@@ -55,7 +55,7 @@ fn main() {
     let index5 = layout.route_around(index4, index3, false, 5.0);
 
     let index6 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (140.5, 300.5).into(), r: 8.0}});
-    let index7 = layout.route_around(index5, index6, false, 5.0);
+    let index7 = layout.route_to(index5, index6, 5.0);
 
     'running: loop {
         i = (i + 1) % 255;
@@ -113,6 +113,7 @@ fn main() {
                             angle2.to_degrees() as i16,
                             Color::RGB(200, 52, 52));
                     }
+
                 },
             }
         }

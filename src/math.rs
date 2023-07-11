@@ -23,7 +23,7 @@ impl Sub for Circle {
     }
 }
 
-fn tangent(center: Point, r1: f64, r2: f64) -> Line {
+fn _tangent(center: Point, r1: f64, r2: f64) -> Line {
     let epsilon = 1e-9;
     let dr = r2 - r1;
     let norm = center.x() * center.x() + center.y() * center.y();
@@ -42,12 +42,12 @@ fn tangent(center: Point, r1: f64, r2: f64) -> Line {
     }
 }
 
-pub fn tangents(circle1: Circle, circle2: Circle) -> [Line; 4] {
+fn _tangents(circle1: Circle, circle2: Circle) -> [Line; 4] {
     let mut tgs: [Line; 4] = [
-        tangent((circle2 - circle1).pos, -circle1.r, -circle2.r),
-        tangent((circle2 - circle1).pos, -circle1.r, circle2.r),
-        tangent((circle2 - circle1).pos, circle1.r, -circle2.r),
-        tangent((circle2 - circle1).pos, circle1.r, circle2.r),
+        _tangent((circle2 - circle1).pos, -circle1.r, -circle2.r),
+        _tangent((circle2 - circle1).pos, -circle1.r, circle2.r),
+        _tangent((circle2 - circle1).pos, circle1.r, -circle2.r),
+        _tangent((circle2 - circle1).pos, circle1.r, circle2.r),
     ];
 
     for tg in tgs.iter_mut() {
@@ -64,8 +64,8 @@ fn cast_point_to_line(pt: Point, line: Line) -> Point {
     ).into();
 }
 
-pub fn tangent_points(circle1: Circle, circle2: Circle) -> [(Point, Point); 4] {
-    let tgs = tangents(circle1, circle2);
+pub fn tangent_point_pairs(circle1: Circle, circle2: Circle) -> [(Point, Point); 4] {
+    let tgs = _tangents(circle1, circle2);
 
     [
         (cast_point_to_line(circle1.pos, tgs[0]), cast_point_to_line(circle2.pos, tgs[0])),
@@ -73,6 +73,32 @@ pub fn tangent_points(circle1: Circle, circle2: Circle) -> [(Point, Point); 4] {
         (cast_point_to_line(circle1.pos, tgs[2]), cast_point_to_line(circle2.pos, tgs[2])),
         (cast_point_to_line(circle1.pos, tgs[3]), cast_point_to_line(circle2.pos, tgs[3])),
     ]
+}
+
+pub fn tangent_point_pair(circle1: Circle, cw1: Option<bool>, circle2: Circle, cw2: Option<bool>) -> (Point, Point) {
+    let tangent_point_pairs = tangent_point_pairs(circle1, circle2);
+
+    for tangent_point_pair in tangent_point_pairs {
+        if let Some(cw1) = cw1 {
+            let cross1 = cross_product(tangent_point_pair.0, tangent_point_pair.1, circle1.pos);
+
+            if (cw1 && cross1 <= 0.0) || (!cw1 && cross1 >= 0.0) {
+                continue;
+            }
+        }
+
+        if let Some(cw2) = cw2 {
+            let cross2 = cross_product(tangent_point_pair.0, tangent_point_pair.1, circle2.pos);
+
+            if (cw2 && cross2 <= 0.0) || (!cw2 && cross2 >= 0.0) {
+                continue;
+            }
+        }
+
+        return tangent_point_pair;
+    }
+
+    unreachable!();
 }
 
 pub fn cross_product(start: Point, stop: Point, reference: Point) -> f64 {
