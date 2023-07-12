@@ -11,7 +11,7 @@ pub type DotIndex = NodeIndex<u32>;
 pub type SegIndex = EdgeIndex<u32>;
 pub type BendIndex = EdgeIndex<u32>;
 
-#[derive(EnumAsInner, Copy, Clone, PartialEq)]
+#[derive(Debug, EnumAsInner, Copy, Clone, PartialEq)]
 pub enum Index {
     Dot(DotIndex),
     Seg(SegIndex),
@@ -88,7 +88,19 @@ impl Mesh {
                     .map(|index| *self.weight(index).as_dot().unwrap())
                     .collect(),
             around_weight: match index {
-                Index::Bend(bend_index) => Some(*self.weight(Index::Dot((*self.weight(index).as_bend().unwrap()).around)).as_dot().unwrap()),
+                Index::Bend(bend_index) => {
+                    Some(self.weight((*self.weight(index).as_bend().unwrap()).around))
+                },
+                _ => None,
+            },
+            center: match index {
+                Index::Bend(bend_index) => {
+                    let mut layer = index;
+                    while let Index::Bend(..) = layer {
+                        layer = self.weight(layer).as_bend().unwrap().around;
+                    }
+                    Some(self.weight(layer).as_dot().unwrap().circle.pos)
+                },
                 _ => None,
             }
         }
@@ -105,14 +117,43 @@ impl Mesh {
         }
     }
 
-    pub fn bend(&self, index: NodeIndex) -> Option<BendIndex> {
-        let edges: Vec<EdgeIndex<u32>> = self.graph.edges(index).map(|r| r.id()).collect();
+    pub fn cw(&self, index: Index) -> Option<bool> {
+        match index {
+            Index::Dot(node_index) => {
+                let maybe_bend = self.bend(node_index);
+                match maybe_bend {
+                    Some(bend) => Some(self.weight(Index::Bend(bend)).as_bend().unwrap().cw),
+                    None => None,
+                }
+            }
+            Index::Seg(edge_index) => None,
+            Index::Bend(edge_index) => Some(self.weight(index).as_bend().unwrap().cw),
+        }
+    }
 
-        if edges.len() != 1 {
+    pub fn bend(&self, index: DotIndex) -> Option<BendIndex> {
+        //let edges: Vec<EdgeIndex<u32>> = self.graph.edges(index).map(|r| r.id()).collect();
+        let bends: Vec<EdgeIndex<u32>> = self.graph.edges(index)
+            .filter_map(|r| match self.weight(Index::Bend(r.id())) {
+                Weight::Bend(..) => Some(r.id()),
+                _ => None,
+            })
+            .collect();
+
+        if bends.len() != 1 {
             return None;
         }
 
-        return Some(edges[0]);
+        Some(bends[0])
+
+        /*if edges.len() == 0 {
+            return None;
+        }*/
+
+        /*if edges[0]
+        Some(edges[0])*/
+
+        //None
     }
 
     pub fn weight(&self, index: Index) -> Weight {

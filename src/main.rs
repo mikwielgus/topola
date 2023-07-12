@@ -40,7 +40,7 @@ fn main() {
     let mut i = 0;
     let mut layout = Layout::new();
     
-    let index = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (150.5, 80.5).into(), r: 8.0}});
+    /*let index = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (150.5, 80.5).into(), r: 8.0}});
     //layout.route_seg(index, Point {x: 400.5, y: 350.5}, 6.0);
 
     let index2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (180.5, 150.5).into(), r: 8.0}});
@@ -51,11 +51,37 @@ fn main() {
     let barrier2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (190.5, 250.5).into(), r: 8.0}});
     layout.add_seg(index3, barrier2, 16.0);
 
-    let index4 = layout.route_around(index, index2, true, 5.0);
-    let index5 = layout.route_around(index4, index3, false, 5.0);
+    let index4 = layout.route_around_dot(index, index2, true, 5.0);
+    let index5 = layout.route_around_dot(index4, index3, false, 5.0);
 
     let index6 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (140.5, 300.5).into(), r: 8.0}});
-    let index7 = layout.route_to(index5, index6, 5.0);
+    let index7 = layout.route_to(index5, index6, 5.0);*/
+
+    let dot1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (100.5, 150.5).into(), r: 8.0}});
+    let dot2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (130.5, 150.5).into(), r: 8.0}});
+    let dot3 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (160.5, 150.5).into(), r: 8.0}});
+
+    let obstacle_dot1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (220.5, 250.5).into(), r: 8.0}});
+    let obstacle_dot2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (100.5, 250.5).into(), r: 8.0}});
+    layout.add_seg(obstacle_dot1, obstacle_dot2, 16.0);
+
+    let dot4 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (200.5, 350.5).into(), r: 8.0}});
+    let dot5 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (220.5, 380.5).into(), r: 8.0}});
+    let dot6 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (290.5, 380.5).into(), r: 8.0}});
+
+    let index3_1 = layout.route_around_dot(dot3, obstacle_dot1, true, 5.0);
+    let index3_2 = layout.route_to(index3_1, dot4, 5.0);
+
+    let index2_1 = layout.route_around_dot(dot2, dot3, true, 5.0);
+    let index2_2 = layout.route_around_bend(index2_1, layout.bend(index3_1).unwrap(), true, 5.0);
+    let index2_3 = layout.route_to(index2_2, dot5, 5.0);
+
+    let index1_1 = layout.route_around_bend(dot1, layout.bend(index2_1).unwrap(), true, 5.0);
+    let index1_2 = layout.route_around_bend(index1_1, layout.bend(index2_2).unwrap(), true, 5.0);
+    let index1_3 = layout.route_to(index1_2, dot6, 5.0);
+
+    //
+    //layout.route_around_bend(dot1, layout.bend(index2).unwrap(), true, 5.0);
 
     'running: loop {
         i = (i + 1) % 255;
@@ -91,11 +117,12 @@ fn main() {
                                               Color::RGB(200, 52, 52));
                 },
                 Weight::Bend(bend) => {
+                    let circle = primitive.circle().unwrap();
                     let dot_neighbor_weights = primitive.dot_neighbor_weights;
-                    let around_circle = primitive.around_weight.unwrap().circle;
+                    //let around_circle = primitive.around_weight.unwrap().circle;
 
-                    let delta1 = dot_neighbor_weights[0].circle.pos - around_circle.pos;
-                    let delta2 = dot_neighbor_weights[1].circle.pos - around_circle.pos;
+                    let delta1 = dot_neighbor_weights[0].circle.pos - circle.pos;
+                    let delta2 = dot_neighbor_weights[1].circle.pos - circle.pos;
 
                     let mut angle1 = delta1.y().atan2(delta1.x());
                     let mut angle2 = delta2.y().atan2(delta2.x());
@@ -106,9 +133,12 @@ fn main() {
 
                     for d in -3..3 {
                         let _ = canvas.arc(
-                            around_circle.pos.x() as i16,
-                            around_circle.pos.y() as i16,
-                            (primitive.around_weight.unwrap().circle.r + 10.0 + (d as f64)) as i16,
+                            //around_circle.pos.x() as i16,
+                            //around_circle.pos.y() as i16,
+                            circle.pos.x() as i16,
+                            circle.pos.y() as i16,
+                            //(primitive.around_weight.unwrap().circle.r + 10.0 + (d as f64)) as i16,
+                            (circle.r + (d as f64)) as i16,
                             angle1.to_degrees() as i16,
                             angle2.to_degrees() as i16,
                             Color::RGB(200, 52, 52));

@@ -29,9 +29,8 @@ impl Layout {
         }
     }
 
-    pub fn route_around(&mut self, from: DotIndex, around: DotIndex, cw: bool, width: f64) -> DotIndex {
+    pub fn route_around_dot(&mut self, from: DotIndex, around: DotIndex, cw: bool, width: f64) -> DotIndex {
         let from_circle = self.head_guidecircle(from, width);
-        let around_circle = self.mesh.weight(Index::Dot(around)).as_dot().unwrap().circle;
 
         let conditions = Conditions {
             lower_net: None,
@@ -40,21 +39,32 @@ impl Layout {
             zone: None,
         };
 
-        let to_circle = self.circle_shell(around_circle, width + 5.0, conditions);
+        let to_circle = self.dot_guidecircle(around, width + 5.0, conditions);
 
-        let maybe_bend = self.mesh.bend(from);
-        let from_cw = match maybe_bend {
-            Some(bend) => Some(self.mesh.weight(Index::Bend(bend)).as_bend().unwrap().cw),
-            None => None,
-        };
-
+        let from_cw = self.mesh.cw(Index::Dot(from));
         let tangent_points = math::tangent_point_pair(from_circle, from_cw, to_circle, Some(cw));
 
-        if maybe_bend.is_some() {
-            self.stretch_head_bend(from, tangent_points.0);
-        }
+        self.extend_head(from, tangent_points.0);
+        self.route_seg_bend(from, Index::Dot(around), tangent_points.1, cw, width)
+    }
 
-        self.route_seg_bend(from, around, tangent_points.1, cw, width)
+    pub fn route_around_bend(&mut self, from: DotIndex, around: BendIndex, cw: bool, width: f64) -> DotIndex {
+        let from_circle = self.head_guidecircle(from, width);
+        
+        let conditions = Conditions {
+            lower_net: None,
+            higher_net: None,
+            layer: None,
+            zone: None,
+        };
+
+        let to_circle = self.bend_guidecircle(around, width, conditions);
+
+        let from_cw = self.mesh.cw(Index::Dot(from));
+        let tangent_points = math::tangent_point_pair(from_circle, from_cw, to_circle, Some(cw));
+
+        self.extend_head(from, tangent_points.0);
+        self.route_seg_bend(from, Index::Bend(around), tangent_points.1, cw, width)
     }
 
     pub fn route_to(&mut self, from: DotIndex, to: DotIndex, width: f64) -> DotIndex {
@@ -72,29 +82,27 @@ impl Layout {
             r: 0.0,
         };
 
-        let maybe_bend = self.mesh.bend(from);
-        let from_cw = match maybe_bend {
-            Some(bend) => Some(self.mesh.weight(Index::Bend(bend)).as_bend().unwrap().cw),
-            None => None,
-        };
-
+        let from_cw = self.mesh.cw(Index::Dot(from));
         let tangent_points = math::tangent_point_pair(from_circle, from_cw, to_circle, None);
 
-        if maybe_bend.is_some() {
-            self.stretch_head_bend(from, tangent_points.0);
-        }
-
+        self.extend_head(from, tangent_points.0);
         self.add_seg(from, to, width);
         to
     }
 
-    fn route_seg_bend(&mut self, from: DotIndex, around: DotIndex, to: Point, cw: bool, width: f64) -> DotIndex {
+    fn route_seg_bend(&mut self, from: DotIndex, around: Index, to: Point, cw: bool, width: f64) -> DotIndex {
         let bend_from = self.route_seg(from, to, width);
         let bend_to = self.add_dot(*self.mesh.primitive(Index::Dot(bend_from)).weight.as_dot().unwrap());
         let from_primitive = self.mesh.primitive(Index::Dot(from));
         let net = from_primitive.weight.as_dot().unwrap().net;
 
-        let bend = self.mesh.add_bend(bend_from, bend_to, BendWeight {net, around, cw});
+        let mut layer = around;
+        while let Index::Bend(..) = layer {
+            layer = self.mesh.weight(layer).as_bend().unwrap().around;
+        }
+        let center = *layer.as_dot().unwrap();
+
+        let bend = self.mesh.add_bend(bend_from, bend_to, BendWeight {net, around, center, cw});
         bend_to
     }
 
@@ -125,8 +133,12 @@ impl Layout {
         match maybe_bend {
             Some(bend) => {
                 let head_around = self.mesh.weight(Index::Bend(bend)).as_bend().unwrap().around;
-                let circle = self.mesh.weight(Index::Dot(head_around)).as_dot().unwrap().circle;
-                self.circle_shell(circle, width + 5.0, conditions)
+                
+                match self.mesh.weight(head_around) {
+                    Weight::Dot(..) => self.dot_guidecircle(*head_around.as_dot().unwrap(), width + 5.0, conditions),
+                    Weight::Bend(..) => self.bend_guidecircle(*head_around.as_bend().unwrap(), width, conditions),
+                    Weight::Seg(..) => unreachable!(),
+                }
             },
             None => Circle {
                 pos: self.mesh.weight(Index::Dot(head)).as_dot().unwrap().circle.pos,
@@ -135,14 +147,42 @@ impl Layout {
         }
     }
 
-    fn circle_shell(&self, circle: Circle, width: f64, conditions: Conditions) -> Circle {
+    fn dot_guidecircle(&self, dot: DotIndex, width: f64, conditions: Conditions) -> Circle {
+        let circle = self.mesh.weight(Index::Dot(dot)).as_dot().unwrap().circle;
         Circle {
             pos: circle.pos,
             r: circle.r + width + self.rules.ruleset(conditions).clearance.min,
         }
     }
 
-    fn stretch_head_bend(&mut self, dot: DotIndex, to: Point) {
+    fn bend_guidecircle(&self, bend: BendIndex, width: f64, conditions: Conditions) -> Circle {
+        let mut layer = Index::Bend(bend);
+        let mut r = width + self.rules.ruleset(conditions).clearance.min;
+
+        while let Index::Bend(..) = layer {
+            layer = self.mesh.weight(layer).as_bend().unwrap().around;
+            r += 5.0 + self.mesh.primitive(layer).width();
+        }
+
+        let circle = self.primitive(layer).weight.as_dot().unwrap().circle;
+        Circle {
+            pos: circle.pos,
+            r: circle.r - 5.0 + r,
+        }
+    }
+
+    fn extend_head(&mut self, from: DotIndex, to: Point) {
+        if let Some(..) = self.mesh.bend(from) {
+            self.extend_head_bend(from, to);
+        } else {
+            // No assertion for now because we temporarily use floats.
+
+            //println!("{:?} {:?}", self.mesh.weight(Index::Dot(from)).as_dot().unwrap().circle.pos, to);
+            //assert!(self.mesh.weight(Index::Dot(from)).as_dot().unwrap().circle.pos == to);
+        }
+    }
+
+    fn extend_head_bend(&mut self, dot: DotIndex, to: Point) {
         let bend = self.mesh.bend(dot).unwrap();
         let dot_weight = *self.mesh.weight(Index::Dot(dot)).as_dot().unwrap();
         let bend_weight = *self.mesh.weight(Index::Bend(bend)).as_bend().unwrap();
@@ -185,5 +225,9 @@ impl Layout {
 
     pub fn primitive(&self, index: Index) -> Primitive {
         return self.mesh.primitive(index);
+    }
+
+    pub fn bend(&self, index: DotIndex) -> Option<BendIndex> {
+        return self.mesh.bend(index);
     }
 }

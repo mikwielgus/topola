@@ -1,26 +1,27 @@
 use enum_as_inner::EnumAsInner;
-use crate::{math::Circle, mesh::DotIndex};
+use crate::{math::Circle, mesh::{Index, DotIndex}};
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DotWeight {
     pub net: i32,
     pub circle: Circle,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BendWeight {
     pub net: i32,
-    pub around: DotIndex,
+    pub around: Index,
+    pub center: DotIndex,
     pub cw: bool,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SegWeight {
     pub net: i32,
     pub width: f64,
 }
 
-#[derive(EnumAsInner, Clone, Copy, PartialEq)]
+#[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
 pub enum Weight {
     Dot(DotWeight),
     Seg(SegWeight),

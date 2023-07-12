@@ -1,14 +1,14 @@
 use std::ops::Sub;
 use geo::geometry::Point;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Line {
     pub a: f64,
     pub b: f64,
     pub c: f64,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Circle {
     pub pos: Point,
     pub r: f64,
