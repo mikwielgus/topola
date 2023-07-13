@@ -25,12 +25,6 @@ pub struct Mesh {
     pub graph: StableUnGraph<Weight, Weight, u32>,
 }
 
-impl Default for Mesh {
-    fn default() -> Self {
-        return Mesh::new();
-    }
-}
-
 impl Mesh {
     pub fn new() -> Self {
         return Mesh {
@@ -93,7 +87,7 @@ impl Mesh {
                 },
                 _ => None,
             },
-            center: match index {
+            focus: match index {
                 Index::Bend(bend_index) => {
                     let mut layer = index;
                     while let Index::Bend(..) = layer {
@@ -117,47 +111,8 @@ impl Mesh {
         }
     }
 
-    pub fn cw(&self, index: Index) -> Option<bool> {
-        match index {
-            Index::Dot(node_index) => {
-                let maybe_bend = self.bend(node_index);
-                match maybe_bend {
-                    Some(bend) => Some(self.weight(Index::Bend(bend)).as_bend().unwrap().cw),
-                    None => None,
-                }
-            }
-            Index::Seg(edge_index) => None,
-            Index::Bend(edge_index) => Some(self.weight(index).as_bend().unwrap().cw),
-        }
-    }
-
-    pub fn bend(&self, index: DotIndex) -> Option<BendIndex> {
-        //let edges: Vec<EdgeIndex<u32>> = self.graph.edges(index).map(|r| r.id()).collect();
-        let bends: Vec<EdgeIndex<u32>> = self.graph.edges(index)
-            .filter_map(|r| match self.weight(Index::Bend(r.id())) {
-                Weight::Bend(..) => Some(r.id()),
-                _ => None,
-            })
-            .collect();
-
-        if bends.len() != 1 {
-            return None;
-        }
-
-        Some(bends[0])
-
-        /*if edges.len() == 0 {
-            return None;
-        }*/
-
-        /*if edges[0]
-        Some(edges[0])*/
-
-        //None
-    }
-
     pub fn weight(&self, index: Index) -> Weight {
-        return match index {
+        match index {
             Index::Dot(node_index) =>
                 *self.graph.node_weight(node_index).unwrap(),
             Index::Seg(edge_index) | Index::Bend(edge_index) =>

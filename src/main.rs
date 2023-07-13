@@ -62,26 +62,32 @@ fn main() {
     let dot3 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (160.5, 150.5).into(), r: 8.0}});
 
     let obstacle_dot1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (220.5, 250.5).into(), r: 8.0}});
-    let obstacle_dot2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (100.5, 250.5).into(), r: 8.0}});
+    let obstacle_dot2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (70.5, 250.5).into(), r: 8.0}});
     layout.add_seg(obstacle_dot1, obstacle_dot2, 16.0);
 
-    let dot4 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (200.5, 350.5).into(), r: 8.0}});
+    let dot4 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (180.5, 380.5).into(), r: 8.0}});
     let dot5 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (220.5, 380.5).into(), r: 8.0}});
     let dot6 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (290.5, 380.5).into(), r: 8.0}});
 
-    let index3_1 = layout.route_around_dot(dot3, obstacle_dot1, true, 5.0);
-    let index3_2 = layout.route_to(index3_1, dot4, 5.0);
+    let head = layout.route_start(dot3);
+    let head = layout.route_around_dot(head, obstacle_dot1, true, 5.0);
+    let dot3_1 = head.dot;
+    let bend3_1 = head.bend.unwrap();
+    layout.route_end(head, dot4, 5.0);
 
-    let index2_1 = layout.route_around_dot(dot2, dot3, true, 5.0);
-    let index2_2 = layout.route_around_bend(index2_1, layout.bend(index3_1).unwrap(), true, 5.0);
-    let index2_3 = layout.route_to(index2_2, dot5, 5.0);
+    let head = layout.route_start(dot2);
+    let head = layout.route_around_dot(head, dot3, true, 5.0);
+    let dot2_1 = head.dot;
+    let bend2_1 = head.bend.unwrap();
+    let head = layout.route_around_bend(head, bend3_1, true, 5.0);
+    let dot2_2 = head.dot;
+    let bend2_2 = head.bend.unwrap();
+    layout.route_end(head, dot5, 5.0);
 
-    let index1_1 = layout.route_around_bend(dot1, layout.bend(index2_1).unwrap(), true, 5.0);
-    let index1_2 = layout.route_around_bend(index1_1, layout.bend(index2_2).unwrap(), true, 5.0);
-    let index1_3 = layout.route_to(index1_2, dot6, 5.0);
-
-    //
-    //layout.route_around_bend(dot1, layout.bend(index2).unwrap(), true, 5.0);
+    let head = layout.route_start(dot1);
+    let head = layout.route_around_bend(head, bend2_1, true, 5.0);
+    let head = layout.route_around_bend(head, bend2_2, true, 5.0);
+    layout.route_end(head, dot6, 5.0);
 
     'running: loop {
         i = (i + 1) % 255;

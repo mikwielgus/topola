@@ -8,7 +8,7 @@ pub struct Primitive {
     pub weight: Weight,
     pub dot_neighbor_weights: Vec<DotWeight>,
     pub around_weight: Option<Weight>,
-    pub center: Option<Point>,
+    pub focus: Option<Point>,
 }
 
 impl Primitive {
@@ -36,9 +36,9 @@ impl Primitive {
             Weight::Dot(dot) => Some(dot.circle),
             Weight::Seg(seg) => None,
             Weight::Bend(bend) => {
-                let r = self.dot_neighbor_weights[0].circle.pos.euclidean_distance(&self.center.unwrap());
+                let r = self.dot_neighbor_weights[0].circle.pos.euclidean_distance(&self.focus.unwrap());
                 Some(Circle {
-                    pos: self.center.unwrap(),
+                    pos: self.focus.unwrap(),
                     r,
                 })
             }
