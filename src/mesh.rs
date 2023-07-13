@@ -1,3 +1,4 @@
+use std::marker::PhantomData;
 use enum_as_inner::EnumAsInner;
 use petgraph::stable_graph::{StableUnGraph, NodeIndex, EdgeIndex};
 use petgraph::visit::EdgeRef;
@@ -7,22 +8,62 @@ use rstar::primitives::GeomWithData;
 use crate::primitive::Primitive;
 use crate::weight::{Weight, DotWeight, SegWeight, BendWeight};
 
-pub type DotIndex = NodeIndex<u32>;
-pub type SegIndex = EdgeIndex<u32>;
-pub type BendIndex = EdgeIndex<u32>;
+
+#[derive(Debug, Copy, Clone, PartialEq)]
+pub struct Index<Ix, T> {
+    index: Ix,
+    marker: PhantomData<T>,
+}
+
+impl<Ix, T> Index<Ix, T> {
+    pub fn new(index: Ix) -> Self {
+        Self {
+            index,
+            marker: PhantomData,
+        }
+    }
+}
+
+pub trait Tag {
+    fn tag(&self) -> TaggedIndex;
+}
+
+pub type DotIndex = Index<NodeIndex<usize>, DotWeight>;
+
+impl Tag for DotIndex {
+    fn tag(&self) -> TaggedIndex {
+        TaggedIndex::Dot(*self)
+    }
+}
+
+pub type SegIndex = Index<EdgeIndex<usize>, SegWeight>;
+
+impl Tag for SegIndex {
+    fn tag(&self) -> TaggedIndex {
+        TaggedIndex::Seg(*self)
+    }
+}
+
+pub type BendIndex = Index<EdgeIndex<usize>, BendWeight>;
+
+impl Tag for BendIndex {
+    fn tag(&self) -> TaggedIndex {
+        TaggedIndex::Bend(*self)
+    }
+}
 
 #[derive(Debug, EnumAsInner, Copy, Clone, PartialEq)]
-pub enum Index {
+pub enum TaggedIndex {
     Dot(DotIndex),
     Seg(SegIndex),
     Bend(BendIndex),
 }
 
-pub type IndexRTreeWrapper = GeomWithData<Primitive, Index>;
+pub type RTreeWrapper = GeomWithData<Primitive, TaggedIndex>;
 
 pub struct Mesh {
-    pub rtree: RTree<IndexRTreeWrapper>,
-    pub graph: StableUnGraph<Weight, Weight, u32>,
+    pub rtree: RTree<RTreeWrapper>,
+    pub graph: StableUnGraph<Weight, Weight, usize>,
 }
 
 impl Mesh {
@@ -34,63 +75,63 @@ impl Mesh {
     }
 
     pub fn add_dot(&mut self, weight: DotWeight) -> DotIndex {
-        let dot_index = self.graph.add_node(Weight::Dot(weight));
-        let index = Index::Dot(dot_index);
-        self.rtree.insert(IndexRTreeWrapper::new(self.primitive(index), index));
+        let dot_index = DotIndex::new(self.graph.add_node(Weight::Dot(weight)));
+        let index = TaggedIndex::Dot(dot_index);
+        self.rtree.insert(RTreeWrapper::new(self.primitive(index), index));
         dot_index
     }
 
     pub fn remove_dot(&mut self, dot: DotIndex) {
-        self.rtree.remove(&IndexRTreeWrapper::new(self.primitive(Index::Dot(dot)), Index::Dot(dot)));
-        self.graph.remove_node(dot);
+        self.rtree.remove(&RTreeWrapper::new(self.primitive(TaggedIndex::Dot(dot)), TaggedIndex::Dot(dot)));
+        self.graph.remove_node(dot.index);
     }
 
     pub fn add_seg(&mut self, from: DotIndex, to: DotIndex, weight: SegWeight) -> SegIndex {
-        let seg_index = self.graph.add_edge(from, to, Weight::Seg(weight));
-        let index = Index::Seg(seg_index);
-        self.rtree.insert(IndexRTreeWrapper::new(self.primitive(index), index));
+        let seg_index = SegIndex::new(self.graph.add_edge(from.index, to.index, Weight::Seg(weight)));
+        let index = TaggedIndex::Seg(seg_index);
+        self.rtree.insert(RTreeWrapper::new(self.primitive(index), index));
         seg_index
     }
 
     pub fn remove_seg(&mut self, seg: SegIndex) {
-        self.rtree.remove(&IndexRTreeWrapper::new(self.primitive(Index::Seg(seg)), Index::Seg(seg)));
-        self.graph.remove_edge(seg);
+        self.rtree.remove(&RTreeWrapper::new(self.primitive(TaggedIndex::Seg(seg)), TaggedIndex::Seg(seg)));
+        self.graph.remove_edge(seg.index);
     }
 
     pub fn add_bend(&mut self, from: DotIndex, to: DotIndex, weight: BendWeight) -> BendIndex {
-        let bend_index = self.graph.add_edge(from, to, Weight::Bend(weight));
-        let index = Index::Bend(bend_index);
-        self.rtree.insert(IndexRTreeWrapper::new(self.primitive(index), index));
+        let bend_index = BendIndex::new(self.graph.add_edge(from.index, to.index, Weight::Bend(weight)));
+        let index = TaggedIndex::Bend(bend_index);
+        self.rtree.insert(RTreeWrapper::new(self.primitive(index), index));
         bend_index
     }
 
     pub fn remove_bend(&mut self, bend: BendIndex) {
-        self.rtree.remove(&IndexRTreeWrapper::new(self.primitive(Index::Bend(bend)), Index::Bend(bend)));
-        self.graph.remove_edge(bend);
+        self.rtree.remove(&RTreeWrapper::new(self.primitive(TaggedIndex::Bend(bend)), TaggedIndex::Bend(bend)));
+        self.graph.remove_edge(bend.index);
     }
 
     pub fn primitives(&self) -> Box<dyn Iterator<Item=Primitive> + '_> {
         Box::new(self.rtree.iter().map(|wrapper| self.primitive(wrapper.data)))
     }
 
-    pub fn primitive(&self, index: Index) -> Primitive {
+    pub fn primitive(&self, index: TaggedIndex) -> Primitive {
         Primitive {
             weight: self.weight(index),
             dot_neighbor_weights:
-                self.dot_neighbors(index)
+                self.neighboring_dots(index)
                     .into_iter()
                     .map(|index| *self.weight(index).as_dot().unwrap())
                     .collect(),
             around_weight: match index {
-                Index::Bend(bend_index) => {
+                TaggedIndex::Bend(bend_index) => {
                     Some(self.weight((*self.weight(index).as_bend().unwrap()).around))
                 },
                 _ => None,
             },
             focus: match index {
-                Index::Bend(bend_index) => {
+                TaggedIndex::Bend(bend_index) => {
                     let mut layer = index;
-                    while let Index::Bend(..) = layer {
+                    while let TaggedIndex::Bend(..) = layer {
                         layer = self.weight(layer).as_bend().unwrap().around;
                     }
                     Some(self.weight(layer).as_dot().unwrap().circle.pos)
@@ -100,22 +141,38 @@ impl Mesh {
         }
     }
 
-    pub fn dot_neighbors(&self, index: Index) -> Vec<Index> {
+    pub fn neighboring_dots(&self, index: TaggedIndex) -> Vec<TaggedIndex> {
         match index {
-            Index::Dot(node_index) =>
-                return self.graph.neighbors(node_index).map(|ni| Index::Dot(ni)).collect(),
-            Index::Seg(edge_index) | Index::Bend(edge_index) => {
+            TaggedIndex::Dot(DotIndex {index: node_index, ..}) =>
+                return self.graph.neighbors(node_index)
+                    .map(|ni| TaggedIndex::Dot(Index::new(ni))).collect(),
+            TaggedIndex::Seg(SegIndex {index: edge_index, ..})
+            | TaggedIndex::Bend(BendIndex {index: edge_index, ..}) => {
                 let endpoints = self.graph.edge_endpoints(edge_index).unwrap();
-                return vec![Index::Dot(endpoints.0), Index::Dot(endpoints.1)]
+                return vec![TaggedIndex::Dot(DotIndex::new(endpoints.0)),
+                            TaggedIndex::Dot(DotIndex::new(endpoints.1))]
             }
         }
     }
 
-    pub fn weight(&self, index: Index) -> Weight {
+    pub fn dot_weight(&self, dot: DotIndex) -> DotWeight {
+        *self.weight(dot.tag()).as_dot().unwrap()
+    }
+
+    pub fn seg_weight(&self, seg: SegIndex) -> SegWeight {
+        *self.weight(seg.tag()).as_seg().unwrap()
+    }
+
+    pub fn bend_weight(&self, bend: BendIndex) -> BendWeight {
+        *self.weight(bend.tag()).as_bend().unwrap()
+    }
+
+    pub fn weight(&self, index: TaggedIndex) -> Weight {
         match index {
-            Index::Dot(node_index) =>
+            TaggedIndex::Dot(DotIndex {index: node_index, ..}) =>
                 *self.graph.node_weight(node_index).unwrap(),
-            Index::Seg(edge_index) | Index::Bend(edge_index) =>
+            TaggedIndex::Seg(SegIndex {index: edge_index, ..})
+            | TaggedIndex::Bend(BendIndex {index: edge_index, ..}) =>
                 *self.graph.edge_weight(edge_index).unwrap(),
         }
     }

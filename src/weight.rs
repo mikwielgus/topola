@@ -1,5 +1,5 @@
 use enum_as_inner::EnumAsInner;
-use crate::{math::Circle, mesh::{Index, DotIndex}};
+use crate::{math::Circle, mesh::{DotIndex, TaggedIndex}};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DotWeight {
@@ -10,7 +10,7 @@ pub struct DotWeight {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BendWeight {
     pub net: i32,
-    pub around: Index,
+    pub around: TaggedIndex,
     pub center: DotIndex,
     pub cw: bool,
 }
