@@ -137,7 +137,7 @@ impl Layout {
                 match self.mesh.weight(head_around) {
                     Weight::Dot(..) => self.dot_guidecircle(*head_around.as_dot().unwrap(), width + 5.0, conditions),
                     Weight::Bend(..) => self.bend_guidecircle(*head_around.as_bend().unwrap(), width, conditions),
-                    Weight::Seg(..) => unreachable!(),
+                    Weight::Seg(..) | Weight::EndRef(..) | Weight::AroundRef(..) => unreachable!(),
                 }
             },
             None => Circle {

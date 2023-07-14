@@ -133,7 +133,7 @@ fn main() {
                     let mut angle1 = delta1.y().atan2(delta1.x());
                     let mut angle2 = delta2.y().atan2(delta2.x());
 
-                    if !primitive.weight.as_bend().unwrap().cw {
+                    if primitive.weight.as_bend().unwrap().cw {
                         swap(&mut angle1, &mut angle2);
                     }
 
@@ -151,6 +151,7 @@ fn main() {
                     }
 
                 },
+                Weight::EndRef(..) | Weight::AroundRef(..) => unreachable!(),
             }
         }
 

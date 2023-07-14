@@ -21,9 +21,19 @@ pub struct SegWeight {
     pub width: f64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct EndRefWeight {
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct AroundRefWeight {
+}
+
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
 pub enum Weight {
     Dot(DotWeight),
     Seg(SegWeight),
     Bend(BendWeight),
+    EndRef(EndRefWeight),
+    AroundRef(AroundRefWeight),
 }

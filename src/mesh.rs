@@ -6,7 +6,7 @@ use rstar::{RTree, RTreeObject, AABB};
 use rstar::primitives::GeomWithData;
 
 use crate::primitive::Primitive;
-use crate::weight::{Weight, DotWeight, SegWeight, BendWeight};
+use crate::weight::{Weight, DotWeight, SegWeight, BendWeight, EndRefWeight, AroundRefWeight};
 
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -44,11 +44,27 @@ impl Tag for SegIndex {
     }
 }
 
-pub type BendIndex = Index<EdgeIndex<usize>, BendWeight>;
+pub type BendIndex = Index<NodeIndex<usize>, BendWeight>;
 
 impl Tag for BendIndex {
     fn tag(&self) -> TaggedIndex {
         TaggedIndex::Bend(*self)
+    }
+}
+
+pub type EndRefIndex = Index<EdgeIndex<usize>, EndRefWeight>;
+
+impl Tag for EndRefIndex {
+    fn tag(&self) -> TaggedIndex {
+        TaggedIndex::EndRef(*self)
+    }
+}
+
+pub type AroundRefIndex = Index<EdgeIndex<usize>, AroundRefWeight>;
+
+impl Tag for AroundRefIndex {
+    fn tag(&self) -> TaggedIndex {
+        TaggedIndex::AroundRef(*self)
     }
 }
 
@@ -57,6 +73,8 @@ pub enum TaggedIndex {
     Dot(DotIndex),
     Seg(SegIndex),
     Bend(BendIndex),
+    EndRef(EndRefIndex),
+    AroundRef(AroundRefIndex),
 }
 
 pub type RTreeWrapper = GeomWithData<Primitive, TaggedIndex>;
@@ -99,7 +117,10 @@ impl Mesh {
     }
 
     pub fn add_bend(&mut self, from: DotIndex, to: DotIndex, weight: BendWeight) -> BendIndex {
-        let bend_index = BendIndex::new(self.graph.add_edge(from.index, to.index, Weight::Bend(weight)));
+        let bend_index = BendIndex::new(self.graph.add_node(Weight::Bend(weight)));
+        self.graph.add_edge(from.index, bend_index.index, Weight::EndRef(EndRefWeight {}));
+        self.graph.add_edge(bend_index.index, to.index, Weight::EndRef(EndRefWeight {}));
+
         let index = TaggedIndex::Bend(bend_index);
         self.rtree.insert(RTreeWrapper::new(self.primitive(index), index));
         bend_index
@@ -107,7 +128,7 @@ impl Mesh {
 
     pub fn remove_bend(&mut self, bend: BendIndex) {
         self.rtree.remove(&RTreeWrapper::new(self.primitive(TaggedIndex::Bend(bend)), TaggedIndex::Bend(bend)));
-        self.graph.remove_edge(bend.index);
+        self.graph.remove_node(bend.index);
     }
 
     pub fn primitives(&self) -> Box<dyn Iterator<Item=Primitive> + '_> {
@@ -143,15 +164,18 @@ impl Mesh {
 
     pub fn neighboring_dots(&self, index: TaggedIndex) -> Vec<TaggedIndex> {
         match index {
-            TaggedIndex::Dot(DotIndex {index: node_index, ..}) =>
+            TaggedIndex::Dot(DotIndex {index: node_index, ..})
+            | TaggedIndex::Bend(BendIndex {index: node_index, ..}) =>
                 return self.graph.neighbors(node_index)
-                    .map(|ni| TaggedIndex::Dot(Index::new(ni))).collect(),
-            TaggedIndex::Seg(SegIndex {index: edge_index, ..})
-            | TaggedIndex::Bend(BendIndex {index: edge_index, ..}) => {
+                    .filter(|ni| self.graph.node_weight(*ni).unwrap().as_dot().is_some())
+                    .map(|ni| TaggedIndex::Dot(Index::new(ni)))
+                    .collect(),
+            TaggedIndex::Seg(SegIndex {index: edge_index, ..}) => {
                 let endpoints = self.graph.edge_endpoints(edge_index).unwrap();
                 return vec![TaggedIndex::Dot(DotIndex::new(endpoints.0)),
                             TaggedIndex::Dot(DotIndex::new(endpoints.1))]
-            }
+            },
+            TaggedIndex::EndRef(..) | TaggedIndex::AroundRef(..) => unreachable!(),
         }
     }
 
@@ -169,11 +193,12 @@ impl Mesh {
 
     pub fn weight(&self, index: TaggedIndex) -> Weight {
         match index {
-            TaggedIndex::Dot(DotIndex {index: node_index, ..}) =>
+            TaggedIndex::Dot(DotIndex {index: node_index, ..})
+            | TaggedIndex::Bend(BendIndex {index: node_index, ..}) =>
                 *self.graph.node_weight(node_index).unwrap(),
-            TaggedIndex::Seg(SegIndex {index: edge_index, ..})
-            | TaggedIndex::Bend(BendIndex {index: edge_index, ..}) =>
+            TaggedIndex::Seg(SegIndex {index: edge_index, ..}) =>
                 *self.graph.edge_weight(edge_index).unwrap(),
+            TaggedIndex::EndRef(..) | TaggedIndex::AroundRef(..) => unreachable!(),
         }
     }
 }
