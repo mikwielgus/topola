@@ -3,7 +3,7 @@ use std::rc::Rc;
 use geo::geometry::Point;
 
 use crate::math::Circle;
-use crate::mesh::{Mesh, TaggedIndex, RTreeWrapper, DotIndex, SegIndex, BendIndex};
+use crate::mesh::{Mesh, TaggedIndex, RTreeWrapper, DotIndex, SegIndex, BendIndex, Tag};
 use crate::rules::{Rules, Conditions};
 use crate::primitive::Primitive;
 use crate::weight::{Weight, DotWeight, SegWeight, BendWeight};
@@ -98,12 +98,12 @@ impl Layout {
         let net = self.mesh.dot_weight(head.dot).net;
 
         let mut layer = around;
-        while let TaggedIndex::Bend(..) = layer {
-            layer = self.mesh.weight(layer).as_bend().unwrap().around;
+        while let TaggedIndex::Bend(layer_bend) = layer {
+            layer = self.mesh.around(layer_bend)
         }
         let center = *layer.as_dot().unwrap();
 
-        let bend = self.mesh.add_bend(head.dot, bend_to, BendWeight {net, around, center, cw});
+        let bend = self.mesh.add_bend(head.dot, bend_to, around, BendWeight {net, cw});
         Head {dot: bend_to, bend: Some(bend)}
     }
 
@@ -132,7 +132,7 @@ impl Layout {
 
         match maybe_bend {
             Some(bend) => {
-                let head_around = self.mesh.bend_weight(bend).around;
+                let head_around = self.mesh.around(bend);
 
                 match self.mesh.weight(head_around) {
                     Weight::Dot(..) => self.dot_guidecircle(*head_around.as_dot().unwrap(), width + 5.0, conditions),
@@ -166,8 +166,8 @@ impl Layout {
         let mut layer = TaggedIndex::Bend(bend);
         let mut r = width + self.rules.ruleset(conditions).clearance.min;
 
-        while let TaggedIndex::Bend(..) = layer {
-            layer = self.mesh.weight(layer).as_bend().unwrap().around;
+        while let TaggedIndex::Bend(layer_bend) = layer {
+            layer = self.mesh.around(layer_bend);
             r += 5.0 + self.mesh.primitive(layer).width();
         }
 
@@ -194,8 +194,9 @@ impl Layout {
         let bend = head.bend.unwrap();
         let dot_weight = self.mesh.dot_weight(head.dot);
         let bend_weight = self.mesh.bend_weight(bend);
+        let around = self.mesh.around(bend);
 
-        let fixed_dot: TaggedIndex = self.mesh.neighboring_dots(TaggedIndex::Bend(bend))
+        let fixed_dot: TaggedIndex = self.mesh.ends(TaggedIndex::Bend(bend))
             .into_iter()
             .filter(|neighbor| *neighbor != TaggedIndex::Dot(head.dot))
             .collect::<Vec<TaggedIndex>>()[0];
@@ -210,7 +211,8 @@ impl Layout {
                 r: dot_weight.circle.r,
             },
         });
-        self.mesh.add_bend(*fixed_dot.as_dot().unwrap(), new_dot, bend_weight);
+
+        self.mesh.add_bend(*fixed_dot.as_dot().unwrap(), new_dot, around, bend_weight);
         head
     }
 

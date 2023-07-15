@@ -116,14 +116,27 @@ impl Mesh {
         self.graph.remove_edge(seg.index);
     }
 
-    pub fn add_bend(&mut self, from: DotIndex, to: DotIndex, weight: BendWeight) -> BendIndex {
-        let bend_index = BendIndex::new(self.graph.add_node(Weight::Bend(weight)));
-        self.graph.add_edge(from.index, bend_index.index, Weight::EndRef(EndRefWeight {}));
-        self.graph.add_edge(bend_index.index, to.index, Weight::EndRef(EndRefWeight {}));
+    pub fn add_bend(&mut self, from: DotIndex, to: DotIndex, around: TaggedIndex, weight: BendWeight) -> BendIndex {
+        let bend = BendIndex::new(self.graph.add_node(Weight::Bend(weight)));
+        self.graph.add_edge(from.index, bend.index, Weight::EndRef(EndRefWeight {}));
+        self.graph.add_edge(bend.index, to.index, Weight::EndRef(EndRefWeight {}));
 
-        let index = TaggedIndex::Bend(bend_index);
+        match around {
+            TaggedIndex::Dot(DotIndex {index: around_index, ..}) => {
+                self.graph.add_edge(bend.index, around_index, Weight::AroundRef(AroundRefWeight {}));
+            },
+            TaggedIndex::Bend(BendIndex {index: around_index, ..}) => {
+                self.graph.add_edge(bend.index, around_index, Weight::AroundRef(AroundRefWeight {}));
+            },
+            TaggedIndex::Seg(..)
+            | TaggedIndex::EndRef(..)
+            | TaggedIndex::AroundRef(..) =>
+                unreachable!(),
+        }
+
+        let index = TaggedIndex::Bend(bend);
         self.rtree.insert(RTreeWrapper::new(self.primitive(index), index));
-        bend_index
+        bend
     }
 
     pub fn remove_bend(&mut self, bend: BendIndex) {
@@ -139,43 +152,71 @@ impl Mesh {
         Primitive {
             weight: self.weight(index),
             dot_neighbor_weights:
-                self.neighboring_dots(index)
+                self.ends(index)
                     .into_iter()
                     .map(|index| *self.weight(index).as_dot().unwrap())
                     .collect(),
             around_weight: match index {
-                TaggedIndex::Bend(bend_index) => {
-                    Some(self.weight((*self.weight(index).as_bend().unwrap()).around))
-                },
+                TaggedIndex::Bend(bend) => Some(self.weight(self.around(bend))),
                 _ => None,
             },
             focus: match index {
-                TaggedIndex::Bend(bend_index) => {
+                TaggedIndex::Bend(bend) => {
                     let mut layer = index;
-                    while let TaggedIndex::Bend(..) = layer {
-                        layer = self.weight(layer).as_bend().unwrap().around;
+                    while let TaggedIndex::Bend(layer_bend) = layer {
+                        layer = self.around(layer_bend)
                     }
                     Some(self.weight(layer).as_dot().unwrap().circle.pos)
                 },
                 _ => None,
-            }
+            },
         }
     }
 
-    pub fn neighboring_dots(&self, index: TaggedIndex) -> Vec<TaggedIndex> {
+    /*pub fn focus(&self, bend: BendIndex) -> DotIndex {
+        let mut layer = bend.tag();
+        while let TaggedIndex::Bend(bend) = layer {
+            layer = self.around(layer).unwrap();
+        }
+
+        *layer.as_dot().unwrap()
+    }*/
+
+    pub fn around(&self, bend: BendIndex) -> TaggedIndex {
+        for neighbor in self.graph.neighbors(bend.index) {
+            let edge = self.graph.find_edge(bend.index, neighbor).unwrap();
+
+            if self.graph.edge_weight(edge).unwrap().is_around_ref() {
+                return match self.graph.node_weight(neighbor).unwrap() {
+                    Weight::Dot(dot) => DotIndex::new(neighbor).tag(),
+                    Weight::Bend(bend) => BendIndex::new(neighbor).tag(),
+                    Weight::Seg(..)
+                    | Weight::EndRef(..)
+                    | Weight::AroundRef(..) =>
+                        unreachable!(),
+                }
+            }
+        }
+        unreachable!();
+    }
+
+    pub fn ends(&self, index: TaggedIndex) -> Vec<TaggedIndex> {
         match index {
-            TaggedIndex::Dot(DotIndex {index: node_index, ..})
-            | TaggedIndex::Bend(BendIndex {index: node_index, ..}) =>
-                return self.graph.neighbors(node_index)
-                    .filter(|ni| self.graph.node_weight(*ni).unwrap().as_dot().is_some())
+            TaggedIndex::Dot(DotIndex {index: node, ..})
+            | TaggedIndex::Bend(BendIndex {index: node, ..}) =>
+                self.graph.neighbors(node)
+                    .filter(|ni| self.graph.node_weight(*ni).unwrap().is_dot())
+                    .filter(|ni| self.graph.edge_weight(self.graph.find_edge(node, *ni).unwrap()).unwrap().is_end_ref())
                     .map(|ni| TaggedIndex::Dot(Index::new(ni)))
                     .collect(),
-            TaggedIndex::Seg(SegIndex {index: edge_index, ..}) => {
-                let endpoints = self.graph.edge_endpoints(edge_index).unwrap();
-                return vec![TaggedIndex::Dot(DotIndex::new(endpoints.0)),
-                            TaggedIndex::Dot(DotIndex::new(endpoints.1))]
+            TaggedIndex::Seg(SegIndex {index: edge, ..}) => {
+                let endpoints = self.graph.edge_endpoints(edge).unwrap();
+                vec![TaggedIndex::Dot(DotIndex::new(endpoints.0)),
+                     TaggedIndex::Dot(DotIndex::new(endpoints.1))]
             },
-            TaggedIndex::EndRef(..) | TaggedIndex::AroundRef(..) => unreachable!(),
+            TaggedIndex::EndRef(..)
+            | TaggedIndex::AroundRef(..) =>
+                unreachable!(),
         }
     }
 
@@ -193,12 +234,14 @@ impl Mesh {
 
     pub fn weight(&self, index: TaggedIndex) -> Weight {
         match index {
-            TaggedIndex::Dot(DotIndex {index: node_index, ..})
-            | TaggedIndex::Bend(BendIndex {index: node_index, ..}) =>
-                *self.graph.node_weight(node_index).unwrap(),
-            TaggedIndex::Seg(SegIndex {index: edge_index, ..}) =>
-                *self.graph.edge_weight(edge_index).unwrap(),
-            TaggedIndex::EndRef(..) | TaggedIndex::AroundRef(..) => unreachable!(),
+            TaggedIndex::Dot(DotIndex {index: node, ..})
+            | TaggedIndex::Bend(BendIndex {index: node, ..}) =>
+                *self.graph.node_weight(node).unwrap(),
+            TaggedIndex::Seg(SegIndex {index: edge, ..}) =>
+                *self.graph.edge_weight(edge).unwrap(),
+            TaggedIndex::EndRef(..)
+            | TaggedIndex::AroundRef(..) => 
+                unreachable!(),
         }
     }
 }

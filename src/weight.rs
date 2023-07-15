@@ -10,8 +10,6 @@ pub struct DotWeight {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BendWeight {
     pub net: i32,
-    pub around: TaggedIndex,
-    pub center: DotIndex,
     pub cw: bool,
 }
 
