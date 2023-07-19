@@ -136,8 +136,8 @@ impl Layout {
 
                 match self.mesh.weight(head_around) {
                     Weight::Dot(..) => self.dot_guidecircle(*head_around.as_dot().unwrap(), width + 5.0, conditions),
+                    Weight::Seg(..) => unreachable!(),
                     Weight::Bend(..) => self.bend_guidecircle(*head_around.as_bend().unwrap(), width, conditions),
-                    Weight::Seg(..) | Weight::EndRef(..) | Weight::AroundRef(..) => unreachable!(),
                 }
             },
             None => Circle {
@@ -196,10 +196,10 @@ impl Layout {
         let bend_weight = self.mesh.bend_weight(bend);
         let around = self.mesh.around(bend);
 
-        let fixed_dot: TaggedIndex = self.mesh.ends(TaggedIndex::Bend(bend))
+        let fixed_dot: DotIndex = self.mesh.ends(TaggedIndex::Bend(bend))
             .into_iter()
-            .filter(|neighbor| *neighbor != TaggedIndex::Dot(head.dot))
-            .collect::<Vec<TaggedIndex>>()[0];
+            .filter(|neighbor| {*neighbor != head.dot})
+            .collect::<Vec<DotIndex>>()[0];
 
         self.mesh.remove_bend(bend);
         self.mesh.remove_dot(head.dot);
@@ -212,7 +212,7 @@ impl Layout {
             },
         });
 
-        self.mesh.add_bend(*fixed_dot.as_dot().unwrap(), new_dot, around, bend_weight);
+        self.mesh.add_bend(fixed_dot, new_dot, around, bend_weight);
         head
     }
 

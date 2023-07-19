@@ -1,12 +1,12 @@
 use std::marker::PhantomData;
 use enum_as_inner::EnumAsInner;
-use petgraph::stable_graph::{StableUnGraph, NodeIndex, EdgeIndex};
+use petgraph::stable_graph::{StableDiGraph, NodeIndex, EdgeIndex};
 use petgraph::visit::EdgeRef;
 use rstar::{RTree, RTreeObject, AABB};
 use rstar::primitives::GeomWithData;
 
 use crate::primitive::Primitive;
-use crate::weight::{Weight, DotWeight, SegWeight, BendWeight, EndRefWeight, AroundRefWeight};
+use crate::weight::{Weight, DotWeight, SegWeight, BendWeight, Label};
 
 
 #[derive(Debug, Copy, Clone, PartialEq)]
@@ -36,7 +36,7 @@ impl Tag for DotIndex {
     }
 }
 
-pub type SegIndex = Index<EdgeIndex<usize>, SegWeight>;
+pub type SegIndex = Index<NodeIndex<usize>, SegWeight>;
 
 impl Tag for SegIndex {
     fn tag(&self) -> TaggedIndex {
@@ -52,51 +52,33 @@ impl Tag for BendIndex {
     }
 }
 
-pub type EndRefIndex = Index<EdgeIndex<usize>, EndRefWeight>;
-
-impl Tag for EndRefIndex {
-    fn tag(&self) -> TaggedIndex {
-        TaggedIndex::EndRef(*self)
-    }
-}
-
-pub type AroundRefIndex = Index<EdgeIndex<usize>, AroundRefWeight>;
-
-impl Tag for AroundRefIndex {
-    fn tag(&self) -> TaggedIndex {
-        TaggedIndex::AroundRef(*self)
-    }
-}
-
 #[derive(Debug, EnumAsInner, Copy, Clone, PartialEq)]
 pub enum TaggedIndex {
     Dot(DotIndex),
     Seg(SegIndex),
     Bend(BendIndex),
-    EndRef(EndRefIndex),
-    AroundRef(AroundRefIndex),
 }
 
 pub type RTreeWrapper = GeomWithData<Primitive, TaggedIndex>;
 
 pub struct Mesh {
     pub rtree: RTree<RTreeWrapper>,
-    pub graph: StableUnGraph<Weight, Weight, usize>,
+    pub graph: StableDiGraph<Weight, Label, usize>,
 }
 
 impl Mesh {
     pub fn new() -> Self {
         return Mesh {
             rtree: RTree::new(),
-            graph: StableUnGraph::default(),
+            graph: StableDiGraph::default(),
         }
     }
 
     pub fn add_dot(&mut self, weight: DotWeight) -> DotIndex {
-        let dot_index = DotIndex::new(self.graph.add_node(Weight::Dot(weight)));
-        let index = TaggedIndex::Dot(dot_index);
+        let dot = DotIndex::new(self.graph.add_node(Weight::Dot(weight)));
+        let index = TaggedIndex::Dot(dot);
         self.rtree.insert(RTreeWrapper::new(self.primitive(index), index));
-        dot_index
+        dot
     }
 
     pub fn remove_dot(&mut self, dot: DotIndex) {
@@ -105,33 +87,34 @@ impl Mesh {
     }
 
     pub fn add_seg(&mut self, from: DotIndex, to: DotIndex, weight: SegWeight) -> SegIndex {
-        let seg_index = SegIndex::new(self.graph.add_edge(from.index, to.index, Weight::Seg(weight)));
-        let index = TaggedIndex::Seg(seg_index);
+        let seg = SegIndex::new(self.graph.add_node(Weight::Seg(weight)));
+        self.graph.add_edge(seg.index, from.index, Label::End);
+        self.graph.add_edge(seg.index, to.index, Label::End);
+
+        let index = TaggedIndex::Seg(seg);
         self.rtree.insert(RTreeWrapper::new(self.primitive(index), index));
-        seg_index
+        seg
+
     }
 
     pub fn remove_seg(&mut self, seg: SegIndex) {
         self.rtree.remove(&RTreeWrapper::new(self.primitive(TaggedIndex::Seg(seg)), TaggedIndex::Seg(seg)));
-        self.graph.remove_edge(seg.index);
+        self.graph.remove_node(seg.index);
     }
 
     pub fn add_bend(&mut self, from: DotIndex, to: DotIndex, around: TaggedIndex, weight: BendWeight) -> BendIndex {
         let bend = BendIndex::new(self.graph.add_node(Weight::Bend(weight)));
-        self.graph.add_edge(from.index, bend.index, Weight::EndRef(EndRefWeight {}));
-        self.graph.add_edge(bend.index, to.index, Weight::EndRef(EndRefWeight {}));
+        self.graph.add_edge(bend.index, from.index, Label::End);
+        self.graph.add_edge(bend.index, to.index, Label::End);
 
         match around {
             TaggedIndex::Dot(DotIndex {index: around_index, ..}) => {
-                self.graph.add_edge(bend.index, around_index, Weight::AroundRef(AroundRefWeight {}));
+                self.graph.add_edge(bend.index, around_index, Label::Around);
             },
+            TaggedIndex::Seg(..) => unreachable!(),
             TaggedIndex::Bend(BendIndex {index: around_index, ..}) => {
-                self.graph.add_edge(bend.index, around_index, Weight::AroundRef(AroundRefWeight {}));
+                self.graph.add_edge(bend.index, around_index, Label::Around);
             },
-            TaggedIndex::Seg(..)
-            | TaggedIndex::EndRef(..)
-            | TaggedIndex::AroundRef(..) =>
-                unreachable!(),
         }
 
         let index = TaggedIndex::Bend(bend);
@@ -154,7 +137,7 @@ impl Mesh {
             dot_neighbor_weights:
                 self.ends(index)
                     .into_iter()
-                    .map(|index| *self.weight(index).as_dot().unwrap())
+                    .map(|index| self.dot_weight(index))
                     .collect(),
             around_weight: match index {
                 TaggedIndex::Bend(bend) => Some(self.weight(self.around(bend))),
@@ -186,37 +169,28 @@ impl Mesh {
         for neighbor in self.graph.neighbors(bend.index) {
             let edge = self.graph.find_edge(bend.index, neighbor).unwrap();
 
-            if self.graph.edge_weight(edge).unwrap().is_around_ref() {
+            if self.graph.edge_weight(edge).unwrap().is_around() {
                 return match self.graph.node_weight(neighbor).unwrap() {
                     Weight::Dot(dot) => DotIndex::new(neighbor).tag(),
                     Weight::Bend(bend) => BendIndex::new(neighbor).tag(),
-                    Weight::Seg(..)
-                    | Weight::EndRef(..)
-                    | Weight::AroundRef(..) =>
-                        unreachable!(),
+                    Weight::Seg(seg) => SegIndex::new(neighbor).tag(),
                 }
             }
         }
         unreachable!();
     }
 
-    pub fn ends(&self, index: TaggedIndex) -> Vec<TaggedIndex> {
+    pub fn ends(&self, index: TaggedIndex) -> Vec<DotIndex> {
         match index {
             TaggedIndex::Dot(DotIndex {index: node, ..})
-            | TaggedIndex::Bend(BendIndex {index: node, ..}) =>
+            | TaggedIndex::Seg(SegIndex {index: node, ..})
+            | TaggedIndex::Bend(BendIndex {index: node, ..}) => {
                 self.graph.neighbors(node)
+                    .filter(|ni| self.graph.edge_weight(self.graph.find_edge(node, *ni).unwrap()).unwrap().is_end())
                     .filter(|ni| self.graph.node_weight(*ni).unwrap().is_dot())
-                    .filter(|ni| self.graph.edge_weight(self.graph.find_edge(node, *ni).unwrap()).unwrap().is_end_ref())
-                    .map(|ni| TaggedIndex::Dot(Index::new(ni)))
-                    .collect(),
-            TaggedIndex::Seg(SegIndex {index: edge, ..}) => {
-                let endpoints = self.graph.edge_endpoints(edge).unwrap();
-                vec![TaggedIndex::Dot(DotIndex::new(endpoints.0)),
-                     TaggedIndex::Dot(DotIndex::new(endpoints.1))]
-            },
-            TaggedIndex::EndRef(..)
-            | TaggedIndex::AroundRef(..) =>
-                unreachable!(),
+                    .map(|ni| DotIndex::new(ni))
+                    .collect()
+            }
         }
     }
 
@@ -235,13 +209,9 @@ impl Mesh {
     pub fn weight(&self, index: TaggedIndex) -> Weight {
         match index {
             TaggedIndex::Dot(DotIndex {index: node, ..})
+            | TaggedIndex::Seg(SegIndex {index: node, ..})
             | TaggedIndex::Bend(BendIndex {index: node, ..}) =>
                 *self.graph.node_weight(node).unwrap(),
-            TaggedIndex::Seg(SegIndex {index: edge, ..}) =>
-                *self.graph.edge_weight(edge).unwrap(),
-            TaggedIndex::EndRef(..)
-            | TaggedIndex::AroundRef(..) => 
-                unreachable!(),
         }
     }
 }

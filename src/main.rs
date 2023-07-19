@@ -151,7 +151,6 @@ fn main() {
                     }
 
                 },
-                Weight::EndRef(..) | Weight::AroundRef(..) => unreachable!(),
             }
         }
 

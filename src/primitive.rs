@@ -28,7 +28,6 @@ impl Primitive {
                     .collect();
                 return AABB::<[f64; 2]>::from_points(&points);
             },
-            Weight::EndRef(..) | Weight::AroundRef(..) => unreachable!(),
         }
     }
 
@@ -43,7 +42,6 @@ impl Primitive {
                     r,
                 })
             }
-            Weight::EndRef(..) | Weight::AroundRef(..) => unreachable!(),
         }
     }
 
@@ -52,7 +50,6 @@ impl Primitive {
             Weight::Dot(dot) => dot.circle.r * 2.0,
             Weight::Seg(seg) => seg.width,
             Weight::Bend(bend) => self.dot_neighbor_weights[0].circle.r * 2.0,
-            Weight::EndRef(..) | Weight::AroundRef(..) => unreachable!(),
         }
     }
 
