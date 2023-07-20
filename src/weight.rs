@@ -29,5 +29,6 @@ pub enum Weight {
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
 pub enum Label {
     End,
-    Around,
+    Outer,
+    Core,
 }

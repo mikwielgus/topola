@@ -97,12 +97,6 @@ impl Layout {
         let bend_to = self.add_dot(self.mesh.dot_weight(head.dot));
         let net = self.mesh.dot_weight(head.dot).net;
 
-        let mut layer = around;
-        while let TaggedIndex::Bend(layer_bend) = layer {
-            layer = self.mesh.around(layer_bend)
-        }
-        let center = *layer.as_dot().unwrap();
-
         let bend = self.mesh.add_bend(head.dot, bend_to, around, BendWeight {net, cw});
         Head {dot: bend_to, bend: Some(bend)}
     }
@@ -132,12 +126,10 @@ impl Layout {
 
         match maybe_bend {
             Some(bend) => {
-                let head_around = self.mesh.around(bend);
-
-                match self.mesh.weight(head_around) {
-                    Weight::Dot(..) => self.dot_guidecircle(*head_around.as_dot().unwrap(), width + 5.0, conditions),
-                    Weight::Seg(..) => unreachable!(),
-                    Weight::Bend(..) => self.bend_guidecircle(*head_around.as_bend().unwrap(), width, conditions),
+                if let Some(inner) = self.mesh.inner(bend) {
+                    self.bend_guidecircle(inner, width, conditions)
+                } else {
+                    self.dot_guidecircle(self.mesh.core(bend), width + 5.0, conditions)
                 }
             },
             None => Circle {
@@ -163,18 +155,18 @@ impl Layout {
     }
 
     fn bend_guidecircle(&self, bend: BendIndex, width: f64, conditions: Conditions) -> Circle {
-        let mut layer = TaggedIndex::Bend(bend);
         let mut r = width + self.rules.ruleset(conditions).clearance.min;
+        let mut layer = bend;
 
-        while let TaggedIndex::Bend(layer_bend) = layer {
-            layer = self.mesh.around(layer_bend);
-            r += 5.0 + self.mesh.primitive(layer).width();
+        while let Some(inner) = self.mesh.inner(layer) {
+            r += 5.0 + self.mesh.primitive(inner.tag()).width();
+            layer = inner;
         }
 
-        let circle = self.mesh.weight(layer).as_dot().unwrap().circle;
+        let core_circle = self.mesh.dot_weight(self.mesh.core(bend)).circle;
         Circle {
-            pos: circle.pos,
-            r: circle.r - 5.0 + r,
+            pos: core_circle.pos,
+            r: core_circle.r + r + 15.0
         }
     }
 
@@ -234,10 +226,6 @@ impl Layout {
     }
 
     pub fn primitive(&self, index: TaggedIndex) -> Primitive {
-        return self.mesh.primitive(index);
+        self.mesh.primitive(index)
     }
-
-    /*pub fn bend(&self, index: DotIndex) -> Option<BendIndex> {
-        return self.mesh.bend(index);
-    }*/
 }

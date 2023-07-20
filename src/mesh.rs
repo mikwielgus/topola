@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 use enum_as_inner::EnumAsInner;
+use petgraph::Direction::{Outgoing, Incoming};
 use petgraph::stable_graph::{StableDiGraph, NodeIndex, EdgeIndex};
 use petgraph::visit::EdgeRef;
 use rstar::{RTree, RTreeObject, AABB};
@@ -103,22 +104,35 @@ impl Mesh {
     }
 
     pub fn add_bend(&mut self, from: DotIndex, to: DotIndex, around: TaggedIndex, weight: BendWeight) -> BendIndex {
+        match around {
+            TaggedIndex::Dot(core) =>
+                self.add_core_bend(from, to, core, weight),
+            TaggedIndex::Bend(around) =>
+                self.add_noncore_bend(from, to, around, weight),
+            TaggedIndex::Seg(..) => unreachable!(),
+        }
+    }
+
+    pub fn add_core_bend(&mut self, from: DotIndex, to: DotIndex, core: DotIndex, weight: BendWeight) -> BendIndex {
         let bend = BendIndex::new(self.graph.add_node(Weight::Bend(weight)));
         self.graph.add_edge(bend.index, from.index, Label::End);
         self.graph.add_edge(bend.index, to.index, Label::End);
-
-        match around {
-            TaggedIndex::Dot(DotIndex {index: around_index, ..}) => {
-                self.graph.add_edge(bend.index, around_index, Label::Around);
-            },
-            TaggedIndex::Seg(..) => unreachable!(),
-            TaggedIndex::Bend(BendIndex {index: around_index, ..}) => {
-                self.graph.add_edge(bend.index, around_index, Label::Around);
-            },
-        }
+        self.graph.add_edge(bend.index, core.index, Label::Core);
 
         let index = TaggedIndex::Bend(bend);
         self.rtree.insert(RTreeWrapper::new(self.primitive(index), index));
+        bend
+    }
+
+    pub fn add_noncore_bend(&mut self, from: DotIndex, to: DotIndex, inner: BendIndex, weight: BendWeight) -> BendIndex {
+        let core = *self.graph.neighbors(inner.index)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(inner.index, *ni).unwrap()).unwrap().is_core())
+            .map(|ni| DotIndex::new(ni))
+            .collect::<Vec<DotIndex>>()
+            .first()
+            .unwrap();
+        let bend = self.add_core_bend(from, to, core, weight);
+        self.graph.add_edge(inner.index, bend.index, Label::Outer);
         bend
     }
 
@@ -139,45 +153,43 @@ impl Mesh {
                     .into_iter()
                     .map(|index| self.dot_weight(index))
                     .collect(),
-            around_weight: match index {
-                TaggedIndex::Bend(bend) => Some(self.weight(self.around(bend))),
-                _ => None,
-            },
-            focus: match index {
+            core_pos: match index {
                 TaggedIndex::Bend(bend) => {
-                    let mut layer = index;
-                    while let TaggedIndex::Bend(layer_bend) = layer {
-                        layer = self.around(layer_bend)
-                    }
-                    Some(self.weight(layer).as_dot().unwrap().circle.pos)
+                    Some(self.dot_weight(self.core(bend)).circle.pos)
                 },
                 _ => None,
             },
         }
     }
 
-    /*pub fn focus(&self, bend: BendIndex) -> DotIndex {
-        let mut layer = bend.tag();
-        while let TaggedIndex::Bend(bend) = layer {
-            layer = self.around(layer).unwrap();
-        }
-
-        *layer.as_dot().unwrap()
-    }*/
-
     pub fn around(&self, bend: BendIndex) -> TaggedIndex {
-        for neighbor in self.graph.neighbors(bend.index) {
-            let edge = self.graph.find_edge(bend.index, neighbor).unwrap();
-
-            if self.graph.edge_weight(edge).unwrap().is_around() {
-                return match self.graph.node_weight(neighbor).unwrap() {
-                    Weight::Dot(dot) => DotIndex::new(neighbor).tag(),
-                    Weight::Bend(bend) => BendIndex::new(neighbor).tag(),
-                    Weight::Seg(seg) => SegIndex::new(neighbor).tag(),
-                }
-            }
+        if let Some(inner) = self.inner(bend) {
+            TaggedIndex::Bend(inner)
+        } else {
+            TaggedIndex::Dot(self.core(bend))
         }
-        unreachable!();
+    }
+
+    pub fn core(&self, bend: BendIndex) -> DotIndex {
+        self.graph.neighbors(bend.index)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(bend.index, *ni).unwrap()).unwrap().is_core())
+            .map(|ni| DotIndex::new(ni))
+            .next()
+            .unwrap()
+    }
+
+    pub fn inner(&self, bend: BendIndex) -> Option<BendIndex> {
+        self.graph.neighbors_directed(bend.index, Incoming)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(*ni, bend.index).unwrap()).unwrap().is_outer())
+            .map(|ni| BendIndex::new(ni))
+            .next()
+    }
+
+    pub fn outer(&self, bend: BendIndex) -> Option<BendIndex> {
+        self.graph.neighbors_directed(bend.index, Outgoing)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(bend.index, *ni).unwrap()).unwrap().is_outer())
+            .map(|ni| BendIndex::new(ni))
+            .next()
     }
 
     pub fn ends(&self, index: TaggedIndex) -> Vec<DotIndex> {
