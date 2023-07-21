@@ -7,17 +7,18 @@ use rstar::{RTree, RTreeObject, AABB};
 use rstar::primitives::GeomWithData;
 
 use crate::primitive::Primitive;
-use crate::weight::{Weight, DotWeight, SegWeight, BendWeight, Label};
+use crate::shape::Shape;
+use crate::weight::{TaggedWeight, DotWeight, SegWeight, BendWeight, Label};
 
 
 #[derive(Debug, Copy, Clone, PartialEq)]
-pub struct Index<Ix, T> {
-    index: Ix,
+pub struct Index<T> {
+    pub index: NodeIndex<usize>,
     marker: PhantomData<T>,
 }
 
-impl<Ix, T> Index<Ix, T> {
-    pub fn new(index: Ix) -> Self {
+impl<T> Index<T> {
+    pub fn new(index: NodeIndex<usize>) -> Self {
         Self {
             index,
             marker: PhantomData,
@@ -29,7 +30,7 @@ pub trait Tag {
     fn tag(&self) -> TaggedIndex;
 }
 
-pub type DotIndex = Index<NodeIndex<usize>, DotWeight>;
+pub type DotIndex = Index<DotWeight>;
 
 impl Tag for DotIndex {
     fn tag(&self) -> TaggedIndex {
@@ -37,7 +38,7 @@ impl Tag for DotIndex {
     }
 }
 
-pub type SegIndex = Index<NodeIndex<usize>, SegWeight>;
+pub type SegIndex = Index<SegWeight>;
 
 impl Tag for SegIndex {
     fn tag(&self) -> TaggedIndex {
@@ -45,7 +46,7 @@ impl Tag for SegIndex {
     }
 }
 
-pub type BendIndex = Index<NodeIndex<usize>, BendWeight>;
+pub type BendIndex = Index<BendWeight>;
 
 impl Tag for BendIndex {
     fn tag(&self) -> TaggedIndex {
@@ -60,11 +61,11 @@ pub enum TaggedIndex {
     Bend(BendIndex),
 }
 
-pub type RTreeWrapper = GeomWithData<Primitive, TaggedIndex>;
+pub type RTreeWrapper = GeomWithData<Shape, TaggedIndex>;
 
 pub struct Mesh {
     pub rtree: RTree<RTreeWrapper>,
-    pub graph: StableDiGraph<Weight, Label, usize>,
+    pub graph: StableDiGraph<TaggedWeight, Label, usize>,
 }
 
 impl Mesh {
@@ -76,30 +77,30 @@ impl Mesh {
     }
 
     pub fn add_dot(&mut self, weight: DotWeight) -> DotIndex {
-        let dot = DotIndex::new(self.graph.add_node(Weight::Dot(weight)));
+        let dot = DotIndex::new(self.graph.add_node(TaggedWeight::Dot(weight)));
         let index = TaggedIndex::Dot(dot);
-        self.rtree.insert(RTreeWrapper::new(self.primitive(index), index));
+        self.rtree.insert(RTreeWrapper::new(self.shape(index), index));
         dot
     }
 
     pub fn remove_dot(&mut self, dot: DotIndex) {
-        self.rtree.remove(&RTreeWrapper::new(self.primitive(TaggedIndex::Dot(dot)), TaggedIndex::Dot(dot)));
+        self.rtree.remove(&RTreeWrapper::new(self.shape(TaggedIndex::Dot(dot)), TaggedIndex::Dot(dot)));
         self.graph.remove_node(dot.index);
     }
 
     pub fn add_seg(&mut self, from: DotIndex, to: DotIndex, weight: SegWeight) -> SegIndex {
-        let seg = SegIndex::new(self.graph.add_node(Weight::Seg(weight)));
+        let seg = SegIndex::new(self.graph.add_node(TaggedWeight::Seg(weight)));
         self.graph.add_edge(seg.index, from.index, Label::End);
         self.graph.add_edge(seg.index, to.index, Label::End);
 
         let index = TaggedIndex::Seg(seg);
-        self.rtree.insert(RTreeWrapper::new(self.primitive(index), index));
+        self.rtree.insert(RTreeWrapper::new(self.shape(index), index));
         seg
 
     }
 
     pub fn remove_seg(&mut self, seg: SegIndex) {
-        self.rtree.remove(&RTreeWrapper::new(self.primitive(TaggedIndex::Seg(seg)), TaggedIndex::Seg(seg)));
+        self.rtree.remove(&RTreeWrapper::new(self.shape(TaggedIndex::Seg(seg)), TaggedIndex::Seg(seg)));
         self.graph.remove_node(seg.index);
     }
 
@@ -108,23 +109,23 @@ impl Mesh {
             TaggedIndex::Dot(core) =>
                 self.add_core_bend(from, to, core, weight),
             TaggedIndex::Bend(around) =>
-                self.add_noncore_bend(from, to, around, weight),
+                self.add_outer_bend(from, to, around, weight),
             TaggedIndex::Seg(..) => unreachable!(),
         }
     }
 
     pub fn add_core_bend(&mut self, from: DotIndex, to: DotIndex, core: DotIndex, weight: BendWeight) -> BendIndex {
-        let bend = BendIndex::new(self.graph.add_node(Weight::Bend(weight)));
+        let bend = BendIndex::new(self.graph.add_node(TaggedWeight::Bend(weight)));
         self.graph.add_edge(bend.index, from.index, Label::End);
         self.graph.add_edge(bend.index, to.index, Label::End);
         self.graph.add_edge(bend.index, core.index, Label::Core);
 
         let index = TaggedIndex::Bend(bend);
-        self.rtree.insert(RTreeWrapper::new(self.primitive(index), index));
+        self.rtree.insert(RTreeWrapper::new(self.shape(index), index));
         bend
     }
 
-    pub fn add_noncore_bend(&mut self, from: DotIndex, to: DotIndex, inner: BendIndex, weight: BendWeight) -> BendIndex {
+    pub fn add_outer_bend(&mut self, from: DotIndex, to: DotIndex, inner: BendIndex, weight: BendWeight) -> BendIndex {
         let core = *self.graph.neighbors(inner.index)
             .filter(|ni| self.graph.edge_weight(self.graph.find_edge(inner.index, *ni).unwrap()).unwrap().is_core())
             .map(|ni| DotIndex::new(ni))
@@ -137,93 +138,60 @@ impl Mesh {
     }
 
     pub fn remove_bend(&mut self, bend: BendIndex) {
-        self.rtree.remove(&RTreeWrapper::new(self.primitive(TaggedIndex::Bend(bend)), TaggedIndex::Bend(bend)));
+        self.rtree.remove(&RTreeWrapper::new(self.shape(TaggedIndex::Bend(bend)), TaggedIndex::Bend(bend)));
         self.graph.remove_node(bend.index);
     }
 
-    pub fn primitives(&self) -> Box<dyn Iterator<Item=Primitive> + '_> {
-        Box::new(self.rtree.iter().map(|wrapper| self.primitive(wrapper.data)))
+    pub fn shapes(&self) -> Box<dyn Iterator<Item=Shape> + '_> {
+        Box::new(self.rtree.iter().map(|wrapper| self.shape(wrapper.data)))
     }
 
-    pub fn primitive(&self, index: TaggedIndex) -> Primitive {
-        Primitive {
-            weight: self.weight(index),
-            dot_neighbor_weights:
-                self.ends(index)
-                    .into_iter()
-                    .map(|index| self.dot_weight(index))
-                    .collect(),
+    pub fn shape(&self, index: TaggedIndex) -> Shape {
+        Shape {
+            weight: match index {
+                TaggedIndex::Dot(index) => self.primitive(index).tagged_weight(),
+                TaggedIndex::Seg(index) => self.primitive(index).tagged_weight(),
+                TaggedIndex::Bend(index) => self.primitive(index).tagged_weight(),
+            },
+            dot_neighbor_weights: match index {
+                TaggedIndex::Dot(index) => {
+                    self.primitive(index).ends()
+                        .into_iter()
+                        .map(|index| self.primitive(index).weight())
+                        .collect()
+                },
+                TaggedIndex::Seg(index) => {
+                    self.primitive(index).ends()
+                        .into_iter()
+                        .map(|index| self.primitive(index).weight())
+                        .collect()
+                },
+                TaggedIndex::Bend(index) => {
+                    self.primitive(index).ends()
+                        .into_iter()
+                        .map(|index| self.primitive(index).weight())
+                        .collect()
+                },
+            },
             core_pos: match index {
                 TaggedIndex::Bend(bend) => {
-                    Some(self.dot_weight(self.core(bend)).circle.pos)
+                    Some(self.primitive(self.primitive(bend).core()).weight().circle.pos)
                 },
                 _ => None,
             },
         }
     }
 
-    pub fn around(&self, bend: BendIndex) -> TaggedIndex {
-        if let Some(inner) = self.inner(bend) {
-            TaggedIndex::Bend(inner)
-        } else {
-            TaggedIndex::Dot(self.core(bend))
-        }
+    pub fn primitive<Weight>(&self, index: Index<Weight>) -> Primitive<Weight> {
+        Primitive::new(index, &self.graph)
     }
 
-    pub fn core(&self, bend: BendIndex) -> DotIndex {
-        self.graph.neighbors(bend.index)
-            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(bend.index, *ni).unwrap()).unwrap().is_core())
-            .map(|ni| DotIndex::new(ni))
-            .next()
-            .unwrap()
-    }
-
-    pub fn inner(&self, bend: BendIndex) -> Option<BendIndex> {
-        self.graph.neighbors_directed(bend.index, Incoming)
-            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(*ni, bend.index).unwrap()).unwrap().is_outer())
-            .map(|ni| BendIndex::new(ni))
-            .next()
-    }
-
-    pub fn outer(&self, bend: BendIndex) -> Option<BendIndex> {
-        self.graph.neighbors_directed(bend.index, Outgoing)
-            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(bend.index, *ni).unwrap()).unwrap().is_outer())
-            .map(|ni| BendIndex::new(ni))
-            .next()
-    }
-
-    pub fn ends(&self, index: TaggedIndex) -> Vec<DotIndex> {
-        match index {
-            TaggedIndex::Dot(DotIndex {index: node, ..})
-            | TaggedIndex::Seg(SegIndex {index: node, ..})
-            | TaggedIndex::Bend(BendIndex {index: node, ..}) => {
-                self.graph.neighbors(node)
-                    .filter(|ni| self.graph.edge_weight(self.graph.find_edge(node, *ni).unwrap()).unwrap().is_end())
-                    .filter(|ni| self.graph.node_weight(*ni).unwrap().is_dot())
-                    .map(|ni| DotIndex::new(ni))
-                    .collect()
-            }
-        }
-    }
-
-    pub fn dot_weight(&self, dot: DotIndex) -> DotWeight {
-        *self.weight(dot.tag()).as_dot().unwrap()
-    }
-
-    pub fn seg_weight(&self, seg: SegIndex) -> SegWeight {
-        *self.weight(seg.tag()).as_seg().unwrap()
-    }
-
-    pub fn bend_weight(&self, bend: BendIndex) -> BendWeight {
-        *self.weight(bend.tag()).as_bend().unwrap()
-    }
-
-    pub fn weight(&self, index: TaggedIndex) -> Weight {
+    /*pub fn tagged_weight(&self, index: TaggedIndex) -> Weight {
         match index {
             TaggedIndex::Dot(DotIndex {index: node, ..})
             | TaggedIndex::Seg(SegIndex {index: node, ..})
             | TaggedIndex::Bend(BendIndex {index: node, ..}) =>
                 *self.graph.node_weight(node).unwrap(),
         }
-    }
+    }*/
 }

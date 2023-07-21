@@ -20,7 +20,7 @@ pub struct SegWeight {
 }
 
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
-pub enum Weight {
+pub enum TaggedWeight {
     Dot(DotWeight),
     Seg(SegWeight),
     Bend(BendWeight),

@@ -1,65 +1,79 @@
-use geo::{Point, EuclideanDistance};
-use rstar::{RTreeObject, AABB};
+use petgraph::Direction::{Outgoing, Incoming};
+use petgraph::stable_graph::StableDiGraph;
 
-use crate::{weight::{Weight, DotWeight}, math::Circle};
+use crate::{mesh::{DotIndex, SegIndex, BendIndex, TaggedIndex, Mesh, Tag, Index}, weight::{DotWeight, SegWeight, BendWeight, TaggedWeight, Label}};
 
-#[derive(PartialEq)]
-pub struct Primitive {
-    pub weight: Weight,
-    pub dot_neighbor_weights: Vec<DotWeight>,
-    pub core_pos: Option<Point>,
+pub struct Primitive<'a, Weight> {
+    index: Index<Weight>,
+    graph: &'a StableDiGraph<TaggedWeight, Label, usize>,
 }
 
-impl Primitive {
-    pub fn envelope(&self) -> AABB<[f64; 2]> {
-        match self.weight {
-            Weight::Dot(dot) => {
-                return AABB::from_corners(
-                    [dot.circle.pos.x() - dot.circle.r, dot.circle.pos.y() - dot.circle.r],
-                    [dot.circle.pos.x() + dot.circle.r, dot.circle.pos.y() + dot.circle.r]
-                );
-            },
-            Weight::Seg(..) | Weight::Bend(..) => {
-                // TODO: Take widths into account.
-
-                let points: Vec<[f64; 2]> = self.dot_neighbor_weights.iter()
-                    .map(|neighbor| [neighbor.circle.pos.x(), neighbor.circle.pos.y()])
-                    .collect();
-                return AABB::<[f64; 2]>::from_points(&points);
-            },
-        }
+impl<'a, Weight> Primitive<'a, Weight> {
+    pub fn new(index: Index<Weight>, graph: &'a StableDiGraph<TaggedWeight, Label, usize>) -> Primitive<Weight> {
+        Primitive::<Weight> {index, graph}
     }
 
-    pub fn circle(&self) -> Option<Circle> {
-        match self.weight {
-            Weight::Dot(dot) => Some(dot.circle),
-            Weight::Seg(seg) => None,
-            Weight::Bend(bend) => {
-                let r = self.dot_neighbor_weights[0].circle.pos.euclidean_distance(&self.core_pos.unwrap());
-                Some(Circle {
-                    pos: self.core_pos.unwrap(),
-                    r,
-                })
-            }
-        }
+    pub fn ends(&self) -> Vec<DotIndex> {
+        self.graph.neighbors(self.index.index)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap()).unwrap().is_end())
+            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_dot())
+            .map(|ni| DotIndex::new(ni))
+            .collect()
     }
 
-    pub fn width(&self) -> f64 {
-        match self.weight {
-            Weight::Dot(dot) => dot.circle.r * 2.0,
-            Weight::Seg(seg) => seg.width,
-            Weight::Bend(bend) => self.dot_neighbor_weights[0].circle.r * 2.0,
-        }
-    }
-
-    pub fn weight(&self) -> Weight {
-        return self.weight;
+    pub fn tagged_weight(&self) -> TaggedWeight {
+        *self.graph.node_weight(self.index.index).unwrap()
     }
 }
 
-impl RTreeObject for Primitive {
-    type Envelope = AABB<[f64; 2]>;
-    fn envelope(&self) -> Self::Envelope {
-        return self.envelope();
+type Dot<'a> = Primitive<'a, DotWeight>;
+type Seg<'a> = Primitive<'a, SegWeight>;
+type Bend<'a> = Primitive<'a, BendWeight>;
+
+impl<'a> Dot<'a> {
+    pub fn weight(&self) -> DotWeight {
+        *self.tagged_weight().as_dot().unwrap()
+    }
+}
+
+impl<'a> Seg<'a> {
+    pub fn weight(&self) -> SegWeight {
+        *self.tagged_weight().as_seg().unwrap()
+    }
+}
+
+impl<'a> Bend<'a> {
+    pub fn around(&self) -> TaggedIndex {
+        if let Some(inner) = self.inner() {
+            TaggedIndex::Bend(inner)
+        } else {
+            TaggedIndex::Dot(self.core())
+        }
+    }
+
+    pub fn core(&self) -> DotIndex {
+        self.graph.neighbors(self.index.index)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap()).unwrap().is_core())
+            .map(|ni| DotIndex::new(ni))
+            .next()
+            .unwrap()
+    }
+
+    pub fn inner(&self) -> Option<BendIndex> {
+        self.graph.neighbors_directed(self.index.index, Incoming)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(*ni, self.index.index).unwrap()).unwrap().is_outer())
+            .map(|ni| BendIndex::new(ni))
+            .next()
+    }
+
+    pub fn outer(&self) -> Option<BendIndex> {
+        self.graph.neighbors_directed(self.index.index, Outgoing)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap()).unwrap().is_outer())
+            .map(|ni| BendIndex::new(ni))
+            .next()
+    }
+
+    pub fn weight(&self) -> BendWeight {
+        *self.tagged_weight().as_bend().unwrap()
     }
 }

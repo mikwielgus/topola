@@ -4,6 +4,7 @@ mod layout;
 mod rules;
 mod mesh;
 mod primitive;
+mod shape;
 mod weight;
 mod math;
 
@@ -17,8 +18,8 @@ use sdl2::keyboard::Keycode;
 use sdl2::gfx::primitives::DrawRenderer;
 
 use crate::layout::Layout;
-use crate::primitive::Primitive;
-use crate::weight::{Weight, DotWeight};
+use crate::shape::Shape;
+use crate::weight::{TaggedWeight, DotWeight};
 use crate::math::Circle;
 
 fn main() {
@@ -105,16 +106,16 @@ fn main() {
             }
         }
 
-        for primitive in layout.primitives() {
-            match primitive.weight {
-                Weight::Dot(dot) => {
+        for shape in layout.shapes() {
+            match shape.weight {
+                TaggedWeight::Dot(dot) => {
                     let _ = canvas.filled_circle(dot.circle.pos.x() as i16,
                                                  dot.circle.pos.y() as i16,
                                                  dot.circle.r as i16,
                                                  Color::RGB(200, 52, 52));
                 },
-                Weight::Seg(seg) => {
-                    let dot_neighbor_weights = primitive.dot_neighbor_weights;
+                TaggedWeight::Seg(seg) => {
+                    let dot_neighbor_weights = shape.dot_neighbor_weights;
                     let _ = canvas.thick_line(dot_neighbor_weights[0].circle.pos.x() as i16,
                                               dot_neighbor_weights[0].circle.pos.y() as i16,
                                               dot_neighbor_weights[1].circle.pos.x() as i16,
@@ -122,10 +123,10 @@ fn main() {
                                               seg.width as u8,
                                               Color::RGB(200, 52, 52));
                 },
-                Weight::Bend(bend) => {
-                    let circle = primitive.circle().unwrap();
-                    let dot_neighbor_weights = primitive.dot_neighbor_weights;
-                    //let around_circle = primitive.around_weight.unwrap().circle;
+                TaggedWeight::Bend(bend) => {
+                    let circle = shape.circle().unwrap();
+                    let dot_neighbor_weights = shape.dot_neighbor_weights;
+                    //let around_circle = shape.around_weight.unwrap().circle;
 
                     let delta1 = dot_neighbor_weights[0].circle.pos - circle.pos;
                     let delta2 = dot_neighbor_weights[1].circle.pos - circle.pos;
@@ -133,7 +134,7 @@ fn main() {
                     let mut angle1 = delta1.y().atan2(delta1.x());
                     let mut angle2 = delta2.y().atan2(delta2.x());
 
-                    if primitive.weight.as_bend().unwrap().cw {
+                    if shape.weight.as_bend().unwrap().cw {
                         swap(&mut angle1, &mut angle2);
                     }
 
@@ -143,7 +144,7 @@ fn main() {
                             //around_circle.pos.y() as i16,
                             circle.pos.x() as i16,
                             circle.pos.y() as i16,
-                            //(primitive.around_weight.unwrap().circle.r + 10.0 + (d as f64)) as i16,
+                            //(shape.around_weight.unwrap().circle.r + 10.0 + (d as f64)) as i16,
                             (circle.r + (d as f64)) as i16,
                             angle1.to_degrees() as i16,
                             angle2.to_degrees() as i16,
