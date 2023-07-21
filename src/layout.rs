@@ -9,7 +9,6 @@ use crate::shape::Shape;
 use crate::weight::{TaggedWeight, DotWeight, SegWeight, BendWeight};
 use crate::math;
 
-
 pub struct Layout {
     mesh: Mesh,
     rules: Rules,
@@ -53,10 +52,6 @@ impl Layout {
         let head = self.extend_head(head, tangent_points.0);
         self.add_seg(head.dot, to, width);
     }
-
-    /*pub fn shove_around_dot(&mut self, head: Head, around: DotIndex, cw: bool, width: f64) -> Head {
-        
-    }*/
 
     pub fn route_around_dot(&mut self, head: Head, around: DotIndex, cw: bool, width: f64) -> Head {
         let from_circle = self.head_guidecircle(&head, width);
@@ -163,7 +158,7 @@ impl Layout {
         let mut layer = bend;
 
         while let Some(inner) = self.mesh.primitive(layer).inner() {
-            r += 5.0 + self.mesh.shape(inner.tag()).width();
+            r += 5.0 + self.mesh.primitive(inner).shape().width();
             layer = inner;
         }
 
@@ -225,7 +220,7 @@ impl Layout {
         self.mesh.add_seg(from, to, SegWeight {net, width})
     }
 
-    pub fn shapes(&self) -> Box<dyn Iterator<Item=Shape> + '_> {
-        self.mesh.shapes()
+    pub fn shapes(&self) -> impl Iterator<Item=Shape> + '_ {
+        self.mesh.nodes().map(|ni| untag!(ni, self.mesh.primitive(ni).shape()))
     }
 }

@@ -1,8 +1,8 @@
 extern crate sdl2;
 
+#[macro_use] mod mesh;
 mod layout;
 mod rules;
-mod mesh;
 mod primitive;
 mod shape;
 mod weight;
