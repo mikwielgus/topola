@@ -128,7 +128,7 @@ impl Layout {
                 if let Some(inner) = self.mesh.primitive(bend).inner() {
                     self.bend_guidecircle(inner, width, conditions)
                 } else {
-                    self.dot_guidecircle(self.mesh.primitive(bend).core(), width + 5.0, conditions)
+                    self.dot_guidecircle(self.mesh.primitive(bend).core().unwrap(), width + 5.0, conditions)
                 }
             },
             None => Circle {
@@ -158,11 +158,11 @@ impl Layout {
         let mut layer = bend;
 
         while let Some(inner) = self.mesh.primitive(layer).inner() {
-            r += 5.0 + self.mesh.primitive(inner).shape().width();
+            r += 5.0 + self.mesh.primitive(inner).shape().width;
             layer = inner;
         }
 
-        let core_circle = self.mesh.primitive(self.mesh.primitive(bend).core()).weight().circle;
+        let core_circle = self.mesh.primitive(self.mesh.primitive(bend).core().unwrap()).weight().circle;
         Circle {
             pos: core_circle.pos,
             r: core_circle.r + r + 15.0

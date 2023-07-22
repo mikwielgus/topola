@@ -1,3 +1,5 @@
+use std::mem::swap;
+
 use petgraph::Direction::{Outgoing, Incoming};
 use petgraph::stable_graph::StableDiGraph;
 
@@ -14,6 +16,54 @@ impl<'a, Weight> Primitive<'a, Weight> {
         Primitive::<Weight> {index, graph}
     }
 
+    pub fn shape(&self) -> Shape {
+        let ends = self.ends();
+        match self.tagged_weight() {
+            TaggedWeight::Dot(dot) => Shape {
+                width: dot.circle.r * 2.0,
+                from: dot.circle.pos,
+                to: dot.circle.pos,
+                center: None,
+            },
+            TaggedWeight::Seg(seg) => {
+                Shape {
+                    width: seg.width,
+                    from: self.primitive(ends[0]).weight().circle.pos,
+                    to: self.primitive(ends[1]).weight().circle.pos,
+                    center: None,
+                }
+            }
+            TaggedWeight::Bend(bend) => {
+                let mut shape = Shape {
+                    width: self.primitive(ends[0]).weight().circle.r * 2.0,
+                    from: self.primitive(ends[0]).weight().circle.pos,
+                    to: self.primitive(ends[1]).weight().circle.pos,
+                    center: Some(self.primitive(self.core().unwrap()).weight().circle.pos),
+                };
+
+                if bend.cw {
+                    swap(&mut shape.from, &mut shape.to);
+                }
+                shape
+            }
+        }
+    }
+
+    pub fn ends(&self) -> Vec<DotIndex> {
+        self.graph.neighbors(self.index.index)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap()).unwrap().is_end())
+            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_dot())
+            .map(|ni| DotIndex::new(ni))
+            .collect()
+    }
+
+    pub fn core(&self) -> Option<DotIndex> {
+        self.graph.neighbors(self.index.index)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap()).unwrap().is_core())
+            .map(|ni| DotIndex::new(ni))
+            .next()
+    }
+
     pub fn tagged_weight(&self) -> TaggedWeight {
         *self.graph.node_weight(self.index.index).unwrap()
     }
@@ -28,80 +78,24 @@ type Seg<'a> = Primitive<'a, SegWeight>;
 type Bend<'a> = Primitive<'a, BendWeight>;
 
 impl<'a> Dot<'a> {
-    pub fn shape(&self) -> Shape {
-        Shape {
-            weight: self.tagged_weight(),
-            dot_neighbor_weights: vec![],
-            core_pos: None,
-        }
-    }
-
     pub fn weight(&self) -> DotWeight {
         *self.tagged_weight().as_dot().unwrap()
     }
 }
 
 impl<'a> Seg<'a> {
-    pub fn shape(&self) -> Shape {
-        Shape {
-            weight: self.tagged_weight(),
-            dot_neighbor_weights:
-                self.ends()
-                    .into_iter()
-                    .map(|index| self.primitive(index).weight())
-                    .collect(),
-            core_pos: None,
-        }
-    }
-
-    pub fn ends(&self) -> Vec<DotIndex> {
-        self.graph.neighbors(self.index.index)
-            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap()).unwrap().is_end())
-            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_dot())
-            .map(|ni| DotIndex::new(ni))
-            .collect()
-    }
-
     pub fn weight(&self) -> SegWeight {
         *self.tagged_weight().as_seg().unwrap()
     }
 }
 
 impl<'a> Bend<'a> {
-    pub fn shape(&self) -> Shape {
-        Shape {
-            weight: self.tagged_weight(),
-            dot_neighbor_weights:
-                self.ends()
-                    .into_iter()
-                    .map(|index| self.primitive(index).weight())
-                    .collect(),
-            core_pos: Some(self.primitive(self.core()).weight().circle.pos),
-        }
-    }
-
-    pub fn ends(&self) -> Vec<DotIndex> {
-        self.graph.neighbors(self.index.index)
-            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap()).unwrap().is_end())
-            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_dot())
-            .map(|ni| DotIndex::new(ni))
-            .collect()
-    }
-
     pub fn around(&self) -> TaggedIndex {
         if let Some(inner) = self.inner() {
             TaggedIndex::Bend(inner)
         } else {
-            TaggedIndex::Dot(self.core())
+            TaggedIndex::Dot(self.core().unwrap())
         }
-    }
-
-    pub fn core(&self) -> DotIndex {
-        self.graph.neighbors(self.index.index)
-            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap()).unwrap().is_core())
-            .map(|ni| DotIndex::new(ni))
-            .next()
-            .unwrap()
     }
 
     pub fn inner(&self) -> Option<BendIndex> {

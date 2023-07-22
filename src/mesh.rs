@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 use enum_as_inner::EnumAsInner;
+use geo::Point;
 use petgraph::Direction::{Outgoing, Incoming};
 use petgraph::stable_graph::{StableDiGraph, NodeIndex, EdgeIndex};
 use petgraph::visit::EdgeRef;
@@ -80,7 +81,7 @@ pub struct Mesh {
 
 impl Mesh {
     pub fn new() -> Self {
-        return Mesh {
+        Mesh {
             rtree: RTree::new(),
             graph: StableDiGraph::default(),
         }
@@ -148,6 +149,14 @@ impl Mesh {
         self.graph.remove_node(bend.index);
     }
 
+    /*pub fn extend_bend(&mut self, bend: BendIndex, to: Point) -> DotIndex {
+        
+    }
+
+    pub fn shift_bend(&mut self, bend: BendIndex, offset: f64) {
+
+    }*/
+
     pub fn nodes(&self) -> impl Iterator<Item=TaggedIndex> + '_ {
         self.rtree.iter().map(|wrapper| wrapper.data)
     }
@@ -155,4 +164,8 @@ impl Mesh {
     pub fn primitive<Weight>(&self, index: Index<Weight>) -> Primitive<Weight> {
         Primitive::new(index, &self.graph)
     }
+
+    /*fn insert_into_rtree<Weight>(&mut self, index: Index<Weight>) {
+        self.rtree.insert(RTreeWrapper::new(self.primitive(index).shape(), index.tag()));
+    }*/
 }

@@ -5,55 +5,40 @@ use crate::{weight::{TaggedWeight, DotWeight}, math::Circle};
 
 #[derive(PartialEq)]
 pub struct Shape {
-    pub weight: TaggedWeight,
-    pub dot_neighbor_weights: Vec<DotWeight>,
-    pub core_pos: Option<Point>,
+    pub width: f64,
+    pub from: Point,
+    pub to: Point,
+    pub center: Option<Point>,
 }
 
 impl Shape {
-    pub fn envelope(&self) -> AABB<[f64; 2]> {
-        match self.weight {
-            TaggedWeight::Dot(dot) => {
-                return AABB::from_corners(
-                    [dot.circle.pos.x() - dot.circle.r, dot.circle.pos.y() - dot.circle.r],
-                    [dot.circle.pos.x() + dot.circle.r, dot.circle.pos.y() + dot.circle.r]
-                );
-            },
-            TaggedWeight::Seg(..) | TaggedWeight::Bend(..) => {
-                // TODO: Take widths into account.
+    pub fn new(width: f64, from: Point, to: Point, center: Option<Point>) -> Self {
+        Shape {width, from, to, center}
+    }
 
-                let points: Vec<[f64; 2]> = self.dot_neighbor_weights.iter()
-                    .map(|neighbor| [neighbor.circle.pos.x(), neighbor.circle.pos.y()])
-                    .collect();
-                return AABB::<[f64; 2]>::from_points(&points);
-            },
+    pub fn envelope(&self) -> AABB<[f64; 2]> {
+        if self.from == self.to {
+            AABB::from_corners(
+                [self.from.x() - self.width, self.from.y() - self.width],
+                [self.from.x() + self.width, self.from.y() + self.width]
+            )
+        } else {
+            // TODO: Take widths into account.
+            AABB::<[f64; 2]>::from_points(&[[self.from.x(), self.from.y()],
+                                            [self.to.x(), self.to.y()]])
         }
     }
 
     pub fn circle(&self) -> Option<Circle> {
-        match self.weight {
-            TaggedWeight::Dot(dot) => Some(dot.circle),
-            TaggedWeight::Seg(seg) => None,
-            TaggedWeight::Bend(bend) => {
-                let r = self.dot_neighbor_weights[0].circle.pos.euclidean_distance(&self.core_pos.unwrap());
-                Some(Circle {
-                    pos: self.core_pos.unwrap(),
-                    r,
-                })
-            }
+        if let Some(center) = self.center {
+            let r = self.from.euclidean_distance(&center);
+            Some(Circle {
+                pos: center,
+                r,
+            })
+        } else {
+            None
         }
-    }
-
-    pub fn width(&self) -> f64 {
-        match self.weight {
-            TaggedWeight::Dot(dot) => dot.circle.r * 2.0,
-            TaggedWeight::Seg(seg) => seg.width,
-            TaggedWeight::Bend(bend) => self.dot_neighbor_weights[0].circle.r * 2.0,
-        }
-    }
-
-    pub fn weight(&self) -> TaggedWeight {
-        return self.weight;
     }
 }
 
