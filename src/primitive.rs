@@ -49,9 +49,23 @@ impl<'a, Weight> Primitive<'a, Weight> {
         }
     }
 
-    pub fn ends(&self) -> Vec<DotIndex> {
-        self.graph.neighbors(self.index.index)
+    pub fn next(&self) -> Option<TaggedIndex> {
+        self.graph.neighbors_directed(self.index.index, Outgoing)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(*ni, self.index.index).unwrap()).unwrap().is_end())
+            .map(|ni| Index::<Label>::new(ni).retag(*self.graph.node_weight(ni).unwrap()))
+            .next()
+    }
+
+    pub fn prev(&self) -> Option<TaggedIndex> {
+        self.graph.neighbors_directed(self.index.index, Incoming)
             .filter(|ni| self.graph.edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap()).unwrap().is_end())
+            .map(|ni| Index::<Label>::new(ni).retag(*self.graph.node_weight(ni).unwrap()))
+            .next()
+    }
+
+    pub fn ends(&self) -> Vec<DotIndex> {
+        self.graph.neighbors_undirected(self.index.index)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge_undirected(self.index.index, *ni).unwrap().0).unwrap().is_end())
             .filter(|ni| self.graph.node_weight(*ni).unwrap().is_dot())
             .map(|ni| DotIndex::new(ni))
             .collect()

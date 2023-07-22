@@ -35,7 +35,7 @@ impl Mesh {
 
     pub fn add_seg(&mut self, from: DotIndex, to: DotIndex, weight: SegWeight) -> SegIndex {
         let seg = SegIndex::new(self.graph.add_node(TaggedWeight::Seg(weight)));
-        self.graph.add_edge(seg.index, from.index, Label::End);
+        self.graph.add_edge(from.index, seg.index, Label::End);
         self.graph.add_edge(seg.index, to.index, Label::End);
 
         self.rtree.insert(RTreeWrapper::new(self.primitive(seg).shape(), TaggedIndex::Seg(seg)));
@@ -59,7 +59,7 @@ impl Mesh {
 
     pub fn add_core_bend(&mut self, from: DotIndex, to: DotIndex, core: DotIndex, weight: BendWeight) -> BendIndex {
         let bend = BendIndex::new(self.graph.add_node(TaggedWeight::Bend(weight)));
-        self.graph.add_edge(bend.index, from.index, Label::End);
+        self.graph.add_edge(from.index, bend.index, Label::End);
         self.graph.add_edge(bend.index, to.index, Label::End);
         self.graph.add_edge(bend.index, core.index, Label::Core);
 
