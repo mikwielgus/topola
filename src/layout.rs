@@ -3,10 +3,11 @@ use std::rc::Rc;
 use geo::geometry::Point;
 
 use crate::math::Circle;
-use crate::mesh::{Mesh, TaggedIndex, RTreeWrapper, DotIndex, SegIndex, BendIndex, Tag};
+use crate::mesh::Mesh;
+use crate::graph::{TaggedIndex, DotIndex, SegIndex, BendIndex};
 use crate::rules::{Rules, Conditions};
 use crate::shape::Shape;
-use crate::weight::{TaggedWeight, DotWeight, SegWeight, BendWeight};
+use crate::graph::{TaggedWeight, DotWeight, SegWeight, BendWeight};
 use crate::math;
 
 pub struct Layout {
@@ -182,28 +183,7 @@ impl Layout {
     }
 
     fn extend_head_bend(&mut self, head: Head, to: Point) -> Head {
-        let bend = head.bend.unwrap();
-        let dot_weight = self.mesh.primitive(head.dot).weight();
-        let bend_weight = self.mesh.primitive(bend).weight();
-        let around = self.mesh.primitive(bend).around();
-
-        let fixed_dot: DotIndex = self.mesh.primitive(bend).ends()
-            .into_iter()
-            .filter(|neighbor| {*neighbor != head.dot})
-            .collect::<Vec<DotIndex>>()[0];
-
-        self.mesh.remove_bend(bend);
-        self.mesh.remove_dot(head.dot);
-
-        let new_dot = self.mesh.add_dot(DotWeight {
-            net: dot_weight.net,
-            circle: Circle {
-                pos: to,
-                r: dot_weight.circle.r,
-            },
-        });
-
-        self.mesh.add_bend(fixed_dot, new_dot, around, bend_weight);
+        self.mesh.extend_bend(head.bend.unwrap(), head.dot, to);
         head
     }
 

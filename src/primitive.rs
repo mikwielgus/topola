@@ -3,7 +3,7 @@ use std::mem::swap;
 use petgraph::Direction::{Outgoing, Incoming};
 use petgraph::stable_graph::StableDiGraph;
 
-use crate::{mesh::{DotIndex, SegIndex, BendIndex, TaggedIndex, Mesh, Tag, Index}, weight::{DotWeight, SegWeight, BendWeight, TaggedWeight, Label}};
+use crate::graph::{Set, DotIndex, SegIndex, BendIndex, TaggedIndex, Tag, Index, DotWeight, SegWeight, BendWeight, TaggedWeight, Label};
 use crate::shape::Shape;
 
 pub struct Primitive<'a, Weight> {
@@ -64,12 +64,34 @@ impl<'a, Weight> Primitive<'a, Weight> {
             .next()
     }
 
+    pub fn tagged_index(&self) -> TaggedIndex {
+        self.index.retag(*self.graph.node_weight(self.index.index).unwrap())
+    }
+
     pub fn tagged_weight(&self) -> TaggedWeight {
         *self.graph.node_weight(self.index.index).unwrap()
     }
 
     fn primitive<W>(&self, index: Index<W>) -> Primitive<W> {
         Primitive::new(index, &self.graph)
+    }
+}
+
+impl<'a, Weight> Set for Primitive<'a, Weight> {
+    fn interior(&self) -> Vec<TaggedIndex> {
+        vec![self.tagged_index()]
+    }
+
+    fn closure(&self) -> Vec<TaggedIndex> {
+        let ends: Vec<TaggedIndex> = self.ends()
+            .into_iter()
+            .map(|end| TaggedIndex::Dot(end))
+            .collect();
+        [[self.tagged_index()].as_slice(), ends.as_slice()].concat()
+    }
+
+    fn boundary(&self) -> Vec<DotIndex> {
+        self.ends()
     }
 }
 

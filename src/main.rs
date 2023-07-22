@@ -1,25 +1,22 @@
 extern crate sdl2;
 
-#[macro_use] mod mesh;
+#[macro_use] mod graph;
 mod layout;
 mod rules;
+mod mesh;
 mod primitive;
 mod shape;
 mod weight;
 mod math;
 
-use std::mem::swap;
 use std::time::Duration;
-use geo::geometry::Point;
-use mesh::Index;
 use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::gfx::primitives::DrawRenderer;
 
 use crate::layout::Layout;
-use crate::shape::Shape;
-use crate::weight::{TaggedWeight, DotWeight};
+use crate::graph::DotWeight;
 use crate::math::Circle;
 
 fn main() {

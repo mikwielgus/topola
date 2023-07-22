@@ -1,7 +1,8 @@
 use geo::{Point, EuclideanDistance};
 use rstar::{RTreeObject, AABB};
 
-use crate::{weight::{TaggedWeight, DotWeight}, math::Circle};
+use crate::graph::{TaggedWeight, DotWeight};
+use crate::math::Circle;
 
 #[derive(PartialEq)]
 pub struct Shape {
