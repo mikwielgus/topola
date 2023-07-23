@@ -4,6 +4,7 @@ extern crate sdl2;
 mod layout;
 mod rules;
 mod mesh;
+mod stretch;
 mod primitive;
 mod shape;
 mod weight;
@@ -71,7 +72,7 @@ fn main() {
     let head = layout.route_around_dot(head, obstacle_dot1, true, 5.0);
     let dot3_1 = head.dot;
     let bend3_1 = head.bend.unwrap();
-    layout.route_end(head, dot4, 5.0);
+    layout.route_stop(head, dot4, 5.0);
 
     let head = layout.route_start(dot2);
     let head = layout.route_around_dot(head, dot3, true, 5.0);
@@ -80,12 +81,12 @@ fn main() {
     let head = layout.route_around_bend(head, bend3_1, true, 5.0);
     let dot2_2 = head.dot;
     let bend2_2 = head.bend.unwrap();
-    layout.route_end(head, dot5, 5.0);
+    layout.route_stop(head, dot5, 5.0);
 
     let head = layout.route_start(dot1);
     let head = layout.route_around_bend(head, bend2_1, true, 5.0);
     let head = layout.route_around_bend(head, bend2_2, true, 5.0);
-    layout.route_end(head, dot6, 5.0);
+    layout.route_stop(head, dot6, 5.0);
 
     'running: loop {
         i = (i + 1) % 255;

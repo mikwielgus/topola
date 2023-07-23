@@ -95,14 +95,6 @@ impl Mesh {
         self.insert_into_rtree(dot.tag());
         self.insert_into_rtree(bend.tag());
     }
-
-    /*pub fn shift_bend(&mut self, bend: BendIndex, offset: f64) {
-        
-    }*/
-
-    /*pub fn position_bend(&mut self, bend: BendIndex, uI*/
-
-    //pub fn reposition_bend
     
     pub fn reoffset_bend(&mut self, bend: BendIndex, offset: f64) {
 

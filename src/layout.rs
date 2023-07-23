@@ -32,7 +32,7 @@ impl Layout {
         Head {dot: from, bend: None}
     }
 
-    pub fn route_end(&mut self, head: Head, to: DotIndex, width: f64) {
+    pub fn route_stop(&mut self, head: Head, to: DotIndex, width: f64) {
         let from_circle = self.head_guidecircle(&head, width);
         
         let conditions = Conditions {

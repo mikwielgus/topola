@@ -7,13 +7,13 @@ use crate::graph::{Set, DotIndex, SegIndex, BendIndex, TaggedIndex, Tag, Index, 
 use crate::shape::Shape;
 
 pub struct Primitive<'a, Weight> {
-    index: Index<Weight>,
+    pub index: Index<Weight>,
     graph: &'a StableDiGraph<TaggedWeight, Label, usize>,
 }
 
 impl<'a, Weight> Primitive<'a, Weight> {
-    pub fn new(index: Index<Weight>, graph: &'a StableDiGraph<TaggedWeight, Label, usize>) -> Primitive<Weight> {
-        Primitive::<Weight> {index, graph}
+    pub fn new(index: Index<Weight>, graph: &'a StableDiGraph<TaggedWeight, Label, usize>) -> Self {
+        Self {index, graph}
     }
 
     pub fn shape(&self) -> Shape {
@@ -109,9 +109,9 @@ impl<'a, Weight> Set for Primitive<'a, Weight> {
     }
 }
 
-type Dot<'a> = Primitive<'a, DotWeight>;
-type Seg<'a> = Primitive<'a, SegWeight>;
-type Bend<'a> = Primitive<'a, BendWeight>;
+pub type Dot<'a> = Primitive<'a, DotWeight>;
+pub type Seg<'a> = Primitive<'a, SegWeight>;
+pub type Bend<'a> = Primitive<'a, BendWeight>;
 
 impl<'a> Dot<'a> {
     pub fn weight(&self) -> DotWeight {
