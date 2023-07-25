@@ -10,10 +10,13 @@ mod shape;
 mod math;
 
 use std::time::Duration;
+use sdl2::EventPump;
 use sdl2::pixels::Color;
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
 use sdl2::gfx::primitives::DrawRenderer;
+use sdl2::render::Canvas;
+use sdl2::video::Window;
 
 use crate::layout::Layout;
 use crate::graph::DotWeight;
@@ -93,33 +96,62 @@ fn main() {
     let dot1_1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (200.5, 200.5).into(), r: 8.0}});
     let dot2_1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (230.5, 230.5).into(), r: 8.0}});
     let dot3_1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (260.5, 260.5).into(), r: 8.0}});
+    let dot4_1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (290.5, 290.5).into(), r: 8.0}});
 
     let dot1_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (500.5, 200.5).into(), r: 8.0}});
     let dot2_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (470.5, 230.5).into(), r: 8.0}});
     let dot3_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (440.5, 260.5).into(), r: 8.0}});
+    let dot4_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (410.5, 290.5).into(), r: 8.0}});
 
     let barrier_dot1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (350.5, 150.5).into(), r: 8.0}});
     let barrier_dot2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (350.5, 500.5).into(), r: 8.0}});
     layout.add_seg(barrier_dot1, barrier_dot2, 16.0);
 
+    render_times(&mut event_pump, &mut canvas, &mut layout, -1);
+
+
     let head = layout.route_start(dot1_1);
     let head = layout.route_around_dot(head, barrier_dot1, true, 5.0);
+
+    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+
     layout.route_finish(head, dot1_2, 5.0);
 
+    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+
+
     let head = layout.route_start(dot2_1);
-    //let head = layout.route_around_dot(head, barrier_dot1, true, 5.0);
     let head = layout.shove_around_dot(head, barrier_dot1, true, 5.0);
+
+    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+
     layout.route_finish(head, dot2_2, 5.0);
 
+    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+
     let head = layout.route_start(dot3_1);
-    //let head = layout.route_around_dot(head, barrier_dot1, true, 5.0);
     let head = layout.shove_around_dot(head, barrier_dot1, true, 5.0);
+
+    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+
     layout.route_finish(head, dot3_2, 5.0);
 
+    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+
+    let head = layout.route_start(dot4_1);
+    let head = layout.shove_around_dot(head, barrier_dot1, true, 5.0);
+
+    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+
+    layout.route_finish(head, dot4_2, 5.0);
+
+    render_times(&mut event_pump, &mut canvas, &mut layout, -1);
+}
+
+fn render_times(event_pump: &mut EventPump, canvas: &mut Canvas<Window>, layout: &mut Layout, times: i64) {
+    let mut i = 0;
 
     'running: loop {
-        i = (i + 1) % 255;
-
         canvas.set_draw_color(Color::RGB(0, 10, 35));
         canvas.clear();
 
@@ -142,7 +174,7 @@ fn main() {
                 let mut angle1 = delta1.y().atan2(delta1.x());
                 let mut angle2 = delta2.y().atan2(delta2.x());
 
-                for d in -3..3 {
+                for d in -2..3 {
                     let _ = canvas.arc(
                         //around_circle.pos.x() as i16,
                         //around_circle.pos.y() as i16,
@@ -170,6 +202,12 @@ fn main() {
         }
 
         canvas.present();
+
+        i += 1;
+        if times != -1 && i >= times {
+            return;
+        }
+
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
 }
