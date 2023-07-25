@@ -4,10 +4,10 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::math::Circle;
 
-pub trait Set {
+pub trait Path {
     fn interior(&self) -> Vec<TaggedIndex>;
     fn closure(&self) -> Vec<TaggedIndex>;
-    fn boundary(&self) -> Vec<DotIndex>;
+    fn ends(&self) -> [DotIndex; 2];
 }
 
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]

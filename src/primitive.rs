@@ -3,7 +3,7 @@ use std::mem::swap;
 use petgraph::Direction::{Outgoing, Incoming};
 use petgraph::stable_graph::StableDiGraph;
 
-use crate::graph::{Set, DotIndex, SegIndex, BendIndex, TaggedIndex, Tag, Index, DotWeight, SegWeight, BendWeight, TaggedWeight, Label};
+use crate::graph::{Path, DotIndex, SegIndex, BendIndex, TaggedIndex, Tag, Index, DotWeight, SegWeight, BendWeight, TaggedWeight, Label};
 use crate::shape::Shape;
 
 pub struct Primitive<'a, Weight> {
@@ -17,7 +17,6 @@ impl<'a, Weight> Primitive<'a, Weight> {
     }
 
     pub fn shape(&self) -> Shape {
-        let ends = self.ends();
         match self.tagged_weight() {
             TaggedWeight::Dot(dot) => Shape {
                 width: dot.circle.r * 2.0,
@@ -26,6 +25,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
                 center: None,
             },
             TaggedWeight::Seg(seg) => {
+                let ends = self.ends();
                 Shape {
                     width: seg.width,
                     from: self.primitive(ends[0]).weight().circle.pos,
@@ -34,6 +34,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
                 }
             }
             TaggedWeight::Bend(bend) => {
+                let ends = self.ends();
                 let mut shape = Shape {
                     width: self.primitive(ends[0]).weight().circle.r * 2.0,
                     from: self.primitive(ends[0]).weight().circle.pos,
@@ -51,24 +52,16 @@ impl<'a, Weight> Primitive<'a, Weight> {
 
     pub fn next(&self) -> Option<TaggedIndex> {
         self.graph.neighbors_directed(self.index.index, Outgoing)
-            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(*ni, self.index.index).unwrap()).unwrap().is_end())
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap()).unwrap().is_end())
             .map(|ni| Index::<Label>::new(ni).retag(*self.graph.node_weight(ni).unwrap()))
             .next()
     }
 
     pub fn prev(&self) -> Option<TaggedIndex> {
         self.graph.neighbors_directed(self.index.index, Incoming)
-            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap()).unwrap().is_end())
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(*ni, self.index.index).unwrap()).unwrap().is_end())
             .map(|ni| Index::<Label>::new(ni).retag(*self.graph.node_weight(ni).unwrap()))
             .next()
-    }
-
-    pub fn ends(&self) -> Vec<DotIndex> {
-        self.graph.neighbors_undirected(self.index.index)
-            .filter(|ni| self.graph.edge_weight(self.graph.find_edge_undirected(self.index.index, *ni).unwrap().0).unwrap().is_end())
-            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_dot())
-            .map(|ni| DotIndex::new(ni))
-            .collect()
     }
 
     pub fn core(&self) -> Option<DotIndex> {
@@ -91,7 +84,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
     }
 }
 
-impl<'a, Weight> Set for Primitive<'a, Weight> {
+impl<'a, Weight> Path for Primitive<'a, Weight> {
     fn interior(&self) -> Vec<TaggedIndex> {
         vec![self.tagged_index()]
     }
@@ -104,8 +97,14 @@ impl<'a, Weight> Set for Primitive<'a, Weight> {
         [[self.tagged_index()].as_slice(), ends.as_slice()].concat()
     }
 
-    fn boundary(&self) -> Vec<DotIndex> {
-        self.ends()
+    fn ends(&self) -> [DotIndex; 2] {
+        self.graph.neighbors_undirected(self.index.index)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge_undirected(self.index.index, *ni).unwrap().0).unwrap().is_end())
+            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_dot())
+            .map(|ni| DotIndex::new(ni))
+            .collect::<Vec<DotIndex>>()
+            .try_into()
+            .unwrap()
     }
 }
 
@@ -114,6 +113,22 @@ pub type Seg<'a> = Primitive<'a, SegWeight>;
 pub type Bend<'a> = Primitive<'a, BendWeight>;
 
 impl<'a> Dot<'a> {
+    pub fn bend(&self) -> Option<BendIndex> {
+        self.graph.neighbors_undirected(self.index.index)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge_undirected(self.index.index, *ni).unwrap().0).unwrap().is_end())
+            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_bend())
+            .map(|ni| BendIndex::new(ni))
+            .next()
+    }
+
+    pub fn outer(&self) -> Option<BendIndex> {
+        self.graph.neighbors_directed(self.index.index, Incoming)
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(*ni, self.index.index).unwrap()).unwrap().is_core())
+            .map(|ni| BendIndex::new(ni))
+            .filter(|bend| self.primitive(*bend).inner().is_none())
+            .next()
+    }
+
     pub fn weight(&self) -> DotWeight {
         *self.tagged_weight().as_dot().unwrap()
     }

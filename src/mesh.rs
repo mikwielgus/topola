@@ -1,11 +1,14 @@
 use geo::Point;
+use petgraph::Direction::Incoming;
 use petgraph::stable_graph::StableDiGraph;
+use petgraph::visit::EdgeRef;
 use rstar::RTree;
 use rstar::primitives::GeomWithData;
 
 use crate::primitive::Primitive;
 use crate::shape::Shape;
-use crate::graph::{Tag, TaggedIndex, DotIndex, SegIndex, BendIndex, Index, TaggedWeight, DotWeight, SegWeight, BendWeight, Label};
+use crate::graph::{Tag, TaggedIndex, DotIndex, SegIndex, BendIndex, Index, TaggedWeight, DotWeight, SegWeight, BendWeight, Label, Path};
+use crate::stretch::Stretch;
 
 pub type RTreeWrapper = GeomWithData<Shape, TaggedIndex>;
 
@@ -22,15 +25,31 @@ impl Mesh {
         }
     }
 
+    pub fn remove_open_set(&mut self, open_set: Vec<TaggedIndex>) {
+        for index in open_set.iter().filter(|index| !index.is_dot()) {
+            untag!(index, self.remove(*index));
+        }
+
+        // We must remove the dots only after the segs and bends because we need dots to calculate
+        // the shapes, which we need to remove the segs and bends from the R-tree.
+        
+        for index in open_set.iter().filter(|index| index.is_dot()) {
+            untag!(index, self.remove(*index));
+        }
+    }
+
+    pub fn remove<Weight: std::marker::Copy>(&mut self, index: Index<Weight>) {
+        // Unnecessary retag. It should be possible to elide it.
+        let weight = *self.graph.node_weight(index.index).unwrap();
+        self.rtree.remove(&RTreeWrapper::new(self.primitive(index).shape(), index.retag(weight)));
+
+        self.graph.remove_node(index.index);
+    }
+
     pub fn add_dot(&mut self, weight: DotWeight) -> DotIndex {
         let dot = DotIndex::new(self.graph.add_node(TaggedWeight::Dot(weight)));
         self.rtree.insert(RTreeWrapper::new(self.primitive(dot).shape(), TaggedIndex::Dot(dot)));
         dot
-    }
-
-    pub fn remove_dot(&mut self, dot: DotIndex) {
-        self.rtree.remove(&RTreeWrapper::new(self.primitive(dot).shape(), TaggedIndex::Dot(dot)));
-        self.graph.remove_node(dot.index);
     }
 
     pub fn add_seg(&mut self, from: DotIndex, to: DotIndex, weight: SegWeight) -> SegIndex {
@@ -40,11 +59,6 @@ impl Mesh {
 
         self.rtree.insert(RTreeWrapper::new(self.primitive(seg).shape(), TaggedIndex::Seg(seg)));
         seg
-    }
-
-    pub fn remove_seg(&mut self, seg: SegIndex) {
-        self.rtree.remove(&RTreeWrapper::new(self.primitive(seg).shape(), TaggedIndex::Seg(seg)));
-        self.graph.remove_node(seg.index);
     }
 
     pub fn add_bend(&mut self, from: DotIndex, to: DotIndex, around: TaggedIndex, weight: BendWeight) -> BendIndex {
@@ -79,9 +93,14 @@ impl Mesh {
         bend
     }
 
-    pub fn remove_bend(&mut self, bend: BendIndex) {
-        self.rtree.remove(&RTreeWrapper::new(self.primitive(bend).shape(), TaggedIndex::Bend(bend)));
-        self.graph.remove_node(bend.index);
+    pub fn reattach_bend(&mut self, bend: BendIndex, inner: BendIndex) {
+        if let Some(old_inner_edge) = self.graph.edges_directed(bend.index, Incoming)
+            .filter(|edge| *edge.weight() == Label::Outer)
+            .next()
+        {
+            self.graph.remove_edge(old_inner_edge.id());
+        }
+        self.graph.add_edge(inner.index, bend.index, Label::Outer);
     }
 
     pub fn extend_bend(&mut self, bend: BendIndex, dot: DotIndex, to: Point) {
@@ -95,10 +114,6 @@ impl Mesh {
         self.insert_into_rtree(dot.tag());
         self.insert_into_rtree(bend.tag());
     }
-    
-    pub fn reoffset_bend(&mut self, bend: BendIndex, offset: f64) {
-
-    }
 
     pub fn nodes(&self) -> impl Iterator<Item=TaggedIndex> + '_ {
         self.rtree.iter().map(|wrapper| wrapper.data)
@@ -106,6 +121,10 @@ impl Mesh {
 
     pub fn primitive<Weight>(&self, index: Index<Weight>) -> Primitive<Weight> {
         Primitive::new(index, &self.graph)
+    }
+
+    pub fn stretch(&self, bend: BendIndex) -> Stretch {
+        Stretch::new(bend, &self.graph)
     }
 
     fn insert_into_rtree(&mut self, index: TaggedIndex) {

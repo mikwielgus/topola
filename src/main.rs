@@ -7,7 +7,6 @@ mod mesh;
 mod stretch;
 mod primitive;
 mod shape;
-mod weight;
 mod math;
 
 use std::time::Duration;
@@ -38,7 +37,8 @@ fn main() {
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut i = 0;
     let mut layout = Layout::new();
-    
+
+
     /*let index = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (150.5, 80.5).into(), r: 8.0}});
     //layout.route_seg(index, Point {x: 400.5, y: 350.5}, 6.0);
 
@@ -56,7 +56,8 @@ fn main() {
     let index6 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (140.5, 300.5).into(), r: 8.0}});
     let index7 = layout.route_to(index5, index6, 5.0);*/
 
-    let dot1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (100.5, 150.5).into(), r: 8.0}});
+
+    /*let dot1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (100.5, 150.5).into(), r: 8.0}});
     let dot2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (130.5, 150.5).into(), r: 8.0}});
     let dot3 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (160.5, 150.5).into(), r: 8.0}});
 
@@ -72,7 +73,7 @@ fn main() {
     let head = layout.route_around_dot(head, obstacle_dot1, true, 5.0);
     let dot3_1 = head.dot;
     let bend3_1 = head.bend.unwrap();
-    layout.route_stop(head, dot4, 5.0);
+    layout.route_finish(head, dot4, 5.0);
 
     let head = layout.route_start(dot2);
     let head = layout.route_around_dot(head, dot3, true, 5.0);
@@ -81,12 +82,40 @@ fn main() {
     let head = layout.route_around_bend(head, bend3_1, true, 5.0);
     let dot2_2 = head.dot;
     let bend2_2 = head.bend.unwrap();
-    layout.route_stop(head, dot5, 5.0);
+    layout.route_finish(head, dot5, 5.0);
 
     let head = layout.route_start(dot1);
     let head = layout.route_around_bend(head, bend2_1, true, 5.0);
     let head = layout.route_around_bend(head, bend2_2, true, 5.0);
-    layout.route_stop(head, dot6, 5.0);
+    layout.route_finish(head, dot6, 5.0);*/
+
+
+    let dot1_1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (200.5, 200.5).into(), r: 8.0}});
+    let dot2_1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (230.5, 230.5).into(), r: 8.0}});
+    let dot3_1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (260.5, 260.5).into(), r: 8.0}});
+
+    let dot1_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (500.5, 200.5).into(), r: 8.0}});
+    let dot2_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (470.5, 230.5).into(), r: 8.0}});
+    let dot3_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (440.5, 260.5).into(), r: 8.0}});
+
+    let barrier_dot1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (350.5, 150.5).into(), r: 8.0}});
+    let barrier_dot2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (350.5, 500.5).into(), r: 8.0}});
+    layout.add_seg(barrier_dot1, barrier_dot2, 16.0);
+
+    let head = layout.route_start(dot1_1);
+    let head = layout.route_around_dot(head, barrier_dot1, true, 5.0);
+    layout.route_finish(head, dot1_2, 5.0);
+
+    let head = layout.route_start(dot2_1);
+    //let head = layout.route_around_dot(head, barrier_dot1, true, 5.0);
+    let head = layout.shove_around_dot(head, barrier_dot1, true, 5.0);
+    layout.route_finish(head, dot2_2, 5.0);
+
+    let head = layout.route_start(dot3_1);
+    //let head = layout.route_around_dot(head, barrier_dot1, true, 5.0);
+    let head = layout.shove_around_dot(head, barrier_dot1, true, 5.0);
+    layout.route_finish(head, dot3_2, 5.0);
+
 
     'running: loop {
         i = (i + 1) % 255;
