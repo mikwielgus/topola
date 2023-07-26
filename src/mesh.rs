@@ -8,7 +8,7 @@ use rstar::primitives::GeomWithData;
 use crate::primitive::Primitive;
 use crate::shape::Shape;
 use crate::graph::{Tag, TaggedIndex, DotIndex, SegIndex, BendIndex, Index, TaggedWeight, DotWeight, SegWeight, BendWeight, Label, Path};
-use crate::stretch::Stretch;
+use crate::bow::Bow;
 
 pub type RTreeWrapper = GeomWithData<Shape, TaggedIndex>;
 
@@ -123,8 +123,8 @@ impl Mesh {
         Primitive::new(index, &self.graph)
     }
 
-    pub fn stretch(&self, bend: BendIndex) -> Stretch {
-        Stretch::new(bend, &self.graph)
+    pub fn bow(&self, bend: BendIndex) -> Bow {
+        Bow::new(bend, &self.graph)
     }
 
     fn insert_into_rtree(&mut self, index: TaggedIndex) {

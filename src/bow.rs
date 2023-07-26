@@ -3,7 +3,7 @@ use petgraph::stable_graph::StableDiGraph;
 use crate::primitive::{Dot, Seg, Bend};
 use crate::graph::{TaggedIndex, DotIndex, SegIndex, BendIndex, TaggedWeight, Label, Path};
 
-pub struct Stretch<'a> {
+pub struct Bow<'a> {
     seg1_dot1: DotIndex,
     seg1: SegIndex,
     seg1_dot2: DotIndex,
@@ -14,7 +14,7 @@ pub struct Stretch<'a> {
     graph: &'a StableDiGraph<TaggedWeight, Label, usize>,
 }
 
-impl<'a> Stretch<'a> {
+impl<'a> Bow<'a> {
     pub fn new(index: BendIndex, graph: &'a StableDiGraph<TaggedWeight, Label, usize>) -> Self {
         let bend = index;
 
@@ -39,7 +39,7 @@ impl<'a> Stretch<'a> {
     }
 }
 
-impl<'a> Path for Stretch<'a> {
+impl<'a> Path for Bow<'a> {
     fn interior(&self) -> Vec<TaggedIndex> {
         vec![
             TaggedIndex::Seg(self.seg1),

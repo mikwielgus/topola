@@ -155,9 +155,9 @@ impl Layout {
 
         let mut cur_bend = bend;
         while let Some(outer) = self.mesh.primitive(cur_bend).outer() {
-            let stretch = self.mesh.stretch(outer);
-            endss.push(stretch.ends());
-            interiors.push(stretch.interior());
+            let bow = self.mesh.bow(outer);
+            endss.push(bow.ends());
+            interiors.push(bow.interior());
             cur_bend = outer;
         }
 

@@ -4,7 +4,7 @@ extern crate sdl2;
 mod layout;
 mod rules;
 mod mesh;
-mod stretch;
+mod bow;
 mod primitive;
 mod shape;
 mod math;
