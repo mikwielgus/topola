@@ -105,14 +105,18 @@ impl Mesh {
 
     pub fn extend_bend(&mut self, bend: BendIndex, dot: DotIndex, to: Point) {
         self.remove_from_rtree(bend.tag());
+        self.move_dot(dot, to);
+        self.insert_into_rtree(bend.tag());
+    }
+
+    pub fn move_dot(&mut self, dot: DotIndex, to: Point) {
         self.remove_from_rtree(dot.tag());
-        
+
         let mut dot_weight = self.primitive(dot).weight();
         dot_weight.circle.pos = to;
         *self.graph.node_weight_mut(dot.index).unwrap() = TaggedWeight::Dot(dot_weight);
 
         self.insert_into_rtree(dot.tag());
-        self.insert_into_rtree(bend.tag());
     }
 
     pub fn nodes(&self) -> impl Iterator<Item=TaggedIndex> + '_ {

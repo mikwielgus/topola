@@ -10,6 +10,7 @@ mod shape;
 mod math;
 
 use std::time::Duration;
+use graph::{TaggedIndex, Tag};
 use sdl2::EventPump;
 use sdl2::pixels::Color;
 use sdl2::event::Event;
@@ -98,57 +99,61 @@ fn main() {
     let dot3_1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (260.5, 260.5).into(), r: 8.0}});
     let dot4_1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (290.5, 290.5).into(), r: 8.0}});
 
-    let dot1_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (500.5, 200.5).into(), r: 8.0}});
-    let dot2_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (470.5, 230.5).into(), r: 8.0}});
-    let dot3_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (440.5, 260.5).into(), r: 8.0}});
-    let dot4_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (410.5, 290.5).into(), r: 8.0}});
+    let dot1_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (600.5, 200.5).into(), r: 8.0}});
+    let dot2_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (570.5, 230.5).into(), r: 8.0}});
+    let dot3_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (540.5, 260.5).into(), r: 8.0}});
+    let dot4_2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (510.5, 290.5).into(), r: 8.0}});
 
-    let barrier_dot1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (350.5, 150.5).into(), r: 8.0}});
-    let barrier_dot2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (350.5, 500.5).into(), r: 8.0}});
+    let barrier_dot1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (400.5, 150.5).into(), r: 8.0}});
+    let barrier_dot2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (400.5, 500.5).into(), r: 8.0}});
     layout.add_seg(barrier_dot1, barrier_dot2, 16.0);
 
-    render_times(&mut event_pump, &mut canvas, &mut layout, -1);
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, -1);
 
 
     let head = layout.route_start(dot1_1);
     let head = layout.route_around_dot(head, barrier_dot1, true, 5.0);
 
-    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
 
     layout.route_finish(head, dot1_2, 5.0);
 
-    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
 
 
     let head = layout.route_start(dot2_1);
     let head = layout.shove_around_dot(head, barrier_dot1, true, 5.0);
 
-    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
 
     layout.route_finish(head, dot2_2, 5.0);
 
-    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
 
     let head = layout.route_start(dot3_1);
     let head = layout.shove_around_dot(head, barrier_dot1, true, 5.0);
 
-    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
 
     layout.route_finish(head, dot3_2, 5.0);
 
-    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
 
     let head = layout.route_start(dot4_1);
     let head = layout.shove_around_dot(head, barrier_dot1, true, 5.0);
 
-    render_times(&mut event_pump, &mut canvas, &mut layout, 50);
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
 
     layout.route_finish(head, dot4_2, 5.0);
 
-    render_times(&mut event_pump, &mut canvas, &mut layout, -1);
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, -1);
+    render_times(&mut event_pump, &mut canvas, &mut layout, Some(barrier_dot1.tag()), -1);
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, -1);
 }
 
-fn render_times(event_pump: &mut EventPump, canvas: &mut Canvas<Window>, layout: &mut Layout, times: i64) {
+fn render_times(event_pump: &mut EventPump, canvas: &mut Canvas<Window>, layout: &mut Layout,
+                follower: Option<TaggedIndex>, times: i64)
+{
     let mut i = 0;
 
     'running: loop {
@@ -163,6 +168,12 @@ fn render_times(event_pump: &mut EventPump, canvas: &mut Canvas<Window>, layout:
                 }
                 _ => {}
             }
+        }
+
+        if let Some(follower) = follower {
+            let state = event_pump.mouse_state();
+
+            layout.move_dot(*follower.as_dot().unwrap(), (state.x() as f64, state.y() as f64).into());
         }
 
         for shape in layout.shapes() {

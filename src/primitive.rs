@@ -6,6 +6,7 @@ use petgraph::stable_graph::StableDiGraph;
 use crate::graph::{Path, DotIndex, SegIndex, BendIndex, TaggedIndex, Tag, Index, DotWeight, SegWeight, BendWeight, TaggedWeight, Label};
 use crate::shape::Shape;
 
+#[derive(Debug)]
 pub struct Primitive<'a, Weight> {
     pub index: Index<Weight>,
     graph: &'a StableDiGraph<TaggedWeight, Label, usize>,

@@ -89,7 +89,8 @@ impl Layout {
         let outer = self.mesh.primitive(around).outer().unwrap();
         let head = self.route_around_dot(head, around, cw, width);
         self.mesh.reattach_bend(outer, head.bend.unwrap());
-        self.displace_outers(head.bend.unwrap());
+
+        self.reroute_outward(outer);
         head
     }
 
@@ -116,7 +117,8 @@ impl Layout {
         let outer = self.mesh.primitive(around).outer().unwrap();
         let head = self.route_around_bend(head, around, cw, width);
         self.mesh.reattach_bend(outer, head.bend.unwrap());
-        self.displace_outers(head.bend.unwrap());
+
+        self.reroute_outward(outer);
         head
     }
 
@@ -148,32 +150,41 @@ impl Layout {
         Head {dot: bend_to, bend: Some(bend)}
     }
 
-    fn displace_outers(&mut self, bend: BendIndex) {
+    fn reroute_outward(&mut self, bend: BendIndex) {
         let mut endss: Vec<[DotIndex; 2]> = vec![];
         let mut interiors: Vec<Vec<TaggedIndex>> = vec![];
         let cw = self.mesh.primitive(bend).weight().cw;
 
         let mut cur_bend = bend;
-        while let Some(outer) = self.mesh.primitive(cur_bend).outer() {
-            let bow = self.mesh.bow(outer);
+        loop {
+            let bow = self.mesh.bow(cur_bend);
             endss.push(bow.ends());
             interiors.push(bow.interior());
-            cur_bend = outer;
+
+            cur_bend = match self.mesh.primitive(cur_bend).outer() {
+                Some(new_bend) => new_bend,
+                None => break,
+            }
         }
+
+        let core = self.mesh.primitive(bend).core().unwrap();
+        let mut maybe_inner = self.mesh.primitive(bend).inner();
 
         for interior in interiors {
             self.mesh.remove_open_set(interior);
         }
 
-        let mut cur_bend = bend;
         for ends in endss {
-            let head = self.route_start(ends[0]);
-            //let width = self.mesh.primitive(head.dot).weight().circle.r * 2.0;
+            let mut head = self.route_start(ends[0]);
             let width = 5.0;
 
-            let head = self.route_around_bend(head, cur_bend, cw, width);
-            cur_bend = head.bend.unwrap();
+            if let Some(inner) = maybe_inner {
+                head = self.route_around_bend(head, inner, cw, width);
+            } else {
+                head = self.route_around_dot(head, core, cw, width);
+            }
 
+            maybe_inner = head.bend;
             self.route_finish(head, ends[1], width);
         }
     }
@@ -189,6 +200,14 @@ impl Layout {
         });
         self.add_seg(head.dot, to_index, width);
         Head {dot: to_index, bend: None}
+    }
+
+    pub fn move_dot(&mut self, dot: DotIndex, to: Point) {
+        self.mesh.move_dot(dot, to);
+
+        if let Some(outer) = self.mesh.primitive(dot).outer() {
+            self.reroute_outward(outer);
+        }
     }
 
     fn head_guidecircle(&self, head: &Head, width: f64) -> Circle {
