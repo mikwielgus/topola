@@ -1,9 +1,10 @@
-use std::mem::swap;
+use std::mem::{swap, self};
 
 use petgraph::Direction::{Outgoing, Incoming};
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::graph::{Path, DotIndex, SegIndex, BendIndex, TaggedIndex, Tag, Index, DotWeight, SegWeight, BendWeight, TaggedWeight, Label};
+use crate::math;
 use crate::shape::Shape;
 
 #[derive(Debug)]
@@ -58,11 +59,55 @@ impl<'a, Weight> Primitive<'a, Weight> {
             .next()
     }
 
+    pub fn next_akin(&self) -> Option<Index<Weight>> {
+        let mut prev_index = self.index.index;
+
+        while let Some(index) = self.graph.neighbors_directed(prev_index, Outgoing)
+            .filter(|ni| dbg!(self.graph.find_edge(prev_index, *ni).is_some()))
+            .filter(|ni| dbg!(self.graph.edge_weight(self.graph.find_edge(prev_index, *ni).unwrap()).unwrap().is_end()))
+            .next()
+        {
+            let weight = *self.graph.node_weight(index).unwrap();
+            dbg!(weight);
+            dbg!(index);
+
+            if mem::discriminant(&self.tagged_weight()) == mem::discriminant(&weight) {
+                return Some(Index::<Weight>::new(index));
+            }
+
+            prev_index = index;
+        }
+
+        None
+    }
+
     pub fn prev(&self) -> Option<TaggedIndex> {
         self.graph.neighbors_directed(self.index.index, Incoming)
             .filter(|ni| self.graph.edge_weight(self.graph.find_edge(*ni, self.index.index).unwrap()).unwrap().is_end())
             .map(|ni| Index::<Label>::new(ni).retag(*self.graph.node_weight(ni).unwrap()))
             .next()
+    }
+
+    pub fn prev_akin(&self) -> Option<Index<Weight>> {
+        let mut prev_index = self.index.index;
+
+        while let Some(index) = self.graph.neighbors_directed(prev_index, Incoming)
+            .filter(|ni| dbg!(self.graph.find_edge(*ni, prev_index).is_some()))
+            .filter(|ni| dbg!(self.graph.edge_weight(self.graph.find_edge(*ni, prev_index).unwrap()).unwrap().is_end()))
+            .next()
+        {
+            let weight = *self.graph.node_weight(index).unwrap();
+            dbg!(weight);
+            dbg!(index);
+
+            if mem::discriminant(&self.tagged_weight()) == mem::discriminant(&weight) {
+                return Some(Index::<Weight>::new(index));
+            }
+
+            prev_index = index;
+        }
+
+        None
     }
 
     pub fn core(&self) -> Option<DotIndex> {
@@ -166,5 +211,13 @@ impl<'a> Bend<'a> {
 
     pub fn weight(&self) -> BendWeight {
         *self.tagged_weight().as_bend().unwrap()
+    }
+
+    pub fn cross_product(&self) -> f64 {
+        let center = self.primitive(self.core().unwrap()).weight().circle.pos;
+        let ends = self.ends();
+        let end1 = self.primitive(ends[0]).weight().circle.pos;
+        let end2 = self.primitive(ends[1]).weight().circle.pos;
+        math::cross_product(end1 - center, end2 - center)
     }
 }

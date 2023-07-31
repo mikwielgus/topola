@@ -80,7 +80,7 @@ pub fn tangent_point_pair(circle1: Circle, cw1: Option<bool>, circle2: Circle, c
 
     for tangent_point_pair in tangent_point_pairs {
         if let Some(cw1) = cw1 {
-            let cross1 = cross_product(tangent_point_pair.0, tangent_point_pair.1, circle1.pos);
+            let cross1 = seq_cross_product(tangent_point_pair.0, tangent_point_pair.1, circle1.pos);
 
             if (cw1 && cross1 <= 0.0) || (!cw1 && cross1 >= 0.0) {
                 continue;
@@ -88,7 +88,7 @@ pub fn tangent_point_pair(circle1: Circle, cw1: Option<bool>, circle2: Circle, c
         }
 
         if let Some(cw2) = cw2 {
-            let cross2 = cross_product(tangent_point_pair.0, tangent_point_pair.1, circle2.pos);
+            let cross2 = seq_cross_product(tangent_point_pair.0, tangent_point_pair.1, circle2.pos);
 
             if (cw2 && cross2 <= 0.0) || (!cw2 && cross2 >= 0.0) {
                 continue;
@@ -101,10 +101,14 @@ pub fn tangent_point_pair(circle1: Circle, cw1: Option<bool>, circle2: Circle, c
     unreachable!();
 }
 
-pub fn cross_product(start: Point, stop: Point, reference: Point) -> f64 {
+pub fn seq_cross_product(start: Point, stop: Point, reference: Point) -> f64 {
     let dx1 = stop.x() - start.x();
     let dy1 = stop.y() - start.y();
     let dx2 = reference.x() - stop.x();
     let dy2 = reference.y() - stop.y();
-    dx1 * dy2 - dy1 * dx2
+    cross_product((dx1, dy1).into(), (dx2, dy2).into())
+}
+
+pub fn cross_product(v1: Point, v2: Point) -> f64 {
+    v1.x() * v2.y() - v1.y() * v2.x()
 }

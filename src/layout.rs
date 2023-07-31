@@ -72,7 +72,7 @@ impl Layout {
             zone: None,
         };
 
-        let to_circle = self.bend_circle(to_bend);
+        let to_circle = self.bend_circle(to_bend, width);
         let from_cw = self.head_cw(&head);
 
         let to_head = Head {bend: Some(to_bend), dot: to};
@@ -186,6 +186,7 @@ impl Layout {
 
             maybe_inner = head.bend;
             self.route_finish(head, ends[1], width);
+            self.relax_band(maybe_inner.unwrap());
         }
     }
 
@@ -200,6 +201,38 @@ impl Layout {
         });
         self.add_seg(head.dot, to_index, width);
         Head {dot: to_index, bend: None}
+    }
+
+    fn relax_band(&mut self, bend: BendIndex) {
+        let mut prev_bend = bend;
+        while let Some(cur_bend) = self.mesh.primitive(prev_bend).prev_akin() {
+            dbg!(cur_bend);
+            if self.mesh.primitive(cur_bend).cross_product() >= 0.0 {
+                self.release_bow(cur_bend);
+            }
+            
+            prev_bend = cur_bend;
+        }
+
+        let mut prev_bend = bend;
+        while let Some(cur_bend) = self.mesh.primitive(prev_bend).next_akin() {
+            dbg!(cur_bend);
+            if self.mesh.primitive(cur_bend).cross_product() >= 0.0 {
+                self.release_bow(cur_bend);
+            }
+
+            prev_bend = cur_bend;
+        }
+    }
+
+    fn release_bow(&mut self, bend: BendIndex) {
+        let bow = self.mesh.bow(bend);
+        let ends = bow.ends();
+
+        self.mesh.remove_open_set(bow.interior());
+
+        let head = self.route_start(ends[0]);
+        self.route_finish(head, ends[1], 5.0);
     }
 
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) {
@@ -250,7 +283,7 @@ impl Layout {
         }
     }
 
-    fn bend_circle(&self, bend: BendIndex) -> Circle {
+    fn bend_circle(&self, bend: BendIndex, width: f64) -> Circle {
         let mut r = 0.0;
         let mut layer = bend;
 
@@ -262,13 +295,13 @@ impl Layout {
         let core_circle = self.mesh.primitive(self.mesh.primitive(bend).core().unwrap()).weight().circle;
         Circle {
             pos: core_circle.pos,
-            r: core_circle.r + r
+            r: core_circle.r + r + width + 5.0,
         }
     }
 
     fn bend_guidecircle(&self, bend: BendIndex, width: f64, conditions: Conditions) -> Circle {
-        let mut circle = self.bend_circle(bend);
-        circle.r += width + self.rules.ruleset(conditions).clearance.min + 15.0;
+        let mut circle = self.bend_circle(bend, width);
+        circle.r += self.rules.ruleset(conditions).clearance.min + 10.0;
         circle
     }
 
