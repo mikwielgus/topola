@@ -1,5 +1,12 @@
 extern crate sdl2;
 
+macro_rules! dbg_dot {
+    ($graph:expr) => {
+        use petgraph::dot::Dot;
+        println!("{:?}", Dot::new(&$graph));
+    }
+}
+
 #[macro_use] mod graph;
 mod layout;
 mod rules;
