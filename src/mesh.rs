@@ -41,8 +41,9 @@ impl Mesh {
     pub fn remove<Weight: std::marker::Copy>(&mut self, index: Index<Weight>) {
         // Unnecessary retag. It should be possible to elide it.
         let weight = *self.graph.node_weight(index.index).unwrap();
-        self.rtree.remove(&RTreeWrapper::new(self.primitive(index).shape(), index.retag(weight)));
 
+        let wrapper = RTreeWrapper::new(self.primitive(index).shape(), index.retag(weight));
+        assert!(self.rtree.remove(&wrapper).is_some());
         self.graph.remove_node(index.index);
     }
 
@@ -110,6 +111,17 @@ impl Mesh {
     }
 
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) {
+        let mut cur_bend = self.primitive(dot).outer();
+        loop {
+            match cur_bend {
+                Some(..) => (),
+                None => break,
+            }
+
+            self.remove_from_rtree(cur_bend.unwrap().tag());
+            cur_bend = self.primitive(cur_bend.unwrap()).outer()
+        }
+
         self.remove_from_rtree(dot.tag());
 
         let mut dot_weight = self.primitive(dot).weight();
@@ -117,6 +129,17 @@ impl Mesh {
         *self.graph.node_weight_mut(dot.index).unwrap() = TaggedWeight::Dot(dot_weight);
 
         self.insert_into_rtree(dot.tag());
+
+        let mut cur_bend = self.primitive(dot).outer();
+        loop {
+            match cur_bend {
+                Some(..) => (),
+                None => break,
+            }
+
+            self.insert_into_rtree(cur_bend.unwrap().tag());
+            cur_bend = self.primitive(cur_bend.unwrap()).outer()
+        }
     }
 
     pub fn nodes(&self) -> impl Iterator<Item=TaggedIndex> + '_ {

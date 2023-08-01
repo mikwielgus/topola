@@ -206,7 +206,6 @@ impl Layout {
     fn relax_band(&mut self, bend: BendIndex) {
         let mut prev_bend = bend;
         while let Some(cur_bend) = self.mesh.primitive(prev_bend).prev_akin() {
-            dbg!(cur_bend);
             if self.mesh.primitive(cur_bend).cross_product() >= 0.0 {
                 self.release_bow(cur_bend);
             }
@@ -216,7 +215,6 @@ impl Layout {
 
         let mut prev_bend = bend;
         while let Some(cur_bend) = self.mesh.primitive(prev_bend).next_akin() {
-            dbg!(cur_bend);
             if self.mesh.primitive(cur_bend).cross_product() >= 0.0 {
                 self.release_bow(cur_bend);
             }

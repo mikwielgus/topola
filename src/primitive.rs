@@ -63,13 +63,11 @@ impl<'a, Weight> Primitive<'a, Weight> {
         let mut prev_index = self.index.index;
 
         while let Some(index) = self.graph.neighbors_directed(prev_index, Outgoing)
-            .filter(|ni| dbg!(self.graph.find_edge(prev_index, *ni).is_some()))
-            .filter(|ni| dbg!(self.graph.edge_weight(self.graph.find_edge(prev_index, *ni).unwrap()).unwrap().is_end()))
+            .filter(|ni| self.graph.find_edge(prev_index, *ni).is_some())
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(prev_index, *ni).unwrap()).unwrap().is_end())
             .next()
         {
             let weight = *self.graph.node_weight(index).unwrap();
-            dbg!(weight);
-            dbg!(index);
 
             if mem::discriminant(&self.tagged_weight()) == mem::discriminant(&weight) {
                 return Some(Index::<Weight>::new(index));
@@ -92,13 +90,11 @@ impl<'a, Weight> Primitive<'a, Weight> {
         let mut prev_index = self.index.index;
 
         while let Some(index) = self.graph.neighbors_directed(prev_index, Incoming)
-            .filter(|ni| dbg!(self.graph.find_edge(*ni, prev_index).is_some()))
-            .filter(|ni| dbg!(self.graph.edge_weight(self.graph.find_edge(*ni, prev_index).unwrap()).unwrap().is_end()))
+            .filter(|ni| self.graph.find_edge(*ni, prev_index).is_some())
+            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(*ni, prev_index).unwrap()).unwrap().is_end())
             .next()
         {
             let weight = *self.graph.node_weight(index).unwrap();
-            dbg!(weight);
-            dbg!(index);
 
             if mem::discriminant(&self.tagged_weight()) == mem::discriminant(&weight) {
                 return Some(Index::<Weight>::new(index));

@@ -4,7 +4,7 @@ use rstar::{RTreeObject, AABB};
 use crate::graph::{TaggedWeight, DotWeight};
 use crate::math::Circle;
 
-#[derive(PartialEq)]
+#[derive(Debug, PartialEq)]
 pub struct Shape {
     pub width: f64,
     pub from: Point,
