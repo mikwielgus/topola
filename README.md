@@ -4,6 +4,8 @@ Topological router in Rust.
 
 ## Gallery
 
+![Animation. There are two upward barriers, with some space between tem, around which four rubberband traces, one over another, are wrapped. Enter mouse cursor. The cursor begins to stretch the left barrier to the right. As it's stretched, the traces cease to be wrapped around the right barrier, becoming "free". The traces and the barrier are two-dimensional and all solid red. The background is black but also very slightly white and blue.](./assets/unwrapping_bends.gif "Unwrapping bends")
+
 ![This animation shows four traces wrapped around a vertical barrier like rubberbands. Computer
 cursor appears and starts dragging the barrier's top end left and right, up and down, elastically
 stretching the barrier and having the traces continue being wrapped on the barrier regardless of
