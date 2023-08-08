@@ -286,7 +286,7 @@ impl Layout {
         let mut layer = bend;
 
         while let Some(inner) = self.mesh.primitive(layer).inner() {
-            r += 5.0 + self.mesh.primitive(inner).shape().width;
+            r += 5.0 + self.mesh.primitive(inner).shape().width();
             layer = inner;
         }
 

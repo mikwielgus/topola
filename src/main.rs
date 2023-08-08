@@ -18,6 +18,7 @@ mod math;
 
 use std::panic;
 use std::time::Duration;
+use geo::EuclideanDistance;
 use graph::{TaggedIndex, Tag};
 use sdl2::EventPump;
 use sdl2::pixels::Color;
@@ -26,6 +27,7 @@ use sdl2::keyboard::Keycode;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
+use shape::Shape;
 
 use crate::layout::Layout;
 use crate::graph::DotWeight;
@@ -205,44 +207,49 @@ fn render_times(event_pump: &mut EventPump, canvas: &mut Canvas<Window>, layout:
 
         let result = panic::catch_unwind(|| {
             for shape in layout.shapes() {
-                if let Some(center) = shape.center {
-                    let circle = shape.circle().unwrap();
-                    let delta1 = shape.from - circle.pos;
-                    let delta2 = shape.to - circle.pos;
+                match shape {
+                    Shape::Dot(dot) => {
+                        let _ = canvas.filled_circle(dot.c.pos.x() as i16,
+                                                     dot.c.pos.y() as i16,
+                                                     dot.c.r as i16,
+                                                     Color::RGB(200, 52, 52));
+                    },
+                    Shape::Seg(seg) => {
+                        let _ = canvas.thick_line(seg.from.x() as i16,
+                                                  seg.from.y() as i16,
+                                                  seg.to.x() as i16,
+                                                  seg.to.y() as i16,
+                                                  seg.width as u8,
+                                                  Color::RGB(200, 52, 52));
+                    },
+                    Shape::Bend(bend) => {
+                        let delta1 = bend.from - bend.center;
+                        let delta2 = bend.to - bend.center;
+                        let r = bend.from.euclidean_distance(&bend.center);
 
-                    let mut angle1 = delta1.y().atan2(delta1.x());
-                    let mut angle2 = delta2.y().atan2(delta2.x());
+                        let mut angle1 = delta1.y().atan2(delta1.x());
+                        let mut angle2 = delta2.y().atan2(delta2.x());
 
-                    for d in -2..3 {
-                        let _ = canvas.arc(
-                            //around_circle.pos.x() as i16,
-                            //around_circle.pos.y() as i16,
-                            circle.pos.x() as i16,
-                            circle.pos.y() as i16,
-                            //(shape.around_weight.unwrap().circle.r + 10.0 + (d as f64)) as i16,
-                            (circle.r + (d as f64)) as i16,
-                            angle1.to_degrees() as i16,
-                            angle2.to_degrees() as i16,
-                            Color::RGB(200, 52, 52));
-                    }
-                } else if shape.from != shape.to {
-                    let _ = canvas.thick_line(shape.from.x() as i16,
-                                              shape.from.y() as i16,
-                                              shape.to.x() as i16,
-                                              shape.to.y() as i16,
-                                              shape.width as u8,
-                                              Color::RGB(200, 52, 52));
-                } else {
-                    let _ = canvas.filled_circle(shape.from.x() as i16,
-                                                 shape.from.y() as i16,
-                                                 (shape.width / 2.0) as i16,
-                                                 Color::RGB(200, 52, 52));
+                        for d in -2..3 {
+                            let _ = canvas.arc(
+                                //around_circle.pos.x() as i16,
+                                //around_circle.pos.y() as i16,
+                                bend.center.x() as i16,
+                                bend.center.y() as i16,
+                                //(shape.around_weight.unwrap().circle.r + 10.0 + (d as f64)) as i16,
+                                (r + (d as f64)) as i16,
+                                angle1.to_degrees() as i16,
+                                angle2.to_degrees() as i16,
+                                Color::RGB(200, 52, 52));
+                        }
+                    },
                 }
                 /*let envelope = shape.envelope();
                 let _ = canvas.rectangle(envelope.lower()[0] as i16,
                                          envelope.lower()[1] as i16,
                                          envelope.upper()[0] as i16,
                                          envelope.upper()[1] as i16,
+
                                          Color::RGB(100, 100, 100));*/
             }
         });

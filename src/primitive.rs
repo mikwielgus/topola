@@ -5,7 +5,7 @@ use petgraph::stable_graph::StableDiGraph;
 
 use crate::graph::{Path, DotIndex, SegIndex, BendIndex, TaggedIndex, Tag, Index, DotWeight, SegWeight, BendWeight, TaggedWeight, Label};
 use crate::math;
-use crate::shape::Shape;
+use crate::shape::{Shape, DotShape, SegShape, BendShape};
 
 #[derive(Debug)]
 pub struct Primitive<'a, Weight> {
@@ -20,35 +20,31 @@ impl<'a, Weight> Primitive<'a, Weight> {
 
     pub fn shape(&self) -> Shape {
         match self.tagged_weight() {
-            TaggedWeight::Dot(dot) => Shape {
-                width: dot.circle.r * 2.0,
-                from: dot.circle.pos,
-                to: dot.circle.pos,
-                center: None,
-            },
+            TaggedWeight::Dot(dot) => Shape::Dot(DotShape {
+                c: dot.circle,
+            }),
             TaggedWeight::Seg(seg) => {
                 let ends = self.ends();
-                Shape {
-                    width: seg.width,
+                Shape::Seg(SegShape {
                     from: self.primitive(ends[0]).weight().circle.pos,
                     to: self.primitive(ends[1]).weight().circle.pos,
-                    center: None,
-                }
-            }
+                    width: seg.width,
+                })
+            },
             TaggedWeight::Bend(bend) => {
                 let ends = self.ends();
-                let mut shape = Shape {
-                    width: self.primitive(ends[0]).weight().circle.r * 2.0,
+                let mut bend_shape = BendShape {
                     from: self.primitive(ends[0]).weight().circle.pos,
                     to: self.primitive(ends[1]).weight().circle.pos,
-                    center: Some(self.primitive(self.core().unwrap()).weight().circle.pos),
+                    center: self.primitive(self.core().unwrap()).weight().circle.pos,
+                    width: self.primitive(ends[0]).weight().circle.r * 2.0,
                 };
 
                 if bend.cw {
-                    swap(&mut shape.from, &mut shape.to);
+                    swap(&mut bend_shape.from, &mut bend_shape.to);
                 }
-                shape
-            }
+                Shape::Bend(bend_shape)
+            },
         }
     }
 

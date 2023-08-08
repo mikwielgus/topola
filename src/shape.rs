@@ -5,40 +5,56 @@ use crate::graph::{TaggedWeight, DotWeight};
 use crate::math::Circle;
 
 #[derive(Debug, PartialEq)]
-pub struct Shape {
-    pub width: f64,
+pub struct DotShape {
+    pub c: Circle,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct SegShape {
     pub from: Point,
     pub to: Point,
-    pub center: Option<Point>,
+    pub width: f64,
+}
+
+#[derive(Debug, PartialEq)]
+pub struct BendShape {
+    pub from: Point,
+    pub to: Point,
+    pub center: Point,
+    pub width: f64,
+}
+
+#[derive(Debug, PartialEq)]
+pub enum Shape {
+    Dot(DotShape),
+    Seg(SegShape),
+    Bend(BendShape),
 }
 
 impl Shape {
-    pub fn new(width: f64, from: Point, to: Point, center: Option<Point>) -> Self {
-        Shape {width, from, to, center}
-    }
-
     pub fn envelope(&self) -> AABB<[f64; 2]> {
-        if self.from == self.to {
-            AABB::from_corners(
-                [self.from.x() - self.width, self.from.y() - self.width],
-                [self.from.x() + self.width, self.from.y() + self.width]
-            )
-        } else {
-            // TODO: Take widths into account.
-            AABB::<[f64; 2]>::from_points(&[[self.from.x(), self.from.y()],
-                                            [self.to.x(), self.to.y()]])
+        match self {
+            Shape::Dot(dot) =>
+                AABB::from_corners(
+                    [dot.c.pos.x() - dot.c.r, dot.c.pos.y() - dot.c.r],
+                    [dot.c.pos.x() + dot.c.r, dot.c.pos.y() + dot.c.r],
+                ),
+            Shape::Seg(seg) =>
+                AABB::<[f64; 2]>::from_points(&[[seg.from.x(), seg.from.y()],
+                                                [seg.to.x(), seg.to.y()]]),
+            Shape::Bend(bend) =>
+                AABB::<[f64; 2]>::from_points(&[[bend.from.x() - bend.width,
+                                                 bend.from.y() - bend.width],
+                                                [bend.to.x() + bend.width,
+                                                 bend.to.y() + bend.width]]),
         }
     }
 
-    pub fn circle(&self) -> Option<Circle> {
-        if let Some(center) = self.center {
-            let r = self.from.euclidean_distance(&center);
-            Some(Circle {
-                pos: center,
-                r,
-            })
-        } else {
-            None
+    pub fn width(&self) -> f64 {
+        match self {
+            Shape::Dot(dot) => dot.c.r * 2.0,
+            Shape::Seg(seg) => seg.width,
+            Shape::Bend(bend) => bend.width,
         }
     }
 }
