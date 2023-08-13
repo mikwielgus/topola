@@ -1,5 +1,5 @@
 use std::ops::Sub;
-use geo::geometry::Point;
+use geo::{geometry::Point, EuclideanDistance, point};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Line {
@@ -99,6 +99,49 @@ pub fn tangent_point_pair(circle1: Circle, cw1: Option<bool>, circle2: Circle, c
     }
 
     unreachable!();
+}
+
+pub fn circles_intersection(circle1: &Circle, circle2: &Circle) -> Vec<Point> {
+    let delta = circle2.pos - circle1.pos;
+    let d = circle2.pos.euclidean_distance(&circle1.pos);
+
+    if d > circle1.r + circle2.r {
+        // No intersection.
+        return vec![];
+    }
+
+    if d < (circle2.r - circle1.r).abs() {
+        // One contains the other.
+        return vec![];
+    }
+
+    // Distance from `circle1.pos` to the intersection of the diagonals.
+    let a = (circle1.r*circle1.r - circle2.r*circle2.r + d*d) / (2.0*d);
+
+    // Intersection of the diagonals.
+    let p = circle1.pos + delta*(a/d);
+    let h = (circle1.r*circle1.r - a*a).sqrt();
+
+    if h == 0. {
+        return [p].into();
+    }
+
+    let r = point! {x: -delta.x(), y: delta.y()} * (h/d);
+    
+    [
+        p + r,
+        p - r,
+    ].into()
+}
+
+pub fn between_vectors(v: Point, from: Point, to: Point) -> bool {
+    let cross = cross_product(from, to);
+
+    if cross >= 0. {
+        cross_product(from, v) >= 0. && cross_product(v, to) >= 0.
+    } else {
+        cross_product(from, v) >= 0. || cross_product(v, to) >= 0.
+    }
 }
 
 pub fn seq_cross_product(start: Point, stop: Point, reference: Point) -> f64 {
