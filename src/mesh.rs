@@ -1,14 +1,17 @@
 use geo::Point;
-use petgraph::Direction::Incoming;
 use petgraph::stable_graph::StableDiGraph;
 use petgraph::visit::EdgeRef;
-use rstar::RTree;
+use petgraph::Direction::Incoming;
 use rstar::primitives::GeomWithData;
+use rstar::RTree;
 
+use crate::bow::Bow;
+use crate::graph::{
+    BendIndex, BendWeight, DotIndex, DotWeight, Index, Label, Path, SegIndex, SegWeight, Tag,
+    TaggedIndex, TaggedWeight,
+};
 use crate::primitive::Primitive;
 use crate::shape::Shape;
-use crate::graph::{Tag, TaggedIndex, DotIndex, SegIndex, BendIndex, Index, TaggedWeight, DotWeight, SegWeight, BendWeight, Label, Path};
-use crate::bow::Bow;
 
 pub type RTreeWrapper = GeomWithData<Shape, TaggedIndex>;
 
@@ -32,7 +35,7 @@ impl Mesh {
 
         // We must remove the dots only after the segs and bends because we need dots to calculate
         // the shapes, which we need to remove the segs and bends from the R-tree.
-        
+
         for index in open_set.iter().filter(|index| index.is_dot()) {
             untag!(index, self.remove(*index));
         }
@@ -47,55 +50,94 @@ impl Mesh {
         self.graph.remove_node(index.index);
     }
 
-    pub fn add_dot(&mut self, weight: DotWeight) -> DotIndex {
+    pub fn add_dot(&mut self, weight: DotWeight) -> Result<DotIndex, ()> {
         let dot = DotIndex::new(self.graph.add_node(TaggedWeight::Dot(weight)));
-        self.rtree.insert(RTreeWrapper::new(self.primitive(dot).shape(), TaggedIndex::Dot(dot)));
-        dot
+        self.fail_and_remove_if_collides(dot)?;
+
+        self.rtree.insert(RTreeWrapper::new(
+            self.primitive(dot).shape(),
+            TaggedIndex::Dot(dot),
+        ));
+        Ok(dot)
     }
 
-    pub fn add_seg(&mut self, from: DotIndex, to: DotIndex, weight: SegWeight) -> SegIndex {
+    pub fn add_seg(
+        &mut self,
+        from: DotIndex,
+        to: DotIndex,
+        weight: SegWeight,
+    ) -> Result<SegIndex, ()> {
         let seg = SegIndex::new(self.graph.add_node(TaggedWeight::Seg(weight)));
+        self.fail_and_remove_if_collides(seg)?;
+
         self.graph.add_edge(from.index, seg.index, Label::End);
         self.graph.add_edge(seg.index, to.index, Label::End);
 
-        self.rtree.insert(RTreeWrapper::new(self.primitive(seg).shape(), TaggedIndex::Seg(seg)));
-        seg
+        self.insert_into_rtree(seg.tag());
+        Ok(seg)
     }
 
-    pub fn add_bend(&mut self, from: DotIndex, to: DotIndex, around: TaggedIndex, weight: BendWeight) -> BendIndex {
+    pub fn add_bend(
+        &mut self,
+        from: DotIndex,
+        to: DotIndex,
+        around: TaggedIndex,
+        weight: BendWeight,
+    ) -> Result<BendIndex, ()> {
         match around {
-            TaggedIndex::Dot(core) =>
-                self.add_core_bend(from, to, core, weight),
-            TaggedIndex::Bend(around) =>
-                self.add_outer_bend(from, to, around, weight),
+            TaggedIndex::Dot(core) => self.add_core_bend(from, to, core, weight),
+            TaggedIndex::Bend(around) => self.add_outer_bend(from, to, around, weight),
             TaggedIndex::Seg(..) => unreachable!(),
         }
     }
 
-    pub fn add_core_bend(&mut self, from: DotIndex, to: DotIndex, core: DotIndex, weight: BendWeight) -> BendIndex {
+    pub fn add_core_bend(
+        &mut self,
+        from: DotIndex,
+        to: DotIndex,
+        core: DotIndex,
+        weight: BendWeight,
+    ) -> Result<BendIndex, ()> {
         let bend = BendIndex::new(self.graph.add_node(TaggedWeight::Bend(weight)));
+        self.fail_and_remove_if_collides(bend)?;
+
         self.graph.add_edge(from.index, bend.index, Label::End);
         self.graph.add_edge(bend.index, to.index, Label::End);
         self.graph.add_edge(bend.index, core.index, Label::Core);
 
-        self.rtree.insert(RTreeWrapper::new(self.primitive(bend).shape(), TaggedIndex::Bend(bend)));
-        bend
+        self.insert_into_rtree(bend.tag());
+        Ok(bend)
     }
 
-    pub fn add_outer_bend(&mut self, from: DotIndex, to: DotIndex, inner: BendIndex, weight: BendWeight) -> BendIndex {
-        let core = *self.graph.neighbors(inner.index)
-            .filter(|ni| self.graph.edge_weight(self.graph.find_edge(inner.index, *ni).unwrap()).unwrap().is_core())
+    pub fn add_outer_bend(
+        &mut self,
+        from: DotIndex,
+        to: DotIndex,
+        inner: BendIndex,
+        weight: BendWeight,
+    ) -> Result<BendIndex, ()> {
+        let core = *self
+            .graph
+            .neighbors(inner.index)
+            .filter(|ni| {
+                self.graph
+                    .edge_weight(self.graph.find_edge(inner.index, *ni).unwrap())
+                    .unwrap()
+                    .is_core()
+            })
             .map(|ni| DotIndex::new(ni))
             .collect::<Vec<DotIndex>>()
             .first()
             .unwrap();
-        let bend = self.add_core_bend(from, to, core, weight);
+        let bend = self.add_core_bend(from, to, core, weight)?;
         self.graph.add_edge(inner.index, bend.index, Label::Outer);
-        bend
+        Ok(bend)
     }
 
     pub fn reattach_bend(&mut self, bend: BendIndex, inner: BendIndex) {
-        if let Some(old_inner_edge) = self.graph.edges_directed(bend.index, Incoming)
+        if let Some(old_inner_edge) = self
+            .graph
+            .edges_directed(bend.index, Incoming)
             .filter(|edge| *edge.weight() == Label::Outer)
             .next()
         {
@@ -104,13 +146,14 @@ impl Mesh {
         self.graph.add_edge(inner.index, bend.index, Label::Outer);
     }
 
-    pub fn extend_bend(&mut self, bend: BendIndex, dot: DotIndex, to: Point) {
+    pub fn extend_bend(&mut self, bend: BendIndex, dot: DotIndex, to: Point) -> Result<(), ()> {
         self.remove_from_rtree(bend.tag());
-        self.move_dot(dot, to);
+        self.move_dot(dot, to)?;
         self.insert_into_rtree(bend.tag());
+        Ok(())
     }
 
-    pub fn move_dot(&mut self, dot: DotIndex, to: Point) {
+    pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), ()> {
         let mut cur_bend = self.primitive(dot).outer();
         loop {
             match cur_bend {
@@ -119,14 +162,24 @@ impl Mesh {
             }
 
             self.remove_from_rtree(cur_bend.unwrap().tag());
-            cur_bend = self.primitive(cur_bend.unwrap()).outer()
+            cur_bend = self.primitive(cur_bend.unwrap()).outer();
         }
 
         self.remove_from_rtree(dot.tag());
 
         let mut dot_weight = self.primitive(dot).weight();
+        let old_weight = dot_weight;
+
         dot_weight.circle.pos = to;
         *self.graph.node_weight_mut(dot.index).unwrap() = TaggedWeight::Dot(dot_weight);
+
+        if let Some(..) = self.detect_collision(&self.primitive(dot).shape()) {
+            // Restore original state.
+            *self.graph.node_weight_mut(dot.index).unwrap() = TaggedWeight::Dot(old_weight);
+            self.insert_into_rtree(dot.tag());
+
+            return Err(());
+        }
 
         self.insert_into_rtree(dot.tag());
 
@@ -138,11 +191,13 @@ impl Mesh {
             }
 
             self.insert_into_rtree(cur_bend.unwrap().tag());
-            cur_bend = self.primitive(cur_bend.unwrap()).outer()
+            cur_bend = self.primitive(cur_bend.unwrap()).outer();
         }
+
+        Ok(())
     }
 
-    pub fn nodes(&self) -> impl Iterator<Item=TaggedIndex> + '_ {
+    pub fn nodes(&self) -> impl Iterator<Item = TaggedIndex> + '_ {
         self.rtree.iter().map(|wrapper| wrapper.data)
     }
 
@@ -152,6 +207,25 @@ impl Mesh {
 
     pub fn bow(&self, bend: BendIndex) -> Bow {
         Bow::new(bend, &self.graph)
+    }
+
+    fn fail_and_remove_if_collides<Weight: std::marker::Copy>(
+        &mut self,
+        index: Index<Weight>,
+    ) -> Result<(), ()> {
+        /*if self.detect_collision(&self.primitive(index).shape()) {
+            self.remove(index);
+            return Err(());
+        }*/
+        Ok(())
+    }
+
+    fn detect_collision(&self, shape: &Shape) -> Option<TaggedIndex> {
+        self.rtree
+            .locate_in_envelope_intersecting(&shape.envelope())
+            .filter(|wrapper| shape.intersects(wrapper.geom()))
+            .map(|wrapper| wrapper.data)
+            .next()
     }
 
     fn insert_into_rtree(&mut self, index: TaggedIndex) {

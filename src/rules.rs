@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct Conditions {
     pub lower_net: Option<i32>,
     pub higher_net: Option<i32>,
@@ -28,12 +28,15 @@ impl Rules {
         let mut me = Self {
             rulesets: Default::default(),
         };
-        me.rulesets[0] = Some(HashMap::from([(Conditions {
-            lower_net: None,
-            higher_net: None,
-            layer: None,
-            zone: None,
-        }, Ruleset::new())]));
+        me.rulesets[0] = Some(HashMap::from([(
+            Conditions {
+                lower_net: None,
+                higher_net: None,
+                layer: None,
+                zone: None,
+            },
+            Ruleset::new(),
+        )]));
         me
     }
 

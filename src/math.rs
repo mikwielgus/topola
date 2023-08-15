@@ -1,5 +1,5 @@
+use geo::{geometry::Point, point, EuclideanDistance};
 use std::ops::Sub;
-use geo::{geometry::Point, EuclideanDistance, point};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Line {
@@ -19,7 +19,10 @@ impl Sub for Circle {
 
     fn sub(self, other: Self) -> Self {
         //return Self{pos: Point{x: self.pos.x() - other.pos.x(), y: self.pos.y() - other.pos.y()}, r: self.r};
-        return Self {pos: self.pos - other.pos, r: self.r};
+        return Self {
+            pos: self.pos - other.pos,
+            r: self.r,
+        };
     }
 }
 
@@ -59,23 +62,43 @@ fn _tangents(circle1: Circle, circle2: Circle) -> [Line; 4] {
 
 fn cast_point_to_line(pt: Point, line: Line) -> Point {
     return (
-        (line.b * (line.b * pt.x() - line.a * pt.y()) - line.a * line.c) / (line.a * line.a + line.b * line.b),
-        (line.a * (-line.b * pt.x() + line.a * pt.y()) - line.b * line.c) / (line.a * line.a + line.b * line.b),
-    ).into();
+        (line.b * (line.b * pt.x() - line.a * pt.y()) - line.a * line.c)
+            / (line.a * line.a + line.b * line.b),
+        (line.a * (-line.b * pt.x() + line.a * pt.y()) - line.b * line.c)
+            / (line.a * line.a + line.b * line.b),
+    )
+        .into();
 }
 
 pub fn tangent_point_pairs(circle1: Circle, circle2: Circle) -> [(Point, Point); 4] {
     let tgs = _tangents(circle1, circle2);
 
     [
-        (cast_point_to_line(circle1.pos, tgs[0]), cast_point_to_line(circle2.pos, tgs[0])),
-        (cast_point_to_line(circle1.pos, tgs[1]), cast_point_to_line(circle2.pos, tgs[1])),
-        (cast_point_to_line(circle1.pos, tgs[2]), cast_point_to_line(circle2.pos, tgs[2])),
-        (cast_point_to_line(circle1.pos, tgs[3]), cast_point_to_line(circle2.pos, tgs[3])),
+        (
+            cast_point_to_line(circle1.pos, tgs[0]),
+            cast_point_to_line(circle2.pos, tgs[0]),
+        ),
+        (
+            cast_point_to_line(circle1.pos, tgs[1]),
+            cast_point_to_line(circle2.pos, tgs[1]),
+        ),
+        (
+            cast_point_to_line(circle1.pos, tgs[2]),
+            cast_point_to_line(circle2.pos, tgs[2]),
+        ),
+        (
+            cast_point_to_line(circle1.pos, tgs[3]),
+            cast_point_to_line(circle2.pos, tgs[3]),
+        ),
     ]
 }
 
-pub fn tangent_point_pair(circle1: Circle, cw1: Option<bool>, circle2: Circle, cw2: Option<bool>) -> (Point, Point) {
+pub fn tangent_point_pair(
+    circle1: Circle,
+    cw1: Option<bool>,
+    circle2: Circle,
+    cw2: Option<bool>,
+) -> (Point, Point) {
     let tangent_point_pairs = tangent_point_pairs(circle1, circle2);
 
     for tangent_point_pair in tangent_point_pairs {
@@ -116,22 +139,19 @@ pub fn circles_intersection(circle1: &Circle, circle2: &Circle) -> Vec<Point> {
     }
 
     // Distance from `circle1.pos` to the intersection of the diagonals.
-    let a = (circle1.r*circle1.r - circle2.r*circle2.r + d*d) / (2.0*d);
+    let a = (circle1.r * circle1.r - circle2.r * circle2.r + d * d) / (2.0 * d);
 
     // Intersection of the diagonals.
-    let p = circle1.pos + delta*(a/d);
-    let h = (circle1.r*circle1.r - a*a).sqrt();
+    let p = circle1.pos + delta * (a / d);
+    let h = (circle1.r * circle1.r - a * a).sqrt();
 
     if h == 0. {
         return [p].into();
     }
 
-    let r = point! {x: -delta.x(), y: delta.y()} * (h/d);
-    
-    [
-        p + r,
-        p - r,
-    ].into()
+    let r = point! {x: -delta.x(), y: delta.y()} * (h / d);
+
+    [p + r, p - r].into()
 }
 
 pub fn between_vectors(v: Point, from: Point, to: Point) -> bool {

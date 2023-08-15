@@ -1,6 +1,6 @@
-use std::marker::PhantomData;
 use enum_as_inner::EnumAsInner;
 use petgraph::stable_graph::NodeIndex;
+use std::marker::PhantomData;
 
 use crate::math::Circle;
 
@@ -42,14 +42,14 @@ pub enum Label {
     Core,
 }
 
-#[derive(Debug, EnumAsInner, Copy, Clone, PartialEq)]
+#[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
 pub enum TaggedIndex {
     Dot(DotIndex),
     Seg(SegIndex),
     Bend(BendIndex),
 }
 
-#[derive(Debug, Copy, Clone, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Index<T> {
     pub index: NodeIndex<usize>,
     marker: PhantomData<T>,
@@ -65,12 +65,18 @@ impl<T> Index<T> {
 
     pub fn retag(&self, weight: TaggedWeight) -> TaggedIndex {
         match weight {
-            TaggedWeight::Dot(..) =>
-                TaggedIndex::Dot(DotIndex {index: self.index, marker: PhantomData}),
-            TaggedWeight::Seg(..) =>
-                TaggedIndex::Seg(SegIndex {index: self.index, marker: PhantomData}),
-            TaggedWeight::Bend(..) =>
-                TaggedIndex::Bend(BendIndex {index: self.index, marker: PhantomData}),
+            TaggedWeight::Dot(..) => TaggedIndex::Dot(DotIndex {
+                index: self.index,
+                marker: PhantomData,
+            }),
+            TaggedWeight::Seg(..) => TaggedIndex::Seg(SegIndex {
+                index: self.index,
+                marker: PhantomData,
+            }),
+            TaggedWeight::Bend(..) => TaggedIndex::Bend(BendIndex {
+                index: self.index,
+                marker: PhantomData,
+            }),
         }
     }
 }
@@ -86,7 +92,7 @@ macro_rules! untag {
             TaggedIndex::Seg($index) => $expr,
             TaggedIndex::Bend($index) => $expr,
         }
-    }
+    };
 }
 
 pub type DotIndex = Index<DotWeight>;
