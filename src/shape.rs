@@ -47,14 +47,14 @@ impl BendShape {
     fn inner_circle(&self) -> Circle {
         Circle {
             pos: self.center,
-            r: self.center.euclidean_distance(&self.from) - self.width / 2.,
+            r: self.center.euclidean_distance(&self.from) - self.width / 2.0,
         }
     }
 
     fn outer_circle(&self) -> Circle {
         Circle {
             pos: self.center,
-            r: self.center.euclidean_distance(&self.from) + self.width / 2.,
+            r: self.center.euclidean_distance(&self.from) + self.width / 2.0,
         }
     }
 }
@@ -97,26 +97,26 @@ impl Shape {
                 Shape::Seg(other) => dot.c.pos.euclidean_distance(&other.polygon()) < dot.c.r,
                 Shape::Bend(other) => {
                     for point in math::circles_intersection(&dot.c, &other.inner_circle()) {
-                        if !math::between_vectors(
+                        if math::between_vectors(
                             point - other.center,
                             other.from - other.center,
                             other.to - other.center,
                         ) {
-                            return false;
+                            return true;
                         }
                     }
 
                     for point in math::circles_intersection(&dot.c, &other.outer_circle()) {
-                        if !math::between_vectors(
+                        if math::between_vectors(
                             point - other.center,
                             other.from - other.center,
                             other.to - other.center,
                         ) {
-                            return false;
+                            return true;
                         }
                     }
 
-                    true
+                    false
                 }
             },
             Shape::Seg(seg) => {
@@ -154,10 +154,13 @@ impl Shape {
                     .collect();
                 AABB::<[f64; 2]>::from_points(points.iter())
             }
-            Shape::Bend(bend) => AABB::<[f64; 2]>::from_points(&[
-                [bend.from.x() - bend.width, bend.from.y() - bend.width],
-                [bend.to.x() + bend.width, bend.to.y() + bend.width],
-            ]),
+            Shape::Bend(bend) => {
+                let halfwidth = bend.center.euclidean_distance(&bend.from).ceil() + bend.width;
+                AABB::from_corners(
+                    [bend.center.x() - halfwidth, bend.center.y() - halfwidth],
+                    [bend.center.x() + halfwidth, bend.center.y() + halfwidth],
+                )
+            }
         }
     }
 

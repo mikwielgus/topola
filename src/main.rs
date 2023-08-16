@@ -191,7 +191,7 @@ fn main() {
         .add_dot(DotWeight {
             net: 0,
             circle: Circle {
-                pos: (190.5, 100.5).into(),
+                pos: (190.5, 200.5).into(),
                 r: 8.0,
             },
         })
@@ -248,7 +248,7 @@ fn main() {
     let _ = layout.add_seg(barrier2_dot1, barrier2_dot2, 16.0);
 
     let head = layout.route_start(dot5);
-    let head = layout.route_around_dot(head, dot6, true, 5.0).unwrap();
+    let head = layout.route_around_dot(head, dot6, false, 5.0).unwrap();
     let _ = layout.route_finish(head, dot7, 5.0);
 
     /*render_times(&mut event_pump, &mut canvas, &mut layout, None, -1);
