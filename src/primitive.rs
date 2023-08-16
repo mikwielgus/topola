@@ -49,6 +49,12 @@ impl<'a, Weight> Primitive<'a, Weight> {
         }
     }
 
+    pub fn neighbors(&self) -> impl Iterator<Item = TaggedIndex> + '_ {
+        self.graph
+            .neighbors_undirected(self.index.index)
+            .map(|index| Index::<Label>::new(index).retag(self.graph.node_weight(index).unwrap()))
+    }
+
     pub fn next(&self) -> Option<TaggedIndex> {
         self.graph
             .neighbors_directed(self.index.index, Outgoing)
@@ -58,7 +64,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
                     .unwrap()
                     .is_end()
             })
-            .map(|ni| Index::<Label>::new(ni).retag(*self.graph.node_weight(ni).unwrap()))
+            .map(|ni| Index::<Label>::new(ni).retag(self.graph.node_weight(ni).unwrap()))
             .next()
     }
 
@@ -98,7 +104,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
                     .unwrap()
                     .is_end()
             })
-            .map(|ni| Index::<Label>::new(ni).retag(*self.graph.node_weight(ni).unwrap()))
+            .map(|ni| Index::<Label>::new(ni).retag(self.graph.node_weight(ni).unwrap()))
             .next()
     }
 
@@ -144,7 +150,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
 
     pub fn tagged_index(&self) -> TaggedIndex {
         self.index
-            .retag(*self.graph.node_weight(self.index.index).unwrap())
+            .retag(self.graph.node_weight(self.index.index).unwrap())
     }
 
     pub fn tagged_weight(&self) -> TaggedWeight {

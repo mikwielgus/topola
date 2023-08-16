@@ -63,7 +63,7 @@ impl<T> Index<T> {
         }
     }
 
-    pub fn retag(&self, weight: TaggedWeight) -> TaggedIndex {
+    pub fn retag(&self, weight: &TaggedWeight) -> TaggedIndex {
         match weight {
             TaggedWeight::Dot(..) => TaggedIndex::Dot(DotIndex {
                 index: self.index,

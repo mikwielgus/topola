@@ -45,14 +45,14 @@ impl Mesh {
         // Unnecessary retag. It should be possible to elide it.
         let weight = *self.graph.node_weight(index.index).unwrap();
 
-        let wrapper = RTreeWrapper::new(self.primitive(index).shape(), index.retag(weight));
+        let wrapper = RTreeWrapper::new(self.primitive(index).shape(), index.retag(&weight));
         assert!(self.rtree.remove(&wrapper).is_some());
         self.graph.remove_node(index.index);
     }
 
     pub fn add_dot(&mut self, weight: DotWeight) -> Result<DotIndex, ()> {
         let dot = DotIndex::new(self.graph.add_node(TaggedWeight::Dot(weight)));
-        self.fail_and_remove_if_collides(dot)?;
+        //self.fail_and_remove_if_collides_except(dot, &[])?;
 
         self.rtree.insert(RTreeWrapper::new(
             self.primitive(dot).shape(),
@@ -68,11 +68,11 @@ impl Mesh {
         weight: SegWeight,
     ) -> Result<SegIndex, ()> {
         let seg = SegIndex::new(self.graph.add_node(TaggedWeight::Seg(weight)));
-        self.fail_and_remove_if_collides(seg)?;
 
         self.graph.add_edge(from.index, seg.index, Label::End);
         self.graph.add_edge(seg.index, to.index, Label::End);
 
+        //self.fail_and_remove_if_collides_except(seg, &[from.tag(), to.tag()])?;
         self.insert_into_rtree(seg.tag());
         Ok(seg)
     }
@@ -99,7 +99,7 @@ impl Mesh {
         weight: BendWeight,
     ) -> Result<BendIndex, ()> {
         let bend = BendIndex::new(self.graph.add_node(TaggedWeight::Bend(weight)));
-        self.fail_and_remove_if_collides(bend)?;
+        //self.fail_and_remove_if_collides_except(bend, &[from.tag(), to.tag(), core.tag()])?;
 
         self.graph.add_edge(from.index, bend.index, Label::End);
         self.graph.add_edge(bend.index, to.index, Label::End);
@@ -173,7 +173,7 @@ impl Mesh {
         dot_weight.circle.pos = to;
         *self.graph.node_weight_mut(dot.index).unwrap() = TaggedWeight::Dot(dot_weight);
 
-        if let Some(..) = self.detect_collision(&self.primitive(dot).shape()) {
+        if let Some(..) = self.detect_collision_except(dot, &[]) {
             // Restore original state.
             *self.graph.node_weight_mut(dot.index).unwrap() = TaggedWeight::Dot(old_weight);
             self.insert_into_rtree(dot.tag());
@@ -209,20 +209,34 @@ impl Mesh {
         Bow::new(bend, &self.graph)
     }
 
-    fn fail_and_remove_if_collides<Weight: std::marker::Copy>(
+    fn fail_and_remove_if_collides_except<Weight: std::marker::Copy>(
         &mut self,
         index: Index<Weight>,
+        except: &[TaggedIndex],
     ) -> Result<(), ()> {
-        /*if self.detect_collision(&self.primitive(index).shape()) {
+        if let Some(..) = self.detect_collision_except(index, except) {
             self.remove(index);
             return Err(());
-        }*/
+        }
         Ok(())
     }
 
-    fn detect_collision(&self, shape: &Shape) -> Option<TaggedIndex> {
+    fn detect_collision_except<Weight: std::marker::Copy>(
+        &self,
+        index: Index<Weight>,
+        except: &[TaggedIndex],
+    ) -> Option<TaggedIndex> {
+        let primitive = self.primitive(index);
+        let shape = primitive.shape();
+
         self.rtree
             .locate_in_envelope_intersecting(&shape.envelope())
+            .filter(|wrapper| {
+                !primitive
+                    .neighbors()
+                    .any(|neighbor| neighbor == wrapper.data)
+            })
+            .filter(|wrapper| !except.contains(&wrapper.data))
             .filter(|wrapper| shape.intersects(wrapper.geom()))
             .map(|wrapper| wrapper.data)
             .next()
