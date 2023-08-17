@@ -57,6 +57,14 @@ impl BendShape {
             r: self.center.euclidean_distance(&self.from) + self.width / 2.0,
         }
     }
+
+    fn between_ends(&self, point: Point) -> bool {
+        math::between_vectors(
+            point - self.center,
+            self.from - self.center,
+            self.to - self.center,
+        )
+    }
 }
 
 #[derive(Debug, PartialEq)]
@@ -96,22 +104,14 @@ impl Shape {
                 }
                 Shape::Seg(other) => dot.c.pos.euclidean_distance(&other.polygon()) < dot.c.r,
                 Shape::Bend(other) => {
-                    for point in math::circles_intersection(&dot.c, &other.inner_circle()) {
-                        if math::between_vectors(
-                            point - other.center,
-                            other.from - other.center,
-                            other.to - other.center,
-                        ) {
+                    for point in math::intersect_circles(&dot.c, &other.inner_circle()) {
+                        if other.between_ends(point) {
                             return true;
                         }
                     }
 
-                    for point in math::circles_intersection(&dot.c, &other.outer_circle()) {
-                        if math::between_vectors(
-                            point - other.center,
-                            other.from - other.center,
-                            other.to - other.center,
-                        ) {
+                    for point in math::intersect_circles(&dot.c, &other.outer_circle()) {
+                        if other.between_ends(point) {
                             return true;
                         }
                     }
@@ -119,23 +119,68 @@ impl Shape {
                     false
                 }
             },
-            Shape::Seg(seg) => {
-                match other {
-                    Shape::Dot(..) => unreachable!(),
-                    Shape::Seg(other) => seg.polygon().intersects(&other.polygon()),
-                    Shape::Bend(other) => {
-                        false // TODO.
+            Shape::Seg(seg) => match other {
+                Shape::Dot(..) => unreachable!(),
+                Shape::Seg(other) => seg.polygon().intersects(&other.polygon()),
+                Shape::Bend(other) => {
+                    for segment in seg.polygon().exterior().lines() {
+                        let inner_circle = other.inner_circle();
+                        let outer_circle = other.outer_circle();
+
+                        for point in math::intersect_circle_segment(&inner_circle, &segment) {
+                            if other.between_ends(point) {
+                                return true;
+                            }
+                        }
+
+                        for point in math::intersect_circle_segment(&outer_circle, &segment) {
+                            if other.between_ends(point) {
+                                return true;
+                            }
+                        }
                     }
+
+                    false
                 }
-            }
-            Shape::Bend(bend) => {
-                match other {
-                    Shape::Dot(..) | Shape::Seg(..) => unreachable!(),
-                    Shape::Bend(other) => {
-                        false // TODO.
+            },
+            Shape::Bend(bend) => match other {
+                Shape::Dot(..) | Shape::Seg(..) => unreachable!(),
+                Shape::Bend(other) => {
+                    for point in
+                        math::intersect_circles(&bend.inner_circle(), &other.inner_circle())
+                    {
+                        if bend.between_ends(point) && other.between_ends(point) {
+                            return true;
+                        }
                     }
+
+                    for point in
+                        math::intersect_circles(&bend.inner_circle(), &other.outer_circle())
+                    {
+                        if bend.between_ends(point) && other.between_ends(point) {
+                            return true;
+                        }
+                    }
+
+                    for point in
+                        math::intersect_circles(&bend.outer_circle(), &other.inner_circle())
+                    {
+                        if bend.between_ends(point) && other.between_ends(point) {
+                            return true;
+                        }
+                    }
+
+                    for point in
+                        math::intersect_circles(&bend.outer_circle(), &other.outer_circle())
+                    {
+                        if bend.between_ends(point) && other.between_ends(point) {
+                            return true;
+                        }
+                    }
+
+                    false
                 }
-            }
+            },
         }
     }
 
