@@ -402,4 +402,15 @@ impl Layout {
             .nodes()
             .map(|ni| untag!(ni, self.mesh.primitive(ni).shape()))
     }
+
+    pub fn edges(&self) -> impl Iterator<Item = (Point, Point)> + '_ {
+        self.mesh.edges().map(|endpoints| {
+            let index0 = endpoints.0;
+            let index1 = endpoints.1;
+            (
+                untag!(index0, self.mesh.primitive(index0).shape().center()),
+                untag!(index1, self.mesh.primitive(index1).shape().center()),
+            )
+        })
+    }
 }

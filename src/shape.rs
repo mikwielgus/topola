@@ -1,5 +1,3 @@
-use std::mem;
-
 use geo::{point, polygon, EuclideanDistance, Intersects, Point, Polygon, Rotate};
 use rstar::{RTreeObject, AABB};
 
@@ -21,10 +19,10 @@ pub struct SegShape {
 impl SegShape {
     fn polygon(&self) -> Polygon {
         let tangent_vector = self.to - self.from;
-        let tangent_vector_norm = tangent_vector.euclidean_distance(&point! {x: 0., y: 0.});
+        let tangent_vector_norm = tangent_vector.euclidean_distance(&point! {x: 0.0, y: 0.0});
         let unit_tangent_vector = tangent_vector / tangent_vector_norm;
 
-        let normal = unit_tangent_vector.rotate_around_point(-90., point! {x: 0., y: 0.});
+        let normal = unit_tangent_vector.rotate_around_point(-90., point! {x: 0.0, y: 0.0});
 
         let p1 = self.from - normal * (self.width / 2.);
         let p2 = self.from + normal * (self.width / 2.);
@@ -81,6 +79,19 @@ impl Shape {
             Shape::Dot(dot) => dot.c.pos,
             Shape::Seg(seg) => seg.from,
             Shape::Bend(bend) => bend.from,
+        }
+    }
+
+    pub fn center(&self) -> Point {
+        match self {
+            Shape::Dot(dot) => dot.c.pos,
+            Shape::Seg(seg) => (seg.from + seg.to) / 2.0,
+            Shape::Bend(bend) => {
+                let sum = (bend.from - bend.center) + (bend.to - bend.center);
+                let r = bend.from.euclidean_distance(&bend.center);
+
+                bend.center + (sum / sum.euclidean_distance(&point! {x: 0.0, y: 0.0})) * r
+            }
         }
     }
 

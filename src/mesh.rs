@@ -213,6 +213,18 @@ impl Mesh {
         self.rtree.iter().map(|wrapper| wrapper.data)
     }
 
+    pub fn edges(&self) -> impl Iterator<Item = (TaggedIndex, TaggedIndex)> + '_ {
+        self.graph.edge_indices().map(|edge| {
+            let endpoints = self.graph.edge_endpoints(edge).unwrap();
+            (
+                Index::<Label>::new(endpoints.0)
+                    .retag(self.graph.node_weight(endpoints.0).unwrap()),
+                Index::<Label>::new(endpoints.1)
+                    .retag(self.graph.node_weight(endpoints.1).unwrap()),
+            )
+        })
+    }
+
     pub fn primitive<Weight>(&self, index: Index<Weight>) -> Primitive<Weight> {
         Primitive::new(index, &self.graph)
     }

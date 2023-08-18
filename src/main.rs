@@ -412,6 +412,17 @@ fn render_times(
                     Color::RGB(100, 100, 100),
                 );
             }
+
+            for edge in layout.edges() {
+                dbg!(edge);
+                let _ = canvas.line(
+                    edge.0.x() as i16,
+                    edge.0.y() as i16,
+                    edge.1.x() as i16,
+                    edge.1.y() as i16,
+                    Color::RGB(250, 250, 250),
+                );
+            }
         });
 
         if let Err(err) = result {
