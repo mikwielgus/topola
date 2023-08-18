@@ -52,12 +52,10 @@ impl Mesh {
 
     pub fn add_dot(&mut self, weight: DotWeight) -> Result<DotIndex, ()> {
         let dot = DotIndex::new(self.graph.add_node(TaggedWeight::Dot(weight)));
-        //self.fail_and_remove_if_collides_except(dot, &[])?;
 
-        self.rtree.insert(RTreeWrapper::new(
-            self.primitive(dot).shape(),
-            TaggedIndex::Dot(dot),
-        ));
+        self.fail_and_remove_if_collides_except(dot, &[])?;
+        self.insert_into_rtree(dot.tag());
+
         Ok(dot)
     }
 
@@ -72,8 +70,22 @@ impl Mesh {
         self.graph.add_edge(from.index, seg.index, Label::End);
         self.graph.add_edge(seg.index, to.index, Label::End);
 
-        //self.fail_and_remove_if_collides_except(seg, &[from.tag(), to.tag()])?;
+        self.fail_and_remove_if_collides_except(seg, &[from.tag(), to.tag()])?;
         self.insert_into_rtree(seg.tag());
+
+        self.graph
+            .node_weight_mut(from.index)
+            .unwrap()
+            .as_dot_mut()
+            .unwrap()
+            .net = weight.net;
+        self.graph
+            .node_weight_mut(to.index)
+            .unwrap()
+            .as_dot_mut()
+            .unwrap()
+            .net = weight.net;
+
         Ok(seg)
     }
 
@@ -99,12 +111,12 @@ impl Mesh {
         weight: BendWeight,
     ) -> Result<BendIndex, ()> {
         let bend = BendIndex::new(self.graph.add_node(TaggedWeight::Bend(weight)));
-        //self.fail_and_remove_if_collides_except(bend, &[from.tag(), to.tag(), core.tag()])?;
 
         self.graph.add_edge(from.index, bend.index, Label::End);
         self.graph.add_edge(bend.index, to.index, Label::End);
         self.graph.add_edge(bend.index, core.index, Label::Core);
 
+        self.fail_and_remove_if_collides_except(bend, &[from.tag(), to.tag(), core.tag()])?;
         self.insert_into_rtree(bend.tag());
         Ok(bend)
     }
@@ -232,9 +244,8 @@ impl Mesh {
         self.rtree
             .locate_in_envelope_intersecting(&shape.envelope())
             .filter(|wrapper| {
-                !primitive
-                    .neighbors()
-                    .any(|neighbor| neighbor == wrapper.data)
+                let index = wrapper.data;
+                !untag!(index, primitive.connectable(index))
             })
             .filter(|wrapper| !except.contains(&wrapper.data))
             .filter(|wrapper| shape.intersects(wrapper.geom()))

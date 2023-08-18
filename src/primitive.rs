@@ -148,6 +148,27 @@ impl<'a, Weight> Primitive<'a, Weight> {
             .next()
     }
 
+    pub fn connectable<W>(&self, index: Index<W>) -> bool {
+        let this = self.net(&self.index);
+        let other = self.net(&index);
+
+        if this == -1 || other == -1 {
+            true
+        } else if this == -2 || other == -2 {
+            false
+        } else {
+            this == other
+        }
+    }
+
+    fn net<W>(&self, index: &Index<W>) -> i64 {
+        match self.graph.node_weight(index.index).unwrap() {
+            TaggedWeight::Dot(dot) => dot.net,
+            TaggedWeight::Seg(seg) => seg.net,
+            TaggedWeight::Bend(bend) => bend.net,
+        }
+    }
+
     pub fn tagged_index(&self) -> TaggedIndex {
         self.index
             .retag(self.graph.node_weight(self.index.index).unwrap())

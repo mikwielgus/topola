@@ -2,19 +2,19 @@ use std::collections::HashMap;
 
 #[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct Conditions {
-    pub lower_net: Option<i32>,
-    pub higher_net: Option<i32>,
-    pub layer: Option<i32>,
-    pub zone: Option<i32>,
+    pub lower_net: Option<i64>,
+    pub higher_net: Option<i64>,
+    pub layer: Option<i64>,
+    pub zone: Option<i64>,
 }
 
 impl Conditions {
-    pub fn priority(&self) -> i32 {
+    pub fn priority(&self) -> i64 {
         let mut priority = 0;
-        priority += (self.lower_net.is_some() as i32) * 1;
-        priority += (self.higher_net.is_some() as i32) * 2;
-        priority += (self.layer.is_some() as i32) * 4;
-        priority += (self.zone.is_some() as i32) * 8;
+        priority += (self.lower_net.is_some() as i64) * 1;
+        priority += (self.higher_net.is_some() as i64) * 2;
+        priority += (self.layer.is_some() as i64) * 4;
+        priority += (self.zone.is_some() as i64) * 8;
         priority
     }
 }

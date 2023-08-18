@@ -19,19 +19,19 @@ pub enum TaggedWeight {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DotWeight {
-    pub net: i32,
+    pub net: i64,
     pub circle: Circle,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BendWeight {
-    pub net: i32,
+    pub net: i64,
     pub cw: bool,
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SegWeight {
-    pub net: i32,
+    pub net: i64,
     pub width: f64,
 }
 

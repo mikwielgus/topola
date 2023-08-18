@@ -105,7 +105,7 @@ fn main() {
 
     let dot1_1 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 1,
             circle: Circle {
                 pos: (100.5, 400.5).into(),
                 r: 8.0,
@@ -114,7 +114,7 @@ fn main() {
         .unwrap();
     let dot2_1 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 2,
             circle: Circle {
                 pos: (130.5, 430.5).into(),
                 r: 8.0,
@@ -123,7 +123,7 @@ fn main() {
         .unwrap();
     let dot3_1 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 3,
             circle: Circle {
                 pos: (160.5, 460.5).into(),
                 r: 8.0,
@@ -132,7 +132,7 @@ fn main() {
         .unwrap();
     let dot4_1 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 4,
             circle: Circle {
                 pos: (190.5, 490.5).into(),
                 r: 8.0,
@@ -142,7 +142,7 @@ fn main() {
 
     let dot1_2 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 1,
             circle: Circle {
                 pos: (700.5, 400.5).into(),
                 r: 8.0,
@@ -151,7 +151,7 @@ fn main() {
         .unwrap();
     let dot2_2 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 2,
             circle: Circle {
                 pos: (670.5, 430.5).into(),
                 r: 8.0,
@@ -160,7 +160,7 @@ fn main() {
         .unwrap();
     let dot3_2 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 3,
             circle: Circle {
                 pos: (640.5, 460.5).into(),
                 r: 8.0,
@@ -169,7 +169,7 @@ fn main() {
         .unwrap();
     let dot4_2 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 4,
             circle: Circle {
                 pos: (610.5, 490.5).into(),
                 r: 8.0,
@@ -179,7 +179,7 @@ fn main() {
 
     let dot5 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 5,
             circle: Circle {
                 pos: (150.5, 100.5).into(),
                 r: 8.0,
@@ -189,7 +189,7 @@ fn main() {
 
     let dot6 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 6,
             circle: Circle {
                 pos: (190.5, 200.5).into(),
                 r: 8.0,
@@ -199,7 +199,7 @@ fn main() {
 
     let dot7 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 5,
             circle: Circle {
                 pos: (230.5, 70.5).into(),
                 r: 8.0,
@@ -209,7 +209,7 @@ fn main() {
 
     let barrier1_dot1 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 10,
             circle: Circle {
                 pos: (250.5, 250.5).into(),
                 r: 8.0,
@@ -218,7 +218,7 @@ fn main() {
         .unwrap();
     let barrier1_dot2 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 10,
             circle: Circle {
                 pos: (250.5, 700.5).into(),
                 r: 8.0,
@@ -229,7 +229,7 @@ fn main() {
 
     let barrier2_dot1 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 20,
             circle: Circle {
                 pos: (420.5, 200.5).into(),
                 r: 8.0,
@@ -238,7 +238,7 @@ fn main() {
         .unwrap();
     let barrier2_dot2 = layout
         .add_dot(DotWeight {
-            net: 0,
+            net: 20,
             circle: Circle {
                 pos: (480.5, 700.5).into(),
                 r: 8.0,
