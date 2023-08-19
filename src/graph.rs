@@ -40,6 +40,7 @@ pub enum Label {
     End,
     Outer,
     Core,
+    Peer,
 }
 
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]

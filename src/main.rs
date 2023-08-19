@@ -414,7 +414,6 @@ fn render_times(
             }
 
             for edge in layout.edges() {
-                dbg!(edge);
                 let _ = canvas.line(
                     edge.0.x() as i16,
                     edge.0.y() as i16,

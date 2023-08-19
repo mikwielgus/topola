@@ -1,9 +1,10 @@
 use geo::Point;
-use petgraph::stable_graph::StableDiGraph;
+use petgraph::stable_graph::{EdgeIndex, NodeIndex, StableDiGraph};
 use petgraph::visit::EdgeRef;
 use petgraph::Direction::Incoming;
 use rstar::primitives::GeomWithData;
 use rstar::RTree;
+use spade::{DelaunayTriangulation, HasPosition, Point2, Triangulation};
 
 use crate::bow::Bow;
 use crate::graph::{
@@ -55,6 +56,7 @@ impl Mesh {
 
         self.fail_and_remove_if_collides_except(dot, &[])?;
         self.insert_into_rtree(dot.tag());
+        self.triangulate();
 
         Ok(dot)
     }
@@ -118,6 +120,7 @@ impl Mesh {
 
         self.fail_and_remove_if_collides_except(bend, &[from.tag(), to.tag(), core.tag()])?;
         self.insert_into_rtree(bend.tag());
+        self.triangulate();
         Ok(bend)
     }
 
@@ -162,6 +165,7 @@ impl Mesh {
         self.remove_from_rtree(bend.tag());
         self.move_dot(dot, to)?;
         self.insert_into_rtree(bend.tag());
+        self.triangulate();
         Ok(())
     }
 
@@ -194,6 +198,7 @@ impl Mesh {
         }
 
         self.insert_into_rtree(dot.tag());
+        self.triangulate();
 
         let mut cur_bend = self.primitive(dot).outer();
         loop {
@@ -231,6 +236,67 @@ impl Mesh {
 
     pub fn bow(&self, bend: BendIndex) -> Bow {
         Bow::new(bend, &self.graph)
+    }
+
+    fn triangulate(&mut self) {
+        /*for edge_index in self.graph.edge_indices() {
+            if *self.graph.edge_weight(edge_index).unwrap() == Label::Peer {
+                self.graph.remove_edge(edge_index);
+            }
+        }*/
+        /*for (edge_index, edge) in self.graph.raw_edges().iter().enumerate() {
+            self.graph.remove_edge(edge_index);
+        }*/
+
+        let peer_edge_indices: Vec<EdgeIndex<usize>> = self
+            .graph
+            .edge_indices()
+            .filter(|index| *self.graph.edge_weight(*index).unwrap() == Label::Peer)
+            .collect();
+
+        for edge_index in peer_edge_indices {
+            self.graph.remove_edge(edge_index);
+        }
+
+        struct TriangulationVertex {
+            pub index: NodeIndex<usize>,
+            x: f64,
+            y: f64,
+        }
+
+        impl HasPosition for TriangulationVertex {
+            type Scalar = f64;
+            fn position(&self) -> Point2<Self::Scalar> {
+                Point2::new(self.x, self.y)
+            }
+        }
+
+        let mut triangulation: DelaunayTriangulation<_> = DelaunayTriangulation::new();
+
+        for node_index in self
+            .graph
+            .node_indices()
+            .filter(|index| self.graph.node_weight(*index).unwrap().is_dot())
+        {
+            let center = self
+                .primitive(Index::<Label>::new(node_index))
+                .shape()
+                .center();
+            triangulation
+                .insert(TriangulationVertex {
+                    index: node_index,
+                    x: center.x(),
+                    y: center.y(),
+                })
+                .unwrap();
+        }
+
+        for edge in triangulation.directed_edges() {
+            let from = edge.from().as_ref().index;
+            let to = edge.to().as_ref().index;
+            dbg!(from, to);
+            self.graph.add_edge(from, to, Label::Peer);
+        }
     }
 
     fn fail_and_remove_if_collides_except<Weight: std::marker::Copy>(
