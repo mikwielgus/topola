@@ -294,7 +294,6 @@ impl Mesh {
         for edge in triangulation.directed_edges() {
             let from = edge.from().as_ref().index;
             let to = edge.to().as_ref().index;
-            dbg!(from, to);
             self.graph.add_edge(from, to, Label::Peer);
         }
     }

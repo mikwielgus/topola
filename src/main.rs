@@ -216,7 +216,7 @@ fn main() {
             },
         })
         .unwrap();
-    let barrier1_dot2 = layout
+    /*let barrier1_dot2 = layout
         .add_dot(DotWeight {
             net: 10,
             circle: Circle {
@@ -225,7 +225,7 @@ fn main() {
             },
         })
         .unwrap();
-    let _ = layout.add_seg(barrier1_dot1, barrier1_dot2, 16.0);
+    let _ = layout.add_seg(barrier1_dot1, barrier1_dot2, 16.0);*/
 
     let barrier2_dot1 = layout
         .add_dot(DotWeight {
@@ -381,9 +381,8 @@ fn render_times(
                         );
                     }
                     Shape::Bend(bend) => {
-                        let delta1 = bend.from - bend.center;
-                        let delta2 = bend.to - bend.center;
-                        let r = bend.from.euclidean_distance(&bend.center);
+                        let delta1 = bend.from - bend.c.pos;
+                        let delta2 = bend.to - bend.c.pos;
 
                         let mut angle1 = delta1.y().atan2(delta1.x());
                         let mut angle2 = delta2.y().atan2(delta2.x());
@@ -392,10 +391,10 @@ fn render_times(
                             let _ = canvas.arc(
                                 //around_circle.pos.x() as i16,
                                 //around_circle.pos.y() as i16,
-                                bend.center.x() as i16,
-                                bend.center.y() as i16,
+                                bend.c.pos.x() as i16,
+                                bend.c.pos.y() as i16,
                                 //(shape.around_weight.unwrap().circle.r + 10.0 + (d as f64)) as i16,
-                                (r + (d as f64)) as i16,
+                                (bend.circle().r + (d as f64)) as i16,
                                 angle1.to_degrees() as i16,
                                 angle2.to_degrees() as i16,
                                 Color::RGB(200, 52, 52),

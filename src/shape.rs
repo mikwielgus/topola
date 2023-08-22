@@ -37,30 +37,34 @@ impl SegShape {
 pub struct BendShape {
     pub from: Point,
     pub to: Point,
-    pub center: Point,
+    pub c: Circle,
     pub width: f64,
 }
 
 impl BendShape {
-    fn inner_circle(&self) -> Circle {
+    pub fn inner_circle(&self) -> Circle {
+        self.c
+    }
+
+    pub fn circle(&self) -> Circle {
         Circle {
-            pos: self.center,
-            r: self.center.euclidean_distance(&self.from) - self.width / 2.0,
+            pos: self.c.pos,
+            r: self.c.r + self.width / 2.0,
         }
     }
 
-    fn outer_circle(&self) -> Circle {
+    pub fn outer_circle(&self) -> Circle {
         Circle {
-            pos: self.center,
-            r: self.center.euclidean_distance(&self.from) + self.width / 2.0,
+            pos: self.c.pos,
+            r: self.c.r + self.width,
         }
     }
 
     fn between_ends(&self, point: Point) -> bool {
         math::between_vectors(
-            point - self.center,
-            self.from - self.center,
-            self.to - self.center,
+            point - self.c.pos,
+            self.from - self.c.pos,
+            self.to - self.c.pos,
         )
     }
 }
@@ -87,10 +91,8 @@ impl Shape {
             Shape::Dot(dot) => dot.c.pos,
             Shape::Seg(seg) => (seg.from + seg.to) / 2.0,
             Shape::Bend(bend) => {
-                let sum = (bend.from - bend.center) + (bend.to - bend.center);
-                let r = bend.from.euclidean_distance(&bend.center);
-
-                bend.center + (sum / sum.euclidean_distance(&point! {x: 0.0, y: 0.0})) * r
+                let sum = (bend.from - bend.c.pos) + (bend.to - bend.c.pos);
+                bend.c.pos + (sum / sum.euclidean_distance(&point! {x: 0.0, y: 0.0})) * bend.c.r
             }
         }
     }
@@ -211,10 +213,10 @@ impl Shape {
                 AABB::<[f64; 2]>::from_points(points.iter())
             }
             Shape::Bend(bend) => {
-                let halfwidth = bend.center.euclidean_distance(&bend.from).ceil() + bend.width;
+                let halfwidth = bend.c.r + bend.width;
                 AABB::from_corners(
-                    [bend.center.x() - halfwidth, bend.center.y() - halfwidth],
-                    [bend.center.x() + halfwidth, bend.center.y() + halfwidth],
+                    [bend.c.pos.x() - halfwidth, bend.c.pos.y() - halfwidth],
+                    [bend.c.pos.x() + halfwidth, bend.c.pos.y() + halfwidth],
                 )
             }
         }

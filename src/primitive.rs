@@ -7,7 +7,7 @@ use crate::graph::{
     BendIndex, BendWeight, DotIndex, DotWeight, Index, Label, Path, SegIndex, SegWeight, Tag,
     TaggedIndex, TaggedWeight,
 };
-use crate::math;
+use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape};
 
 #[derive(Debug)]
@@ -34,10 +34,14 @@ impl<'a, Weight> Primitive<'a, Weight> {
             }
             TaggedWeight::Bend(bend) => {
                 let ends = self.ends();
+
                 let mut bend_shape = BendShape {
                     from: self.primitive(ends[0]).weight().circle.pos,
                     to: self.primitive(ends[1]).weight().circle.pos,
-                    center: self.primitive(self.core().unwrap()).weight().circle.pos,
+                    c: Circle {
+                        pos: self.primitive(self.core().unwrap()).weight().circle.pos,
+                        r: self.inner_radius(),
+                    },
                     width: self.primitive(ends[0]).weight().circle.r * 2.0,
                 };
 
@@ -47,6 +51,27 @@ impl<'a, Weight> Primitive<'a, Weight> {
                 Shape::Bend(bend_shape)
             }
         }
+    }
+
+    fn inner_radius(&self) -> f64 {
+        let mut r = 0.0;
+        let mut layer = BendIndex::new(self.index.index);
+
+        while let Some(inner) = self.primitive(layer).inner() {
+            r += self.primitive(inner).shape().width();
+            layer = inner;
+        }
+
+        let core_circle = self
+            .primitive(
+                self.primitive(BendIndex::new(self.index.index))
+                    .core()
+                    .unwrap(),
+            )
+            .weight()
+            .circle;
+
+        core_circle.r + r + 5.0
     }
 
     pub fn neighbors(&self) -> impl Iterator<Item = TaggedIndex> + '_ {
