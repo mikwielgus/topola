@@ -56,7 +56,7 @@ fn main() {
     let mut layout = Layout::new();
 
     /*let index = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (150.5, 80.5).into(), r: 8.0}});
-    //layout.route_seg(index, Point {x: 400.5, y: 350.5}, 6.0);
+    //layout.draw_seg(index, Point {x: 400.5, y: 350.5}, 6.0);
 
     let index2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (180.5, 150.5).into(), r: 8.0}});
     let barrier1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (90.5, 150.5).into(), r: 8.0}});
@@ -66,11 +66,11 @@ fn main() {
     let barrier2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (190.5, 250.5).into(), r: 8.0}});
     layout.add_seg(index3, barrier2, 16.0);
 
-    let index4 = layout.route_around_dot(index, index2, true, 5.0);
-    let index5 = layout.route_around_dot(index4, index3, false, 5.0);
+    let index4 = layout.draw_around_dot(index, index2, true, 5.0);
+    let index5 = layout.draw_around_dot(index4, index3, false, 5.0);
 
     let index6 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (140.5, 300.5).into(), r: 8.0}});
-    let index7 = layout.route_to(index5, index6, 5.0);*/
+    let index7 = layout.draw_to(index5, index6, 5.0);*/
 
     /*let dot1 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (100.5, 150.5).into(), r: 8.0}});
     let dot2 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (130.5, 150.5).into(), r: 8.0}});
@@ -84,25 +84,25 @@ fn main() {
     let dot5 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (220.5, 380.5).into(), r: 8.0}});
     let dot6 = layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (290.5, 380.5).into(), r: 8.0}});
 
-    let head = layout.route_start(dot3);
-    let head = layout.route_around_dot(head, obstacle_dot1, true, 5.0);
+    let head = layout.draw_start(dot3);
+    let head = layout.draw_around_dot(head, obstacle_dot1, true, 5.0);
     let dot3_1 = head.dot;
     let bend3_1 = head.bend.unwrap();
-    layout.route_finish(head, dot4, 5.0);
+    layout.draw_finish(head, dot4, 5.0);
 
-    let head = layout.route_start(dot2);
-    let head = layout.route_around_dot(head, dot3, true, 5.0);
+    let head = layout.draw_start(dot2);
+    let head = layout.draw_around_dot(head, dot3, true, 5.0);
     let dot2_1 = head.dot;
     let bend2_1 = head.bend.unwrap();
-    let head = layout.route_around_bend(head, bend3_1, true, 5.0);
+    let head = layout.draw_around_bend(head, bend3_1, true, 5.0);
     let dot2_2 = head.dot;
     let bend2_2 = head.bend.unwrap();
-    layout.route_finish(head, dot5, 5.0);
+    layout.draw_finish(head, dot5, 5.0);
 
-    let head = layout.route_start(dot1);
-    let head = layout.route_around_bend(head, bend2_1, true, 5.0);
-    let head = layout.route_around_bend(head, bend2_2, true, 5.0);
-    layout.route_finish(head, dot6, 5.0);*/
+    let head = layout.draw_start(dot1);
+    let head = layout.draw_around_bend(head, bend2_1, true, 5.0);
+    let head = layout.draw_around_bend(head, bend2_2, true, 5.0);
+    layout.draw_finish(head, dot6, 5.0);*/
 
     let dot1_1 = layout
         .add_dot(DotWeight {
@@ -248,73 +248,73 @@ fn main() {
         .unwrap();
     let _ = layout.add_seg(barrier2_dot1, barrier2_dot2, 16.0);
 
-    let head = layout.route_start(dot5);
-    let head = layout.route_around_dot(head, dot6, false, 5.0).unwrap();
-    let _ = layout.route_finish(head, dot7, 5.0);
+    let head = layout.draw_start(dot5);
+    let head = layout.draw_around_dot(head, dot6, false, 5.0).unwrap();
+    let _ = layout.draw_finish(head, dot7, 5.0);
 
     /*render_times(&mut event_pump, &mut canvas, &mut layout, None, -1);
 
-    let head = layout.route_start(dot1_1);
+    let head = layout.draw_start(dot1_1);
     let head = layout
-        .route_around_dot(head, barrier1_dot1, true, 5.0)
+        .draw_around_dot(head, barrier1_dot1, true, 5.0)
         .unwrap();
 
     render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
     let head = layout
-        .route_around_dot(head, barrier2_dot1, true, 5.0)
+        .draw_around_dot(head, barrier2_dot1, true, 5.0)
         .unwrap();
 
     render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
-    layout.route_finish(head, dot1_2, 5.0).unwrap();
+    layout.draw_finish(head, dot1_2, 5.0).unwrap();
 
     render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
 
-    let head = layout.route_start(dot2_1);
+    let head = layout.draw_start(dot2_1);
     let head = layout
-        .shove_around_dot(head, barrier1_dot1, true, 5.0)
-        .unwrap();
-
-    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
-    let head = layout
-        .shove_around_dot(head, barrier2_dot1, true, 5.0)
-        .unwrap();
-
-    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
-    let _ = layout.route_finish(head, dot2_2, 5.0);
-
-    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
-
-    let head = layout.route_start(dot3_1);
-
-    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
-    let head = layout
-        .shove_around_dot(head, barrier1_dot1, true, 5.0)
+        .squeeze_around_dot(head, barrier1_dot1, true, 5.0)
         .unwrap();
 
     render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
     let head = layout
-        .shove_around_dot(head, barrier2_dot1, true, 5.0)
+        .squeeze_around_dot(head, barrier2_dot1, true, 5.0)
         .unwrap();
 
     render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
-    let _ = layout.route_finish(head, dot3_2, 5.0);
+    let _ = layout.draw_finish(head, dot2_2, 5.0);
 
     render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
 
-    let head = layout.route_start(dot4_1);
+    let head = layout.draw_start(dot3_1);
 
     render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
     let head = layout
-        .shove_around_dot(head, barrier1_dot1, true, 5.0)
+        .squeeze_around_dot(head, barrier1_dot1, true, 5.0)
         .unwrap();
 
     render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
     let head = layout
-        .shove_around_dot(head, barrier2_dot1, true, 5.0)
+        .squeeze_around_dot(head, barrier2_dot1, true, 5.0)
         .unwrap();
 
     render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
-    let _ = layout.route_finish(head, dot4_2, 5.0);*/
+    let _ = layout.draw_finish(head, dot3_2, 5.0);
+
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
+
+    let head = layout.draw_start(dot4_1);
+
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
+    let head = layout
+        .squeeze_around_dot(head, barrier1_dot1, true, 5.0)
+        .unwrap();
+
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
+    let head = layout
+        .squeeze_around_dot(head, barrier2_dot1, true, 5.0)
+        .unwrap();
+
+    render_times(&mut event_pump, &mut canvas, &mut layout, None, 50);
+    let _ = layout.draw_finish(head, dot4_2, 5.0);*/
 
     render_times(&mut event_pump, &mut canvas, &mut layout, None, -1);
     render_times(

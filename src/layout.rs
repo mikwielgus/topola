@@ -29,22 +29,22 @@ impl Layout {
         }
     }
 
-    pub fn route_start(&mut self, from: DotIndex) -> Head {
+    pub fn draw_start(&mut self, from: DotIndex) -> Head {
         Head {
             dot: from,
             bend: self.mesh.primitive(from).bend(),
         }
     }
 
-    pub fn route_finish(&mut self, head: Head, into: DotIndex, width: f64) -> Result<(), ()> {
+    pub fn draw_finish(&mut self, head: Head, into: DotIndex, width: f64) -> Result<(), ()> {
         if let Some(bend) = self.mesh.primitive(into).bend() {
-            self.route_finish_in_bend(head, bend, into, width)
+            self.draw_finish_in_bend(head, bend, into, width)
         } else {
-            self.route_finish_in_dot(head, into, width)
+            self.draw_finish_in_dot(head, into, width)
         }
     }
 
-    fn route_finish_in_dot(&mut self, head: Head, into: DotIndex, width: f64) -> Result<(), ()> {
+    fn draw_finish_in_dot(&mut self, head: Head, into: DotIndex, width: f64) -> Result<(), ()> {
         let tangent = self
             .guide(&Default::default())
             .head_into_dot_segment(&head, into, width);
@@ -53,7 +53,7 @@ impl Layout {
         Ok(())
     }
 
-    fn route_finish_in_bend(
+    fn draw_finish_in_bend(
         &mut self,
         head: Head,
         to_bend: BendIndex,
@@ -75,7 +75,7 @@ impl Layout {
         Ok(())
     }
 
-    pub fn shove_around_dot(
+    pub fn squeeze_around_dot(
         &mut self,
         head: Head,
         around: DotIndex,
@@ -83,14 +83,14 @@ impl Layout {
         width: f64,
     ) -> Result<Head, ()> {
         let outer = self.mesh.primitive(around).outer().unwrap();
-        let head = self.route_around_dot(head, around, cw, width)?;
+        let head = self.draw_around_dot(head, around, cw, width)?;
         self.mesh.reattach_bend(outer, head.bend.unwrap());
 
         self.reroute_outward(outer)?;
         Ok(head)
     }
 
-    pub fn route_around_dot(
+    pub fn draw_around_dot(
         &mut self,
         head: Head,
         around: DotIndex,
@@ -102,7 +102,7 @@ impl Layout {
             .head_around_dot_segment(&head, around, cw, width);
 
         let head = self.extend_head(head, tangent.start_point())?;
-        self.route_seg_bend(
+        self.draw_seg_bend(
             head,
             TaggedIndex::Dot(around),
             tangent.end_point(),
@@ -111,7 +111,7 @@ impl Layout {
         )
     }
 
-    pub fn shove_around_bend(
+    pub fn squeeze_around_bend(
         &mut self,
         head: Head,
         around: BendIndex,
@@ -119,14 +119,14 @@ impl Layout {
         width: f64,
     ) -> Result<Head, ()> {
         let outer = self.mesh.primitive(around).outer().unwrap();
-        let head = self.route_around_bend(head, around, cw, width)?;
+        let head = self.draw_around_bend(head, around, cw, width)?;
         self.mesh.reattach_bend(outer, head.bend.unwrap());
 
         self.reroute_outward(outer)?;
         Ok(head)
     }
 
-    pub fn route_around_bend(
+    pub fn draw_around_bend(
         &mut self,
         head: Head,
         around: BendIndex,
@@ -138,7 +138,7 @@ impl Layout {
             .head_around_bend_segment(&head, around, cw, width);
 
         let head = self.extend_head(head, tangent.start_point())?;
-        self.route_seg_bend(
+        self.draw_seg_bend(
             head,
             TaggedIndex::Bend(around),
             tangent.end_point(),
@@ -147,7 +147,7 @@ impl Layout {
         )
     }
 
-    fn route_seg_bend(
+    fn draw_seg_bend(
         &mut self,
         head: Head,
         around: TaggedIndex,
@@ -155,7 +155,7 @@ impl Layout {
         cw: bool,
         width: f64,
     ) -> Result<Head, ()> {
-        let head = self.route_seg(head, to, width)?;
+        let head = self.draw_seg(head, to, width)?;
         let bend_to = self.add_dot(self.mesh.primitive(head.dot).weight())?;
         let net = self.mesh.primitive(head.dot).weight().net;
 
@@ -193,24 +193,24 @@ impl Layout {
         }
 
         for ends in endss {
-            let mut head = self.route_start(ends[0]);
+            let mut head = self.draw_start(ends[0]);
             let width = 5.0;
 
             if let Some(inner) = maybe_inner {
-                head = self.route_around_bend(head, inner, cw, width)?;
+                head = self.draw_around_bend(head, inner, cw, width)?;
             } else {
-                head = self.route_around_dot(head, core, cw, width)?;
+                head = self.draw_around_dot(head, core, cw, width)?;
             }
 
             maybe_inner = head.bend;
-            self.route_finish(head, ends[1], width)?;
+            self.draw_finish(head, ends[1], width)?;
             self.relax_band(maybe_inner.unwrap());
         }
 
         Ok(())
     }
 
-    fn route_seg(&mut self, head: Head, to: Point, width: f64) -> Result<Head, ()> {
+    fn draw_seg(&mut self, head: Head, to: Point, width: f64) -> Result<Head, ()> {
         let net = self.mesh.primitive(head.dot).weight().net;
 
         assert!(width <= self.mesh.primitive(head.dot).weight().circle.r * 2.);
@@ -255,8 +255,8 @@ impl Layout {
 
         self.mesh.remove_open_set(bow.interior());
 
-        let head = self.route_start(ends[0]);
-        let _ = self.route_finish(head, ends[1], 5.);
+        let head = self.draw_start(ends[0]);
+        let _ = self.draw_finish(head, ends[1], 5.);
     }
 
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), ()> {
