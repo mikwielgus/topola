@@ -239,15 +239,6 @@ impl Mesh {
     }
 
     fn triangulate(&mut self) {
-        /*for edge_index in self.graph.edge_indices() {
-            if *self.graph.edge_weight(edge_index).unwrap() == Label::Peer {
-                self.graph.remove_edge(edge_index);
-            }
-        }*/
-        /*for (edge_index, edge) in self.graph.raw_edges().iter().enumerate() {
-            self.graph.remove_edge(edge_index);
-        }*/
-
         let peer_edge_indices: Vec<EdgeIndex<usize>> = self
             .graph
             .edge_indices()

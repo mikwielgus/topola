@@ -69,7 +69,7 @@ fn cast_point_to_canonical_line(pt: Point, line: CanonicalLine) -> Point {
         .into();
 }
 
-pub fn tangent_point_pairs(circle1: Circle, circle2: Circle) -> [(Point, Point); 4] {
+fn tangent_point_pairs(circle1: Circle, circle2: Circle) -> [(Point, Point); 4] {
     let tgs = _tangents(circle1, circle2);
 
     [
@@ -92,12 +92,12 @@ pub fn tangent_point_pairs(circle1: Circle, circle2: Circle) -> [(Point, Point);
     ]
 }
 
-pub fn tangent_point_pair(
+pub fn tangent_segment(
     circle1: Circle,
     cw1: Option<bool>,
     circle2: Circle,
     cw2: Option<bool>,
-) -> (Point, Point) {
+) -> Line {
     let tangent_point_pairs = tangent_point_pairs(circle1, circle2);
 
     for tangent_point_pair in tangent_point_pairs {
@@ -117,7 +117,7 @@ pub fn tangent_point_pair(
             }
         }
 
-        return tangent_point_pair;
+        return Line::new(tangent_point_pair.0, tangent_point_pair.1);
     }
 
     unreachable!();

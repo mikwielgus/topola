@@ -1,3 +1,4 @@
+use enum_as_inner::EnumAsInner;
 use geo::{point, polygon, EuclideanDistance, Intersects, Point, Polygon, Rotate};
 use rstar::{RTreeObject, AABB};
 
@@ -69,7 +70,7 @@ impl BendShape {
     }
 }
 
-#[derive(Debug, PartialEq)]
+#[derive(Debug, EnumAsInner, PartialEq)]
 pub enum Shape {
     // Intentionally in different order to reorder `self.intersects(...)` properly.
     Dot(DotShape),

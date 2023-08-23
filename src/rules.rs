@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-#[derive(Debug, Clone, Copy, Hash, PartialEq, Eq)]
+#[derive(Debug, Default, Clone, Copy, Hash, PartialEq, Eq)]
 pub struct Conditions {
     pub lower_net: Option<i64>,
     pub higher_net: Option<i64>,
@@ -40,7 +40,7 @@ impl Rules {
         me
     }
 
-    pub fn ruleset(&self, conditions: Conditions) -> &Ruleset {
+    pub fn ruleset(&self, conditions: &Conditions) -> &Ruleset {
         let priority = conditions.priority();
 
         for index in (1..(priority + 1)).rev() {

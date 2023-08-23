@@ -4,6 +4,7 @@ use std::rc::Rc;
 
 use crate::graph::{BendIndex, DotIndex, Path, SegIndex, TaggedIndex};
 use crate::graph::{BendWeight, DotWeight, SegWeight, TaggedWeight};
+use crate::guide::Guide;
 use crate::math;
 use crate::math::Circle;
 use crate::mesh::Mesh;
@@ -35,34 +36,20 @@ impl Layout {
         }
     }
 
-    pub fn route_finish(&mut self, head: Head, to: DotIndex, width: f64) -> Result<(), ()> {
-        if let Some(bend) = self.mesh.primitive(to).bend() {
-            self.route_finish_in_bend(head, bend, to, width)
+    pub fn route_finish(&mut self, head: Head, into: DotIndex, width: f64) -> Result<(), ()> {
+        if let Some(bend) = self.mesh.primitive(into).bend() {
+            self.route_finish_in_bend(head, bend, into, width)
         } else {
-            self.route_finish_in_dot(head, to, width)
+            self.route_finish_in_dot(head, into, width)
         }
     }
 
-    fn route_finish_in_dot(&mut self, head: Head, to: DotIndex, width: f64) -> Result<(), ()> {
-        let from_circle = self.head_guidecircle(&head, width);
-
-        let conditions = Conditions {
-            lower_net: None,
-            higher_net: None,
-            layer: None,
-            zone: None,
-        };
-
-        let to_circle = Circle {
-            pos: self.mesh.primitive(to).weight().circle.pos,
-            r: 0.0,
-        };
-
-        let from_cw = self.head_cw(&head);
-        let tangent_points = math::tangent_point_pair(from_circle, from_cw, to_circle, None);
-
-        let head = self.extend_head(head, tangent_points.0)?;
-        self.add_seg(head.dot, to, width)?;
+    fn route_finish_in_dot(&mut self, head: Head, into: DotIndex, width: f64) -> Result<(), ()> {
+        let tangent = self
+            .guide(&Default::default())
+            .head_into_dot_segment(&head, into, width);
+        let head = self.extend_head(head, tangent.start_point())?;
+        self.add_seg(head.dot, into, width)?;
         Ok(())
     }
 
@@ -73,28 +60,17 @@ impl Layout {
         to: DotIndex,
         width: f64,
     ) -> Result<(), ()> {
-        let from_circle = self.head_guidecircle(&head, width);
-
-        let conditions = Conditions {
-            lower_net: None,
-            higher_net: None,
-            layer: None,
-            zone: None,
-        };
-
-        let to_circle = self.bend_circle(to_bend, width);
-        let from_cw = self.head_cw(&head);
-
         let to_head = Head {
             bend: Some(to_bend),
             dot: to,
         };
-        let to_cw = self.head_cw(&to_head);
+        let to_cw = self.guide(&Default::default()).head_cw(&to_head).unwrap();
+        let tangent = self
+            .guide(&Default::default())
+            .head_around_bend_segment(&head, to_bend, to_cw, width);
+        let head = self.extend_head(head, tangent.start_point())?;
 
-        let tangent_points = math::tangent_point_pair(from_circle, from_cw, to_circle, to_cw);
-        let head = self.extend_head(head, tangent_points.0)?;
-
-        let to_head = self.extend_head(to_head, tangent_points.1)?;
+        let to_head = self.extend_head(to_head, tangent.end_point())?;
         self.add_seg(head.dot, to, width)?;
         Ok(())
     }
@@ -121,22 +97,18 @@ impl Layout {
         cw: bool,
         width: f64,
     ) -> Result<Head, ()> {
-        let from_circle = self.head_guidecircle(&head, width);
+        let tangent = self
+            .guide(&Default::default())
+            .head_around_dot_segment(&head, around, cw, width);
 
-        let conditions = Conditions {
-            lower_net: None,
-            higher_net: None,
-            layer: None,
-            zone: None,
-        };
-
-        let to_circle = self.dot_guidecircle(around, width + 5.0, conditions);
-
-        let from_cw = self.head_cw(&head);
-        let tangent_points = math::tangent_point_pair(from_circle, from_cw, to_circle, Some(cw));
-
-        let head = self.extend_head(head, tangent_points.0)?;
-        self.route_seg_bend(head, TaggedIndex::Dot(around), tangent_points.1, cw, width)
+        let head = self.extend_head(head, tangent.start_point())?;
+        self.route_seg_bend(
+            head,
+            TaggedIndex::Dot(around),
+            tangent.end_point(),
+            cw,
+            width,
+        )
     }
 
     pub fn shove_around_bend(
@@ -161,22 +133,18 @@ impl Layout {
         cw: bool,
         width: f64,
     ) -> Result<Head, ()> {
-        let from_circle = self.head_guidecircle(&head, width);
+        let tangent = self
+            .guide(&Default::default())
+            .head_around_bend_segment(&head, around, cw, width);
 
-        let conditions = Conditions {
-            lower_net: None,
-            higher_net: None,
-            layer: None,
-            zone: None,
-        };
-
-        let to_circle = self.bend_guidecircle(around, width, conditions);
-
-        let from_cw = self.head_cw(&head);
-        let tangent_points = math::tangent_point_pair(from_circle, from_cw, to_circle, Some(cw));
-
-        let head = self.extend_head(head, tangent_points.0)?;
-        self.route_seg_bend(head, TaggedIndex::Bend(around), tangent_points.1, cw, width)
+        let head = self.extend_head(head, tangent.start_point())?;
+        self.route_seg_bend(
+            head,
+            TaggedIndex::Bend(around),
+            tangent.end_point(),
+            cw,
+            width,
+        )
     }
 
     fn route_seg_bend(
@@ -301,76 +269,6 @@ impl Layout {
         Ok(())
     }
 
-    fn head_guidecircle(&self, head: &Head, width: f64) -> Circle {
-        let maybe_bend = head.bend;
-
-        let conditions = Conditions {
-            lower_net: None,
-            higher_net: None,
-            layer: None,
-            zone: None,
-        };
-
-        match maybe_bend {
-            Some(bend) => {
-                if let Some(inner) = self.mesh.primitive(bend).inner() {
-                    self.bend_guidecircle(inner, width, conditions)
-                } else {
-                    self.dot_guidecircle(
-                        self.mesh.primitive(bend).core().unwrap(),
-                        width + 5.0,
-                        conditions,
-                    )
-                }
-            }
-            None => Circle {
-                pos: self.mesh.primitive(head.dot).weight().circle.pos,
-                r: 0.0,
-            },
-        }
-    }
-
-    fn head_cw(&self, head: &Head) -> Option<bool> {
-        match head.bend {
-            Some(bend) => Some(self.mesh.primitive(bend).weight().cw),
-            None => None,
-        }
-    }
-
-    fn dot_guidecircle(&self, dot: DotIndex, width: f64, conditions: Conditions) -> Circle {
-        let circle = self.mesh.primitive(dot).weight().circle;
-        Circle {
-            pos: circle.pos,
-            r: circle.r + width + self.rules.ruleset(conditions).clearance.min,
-        }
-    }
-
-    fn bend_circle(&self, bend: BendIndex, width: f64) -> Circle {
-        let mut r = 0.0;
-        let mut layer = bend;
-
-        while let Some(inner) = self.mesh.primitive(layer).inner() {
-            r += 5.0 + self.mesh.primitive(inner).shape().width();
-            layer = inner;
-        }
-
-        let core_circle = self
-            .mesh
-            .primitive(self.mesh.primitive(bend).core().unwrap())
-            .weight()
-            .circle;
-        Circle {
-            pos: core_circle.pos,
-            r: core_circle.r + r + width + 5.0,
-        }
-    }
-
-    fn bend_guidecircle(&self, bend: BendIndex, width: f64, conditions: Conditions) -> Circle {
-        let mut circle = self.bend_circle(bend, width);
-        circle.r += self.rules.ruleset(conditions).clearance.min + 10.0;
-        circle
-    }
-
     fn extend_head(&mut self, head: Head, to: Point) -> Result<Head, ()> {
         if let Some(..) = head.bend {
             self.extend_head_bend(head, to)
@@ -412,5 +310,9 @@ impl Layout {
                 untag!(index1, self.mesh.primitive(index1).shape().center()),
             )
         })
+    }
+
+    fn guide<'a>(&'a self, conditions: &'a Conditions) -> Guide {
+        Guide::new(&self.mesh, &self.rules, conditions)
     }
 }
