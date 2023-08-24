@@ -2,22 +2,22 @@ use geo::Line;
 
 use crate::{
     graph::{BendIndex, DotIndex},
-    layout::Head,
+    layout::Layout,
     math::{self, Circle},
-    mesh::Mesh,
+    router::Head,
     rules::{Conditions, Rules},
 };
 
 pub struct Guide<'a, 'b> {
-    mesh: &'a Mesh,
+    layout: &'a Layout,
     rules: &'a Rules,
     conditions: &'b Conditions,
 }
 
 impl<'a, 'b> Guide<'a, 'b> {
-    pub fn new(mesh: &'a Mesh, rules: &'a Rules, conditions: &'b Conditions) -> Self {
+    pub fn new(layout: &'a Layout, rules: &'a Rules, conditions: &'b Conditions) -> Self {
         Self {
-            mesh,
+            layout,
             rules,
             conditions,
         }
@@ -26,7 +26,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     pub fn head_into_dot_segment(&self, head: &Head, into: DotIndex, width: f64) -> Line {
         let from_circle = self.head_circle(&head, width);
         let to_circle = Circle {
-            pos: self.mesh.primitive(into).weight().circle.pos,
+            pos: self.layout.primitive(into).weight().circle.pos,
             r: 0.0,
         };
 
@@ -64,7 +64,7 @@ impl<'a, 'b> Guide<'a, 'b> {
 
     pub fn head_cw(&self, head: &Head) -> Option<bool> {
         match head.bend {
-            Some(bend) => Some(self.mesh.primitive(bend).weight().cw),
+            Some(bend) => Some(self.layout.primitive(bend).weight().cw),
             None => None,
         }
     }
@@ -81,14 +81,14 @@ impl<'a, 'b> Guide<'a, 'b> {
 
         match maybe_bend {
             Some(bend) => {
-                if let Some(inner) = self.mesh.primitive(bend).inner() {
+                if let Some(inner) = self.layout.primitive(bend).inner() {
                     self.bend_circle(inner, width)
                 } else {
-                    self.dot_circle(self.mesh.primitive(bend).core().unwrap(), width + 5.0)
+                    self.dot_circle(self.layout.primitive(bend).core().unwrap(), width + 5.0)
                 }
             }
             None => Circle {
-                pos: self.mesh.primitive(head.dot).weight().circle.pos,
+                pos: self.layout.primitive(head.dot).weight().circle.pos,
                 r: 0.0,
             },
         }
@@ -96,7 +96,7 @@ impl<'a, 'b> Guide<'a, 'b> {
 
     fn bend_circle(&self, bend: BendIndex, width: f64) -> Circle {
         let mut circle = self
-            .mesh
+            .layout
             .primitive(bend)
             .shape()
             .as_bend()
@@ -107,7 +107,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     }
 
     fn dot_circle(&self, dot: DotIndex, width: f64) -> Circle {
-        let circle = self.mesh.primitive(dot).weight().circle;
+        let circle = self.layout.primitive(dot).weight().circle;
         Circle {
             pos: circle.pos,
             r: circle.r + width + self.rules.ruleset(self.conditions).clearance.min,
