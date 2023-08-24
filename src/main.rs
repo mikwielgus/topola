@@ -13,6 +13,7 @@ mod bow;
 mod guide;
 mod layout;
 mod math;
+mod mesh;
 mod primitive;
 mod router;
 mod rules;

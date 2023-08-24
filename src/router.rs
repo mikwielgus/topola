@@ -8,11 +8,13 @@ use crate::guide::Guide;
 use crate::layout::Layout;
 use crate::math;
 use crate::math::Circle;
+use crate::mesh::Mesh;
 use crate::rules::{Conditions, Rules};
 use crate::shape::Shape;
 
 pub struct Router {
     pub layout: Layout,
+    mesh: Mesh,
     rules: Rules,
 }
 
@@ -25,6 +27,7 @@ impl Router {
     pub fn new() -> Self {
         Router {
             layout: Layout::new(),
+            mesh: Mesh::new(),
             rules: Rules::new(),
         }
     }
@@ -53,6 +56,7 @@ impl Router {
         let net = self.layout.primitive(head.dot).weight().net;
         self.layout
             .add_seg(head.dot, into, SegWeight { net, width })?;
+        self.mesh.triangulate(&self.layout);
         Ok(())
     }
 
@@ -78,6 +82,7 @@ impl Router {
         let net = self.layout.primitive(head.dot).weight().net;
         self.layout
             .add_seg(head.dot, into, SegWeight { net, width })?;
+        self.mesh.triangulate(&self.layout);
         Ok(())
     }
 
@@ -170,6 +175,7 @@ impl Router {
         let bend = self
             .layout
             .add_bend(head.dot, bend_to, around, BendWeight { net, cw })?;
+        self.mesh.triangulate(&self.layout);
         Ok(Head {
             dot: bend_to,
             bend: Some(bend),
@@ -232,6 +238,7 @@ impl Router {
         })?;
         self.layout
             .add_seg(head.dot, to_index, SegWeight { net, width })?;
+        self.mesh.triangulate(&self.layout);
         Ok(Head {
             dot: to_index,
             bend: None,
@@ -275,6 +282,7 @@ impl Router {
             self.reroute_outward(outer)?;
         }
 
+        self.mesh.triangulate(&self.layout);
         Ok(())
     }
 
@@ -300,12 +308,12 @@ impl Router {
     }
 
     pub fn routeedges(&self) -> impl Iterator<Item = (Point, Point)> + '_ {
-        self.layout.edges().map(|endpoints| {
+        self.mesh.edges().map(|endpoints| {
             let index0 = endpoints.0;
             let index1 = endpoints.1;
             (
-                untag!(index0, self.layout.primitive(index0).shape().center()),
-                untag!(index1, self.layout.primitive(index1).shape().center()),
+                self.layout.primitive(index0).shape().center(),
+                self.layout.primitive(index1).shape().center(),
             )
         })
     }

@@ -56,7 +56,6 @@ impl Layout {
 
         self.fail_and_remove_if_collides_except(dot, &[])?;
         self.insert_into_rtree(dot.tag());
-        self.triangulate();
 
         Ok(dot)
     }
@@ -120,7 +119,6 @@ impl Layout {
 
         self.fail_and_remove_if_collides_except(bend, &[from.tag(), to.tag(), core.tag()])?;
         self.insert_into_rtree(bend.tag());
-        self.triangulate();
         Ok(bend)
     }
 
@@ -165,7 +163,6 @@ impl Layout {
         self.remove_from_rtree(bend.tag());
         self.move_dot(dot, to)?;
         self.insert_into_rtree(bend.tag());
-        self.triangulate();
         Ok(())
     }
 
@@ -198,7 +195,6 @@ impl Layout {
         }
 
         self.insert_into_rtree(dot.tag());
-        self.triangulate();
 
         let mut cur_bend = self.primitive(dot).outer();
         loop {
@@ -214,27 +210,6 @@ impl Layout {
         Ok(())
     }
 
-    pub fn nodes(&self) -> impl Iterator<Item = TaggedIndex> + '_ {
-        self.rtree.iter().map(|wrapper| wrapper.data)
-    }
-
-    pub fn edges(&self) -> impl Iterator<Item = (TaggedIndex, TaggedIndex)> + '_ {
-        self.graph.edge_indices().map(|edge| {
-            let endpoints = self.graph.edge_endpoints(edge).unwrap();
-            (
-                Index::<Label>::new(endpoints.0)
-                    .retag(self.graph.node_weight(endpoints.0).unwrap()),
-                Index::<Label>::new(endpoints.1)
-                    .retag(self.graph.node_weight(endpoints.1).unwrap()),
-            )
-        })
-    }
-
-    pub fn shapes(&self) -> impl Iterator<Item = Shape> + '_ {
-        self.nodes()
-            .map(|ni| untag!(ni, self.primitive(ni).shape()))
-    }
-
     pub fn primitive<Weight>(&self, index: Index<Weight>) -> Primitive<Weight> {
         Primitive::new(index, &self.graph)
     }
@@ -243,7 +218,7 @@ impl Layout {
         Bow::new(bend, &self.graph)
     }
 
-    fn triangulate(&mut self) {
+    /*fn triangulate(&mut self) {
         let peer_edge_indices: Vec<EdgeIndex<usize>> = self
             .graph
             .edge_indices()
@@ -292,7 +267,7 @@ impl Layout {
             let to = edge.to().as_ref().index;
             self.graph.add_edge(from, to, Label::Peer);
         }
-    }
+    }*/
 
     fn fail_and_remove_if_collides_except<Weight: std::marker::Copy>(
         &mut self,
@@ -334,5 +309,31 @@ impl Layout {
     fn remove_from_rtree(&mut self, index: TaggedIndex) {
         let shape = untag!(index, self.primitive(index).shape());
         self.rtree.remove(&RTreeWrapper::new(shape, index));
+    }
+
+    /*pub fn edges(&self) -> impl Iterator<Item = (TaggedIndex, TaggedIndex)> + '_ {
+        self.graph.edge_indices().map(|edge| {
+            let endpoints = self.graph.edge_endpoints(edge).unwrap();
+            (
+                Index::<Label>::new(endpoints.0)
+                    .retag(self.graph.node_weight(endpoints.0).unwrap()),
+                Index::<Label>::new(endpoints.1)
+                    .retag(self.graph.node_weight(endpoints.1).unwrap()),
+            )
+        })
+    }*/
+
+    pub fn dots(&self) -> impl Iterator<Item = DotIndex> + '_ {
+        self.nodes()
+            .filter_map(|ni| ni.as_dot().and_then(|di| Some(*di)))
+    }
+
+    pub fn shapes(&self) -> impl Iterator<Item = Shape> + '_ {
+        self.nodes()
+            .map(|ni| untag!(ni, self.primitive(ni).shape()))
+    }
+
+    fn nodes(&self) -> impl Iterator<Item = TaggedIndex> + '_ {
+        self.rtree.iter().map(|wrapper| wrapper.data)
     }
 }
