@@ -1,4 +1,5 @@
 use geo::geometry::Point;
+use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
@@ -308,12 +309,10 @@ impl Router {
     }
 
     pub fn routeedges(&self) -> impl Iterator<Item = (Point, Point)> + '_ {
-        self.mesh.edges().map(|endpoints| {
-            let index0 = endpoints.0;
-            let index1 = endpoints.1;
+        self.mesh.edge_references().map(|edge| {
             (
-                self.layout.primitive(index0).shape().center(),
-                self.layout.primitive(index1).shape().center(),
+                self.mesh.position(edge.source()),
+                self.mesh.position(edge.target()),
             )
         })
     }

@@ -17,6 +17,9 @@ version = "0.6.3"
 [dependencies.spade]
 version = "2.2.0"
 
+[dependencies.fixedbitset]
+version = "0.4.0"
+
 [dependencies.sdl2]
 version = "0.35.2"
 default-features = false

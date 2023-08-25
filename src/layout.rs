@@ -17,7 +17,7 @@ use crate::shape::Shape;
 pub type RTreeWrapper = GeomWithData<Shape, TaggedIndex>;
 
 pub struct Layout {
-    pub rtree: RTree<RTreeWrapper>,
+    rtree: RTree<RTreeWrapper>,
     pub graph: StableDiGraph<TaggedWeight, Label, usize>,
 }
 
@@ -218,57 +218,6 @@ impl Layout {
         Bow::new(bend, &self.graph)
     }
 
-    /*fn triangulate(&mut self) {
-        let peer_edge_indices: Vec<EdgeIndex<usize>> = self
-            .graph
-            .edge_indices()
-            .filter(|index| *self.graph.edge_weight(*index).unwrap() == Label::Peer)
-            .collect();
-
-        for edge_index in peer_edge_indices {
-            self.graph.remove_edge(edge_index);
-        }
-
-        struct TriangulationVertex {
-            pub index: NodeIndex<usize>,
-            x: f64,
-            y: f64,
-        }
-
-        impl HasPosition for TriangulationVertex {
-            type Scalar = f64;
-            fn position(&self) -> Point2<Self::Scalar> {
-                Point2::new(self.x, self.y)
-            }
-        }
-
-        let mut triangulation: DelaunayTriangulation<_> = DelaunayTriangulation::new();
-
-        for node_index in self
-            .graph
-            .node_indices()
-            .filter(|index| self.graph.node_weight(*index).unwrap().is_dot())
-        {
-            let center = self
-                .primitive(Index::<Label>::new(node_index))
-                .shape()
-                .center();
-            triangulation
-                .insert(TriangulationVertex {
-                    index: node_index,
-                    x: center.x(),
-                    y: center.y(),
-                })
-                .unwrap();
-        }
-
-        for edge in triangulation.directed_edges() {
-            let from = edge.from().as_ref().index;
-            let to = edge.to().as_ref().index;
-            self.graph.add_edge(from, to, Label::Peer);
-        }
-    }*/
-
     fn fail_and_remove_if_collides_except<Weight: std::marker::Copy>(
         &mut self,
         index: Index<Weight>,
@@ -310,18 +259,6 @@ impl Layout {
         let shape = untag!(index, self.primitive(index).shape());
         self.rtree.remove(&RTreeWrapper::new(shape, index));
     }
-
-    /*pub fn edges(&self) -> impl Iterator<Item = (TaggedIndex, TaggedIndex)> + '_ {
-        self.graph.edge_indices().map(|edge| {
-            let endpoints = self.graph.edge_endpoints(edge).unwrap();
-            (
-                Index::<Label>::new(endpoints.0)
-                    .retag(self.graph.node_weight(endpoints.0).unwrap()),
-                Index::<Label>::new(endpoints.1)
-                    .retag(self.graph.node_weight(endpoints.1).unwrap()),
-            )
-        })
-    }*/
 
     pub fn dots(&self) -> impl Iterator<Item = DotIndex> + '_ {
         self.nodes()
