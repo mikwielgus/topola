@@ -42,10 +42,13 @@ impl Router {
 
     pub fn draw_finish(&mut self, head: Head, into: DotIndex, width: f64) -> Result<(), ()> {
         if let Some(bend) = self.layout.primitive(into).bend() {
-            self.draw_finish_in_bend(head, bend, into, width)
+            self.draw_finish_in_bend(head, bend, into, width)?;
         } else {
-            self.draw_finish_in_dot(head, into, width)
+            self.draw_finish_in_dot(head, into, width)?;
         }
+
+        self.mesh.triangulate(&self.layout);
+        Ok(())
     }
 
     fn draw_finish_in_dot(&mut self, head: Head, into: DotIndex, width: f64) -> Result<(), ()> {
@@ -57,7 +60,6 @@ impl Router {
         let net = self.layout.primitive(head.dot).weight().net;
         self.layout
             .add_seg(head.dot, into, SegWeight { net, width })?;
-        self.mesh.triangulate(&self.layout);
         Ok(())
     }
 
@@ -83,7 +85,6 @@ impl Router {
         let net = self.layout.primitive(head.dot).weight().net;
         self.layout
             .add_seg(head.dot, into, SegWeight { net, width })?;
-        self.mesh.triangulate(&self.layout);
         Ok(())
     }
 
@@ -176,7 +177,6 @@ impl Router {
         let bend = self
             .layout
             .add_bend(head.dot, bend_to, around, BendWeight { net, cw })?;
-        self.mesh.triangulate(&self.layout);
         Ok(Head {
             dot: bend_to,
             bend: Some(bend),
@@ -239,7 +239,6 @@ impl Router {
         })?;
         self.layout
             .add_seg(head.dot, to_index, SegWeight { net, width })?;
-        self.mesh.triangulate(&self.layout);
         Ok(Head {
             dot: to_index,
             bend: None,
