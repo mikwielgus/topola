@@ -7,7 +7,7 @@ use petgraph::{
 use spade::{
     handles::{DirectedEdgeHandle, FixedDirectedEdgeHandle, FixedVertexHandle},
     iterators::DirectedEdgeIterator,
-    DelaunayTriangulation, HasPosition, Point2, Triangulation,
+    DelaunayTriangulation, HasPosition, InsertionError, Point2, Triangulation,
 };
 
 use crate::{graph::DotIndex, layout::Layout, router::Router};
@@ -32,32 +32,43 @@ impl HasPosition for Vertex {
 
 pub struct Mesh {
     triangulation: DelaunayTriangulation<Vertex>,
+    dot_to_vertex: Vec<Option<VertexIndex>>,
 }
 
 impl Mesh {
     pub fn new() -> Self {
         Self {
             triangulation: DelaunayTriangulation::new(),
+            dot_to_vertex: Vec::new(),
         }
     }
 
-    pub fn triangulate(&mut self, layout: &Layout) {
+    pub fn triangulate(&mut self, layout: &Layout) -> Result<(), InsertionError> {
         self.triangulation.clear();
+        self.dot_to_vertex = Vec::new();
+        self.dot_to_vertex.resize(layout.graph.node_bound(), None);
 
         for dot in layout.dots() {
             let center = layout.primitive(dot).shape().center();
-            self.triangulation
-                .insert(Vertex {
+
+            self.dot_to_vertex[dot.index.index()] = Some(VertexIndex {
+                handle: self.triangulation.insert(Vertex {
                     dot,
                     x: center.x(),
                     y: center.y(),
-                })
-                .unwrap(); // TODO.
+                })?,
+            });
         }
+
+        Ok(())
     }
 
-    pub fn position(&self, index: VertexIndex) -> Point {
-        let position = self.triangulation.vertex(index.handle).position();
+    pub fn vertex(&self, dot: DotIndex) -> VertexIndex {
+        self.dot_to_vertex[dot.index.index()].unwrap()
+    }
+
+    pub fn position(&self, vertex: VertexIndex) -> Point {
+        let position = self.triangulation.vertex(vertex.handle).position();
         point! {x: position.x, y: position.y}
     }
 }
