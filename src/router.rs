@@ -1,15 +1,17 @@
 use geo::geometry::Point;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use spade::InsertionError;
 use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
+use crate::astar::astar;
 use crate::graph::{BendIndex, DotIndex, Path, SegIndex, TaggedIndex};
 use crate::graph::{BendWeight, DotWeight, SegWeight, TaggedWeight};
 use crate::guide::Guide;
 use crate::layout::Layout;
 use crate::math;
 use crate::math::Circle;
-use crate::mesh::Mesh;
+use crate::mesh::{Mesh, VertexIndex};
 use crate::rules::{Conditions, Rules};
 use crate::shape::Shape;
 
@@ -17,6 +19,12 @@ pub struct Router {
     pub layout: Layout,
     mesh: Mesh,
     rules: Rules,
+}
+
+struct Route {
+    path: Vec<VertexIndex>,
+    head: Head,
+    width: f64,
 }
 
 pub struct Head {
@@ -33,6 +41,59 @@ impl Router {
         }
     }
 
+    pub fn route(&mut self, from: DotIndex, to: DotIndex) -> Result<(), InsertionError> {
+        // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
+        // right.
+        self.mesh.triangulate(&self.layout)?;
+
+        let (cost, mesh_path) = astar(
+            &self.mesh,
+            self.mesh.vertex(from),
+            |node, tracker| (node != self.mesh.vertex(to)).then_some(0),
+            |edge| 1,
+            |_| 0,
+        )
+        .unwrap(); // TODO.
+
+        let path: Vec<DotIndex> = mesh_path
+            .iter()
+            .map(|vertex| self.mesh.dot(*vertex))
+            .collect();
+
+        self.route_path(&path[..], 5.0).unwrap(); // TODO.
+
+        Ok(())
+    }
+
+    fn route_path(&mut self, path: &[DotIndex], width: f64) -> Result<(), ()> {
+        let mut route = self.route_start(path[0], width);
+
+        for dot in &path[1..(path.len() - 1)] {
+            route = self.route_step(route, *dot)?;
+        }
+
+        self.route_finish(route, path[path.len() - 1])
+    }
+
+    fn route_start(&mut self, from: DotIndex, width: f64) -> Route {
+        Route {
+            path: vec![],
+            head: self.draw_start(from),
+            width,
+        }
+    }
+
+    fn route_finish(&mut self, route: Route, into: DotIndex) -> Result<(), ()> {
+        self.draw_finish(route.head, into, route.width)?;
+        Ok(())
+    }
+
+    fn route_step(&mut self, mut route: Route, to: DotIndex) -> Result<Route, ()> {
+        route.head = self.draw_around_dot(route.head, to, true, route.width)?;
+        route.path.push(self.mesh.vertex(to));
+        Ok(route)
+    }
+
     pub fn draw_start(&mut self, from: DotIndex) -> Head {
         Head {
             dot: from,
@@ -47,7 +108,6 @@ impl Router {
             self.draw_finish_in_dot(head, into, width)?;
         }
 
-        self.mesh.triangulate(&self.layout);
         Ok(())
     }
 
@@ -282,7 +342,6 @@ impl Router {
             self.reroute_outward(outer)?;
         }
 
-        self.mesh.triangulate(&self.layout);
         Ok(())
     }
 

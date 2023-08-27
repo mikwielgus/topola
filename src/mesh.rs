@@ -18,7 +18,7 @@ struct Vertex {
     y: f64,
 }
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
 pub struct VertexIndex {
     handle: FixedVertexHandle,
 }
@@ -61,6 +61,10 @@ impl Mesh {
         }
 
         Ok(())
+    }
+
+    pub fn dot(&self, vertex: VertexIndex) -> DotIndex {
+        self.triangulation.vertex(vertex.handle).as_ref().dot
     }
 
     pub fn vertex(&self, dot: DotIndex) -> VertexIndex {

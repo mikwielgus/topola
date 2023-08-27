@@ -153,18 +153,6 @@ pub fn intersect_circles(circle1: &Circle, circle2: &Circle) -> Vec<Point> {
     [p + r, p - r].into()
 }
 
-/*pub fn cast_point_to_segment(p: &Point, segment: &Line) -> Option<Point> {
-    let delta = segment.end_point() - segment.start_point();
-    let rel_p = *p - segment.start_point();
-    let t = delta.dot(rel_p) / delta.dot(delta);
-
-    if t < 0.0 || t > 1.0 {
-        return None;
-    }
-
-    Some(segment.start_point() + delta * t)
-}*/
-
 pub fn intersect_circle_segment(circle: &Circle, segment: &Line) -> Vec<Point> {
     let delta: Point = segment.delta().into();
     let from = segment.start_point();

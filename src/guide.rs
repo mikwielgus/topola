@@ -56,7 +56,7 @@ impl<'a, 'b> Guide<'a, 'b> {
         width: f64,
     ) -> Line {
         let from_circle = self.head_circle(&head, width);
-        let to_circle = self.dot_circle(around, width + 5.0);
+        let to_circle = self.dot_circle(around, width);
 
         let from_cw = self.head_cw(&head);
         math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
@@ -84,7 +84,7 @@ impl<'a, 'b> Guide<'a, 'b> {
                 if let Some(inner) = self.layout.primitive(bend).inner() {
                     self.bend_circle(inner, width)
                 } else {
-                    self.dot_circle(self.layout.primitive(bend).core().unwrap(), width + 5.0)
+                    self.dot_circle(self.layout.primitive(bend).core().unwrap(), width)
                 }
             }
             None => Circle {
@@ -102,7 +102,7 @@ impl<'a, 'b> Guide<'a, 'b> {
             .as_bend()
             .unwrap()
             .circle();
-        circle.r += self.rules.ruleset(&self.conditions).clearance.min + 10.0;
+        circle.r += self.rules.ruleset(&self.conditions).clearance.min;
         circle
     }
 

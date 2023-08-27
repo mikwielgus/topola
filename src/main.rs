@@ -9,6 +9,7 @@ macro_rules! dbg_dot {
 
 #[macro_use]
 mod graph;
+mod astar;
 mod bow;
 mod guide;
 mod layout;
@@ -55,55 +56,6 @@ fn main() {
     let mut event_pump = sdl_context.event_pump().unwrap();
     let mut i = 0;
     let mut router = Router::new();
-
-    /*let index = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (150.5, 80.5).into(), r: 8.0}});
-    //router.draw_seg(index, Point {x: 400.5, y: 350.5}, 6.0);
-
-    let index2 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (180.5, 150.5).into(), r: 8.0}});
-    let barrier1 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (90.5, 150.5).into(), r: 8.0}});
-    router.layout.add_seg(index2, barrier1, 16.0);
-
-    let index3 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (130.5, 250.5).into(), r: 8.0}});
-    let barrier2 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (190.5, 250.5).into(), r: 8.0}});
-    router.layout.add_seg(index3, barrier2, 16.0);
-
-    let index4 = router.draw_around_dot(index, index2, true, 5.0);
-    let index5 = router.draw_around_dot(index4, index3, false, 5.0);
-
-    let index6 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (140.5, 300.5).into(), r: 8.0}});
-    let index7 = router.draw_to(index5, index6, 5.0);*/
-
-    /*let dot1 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (100.5, 150.5).into(), r: 8.0}});
-    let dot2 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (130.5, 150.5).into(), r: 8.0}});
-    let dot3 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (160.5, 150.5).into(), r: 8.0}});
-
-    let obstacle_dot1 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (220.5, 250.5).into(), r: 8.0}});
-    let obstacle_dot2 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (70.5, 250.5).into(), r: 8.0}});
-    router.layout.add_seg(obstacle_dot1, obstacle_dot2, 16.0);
-
-    let dot4 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (180.5, 380.5).into(), r: 8.0}});
-    let dot5 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (220.5, 380.5).into(), r: 8.0}});
-    let dot6 = router.layout.add_dot(DotWeight {net: 0, circle: Circle {pos: (290.5, 380.5).into(), r: 8.0}});
-
-    let head = router.draw_start(dot3);
-    let head = router.draw_around_dot(head, obstacle_dot1, true, 5.0);
-    let dot3_1 = head.dot;
-    let bend3_1 = head.bend.unwrap();
-    router.draw_finish(head, dot4, 5.0);
-
-    let head = router.draw_start(dot2);
-    let head = router.draw_around_dot(head, dot3, true, 5.0);
-    let dot2_1 = head.dot;
-    let bend2_1 = head.bend.unwrap();
-    let head = router.draw_around_bend(head, bend3_1, true, 5.0);
-    let dot2_2 = head.dot;
-    let bend2_2 = head.bend.unwrap();
-    router.draw_finish(head, dot5, 5.0);
-
-    let head = router.draw_start(dot1);
-    let head = router.draw_around_bend(head, bend2_1, true, 5.0);
-    let head = router.draw_around_bend(head, bend2_2, true, 5.0);
-    router.draw_finish(head, dot6, 5.0);*/
 
     let dot1_1 = router
         .layout
@@ -230,16 +182,6 @@ fn main() {
             },
         })
         .unwrap();
-    /*let barrier1_dot2 = router
-        .layout.add_dot(DotWeight {
-            net: 10,
-            circle: Circle {
-                pos: (250.5, 700.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-    let _ = router.layout.add_seg(barrier1_dot1, barrier1_dot2, 16.0);*/
 
     let barrier2_dot1 = router
         .layout
@@ -261,82 +203,20 @@ fn main() {
             },
         })
         .unwrap();
-    let _ = router.layout.add_seg(
+    /*let _ = router.layout.add_seg(
         barrier2_dot1,
         barrier2_dot2,
         SegWeight {
             net: 20,
             width: 16.0,
         },
-    );
+    );*/
 
-    let head = router.draw_start(dot5);
+    /*let head = router.draw_start(dot5);
     let head = router.draw_around_dot(head, dot6, false, 5.0).unwrap();
-    let _ = router.draw_finish(head, dot7, 5.0);
+    let _ = router.draw_finish(head, dot7, 5.0);*/
 
-    /*render_times(&mut event_pump, &mut canvas, &mut router, None, -1);
-
-    let head = router.draw_start(dot1_1);
-    let head = router
-        .draw_around_dot(head, barrier1_dot1, true, 5.0)
-        .unwrap();
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-    let head = router
-        .draw_around_dot(head, barrier2_dot1, true, 5.0)
-        .unwrap();
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-    router.draw_finish(head, dot1_2, 5.0).unwrap();
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-
-    let head = router.draw_start(dot2_1);
-    let head = router
-        .squeeze_around_dot(head, barrier1_dot1, true, 5.0)
-        .unwrap();
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-    let head = router
-        .squeeze_around_dot(head, barrier2_dot1, true, 5.0)
-        .unwrap();
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-    let _ = router.draw_finish(head, dot2_2, 5.0);
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-
-    let head = router.draw_start(dot3_1);
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-    let head = router
-        .squeeze_around_dot(head, barrier1_dot1, true, 5.0)
-        .unwrap();
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-    let head = router
-        .squeeze_around_dot(head, barrier2_dot1, true, 5.0)
-        .unwrap();
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-    let _ = router.draw_finish(head, dot3_2, 5.0);
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-
-    let head = router.draw_start(dot4_1);
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-    let head = router
-        .squeeze_around_dot(head, barrier1_dot1, true, 5.0)
-        .unwrap();
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-    let head = router
-        .squeeze_around_dot(head, barrier2_dot1, true, 5.0)
-        .unwrap();
-
-    render_times(&mut event_pump, &mut canvas, &mut router, None, 50);
-    let _ = router.draw_finish(head, dot4_2, 5.0);*/
+    router.route(dot1_1, dot1_2);
 
     render_times(&mut event_pump, &mut canvas, &mut router, None, -1);
     render_times(
@@ -435,7 +315,7 @@ fn render_times(
                 );
             }
 
-            for edge in router.routeedges() {
+            /*for edge in router.routeedges() {
                 let _ = canvas.line(
                     edge.0.x() as i16,
                     edge.0.y() as i16,
@@ -443,7 +323,7 @@ fn render_times(
                     edge.1.y() as i16,
                     Color::RGB(250, 250, 250),
                 );
-            }
+            }*/
         });
 
         if let Err(err) = result {
