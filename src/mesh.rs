@@ -12,13 +12,18 @@ use spade::{
 
 use crate::{graph::DotIndex, layout::Layout, router::Router};
 
-struct MeshVertex {
-    pub index: DotIndex,
+struct Vertex {
+    pub dot: DotIndex,
     x: f64,
     y: f64,
 }
 
-impl HasPosition for MeshVertex {
+#[derive(Clone, Copy, PartialEq)]
+pub struct VertexIndex {
+    handle: FixedVertexHandle,
+}
+
+impl HasPosition for Vertex {
     type Scalar = f64;
     fn position(&self) -> Point2<Self::Scalar> {
         Point2::new(self.x, self.y)
@@ -26,7 +31,7 @@ impl HasPosition for MeshVertex {
 }
 
 pub struct Mesh {
-    triangulation: DelaunayTriangulation<MeshVertex>,
+    triangulation: DelaunayTriangulation<Vertex>,
 }
 
 impl Mesh {
@@ -42,8 +47,8 @@ impl Mesh {
         for dot in layout.dots() {
             let center = layout.primitive(dot).shape().center();
             self.triangulation
-                .insert(MeshVertex {
-                    index: dot,
+                .insert(Vertex {
+                    dot,
                     x: center.x(),
                     y: center.y(),
                 })
@@ -51,14 +56,14 @@ impl Mesh {
         }
     }
 
-    pub fn position(&self, handle: FixedVertexHandle) -> Point {
-        let position = self.triangulation.vertex(handle).position();
+    pub fn position(&self, index: VertexIndex) -> Point {
+        let position = self.triangulation.vertex(index.handle).position();
         point! {x: position.x, y: position.y}
     }
 }
 
 impl visit::GraphBase for Mesh {
-    type NodeId = FixedVertexHandle;
+    type NodeId = VertexIndex;
     type EdgeId = FixedDirectedEdgeHandle;
 }
 
@@ -86,9 +91,9 @@ pub trait IndexHolder {
     fn index(&self) -> usize;
 }
 
-impl IndexHolder for FixedVertexHandle {
+impl IndexHolder for VertexIndex {
     fn index(&self) -> usize {
-        self.index()
+        self.handle.index()
     }
 }
 
@@ -122,20 +127,24 @@ impl visit::Data for Mesh {
 
 #[derive(Clone, Copy)]
 pub struct MeshEdgeReference<'a> {
-    handle: DirectedEdgeHandle<'a, MeshVertex, (), (), ()>,
+    handle: DirectedEdgeHandle<'a, Vertex, (), (), ()>,
 }
 
 impl<'a> visit::EdgeRef for MeshEdgeReference<'a> {
-    type NodeId = FixedVertexHandle;
+    type NodeId = VertexIndex;
     type EdgeId = FixedDirectedEdgeHandle;
     type Weight = ();
 
     fn source(&self) -> Self::NodeId {
-        self.handle.from().fix()
+        VertexIndex {
+            handle: self.handle.from().fix(),
+        }
     }
 
     fn target(&self) -> Self::NodeId {
-        self.handle.to().fix()
+        VertexIndex {
+            handle: self.handle.to().fix(),
+        }
     }
 
     fn weight(&self) -> &Self::Weight {
@@ -148,7 +157,7 @@ impl<'a> visit::EdgeRef for MeshEdgeReference<'a> {
 }
 
 pub struct MeshEdgeReferences<'a> {
-    iter: DirectedEdgeIterator<'a, MeshVertex, (), (), ()>,
+    iter: DirectedEdgeIterator<'a, Vertex, (), (), ()>,
 }
 
 impl<'a> Iterator for MeshEdgeReferences<'a> {
@@ -172,15 +181,17 @@ impl<'a> visit::IntoEdgeReferences for &'a Mesh {
 }
 
 pub struct MeshNeighbors<'a> {
-    iter: Box<dyn Iterator<Item = DirectedEdgeHandle<'a, MeshVertex, (), (), ()>> + 'a>,
+    iter: Box<dyn Iterator<Item = DirectedEdgeHandle<'a, Vertex, (), (), ()>> + 'a>,
 }
 
 impl<'a> Iterator for MeshNeighbors<'a> {
-    type Item = FixedVertexHandle;
+    type Item = VertexIndex;
 
     fn next(&mut self) -> Option<Self::Item> {
         let handle = self.iter.next()?;
-        Some(handle.to().fix())
+        Some(VertexIndex {
+            handle: handle.to().fix(),
+        })
     }
 }
 
@@ -189,13 +200,13 @@ impl<'a> visit::IntoNeighbors for &'a Mesh {
 
     fn neighbors(self, a: Self::NodeId) -> Self::Neighbors {
         MeshNeighbors {
-            iter: Box::new(self.triangulation.vertex(a).out_edges()),
+            iter: Box::new(self.triangulation.vertex(a.handle).out_edges()),
         }
     }
 }
 
 pub struct MeshEdges<'a> {
-    iter: Box<dyn Iterator<Item = DirectedEdgeHandle<'a, MeshVertex, (), (), ()>> + 'a>,
+    iter: Box<dyn Iterator<Item = DirectedEdgeHandle<'a, Vertex, (), (), ()>> + 'a>,
 }
 
 impl<'a> Iterator for MeshEdges<'a> {
@@ -212,7 +223,7 @@ impl<'a> visit::IntoEdges for &'a Mesh {
 
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         MeshEdges {
-            iter: Box::new(self.triangulation.vertex(a).out_edges()),
+            iter: Box::new(self.triangulation.vertex(a.handle).out_edges()),
         }
     }
 }
