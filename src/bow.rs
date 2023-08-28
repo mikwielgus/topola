@@ -1,6 +1,6 @@
 use petgraph::stable_graph::StableDiGraph;
 
-use crate::graph::{BendIndex, DotIndex, Label, Path, SegIndex, TaggedIndex, TaggedWeight};
+use crate::graph::{BendIndex, DotIndex, Label, SegIndex, TaggedIndex, TaggedWeight, Walk};
 use crate::primitive::{Bend, Dot, Seg};
 
 pub struct Bow<'a> {
@@ -18,13 +18,21 @@ impl<'a> Bow<'a> {
     pub fn new(index: BendIndex, graph: &'a StableDiGraph<TaggedWeight, Label, usize>) -> Self {
         let bend = index;
 
-        let seg1_dot2 = *Bend::new(bend, graph).prev().unwrap().as_dot().unwrap();
-        let seg1 = *Dot::new(seg1_dot2, graph).prev().unwrap().as_seg().unwrap();
-        let seg1_dot1 = *Seg::new(seg1, graph).prev().unwrap().as_dot().unwrap();
+        let seg1_dot2 = Bend::new(bend, graph).prev().unwrap();
+        let seg1 = *Dot::new(seg1_dot2, graph)
+            .tagged_prev()
+            .unwrap()
+            .as_seg()
+            .unwrap();
+        let seg1_dot1 = Seg::new(seg1, graph).prev().unwrap();
 
-        let seg2_dot1 = *Bend::new(bend, graph).next().unwrap().as_dot().unwrap();
-        let seg2 = *Dot::new(seg2_dot1, graph).next().unwrap().as_seg().unwrap();
-        let seg2_dot2 = *Seg::new(seg2, graph).next().unwrap().as_dot().unwrap();
+        let seg2_dot1 = Bend::new(bend, graph).next().unwrap();
+        let seg2 = *Dot::new(seg2_dot1, graph)
+            .tagged_next()
+            .unwrap()
+            .as_seg()
+            .unwrap();
+        let seg2_dot2 = Seg::new(seg2, graph).next().unwrap();
 
         Self {
             seg1_dot1,
@@ -39,7 +47,7 @@ impl<'a> Bow<'a> {
     }
 }
 
-impl<'a> Path for Bow<'a> {
+impl<'a> Walk for Bow<'a> {
     fn interior(&self) -> Vec<TaggedIndex> {
         vec![
             TaggedIndex::Seg(self.seg1),

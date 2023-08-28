@@ -1,11 +1,11 @@
 use std::mem::{self, swap};
 
-use petgraph::stable_graph::StableDiGraph;
+use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, Index, Label, Path, SegIndex, SegWeight, Tag,
-    TaggedIndex, TaggedWeight,
+    BendIndex, BendWeight, DotIndex, DotWeight, Index, Label, SegIndex, SegWeight, Tag,
+    TaggedIndex, TaggedWeight, Walk,
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape};
@@ -80,20 +80,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
             .map(|index| Index::<Label>::new(index).retag(self.graph.node_weight(index).unwrap()))
     }
 
-    pub fn next(&self) -> Option<TaggedIndex> {
-        self.graph
-            .neighbors_directed(self.index.index, Outgoing)
-            .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap())
-                    .unwrap()
-                    .is_end()
-            })
-            .map(|ni| Index::<Label>::new(ni).retag(self.graph.node_weight(ni).unwrap()))
-            .next()
-    }
-
-    pub fn next_akin(&self) -> Option<Index<Weight>> {
+    pub fn find_next_akin(&self) -> Option<Index<Weight>> {
         let mut prev_index = self.index.index;
 
         while let Some(index) = self
@@ -120,20 +107,24 @@ impl<'a, Weight> Primitive<'a, Weight> {
         None
     }
 
-    pub fn prev(&self) -> Option<TaggedIndex> {
+    pub fn tagged_next(&self) -> Option<TaggedIndex> {
+        self.next_node()
+            .map(|ni| Index::<Label>::new(ni).retag(self.graph.node_weight(ni).unwrap()))
+    }
+
+    fn next_node(&self) -> Option<NodeIndex<usize>> {
         self.graph
-            .neighbors_directed(self.index.index, Incoming)
+            .neighbors_directed(self.index.index, Outgoing)
             .filter(|ni| {
                 self.graph
-                    .edge_weight(self.graph.find_edge(*ni, self.index.index).unwrap())
+                    .edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap())
                     .unwrap()
                     .is_end()
             })
-            .map(|ni| Index::<Label>::new(ni).retag(self.graph.node_weight(ni).unwrap()))
             .next()
     }
 
-    pub fn prev_akin(&self) -> Option<Index<Weight>> {
+    pub fn find_prev_akin(&self) -> Option<Index<Weight>> {
         let mut prev_index = self.index.index;
 
         while let Some(index) = self
@@ -158,6 +149,23 @@ impl<'a, Weight> Primitive<'a, Weight> {
         }
 
         None
+    }
+
+    pub fn tagged_prev(&self) -> Option<TaggedIndex> {
+        self.prev_node()
+            .map(|ni| Index::<Label>::new(ni).retag(self.graph.node_weight(ni).unwrap()))
+    }
+
+    fn prev_node(&self) -> Option<NodeIndex<usize>> {
+        self.graph
+            .neighbors_directed(self.index.index, Incoming)
+            .filter(|ni| {
+                self.graph
+                    .edge_weight(self.graph.find_edge(*ni, self.index.index).unwrap())
+                    .unwrap()
+                    .is_end()
+            })
+            .next()
     }
 
     pub fn core(&self) -> Option<DotIndex> {
@@ -208,7 +216,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
     }
 }
 
-impl<'a, Weight> Path for Primitive<'a, Weight> {
+impl<'a, Weight> Walk for Primitive<'a, Weight> {
     fn interior(&self) -> Vec<TaggedIndex> {
         vec![self.tagged_index()]
     }
@@ -288,6 +296,14 @@ impl<'a> Dot<'a> {
 }
 
 impl<'a> Seg<'a> {
+    pub fn next(&self) -> Option<DotIndex> {
+        self.next_node().map(|ni| DotIndex::new(ni))
+    }
+
+    pub fn prev(&self) -> Option<DotIndex> {
+        self.prev_node().map(|ni| DotIndex::new(ni))
+    }
+
     pub fn weight(&self) -> SegWeight {
         *self.tagged_weight().as_seg().unwrap()
     }
@@ -326,6 +342,14 @@ impl<'a> Bend<'a> {
             })
             .map(|ni| BendIndex::new(ni))
             .next()
+    }
+
+    pub fn next(&self) -> Option<DotIndex> {
+        self.next_node().map(|ni| DotIndex::new(ni))
+    }
+
+    pub fn prev(&self) -> Option<DotIndex> {
+        self.prev_node().map(|ni| DotIndex::new(ni))
     }
 
     pub fn weight(&self) -> BendWeight {

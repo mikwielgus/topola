@@ -307,7 +307,7 @@ impl Router {
 
     fn relax_band(&mut self, bend: BendIndex) {
         let mut prev_bend = bend;
-        while let Some(cur_bend) = self.layout.primitive(prev_bend).prev_akin() {
+        while let Some(cur_bend) = self.layout.primitive(prev_bend).find_prev_akin() {
             if self.layout.primitive(cur_bend).cross_product() >= 0. {
                 self.release_bow(cur_bend);
             }
@@ -316,7 +316,7 @@ impl Router {
         }
 
         let mut prev_bend = bend;
-        while let Some(cur_bend) = self.layout.primitive(prev_bend).next_akin() {
+        while let Some(cur_bend) = self.layout.primitive(prev_bend).find_next_akin() {
             if self.layout.primitive(cur_bend).cross_product() >= 0. {
                 self.release_bow(cur_bend);
             }

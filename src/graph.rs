@@ -4,7 +4,7 @@ use std::marker::PhantomData;
 
 use crate::math::Circle;
 
-pub trait Path {
+pub trait Walk {
     fn interior(&self) -> Vec<TaggedIndex>;
     fn closure(&self) -> Vec<TaggedIndex>;
     fn ends(&self) -> [DotIndex; 2];

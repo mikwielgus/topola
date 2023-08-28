@@ -8,8 +8,8 @@ use spade::{DelaunayTriangulation, HasPosition, Point2, Triangulation};
 
 use crate::bow::Bow;
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, Index, Label, Path, SegIndex, SegWeight, Tag,
-    TaggedIndex, TaggedWeight,
+    BendIndex, BendWeight, DotIndex, DotWeight, Index, Label, SegIndex, SegWeight, Tag,
+    TaggedIndex, TaggedWeight, Walk,
 };
 use crate::primitive::Primitive;
 use crate::shape::Shape;
@@ -261,8 +261,7 @@ impl Layout {
     }
 
     pub fn dots(&self) -> impl Iterator<Item = DotIndex> + '_ {
-        self.nodes()
-            .filter_map(|ni| ni.as_dot().and_then(|di| Some(*di)))
+        self.nodes().filter_map(|ni| ni.as_dot().map(|di| *di))
     }
 
     pub fn shapes(&self) -> impl Iterator<Item = Shape> + '_ {
