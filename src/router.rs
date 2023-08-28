@@ -5,7 +5,7 @@ use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
 use crate::astar::astar;
-use crate::graph::{BendIndex, DotIndex, Path, SegIndex, TaggedIndex};
+use crate::graph::{BendIndex, DotIndex, SegIndex, TaggedIndex, Walk};
 use crate::graph::{BendWeight, DotWeight, SegWeight, TaggedWeight};
 use crate::guide::Guide;
 use crate::layout::Layout;
