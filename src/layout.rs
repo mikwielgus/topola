@@ -8,8 +8,8 @@ use spade::{DelaunayTriangulation, HasPosition, Point2, Triangulation};
 
 use crate::bow::Bow;
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, Index, Label, SegIndex, SegWeight, Tag,
-    TaggedIndex, TaggedWeight, Walk,
+    BendIndex, BendWeight, DotIndex, DotWeight, Index, Interior, Label, SegIndex, SegWeight, Tag,
+    TaggedIndex, TaggedWeight,
 };
 use crate::primitive::Primitive;
 use crate::shape::Shape;
@@ -29,15 +29,15 @@ impl Layout {
         }
     }
 
-    pub fn remove_open_set(&mut self, open_set: Vec<TaggedIndex>) {
-        for index in open_set.iter().filter(|index| !index.is_dot()) {
+    pub fn remove_open_set(&mut self, set: Vec<TaggedIndex>) {
+        for index in set.iter().filter(|index| !index.is_dot()) {
             untag!(index, self.remove(*index));
         }
 
         // We must remove the dots only after the segs and bends because we need dots to calculate
         // the shapes, which we need to remove the segs and bends from the R-tree.
 
-        for index in open_set.iter().filter(|index| index.is_dot()) {
+        for index in set.iter().filter(|index| index.is_dot()) {
             untag!(index, self.remove(*index));
         }
     }

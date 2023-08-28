@@ -4,10 +4,12 @@ use std::marker::PhantomData;
 
 use crate::math::Circle;
 
-pub trait Walk {
-    fn interior(&self) -> Vec<TaggedIndex>;
-    fn closure(&self) -> Vec<TaggedIndex>;
-    fn ends(&self) -> [DotIndex; 2];
+pub trait Interior<T> {
+    fn interior(&self) -> Vec<T>;
+}
+
+pub trait Ends<Start, Stop> {
+    fn ends(&self) -> (Start, Stop);
 }
 
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]

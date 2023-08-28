@@ -4,8 +4,8 @@ use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, Index, Label, SegIndex, SegWeight, Tag,
-    TaggedIndex, TaggedWeight, Walk,
+    BendIndex, BendWeight, DotIndex, DotWeight, Ends, Index, Interior, Label, SegIndex, SegWeight,
+    Tag, TaggedIndex, TaggedWeight,
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape};
@@ -27,8 +27,8 @@ impl<'a, Weight> Primitive<'a, Weight> {
             TaggedWeight::Seg(seg) => {
                 let ends = self.ends();
                 Shape::Seg(SegShape {
-                    from: self.primitive(ends[0]).weight().circle.pos,
-                    to: self.primitive(ends[1]).weight().circle.pos,
+                    from: self.primitive(ends.0).weight().circle.pos,
+                    to: self.primitive(ends.1).weight().circle.pos,
                     width: seg.width,
                 })
             }
@@ -36,13 +36,13 @@ impl<'a, Weight> Primitive<'a, Weight> {
                 let ends = self.ends();
 
                 let mut bend_shape = BendShape {
-                    from: self.primitive(ends[0]).weight().circle.pos,
-                    to: self.primitive(ends[1]).weight().circle.pos,
+                    from: self.primitive(ends.0).weight().circle.pos,
+                    to: self.primitive(ends.1).weight().circle.pos,
                     c: Circle {
                         pos: self.primitive(self.core().unwrap()).weight().circle.pos,
                         r: self.inner_radius(),
                     },
-                    width: self.primitive(ends[0]).weight().circle.r * 2.0,
+                    width: self.primitive(ends.0).weight().circle.r * 2.0,
                 };
 
                 if bend.cw {
@@ -216,22 +216,16 @@ impl<'a, Weight> Primitive<'a, Weight> {
     }
 }
 
-impl<'a, Weight> Walk for Primitive<'a, Weight> {
+impl<'a, Weight> Interior<TaggedIndex> for Primitive<'a, Weight> {
     fn interior(&self) -> Vec<TaggedIndex> {
         vec![self.tagged_index()]
     }
+}
 
-    fn closure(&self) -> Vec<TaggedIndex> {
-        let ends: Vec<TaggedIndex> = self
-            .ends()
-            .into_iter()
-            .map(|end| TaggedIndex::Dot(end))
-            .collect();
-        [[self.tagged_index()].as_slice(), ends.as_slice()].concat()
-    }
-
-    fn ends(&self) -> [DotIndex; 2] {
-        self.graph
+impl<'a, Weight> Ends<DotIndex, DotIndex> for Primitive<'a, Weight> {
+    fn ends(&self) -> (DotIndex, DotIndex) {
+        let v = self
+            .graph
             .neighbors_undirected(self.index.index)
             .filter(|ni| {
                 self.graph
@@ -246,9 +240,8 @@ impl<'a, Weight> Walk for Primitive<'a, Weight> {
             })
             .filter(|ni| self.graph.node_weight(*ni).unwrap().is_dot())
             .map(|ni| DotIndex::new(ni))
-            .collect::<Vec<DotIndex>>()
-            .try_into()
-            .unwrap()
+            .collect::<Vec<_>>();
+        (v[0], v[1])
     }
 }
 
@@ -359,8 +352,8 @@ impl<'a> Bend<'a> {
     pub fn cross_product(&self) -> f64 {
         let center = self.primitive(self.core().unwrap()).weight().circle.pos;
         let ends = self.ends();
-        let end1 = self.primitive(ends[0]).weight().circle.pos;
-        let end2 = self.primitive(ends[1]).weight().circle.pos;
+        let end1 = self.primitive(ends.0).weight().circle.pos;
+        let end2 = self.primitive(ends.1).weight().circle.pos;
         math::cross_product(end1 - center, end2 - center)
     }
 }

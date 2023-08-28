@@ -1,6 +1,8 @@
 use petgraph::stable_graph::StableDiGraph;
 
-use crate::graph::{BendIndex, DotIndex, Label, SegIndex, TaggedIndex, TaggedWeight, Walk};
+use crate::graph::{
+    BendIndex, DotIndex, Ends, Interior, Label, SegIndex, TaggedIndex, TaggedWeight,
+};
 use crate::primitive::{Bend, Dot, Seg};
 
 pub struct Bow {
@@ -45,7 +47,7 @@ impl Bow {
     }
 }
 
-impl Walk for Bow {
+impl Interior<TaggedIndex> for Bow {
     fn interior(&self) -> Vec<TaggedIndex> {
         vec![
             TaggedIndex::Seg(self.seg1),
@@ -55,20 +57,10 @@ impl Walk for Bow {
             TaggedIndex::Seg(self.seg2),
         ]
     }
+}
 
-    fn closure(&self) -> Vec<TaggedIndex> {
-        vec![
-            TaggedIndex::Dot(self.seg1_dot1),
-            TaggedIndex::Seg(self.seg1),
-            TaggedIndex::Dot(self.seg1_dot2),
-            TaggedIndex::Bend(self.bend),
-            TaggedIndex::Dot(self.seg2_dot1),
-            TaggedIndex::Seg(self.seg2),
-            TaggedIndex::Dot(self.seg2_dot2),
-        ]
-    }
-
-    fn ends(&self) -> [DotIndex; 2] {
-        [self.seg1_dot1, self.seg2_dot2]
+impl Ends<DotIndex, DotIndex> for Bow {
+    fn ends(&self) -> (DotIndex, DotIndex) {
+        (self.seg1_dot1, self.seg2_dot2)
     }
 }
