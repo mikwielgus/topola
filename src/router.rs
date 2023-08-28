@@ -5,6 +5,7 @@ use std::cell::{Ref, RefCell};
 use std::rc::Rc;
 
 use crate::astar::astar;
+use crate::bow::Bow;
 use crate::graph::{BendIndex, DotIndex, Ends, Interior, SegIndex, TaggedIndex};
 use crate::graph::{BendWeight, DotWeight, SegWeight, TaggedWeight};
 use crate::guide::Guide;
@@ -248,15 +249,12 @@ impl Router {
     }
 
     fn reroute_outward(&mut self, bend: BendIndex) -> Result<(), ()> {
-        let mut endss: Vec<(DotIndex, DotIndex)> = vec![];
-        let mut interiors: Vec<Vec<TaggedIndex>> = vec![];
+        let mut bows: Vec<Bow> = vec![];
         let cw = self.layout.primitive(bend).weight().cw;
 
         let mut cur_bend = bend;
         loop {
-            let bow = self.layout.bow(cur_bend);
-            endss.push(bow.ends());
-            interiors.push(bow.interior());
+            bows.push(self.layout.bow(cur_bend));
 
             cur_bend = match self.layout.primitive(cur_bend).outer() {
                 Some(new_bend) => new_bend,
@@ -267,11 +265,12 @@ impl Router {
         let core = self.layout.primitive(bend).core().unwrap();
         let mut maybe_inner = self.layout.primitive(bend).inner();
 
-        for interior in interiors {
-            self.layout.remove_open_set(interior);
+        for bow in &bows {
+            self.layout.remove_interior(bow);
         }
 
-        for ends in endss {
+        for bow in &bows {
+            let ends = bow.ends();
             let mut head = self.draw_start(ends.0);
             let width = 5.0;
 
@@ -337,7 +336,7 @@ impl Router {
         let bow = self.layout.bow(bend);
         let ends = bow.ends();
 
-        self.layout.remove_open_set(bow.interior());
+        self.layout.remove_interior(&bow);
 
         let head = self.draw_start(ends.0);
         let _ = self.draw_finish(head, ends.1, 5.0);

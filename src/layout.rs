@@ -30,15 +30,15 @@ impl Layout {
         }
     }
 
-    pub fn remove_open_set(&mut self, set: Vec<TaggedIndex>) {
-        for index in set.iter().filter(|index| !index.is_dot()) {
+    pub fn remove_interior(&mut self, path: &impl Interior<TaggedIndex>) {
+        for index in path.interior().iter().filter(|index| !index.is_dot()) {
             untag!(index, self.remove(*index));
         }
 
         // We must remove the dots only after the segs and bends because we need dots to calculate
         // the shapes, which we need to remove the segs and bends from the R-tree.
 
-        for index in set.iter().filter(|index| index.is_dot()) {
+        for index in path.interior().iter().filter(|index| index.is_dot()) {
             untag!(index, self.remove(*index));
         }
     }
