@@ -80,50 +80,6 @@ impl<'a, Weight> Primitive<'a, Weight> {
             .map(|index| Index::<Label>::new(index).retag(self.graph.node_weight(index).unwrap()))
     }
 
-    pub fn find_next_akin(&self) -> Option<Index<Weight>> {
-        let mut prev_index = self.index.index;
-
-        while let Some(index) = self
-            .graph
-            .neighbors_directed(prev_index, Outgoing)
-            .filter(|ni| self.graph.find_edge(prev_index, *ni).is_some())
-            .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(prev_index, *ni).unwrap())
-                    .unwrap()
-                    .is_end()
-            })
-            .next()
-        {
-            let weight = *self.graph.node_weight(index).unwrap();
-
-            if mem::discriminant(&self.tagged_weight()) == mem::discriminant(&weight) {
-                return Some(Index::<Weight>::new(index));
-            }
-
-            prev_index = index;
-        }
-
-        None
-    }
-
-    pub fn tagged_next(&self) -> Option<TaggedIndex> {
-        self.next_node()
-            .map(|ni| Index::<Label>::new(ni).retag(self.graph.node_weight(ni).unwrap()))
-    }
-
-    fn next_node(&self) -> Option<NodeIndex<usize>> {
-        self.graph
-            .neighbors_directed(self.index.index, Outgoing)
-            .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap())
-                    .unwrap()
-                    .is_end()
-            })
-            .next()
-    }
-
     pub fn find_prev_akin(&self) -> Option<Index<Weight>> {
         let mut prev_index = self.index.index;
 
@@ -162,6 +118,50 @@ impl<'a, Weight> Primitive<'a, Weight> {
             .filter(|ni| {
                 self.graph
                     .edge_weight(self.graph.find_edge(*ni, self.index.index).unwrap())
+                    .unwrap()
+                    .is_end()
+            })
+            .next()
+    }
+
+    pub fn find_next_akin(&self) -> Option<Index<Weight>> {
+        let mut prev_index = self.index.index;
+
+        while let Some(index) = self
+            .graph
+            .neighbors_directed(prev_index, Outgoing)
+            .filter(|ni| self.graph.find_edge(prev_index, *ni).is_some())
+            .filter(|ni| {
+                self.graph
+                    .edge_weight(self.graph.find_edge(prev_index, *ni).unwrap())
+                    .unwrap()
+                    .is_end()
+            })
+            .next()
+        {
+            let weight = *self.graph.node_weight(index).unwrap();
+
+            if mem::discriminant(&self.tagged_weight()) == mem::discriminant(&weight) {
+                return Some(Index::<Weight>::new(index));
+            }
+
+            prev_index = index;
+        }
+
+        None
+    }
+
+    pub fn tagged_next(&self) -> Option<TaggedIndex> {
+        self.next_node()
+            .map(|ni| Index::<Label>::new(ni).retag(self.graph.node_weight(ni).unwrap()))
+    }
+
+    fn next_node(&self) -> Option<NodeIndex<usize>> {
+        self.graph
+            .neighbors_directed(self.index.index, Outgoing)
+            .filter(|ni| {
+                self.graph
+                    .edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap())
                     .unwrap()
                     .is_end()
             })

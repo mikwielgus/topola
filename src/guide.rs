@@ -63,15 +63,13 @@ impl<'a, 'b> Guide<'a, 'b> {
     }
 
     pub fn head_cw(&self, head: &Head) -> Option<bool> {
-        match head.bend {
-            Some(bend) => Some(self.layout.primitive(bend).weight().cw),
+        match &head.segbend {
+            Some(segbend) => Some(self.layout.primitive(segbend.bend).weight().cw),
             None => None,
         }
     }
 
     fn head_circle(&self, head: &Head, width: f64) -> Circle {
-        let maybe_bend = head.bend;
-
         let conditions = Conditions {
             lower_net: None,
             higher_net: None,
@@ -79,12 +77,12 @@ impl<'a, 'b> Guide<'a, 'b> {
             zone: None,
         };
 
-        match maybe_bend {
-            Some(bend) => {
-                if let Some(inner) = self.layout.primitive(bend).inner() {
+        match &head.segbend {
+            Some(segbend) => {
+                if let Some(inner) = self.layout.primitive(segbend.bend).inner() {
                     self.bend_circle(inner, width)
                 } else {
-                    self.dot_circle(self.layout.primitive(bend).core().unwrap(), width)
+                    self.dot_circle(self.layout.primitive(segbend.bend).core().unwrap(), width)
                 }
             }
             None => Circle {

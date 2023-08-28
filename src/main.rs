@@ -18,6 +18,7 @@ mod mesh;
 mod primitive;
 mod router;
 mod rules;
+mod segbend;
 mod shape;
 
 use geo::EuclideanDistance;

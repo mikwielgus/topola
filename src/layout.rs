@@ -12,6 +12,7 @@ use crate::graph::{
     TaggedIndex, TaggedWeight,
 };
 use crate::primitive::Primitive;
+use crate::segbend::Segbend;
 use crate::shape::Shape;
 
 pub type RTreeWrapper = GeomWithData<Shape, TaggedIndex>;
@@ -215,7 +216,15 @@ impl Layout {
     }
 
     pub fn bow(&self, bend: BendIndex) -> Bow {
-        Bow::new(bend, &self.graph)
+        Bow::from_bend(bend, &self.graph)
+    }
+
+    pub fn prev_segbend(&self, dot: DotIndex) -> Option<Segbend> {
+        Segbend::from_dot_prev(dot, &self.graph)
+    }
+
+    pub fn next_segbend(&self, dot: DotIndex) -> Option<Segbend> {
+        Segbend::from_dot_next(dot, &self.graph)
     }
 
     fn fail_and_remove_if_collides_except<Weight: std::marker::Copy>(

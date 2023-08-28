@@ -13,6 +13,7 @@ use crate::math;
 use crate::math::Circle;
 use crate::mesh::{Mesh, VertexIndex};
 use crate::rules::{Conditions, Rules};
+use crate::segbend::Segbend;
 use crate::shape::Shape;
 
 pub struct Router {
@@ -29,7 +30,7 @@ struct Route {
 
 pub struct Head {
     pub dot: DotIndex,
-    pub bend: Option<BendIndex>,
+    pub segbend: Option<Segbend>,
 }
 
 impl Router {
@@ -97,7 +98,7 @@ impl Router {
     pub fn draw_start(&mut self, from: DotIndex) -> Head {
         Head {
             dot: from,
-            bend: self.layout.primitive(from).bend(),
+            segbend: self.layout.prev_segbend(from),
         }
     }
 
@@ -131,8 +132,8 @@ impl Router {
         width: f64,
     ) -> Result<(), ()> {
         let to_head = Head {
-            bend: Some(into_bend),
             dot: into,
+            segbend: self.layout.next_segbend(into),
         };
         let to_cw = self.guide(&Default::default()).head_cw(&to_head).unwrap();
         let tangent = self
@@ -157,7 +158,8 @@ impl Router {
     ) -> Result<Head, ()> {
         let outer = self.layout.primitive(around).outer().unwrap();
         let head = self.draw_around_dot(head, around, cw, width)?;
-        self.layout.reattach_bend(outer, head.bend.unwrap());
+        self.layout
+            .reattach_bend(outer, head.segbend.as_ref().unwrap().bend);
 
         self.reroute_outward(outer)?;
         Ok(head)
@@ -175,7 +177,7 @@ impl Router {
             .head_around_dot_segment(&head, around, cw, width);
 
         let head = self.extend_head(head, tangent.start_point())?;
-        self.draw_seg_bend(
+        self.draw_segbend(
             head,
             TaggedIndex::Dot(around),
             tangent.end_point(),
@@ -193,7 +195,8 @@ impl Router {
     ) -> Result<Head, ()> {
         let outer = self.layout.primitive(around).outer().unwrap();
         let head = self.draw_around_bend(head, around, cw, width)?;
-        self.layout.reattach_bend(outer, head.bend.unwrap());
+        self.layout
+            .reattach_bend(outer, head.segbend.as_ref().unwrap().bend);
 
         self.reroute_outward(outer)?;
         Ok(head)
@@ -211,7 +214,7 @@ impl Router {
             .head_around_bend_segment(&head, around, cw, width);
 
         let head = self.extend_head(head, tangent.start_point())?;
-        self.draw_seg_bend(
+        self.draw_segbend(
             head,
             TaggedIndex::Bend(around),
             tangent.end_point(),
@@ -220,7 +223,7 @@ impl Router {
         )
     }
 
-    fn draw_seg_bend(
+    fn draw_segbend(
         &mut self,
         head: Head,
         around: TaggedIndex,
@@ -228,7 +231,8 @@ impl Router {
         cw: bool,
         width: f64,
     ) -> Result<Head, ()> {
-        let head = self.draw_seg(head, to, width)?;
+        let (head, seg) = self.draw_seg(head, to, width)?;
+        let dot = head.dot;
         let bend_to = self
             .layout
             .add_dot(self.layout.primitive(head.dot).weight())?;
@@ -239,7 +243,7 @@ impl Router {
             .add_bend(head.dot, bend_to, around, BendWeight { net, cw })?;
         Ok(Head {
             dot: bend_to,
-            bend: Some(bend),
+            segbend: Some(Segbend { bend, dot, seg }),
         })
     }
 
@@ -277,7 +281,7 @@ impl Router {
                 head = self.draw_around_dot(head, core, cw, width)?;
             }
 
-            maybe_inner = head.bend;
+            maybe_inner = head.segbend.as_ref().map(|segbend| segbend.bend);
             self.draw_finish(head, ends.1, width)?;
             self.relax_band(maybe_inner.unwrap());
         }
@@ -285,7 +289,7 @@ impl Router {
         Ok(())
     }
 
-    fn draw_seg(&mut self, head: Head, to: Point, width: f64) -> Result<Head, ()> {
+    fn draw_seg(&mut self, head: Head, to: Point, width: f64) -> Result<(Head, SegIndex), ()> {
         let net = self.layout.primitive(head.dot).weight().net;
 
         assert!(width <= self.layout.primitive(head.dot).weight().circle.r * 2.);
@@ -297,12 +301,16 @@ impl Router {
                 r: width / 2.0,
             },
         })?;
-        self.layout
+        let seg = self
+            .layout
             .add_seg(head.dot, to_index, SegWeight { net, width })?;
-        Ok(Head {
-            dot: to_index,
-            bend: None,
-        })
+        Ok((
+            Head {
+                dot: to_index,
+                segbend: None,
+            },
+            seg,
+        ))
     }
 
     fn relax_band(&mut self, bend: BendIndex) {
@@ -346,7 +354,7 @@ impl Router {
     }
 
     fn extend_head(&mut self, head: Head, to: Point) -> Result<Head, ()> {
-        if let Some(..) = head.bend {
+        if let Some(..) = head.segbend {
             self.extend_head_bend(head, to)
         } else {
             Ok(head)
@@ -358,7 +366,8 @@ impl Router {
     }
 
     fn extend_head_bend(&mut self, head: Head, to: Point) -> Result<Head, ()> {
-        self.layout.extend_bend(head.bend.unwrap(), head.dot, to)?;
+        self.layout
+            .extend_bend(head.segbend.as_ref().unwrap().bend, head.dot, to)?;
         Ok(head)
     }
 
