@@ -63,10 +63,9 @@ impl<'a, 'b> Guide<'a, 'b> {
     }
 
     pub fn head_cw(&self, head: &Head) -> Option<bool> {
-        match &head.segbend {
-            Some(segbend) => Some(self.layout.primitive(segbend.bend).weight().cw),
-            None => None,
-        }
+        head.segbend
+            .as_ref()
+            .map(|segbend| self.layout.primitive(segbend.bend).weight().cw)
     }
 
     fn head_circle(&self, head: &Head, width: f64) -> Circle {

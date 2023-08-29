@@ -1,7 +1,7 @@
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::{
-    graph::{BendIndex, DotIndex, Interior, Label, SegIndex, TaggedIndex, TaggedWeight},
+    graph::{BendIndex, DotIndex, Ends, Interior, Label, SegIndex, TaggedIndex, TaggedWeight},
     primitive::{Bend, Dot},
 };
 
@@ -62,5 +62,11 @@ impl Interior<TaggedIndex> for Segbend {
             TaggedIndex::Dot(self.dot),
             TaggedIndex::Seg(self.seg),
         ]
+    }
+}
+
+impl Ends<SegIndex, BendIndex> for Segbend {
+    fn ends(&self) -> (SegIndex, BendIndex) {
+        (self.seg, self.bend)
     }
 }

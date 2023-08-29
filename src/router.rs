@@ -2,8 +2,6 @@ use geo::geometry::Point;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use spade::InsertionError;
 
-
-
 use crate::astar::astar;
 use crate::bow::Bow;
 use crate::graph::{BendIndex, DotIndex, Ends, SegIndex, TaggedIndex};
@@ -15,7 +13,6 @@ use crate::math::Circle;
 use crate::mesh::{Mesh, VertexIndex};
 use crate::rules::{Conditions, Rules};
 use crate::segbend::Segbend;
-
 
 pub struct Router {
     pub layout: Layout,
@@ -90,10 +87,31 @@ impl Router {
         Ok(())
     }
 
+    fn unroute_step(&mut self, mut route: Route) -> Result<Route, ()> {
+        route.head = self.undraw_segbend(route.head).unwrap();
+        route.path.pop();
+        Ok(route)
+    }
+
     fn route_step(&mut self, mut route: Route, to: DotIndex) -> Result<Route, ()> {
         route.head = self.draw_around_dot(route.head, to, true, route.width)?;
         route.path.push(self.mesh.vertex(to));
         Ok(route)
+    }
+
+    pub fn undraw_segbend(&mut self, head: Head) -> Option<Head> {
+        let segbend = head.segbend.unwrap();
+
+        if let Some(prev_dot) = self.layout.primitive(segbend.ends().0).prev() {
+            self.layout.remove_interior(&segbend);
+
+            Some(Head {
+                dot: prev_dot,
+                segbend: self.layout.prev_segbend(prev_dot),
+            })
+        } else {
+            None
+        }
     }
 
     pub fn draw_start(&mut self, from: DotIndex) -> Head {
