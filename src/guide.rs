@@ -70,7 +70,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     }
 
     fn head_circle(&self, head: &Head, width: f64) -> Circle {
-        let conditions = Conditions {
+        let _conditions = Conditions {
             lower_net: None,
             higher_net: None,
             layer: None,
@@ -92,7 +92,7 @@ impl<'a, 'b> Guide<'a, 'b> {
         }
     }
 
-    fn bend_circle(&self, bend: BendIndex, width: f64) -> Circle {
+    fn bend_circle(&self, bend: BendIndex, _width: f64) -> Circle {
         let mut circle = self
             .layout
             .primitive(bend)

@@ -1,7 +1,6 @@
 use fixedbitset::FixedBitSet;
 use geo::{point, Point};
 use petgraph::{
-    stable_graph::NodeIndex,
     visit::{self, NodeIndexable},
 };
 use spade::{
@@ -10,7 +9,7 @@ use spade::{
     DelaunayTriangulation, HasPosition, InsertionError, Point2, Triangulation,
 };
 
-use crate::{graph::DotIndex, layout::Layout, router::Router};
+use crate::{graph::DotIndex, layout::Layout};
 
 struct Vertex {
     pub dot: DotIndex,

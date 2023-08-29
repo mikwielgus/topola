@@ -4,8 +4,7 @@ use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, Ends, Index, Interior, Label, SegIndex, SegWeight,
-    Tag, TaggedIndex, TaggedWeight,
+    BendIndex, BendWeight, DotIndex, DotWeight, Ends, Index, Interior, Label, SegWeight, TaggedIndex, TaggedWeight,
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape};

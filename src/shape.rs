@@ -2,7 +2,7 @@ use enum_as_inner::EnumAsInner;
 use geo::{point, polygon, EuclideanDistance, Intersects, Point, Polygon, Rotate};
 use rstar::{RTreeObject, AABB};
 
-use crate::graph::{DotWeight, TaggedWeight};
+
 use crate::math::{self, Circle};
 
 #[derive(Debug, Clone, Copy, PartialEq)]

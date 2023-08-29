@@ -21,8 +21,8 @@ mod rules;
 mod segbend;
 mod shape;
 
-use geo::EuclideanDistance;
-use graph::{SegWeight, Tag, TaggedIndex};
+
+use graph::{Tag, TaggedIndex};
 use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
@@ -55,7 +55,7 @@ fn main() {
     canvas.present();
 
     let mut event_pump = sdl_context.event_pump().unwrap();
-    let mut i = 0;
+    let _i = 0;
     let mut router = Router::new();
 
     let dot1_1 = router
@@ -68,7 +68,7 @@ fn main() {
             },
         })
         .unwrap();
-    let dot2_1 = router
+    let _dot2_1 = router
         .layout
         .add_dot(DotWeight {
             net: 2,
@@ -78,7 +78,7 @@ fn main() {
             },
         })
         .unwrap();
-    let dot3_1 = router
+    let _dot3_1 = router
         .layout
         .add_dot(DotWeight {
             net: 3,
@@ -88,7 +88,7 @@ fn main() {
             },
         })
         .unwrap();
-    let dot4_1 = router
+    let _dot4_1 = router
         .layout
         .add_dot(DotWeight {
             net: 4,
@@ -109,7 +109,7 @@ fn main() {
             },
         })
         .unwrap();
-    let dot2_2 = router
+    let _dot2_2 = router
         .layout
         .add_dot(DotWeight {
             net: 2,
@@ -119,7 +119,7 @@ fn main() {
             },
         })
         .unwrap();
-    let dot3_2 = router
+    let _dot3_2 = router
         .layout
         .add_dot(DotWeight {
             net: 3,
@@ -129,7 +129,7 @@ fn main() {
             },
         })
         .unwrap();
-    let dot4_2 = router
+    let _dot4_2 = router
         .layout
         .add_dot(DotWeight {
             net: 4,
@@ -140,7 +140,7 @@ fn main() {
         })
         .unwrap();
 
-    let dot5 = router
+    let _dot5 = router
         .layout
         .add_dot(DotWeight {
             net: 5,
@@ -151,7 +151,7 @@ fn main() {
         })
         .unwrap();
 
-    let dot6 = router
+    let _dot6 = router
         .layout
         .add_dot(DotWeight {
             net: 6,
@@ -162,7 +162,7 @@ fn main() {
         })
         .unwrap();
 
-    let dot7 = router
+    let _dot7 = router
         .layout
         .add_dot(DotWeight {
             net: 5,
@@ -184,7 +184,7 @@ fn main() {
         })
         .unwrap();
 
-    let barrier2_dot1 = router
+    let _barrier2_dot1 = router
         .layout
         .add_dot(DotWeight {
             net: 20,
@@ -194,7 +194,7 @@ fn main() {
             },
         })
         .unwrap();
-    let barrier2_dot2 = router
+    let _barrier2_dot2 = router
         .layout
         .add_dot(DotWeight {
             net: 20,

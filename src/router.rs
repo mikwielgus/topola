@@ -1,21 +1,21 @@
 use geo::geometry::Point;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use spade::InsertionError;
-use std::cell::{Ref, RefCell};
-use std::rc::Rc;
+
+
 
 use crate::astar::astar;
 use crate::bow::Bow;
-use crate::graph::{BendIndex, DotIndex, Ends, Interior, SegIndex, TaggedIndex};
-use crate::graph::{BendWeight, DotWeight, SegWeight, TaggedWeight};
+use crate::graph::{BendIndex, DotIndex, Ends, SegIndex, TaggedIndex};
+use crate::graph::{BendWeight, DotWeight, SegWeight};
 use crate::guide::Guide;
 use crate::layout::Layout;
-use crate::math;
+
 use crate::math::Circle;
 use crate::mesh::{Mesh, VertexIndex};
 use crate::rules::{Conditions, Rules};
 use crate::segbend::Segbend;
-use crate::shape::Shape;
+
 
 pub struct Router {
     pub layout: Layout,
@@ -48,11 +48,11 @@ impl Router {
         // right.
         self.mesh.triangulate(&self.layout)?;
 
-        let (cost, mesh_path) = astar(
+        let (_cost, mesh_path) = astar(
             &self.mesh,
             self.mesh.vertex(from),
-            |node, tracker| (node != self.mesh.vertex(to)).then_some(0),
-            |edge| 1,
+            |node, _tracker| (node != self.mesh.vertex(to)).then_some(0),
+            |_edge| 1,
             |_| 0,
         )
         .unwrap(); // TODO.
@@ -142,7 +142,7 @@ impl Router {
             .head_around_bend_segment(&head, into_bend, to_cw, width);
 
         let head = self.extend_head(head, tangent.start_point())?;
-        let to_head = self.extend_head(to_head, tangent.end_point())?;
+        let _to_head = self.extend_head(to_head, tangent.end_point())?;
 
         let net = self.layout.primitive(head.dot).weight().net;
         self.layout

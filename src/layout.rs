@@ -1,10 +1,10 @@
 use geo::Point;
-use petgraph::stable_graph::{EdgeIndex, NodeIndex, StableDiGraph};
+use petgraph::stable_graph::{StableDiGraph};
 use petgraph::visit::EdgeRef;
 use petgraph::Direction::Incoming;
 use rstar::primitives::GeomWithData;
 use rstar::RTree;
-use spade::{DelaunayTriangulation, HasPosition, Point2, Triangulation};
+use spade::{Triangulation};
 
 use crate::bow::Bow;
 use crate::graph::{
