@@ -81,7 +81,7 @@ where
         self.came_from.insert(node, previous);
     }
 
-    fn reconstruct_path_to(&self, last: G::NodeId) -> Vec<G::NodeId> {
+    pub fn reconstruct_path_to(&self, last: G::NodeId) -> Vec<G::NodeId> {
         let mut path = vec![last];
 
         let mut current = last;

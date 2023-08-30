@@ -11,6 +11,7 @@ macro_rules! dbg_dot {
 mod graph;
 mod astar;
 mod bow;
+mod draw;
 mod guide;
 mod layout;
 mod math;
@@ -20,7 +21,6 @@ mod router;
 mod rules;
 mod segbend;
 mod shape;
-
 
 use graph::{Tag, TaggedIndex};
 use sdl2::event::Event;
