@@ -307,14 +307,14 @@ fn render_times(
                         }
                     }
                 }
-                let envelope = shape.envelope();
+                /*let envelope = shape.envelope();
                 let _ = canvas.rectangle(
                     envelope.lower()[0] as i16,
                     envelope.lower()[1] as i16,
                     envelope.upper()[0] as i16,
                     envelope.upper()[1] as i16,
                     Color::RGB(100, 100, 100),
-                );
+                );*/
             }
 
             /*for edge in router.routeedges() {

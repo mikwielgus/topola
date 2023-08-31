@@ -171,6 +171,7 @@ impl<'a> Draw<'a> {
             .prev()
             .map(|prev_dot| {
                 self.layout.remove_interior(&segbend);
+                self.layout.remove(head.dot);
 
                 Head {
                     dot: prev_dot,

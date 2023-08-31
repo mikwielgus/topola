@@ -36,31 +36,32 @@ impl Router {
         let mut mesh = Mesh::new();
         mesh.triangulate(&self.layout)?;
 
+        let mut route = self.route(&mesh);
+        let mut trace = route.start(mesh.vertex(from));
+
         let (_cost, path) = astar(
             &mesh,
             mesh.vertex(from),
             |node, tracker| {
                 let new_path = tracker.reconstruct_path_to(node);
 
-                (node != mesh.vertex(to)).then_some(0)
+                if node == mesh.vertex(to) {
+                    route
+                        .rework_path(&mut trace, &new_path[..new_path.len() - 1], 5.0)
+                        .ok();
+                    route
+                        .finish(&mut trace, new_path[new_path.len() - 1], 5.0)
+                        .ok();
+                    None
+                } else {
+                    route.rework_path(&mut trace, &new_path, 5.0).ok();
+                    Some(0)
+                }
             },
             |_edge| 1,
             |_| 0,
         )
         .unwrap(); // TODO.
-
-        /*let path: Vec<DotIndex> = mesh_path
-        .iter()
-        .map(|vertex| self.mesh.dot(*vertex))
-        .collect();*/
-
-        let mut trace = self.route(&mesh).start(path[0]);
-        trace = self
-            .route(&mesh)
-            .path(trace, &path[1..(path.len() - 1)], 5.0)
-            .unwrap(); // TODO.
-        let _ = self.route(&mesh).finish(trace, path[path.len() - 1], 5.0);
-
         Ok(())
     }
 

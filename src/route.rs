@@ -36,17 +36,17 @@ impl<'a> Route<'a> {
         }
     }
 
-    pub fn finish(&mut self, trace: Trace, into: VertexIndex, width: f64) -> Result<(), ()> {
+    pub fn finish(&mut self, trace: &mut Trace, into: VertexIndex, width: f64) -> Result<(), ()> {
         let into_dot = self.mesh.dot(into);
         self.draw().finish(trace.head, into_dot, width)
     }
 
     pub fn rework_path(
         &mut self,
-        mut trace: Trace,
+        trace: &mut Trace,
         path: &[VertexIndex],
         width: f64,
-    ) -> Result<Trace, ()> {
+    ) -> Result<(), ()> {
         let prefix_length = trace
             .path
             .iter()
@@ -55,41 +55,37 @@ impl<'a> Route<'a> {
             .count();
 
         let length = trace.path.len();
-        trace = self.undo_path(trace, length - prefix_length)?;
+        self.undo_path(trace, length - prefix_length)?;
         self.path(trace, &path[prefix_length..], width)
     }
 
-    pub fn path(
-        &mut self,
-        mut trace: Trace,
-        path: &[VertexIndex],
-        width: f64,
-    ) -> Result<Trace, ()> {
+    pub fn path(&mut self, trace: &mut Trace, path: &[VertexIndex], width: f64) -> Result<(), ()> {
         for vertex in path {
-            trace = self.step(trace, *vertex, width)?;
+            self.step(trace, *vertex, width)?;
         }
-        Ok(trace)
+        Ok(())
     }
 
-    pub fn undo_path(&mut self, mut trace: Trace, step_count: usize) -> Result<Trace, ()> {
+    pub fn undo_path(&mut self, trace: &mut Trace, step_count: usize) -> Result<(), ()> {
         for _ in 0..step_count {
-            trace = self.undo_step(trace)?;
+            self.undo_step(trace)?;
         }
-        Ok(trace)
+        Ok(())
     }
 
-    pub fn step(&mut self, mut trace: Trace, to: VertexIndex, width: f64) -> Result<Trace, ()> {
+    pub fn step(&mut self, trace: &mut Trace, to: VertexIndex, width: f64) -> Result<(), ()> {
         let to_dot = self.mesh.dot(to);
         trace.head = self
             .draw()
             .segbend_around_dot(trace.head, to_dot, true, width)?;
-        Ok(trace)
+        trace.path.push(to);
+        Ok(())
     }
 
-    pub fn undo_step(&mut self, mut trace: Trace) -> Result<Trace, ()> {
+    pub fn undo_step(&mut self, trace: &mut Trace) -> Result<(), ()> {
         trace.head = self.draw().undo_segbend(trace.head).unwrap();
         trace.path.pop();
-        Ok(trace)
+        Ok(())
     }
 
     fn draw(&mut self) -> Draw {
