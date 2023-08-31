@@ -54,12 +54,12 @@ impl Router {
         .map(|vertex| self.mesh.dot(*vertex))
         .collect();*/
 
-        let mut trace = self.route(&mesh, 5.0).start(path[0]);
+        let mut trace = self.route(&mesh).start(path[0]);
         trace = self
-            .route(&mesh, 5.0)
-            .path(trace, &path[1..(path.len() - 1)])
+            .route(&mesh)
+            .path(trace, &path[1..(path.len() - 1)], 5.0)
             .unwrap(); // TODO.
-        let _ = self.route(&mesh, 5.0).finish(trace, path[path.len() - 1]);
+        let _ = self.route(&mesh).finish(trace, path[path.len() - 1], 5.0);
 
         Ok(())
     }
@@ -176,8 +176,8 @@ impl Router {
         Ok(())
     }*/
 
-    pub fn route<'a>(&'a mut self, mesh: &'a Mesh, width: f64) -> Route {
-        Route::new(&mut self.layout, &self.rules, mesh, width)
+    pub fn route<'a>(&'a mut self, mesh: &'a Mesh) -> Route {
+        Route::new(&mut self.layout, &self.rules, mesh)
     }
 
     /*pub fn routeedges(&self) -> impl Iterator<Item = (Point, Point)> + '_ {

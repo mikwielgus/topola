@@ -15,16 +15,14 @@ pub struct Route<'a> {
     layout: &'a mut Layout,
     rules: &'a Rules,
     mesh: &'a Mesh,
-    width: f64,
 }
 
 impl<'a> Route<'a> {
-    pub fn new(layout: &'a mut Layout, rules: &'a Rules, mesh: &'a Mesh, width: f64) -> Self {
+    pub fn new(layout: &'a mut Layout, rules: &'a Rules, mesh: &'a Mesh) -> Self {
         Route {
             layout,
             rules,
             mesh,
-            width,
         }
     }
 
@@ -38,13 +36,17 @@ impl<'a> Route<'a> {
         }
     }
 
-    pub fn finish(&mut self, trace: Trace, into: VertexIndex) {
+    pub fn finish(&mut self, trace: Trace, into: VertexIndex, width: f64) -> Result<(), ()> {
         let into_dot = self.mesh.dot(into);
-        let width = self.width;
-        self.draw().finish(trace.head, into_dot, width);
+        self.draw().finish(trace.head, into_dot, width)
     }
 
-    pub fn rework_path(&mut self, mut trace: Trace, path: &[VertexIndex]) -> Result<Trace, ()> {
+    pub fn rework_path(
+        &mut self,
+        mut trace: Trace,
+        path: &[VertexIndex],
+        width: f64,
+    ) -> Result<Trace, ()> {
         let prefix_length = trace
             .path
             .iter()
@@ -54,12 +56,17 @@ impl<'a> Route<'a> {
 
         let length = trace.path.len();
         trace = self.undo_path(trace, length - prefix_length)?;
-        self.path(trace, &path[prefix_length..])
+        self.path(trace, &path[prefix_length..], width)
     }
 
-    pub fn path(&mut self, mut trace: Trace, path: &[VertexIndex]) -> Result<Trace, ()> {
+    pub fn path(
+        &mut self,
+        mut trace: Trace,
+        path: &[VertexIndex],
+        width: f64,
+    ) -> Result<Trace, ()> {
         for vertex in path {
-            trace = self.step(trace, *vertex)?;
+            trace = self.step(trace, *vertex, width)?;
         }
         Ok(trace)
     }
@@ -71,9 +78,8 @@ impl<'a> Route<'a> {
         Ok(trace)
     }
 
-    pub fn step(&mut self, mut trace: Trace, to: VertexIndex) -> Result<Trace, ()> {
+    pub fn step(&mut self, mut trace: Trace, to: VertexIndex, width: f64) -> Result<Trace, ()> {
         let to_dot = self.mesh.dot(to);
-        let width = self.width;
         trace.head = self
             .draw()
             .segbend_around_dot(trace.head, to_dot, true, width)?;
