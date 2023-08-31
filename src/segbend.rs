@@ -5,6 +5,7 @@ use crate::{
     primitive::{Bend, Dot},
 };
 
+#[derive(Debug, Clone, Copy)]
 pub struct Segbend {
     pub seg: SegIndex,
     pub dot: DotIndex,

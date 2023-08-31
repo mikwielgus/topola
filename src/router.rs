@@ -27,6 +27,7 @@ struct Route {
     width: f64,
 }
 
+#[derive(Debug, Clone, Copy)]
 pub struct Head {
     pub dot: DotIndex,
     pub segbend: Option<Segbend>,

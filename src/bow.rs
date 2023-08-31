@@ -5,6 +5,7 @@ use crate::graph::{
 };
 use crate::primitive::{Bend, Dot, Seg};
 
+#[derive(Debug, Clone, Copy)]
 pub struct Bow {
     seg1_dot1: DotIndex,
     seg1: SegIndex,
