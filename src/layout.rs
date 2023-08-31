@@ -1,10 +1,10 @@
 use geo::Point;
-use petgraph::stable_graph::{StableDiGraph};
+use petgraph::stable_graph::StableDiGraph;
 use petgraph::visit::EdgeRef;
 use petgraph::Direction::Incoming;
 use rstar::primitives::GeomWithData;
 use rstar::RTree;
-use spade::{Triangulation};
+use spade::Triangulation;
 
 use crate::bow::Bow;
 use crate::graph::{
@@ -233,7 +233,7 @@ impl Layout {
         except: &[TaggedIndex],
     ) -> Result<(), ()> {
         if let Some(..) = self.detect_collision_except(index, except) {
-            self.remove(index);
+            self.graph.remove_node(index.index);
             return Err(());
         }
         Ok(())
