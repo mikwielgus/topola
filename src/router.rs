@@ -4,7 +4,7 @@ use spade::InsertionError;
 
 use crate::astar::astar;
 use crate::bow::Bow;
-use crate::draw::Draw;
+use crate::draw::{Draw, Head};
 use crate::graph::{BendIndex, DotIndex, Ends, SegIndex, TaggedIndex};
 use crate::graph::{BendWeight, DotWeight, SegWeight};
 use crate::guide::Guide;
@@ -12,123 +12,59 @@ use crate::layout::Layout;
 
 use crate::math::Circle;
 use crate::mesh::{Mesh, VertexIndex};
+use crate::route::Route;
 use crate::rules::{Conditions, Rules};
 use crate::segbend::Segbend;
 
 pub struct Router {
     pub layout: Layout,
-    mesh: Mesh,
     rules: Rules,
-}
-
-struct Route {
-    path: Vec<VertexIndex>,
-    head: Head,
-    width: f64,
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct Head {
-    pub dot: DotIndex,
-    pub segbend: Option<Segbend>,
 }
 
 impl Router {
     pub fn new() -> Self {
         Router {
             layout: Layout::new(),
-            mesh: Mesh::new(),
             rules: Rules::new(),
         }
     }
 
-    pub fn route(&mut self, from: DotIndex, to: DotIndex) -> Result<(), InsertionError> {
+    pub fn enroute(&mut self, from: DotIndex, to: DotIndex) -> Result<(), InsertionError> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
-        self.mesh.triangulate(&self.layout)?;
+        //self.mesh.triangulate(&self.layout)?;
+        let mut mesh = Mesh::new();
+        mesh.triangulate(&self.layout)?;
 
-        let (_cost, mesh_path) = astar(
-            &self.mesh,
-            self.mesh.vertex(from),
+        let (_cost, path) = astar(
+            &mesh,
+            mesh.vertex(from),
             |node, tracker| {
                 let new_path = tracker.reconstruct_path_to(node);
 
-                (node != self.mesh.vertex(to)).then_some(0)
+                (node != mesh.vertex(to)).then_some(0)
             },
             |_edge| 1,
             |_| 0,
         )
         .unwrap(); // TODO.
 
-        let path: Vec<DotIndex> = mesh_path
-            .iter()
-            .map(|vertex| self.mesh.dot(*vertex))
-            .collect();
+        /*let path: Vec<DotIndex> = mesh_path
+        .iter()
+        .map(|vertex| self.mesh.dot(*vertex))
+        .collect();*/
 
-        let mut route = self.route_start(path[0], 5.0);
-        route = self.route_path(route, &path[1..(path.len() - 1)]).unwrap(); // TODO.
-        let _ = self.route_finish(route, path[path.len() - 1]);
+        let mut trace = self.route(&mesh, 5.0).start(path[0]);
+        trace = self
+            .route(&mesh, 5.0)
+            .path(trace, &path[1..(path.len() - 1)])
+            .unwrap(); // TODO.
+        let _ = self.route(&mesh, 5.0).finish(trace, path[path.len() - 1]);
 
         Ok(())
     }
 
-    fn route_start(&mut self, from: DotIndex, width: f64) -> Route {
-        Route {
-            path: vec![],
-            head: self.draw().start(from),
-            width,
-        }
-    }
-
-    fn route_finish(&mut self, route: Route, into: DotIndex) -> Result<(), ()> {
-        self.draw().finish(route.head, into, route.width)?;
-        Ok(())
-    }
-
-    fn route_path(&mut self, mut route: Route, path: &[DotIndex]) -> Result<Route, ()> {
-        for dot in path {
-            route = self.route_step(route, *dot)?;
-        }
-
-        Ok(route)
-    }
-
-    fn reroute_path(&mut self, mut route: Route, path: &[DotIndex]) -> Result<Route, ()> {
-        let prefix_length = route
-            .path
-            .iter()
-            .zip(path)
-            .take_while(|(vertex, dot)| **vertex == self.mesh.vertex(**dot))
-            .count();
-
-        let length = route.path.len();
-        route = self.unroute_steps(route, length - prefix_length)?;
-        route = self.route_path(route, &path[prefix_length..])?;
-        Ok(route)
-    }
-
-    fn unroute_step(&mut self, mut route: Route) -> Result<Route, ()> {
-        route.head = self.draw().undo_segbend(route.head).unwrap();
-        route.path.pop();
-        Ok(route)
-    }
-
-    fn unroute_steps(&mut self, mut route: Route, step_count: usize) -> Result<Route, ()> {
-        for _ in 0..step_count {
-            route = self.unroute_step(route)?;
-        }
-        Ok(route)
-    }
-
-    fn route_step(&mut self, mut route: Route, to: DotIndex) -> Result<Route, ()> {
-        route.head = self
-            .draw()
-            .segbend_around_dot(route.head, to, true, route.width)?;
-        route.path.push(self.mesh.vertex(to));
-        Ok(route)
-    }
-
-    pub fn squeeze_around_dot(
+    /*pub fn squeeze_around_dot(
         &mut self,
         head: Head,
         around: DotIndex,
@@ -238,18 +174,18 @@ impl Router {
         }
 
         Ok(())
+    }*/
+
+    pub fn route<'a>(&'a mut self, mesh: &'a Mesh, width: f64) -> Route {
+        Route::new(&mut self.layout, &self.rules, mesh, width)
     }
 
-    pub fn draw(&mut self) -> Draw {
-        Draw::new(&mut self.layout, &self.rules)
-    }
-
-    pub fn routeedges(&self) -> impl Iterator<Item = (Point, Point)> + '_ {
+    /*pub fn routeedges(&self) -> impl Iterator<Item = (Point, Point)> + '_ {
         self.mesh.edge_references().map(|edge| {
             (
                 self.mesh.position(edge.source()),
                 self.mesh.position(edge.target()),
             )
         })
-    }
+    }*/
 }

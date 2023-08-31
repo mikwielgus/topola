@@ -17,6 +17,7 @@ mod layout;
 mod math;
 mod mesh;
 mod primitive;
+mod route;
 mod router;
 mod rules;
 mod segbend;
@@ -217,7 +218,7 @@ fn main() {
     let head = router.draw_around_dot(head, dot6, false, 5.0).unwrap();
     let _ = router.draw_finish(head, dot7, 5.0);*/
 
-    router.route(dot1_1, dot1_2);
+    router.enroute(dot1_1, dot1_2);
 
     render_times(&mut event_pump, &mut canvas, &mut router, None, -1);
     render_times(
@@ -257,10 +258,10 @@ fn render_times(
         if let Some(follower) = follower {
             let state = event_pump.mouse_state();
 
-            let _ = router.move_dot(
+            /*let _ = router.move_dot(
                 *follower.as_dot().unwrap(),
                 (state.x() as f64, state.y() as f64).into(),
-            );
+            );*/
         }
 
         let result = panic::catch_unwind(|| {

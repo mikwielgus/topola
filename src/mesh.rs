@@ -1,8 +1,6 @@
 use fixedbitset::FixedBitSet;
 use geo::{point, Point};
-use petgraph::{
-    visit::{self, NodeIndexable},
-};
+use petgraph::visit::{self, NodeIndexable};
 use spade::{
     handles::{DirectedEdgeHandle, FixedDirectedEdgeHandle, FixedVertexHandle},
     iterators::DirectedEdgeIterator,

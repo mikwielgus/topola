@@ -5,10 +5,15 @@ use crate::{
     guide::Guide,
     layout::Layout,
     math::Circle,
-    router::Head,
     rules::{Conditions, Rules},
     segbend::Segbend,
 };
+
+#[derive(Debug, Clone, Copy)]
+pub struct Head {
+    pub dot: DotIndex,
+    pub segbend: Option<Segbend>,
+}
 
 pub struct Draw<'a> {
     layout: &'a mut Layout,

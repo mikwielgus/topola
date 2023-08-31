@@ -1,10 +1,10 @@
 use geo::Line;
 
 use crate::{
+    draw::Head,
     graph::{BendIndex, DotIndex},
     layout::Layout,
     math::{self, Circle},
-    router::Head,
     rules::{Conditions, Rules},
 };
 
