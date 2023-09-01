@@ -2,7 +2,7 @@ use geo::geometry::Point;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use spade::InsertionError;
 
-use crate::astar::astar;
+use crate::astar::{astar, AstarStrategy, PathTracker};
 use crate::bow::Bow;
 use crate::draw::{Draw, Head};
 use crate::graph::{BendIndex, DotIndex, Ends, SegIndex, TaggedIndex};
@@ -11,14 +11,53 @@ use crate::guide::Guide;
 use crate::layout::Layout;
 
 use crate::math::Circle;
-use crate::mesh::{Mesh, VertexIndex};
-use crate::route::Route;
+use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
+use crate::route::{Route, Trace};
 use crate::rules::{Conditions, Rules};
 use crate::segbend::Segbend;
 
 pub struct Router {
     pub layout: Layout,
     rules: Rules,
+}
+
+pub struct DefaultAstarStrategy<'a> {
+    route: Route<'a>,
+    trace: Trace,
+    to: VertexIndex,
+}
+
+impl<'a> DefaultAstarStrategy<'a> {
+    pub fn new(route: Route<'a>, trace: Trace, to: VertexIndex) -> Self {
+        Self { route, trace, to }
+    }
+}
+
+impl<'a> AstarStrategy<&Mesh, u64> for DefaultAstarStrategy<'a> {
+    fn reroute(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Mesh>) -> Option<u64> {
+        let new_path = tracker.reconstruct_path_to(vertex);
+
+        if vertex == self.to {
+            self.route
+                .rework_path(&mut self.trace, &new_path[..new_path.len() - 1], 5.0)
+                .ok();
+            self.route
+                .finish(&mut self.trace, new_path[new_path.len() - 1], 5.0)
+                .ok();
+            None
+        } else {
+            self.route.rework_path(&mut self.trace, &new_path, 5.0).ok();
+            Some(0)
+        }
+    }
+
+    fn edge_cost(&mut self, edge: MeshEdgeReference) -> u64 {
+        1
+    }
+
+    fn estimate_cost(&mut self, vertex: VertexIndex) -> u64 {
+        0
+    }
 }
 
 impl Router {
@@ -37,29 +76,12 @@ impl Router {
         mesh.triangulate(&self.layout)?;
 
         let mut route = self.route(&mesh);
-        let mut trace = route.start(mesh.vertex(from));
+        let trace = route.start(mesh.vertex(from));
 
         let (_cost, path) = astar(
             &mesh,
             mesh.vertex(from),
-            |node, tracker| {
-                let new_path = tracker.reconstruct_path_to(node);
-
-                if node == mesh.vertex(to) {
-                    route
-                        .rework_path(&mut trace, &new_path[..new_path.len() - 1], 5.0)
-                        .ok();
-                    route
-                        .finish(&mut trace, new_path[new_path.len() - 1], 5.0)
-                        .ok();
-                    None
-                } else {
-                    route.rework_path(&mut trace, &new_path, 5.0).ok();
-                    Some(0)
-                }
-            },
-            |_edge| 1,
-            |_| 0,
+            &mut DefaultAstarStrategy::new(route, trace, mesh.vertex(to)),
         )
         .unwrap(); // TODO.
         Ok(())

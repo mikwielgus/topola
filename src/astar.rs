@@ -96,19 +96,25 @@ where
     }
 }
 
-pub fn astar<G, F, H, K, Reroute>(
+pub trait AstarStrategy<G, K>
+where
+    G: IntoEdges + Visitable,
+    K: Measure + Copy,
+    G::NodeId: Eq + Hash,
+{
+    fn reroute(&mut self, node: G::NodeId, tracker: &PathTracker<G>) -> Option<K>;
+    fn edge_cost(&mut self, edge: G::EdgeRef) -> K;
+    fn estimate_cost(&mut self, node: G::NodeId) -> K;
+}
+
+pub fn astar<G, K>(
     graph: G,
     start: G::NodeId,
-    mut reroute: Reroute,
-    mut edge_cost: F,
-    mut estimate_cost: H,
+    strategy: &mut impl AstarStrategy<G, K>,
 ) -> Option<(K, Vec<G::NodeId>)>
 where
     G: IntoEdges + Visitable,
-    Reroute: FnMut(G::NodeId, &PathTracker<G>) -> Option<K>,
     G::NodeId: Eq + Hash,
-    F: FnMut(G::EdgeRef) -> K,
-    H: FnMut(G::NodeId) -> K,
     K: Measure + Copy,
 {
     let mut visit_next = BinaryHeap::new();
@@ -118,10 +124,10 @@ where
 
     let zero_score = K::default();
     scores.insert(start, zero_score);
-    visit_next.push(MinScored(estimate_cost(start), start));
+    visit_next.push(MinScored(strategy.estimate_cost(start), start));
 
     while let Some(MinScored(estimate_score, node)) = visit_next.pop() {
-        match reroute(node, &path_tracker) {
+        match strategy.reroute(node, &path_tracker) {
             None => {
                 let path = path_tracker.reconstruct_path_to(node);
                 let cost = scores[&node];
@@ -148,7 +154,7 @@ where
 
                 for edge in graph.edges(node) {
                     let next = edge.target();
-                    let next_score = node_score + route_cost + edge_cost(edge);
+                    let next_score = node_score + route_cost + strategy.edge_cost(edge);
 
                     match scores.entry(next) {
                         Occupied(mut entry) => {
@@ -165,7 +171,7 @@ where
                     }
 
                     path_tracker.set_predecessor(next, node);
-                    let next_estimate_score = next_score + estimate_cost(next);
+                    let next_estimate_score = next_score + strategy.estimate_cost(next);
                     visit_next.push(MinScored(next_estimate_score, next));
                 }
             }
