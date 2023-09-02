@@ -24,7 +24,10 @@ mod segbend;
 mod shape;
 
 use graph::{Tag, TaggedIndex};
-use router::DefaultRouteStrategy;
+use layout::Layout;
+use mesh::{MeshEdgeReference, VertexIndex};
+use route::Route;
+use router::{DefaultRouteStrategy, RouteStrategy};
 use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
@@ -40,12 +43,47 @@ use crate::graph::DotWeight;
 use crate::math::Circle;
 use crate::router::Router;
 
+struct DebugRouteStrategy<'a, RS: RouteStrategy> {
+    strategy: RS,
+    event_pump: &'a mut sdl2::EventPump,
+    canvas: &'a mut sdl2::render::Canvas<Window>,
+}
+
+impl<'a, RS: RouteStrategy> DebugRouteStrategy<'a, RS> {
+    pub fn new(
+        strategy: RS,
+        event_pump: &'a mut sdl2::EventPump,
+        canvas: &'a mut sdl2::render::Canvas<Window>,
+    ) -> Self {
+        Self {
+            strategy,
+            event_pump,
+            canvas,
+        }
+    }
+}
+
+impl<'a, RS: RouteStrategy> RouteStrategy for DebugRouteStrategy<'a, RS> {
+    fn route_cost(&mut self, route: &Route, path: &[VertexIndex]) -> u64 {
+        render_times(self.event_pump, self.canvas, route.layout, None, 25);
+        self.strategy.route_cost(route, path)
+    }
+
+    fn edge_cost(&mut self, route: &Route, edge: MeshEdgeReference) -> u64 {
+        self.strategy.edge_cost(route, edge)
+    }
+
+    fn estimate_cost(&mut self, route: &Route, vertex: VertexIndex) -> u64 {
+        self.strategy.estimate_cost(route, vertex)
+    }
+}
+
 fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
     let window = video_subsystem
-        .window("rust-sdl2 demo", 800, 600)
+        .window("Topola demo", 800, 600)
         .position_centered()
         .build()
         .unwrap();
@@ -219,23 +257,27 @@ fn main() {
     let head = router.draw_around_dot(head, dot6, false, 5.0).unwrap();
     let _ = router.draw_finish(head, dot7, 5.0);*/
 
-    router.enroute(dot1_1, dot1_2, DefaultRouteStrategy::new());
+    router.enroute(
+        dot1_1,
+        dot1_2,
+        DebugRouteStrategy::new(DefaultRouteStrategy::new(), &mut event_pump, &mut canvas),
+    );
 
-    render_times(&mut event_pump, &mut canvas, &mut router, None, -1);
+    render_times(&mut event_pump, &mut canvas, &router.layout, None, -1);
     render_times(
         &mut event_pump,
         &mut canvas,
-        &mut router,
+        &router.layout,
         Some(barrier1_dot1.tag()),
         -1,
     );
-    render_times(&mut event_pump, &mut canvas, &mut router, None, -1);
+    render_times(&mut event_pump, &mut canvas, &router.layout, None, -1);
 }
 
 fn render_times(
     event_pump: &mut EventPump,
     canvas: &mut Canvas<Window>,
-    router: &mut Router,
+    layout: &Layout,
     follower: Option<TaggedIndex>,
     times: i64,
 ) {
@@ -266,7 +308,7 @@ fn render_times(
         }
 
         let result = panic::catch_unwind(|| {
-            for shape in router.layout.shapes() {
+            for shape in layout.shapes() {
                 match shape {
                     Shape::Dot(dot) => {
                         let _ = canvas.filled_circle(

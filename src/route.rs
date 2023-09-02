@@ -12,7 +12,7 @@ pub struct Trace {
 }
 
 pub struct Route<'a> {
-    layout: &'a mut Layout,
+    pub layout: &'a mut Layout,
     rules: &'a Rules,
     mesh: &'a Mesh,
 }

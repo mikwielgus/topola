@@ -22,9 +22,9 @@ pub struct Router {
 }
 
 pub trait RouteStrategy {
-    fn route_cost(&mut self, path: &[VertexIndex]) -> u64;
-    fn edge_cost(&mut self, edge: MeshEdgeReference) -> u64;
-    fn estimate_cost(&mut self, vertex: VertexIndex) -> u64;
+    fn route_cost(&mut self, route: &Route, path: &[VertexIndex]) -> u64;
+    fn edge_cost(&mut self, route: &Route, edge: MeshEdgeReference) -> u64;
+    fn estimate_cost(&mut self, route: &Route, vertex: VertexIndex) -> u64;
 }
 
 pub struct DefaultRouteStrategy {}
@@ -36,15 +36,15 @@ impl DefaultRouteStrategy {
 }
 
 impl RouteStrategy for DefaultRouteStrategy {
-    fn route_cost(&mut self, path: &[VertexIndex]) -> u64 {
+    fn route_cost(&mut self, route: &Route, path: &[VertexIndex]) -> u64 {
         0
     }
 
-    fn edge_cost(&mut self, edge: MeshEdgeReference) -> u64 {
+    fn edge_cost(&mut self, route: &Route, edge: MeshEdgeReference) -> u64 {
         1
     }
 
-    fn estimate_cost(&mut self, vertex: VertexIndex) -> u64 {
+    fn estimate_cost(&mut self, route: &Route, vertex: VertexIndex) -> u64 {
         0
     }
 }
@@ -53,16 +53,16 @@ struct RouterAstarStrategy<'a, RS: RouteStrategy> {
     route: Route<'a>,
     trace: Trace,
     to: VertexIndex,
-    route_strategy: RS,
+    strategy: RS,
 }
 
 impl<'a, RS: RouteStrategy> RouterAstarStrategy<'a, RS> {
-    pub fn new(route: Route<'a>, trace: Trace, to: VertexIndex, route_strategy: RS) -> Self {
+    pub fn new(route: Route<'a>, trace: Trace, to: VertexIndex, strategy: RS) -> Self {
         Self {
             route,
             trace,
             to,
-            route_strategy,
+            strategy,
         }
     }
 }
@@ -81,16 +81,16 @@ impl<'a, RS: RouteStrategy> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'a
             None
         } else {
             self.route.rework_path(&mut self.trace, &new_path, 5.0).ok();
-            Some(self.route_strategy.route_cost(&new_path))
+            Some(self.strategy.route_cost(&self.route, &new_path))
         }
     }
 
     fn edge_cost(&mut self, edge: MeshEdgeReference) -> u64 {
-        self.route_strategy.edge_cost(edge)
+        self.strategy.edge_cost(&self.route, edge)
     }
 
     fn estimate_cost(&mut self, vertex: VertexIndex) -> u64 {
-        self.route_strategy.estimate_cost(vertex)
+        self.strategy.estimate_cost(&self.route, vertex)
     }
 }
 
