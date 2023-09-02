@@ -21,19 +21,53 @@ pub struct Router {
     rules: Rules,
 }
 
-pub struct DefaultAstarStrategy<'a> {
-    route: Route<'a>,
-    trace: Trace,
-    to: VertexIndex,
+pub trait RouteStrategy {
+    fn route_cost(&mut self, path: &[VertexIndex]) -> u64;
+    fn edge_cost(&mut self, edge: MeshEdgeReference) -> u64;
+    fn estimate_cost(&mut self, vertex: VertexIndex) -> u64;
 }
 
-impl<'a> DefaultAstarStrategy<'a> {
-    pub fn new(route: Route<'a>, trace: Trace, to: VertexIndex) -> Self {
-        Self { route, trace, to }
+pub struct DefaultRouteStrategy {}
+
+impl DefaultRouteStrategy {
+    pub fn new() -> Self {
+        Self {}
     }
 }
 
-impl<'a> AstarStrategy<&Mesh, u64> for DefaultAstarStrategy<'a> {
+impl RouteStrategy for DefaultRouteStrategy {
+    fn route_cost(&mut self, path: &[VertexIndex]) -> u64 {
+        0
+    }
+
+    fn edge_cost(&mut self, edge: MeshEdgeReference) -> u64 {
+        1
+    }
+
+    fn estimate_cost(&mut self, vertex: VertexIndex) -> u64 {
+        0
+    }
+}
+
+struct RouterAstarStrategy<'a, RS: RouteStrategy> {
+    route: Route<'a>,
+    trace: Trace,
+    to: VertexIndex,
+    route_strategy: RS,
+}
+
+impl<'a, RS: RouteStrategy> RouterAstarStrategy<'a, RS> {
+    pub fn new(route: Route<'a>, trace: Trace, to: VertexIndex, route_strategy: RS) -> Self {
+        Self {
+            route,
+            trace,
+            to,
+            route_strategy,
+        }
+    }
+}
+
+impl<'a, RS: RouteStrategy> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'a, RS> {
     fn reroute(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Mesh>) -> Option<u64> {
         let new_path = tracker.reconstruct_path_to(vertex);
 
@@ -47,16 +81,16 @@ impl<'a> AstarStrategy<&Mesh, u64> for DefaultAstarStrategy<'a> {
             None
         } else {
             self.route.rework_path(&mut self.trace, &new_path, 5.0).ok();
-            Some(0)
+            Some(self.route_strategy.route_cost(&new_path))
         }
     }
 
     fn edge_cost(&mut self, edge: MeshEdgeReference) -> u64 {
-        1
+        self.route_strategy.edge_cost(edge)
     }
 
     fn estimate_cost(&mut self, vertex: VertexIndex) -> u64 {
-        0
+        self.route_strategy.estimate_cost(vertex)
     }
 }
 
@@ -68,7 +102,12 @@ impl Router {
         }
     }
 
-    pub fn enroute(&mut self, from: DotIndex, to: DotIndex) -> Result<(), InsertionError> {
+    pub fn enroute(
+        &mut self,
+        from: DotIndex,
+        to: DotIndex,
+        strategy: impl RouteStrategy,
+    ) -> Result<(), InsertionError> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
         //self.mesh.triangulate(&self.layout)?;
@@ -81,7 +120,7 @@ impl Router {
         let (_cost, path) = astar(
             &mesh,
             mesh.vertex(from),
-            &mut DefaultAstarStrategy::new(route, trace, mesh.vertex(to)),
+            &mut RouterAstarStrategy::new(route, trace, mesh.vertex(to), strategy),
         )
         .unwrap(); // TODO.
         Ok(())

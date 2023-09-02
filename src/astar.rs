@@ -1,8 +1,6 @@
 /**
  *
- * Copied from petgraph's scored.rs and algo/astar.rs. Renamed the `is_goal: IsGoal` callback to
- * `reroute: Reroute` and made it pass a reference to `path_tracker` and return a value to be added
- * to outgoing edge costs.
+ * Copied and substantially modified from petgraph's scored.rs and algo/astar.rs.
  *
  * Copyright (c) 2015
  **/

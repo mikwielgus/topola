@@ -24,6 +24,7 @@ mod segbend;
 mod shape;
 
 use graph::{Tag, TaggedIndex};
+use router::DefaultRouteStrategy;
 use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
@@ -218,7 +219,7 @@ fn main() {
     let head = router.draw_around_dot(head, dot6, false, 5.0).unwrap();
     let _ = router.draw_finish(head, dot7, 5.0);*/
 
-    router.enroute(dot1_1, dot1_2);
+    router.enroute(dot1_1, dot1_2, DefaultRouteStrategy::new());
 
     render_times(&mut event_pump, &mut canvas, &mut router, None, -1);
     render_times(
