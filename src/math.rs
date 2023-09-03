@@ -92,35 +92,44 @@ fn tangent_point_pairs(circle1: Circle, circle2: Circle) -> [(Point, Point); 4] 
     ]
 }
 
+pub fn tangent_segments(
+    circle1: Circle,
+    cw1: Option<bool>,
+    circle2: Circle,
+    cw2: Option<bool>,
+) -> impl Iterator<Item = Line> {
+    tangent_point_pairs(circle1, circle2)
+        .into_iter()
+        .filter_map(move |tangent_point_pair| {
+            if let Some(cw1) = cw1 {
+                let cross1 =
+                    seq_cross_product(tangent_point_pair.0, tangent_point_pair.1, circle1.pos);
+
+                if (cw1 && cross1 <= 0.0) || (!cw1 && cross1 >= 0.0) {
+                    return None;
+                }
+            }
+
+            if let Some(cw2) = cw2 {
+                let cross2 =
+                    seq_cross_product(tangent_point_pair.0, tangent_point_pair.1, circle2.pos);
+
+                if (cw2 && cross2 <= 0.0) || (!cw2 && cross2 >= 0.0) {
+                    return None;
+                }
+            }
+
+            Some(Line::new(tangent_point_pair.0, tangent_point_pair.1))
+        })
+}
+
 pub fn tangent_segment(
     circle1: Circle,
     cw1: Option<bool>,
     circle2: Circle,
     cw2: Option<bool>,
 ) -> Line {
-    let tangent_point_pairs = tangent_point_pairs(circle1, circle2);
-
-    for tangent_point_pair in tangent_point_pairs {
-        if let Some(cw1) = cw1 {
-            let cross1 = seq_cross_product(tangent_point_pair.0, tangent_point_pair.1, circle1.pos);
-
-            if (cw1 && cross1 <= 0.0) || (!cw1 && cross1 >= 0.0) {
-                continue;
-            }
-        }
-
-        if let Some(cw2) = cw2 {
-            let cross2 = seq_cross_product(tangent_point_pair.0, tangent_point_pair.1, circle2.pos);
-
-            if (cw2 && cross2 <= 0.0) || (!cw2 && cross2 >= 0.0) {
-                continue;
-            }
-        }
-
-        return Line::new(tangent_point_pair.0, tangent_point_pair.1);
-    }
-
-    unreachable!();
+    tangent_segments(circle1, cw1, circle2, cw2).next().unwrap()
 }
 
 pub fn intersect_circles(circle1: &Circle, circle2: &Circle) -> Vec<Point> {
