@@ -2,7 +2,6 @@ use enum_as_inner::EnumAsInner;
 use geo::{point, polygon, EuclideanDistance, Intersects, Point, Polygon, Rotate};
 use rstar::{RTreeObject, AABB};
 
-
 use crate::math::{self, Circle};
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -101,8 +100,8 @@ impl Shape {
     fn priority(&self) -> i64 {
         match self {
             Shape::Dot(..) => 3,
-            Shape::Bend(..) => 2,
-            Shape::Seg(..) => 1,
+            Shape::Seg(..) => 2,
+            Shape::Bend(..) => 1,
         }
     }
 

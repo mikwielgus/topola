@@ -23,7 +23,7 @@ mod rules;
 mod segbend;
 mod shape;
 
-use graph::{Tag, TaggedIndex};
+use graph::{SegWeight, Tag, TaggedIndex};
 use layout::Layout;
 use mesh::{MeshEdgeReference, VertexIndex};
 use route::Route;
@@ -224,7 +224,7 @@ fn main() {
         })
         .unwrap();
 
-    let _barrier2_dot1 = router
+    let barrier2_dot1 = router
         .layout
         .add_dot(DotWeight {
             net: 20,
@@ -234,7 +234,7 @@ fn main() {
             },
         })
         .unwrap();
-    let _barrier2_dot2 = router
+    let barrier2_dot2 = router
         .layout
         .add_dot(DotWeight {
             net: 20,
@@ -244,20 +244,20 @@ fn main() {
             },
         })
         .unwrap();
-    /*let _ = router.layout.add_seg(
+    let _ = router.layout.add_seg(
         barrier2_dot1,
         barrier2_dot2,
         SegWeight {
             net: 20,
             width: 16.0,
         },
-    );*/
+    );
 
     /*let head = router.draw_start(dot5);
     let head = router.draw_around_dot(head, dot6, false, 5.0).unwrap();
     let _ = router.draw_finish(head, dot7, 5.0);*/
 
-    router.enroute(
+    let _ = router.enroute(
         dot1_1,
         dot1_2,
         DebugRouteStrategy::new(DefaultRouteStrategy::new(), &mut event_pump, &mut canvas),

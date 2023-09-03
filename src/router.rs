@@ -71,7 +71,7 @@ impl<'a, RS: RouteStrategy> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'a
     fn reroute(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Mesh>) -> Option<u64> {
         let new_path = tracker.reconstruct_path_to(vertex);
 
-        if vertex == self.to {
+        /*if vertex == self.to {
             self.route
                 .rework_path(&mut self.trace, &new_path[..new_path.len() - 1], 5.0)
                 .ok();
@@ -79,10 +79,16 @@ impl<'a, RS: RouteStrategy> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'a
                 .finish(&mut self.trace, new_path[new_path.len() - 1], 5.0)
                 .ok();
             None
-        } else {
-            self.route.rework_path(&mut self.trace, &new_path, 5.0).ok();
-            Some(self.strategy.route_cost(&self.route, &new_path))
+        } else {*/
+        //}
+
+        self.route.rework_path(&mut self.trace, &new_path, 5.0).ok();
+
+        if self.route.finish(&mut self.trace, self.to, 5.0).is_ok() {
+            return None;
         }
+
+        Some(self.strategy.route_cost(&self.route, &new_path))
     }
 
     fn edge_cost(&mut self, edge: MeshEdgeReference) -> u64 {
