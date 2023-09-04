@@ -154,9 +154,16 @@ impl<'a> Draw<'a> {
             .add_dot(self.layout.primitive(head.dot).weight())?;
         let net = self.layout.primitive(head.dot).weight().net;
 
-        let bend = self
+        let bend = match self
             .layout
-            .add_bend(head.dot, bend_to, around, BendWeight { net, cw })?;
+            .add_bend(head.dot, bend_to, around, BendWeight { net, cw })
+        {
+            Err(err) => {
+                self.layout.remove(bend_to);
+                return Err(err);
+            }
+            Ok(bend) => bend,
+        };
         Ok(Head {
             dot: bend_to,
             segbend: Some(Segbend { bend, dot, seg }),
@@ -192,9 +199,16 @@ impl<'a> Draw<'a> {
                 r: width / 2.0,
             },
         })?;
-        let seg = self
+        let seg = match self
             .layout
-            .add_seg(head.dot, to_index, SegWeight { net, width })?;
+            .add_seg(head.dot, to_index, SegWeight { net, width })
+        {
+            Err(err) => {
+                self.layout.remove(to_index);
+                return Err(err);
+            }
+            Ok(bend) => bend,
+        };
         Ok((
             Head {
                 dot: to_index,
