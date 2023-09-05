@@ -60,8 +60,11 @@ impl<'a> Route<'a> {
     }
 
     pub fn path(&mut self, trace: &mut Trace, path: &[VertexIndex], width: f64) -> Result<(), ()> {
-        for vertex in path {
-            self.step(trace, *vertex, width)?;
+        for (i, vertex) in path.iter().enumerate() {
+            if let Err(err) = self.step(trace, *vertex, width) {
+                self.undo_path(trace, i)?;
+                return Err(err);
+            }
         }
         Ok(())
     }

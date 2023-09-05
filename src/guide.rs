@@ -48,6 +48,21 @@ impl<'a, 'b> Guide<'a, 'b> {
         math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
     }
 
+    pub fn head_around_dot_segments(
+        &self,
+        head: &Head,
+        around: DotIndex,
+        width: f64,
+    ) -> (Line, Line) {
+        let from_circle = self.head_circle(&head, width);
+        let to_circle = self.dot_circle(around, width);
+
+        let from_cw = self.head_cw(&head);
+        let tangents: Vec<Line> =
+            math::tangent_segments(from_circle, from_cw, to_circle, None).collect();
+        (tangents[0], tangents[1])
+    }
+
     pub fn head_around_dot_segment(
         &self,
         head: &Head,

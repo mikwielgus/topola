@@ -1,4 +1,4 @@
-use geo::Point;
+use geo::{EuclideanLength, Point};
 
 use crate::{
     graph::{BendIndex, BendWeight, DotIndex, DotWeight, Ends, SegIndex, SegWeight, TaggedIndex},
@@ -88,7 +88,21 @@ impl<'a> Draw<'a> {
     ) -> Result<Head, ()> {
         let tangent = self
             .guide(&Default::default())
-            .head_around_dot_segment(&head, around, cw, width);
+            .head_around_dot_segments(&head, around, width)
+            .1;
+        /*.into_iter()
+        .max_by(|x, y| x.euclidean_length().total_cmp(&y.euclidean_length()))
+        .unwrap();*/
+
+        /*let tangents = self
+            .guide(&Default::default())
+            .head_around_dot_segments(&head, around, width);
+
+        let tangent = if tangents.0.euclidean_length() <= tangents.1.euclidean_length() {
+            tangents.0
+        } else {
+            tangents.1
+        };*/
 
         head = self.extend_head(head, tangent.start_point())?;
         self.segbend(

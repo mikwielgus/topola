@@ -239,7 +239,7 @@ fn main() {
         .add_dot(DotWeight {
             net: 20,
             circle: Circle {
-                pos: (480.5, 700.5).into(),
+                pos: (480.5, 550.5).into(),
                 r: 8.0,
             },
         })
