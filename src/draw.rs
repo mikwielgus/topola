@@ -181,19 +181,22 @@ impl<'a> Draw<'a> {
         let dot = head.dot;
         let bend_to = self
             .layout
-            .add_dot(self.layout.primitive(head.dot).weight())?;
+            .add_dot(self.layout.primitive(head.dot).weight())
+            .map_err(|err| {
+                self.undo_seg(head, seg);
+                err
+            })?;
+
         let net = self.layout.primitive(head.dot).weight().net;
 
-        let bend = match self
+        let bend = self
             .layout
             .add_bend(head.dot, bend_to, around, BendWeight { net, cw })
-        {
-            Err(err) => {
+            .map_err(|err| {
                 self.layout.remove(bend_to);
-                return Err(err);
-            }
-            Ok(bend) => bend,
-        };
+                self.undo_seg(head, seg);
+                err
+            })?;
         Ok(Head {
             dot: bend_to,
             segbend: Some(Segbend { bend, dot, seg }),
@@ -218,10 +221,9 @@ impl<'a> Draw<'a> {
     }
 
     fn seg(&mut self, head: Head, to: Point, width: f64) -> Result<(Head, SegIndex), ()> {
-        let net = self.layout.primitive(head.dot).weight().net;
-
         assert!(width <= self.layout.primitive(head.dot).weight().circle.r * 2.0);
 
+        let net = self.layout.primitive(head.dot).weight().net;
         let to_index = self.layout.add_dot(DotWeight {
             net,
             circle: Circle {
@@ -229,16 +231,13 @@ impl<'a> Draw<'a> {
                 r: width / 2.0,
             },
         })?;
-        let seg = match self
+        let seg = self
             .layout
             .add_seg(head.dot, to_index, SegWeight { net, width })
-        {
-            Err(err) => {
+            .map_err(|err| {
                 self.layout.remove(to_index);
-                return Err(err);
-            }
-            Ok(bend) => bend,
-        };
+                err
+            })?;
         Ok((
             Head {
                 dot: to_index,
@@ -246,6 +245,11 @@ impl<'a> Draw<'a> {
             },
             seg,
         ))
+    }
+
+    fn undo_seg(&mut self, head: Head, seg: SegIndex) {
+        self.layout.remove(seg);
+        self.layout.remove(head.dot);
     }
 
     fn guide(&'a self, conditions: &'a Conditions) -> Guide {
