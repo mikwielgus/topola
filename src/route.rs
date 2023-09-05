@@ -78,9 +78,7 @@ impl<'a> Route<'a> {
 
     pub fn step(&mut self, trace: &mut Trace, to: VertexIndex, width: f64) -> Result<(), ()> {
         let to_dot = self.mesh.dot(to);
-        trace.head = self
-            .draw()
-            .segbend_around_dot(trace.head, to_dot, true, width)?;
+        trace.head = self.draw().segbend_around_dot(trace.head, to_dot, width)?;
         trace.path.push(to);
         Ok(())
     }

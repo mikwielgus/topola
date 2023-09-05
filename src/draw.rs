@@ -83,15 +83,16 @@ impl<'a> Draw<'a> {
         &mut self,
         head: Head,
         around: DotIndex,
-        cw: bool,
         width: f64,
     ) -> Result<Head, ()> {
         let mut tangents = self
             .guide(&Default::default())
             .head_around_dot_segments(&head, around, width);
+        let mut dirs = [true, false];
 
         if tangents.1.euclidean_length() < tangents.0.euclidean_length() {
             tangents = (tangents.1, tangents.0);
+            dirs = [false, true];
         }
 
         for (i, tangent) in [tangents.0, tangents.1].iter().enumerate() {
@@ -100,7 +101,7 @@ impl<'a> Draw<'a> {
                 TaggedIndex::Dot(around),
                 tangent.start_point(),
                 tangent.end_point(),
-                cw,
+                dirs[i],
                 width,
             ) {
                 Ok(head) => {
