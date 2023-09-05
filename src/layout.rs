@@ -47,8 +47,7 @@ impl Layout {
         // Unnecessary retag. It should be possible to elide it.
         let weight = *self.graph.node_weight(index.index).unwrap();
 
-        let wrapper = RTreeWrapper::new(self.primitive(index).shape(), index.retag(&weight));
-        assert!(self.rtree.remove(&wrapper).is_some());
+        self.remove_from_rtree(index.retag(&weight));
         self.graph.remove_node(index.index);
     }
 
@@ -162,17 +161,16 @@ impl Layout {
 
     pub fn extend_bend(&mut self, bend: BendIndex, dot: DotIndex, to: Point) -> Result<(), ()> {
         self.remove_from_rtree(bend.tag());
-        self.move_dot(dot, to)?;
+        let result = self.move_dot(dot, to);
         self.insert_into_rtree(bend.tag());
-        Ok(())
+        result
     }
 
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), ()> {
         let mut cur_bend = self.primitive(dot).outer();
         loop {
-            match cur_bend {
-                Some(..) => (),
-                None => break,
+            if let None = cur_bend {
+                break;
             }
 
             self.remove_from_rtree(cur_bend.unwrap().tag());
@@ -191,7 +189,6 @@ impl Layout {
             // Restore original state.
             *self.graph.node_weight_mut(dot.index).unwrap() = TaggedWeight::Dot(old_weight);
             self.insert_into_rtree(dot.tag());
-
             return Err(());
         }
 
@@ -266,7 +263,10 @@ impl Layout {
 
     fn remove_from_rtree(&mut self, index: TaggedIndex) {
         let shape = untag!(index, self.primitive(index).shape());
-        self.rtree.remove(&RTreeWrapper::new(shape, index));
+        assert!(self
+            .rtree
+            .remove(&RTreeWrapper::new(shape, index))
+            .is_some());
     }
 
     pub fn dots(&self) -> impl Iterator<Item = DotIndex> + '_ {
