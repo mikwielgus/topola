@@ -81,37 +81,39 @@ impl<'a> Draw<'a> {
 
     pub fn segbend_around_dot(
         &mut self,
-        mut head: Head,
+        head: Head,
         around: DotIndex,
         cw: bool,
         width: f64,
     ) -> Result<Head, ()> {
-        let tangent = self
-            .guide(&Default::default())
-            .head_around_dot_segments(&head, around, width)
-            .1;
-        /*.into_iter()
-        .max_by(|x, y| x.euclidean_length().total_cmp(&y.euclidean_length()))
-        .unwrap();*/
-
-        /*let tangents = self
+        let mut tangents = self
             .guide(&Default::default())
             .head_around_dot_segments(&head, around, width);
 
-        let tangent = if tangents.0.euclidean_length() <= tangents.1.euclidean_length() {
-            tangents.0
-        } else {
-            tangents.1
-        };*/
+        if tangents.1.euclidean_length() < tangents.0.euclidean_length() {
+            tangents = (tangents.1, tangents.0);
+        }
 
-        head = self.extend_head(head, tangent.start_point())?;
-        self.segbend(
-            head,
-            TaggedIndex::Dot(around),
-            tangent.end_point(),
-            cw,
-            width,
-        )
+        for (i, tangent) in [tangents.0, tangents.1].iter().enumerate() {
+            match self.segbend_around(
+                head,
+                TaggedIndex::Dot(around),
+                tangent.start_point(),
+                tangent.end_point(),
+                cw,
+                width,
+            ) {
+                Ok(head) => {
+                    return Ok(head);
+                }
+                Err(err) => {
+                    if i >= 1 {
+                        return Err(err);
+                    }
+                }
+            }
+        }
+        unreachable!();
     }
 
     pub fn segbend_around_bend(
@@ -133,6 +135,19 @@ impl<'a> Draw<'a> {
             cw,
             width,
         )
+    }
+
+    fn segbend_around(
+        &mut self,
+        mut head: Head,
+        around: TaggedIndex,
+        from: Point,
+        to: Point,
+        cw: bool,
+        width: f64,
+    ) -> Result<Head, ()> {
+        head = self.extend_head(head, from)?;
+        self.segbend(head, around, to, cw, width)
     }
 
     fn extend_head(&mut self, head: Head, to: Point) -> Result<Head, ()> {
