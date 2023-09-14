@@ -27,3 +27,9 @@ features = ["gfx"]
 
 [dependencies.enum-as-inner]
 version = "0.6.0"
+
+[dependencies.contracts]
+version = "0.6.3"
+
+[patch.crates-io]
+contracts = { path = "vendor/contracts" }

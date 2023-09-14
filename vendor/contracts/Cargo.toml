@@ -1,0 +1,41 @@
+[package]
+name = "contracts"
+version = "0.6.3"
+authors = ["karroffel <therzog@mail.de>"]
+edition = "2018"
+repository = "https://gitlab.com/karroffel/contracts"
+license = "MPL-2.0"
+readme = "README.md"
+categories = [
+    "development-tools",
+    "development-tools::procedural-macro-helpers",
+]
+keywords = [
+    "design-by-contract",
+    "precondition",
+    "postcondition",
+    "invariant",
+    "verification",
+]
+documentation = "https://docs.rs/contracts"
+description = "Design-by-contract attributes"
+
+[badges]
+gitlab = { repository = "karroffel/contracts", branch = "master" }
+
+[lib]
+name = "contracts"
+path = "src/lib.rs"
+proc-macro = true
+
+[features]
+disable_contracts = []
+override_debug = []
+override_log = []
+mirai_assertions = []
+
+[dependencies]
+syn = { version = "1.0", features = ["extra-traits", "full", "visit", "visit-mut"] }
+quote = "1.0"
+proc-macro2 = "1.0"
+
