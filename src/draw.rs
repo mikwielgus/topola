@@ -221,7 +221,7 @@ impl<'a> Draw<'a> {
     }
 
     fn seg(&mut self, head: Head, to: Point, width: f64) -> Result<(Head, SegIndex), ()> {
-        assert!(width <= self.layout.primitive(head.dot).weight().circle.r * 2.0);
+        debug_assert!(width <= self.layout.primitive(head.dot).weight().circle.r * 2.0);
 
         let net = self.layout.primitive(head.dot).weight().net;
         let to_index = self.layout.add_dot(DotWeight {

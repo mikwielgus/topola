@@ -4,7 +4,8 @@ use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, Ends, Index, Interior, Label, SegWeight, TaggedIndex, TaggedWeight,
+    BendIndex, BendWeight, DotIndex, DotWeight, Ends, Index, Interior, Label, SegWeight,
+    TaggedIndex, TaggedWeight,
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape};
@@ -184,7 +185,9 @@ impl<'a, Weight> Primitive<'a, Weight> {
         let this = self.net(&self.index);
         let other = self.net(&index);
 
-        if this == -1 || other == -1 {
+        if this == other {
+            true
+        } else if this == -1 || other == -1 {
             true
         } else if this == -2 || other == -2 {
             false

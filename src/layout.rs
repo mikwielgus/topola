@@ -1,3 +1,4 @@
+use contracts::debug_invariant;
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
 use petgraph::visit::EdgeRef;
@@ -22,6 +23,7 @@ pub struct Layout {
     pub graph: StableDiGraph<TaggedWeight, Label, usize>,
 }
 
+#[debug_invariant(self.graph.node_count() == self.rtree.size())]
 impl Layout {
     pub fn new() -> Self {
         Layout {
@@ -54,8 +56,8 @@ impl Layout {
     pub fn add_dot(&mut self, weight: DotWeight) -> Result<DotIndex, ()> {
         let dot = DotIndex::new(self.graph.add_node(TaggedWeight::Dot(weight)));
 
-        self.fail_and_remove_if_collides_except(dot, &[])?;
         self.insert_into_rtree(dot.tag());
+        self.fail_and_remove_if_collides_except(dot, &[])?;
 
         Ok(dot)
     }
@@ -71,8 +73,8 @@ impl Layout {
         self.graph.add_edge(from.index, seg.index, Label::End);
         self.graph.add_edge(seg.index, to.index, Label::End);
 
-        self.fail_and_remove_if_collides_except(seg, &[from.tag(), to.tag()])?;
         self.insert_into_rtree(seg.tag());
+        self.fail_and_remove_if_collides_except(seg, &[from.tag(), to.tag()])?;
 
         self.graph
             .node_weight_mut(from.index)
@@ -117,8 +119,8 @@ impl Layout {
         self.graph.add_edge(bend.index, to.index, Label::End);
         self.graph.add_edge(bend.index, core.index, Label::Core);
 
-        self.fail_and_remove_if_collides_except(bend, &[from.tag(), to.tag(), core.tag()])?;
         self.insert_into_rtree(bend.tag());
+        self.fail_and_remove_if_collides_except(bend, &[from.tag(), to.tag(), core.tag()])?;
         Ok(bend)
     }
 
@@ -166,6 +168,45 @@ impl Layout {
         result
     }
 
+    pub fn bow(&self, bend: BendIndex) -> Bow {
+        Bow::from_bend(bend, &self.graph)
+    }
+
+    pub fn prev_segbend(&self, dot: DotIndex) -> Option<Segbend> {
+        Segbend::from_dot_prev(dot, &self.graph)
+    }
+
+    pub fn next_segbend(&self, dot: DotIndex) -> Option<Segbend> {
+        Segbend::from_dot_next(dot, &self.graph)
+    }
+
+    fn fail_and_remove_if_collides_except<Weight: std::marker::Copy>(
+        &mut self,
+        index: Index<Weight>,
+        except: &[TaggedIndex],
+    ) -> Result<(), ()> {
+        if let Some(..) = self.detect_collision_except(index, except) {
+            self.remove(index);
+            return Err(());
+        }
+        Ok(())
+    }
+
+    pub fn dots(&self) -> impl Iterator<Item = DotIndex> + '_ {
+        self.nodes().filter_map(|ni| ni.as_dot().map(|di| *di))
+    }
+
+    pub fn shapes(&self) -> impl Iterator<Item = Shape> + '_ {
+        self.nodes()
+            .map(|ni| untag!(ni, self.primitive(ni).shape()))
+    }
+
+    fn nodes(&self) -> impl Iterator<Item = TaggedIndex> + '_ {
+        self.rtree.iter().map(|wrapper| wrapper.data)
+    }
+}
+
+impl Layout {
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), ()> {
         let mut cur_bend = self.primitive(dot).outer();
         loop {
@@ -212,30 +253,6 @@ impl Layout {
         Primitive::new(index, &self.graph)
     }
 
-    pub fn bow(&self, bend: BendIndex) -> Bow {
-        Bow::from_bend(bend, &self.graph)
-    }
-
-    pub fn prev_segbend(&self, dot: DotIndex) -> Option<Segbend> {
-        Segbend::from_dot_prev(dot, &self.graph)
-    }
-
-    pub fn next_segbend(&self, dot: DotIndex) -> Option<Segbend> {
-        Segbend::from_dot_next(dot, &self.graph)
-    }
-
-    fn fail_and_remove_if_collides_except<Weight: std::marker::Copy>(
-        &mut self,
-        index: Index<Weight>,
-        except: &[TaggedIndex],
-    ) -> Result<(), ()> {
-        if let Some(..) = self.detect_collision_except(index, except) {
-            self.graph.remove_node(index.index);
-            return Err(());
-        }
-        Ok(())
-    }
-
     fn detect_collision_except<Weight: std::marker::Copy>(
         &self,
         index: Index<Weight>,
@@ -263,22 +280,9 @@ impl Layout {
 
     fn remove_from_rtree(&mut self, index: TaggedIndex) {
         let shape = untag!(index, self.primitive(index).shape());
-        assert!(self
+        debug_assert!(self
             .rtree
             .remove(&RTreeWrapper::new(shape, index))
             .is_some());
-    }
-
-    pub fn dots(&self) -> impl Iterator<Item = DotIndex> + '_ {
-        self.nodes().filter_map(|ni| ni.as_dot().map(|di| *di))
-    }
-
-    pub fn shapes(&self) -> impl Iterator<Item = Shape> + '_ {
-        self.nodes()
-            .map(|ni| untag!(ni, self.primitive(ni).shape()))
-    }
-
-    fn nodes(&self) -> impl Iterator<Item = TaggedIndex> + '_ {
-        self.rtree.iter().map(|wrapper| wrapper.data)
     }
 }
