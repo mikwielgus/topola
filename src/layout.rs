@@ -201,6 +201,10 @@ impl Layout {
             .map(|ni| untag!(ni, self.primitive(ni).shape()))
     }
 
+    pub fn node_count(&self) -> usize {
+        self.graph.node_count()
+    }
+
     fn nodes(&self) -> impl Iterator<Item = TaggedIndex> + '_ {
         self.rtree.iter().map(|wrapper| wrapper.data)
     }

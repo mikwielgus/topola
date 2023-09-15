@@ -1,3 +1,4 @@
+use contracts::debug_ensures;
 use geo::{EuclideanLength, Point};
 
 use crate::{
@@ -32,16 +33,19 @@ impl<'a> Draw<'a> {
         }
     }
 
+    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
     pub fn finish(&mut self, head: Head, into: DotIndex, width: f64) -> Result<(), ()> {
         if let Some(bend) = self.layout.primitive(into).bend() {
             self.finish_in_bend(head, bend, into, width)?;
         } else {
             self.finish_in_dot(head, into, width)?;
         }
-
         Ok(())
     }
 
+    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
     fn finish_in_dot(&mut self, head: Head, into: DotIndex, width: f64) -> Result<(), ()> {
         let tangent = self
             .guide(&Default::default())
@@ -54,6 +58,8 @@ impl<'a> Draw<'a> {
         Ok(())
     }
 
+    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
     fn finish_in_bend(
         &mut self,
         head: Head,
@@ -79,6 +85,8 @@ impl<'a> Draw<'a> {
         Ok(())
     }
 
+    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
     pub fn segbend_around_dot(
         &mut self,
         head: Head,
@@ -117,6 +125,8 @@ impl<'a> Draw<'a> {
         unreachable!();
     }
 
+    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
     pub fn segbend_around_bend(
         &mut self,
         mut head: Head,
@@ -138,6 +148,8 @@ impl<'a> Draw<'a> {
         )
     }
 
+    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
     fn segbend_around(
         &mut self,
         mut head: Head,
@@ -151,6 +163,7 @@ impl<'a> Draw<'a> {
         self.segbend(head, around, to, cw, width)
     }
 
+    #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
     fn extend_head(&mut self, head: Head, to: Point) -> Result<Head, ()> {
         if let Some(..) = head.segbend {
             self.extend_head_bend(head, to)
@@ -163,12 +176,15 @@ impl<'a> Draw<'a> {
         }
     }
 
+    #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
     fn extend_head_bend(&mut self, head: Head, to: Point) -> Result<Head, ()> {
         self.layout
             .extend_bend(head.segbend.as_ref().unwrap().bend, head.dot, to)?;
         Ok(head)
     }
 
+    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
     fn segbend(
         &mut self,
         head: Head,
@@ -203,6 +219,8 @@ impl<'a> Draw<'a> {
         })
     }
 
+    #[debug_ensures(ret.is_some() -> self.layout.node_count() == old(self.layout.node_count() - 4))]
+    #[debug_ensures(ret.is_none() -> self.layout.node_count() == old(self.layout.node_count()))]
     pub fn undo_segbend(&mut self, head: Head) -> Option<Head> {
         let segbend = head.segbend.unwrap();
 
@@ -220,6 +238,8 @@ impl<'a> Draw<'a> {
             })
     }
 
+    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 2))]
+    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
     fn seg(&mut self, head: Head, to: Point, width: f64) -> Result<(Head, SegIndex), ()> {
         debug_assert!(width <= self.layout.primitive(head.dot).weight().circle.r * 2.0);
 
@@ -247,6 +267,7 @@ impl<'a> Draw<'a> {
         ))
     }
 
+    #[debug_ensures(self.layout.node_count() == old(self.layout.node_count() - 2))]
     fn undo_seg(&mut self, head: Head, seg: SegIndex) {
         self.layout.remove(seg);
         self.layout.remove(head.dot);
