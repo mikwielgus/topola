@@ -4,7 +4,10 @@
 
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::ToTokens;
-use syn::{spanned::Spanned, visit_mut as visitor, Attribute, Expr, ExprCall};
+use syn::{
+    spanned::Spanned, visit_mut as visitor, Attribute, Expr, ExprCall,
+    ReturnType, Type,
+};
 
 use crate::implementation::{
     Contract, ContractMode, ContractType, FuncWithContracts,
@@ -313,12 +316,22 @@ pub(crate) fn generate(
     };
 
     //
-    // wrap the function body in a closure if we have any postconditions
+    // wrap the function body in a block so that we can use its return value
     //
 
-    let body = {
-        let block = &func.function.block;
-        quote::quote! { let ret = #block; }
+    let body = 'blk: {
+        let mut block = func.function.block.clone();
+        syn::visit_mut::visit_block_mut(&mut ReturnReplacer {}, &mut block);
+
+        if let ReturnType::Type(.., ref return_type) = func.function.sig.output
+        {
+            if let Type::ImplTrait(..) = **return_type {
+            } else {
+                break 'blk quote::quote! { let ret: #return_type = 'run: #block; };
+            }
+        }
+
+        quote::quote! { let ret = 'run: #block; }
     };
 
     //
@@ -352,14 +365,13 @@ pub(crate) fn generate(
     func.function.into_token_stream()
 }
 
-struct SelfReplacer<'a> {
-    replace_with: &'a syn::Ident,
-}
+struct ReturnReplacer {}
 
-impl syn::visit_mut::VisitMut for SelfReplacer<'_> {
-    fn visit_ident_mut(&mut self, i: &mut Ident) {
-        if i == "self" {
-            *i = self.replace_with.clone();
+impl syn::visit_mut::VisitMut for ReturnReplacer {
+    fn visit_expr_mut(&mut self, node: &mut Expr) {
+        if let Expr::Return(retexpr) = node {
+            let retexprexpr = retexpr.expr.clone();
+            *node = syn::parse_quote!(break 'run #retexprexpr);
         }
     }
 }
