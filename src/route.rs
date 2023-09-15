@@ -1,3 +1,5 @@
+use contracts::debug_ensures;
+
 use crate::{
     draw::{Draw, Head},
     layout::Layout,
@@ -41,6 +43,7 @@ impl<'a> Route<'a> {
         self.draw().finish(trace.head, into_dot, width)
     }
 
+    #[debug_ensures(ret.is_ok() -> trace.path.len() == path.len())]
     pub fn rework_path(
         &mut self,
         trace: &mut Trace,
@@ -59,6 +62,7 @@ impl<'a> Route<'a> {
         self.path(trace, &path[prefix_length..], width)
     }
 
+    #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() + path.len()))]
     pub fn path(&mut self, trace: &mut Trace, path: &[VertexIndex], width: f64) -> Result<(), ()> {
         for (i, vertex) in path.iter().enumerate() {
             if let Err(err) = self.step(trace, *vertex, width) {
@@ -69,6 +73,7 @@ impl<'a> Route<'a> {
         Ok(())
     }
 
+    #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() - step_count))]
     pub fn undo_path(&mut self, trace: &mut Trace, step_count: usize) -> Result<(), ()> {
         for _ in 0..step_count {
             self.undo_step(trace)?;
@@ -76,6 +81,8 @@ impl<'a> Route<'a> {
         Ok(())
     }
 
+    #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() + 1))]
+    #[debug_ensures(ret.is_err() -> trace.path.len() == old(trace.path.len()))]
     pub fn step(&mut self, trace: &mut Trace, to: VertexIndex, width: f64) -> Result<(), ()> {
         let to_dot = self.mesh.dot(to);
         trace.head = self.draw().segbend_around_dot(trace.head, to_dot, width)?;
@@ -83,6 +90,8 @@ impl<'a> Route<'a> {
         Ok(())
     }
 
+    #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() - 1))]
+    #[debug_ensures(ret.is_err() -> trace.path.len() == old(trace.path.len()))]
     pub fn undo_step(&mut self, trace: &mut Trace) -> Result<(), ()> {
         trace.head = self.draw().undo_segbend(trace.head).unwrap();
         trace.path.pop();
