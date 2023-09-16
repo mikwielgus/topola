@@ -1,4 +1,4 @@
-use contracts::debug_invariant;
+use contracts::{debug_ensures, debug_invariant};
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
 use petgraph::visit::EdgeRef;
@@ -32,6 +32,7 @@ impl Layout {
         }
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() - path.interior().len()))]
     pub fn remove_interior(&mut self, path: &impl Interior<TaggedIndex>) {
         for index in path.interior().iter().filter(|index| !index.is_dot()) {
             untag!(index, self.remove(*index));
@@ -45,6 +46,7 @@ impl Layout {
         }
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() - 1))]
     pub fn remove<Weight: std::marker::Copy>(&mut self, index: Index<Weight>) {
         // Unnecessary retag. It should be possible to elide it.
         let weight = *self.graph.node_weight(index.index).unwrap();
@@ -53,6 +55,7 @@ impl Layout {
         self.graph.remove_node(index.index);
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() + 1))]
     pub fn add_dot(&mut self, weight: DotWeight) -> Result<DotIndex, ()> {
         let dot = DotIndex::new(self.graph.add_node(TaggedWeight::Dot(weight)));
 
@@ -62,6 +65,8 @@ impl Layout {
         Ok(dot)
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() + 1))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count() + 2))]
     pub fn add_seg(
         &mut self,
         from: DotIndex,
@@ -92,6 +97,7 @@ impl Layout {
         Ok(seg)
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() + 1))]
     pub fn add_bend(
         &mut self,
         from: DotIndex,
@@ -106,6 +112,8 @@ impl Layout {
         }
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() + 1))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count() + 3))]
     pub fn add_core_bend(
         &mut self,
         from: DotIndex,
@@ -124,6 +132,8 @@ impl Layout {
         Ok(bend)
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() + 1))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count() + 2))]
     pub fn add_outer_bend(
         &mut self,
         from: DotIndex,
@@ -149,6 +159,8 @@ impl Layout {
         Ok(bend)
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn reattach_bend(&mut self, bend: BendIndex, inner: BendIndex) {
         if let Some(old_inner_edge) = self
             .graph
@@ -161,6 +173,8 @@ impl Layout {
         self.graph.add_edge(inner.index, bend.index, Label::Outer);
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn extend_bend(&mut self, bend: BendIndex, dot: DotIndex, to: Point) -> Result<(), ()> {
         self.remove_from_rtree(bend.tag());
         let result = self.move_dot(dot, to);
@@ -211,6 +225,8 @@ impl Layout {
 }
 
 impl Layout {
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), ()> {
         let mut cur_bend = self.primitive(dot).outer();
         loop {
@@ -277,11 +293,15 @@ impl Layout {
             .next()
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     fn insert_into_rtree(&mut self, index: TaggedIndex) {
         let shape = untag!(index, self.primitive(index).shape());
         self.rtree.insert(RTreeWrapper::new(shape, index));
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     fn remove_from_rtree(&mut self, index: TaggedIndex) {
         let shape = untag!(index, self.primitive(index).shape());
         debug_assert!(self
