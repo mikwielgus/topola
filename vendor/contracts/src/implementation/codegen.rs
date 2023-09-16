@@ -6,7 +6,7 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::ToTokens;
 use syn::{
     spanned::Spanned, visit_mut as visitor, Attribute, Expr, ExprCall,
-    ReturnType, Type,
+    ReturnType, TypeImplTrait,
 };
 
 use crate::implementation::{
@@ -321,12 +321,18 @@ pub(crate) fn generate(
 
     let body = 'blk: {
         let mut block = func.function.block.clone();
-        syn::visit_mut::visit_block_mut(&mut ReturnReplacer {}, &mut block);
+        syn::visit_mut::visit_block_mut(&mut ReturnReplacer, &mut block);
 
-        if let ReturnType::Type(.., ref return_type) = func.function.sig.output
-        {
-            if let Type::ImplTrait(..) = **return_type {
-            } else {
+        let mut impl_detector = ImplDetector { found_impl: false };
+        syn::visit::visit_return_type(
+            &mut impl_detector,
+            &func.function.sig.output,
+        );
+
+        if !impl_detector.found_impl {
+            if let ReturnType::Type(.., ref return_type) =
+                func.function.sig.output
+            {
                 break 'blk quote::quote! { let ret: #return_type = 'run: #block; };
             }
         }
@@ -365,7 +371,7 @@ pub(crate) fn generate(
     func.function.into_token_stream()
 }
 
-struct ReturnReplacer {}
+struct ReturnReplacer;
 
 impl syn::visit_mut::VisitMut for ReturnReplacer {
     fn visit_expr_mut(&mut self, node: &mut Expr) {
@@ -373,5 +379,15 @@ impl syn::visit_mut::VisitMut for ReturnReplacer {
             let retexprexpr = retexpr.expr.clone();
             *node = syn::parse_quote!(break 'run #retexprexpr);
         }
+    }
+}
+
+struct ImplDetector {
+    found_impl: bool,
+}
+
+impl<'a> syn::visit::Visit<'a> for ImplDetector {
+    fn visit_type_impl_trait(&mut self, _node: &'a TypeImplTrait) {
+        self.found_impl = true;
     }
 }
