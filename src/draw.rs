@@ -1,4 +1,5 @@
-use contracts::debug_ensures;
+use contracts::{debug_ensures, debug_requires};
+use enum_dispatch::enum_dispatch;
 use geo::{EuclideanLength, Point};
 
 use crate::{
@@ -10,10 +11,39 @@ use crate::{
     segbend::Segbend,
 };
 
+#[enum_dispatch]
+pub trait HeadDot {
+    fn dot(&self) -> DotIndex;
+}
+
+#[enum_dispatch(HeadDot)]
 #[derive(Debug, Clone, Copy)]
-pub struct Head {
+pub enum Head {
+    Bare(BareHead),
+    Segbend(SegbendHead),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct BareHead {
     pub dot: DotIndex,
-    pub segbend: Option<Segbend>,
+}
+
+impl HeadDot for BareHead {
+    fn dot(&self) -> DotIndex {
+        self.dot
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct SegbendHead {
+    pub dot: DotIndex,
+    pub segbend: Segbend,
+}
+
+impl HeadDot for SegbendHead {
+    fn dot(&self) -> DotIndex {
+        self.dot
+    }
 }
 
 pub struct Draw<'a> {
@@ -27,10 +57,7 @@ impl<'a> Draw<'a> {
     }
 
     pub fn start(&mut self, from: DotIndex) -> Head {
-        Head {
-            dot: from,
-            segbend: self.layout.prev_segbend(from),
-        }
+        self.prev_head(from)
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
@@ -52,9 +79,9 @@ impl<'a> Draw<'a> {
             .head_into_dot_segment(&head, into, width);
         let head = self.extend_head(head, tangent.start_point())?;
 
-        let net = self.layout.primitive(head.dot).weight().net;
+        let net = self.layout.primitive(head.dot()).weight().net;
         self.layout
-            .add_seg(head.dot, into, SegWeight { net, width })?;
+            .add_seg(head.dot(), into, SegWeight { net, width })?;
         Ok(())
     }
 
@@ -67,10 +94,7 @@ impl<'a> Draw<'a> {
         into: DotIndex,
         width: f64,
     ) -> Result<(), ()> {
-        let to_head = Head {
-            dot: into,
-            segbend: self.layout.next_segbend(into),
-        };
+        let to_head = self.next_head(into);
         let to_cw = self.guide(&Default::default()).head_cw(&to_head).unwrap();
         let tangent = self
             .guide(&Default::default())
@@ -79,9 +103,9 @@ impl<'a> Draw<'a> {
         let head = self.extend_head(head, tangent.start_point())?;
         let _to_head = self.extend_head(to_head, tangent.end_point())?;
 
-        let net = self.layout.primitive(head.dot).weight().net;
+        let net = self.layout.primitive(head.dot()).weight().net;
         self.layout
-            .add_seg(head.dot, into, SegWeight { net, width })?;
+            .add_seg(head.dot(), into, SegWeight { net, width })?;
         Ok(())
     }
 
@@ -92,7 +116,7 @@ impl<'a> Draw<'a> {
         head: Head,
         around: DotIndex,
         width: f64,
-    ) -> Result<Head, ()> {
+    ) -> Result<SegbendHead, ()> {
         let mut tangents = self
             .guide(&Default::default())
             .head_around_dot_segments(&head, around, width);
@@ -133,7 +157,7 @@ impl<'a> Draw<'a> {
         around: BendIndex,
         cw: bool,
         width: f64,
-    ) -> Result<Head, ()> {
+    ) -> Result<SegbendHead, ()> {
         let tangent = self
             .guide(&Default::default())
             .head_around_bend_segment(&head, around, cw, width);
@@ -158,15 +182,15 @@ impl<'a> Draw<'a> {
         to: Point,
         cw: bool,
         width: f64,
-    ) -> Result<Head, ()> {
+    ) -> Result<SegbendHead, ()> {
         head = self.extend_head(head, from)?;
         self.segbend(head, around, to, cw, width)
     }
 
     #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
     fn extend_head(&mut self, head: Head, to: Point) -> Result<Head, ()> {
-        if let Some(..) = head.segbend {
-            self.extend_head_bend(head, to)
+        if let Head::Segbend(head) = head {
+            Ok(Head::Segbend(self.extend_head_bend(head, to)?))
         } else {
             Ok(head)
             // No assertion for now because we temporarily use floats.
@@ -177,9 +201,8 @@ impl<'a> Draw<'a> {
     }
 
     #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
-    fn extend_head_bend(&mut self, head: Head, to: Point) -> Result<Head, ()> {
-        self.layout
-            .extend_bend(head.segbend.as_ref().unwrap().bend, head.dot, to)?;
+    fn extend_head_bend(&mut self, head: SegbendHead, to: Point) -> Result<SegbendHead, ()> {
+        self.layout.extend_bend(head.segbend.bend, head.dot, to)?;
         Ok(head)
     }
 
@@ -192,7 +215,7 @@ impl<'a> Draw<'a> {
         to: Point,
         cw: bool,
         width: f64,
-    ) -> Result<Head, ()> {
+    ) -> Result<SegbendHead, ()> {
         let (head, seg) = self.seg(head, to, width)?;
         let dot = head.dot;
         let bend_to = self
@@ -213,37 +236,31 @@ impl<'a> Draw<'a> {
                 self.undo_seg(head, seg);
                 err
             })?;
-        Ok(Head {
+        Ok(SegbendHead {
             dot: bend_to,
-            segbend: Some(Segbend { bend, dot, seg }),
+            segbend: Segbend { bend, dot, seg },
         })
     }
 
     #[debug_ensures(ret.is_some() -> self.layout.node_count() == old(self.layout.node_count() - 4))]
     #[debug_ensures(ret.is_none() -> self.layout.node_count() == old(self.layout.node_count()))]
-    pub fn undo_segbend(&mut self, head: Head) -> Option<Head> {
-        let segbend = head.segbend.unwrap();
-
+    pub fn undo_segbend(&mut self, head: SegbendHead) -> Option<Head> {
         self.layout
-            .primitive(segbend.ends().0)
+            .primitive(head.segbend.ends().0)
             .prev()
             .map(|prev_dot| {
-                self.layout.remove_interior(&segbend);
-                self.layout.remove(head.dot);
+                self.layout.remove_interior(&head.segbend);
+                self.layout.remove(head.dot());
 
-                Head {
-                    dot: prev_dot,
-                    segbend: self.layout.prev_segbend(prev_dot),
-                }
+                self.prev_head(prev_dot)
             })
     }
 
+    #[debug_requires(width <= self.layout.primitive(head.dot()).weight().circle.r * 2.0)]
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
-    fn seg(&mut self, head: Head, to: Point, width: f64) -> Result<(Head, SegIndex), ()> {
-        debug_assert!(width <= self.layout.primitive(head.dot).weight().circle.r * 2.0);
-
-        let net = self.layout.primitive(head.dot).weight().net;
+    fn seg(&mut self, head: Head, to: Point, width: f64) -> Result<(BareHead, SegIndex), ()> {
+        let net = self.layout.primitive(head.dot()).weight().net;
         let to_index = self.layout.add_dot(DotWeight {
             net,
             circle: Circle {
@@ -253,24 +270,34 @@ impl<'a> Draw<'a> {
         })?;
         let seg = self
             .layout
-            .add_seg(head.dot, to_index, SegWeight { net, width })
+            .add_seg(head.dot(), to_index, SegWeight { net, width })
             .map_err(|err| {
                 self.layout.remove(to_index);
                 err
             })?;
-        Ok((
-            Head {
-                dot: to_index,
-                segbend: None,
-            },
-            seg,
-        ))
+        Ok((BareHead { dot: to_index }, seg))
     }
 
     #[debug_ensures(self.layout.node_count() == old(self.layout.node_count() - 2))]
-    fn undo_seg(&mut self, head: Head, seg: SegIndex) {
+    fn undo_seg(&mut self, head: BareHead, seg: SegIndex) {
         self.layout.remove(seg);
         self.layout.remove(head.dot);
+    }
+
+    fn prev_head(&self, dot: DotIndex) -> Head {
+        if let Some(segbend) = self.layout.prev_segbend(dot) {
+            Head::from(SegbendHead { dot, segbend })
+        } else {
+            Head::from(BareHead { dot })
+        }
+    }
+
+    fn next_head(&self, dot: DotIndex) -> Head {
+        if let Some(segbend) = self.layout.next_segbend(dot) {
+            Head::from(SegbendHead { dot, segbend })
+        } else {
+            Head::from(BareHead { dot })
+        }
     }
 
     fn guide(&'a self, conditions: &'a Conditions) -> Guide {

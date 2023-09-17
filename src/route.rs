@@ -1,7 +1,7 @@
 use contracts::debug_ensures;
 
 use crate::{
-    draw::{Draw, Head},
+    draw::{BareHead, Draw, Head},
     layout::Layout,
     mesh::{Mesh, VertexIndex},
     rules::Rules,
@@ -31,10 +31,9 @@ impl<'a> Route<'a> {
     pub fn start(&mut self, from: VertexIndex) -> Trace {
         Trace {
             path: vec![from],
-            head: Head {
+            head: Head::from(BareHead {
                 dot: self.mesh.dot(from),
-                segbend: None,
-            },
+            }),
         }
     }
 
@@ -85,7 +84,7 @@ impl<'a> Route<'a> {
     #[debug_ensures(ret.is_err() -> trace.path.len() == old(trace.path.len()))]
     pub fn step(&mut self, trace: &mut Trace, to: VertexIndex, width: f64) -> Result<(), ()> {
         let to_dot = self.mesh.dot(to);
-        trace.head = self.draw().segbend_around_dot(trace.head, to_dot, width)?;
+        trace.head = Head::from(self.draw().segbend_around_dot(trace.head, to_dot, width)?);
         trace.path.push(to);
         Ok(())
     }
@@ -93,7 +92,12 @@ impl<'a> Route<'a> {
     #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() - 1))]
     #[debug_ensures(ret.is_err() -> trace.path.len() == old(trace.path.len()))]
     pub fn undo_step(&mut self, trace: &mut Trace) -> Result<(), ()> {
-        trace.head = self.draw().undo_segbend(trace.head).unwrap();
+        if let Head::Segbend(head) = trace.head {
+            trace.head = self.draw().undo_segbend(head).unwrap();
+        } else {
+            return Err(());
+        }
+
         trace.path.pop();
         Ok(())
     }

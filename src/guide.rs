@@ -1,7 +1,7 @@
 use geo::Line;
 
 use crate::{
-    draw::Head,
+    draw::{Head, HeadDot, SegbendHead},
     graph::{BendIndex, DotIndex},
     layout::Layout,
     math::{self, Circle},
@@ -78,9 +78,11 @@ impl<'a, 'b> Guide<'a, 'b> {
     }
 
     pub fn head_cw(&self, head: &Head) -> Option<bool> {
-        head.segbend
-            .as_ref()
-            .map(|segbend| self.layout.primitive(segbend.bend).weight().cw)
+        if let Head::Segbend(head) = head {
+            Some(self.layout.primitive(head.segbend.bend).weight().cw)
+        } else {
+            None
+        }
     }
 
     fn head_circle(&self, head: &Head, width: f64) -> Circle {
@@ -91,18 +93,21 @@ impl<'a, 'b> Guide<'a, 'b> {
             zone: None,
         };
 
-        match &head.segbend {
-            Some(segbend) => {
-                if let Some(inner) = self.layout.primitive(segbend.bend).inner() {
-                    self.bend_circle(inner, width)
-                } else {
-                    self.dot_circle(self.layout.primitive(segbend.bend).core().unwrap(), width)
-                }
-            }
-            None => Circle {
-                pos: self.layout.primitive(head.dot).weight().circle.pos,
+        match *head {
+            Head::Bare(head) => Circle {
+                pos: self.layout.primitive(head.dot()).weight().circle.pos,
                 r: 0.0,
             },
+            Head::Segbend(head) => {
+                if let Some(inner) = self.layout.primitive(head.segbend.bend).inner() {
+                    self.bend_circle(inner, width)
+                } else {
+                    self.dot_circle(
+                        self.layout.primitive(head.segbend.bend).core().unwrap(),
+                        width,
+                    )
+                }
+            }
         }
     }
 

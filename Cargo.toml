@@ -20,16 +20,19 @@ version = "2.2.0"
 [dependencies.fixedbitset]
 version = "0.4.0"
 
-[dependencies.sdl2]
-version = "0.35.2"
-default-features = false
-features = ["gfx"]
+[dependencies.enum_dispatch]
+version = "0.3.12"
 
 [dependencies.enum-as-inner]
 version = "0.6.0"
 
 [dependencies.contracts]
 version = "0.6.3"
+
+[dependencies.sdl2]
+version = "0.35.2"
+default-features = false
+features = ["gfx"]
 
 [patch.crates-io]
 contracts = { path = "vendor/contracts" }
