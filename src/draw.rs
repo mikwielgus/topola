@@ -1,6 +1,6 @@
 use contracts::{debug_ensures, debug_requires};
 use enum_dispatch::enum_dispatch;
-use geo::{EuclideanLength, Point};
+use geo::{EuclideanDistance, EuclideanLength, Point};
 
 use crate::{
     graph::{BendIndex, BendWeight, DotIndex, DotWeight, Ends, SegIndex, SegWeight, TaggedIndex},
@@ -176,21 +176,43 @@ impl<'a> Draw<'a> {
     #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
     fn segbend_around(
         &mut self,
-        mut head: Head,
+        head: Head,
         around: TaggedIndex,
         from: Point,
         to: Point,
         cw: bool,
         width: f64,
     ) -> Result<SegbendHead, ()> {
-        head = self.extend_head(head, from)?;
+        let head = self.extend_head(head, from)?;
         self.segbend(head, around, to, cw, width)
     }
 
     #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
     fn extend_head(&mut self, head: Head, to: Point) -> Result<Head, ()> {
         if let Head::Segbend(head) = head {
-            Ok(Head::Segbend(self.extend_head_bend(head, to)?))
+            self.layout.move_dot(head.dot, to)?;
+
+            if let TaggedIndex::Dot(around) = self.layout.primitive(head.segbend.bend).around() {
+                let cw = self.layout.primitive(head.segbend.bend).weight().cw;
+                let prev_dot = self.layout.primitive(head.segbend.ends().0).prev().unwrap();
+                let prev_head = self.prev_head(prev_dot);
+
+                let alternate_tangent = self
+                    .guide(&Default::default())
+                    .head_around_dot_segment(&prev_head, around, cw, 5.0);
+
+                let segbend_dot_pos = self.layout.primitive(head.segbend.dot).weight().circle.pos;
+
+                if alternate_tangent.end_point().euclidean_distance(&to)
+                    < segbend_dot_pos.euclidean_distance(&to)
+                {
+                    self.layout.flip_bend(head.segbend.bend);
+                    self.layout
+                        .move_dot(head.segbend.dot, alternate_tangent.end_point())?;
+                }
+            }
+
+            Ok(Head::Segbend(head))
         } else {
             Ok(head)
             // No assertion for now because we temporarily use floats.
@@ -198,12 +220,6 @@ impl<'a> Draw<'a> {
             //println!("{:?} {:?}", self.layout.weight(TaggedIndex::Dot(from)).as_dot().unwrap().circle.pos, to);
             //assert!(self.layout.weight(TaggedIndex::Dot(from)).as_dot().unwrap().circle.pos == to);
         }
-    }
-
-    #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
-    fn extend_head_bend(&mut self, head: SegbendHead, to: Point) -> Result<SegbendHead, ()> {
-        self.layout.extend_bend(head.segbend.bend, head.dot, to)?;
-        Ok(head)
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 4))]

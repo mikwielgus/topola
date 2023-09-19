@@ -176,11 +176,22 @@ impl Layout {
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
-    pub fn extend_bend(&mut self, bend: BendIndex, dot: DotIndex, to: Point) -> Result<(), ()> {
+    pub fn flip_bend(&mut self, bend: BendIndex) {
         self.remove_from_rtree(bend.tag());
-        let result = self.move_dot(dot, to);
+        let cw = self
+            .graph
+            .node_weight(bend.index)
+            .unwrap()
+            .as_bend()
+            .unwrap()
+            .cw;
+        self.graph
+            .node_weight_mut(bend.index)
+            .unwrap()
+            .as_bend_mut()
+            .unwrap()
+            .cw = !cw;
         self.insert_into_rtree(bend.tag());
-        result
     }
 
     pub fn bow(&self, bend: BendIndex) -> Bow {
@@ -195,6 +206,9 @@ impl Layout {
         Segbend::from_dot_next(dot, &self.graph)
     }
 
+    #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count()))]
+    #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count() - 1))]
     fn fail_and_remove_if_collides_except<Weight: std::marker::Copy>(
         &mut self,
         index: Index<Weight>,
@@ -230,16 +244,12 @@ impl Layout {
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), ()> {
-        let mut cur_bend = self.primitive(dot).outer();
-        loop {
-            if let None = cur_bend {
-                break;
-            }
-
-            self.remove_from_rtree(cur_bend.unwrap().tag());
-            cur_bend = self.primitive(cur_bend.unwrap()).outer();
-        }
-
+        self.primitive(dot)
+            .tagged_prev()
+            .map(|prev| self.remove_from_rtree(prev));
+        self.primitive(dot)
+            .tagged_next()
+            .map(|next| self.remove_from_rtree(next));
         self.remove_from_rtree(dot.tag());
 
         let mut dot_weight = self.primitive(dot).weight();
@@ -251,22 +261,24 @@ impl Layout {
         if let Some(..) = self.detect_collision_except(dot, &[]) {
             // Restore original state.
             *self.graph.node_weight_mut(dot.index).unwrap() = TaggedWeight::Dot(old_weight);
+
             self.insert_into_rtree(dot.tag());
+            self.primitive(dot)
+                .tagged_prev()
+                .map(|prev| self.insert_into_rtree(prev));
+            self.primitive(dot)
+                .tagged_next()
+                .map(|next| self.insert_into_rtree(next));
             return Err(());
         }
 
         self.insert_into_rtree(dot.tag());
-
-        let mut cur_bend = self.primitive(dot).outer();
-        loop {
-            match cur_bend {
-                Some(..) => (),
-                None => break,
-            }
-
-            self.insert_into_rtree(cur_bend.unwrap().tag());
-            cur_bend = self.primitive(cur_bend.unwrap()).outer();
-        }
+        self.primitive(dot)
+            .tagged_prev()
+            .map(|prev| self.insert_into_rtree(prev));
+        self.primitive(dot)
+            .tagged_next()
+            .map(|next| self.insert_into_rtree(next));
 
         Ok(())
     }
