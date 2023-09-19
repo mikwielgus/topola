@@ -383,10 +383,12 @@ struct ReturnReplacer;
 
 impl syn::visit_mut::VisitMut for ReturnReplacer {
     fn visit_expr_mut(&mut self, node: &mut Expr) {
-        if let Expr::Return(retexpr) = node {
-            let retexprexpr = retexpr.expr.clone();
-            *node = syn::parse_quote!(break 'run #retexprexpr);
+        if let Expr::Return(ret_expr) = node {
+            let ret_expr_expr = ret_expr.expr.clone();
+            *node = syn::parse_quote!(break 'run #ret_expr_expr);
         }
+
+        syn::visit_mut::visit_expr_mut(self, node);
     }
 }
 
