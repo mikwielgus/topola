@@ -316,10 +316,13 @@ impl Layout {
 impl Layout {
     fn test_envelopes(&self) -> bool {
         !self.rtree.iter().any(|wrapper| {
+            let index = wrapper.data;
+            let shape = untag!(index, Primitive::new(index, &self.graph).shape());
+            let wrapper = RTreeWrapper::new(shape, index);
             !self
                 .rtree
-                .locate_in_envelope(&wrapper.geom().envelope())
-                .any(|w| w == wrapper)
+                .locate_in_envelope(&shape.envelope())
+                .any(|w| *w == wrapper)
         })
     }
 }

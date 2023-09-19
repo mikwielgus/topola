@@ -69,7 +69,7 @@ impl BendShape {
     }
 }
 
-#[derive(Debug, EnumAsInner, PartialEq)]
+#[derive(Debug, Clone, Copy, EnumAsInner, PartialEq)]
 pub enum Shape {
     // Intentionally in different order to reorder `self.intersects(...)` properly.
     Dot(DotShape),
