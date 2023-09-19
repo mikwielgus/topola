@@ -24,6 +24,7 @@ pub struct Layout {
 }
 
 #[debug_invariant(self.graph.node_count() == self.rtree.size())]
+#[debug_invariant(self.test_envelopes())]
 impl Layout {
     pub fn new() -> Self {
         Layout {
@@ -224,6 +225,7 @@ impl Layout {
     }
 }
 
+#[debug_invariant(self.test_envelopes())]
 impl Layout {
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
@@ -308,5 +310,16 @@ impl Layout {
             .rtree
             .remove(&RTreeWrapper::new(shape, index))
             .is_some());
+    }
+}
+
+impl Layout {
+    fn test_envelopes(&self) -> bool {
+        !self.rtree.iter().any(|wrapper| {
+            !self
+                .rtree
+                .locate_in_envelope(&wrapper.geom().envelope())
+                .any(|w| w == wrapper)
+        })
     }
 }
