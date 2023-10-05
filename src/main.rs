@@ -10,6 +10,7 @@ macro_rules! dbg_dot {
 #[macro_use]
 mod graph;
 mod astar;
+mod band;
 mod bow;
 mod draw;
 mod guide;

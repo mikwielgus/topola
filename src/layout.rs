@@ -7,6 +7,7 @@ use rstar::primitives::GeomWithData;
 use rstar::RTree;
 use spade::Triangulation;
 
+use crate::band::Band;
 use crate::bow::Bow;
 use crate::graph::{
     BendIndex, BendWeight, DotIndex, DotWeight, Index, Interior, Label, SegIndex, SegWeight, Tag,
@@ -204,6 +205,10 @@ impl Layout {
 
     pub fn next_segbend(&self, dot: DotIndex) -> Option<Segbend> {
         Segbend::from_dot_next(dot, &self.graph)
+    }
+
+    pub fn band(&self, from: DotIndex, to: DotIndex) -> Band {
+        Band::new(from, to, &self.graph)
     }
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count()))]

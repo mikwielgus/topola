@@ -25,10 +25,10 @@ pub struct Rules {
 
 impl Rules {
     pub fn new() -> Self {
-        let mut me = Self {
+        let mut this = Self {
             rulesets: Default::default(),
         };
-        me.rulesets[0] = Some(HashMap::from([(
+        this.rulesets[0] = Some(HashMap::from([(
             Conditions {
                 lower_net: None,
                 higher_net: None,
@@ -37,7 +37,7 @@ impl Rules {
             },
             Ruleset::new(),
         )]));
-        me
+        this
     }
 
     pub fn ruleset(&self, conditions: &Conditions) -> &Ruleset {
