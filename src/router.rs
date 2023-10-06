@@ -53,11 +53,11 @@ struct RouterAstarStrategy<'a, RS: RouteStrategy> {
     route: Route<'a>,
     trace: Trace,
     to: VertexIndex,
-    strategy: RS,
+    strategy: &'a mut RS,
 }
 
 impl<'a, RS: RouteStrategy> RouterAstarStrategy<'a, RS> {
-    pub fn new(route: Route<'a>, trace: Trace, to: VertexIndex, strategy: RS) -> Self {
+    pub fn new(route: Route<'a>, trace: Trace, to: VertexIndex, strategy: &'a mut RS) -> Self {
         Self {
             route,
             trace,
@@ -101,7 +101,7 @@ impl Router {
         &mut self,
         from: DotIndex,
         to: DotIndex,
-        strategy: impl RouteStrategy,
+        strategy: &mut impl RouteStrategy,
     ) -> Result<(), InsertionError> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
@@ -119,6 +119,31 @@ impl Router {
         )
         .unwrap(); // TODO.
         Ok(())
+    }
+
+    pub fn reroute(
+        &mut self,
+        from: DotIndex,
+        to: Point,
+        strategy: &mut impl RouteStrategy,
+    ) -> Result<(), InsertionError> {
+        let to_dot = if let Some(band) = self.layout.next_band(from) {
+            let to_dot = band.ends().1;
+
+            self.layout.remove_interior(&band);
+            self.layout.move_dot(to_dot, to);
+            to_dot
+        } else {
+            let from_weight = self.layout.primitive(from).weight();
+            self.layout
+                .add_dot(DotWeight {
+                    net: from_weight.net,
+                    circle: Circle { pos: to, r: 2.0 },
+                })
+                .unwrap() // TODO.
+        };
+
+        self.enroute(from, to_dot, strategy)
     }
 
     /*pub fn squeeze_around_dot(

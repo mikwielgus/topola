@@ -207,8 +207,12 @@ impl Layout {
         Segbend::from_dot_next(dot, &self.graph)
     }
 
-    pub fn band(&self, from: DotIndex, to: DotIndex) -> Band {
-        Band::new(from, to, &self.graph)
+    pub fn prev_band(&self, to: DotIndex) -> Option<Band> {
+        Band::from_dot_prev(to, &self.graph)
+    }
+
+    pub fn next_band(&self, from: DotIndex) -> Option<Band> {
+        Band::from_dot_next(from, &self.graph)
     }
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count()))]

@@ -24,7 +24,8 @@ mod rules;
 mod segbend;
 mod shape;
 
-use graph::{SegWeight, Tag, TaggedIndex};
+use geo::point;
+use graph::{DotIndex, SegWeight, Tag, TaggedIndex};
 use layout::Layout;
 use mesh::{MeshEdgeReference, VertexIndex};
 use route::Route;
@@ -43,6 +44,12 @@ use std::time::Duration;
 use crate::graph::DotWeight;
 use crate::math::Circle;
 use crate::router::Router;
+
+// Clunky enum to work around borrow checker.
+enum RouterOrLayout<'a> {
+    Router(&'a mut Router),
+    Layout(&'a Layout),
+}
 
 struct DebugRouteStrategy<'a, RS: RouteStrategy> {
     strategy: RS,
@@ -66,7 +73,14 @@ impl<'a, RS: RouteStrategy> DebugRouteStrategy<'a, RS> {
 
 impl<'a, RS: RouteStrategy> RouteStrategy for DebugRouteStrategy<'a, RS> {
     fn route_cost(&mut self, route: &Route, path: &[VertexIndex]) -> u64 {
-        render_times(self.event_pump, self.canvas, route.layout, None, 25);
+        render_times(
+            self.event_pump,
+            self.canvas,
+            RouterOrLayout::Layout(route.layout),
+            None,
+            None,
+            25,
+        );
         self.strategy.route_cost(route, path)
     }
 
@@ -258,28 +272,37 @@ fn main() {
     let head = router.draw_around_dot(head, dot6, false, 5.0).unwrap();
     let _ = router.draw_finish(head, dot7, 5.0);*/
 
-    let _ = router.enroute(
+    /*let _ = router.enroute(
         dot1_1,
         dot1_2,
         DebugRouteStrategy::new(DefaultRouteStrategy::new(), &mut event_pump, &mut canvas),
     );
 
-    render_times(&mut event_pump, &mut canvas, &router.layout, None, -1);
+    render_times(&mut event_pump, &mut canvas, &router.layout, None, -1);*/
     render_times(
         &mut event_pump,
         &mut canvas,
-        &router.layout,
-        Some(barrier1_dot1.tag()),
+        RouterOrLayout::Router(&mut router),
+        Some(dot1_1),
+        Some(dot1_2),
         -1,
     );
-    render_times(&mut event_pump, &mut canvas, &router.layout, None, -1);
+    render_times(
+        &mut event_pump,
+        &mut canvas,
+        RouterOrLayout::Layout(&router.layout),
+        None,
+        None,
+        -1,
+    );
 }
 
 fn render_times(
     event_pump: &mut EventPump,
     canvas: &mut Canvas<Window>,
-    layout: &Layout,
-    follower: Option<TaggedIndex>,
+    mut router_or_layout: RouterOrLayout,
+    from: Option<DotIndex>,
+    follower: Option<DotIndex>,
     times: i64,
 ) {
     let mut i = 0;
@@ -299,14 +322,29 @@ fn render_times(
             }
         }
 
-        if let Some(follower) = follower {
-            let state = event_pump.mouse_state();
+        let layout = match router_or_layout {
+            RouterOrLayout::Router(ref mut router) => {
+                if let Some(follower) = follower {
+                    let state = event_pump.mouse_state();
 
-            /*let _ = router.move_dot(
-                *follower.as_dot().unwrap(),
-                (state.x() as f64, state.y() as f64).into(),
-            );*/
-        }
+                    /*let _ = router.layout.move_dot(
+                        *follower.as_dot().unwrap(),
+                        (state.x() as f64, state.y() as f64).into(),
+                    );*/
+
+                    if let Some(from) = from {
+                        router.reroute(
+                            from,
+                            point! {x: state.x() as f64, y: state.y() as f64},
+                            &mut DefaultRouteStrategy::new(),
+                        );
+                    }
+                }
+
+                &router.layout
+            }
+            RouterOrLayout::Layout(layout) => layout,
+        };
 
         let result = panic::catch_unwind(|| {
             for shape in layout.shapes() {
