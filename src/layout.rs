@@ -99,7 +99,8 @@ impl Layout {
         Ok(seg)
     }
 
-    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() + 1))]
+    #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
     pub fn add_bend(
         &mut self,
         from: DotIndex,
@@ -114,8 +115,10 @@ impl Layout {
         }
     }
 
-    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() + 1))]
-    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count() + 3))]
+    #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count() + 3))]
+    #[debug_ensures(ret.is_err() -> self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn add_core_bend(
         &mut self,
         from: DotIndex,
@@ -134,8 +137,10 @@ impl Layout {
         Ok(bend)
     }
 
-    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() + 1))]
-    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count() + 2))]
+    #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count() + 2))]
+    #[debug_ensures(ret.is_err() -> self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn add_outer_bend(
         &mut self,
         from: DotIndex,

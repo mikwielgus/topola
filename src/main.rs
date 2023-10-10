@@ -27,7 +27,8 @@ mod shape;
 use geo::point;
 use graph::{DotIndex, SegWeight, Tag, TaggedIndex};
 use layout::Layout;
-use mesh::{MeshEdgeReference, VertexIndex};
+use mesh::{Mesh, MeshEdgeReference, VertexIndex};
+use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use route::Route;
 use router::{DefaultRouteStrategy, RouteStrategy};
 use sdl2::event::Event;
@@ -79,7 +80,9 @@ impl<'a, RS: RouteStrategy> RouteStrategy for DebugRouteStrategy<'a, RS> {
             RouterOrLayout::Layout(route.layout),
             None,
             None,
-            25,
+            Some(route.mesh.clone()),
+            path,
+            10,
         );
         self.strategy.route_cost(route, path)
     }
@@ -113,7 +116,7 @@ fn main() {
     let _i = 0;
     let mut router = Router::new();
 
-    let dot1_1 = router
+    let dot1 = router
         .layout
         .add_dot(DotWeight {
             net: 1,
@@ -123,168 +126,128 @@ fn main() {
             },
         })
         .unwrap();
-    let _dot2_1 = router
-        .layout
-        .add_dot(DotWeight {
-            net: 2,
-            circle: Circle {
-                pos: (130.5, 430.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-    let _dot3_1 = router
-        .layout
-        .add_dot(DotWeight {
-            net: 3,
-            circle: Circle {
-                pos: (160.5, 460.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-    let _dot4_1 = router
-        .layout
-        .add_dot(DotWeight {
-            net: 4,
-            circle: Circle {
-                pos: (190.5, 490.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
 
-    let dot1_2 = router
+    let dot2 = router
         .layout
         .add_dot(DotWeight {
             net: 1,
             circle: Circle {
-                pos: (700.5, 400.5).into(),
+                pos: (500.5, 430.5).into(),
                 r: 8.0,
             },
         })
         .unwrap();
-    let _dot2_2 = router
+
+    let dot1_1 = router
         .layout
         .add_dot(DotWeight {
             net: 2,
             circle: Circle {
-                pos: (670.5, 430.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-    let _dot3_2 = router
-        .layout
-        .add_dot(DotWeight {
-            net: 3,
-            circle: Circle {
-                pos: (640.5, 460.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-    let _dot4_2 = router
-        .layout
-        .add_dot(DotWeight {
-            net: 4,
-            circle: Circle {
-                pos: (610.5, 490.5).into(),
+                pos: (200.5, 200.5).into(),
                 r: 8.0,
             },
         })
         .unwrap();
 
-    let _dot5 = router
+    let dot2_1 = router
         .layout
         .add_dot(DotWeight {
-            net: 5,
+            net: 2,
             circle: Circle {
-                pos: (150.5, 100.5).into(),
+                pos: (200.5, 500.5).into(),
                 r: 8.0,
             },
         })
         .unwrap();
 
-    let _dot6 = router
-        .layout
-        .add_dot(DotWeight {
-            net: 6,
-            circle: Circle {
-                pos: (190.5, 200.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let _dot7 = router
-        .layout
-        .add_dot(DotWeight {
-            net: 5,
-            circle: Circle {
-                pos: (230.5, 70.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let barrier1_dot1 = router
-        .layout
-        .add_dot(DotWeight {
-            net: 10,
-            circle: Circle {
-                pos: (250.5, 250.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let barrier2_dot1 = router
-        .layout
-        .add_dot(DotWeight {
-            net: 20,
-            circle: Circle {
-                pos: (420.5, 200.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-    let barrier2_dot2 = router
-        .layout
-        .add_dot(DotWeight {
-            net: 20,
-            circle: Circle {
-                pos: (480.5, 550.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
     let _ = router.layout.add_seg(
-        barrier2_dot1,
-        barrier2_dot2,
+        dot1_1,
+        dot2_1,
         SegWeight {
             net: 20,
             width: 16.0,
         },
     );
 
-    /*let head = router.draw_start(dot5);
-    let head = router.draw_around_dot(head, dot6, false, 5.0).unwrap();
-    let _ = router.draw_finish(head, dot7, 5.0);*/
+    let dot2_2 = router
+        .layout
+        .add_dot(DotWeight {
+            net: 2,
+            circle: Circle {
+                pos: (600.5, 500.5).into(),
+                r: 8.0,
+            },
+        })
+        .unwrap();
 
-    /*let _ = router.enroute(
-        dot1_1,
-        dot1_2,
-        DebugRouteStrategy::new(DefaultRouteStrategy::new(), &mut event_pump, &mut canvas),
+    let _ = router.layout.add_seg(
+        dot2_1,
+        dot2_2,
+        SegWeight {
+            net: 20,
+            width: 16.0,
+        },
     );
 
-    render_times(&mut event_pump, &mut canvas, &router.layout, None, -1);*/
+    let dot3 = router
+        .layout
+        .add_dot(DotWeight {
+            net: 2,
+            circle: Circle {
+                pos: (400.5, 200.5).into(),
+                r: 8.0,
+            },
+        })
+        .unwrap();
+
+    let dot4 = router
+        .layout
+        .add_dot(DotWeight {
+            net: 2,
+            circle: Circle {
+                pos: (400.5, 400.5).into(),
+                r: 8.0,
+            },
+        })
+        .unwrap();
+
+    let _ = router.layout.add_seg(
+        dot3,
+        dot4,
+        SegWeight {
+            net: 20,
+            width: 16.0,
+        },
+    );
+
+    let dot1_2 = router
+        .layout
+        .add_dot(DotWeight {
+            net: 2,
+            circle: Circle {
+                pos: (600.5, 200.5).into(),
+                r: 8.0,
+            },
+        })
+        .unwrap();
+
+    let _ = router.layout.add_seg(
+        dot3,
+        dot1_2,
+        SegWeight {
+            net: 20,
+            width: 16.0,
+        },
+    );
+
     render_times(
         &mut event_pump,
         &mut canvas,
         RouterOrLayout::Router(&mut router),
-        Some(dot1_1),
-        Some(dot1_2),
+        Some(dot1),
+        Some(dot2),
+        None,
+        &[],
         -1,
     );
     render_times(
@@ -293,6 +256,8 @@ fn main() {
         RouterOrLayout::Layout(&router.layout),
         None,
         None,
+        None,
+        &[],
         -1,
     );
 }
@@ -303,6 +268,8 @@ fn render_times(
     mut router_or_layout: RouterOrLayout,
     from: Option<DotIndex>,
     follower: Option<DotIndex>,
+    mut mesh: Option<Mesh>,
+    path: &[VertexIndex],
     times: i64,
 ) {
     let mut i = 0;
@@ -333,11 +300,17 @@ fn render_times(
                     );*/
 
                     if let Some(from) = from {
-                        router.reroute(
-                            from,
-                            point! {x: state.x() as f64, y: state.y() as f64},
-                            &mut DefaultRouteStrategy::new(),
-                        );
+                        mesh = router
+                            .reroute(
+                                from,
+                                point! {x: state.x() as f64, y: state.y() as f64},
+                                &mut DebugRouteStrategy::new(
+                                    DefaultRouteStrategy::new(),
+                                    event_pump,
+                                    canvas,
+                                ),
+                            )
+                            .ok();
                     }
                 }
 
@@ -346,73 +319,79 @@ fn render_times(
             RouterOrLayout::Layout(layout) => layout,
         };
 
-        let result = panic::catch_unwind(|| {
-            for shape in layout.shapes() {
-                match shape {
-                    Shape::Dot(dot) => {
-                        let _ = canvas.filled_circle(
-                            dot.c.pos.x() as i16,
-                            dot.c.pos.y() as i16,
-                            dot.c.r as i16,
+        //let result = panic::catch_unwind(|| {
+        for shape in layout.shapes() {
+            match shape {
+                Shape::Dot(dot) => {
+                    let _ = canvas.filled_circle(
+                        dot.c.pos.x() as i16,
+                        dot.c.pos.y() as i16,
+                        dot.c.r as i16,
+                        Color::RGB(200, 52, 52),
+                    );
+                }
+                Shape::Seg(seg) => {
+                    let _ = canvas.thick_line(
+                        seg.from.x() as i16,
+                        seg.from.y() as i16,
+                        seg.to.x() as i16,
+                        seg.to.y() as i16,
+                        seg.width as u8,
+                        Color::RGB(200, 52, 52),
+                    );
+                }
+                Shape::Bend(bend) => {
+                    let delta1 = bend.from - bend.c.pos;
+                    let delta2 = bend.to - bend.c.pos;
+
+                    let angle1 = delta1.y().atan2(delta1.x());
+                    let angle2 = delta2.y().atan2(delta2.x());
+
+                    for d in -2..3 {
+                        let _ = canvas.arc(
+                            //around_circle.pos.x() as i16,
+                            //around_circle.pos.y() as i16,
+                            bend.c.pos.x() as i16,
+                            bend.c.pos.y() as i16,
+                            //(shape.around_weight.unwrap().circle.r + 10.0 + (d as f64)) as i16,
+                            (bend.circle().r + (d as f64)) as i16,
+                            angle1.to_degrees() as i16,
+                            angle2.to_degrees() as i16,
                             Color::RGB(200, 52, 52),
                         );
-                    }
-                    Shape::Seg(seg) => {
-                        let _ = canvas.thick_line(
-                            seg.from.x() as i16,
-                            seg.from.y() as i16,
-                            seg.to.x() as i16,
-                            seg.to.y() as i16,
-                            seg.width as u8,
-                            Color::RGB(200, 52, 52),
-                        );
-                    }
-                    Shape::Bend(bend) => {
-                        let delta1 = bend.from - bend.c.pos;
-                        let delta2 = bend.to - bend.c.pos;
-
-                        let angle1 = delta1.y().atan2(delta1.x());
-                        let angle2 = delta2.y().atan2(delta2.x());
-
-                        for d in -2..3 {
-                            let _ = canvas.arc(
-                                //around_circle.pos.x() as i16,
-                                //around_circle.pos.y() as i16,
-                                bend.c.pos.x() as i16,
-                                bend.c.pos.y() as i16,
-                                //(shape.around_weight.unwrap().circle.r + 10.0 + (d as f64)) as i16,
-                                (bend.circle().r + (d as f64)) as i16,
-                                angle1.to_degrees() as i16,
-                                angle2.to_degrees() as i16,
-                                Color::RGB(200, 52, 52),
-                            );
-                        }
                     }
                 }
-                /*let envelope = shape.envelope();
-                let _ = canvas.rectangle(
-                    envelope.lower()[0] as i16,
-                    envelope.lower()[1] as i16,
-                    envelope.upper()[0] as i16,
-                    envelope.upper()[1] as i16,
-                    Color::RGB(100, 100, 100),
-                );*/
             }
-
-            /*for edge in router.routeedges() {
-                let _ = canvas.line(
-                    edge.0.x() as i16,
-                    edge.0.y() as i16,
-                    edge.1.x() as i16,
-                    edge.1.y() as i16,
-                    Color::RGB(250, 250, 250),
-                );
-            }*/
-        });
-
-        if let Err(err) = result {
-            dbg!(err);
+            /*let envelope = shape.envelope();
+            let _ = canvas.rectangle(
+                envelope.lower()[0] as i16,
+                envelope.lower()[1] as i16,
+                envelope.upper()[0] as i16,
+                envelope.upper()[1] as i16,
+                Color::RGB(100, 100, 100),
+            );*/
         }
+
+        if let Some(ref mesh) = mesh {
+            for edge in mesh.edge_references() {
+                let endpoints = (mesh.position(edge.source()), mesh.position(edge.target()));
+
+                let color = if path.contains(&edge.source()) && path.contains(&edge.target()) {
+                    Color::RGB(250, 250, 0)
+                } else {
+                    Color::RGB(125, 125, 125)
+                };
+
+                let _ = canvas.line(
+                    endpoints.0.x() as i16,
+                    endpoints.0.y() as i16,
+                    endpoints.1.x() as i16,
+                    endpoints.1.y() as i16,
+                    color,
+                );
+            }
+        }
+        //});
 
         canvas.present();
 

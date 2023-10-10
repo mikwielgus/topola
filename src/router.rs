@@ -71,7 +71,7 @@ impl<'a, RS: RouteStrategy> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'a
     fn reroute(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Mesh>) -> Option<u64> {
         let new_path = tracker.reconstruct_path_to(vertex);
 
-        self.route.rework_path(&mut self.trace, &new_path, 5.0).ok();
+        self.route.rework_path(&mut self.trace, &new_path, 5.0);
 
         if self.route.finish(&mut self.trace, self.to, 5.0).is_ok() {
             return None;
@@ -102,7 +102,7 @@ impl Router {
         from: DotIndex,
         to: DotIndex,
         strategy: &mut impl RouteStrategy,
-    ) -> Result<(), InsertionError> {
+    ) -> Result<Mesh, InsertionError> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
         //self.mesh.triangulate(&self.layout)?;
@@ -118,7 +118,8 @@ impl Router {
             &mut RouterAstarStrategy::new(route, trace, mesh.vertex(to), strategy),
         )
         .unwrap(); // TODO.
-        Ok(())
+
+        Ok(mesh)
     }
 
     pub fn reroute(
@@ -126,7 +127,7 @@ impl Router {
         from: DotIndex,
         to: Point,
         strategy: &mut impl RouteStrategy,
-    ) -> Result<(), InsertionError> {
+    ) -> Result<Mesh, InsertionError> {
         let to_dot = if let Some(band) = self.layout.next_band(from) {
             let to_dot = band.ends().1;
 

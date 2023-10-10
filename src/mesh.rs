@@ -9,6 +9,7 @@ use spade::{
 
 use crate::{graph::DotIndex, layout::Layout};
 
+#[derive(Debug, Clone)]
 struct Vertex {
     pub dot: DotIndex,
     x: f64,
@@ -27,6 +28,7 @@ impl HasPosition for Vertex {
     }
 }
 
+#[derive(Debug, Clone)]
 pub struct Mesh {
     triangulation: DelaunayTriangulation<Vertex>,
     dot_to_vertex: Vec<Option<VertexIndex>>,

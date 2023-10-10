@@ -15,8 +15,8 @@ pub struct Trace {
 
 pub struct Route<'a> {
     pub layout: &'a mut Layout,
-    rules: &'a Rules,
-    mesh: &'a Mesh,
+    pub rules: &'a Rules,
+    pub mesh: &'a Mesh,
 }
 
 impl<'a> Route<'a> {
