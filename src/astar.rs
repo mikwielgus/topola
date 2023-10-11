@@ -100,7 +100,7 @@ where
     K: Measure + Copy,
     G::NodeId: Eq + Hash,
 {
-    fn reroute(&mut self, node: G::NodeId, tracker: &PathTracker<G>) -> Option<K>;
+    fn is_goal(&mut self, node: G::NodeId, tracker: &PathTracker<G>) -> bool;
     fn edge_cost(&mut self, edge: G::EdgeRef) -> K;
     fn estimate_cost(&mut self, node: G::NodeId) -> K;
 }
@@ -125,54 +125,51 @@ where
     visit_next.push(MinScored(strategy.estimate_cost(start), start));
 
     while let Some(MinScored(estimate_score, node)) = visit_next.pop() {
-        match strategy.reroute(node, &path_tracker) {
-            None => {
-                let path = path_tracker.reconstruct_path_to(node);
-                let cost = scores[&node];
-                return Some((cost, path));
-            }
-            Some(route_cost) => {
-                // This lookup can be unwrapped without fear of panic since the node was
-                // necessarily scored before adding it to `visit_next`.
-                let node_score = scores[&node];
+        if strategy.is_goal(node, &path_tracker) {
+            let path = path_tracker.reconstruct_path_to(node);
+            let cost = scores[&node];
+            return Some((cost, path));
+        }
 
-                match estimate_scores.entry(node) {
-                    Occupied(mut entry) => {
-                        // If the node has already been visited with an equal or lower score than
-                        // now, then we do not need to re-visit it.
-                        if *entry.get() <= estimate_score {
-                            continue;
-                        }
-                        entry.insert(estimate_score);
-                    }
-                    Vacant(entry) => {
-                        entry.insert(estimate_score);
-                    }
+        // This lookup can be unwrapped without fear of panic since the node was
+        // necessarily scored before adding it to `visit_next`.
+        let node_score = scores[&node];
+
+        match estimate_scores.entry(node) {
+            Occupied(mut entry) => {
+                // If the node has already been visited with an equal or lower score than
+                // now, then we do not need to re-visit it.
+                if *entry.get() <= estimate_score {
+                    continue;
                 }
+                entry.insert(estimate_score);
+            }
+            Vacant(entry) => {
+                entry.insert(estimate_score);
+            }
+        }
 
-                for edge in graph.edges(node) {
-                    let next = edge.target();
-                    let next_score = node_score + route_cost + strategy.edge_cost(edge);
+        for edge in graph.edges(node) {
+            let next = edge.target();
+            let next_score = node_score + strategy.edge_cost(edge);
 
-                    match scores.entry(next) {
-                        Occupied(mut entry) => {
-                            // No need to add neighbors that we have already reached through a
-                            // shorter path than now.
-                            if *entry.get() <= next_score {
-                                continue;
-                            }
-                            entry.insert(next_score);
-                        }
-                        Vacant(entry) => {
-                            entry.insert(next_score);
-                        }
+            match scores.entry(next) {
+                Occupied(mut entry) => {
+                    // No need to add neighbors that we have already reached through a
+                    // shorter path than now.
+                    if *entry.get() <= next_score {
+                        continue;
                     }
-
-                    path_tracker.set_predecessor(next, node);
-                    let next_estimate_score = next_score + strategy.estimate_cost(next);
-                    visit_next.push(MinScored(next_estimate_score, next));
+                    entry.insert(next_score);
+                }
+                Vacant(entry) => {
+                    entry.insert(next_score);
                 }
             }
+
+            path_tracker.set_predecessor(next, node);
+            let next_estimate_score = next_score + strategy.estimate_cost(next);
+            visit_next.push(MinScored(next_estimate_score, next));
         }
     }
 

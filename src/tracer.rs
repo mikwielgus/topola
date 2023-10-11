@@ -3,7 +3,7 @@ use contracts::debug_ensures;
 use crate::{
     draw::{BareHead, Draw, Head},
     layout::Layout,
-    mesh::{Mesh, VertexIndex},
+    mesh::{Mesh, MeshEdgeReference, VertexIndex},
     rules::Rules,
 };
 
@@ -13,15 +13,15 @@ pub struct Trace {
     head: Head,
 }
 
-pub struct Route<'a> {
+pub struct Tracer<'a> {
     pub layout: &'a mut Layout,
     pub rules: &'a Rules,
     pub mesh: &'a Mesh,
 }
 
-impl<'a> Route<'a> {
+impl<'a> Tracer<'a> {
     pub fn new(layout: &'a mut Layout, rules: &'a Rules, mesh: &'a Mesh) -> Self {
-        Route {
+        Tracer {
             layout,
             rules,
             mesh,

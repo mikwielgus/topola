@@ -18,19 +18,18 @@ mod layout;
 mod math;
 mod mesh;
 mod primitive;
-mod route;
 mod router;
 mod rules;
 mod segbend;
 mod shape;
+mod tracer;
 
 use geo::point;
-use graph::{DotIndex, SegWeight, Tag, TaggedIndex};
+use graph::{DotIndex, SegWeight};
 use layout::Layout;
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-use route::Route;
-use router::{DefaultRouteStrategy, RouteStrategy};
+use router::RouterObserver;
 use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
@@ -41,6 +40,7 @@ use sdl2::EventPump;
 use shape::Shape;
 use std::panic;
 use std::time::Duration;
+use tracer::Tracer;
 
 use crate::graph::DotWeight;
 use crate::math::Circle;
@@ -52,48 +52,36 @@ enum RouterOrLayout<'a> {
     Layout(&'a Layout),
 }
 
-struct DebugRouteStrategy<'a, RS: RouteStrategy> {
-    strategy: RS,
+struct DebugRouterObserver<'a> {
     event_pump: &'a mut sdl2::EventPump,
     canvas: &'a mut sdl2::render::Canvas<Window>,
 }
 
-impl<'a, RS: RouteStrategy> DebugRouteStrategy<'a, RS> {
+impl<'a> DebugRouterObserver<'a> {
     pub fn new(
-        strategy: RS,
         event_pump: &'a mut sdl2::EventPump,
         canvas: &'a mut sdl2::render::Canvas<Window>,
     ) -> Self {
-        Self {
-            strategy,
-            event_pump,
-            canvas,
-        }
+        Self { event_pump, canvas }
     }
 }
 
-impl<'a, RS: RouteStrategy> RouteStrategy for DebugRouteStrategy<'a, RS> {
-    fn route_cost(&mut self, route: &Route, path: &[VertexIndex]) -> u64 {
+impl<'a> RouterObserver for DebugRouterObserver<'a> {
+    fn on_rework(&mut self, tracer: &Tracer, path: &[VertexIndex]) {
         render_times(
             self.event_pump,
             self.canvas,
-            RouterOrLayout::Layout(route.layout),
+            RouterOrLayout::Layout(tracer.layout),
             None,
             None,
-            Some(route.mesh.clone()),
+            Some(tracer.mesh.clone()),
             path,
             10,
         );
-        self.strategy.route_cost(route, path)
     }
 
-    fn edge_cost(&mut self, route: &Route, edge: MeshEdgeReference) -> u64 {
-        self.strategy.edge_cost(route, edge)
-    }
-
-    fn estimate_cost(&mut self, route: &Route, vertex: VertexIndex) -> u64 {
-        self.strategy.estimate_cost(route, vertex)
-    }
+    fn on_probe(&mut self, _tracer: &Tracer, _edge: MeshEdgeReference) {}
+    fn on_estimate(&mut self, _tracer: &Tracer, _vertex: VertexIndex) {}
 }
 
 fn main() {
@@ -304,11 +292,7 @@ fn render_times(
                             .reroute(
                                 from,
                                 point! {x: state.x() as f64, y: state.y() as f64},
-                                &mut DebugRouteStrategy::new(
-                                    DefaultRouteStrategy::new(),
-                                    event_pump,
-                                    canvas,
-                                ),
+                                &mut DebugRouterObserver::new(event_pump, canvas),
                             )
                             .ok();
                     }

@@ -1,91 +1,63 @@
 use geo::geometry::Point;
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use petgraph::visit::EdgeRef;
 use spade::InsertionError;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
-use crate::bow::Bow;
-use crate::draw::{Draw, Head};
-use crate::graph::{BendIndex, DotIndex, Ends, SegIndex, TaggedIndex};
-use crate::graph::{BendWeight, DotWeight, SegWeight};
-use crate::guide::Guide;
+use crate::graph::{DotIndex, DotWeight, Ends};
 use crate::layout::Layout;
 
 use crate::math::Circle;
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
-use crate::route::{Route, Trace};
-use crate::rules::{Conditions, Rules};
-use crate::segbend::Segbend;
+use crate::rules::Rules;
+use crate::tracer::{Trace, Tracer};
+
+pub trait RouterObserver {
+    fn on_rework(&mut self, tracer: &Tracer, path: &[VertexIndex]);
+    fn on_probe(&mut self, tracer: &Tracer, edge: MeshEdgeReference);
+    fn on_estimate(&mut self, tracer: &Tracer, vertex: VertexIndex);
+}
 
 pub struct Router {
     pub layout: Layout,
     rules: Rules,
 }
 
-pub trait RouteStrategy {
-    fn route_cost(&mut self, route: &Route, path: &[VertexIndex]) -> u64;
-    fn edge_cost(&mut self, route: &Route, edge: MeshEdgeReference) -> u64;
-    fn estimate_cost(&mut self, route: &Route, vertex: VertexIndex) -> u64;
-}
-
-pub struct DefaultRouteStrategy {}
-
-impl DefaultRouteStrategy {
-    pub fn new() -> Self {
-        Self {}
-    }
-}
-
-impl RouteStrategy for DefaultRouteStrategy {
-    fn route_cost(&mut self, route: &Route, path: &[VertexIndex]) -> u64 {
-        0
-    }
-
-    fn edge_cost(&mut self, route: &Route, edge: MeshEdgeReference) -> u64 {
-        1
-    }
-
-    fn estimate_cost(&mut self, route: &Route, vertex: VertexIndex) -> u64 {
-        0
-    }
-}
-
-struct RouterAstarStrategy<'a, RS: RouteStrategy> {
-    route: Route<'a>,
+struct RouterAstarStrategy<'a, RO: RouterObserver> {
+    tracer: Tracer<'a>,
     trace: Trace,
     to: VertexIndex,
-    strategy: &'a mut RS,
+    observer: &'a mut RO,
 }
 
-impl<'a, RS: RouteStrategy> RouterAstarStrategy<'a, RS> {
-    pub fn new(route: Route<'a>, trace: Trace, to: VertexIndex, strategy: &'a mut RS) -> Self {
+impl<'a, RO: RouterObserver> RouterAstarStrategy<'a, RO> {
+    pub fn new(tracer: Tracer<'a>, trace: Trace, to: VertexIndex, observer: &'a mut RO) -> Self {
         Self {
-            route,
+            tracer,
             trace,
             to,
-            strategy,
+            observer,
         }
     }
 }
 
-impl<'a, RS: RouteStrategy> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'a, RS> {
-    fn reroute(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Mesh>) -> Option<u64> {
+impl<'a, RO: RouterObserver> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'a, RO> {
+    fn is_goal(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Mesh>) -> bool {
         let new_path = tracker.reconstruct_path_to(vertex);
 
-        self.route.rework_path(&mut self.trace, &new_path, 5.0);
+        self.tracer.rework_path(&mut self.trace, &new_path, 5.0);
+        self.observer.on_rework(&self.tracer, &new_path);
 
-        if self.route.finish(&mut self.trace, self.to, 5.0).is_ok() {
-            return None;
-        }
-
-        Some(self.strategy.route_cost(&self.route, &new_path))
+        self.tracer.finish(&mut self.trace, self.to, 5.0).is_ok()
     }
 
     fn edge_cost(&mut self, edge: MeshEdgeReference) -> u64 {
-        self.strategy.edge_cost(&self.route, edge)
+        self.observer.on_probe(&self.tracer, edge);
+        1
     }
 
     fn estimate_cost(&mut self, vertex: VertexIndex) -> u64 {
-        self.strategy.estimate_cost(&self.route, vertex)
+        self.observer.on_estimate(&self.tracer, vertex);
+        0
     }
 }
 
@@ -101,7 +73,7 @@ impl Router {
         &mut self,
         from: DotIndex,
         to: DotIndex,
-        strategy: &mut impl RouteStrategy,
+        observer: &mut impl RouterObserver,
     ) -> Result<Mesh, InsertionError> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
@@ -109,13 +81,13 @@ impl Router {
         let mut mesh = Mesh::new();
         mesh.triangulate(&self.layout)?;
 
-        let mut route = self.route(&mesh);
-        let trace = route.start(mesh.vertex(from));
+        let mut tracer = self.tracer(&mesh);
+        let trace = tracer.start(mesh.vertex(from));
 
         let (_cost, path) = astar(
             &mesh,
             mesh.vertex(from),
-            &mut RouterAstarStrategy::new(route, trace, mesh.vertex(to), strategy),
+            &mut RouterAstarStrategy::new(tracer, trace, mesh.vertex(to), observer),
         )
         .unwrap(); // TODO.
 
@@ -126,7 +98,7 @@ impl Router {
         &mut self,
         from: DotIndex,
         to: Point,
-        strategy: &mut impl RouteStrategy,
+        observer: &mut impl RouterObserver,
     ) -> Result<Mesh, InsertionError> {
         let to_dot = if let Some(band) = self.layout.next_band(from) {
             let to_dot = band.ends().1;
@@ -144,7 +116,7 @@ impl Router {
                 .unwrap() // TODO.
         };
 
-        self.enroute(from, to_dot, strategy)
+        self.enroute(from, to_dot, observer)
     }
 
     /*pub fn squeeze_around_dot(
@@ -259,8 +231,8 @@ impl Router {
         Ok(())
     }*/
 
-    pub fn route<'a>(&'a mut self, mesh: &'a Mesh) -> Route {
-        Route::new(&mut self.layout, &self.rules, mesh)
+    pub fn tracer<'a>(&'a mut self, mesh: &'a Mesh) -> Tracer {
+        Tracer::new(&mut self.layout, &self.rules, mesh)
     }
 
     /*pub fn routeedges(&self) -> impl Iterator<Item = (Point, Point)> + '_ {
