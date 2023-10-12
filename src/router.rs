@@ -50,9 +50,18 @@ impl<'a, RO: RouterObserver> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'
         self.tracer.finish(&mut self.trace, self.to, 5.0).is_ok()
     }
 
-    fn edge_cost(&mut self, edge: MeshEdgeReference) -> u64 {
-        self.observer.on_probe(&self.tracer, edge);
-        1
+    fn edge_cost(&mut self, edge: MeshEdgeReference) -> Option<u64> {
+        if self
+            .tracer
+            .step(&mut self.trace, edge.target(), 5.0)
+            .is_ok()
+        {
+            self.observer.on_probe(&self.tracer, edge);
+            self.tracer.undo_step(&mut self.trace);
+            Some(1)
+        } else {
+            None
+        }
     }
 
     fn estimate_cost(&mut self, vertex: VertexIndex) -> u64 {

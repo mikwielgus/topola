@@ -101,7 +101,7 @@ where
     G::NodeId: Eq + Hash,
 {
     fn is_goal(&mut self, node: G::NodeId, tracker: &PathTracker<G>) -> bool;
-    fn edge_cost(&mut self, edge: G::EdgeRef) -> K;
+    fn edge_cost(&mut self, edge: G::EdgeRef) -> Option<K>;
     fn estimate_cost(&mut self, node: G::NodeId) -> K;
 }
 
@@ -150,26 +150,28 @@ where
         }
 
         for edge in graph.edges(node) {
-            let next = edge.target();
-            let next_score = node_score + strategy.edge_cost(edge);
+            if let Some(edge_cost) = strategy.edge_cost(edge) {
+                let next = edge.target();
+                let next_score = node_score + edge_cost;
 
-            match scores.entry(next) {
-                Occupied(mut entry) => {
-                    // No need to add neighbors that we have already reached through a
-                    // shorter path than now.
-                    if *entry.get() <= next_score {
-                        continue;
+                match scores.entry(next) {
+                    Occupied(mut entry) => {
+                        // No need to add neighbors that we have already reached through a
+                        // shorter path than now.
+                        if *entry.get() <= next_score {
+                            continue;
+                        }
+                        entry.insert(next_score);
                     }
-                    entry.insert(next_score);
+                    Vacant(entry) => {
+                        entry.insert(next_score);
+                    }
                 }
-                Vacant(entry) => {
-                    entry.insert(next_score);
-                }
-            }
 
-            path_tracker.set_predecessor(next, node);
-            let next_estimate_score = next_score + strategy.estimate_cost(next);
-            visit_next.push(MinScored(next_estimate_score, next));
+                path_tracker.set_predecessor(next, node);
+                let next_estimate_score = next_score + strategy.estimate_cost(next);
+                visit_next.push(MinScored(next_estimate_score, next));
+            }
         }
     }
 
