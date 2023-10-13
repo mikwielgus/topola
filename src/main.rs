@@ -40,7 +40,7 @@ use sdl2::EventPump;
 use shape::Shape;
 use std::panic;
 use std::time::Duration;
-use tracer::Tracer;
+use tracer::{Trace, Tracer};
 
 use crate::graph::DotWeight;
 use crate::math::Circle;
@@ -67,7 +67,7 @@ impl<'a> DebugRouterObserver<'a> {
 }
 
 impl<'a> RouterObserver for DebugRouterObserver<'a> {
-    fn on_rework(&mut self, tracer: &Tracer, path: &[VertexIndex]) {
+    fn on_rework(&mut self, tracer: &Tracer, trace: &Trace) {
         render_times(
             self.event_pump,
             self.canvas,
@@ -75,12 +75,39 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             None,
             None,
             Some(tracer.mesh.clone()),
-            path,
-            10,
+            &trace.path,
+            20,
         );
     }
 
-    fn on_probe(&mut self, _tracer: &Tracer, _edge: MeshEdgeReference) {}
+    fn before_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference) {
+        let mut path = trace.path.clone();
+        path.push(edge.target());
+        render_times(
+            self.event_pump,
+            self.canvas,
+            RouterOrLayout::Layout(tracer.layout),
+            None,
+            None,
+            Some(tracer.mesh.clone()),
+            &path,
+            5,
+        );
+    }
+
+    fn on_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference) {
+        render_times(
+            self.event_pump,
+            self.canvas,
+            RouterOrLayout::Layout(tracer.layout),
+            None,
+            None,
+            Some(tracer.mesh.clone()),
+            &trace.path,
+            5,
+        );
+    }
+
     fn on_estimate(&mut self, _tracer: &Tracer, _vertex: VertexIndex) {}
 }
 
@@ -120,7 +147,7 @@ fn main() {
         .add_dot(DotWeight {
             net: 1,
             circle: Circle {
-                pos: (500.5, 430.5).into(),
+                pos: (470.5, 350.5).into(),
                 r: 8.0,
             },
         })
@@ -208,6 +235,26 @@ fn main() {
         },
     );
 
+    let dot5 = router
+        .layout
+        .add_dot(DotWeight {
+            net: 2,
+            circle: Circle {
+                pos: (530.5, 400.5).into(),
+                r: 8.0,
+            },
+        })
+        .unwrap();
+
+    let _ = router.layout.add_seg(
+        dot4,
+        dot5,
+        SegWeight {
+            net: 20,
+            width: 16.0,
+        },
+    );
+
     let dot1_2 = router
         .layout
         .add_dot(DotWeight {
@@ -222,6 +269,15 @@ fn main() {
     let _ = router.layout.add_seg(
         dot3,
         dot1_2,
+        SegWeight {
+            net: 20,
+            width: 16.0,
+        },
+    );
+
+    let _ = router.layout.add_seg(
+        dot1_2,
+        dot2_2,
         SegWeight {
             net: 20,
             width: 16.0,
@@ -283,7 +339,7 @@ fn render_times(
                     let state = event_pump.mouse_state();
 
                     /*let _ = router.layout.move_dot(
-                        *follower.as_dot().unwrap(),
+                        follower.into_dot().unwrap(),
                         (state.x() as f64, state.y() as f64).into(),
                     );*/
 

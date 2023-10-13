@@ -188,7 +188,7 @@ impl Layout {
             .graph
             .node_weight(bend.index)
             .unwrap()
-            .as_bend()
+            .into_bend()
             .unwrap()
             .cw;
         self.graph

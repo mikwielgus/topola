@@ -9,7 +9,7 @@ use crate::{
 
 #[derive(Debug)]
 pub struct Trace {
-    path: Vec<VertexIndex>,
+    pub path: Vec<VertexIndex>,
     head: Head,
 }
 

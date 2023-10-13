@@ -116,7 +116,7 @@ impl<'a, 'b> Guide<'a, 'b> {
             .layout
             .primitive(bend)
             .shape()
-            .as_bend()
+            .into_bend()
             .unwrap()
             .circle();
         circle.r += self.rules.ruleset(&self.conditions).clearance.min;

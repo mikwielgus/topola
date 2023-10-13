@@ -29,7 +29,7 @@ impl Band {
             None
         } else {
             Some(Self {
-                from: *interior.pop().unwrap().as_dot().unwrap(),
+                from: interior.pop().unwrap().into_dot().unwrap(),
                 to: dot,
                 interior,
             })
@@ -54,7 +54,7 @@ impl Band {
         } else {
             Some(Self {
                 from: dot,
-                to: *interior.pop().unwrap().as_dot().unwrap(),
+                to: interior.pop().unwrap().into_dot().unwrap(),
                 interior,
             })
         }

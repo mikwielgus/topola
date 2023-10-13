@@ -286,7 +286,7 @@ impl<'a> Dot<'a> {
     }
 
     pub fn weight(&self) -> DotWeight {
-        *self.tagged_weight().as_dot().unwrap()
+        self.tagged_weight().into_dot().unwrap()
     }
 }
 
@@ -300,7 +300,7 @@ impl<'a> Seg<'a> {
     }
 
     pub fn weight(&self) -> SegWeight {
-        *self.tagged_weight().as_seg().unwrap()
+        self.tagged_weight().into_seg().unwrap()
     }
 }
 
@@ -348,7 +348,7 @@ impl<'a> Bend<'a> {
     }
 
     pub fn weight(&self) -> BendWeight {
-        *self.tagged_weight().as_bend().unwrap()
+        self.tagged_weight().into_bend().unwrap()
     }
 
     pub fn cross_product(&self) -> f64 {

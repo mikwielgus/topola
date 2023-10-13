@@ -21,18 +21,18 @@ impl Bow {
         let bend = index;
 
         let seg1_dot2 = Bend::new(bend, graph).prev().unwrap();
-        let seg1 = *Dot::new(seg1_dot2, graph)
+        let seg1 = Dot::new(seg1_dot2, graph)
             .tagged_prev()
             .unwrap()
-            .as_seg()
+            .into_seg()
             .unwrap();
         let seg1_dot1 = Seg::new(seg1, graph).prev().unwrap();
 
         let seg2_dot1 = Bend::new(bend, graph).next().unwrap();
-        let seg2 = *Dot::new(seg2_dot1, graph)
+        let seg2 = Dot::new(seg2_dot1, graph)
             .tagged_next()
             .unwrap()
-            .as_seg()
+            .into_seg()
             .unwrap();
         let seg2_dot2 = Seg::new(seg2, graph).next().unwrap();
 
