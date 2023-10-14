@@ -136,7 +136,7 @@ impl Shape {
                 Shape::Dot(..) => unreachable!(),
                 Shape::Seg(other) => seg.polygon().intersects(&other.polygon()),
                 Shape::Bend(other) => {
-                    for segment in seg.polygon().exterior().lines() {
+                    /*for segment in seg.polygon().exterior().lines() {
                         let inner_circle = other.inner_circle();
                         let outer_circle = other.outer_circle();
 
@@ -151,7 +151,7 @@ impl Shape {
                                 return true;
                             }
                         }
-                    }
+                    }*/
 
                     false
                 }
