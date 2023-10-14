@@ -312,8 +312,8 @@ impl Layout {
         self.rtree
             .locate_in_envelope_intersecting(&shape.envelope())
             .filter(|wrapper| {
-                let index = wrapper.data;
-                !untag!(index, primitive.connectable(index))
+                let other_index = wrapper.data;
+                !untag!(other_index, primitive.connectable(other_index))
             })
             .filter(|wrapper| !except.contains(&wrapper.data))
             .filter(|wrapper| shape.intersects(wrapper.geom()))
@@ -332,10 +332,8 @@ impl Layout {
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     fn remove_from_rtree(&mut self, index: TaggedIndex) {
         let shape = untag!(index, self.primitive(index).shape());
-        debug_assert!(self
-            .rtree
-            .remove(&RTreeWrapper::new(shape, index))
-            .is_some());
+        let removed_element = self.rtree.remove(&RTreeWrapper::new(shape, index));
+        debug_assert!(removed_element.is_some());
     }
 }
 
