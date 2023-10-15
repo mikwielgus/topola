@@ -194,10 +194,12 @@ pub fn intersect_circle_segment(circle: &Circle, segment: &Line) -> Vec<Point> {
 pub fn between_vectors(p: Point, from: Point, to: Point) -> bool {
     let cross = cross_product(from, to);
 
-    if cross >= 0. {
-        cross_product(from, p) >= 0. && cross_product(p, to) >= 0.
+    if cross > 0.0 {
+        cross_product(from, p) >= 0.0 && cross_product(p, to) >= 0.0
+    } else if cross < 0.0 {
+        cross_product(from, p) >= 0.0 || cross_product(p, to) >= 0.0
     } else {
-        cross_product(from, p) >= 0. || cross_product(p, to) >= 0.
+        false
     }
 }
 
