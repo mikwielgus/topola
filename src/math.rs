@@ -25,38 +25,38 @@ impl Sub for Circle {
     }
 }
 
-fn _tangent(center: Point, r1: f64, r2: f64) -> CanonicalLine {
+fn _tangent(center: Point, r1: f64, r2: f64) -> Result<CanonicalLine, ()> {
     let epsilon = 1e-9;
     let dr = r2 - r1;
     let norm = center.x() * center.x() + center.y() * center.y();
     let discriminant = norm - dr * dr;
 
     if discriminant < -epsilon {
-        panic!();
+        return Err(());
     }
 
     let sqrt_discriminant = f64::sqrt(f64::abs(discriminant));
 
-    CanonicalLine {
+    Ok(CanonicalLine {
         a: (center.x() * dr + center.y() * sqrt_discriminant) / norm,
         b: (center.y() * dr - center.x() * sqrt_discriminant) / norm,
         c: r1,
-    }
+    })
 }
 
-fn _tangents(circle1: Circle, circle2: Circle) -> [CanonicalLine; 4] {
+fn _tangents(circle1: Circle, circle2: Circle) -> Result<[CanonicalLine; 4], ()> {
     let mut tgs: [CanonicalLine; 4] = [
-        _tangent((circle2 - circle1).pos, -circle1.r, -circle2.r),
-        _tangent((circle2 - circle1).pos, -circle1.r, circle2.r),
-        _tangent((circle2 - circle1).pos, circle1.r, -circle2.r),
-        _tangent((circle2 - circle1).pos, circle1.r, circle2.r),
+        _tangent((circle2 - circle1).pos, -circle1.r, -circle2.r)?,
+        _tangent((circle2 - circle1).pos, -circle1.r, circle2.r)?,
+        _tangent((circle2 - circle1).pos, circle1.r, -circle2.r)?,
+        _tangent((circle2 - circle1).pos, circle1.r, circle2.r)?,
     ];
 
     for tg in tgs.iter_mut() {
         tg.c -= tg.a * circle1.pos.x() + tg.b * circle1.pos.y();
     }
 
-    return tgs;
+    Ok(tgs)
 }
 
 fn cast_point_to_canonical_line(pt: Point, line: CanonicalLine) -> Point {
@@ -69,10 +69,10 @@ fn cast_point_to_canonical_line(pt: Point, line: CanonicalLine) -> Point {
         .into();
 }
 
-fn tangent_point_pairs(circle1: Circle, circle2: Circle) -> [(Point, Point); 4] {
-    let tgs = _tangents(circle1, circle2);
+fn tangent_point_pairs(circle1: Circle, circle2: Circle) -> Result<[(Point, Point); 4], ()> {
+    let tgs = _tangents(circle1, circle2)?;
 
-    [
+    Ok([
         (
             cast_point_to_canonical_line(circle1.pos, tgs[0]),
             cast_point_to_canonical_line(circle2.pos, tgs[0]),
@@ -89,7 +89,7 @@ fn tangent_point_pairs(circle1: Circle, circle2: Circle) -> [(Point, Point); 4] 
             cast_point_to_canonical_line(circle1.pos, tgs[3]),
             cast_point_to_canonical_line(circle2.pos, tgs[3]),
         ),
-    ]
+    ])
 }
 
 pub fn tangent_segments(
@@ -97,8 +97,8 @@ pub fn tangent_segments(
     cw1: Option<bool>,
     circle2: Circle,
     cw2: Option<bool>,
-) -> impl Iterator<Item = Line> {
-    tangent_point_pairs(circle1, circle2)
+) -> Result<impl Iterator<Item = Line>, ()> {
+    Ok(tangent_point_pairs(circle1, circle2)?
         .into_iter()
         .filter_map(move |tangent_point_pair| {
             if let Some(cw1) = cw1 {
@@ -120,7 +120,7 @@ pub fn tangent_segments(
             }
 
             Some(Line::new(tangent_point_pair.0, tangent_point_pair.1))
-        })
+        }))
 }
 
 pub fn tangent_segment(
@@ -128,8 +128,10 @@ pub fn tangent_segment(
     cw1: Option<bool>,
     circle2: Circle,
     cw2: Option<bool>,
-) -> Line {
-    tangent_segments(circle1, cw1, circle2, cw2).next().unwrap()
+) -> Result<Line, ()> {
+    Ok(tangent_segments(circle1, cw1, circle2, cw2)?
+        .next()
+        .unwrap())
 }
 
 pub fn intersect_circles(circle1: &Circle, circle2: &Circle) -> Vec<Point> {

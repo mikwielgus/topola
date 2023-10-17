@@ -76,7 +76,7 @@ impl<'a> Draw<'a> {
     fn finish_in_dot(&mut self, head: Head, into: DotIndex, width: f64) -> Result<(), ()> {
         let tangent = self
             .guide(&Default::default())
-            .head_into_dot_segment(&head, into, width);
+            .head_into_dot_segment(&head, into, width)?;
         let head = self.extend_head(head, tangent.start_point())?;
 
         let net = self.layout.primitive(head.dot()).weight().net;
@@ -98,7 +98,7 @@ impl<'a> Draw<'a> {
         let to_cw = self.guide(&Default::default()).head_cw(&to_head).unwrap();
         let tangent = self
             .guide(&Default::default())
-            .head_around_bend_segment(&head, into_bend, to_cw, width);
+            .head_around_bend_segment(&head, into_bend, to_cw, width)?;
 
         let head = self.extend_head(head, tangent.start_point())?;
         let _to_head = self.extend_head(to_head, tangent.end_point())?;
@@ -119,7 +119,7 @@ impl<'a> Draw<'a> {
     ) -> Result<SegbendHead, ()> {
         let mut tangents = self
             .guide(&Default::default())
-            .head_around_dot_segments(&head, around, width);
+            .head_around_dot_segments(&head, around, width)?;
         let mut dirs = [true, false];
 
         if tangents.1.euclidean_length() < tangents.0.euclidean_length() {
@@ -154,7 +154,7 @@ impl<'a> Draw<'a> {
     ) -> Result<SegbendHead, ()> {
         let mut tangents = self
             .guide(&Default::default())
-            .head_around_bend_segments(&head, around, width);
+            .head_around_bend_segments(&head, around, width)?;
         let mut dirs = [true, false];
 
         if tangents.1.euclidean_length() < tangents.0.euclidean_length() {
@@ -206,7 +206,7 @@ impl<'a> Draw<'a> {
 
                 let alternate_tangent = self
                     .guide(&Default::default())
-                    .head_around_dot_segment(&prev_head, around, cw, 5.0);
+                    .head_around_dot_segment(&prev_head, around, cw, 5.0)?;
 
                 let segbend_dot_pos = self.layout.primitive(head.segbend.dot).weight().circle.pos;
 

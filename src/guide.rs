@@ -23,7 +23,12 @@ impl<'a, 'b> Guide<'a, 'b> {
         }
     }
 
-    pub fn head_into_dot_segment(&self, head: &Head, into: DotIndex, width: f64) -> Line {
+    pub fn head_into_dot_segment(
+        &self,
+        head: &Head,
+        into: DotIndex,
+        width: f64,
+    ) -> Result<Line, ()> {
         let from_circle = self.head_circle(head, width);
         let to_circle = Circle {
             pos: self.layout.primitive(into).weight().circle.pos,
@@ -39,14 +44,14 @@ impl<'a, 'b> Guide<'a, 'b> {
         head: &Head,
         around: DotIndex,
         width: f64,
-    ) -> (Line, Line) {
+    ) -> Result<(Line, Line), ()> {
         let from_circle = self.head_circle(head, width);
         let to_circle = self.dot_circle(around, width);
 
         let from_cw = self.head_cw(head);
         let tangents: Vec<Line> =
-            math::tangent_segments(from_circle, from_cw, to_circle, None).collect();
-        (tangents[0], tangents[1])
+            math::tangent_segments(from_circle, from_cw, to_circle, None)?.collect();
+        Ok((tangents[0], tangents[1]))
     }
 
     pub fn head_around_dot_segment(
@@ -55,7 +60,7 @@ impl<'a, 'b> Guide<'a, 'b> {
         around: DotIndex,
         cw: bool,
         width: f64,
-    ) -> Line {
+    ) -> Result<Line, ()> {
         let from_circle = self.head_circle(head, width);
         let to_circle = self.dot_circle(around, width);
 
@@ -68,14 +73,14 @@ impl<'a, 'b> Guide<'a, 'b> {
         head: &Head,
         around: BendIndex,
         width: f64,
-    ) -> (Line, Line) {
+    ) -> Result<(Line, Line), ()> {
         let from_circle = self.head_circle(head, width);
         let to_circle = self.bend_circle(around, width);
 
         let from_cw = self.head_cw(head);
         let tangents: Vec<Line> =
-            math::tangent_segments(from_circle, from_cw, to_circle, None).collect();
-        (tangents[0], tangents[1])
+            math::tangent_segments(from_circle, from_cw, to_circle, None)?.collect();
+        Ok((tangents[0], tangents[1]))
     }
 
     pub fn head_around_bend_segment(
@@ -84,7 +89,7 @@ impl<'a, 'b> Guide<'a, 'b> {
         around: BendIndex,
         cw: bool,
         width: f64,
-    ) -> Line {
+    ) -> Result<Line, ()> {
         let from_circle = self.head_circle(head, width);
         let to_circle = self.bend_circle(around, width);
 
