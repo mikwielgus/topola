@@ -139,7 +139,7 @@ impl Layout {
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
-    #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count() + 2))]
+    #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count() + 4))]
     #[debug_ensures(ret.is_err() -> self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn add_outer_bend(
         &mut self,
@@ -161,14 +161,25 @@ impl Layout {
             .collect::<Vec<DotIndex>>()
             .first()
             .unwrap();
-        let bend = self.add_core_bend(from, to, core, weight)?;
+
+        let bend = BendIndex::new(self.graph.add_node(TaggedWeight::Bend(weight)));
+
+        self.graph.add_edge(from.index, bend.index, Label::End);
+        self.graph.add_edge(bend.index, to.index, Label::End);
+        self.graph.add_edge(bend.index, core.index, Label::Core);
         self.graph.add_edge(inner.index, bend.index, Label::Outer);
+
+        self.insert_into_rtree(bend.tag());
+        self.fail_and_remove_if_collides_except(bend, &[from.tag(), to.tag(), core.tag()])?;
         Ok(bend)
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
-    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count())
+        || self.graph.edge_count() == old(self.graph.edge_count() + 1))]
     pub fn reattach_bend(&mut self, bend: BendIndex, inner: BendIndex) {
+        self.remove_from_rtree(bend.tag());
+
         if let Some(old_inner_edge) = self
             .graph
             .edges_directed(bend.index, Incoming)
@@ -177,7 +188,9 @@ impl Layout {
         {
             self.graph.remove_edge(old_inner_edge.id());
         }
+
         self.graph.add_edge(inner.index, bend.index, Label::Outer);
+        self.insert_into_rtree(bend.tag());
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
