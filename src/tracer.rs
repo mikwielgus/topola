@@ -114,7 +114,7 @@ impl<'a> Tracer<'a> {
                     layer = outer;
                 }
 
-                return self.tuck_around_bend(head, layer, width);
+                return self.draw().segbend_around_bend(head, layer, width);
             }
         }
 
