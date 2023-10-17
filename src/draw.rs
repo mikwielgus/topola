@@ -199,7 +199,7 @@ impl<'a> Draw<'a> {
         if let Head::Segbend(head) = head {
             self.layout.move_dot(head.dot, to)?;
 
-            if let TaggedIndex::Dot(around) = self.layout.primitive(head.segbend.bend).around() {
+            /*if let TaggedIndex::Dot(around) = self.layout.primitive(head.segbend.bend).around() {
                 let cw = self.layout.primitive(head.segbend.bend).weight().cw;
                 let prev_dot = self.layout.primitive(head.segbend.ends().0).prev().unwrap();
                 let prev_head = self.prev_head(prev_dot);
@@ -217,7 +217,7 @@ impl<'a> Draw<'a> {
                     self.layout
                         .move_dot(head.segbend.dot, alternate_tangent.end_point())?;
                 }
-            }
+            }*/
 
             Ok(Head::Segbend(head))
         } else {
