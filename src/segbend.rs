@@ -21,34 +21,28 @@ impl Segbend {
         dot: DotIndex,
         graph: &StableDiGraph<TaggedWeight, Label, usize>,
     ) -> Option<Self> {
-        Dot::new(dot, graph).tagged_prev().map(|tagged_prev| {
-            let bend = tagged_prev.into_bend().unwrap();
-            let dot = Bend::new(bend, graph).prev().unwrap();
-            let seg = Dot::new(dot, graph)
-                .tagged_prev()
-                .unwrap()
-                .into_seg()
-                .unwrap();
-
-            Self { bend, dot, seg }
-        })
+        let bend = *Dot::new(dot, graph).tagged_prev()?.as_bend()?;
+        let dot = Bend::new(bend, graph).prev().unwrap();
+        let seg = Dot::new(dot, graph)
+            .tagged_prev()
+            .unwrap()
+            .into_seg()
+            .unwrap();
+        Some(Self { bend, dot, seg })
     }
 
     pub fn from_dot_next(
         dot: DotIndex,
         graph: &StableDiGraph<TaggedWeight, Label, usize>,
     ) -> Option<Self> {
-        Dot::new(dot, graph).tagged_next().map(|tagged_next| {
-            let bend = tagged_next.into_bend().unwrap();
-            let dot = Bend::new(bend, graph).next().unwrap();
-            let seg = Dot::new(dot, graph)
-                .tagged_next()
-                .unwrap()
-                .into_seg()
-                .unwrap();
-
-            Self { bend, dot, seg }
-        })
+        let bend = *Dot::new(dot, graph).tagged_next()?.as_bend()?;
+        let dot = Bend::new(bend, graph).next().unwrap();
+        let seg = Dot::new(dot, graph)
+            .tagged_next()
+            .unwrap()
+            .into_seg()
+            .unwrap();
+        Some(Self { bend, dot, seg })
     }
 }
 
