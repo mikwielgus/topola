@@ -127,26 +127,21 @@ impl<'a> Draw<'a> {
             dirs = [false, true];
         }
 
-        for (i, tangent) in [tangents.0, tangents.1].iter().enumerate() {
-            match self.segbend_around(
-                head,
-                TaggedIndex::Dot(around),
-                tangent.start_point(),
-                tangent.end_point(),
-                dirs[i],
-                width,
-            ) {
-                Ok(head) => {
-                    return Ok(head);
-                }
-                Err(err) => {
-                    if i >= 1 {
-                        return Err(err);
-                    }
-                }
-            }
-        }
-        unreachable!();
+        [tangents.0, tangents.1]
+            .iter()
+            .enumerate()
+            .find_map(|(i, tangent)| {
+                self.segbend_around(
+                    head,
+                    TaggedIndex::Dot(around),
+                    tangent.start_point(),
+                    tangent.end_point(),
+                    dirs[i],
+                    width,
+                )
+                .ok()
+            })
+            .ok_or(())
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 4))]
@@ -155,21 +150,33 @@ impl<'a> Draw<'a> {
         &mut self,
         mut head: Head,
         around: BendIndex,
-        cw: bool,
         width: f64,
     ) -> Result<SegbendHead, ()> {
-        let tangent = self
+        let mut tangents = self
             .guide(&Default::default())
-            .head_around_bend_segment(&head, around, cw, width);
+            .head_around_bend_segments(&head, around, width);
+        let mut dirs = [true, false];
 
-        head = self.extend_head(head, tangent.start_point())?;
-        self.segbend(
-            head,
-            TaggedIndex::Bend(around),
-            tangent.end_point(),
-            cw,
-            width,
-        )
+        if tangents.1.euclidean_length() < tangents.0.euclidean_length() {
+            tangents = (tangents.1, tangents.0);
+            dirs = [false, true];
+        }
+
+        [tangents.0, tangents.1]
+            .iter()
+            .enumerate()
+            .find_map(|(i, tangent)| {
+                self.segbend_around(
+                    head,
+                    TaggedIndex::Bend(around),
+                    tangent.start_point(),
+                    tangent.end_point(),
+                    dirs[i],
+                    width,
+                )
+                .ok()
+            })
+            .ok_or(())
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 4))]

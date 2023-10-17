@@ -153,7 +153,7 @@ pub fn intersect_circles(circle1: &Circle, circle2: &Circle) -> Vec<Point> {
     let p = circle1.pos + delta * (a / d);
     let h = (circle1.r * circle1.r - a * a).sqrt();
 
-    if h == 0. {
+    if h == 0.0 {
         return [p].into();
     }
 

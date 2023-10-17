@@ -71,7 +71,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
             .weight()
             .circle;
 
-        core_circle.r + r + 5.0
+        core_circle.r + r + 3.0
     }
 
     pub fn neighbors(&self) -> impl Iterator<Item = TaggedIndex> + '_ {
@@ -80,13 +80,15 @@ impl<'a, Weight> Primitive<'a, Weight> {
             .map(|index| Index::<Label>::new(index).retag(self.graph.node_weight(index).unwrap()))
     }
 
-    pub fn find_prev_akin(&self) -> Option<Index<Weight>> {
+    pub fn prev_bend(&self) -> Option<BendIndex> {
         let mut prev_index = self.index.index;
 
         while let Some(index) = self
             .graph
             .neighbors_directed(prev_index, Incoming)
+            // Ensure subsequent unwrap doesn't panic.
             .filter(|ni| self.graph.find_edge(*ni, prev_index).is_some())
+            // Filter out non-End edges.
             .filter(|ni| {
                 self.graph
                     .edge_weight(self.graph.find_edge(*ni, prev_index).unwrap())
@@ -97,8 +99,8 @@ impl<'a, Weight> Primitive<'a, Weight> {
         {
             let weight = *self.graph.node_weight(index).unwrap();
 
-            if mem::discriminant(&self.tagged_weight()) == mem::discriminant(&weight) {
-                return Some(Index::<Weight>::new(index));
+            if let Some(TaggedWeight::Bend(..)) = self.graph.node_weight(index) {
+                return Some(BendIndex::new(index));
             }
 
             prev_index = index;
@@ -124,13 +126,15 @@ impl<'a, Weight> Primitive<'a, Weight> {
             .next()
     }
 
-    pub fn find_next_akin(&self) -> Option<Index<Weight>> {
+    pub fn next_bend(&self) -> Option<BendIndex> {
         let mut prev_index = self.index.index;
 
         while let Some(index) = self
             .graph
             .neighbors_directed(prev_index, Outgoing)
+            // Ensure subsequent unwrap doesn't panic.
             .filter(|ni| self.graph.find_edge(prev_index, *ni).is_some())
+            // Filter out non-End edges.
             .filter(|ni| {
                 self.graph
                     .edge_weight(self.graph.find_edge(prev_index, *ni).unwrap())
@@ -141,8 +145,8 @@ impl<'a, Weight> Primitive<'a, Weight> {
         {
             let weight = *self.graph.node_weight(index).unwrap();
 
-            if mem::discriminant(&self.tagged_weight()) == mem::discriminant(&weight) {
-                return Some(Index::<Weight>::new(index));
+            if let Some(TaggedWeight::Bend(..)) = self.graph.node_weight(index) {
+                return Some(BendIndex::new(index));
             }
 
             prev_index = index;

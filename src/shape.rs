@@ -60,7 +60,7 @@ impl BendShape {
         }
     }
 
-    fn between_ends(&self, point: Point) -> bool {
+    pub fn between_ends(&self, point: Point) -> bool {
         math::between_vectors(
             point - self.c.pos,
             self.from - self.c.pos,
@@ -69,6 +69,7 @@ impl BendShape {
     }
 }
 
+// TODO: Use enum_dispatch.
 #[derive(Debug, Clone, Copy, EnumAsInner, PartialEq)]
 pub enum Shape {
     // Intentionally in different order to reorder `self.intersects(...)` properly.

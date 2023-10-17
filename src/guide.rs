@@ -34,20 +34,6 @@ impl<'a, 'b> Guide<'a, 'b> {
         math::tangent_segment(from_circle, from_cw, to_circle, None)
     }
 
-    pub fn head_around_bend_segment(
-        &self,
-        head: &Head,
-        around: BendIndex,
-        cw: bool,
-        width: f64,
-    ) -> Line {
-        let from_circle = self.head_circle(head, width);
-        let to_circle = self.bend_circle(around, width);
-
-        let from_cw = self.head_cw(head);
-        math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
-    }
-
     pub fn head_around_dot_segments(
         &self,
         head: &Head,
@@ -72,6 +58,35 @@ impl<'a, 'b> Guide<'a, 'b> {
     ) -> Line {
         let from_circle = self.head_circle(head, width);
         let to_circle = self.dot_circle(around, width);
+
+        let from_cw = self.head_cw(head);
+        math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
+    }
+
+    pub fn head_around_bend_segments(
+        &self,
+        head: &Head,
+        around: BendIndex,
+        width: f64,
+    ) -> (Line, Line) {
+        let from_circle = self.head_circle(head, width);
+        let to_circle = self.bend_circle(around, width);
+
+        let from_cw = self.head_cw(head);
+        let tangents: Vec<Line> =
+            math::tangent_segments(from_circle, from_cw, to_circle, None).collect();
+        (tangents[0], tangents[1])
+    }
+
+    pub fn head_around_bend_segment(
+        &self,
+        head: &Head,
+        around: BendIndex,
+        cw: bool,
+        width: f64,
+    ) -> Line {
+        let from_circle = self.head_circle(head, width);
+        let to_circle = self.bend_circle(around, width);
 
         let from_cw = self.head_cw(head);
         math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))

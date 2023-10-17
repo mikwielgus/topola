@@ -68,7 +68,7 @@ impl<'a> DebugRouterObserver<'a> {
 
 impl<'a> RouterObserver for DebugRouterObserver<'a> {
     fn on_rework(&mut self, tracer: &Tracer, trace: &Trace) {
-        render_times(
+        /*render_times(
             self.event_pump,
             self.canvas,
             RouterOrLayout::Layout(tracer.layout),
@@ -77,13 +77,13 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             Some(tracer.mesh.clone()),
             &trace.path,
             20,
-        );
+        );*/
     }
 
     fn before_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference) {
         let mut path = trace.path.clone();
         path.push(edge.target());
-        render_times(
+        /*render_times(
             self.event_pump,
             self.canvas,
             RouterOrLayout::Layout(tracer.layout),
@@ -92,11 +92,11 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             Some(tracer.mesh.clone()),
             &path,
             5,
-        );
+        );*/
     }
 
     fn on_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference) {
-        render_times(
+        /*render_times(
             self.event_pump,
             self.canvas,
             RouterOrLayout::Layout(tracer.layout),
@@ -105,7 +105,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             Some(tracer.mesh.clone()),
             &trace.path,
             5,
-        );
+        );*/
     }
 
     fn on_estimate(&mut self, _tracer: &Tracer, _vertex: VertexIndex) {}
@@ -145,7 +145,18 @@ fn main() {
     let dot2 = router
         .layout
         .add_dot(DotWeight {
-            net: 1,
+            net: 15,
+            circle: Circle {
+                pos: (100.5, 500.5).into(),
+                r: 8.0,
+            },
+        })
+        .unwrap();
+
+    let dot_end = router
+        .layout
+        .add_dot(DotWeight {
+            net: 10,
             circle: Circle {
                 pos: (470.5, 350.5).into(),
                 r: 8.0,
@@ -284,16 +295,90 @@ fn main() {
         },
     );
 
+    let dot6 = router
+        .layout
+        .add_dot(DotWeight {
+            net: 2,
+            circle: Circle {
+                pos: (530.5, 300.5).into(),
+                r: 8.0,
+            },
+        })
+        .unwrap();
+
+    let _ = router.layout.add_seg(
+        dot5,
+        dot6,
+        SegWeight {
+            net: 20,
+            width: 16.0,
+        },
+    );
+
+    /*let dot7 = router
+        .layout
+        .add_dot(DotWeight {
+            net: 2,
+            circle: Circle {
+                pos: (400.5, 440.5).into(),
+                r: 8.0,
+            },
+        })
+        .unwrap();
+
+    let _ = router.layout.add_seg(
+        dot4,
+        dot7,
+        SegWeight {
+            net: 20,
+            width: 16.0,
+        },
+    );*/
+
+    render_times(
+        &mut event_pump,
+        &mut canvas,
+        RouterOrLayout::Layout(&router.layout),
+        None,
+        None,
+        None,
+        &[],
+        -1,
+    );
+
     render_times(
         &mut event_pump,
         &mut canvas,
         RouterOrLayout::Router(&mut router),
         Some(dot1),
-        Some(dot2),
+        Some(dot_end),
         None,
         &[],
         -1,
     );
+
+    render_times(
+        &mut event_pump,
+        &mut canvas,
+        RouterOrLayout::Layout(&router.layout),
+        None,
+        None,
+        None,
+        &[],
+        -1,
+    );
+
+    render_times(
+        &mut event_pump,
+        &mut canvas,
+        RouterOrLayout::Router(&mut router),
+        Some(dot2),
+        Some(dot_end),
+        None,
+        &[],
+        -1,
+    );
+
     render_times(
         &mut event_pump,
         &mut canvas,
@@ -338,11 +423,6 @@ fn render_times(
                 if let Some(follower) = follower {
                     let state = event_pump.mouse_state();
 
-                    /*let _ = router.layout.move_dot(
-                        follower.into_dot().unwrap(),
-                        (state.x() as f64, state.y() as f64).into(),
-                    );*/
-
                     if let Some(from) = from {
                         mesh = router
                             .reroute(
@@ -351,6 +431,10 @@ fn render_times(
                                 &mut DebugRouterObserver::new(event_pump, canvas),
                             )
                             .ok();
+                    } else {
+                        let _ = router
+                            .layout
+                            .move_dot(follower, (state.x() as f64, state.y() as f64).into());
                     }
                 }
 
@@ -412,7 +496,7 @@ fn render_times(
             );*/
         }
 
-        if let Some(ref mesh) = mesh {
+        /*if let Some(ref mesh) = mesh {
             for edge in mesh.edge_references() {
                 let endpoints = (mesh.position(edge.source()), mesh.position(edge.target()));
 
@@ -430,7 +514,7 @@ fn render_times(
                     color,
                 );
             }
-        }
+        }*/
         //});
 
         canvas.present();
