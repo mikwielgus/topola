@@ -10,8 +10,8 @@ use spade::Triangulation;
 use crate::band::Band;
 use crate::bow::Bow;
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, Index, Interior, Label, SegIndex, SegWeight, Tag,
-    TaggedIndex, TaggedWeight,
+    BendIndex, BendWeight, DotIndex, DotWeight, Index, Interior, Label, Retag, SegIndex, SegWeight,
+    Tag, TaggedIndex, Weight,
 };
 use crate::primitive::Primitive;
 use crate::segbend::Segbend;
@@ -21,7 +21,7 @@ pub type RTreeWrapper = GeomWithData<Shape, TaggedIndex>;
 
 pub struct Layout {
     rtree: RTree<RTreeWrapper>,
-    pub graph: StableDiGraph<TaggedWeight, Label, usize>,
+    pub graph: StableDiGraph<Weight, Label, usize>,
 }
 
 #[debug_invariant(self.graph.node_count() == self.rtree.size())]
@@ -53,13 +53,13 @@ impl Layout {
         // Unnecessary retag. It should be possible to elide it.
         let weight = *self.graph.node_weight(index.index).unwrap();
 
-        self.remove_from_rtree(index.retag(&weight));
+        self.remove_from_rtree(weight.retag(index.index));
         self.graph.remove_node(index.index);
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() + 1))]
     pub fn add_dot(&mut self, weight: DotWeight) -> Result<DotIndex, ()> {
-        let dot = DotIndex::new(self.graph.add_node(TaggedWeight::Dot(weight)));
+        let dot = DotIndex::new(self.graph.add_node(Weight::Dot(weight)));
 
         self.insert_into_rtree(dot.tag());
         self.fail_and_remove_if_collides_except(dot, &[])?;
@@ -75,7 +75,7 @@ impl Layout {
         to: DotIndex,
         weight: SegWeight,
     ) -> Result<SegIndex, ()> {
-        let seg = SegIndex::new(self.graph.add_node(TaggedWeight::Seg(weight)));
+        let seg = SegIndex::new(self.graph.add_node(Weight::Seg(weight)));
 
         self.graph.add_edge(from.index, seg.index, Label::End);
         self.graph.add_edge(seg.index, to.index, Label::End);
@@ -126,7 +126,7 @@ impl Layout {
         core: DotIndex,
         weight: BendWeight,
     ) -> Result<BendIndex, ()> {
-        let bend = BendIndex::new(self.graph.add_node(TaggedWeight::Bend(weight)));
+        let bend = BendIndex::new(self.graph.add_node(Weight::Bend(weight)));
 
         self.graph.add_edge(from.index, bend.index, Label::End);
         self.graph.add_edge(bend.index, to.index, Label::End);
@@ -162,7 +162,7 @@ impl Layout {
             .first()
             .unwrap();
 
-        let bend = BendIndex::new(self.graph.add_node(TaggedWeight::Bend(weight)));
+        let bend = BendIndex::new(self.graph.add_node(Weight::Bend(weight)));
 
         self.graph.add_edge(from.index, bend.index, Label::End);
         self.graph.add_edge(bend.index, to.index, Label::End);
@@ -283,11 +283,11 @@ impl Layout {
         let old_weight = dot_weight;
 
         dot_weight.circle.pos = to;
-        *self.graph.node_weight_mut(dot.index).unwrap() = TaggedWeight::Dot(dot_weight);
+        *self.graph.node_weight_mut(dot.index).unwrap() = Weight::Dot(dot_weight);
 
         if let Some(..) = self.detect_collision_except(dot, &[]) {
             // Restore original state.
-            *self.graph.node_weight_mut(dot.index).unwrap() = TaggedWeight::Dot(old_weight);
+            *self.graph.node_weight_mut(dot.index).unwrap() = Weight::Dot(old_weight);
 
             self.insert_into_rtree(dot.tag());
             self.primitive(dot)

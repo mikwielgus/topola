@@ -4,27 +4,27 @@ use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, Ends, Index, Interior, Label, SegWeight,
-    TaggedIndex, TaggedWeight,
+    BendIndex, BendWeight, DotIndex, DotWeight, Ends, Index, Interior, Label, Retag, SegWeight,
+    TaggedIndex, Weight,
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
 
 #[derive(Debug)]
-pub struct Primitive<'a, Weight> {
-    pub index: Index<Weight>,
-    graph: &'a StableDiGraph<TaggedWeight, Label, usize>,
+pub struct Primitive<'a, W> {
+    pub index: Index<W>,
+    graph: &'a StableDiGraph<Weight, Label, usize>,
 }
 
-impl<'a, Weight> Primitive<'a, Weight> {
-    pub fn new(index: Index<Weight>, graph: &'a StableDiGraph<TaggedWeight, Label, usize>) -> Self {
+impl<'a, W> Primitive<'a, W> {
+    pub fn new(index: Index<W>, graph: &'a StableDiGraph<Weight, Label, usize>) -> Self {
         Self { index, graph }
     }
 
     pub fn shape(&self) -> Shape {
         match self.tagged_weight() {
-            TaggedWeight::Dot(dot) => Shape::Dot(DotShape { c: dot.circle }),
-            TaggedWeight::Seg(seg) => {
+            Weight::Dot(dot) => Shape::Dot(DotShape { c: dot.circle }),
+            Weight::Seg(seg) => {
                 let ends = self.ends();
                 Shape::Seg(SegShape {
                     from: self.primitive(ends.0).weight().circle.pos,
@@ -32,7 +32,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
                     width: seg.width,
                 })
             }
-            TaggedWeight::Bend(bend) => {
+            Weight::Bend(bend) => {
                 let ends = self.ends();
 
                 let mut bend_shape = BendShape {
@@ -77,7 +77,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
     pub fn neighbors(&self) -> impl Iterator<Item = TaggedIndex> + '_ {
         self.graph
             .neighbors_undirected(self.index.index)
-            .map(|index| Index::<Label>::new(index).retag(self.graph.node_weight(index).unwrap()))
+            .map(|index| self.graph.node_weight(index).unwrap().retag(index))
     }
 
     pub fn prev_bend(&self) -> Option<BendIndex> {
@@ -99,7 +99,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
         {
             let weight = *self.graph.node_weight(index).unwrap();
 
-            if let Some(TaggedWeight::Bend(..)) = self.graph.node_weight(index) {
+            if let Some(Weight::Bend(..)) = self.graph.node_weight(index) {
                 return Some(BendIndex::new(index));
             }
 
@@ -111,7 +111,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
 
     pub fn tagged_prev(&self) -> Option<TaggedIndex> {
         self.prev_node()
-            .map(|ni| Index::<Label>::new(ni).retag(self.graph.node_weight(ni).unwrap()))
+            .map(|ni| self.graph.node_weight(ni).unwrap().retag(ni))
     }
 
     fn prev_node(&self) -> Option<NodeIndex<usize>> {
@@ -145,7 +145,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
         {
             let weight = *self.graph.node_weight(index).unwrap();
 
-            if let Some(TaggedWeight::Bend(..)) = self.graph.node_weight(index) {
+            if let Some(Weight::Bend(..)) = self.graph.node_weight(index) {
                 return Some(BendIndex::new(index));
             }
 
@@ -157,7 +157,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
 
     pub fn tagged_next(&self) -> Option<TaggedIndex> {
         self.next_node()
-            .map(|ni| Index::<Label>::new(ni).retag(self.graph.node_weight(ni).unwrap()))
+            .map(|ni| self.graph.node_weight(ni).unwrap().retag(ni))
     }
 
     fn next_node(&self) -> Option<NodeIndex<usize>> {
@@ -185,7 +185,7 @@ impl<'a, Weight> Primitive<'a, Weight> {
             .next()
     }
 
-    pub fn connectable<W>(&self, index: Index<W>) -> bool {
+    pub fn connectable<WW>(&self, index: Index<WW>) -> bool {
         let this = self.net(&self.index);
         let other = self.net(&index);
 
@@ -200,24 +200,26 @@ impl<'a, Weight> Primitive<'a, Weight> {
         }
     }
 
-    fn net<W>(&self, index: &Index<W>) -> i64 {
+    fn net<WW>(&self, index: &Index<WW>) -> i64 {
         match self.graph.node_weight(index.index).unwrap() {
-            TaggedWeight::Dot(dot) => dot.net,
-            TaggedWeight::Seg(seg) => seg.net,
-            TaggedWeight::Bend(bend) => bend.net,
+            Weight::Dot(dot) => dot.net,
+            Weight::Seg(seg) => seg.net,
+            Weight::Bend(bend) => bend.net,
         }
     }
 
     pub fn tagged_index(&self) -> TaggedIndex {
-        self.index
-            .retag(self.graph.node_weight(self.index.index).unwrap())
+        self.graph
+            .node_weight(self.index.index)
+            .unwrap()
+            .retag(self.index.index)
     }
 
-    pub fn tagged_weight(&self) -> TaggedWeight {
+    pub fn tagged_weight(&self) -> Weight {
         *self.graph.node_weight(self.index.index).unwrap()
     }
 
-    fn primitive<W>(&self, index: Index<W>) -> Primitive<W> {
+    fn primitive<WW>(&self, index: Index<WW>) -> Primitive<WW> {
         Primitive::new(index, &self.graph)
     }
 }

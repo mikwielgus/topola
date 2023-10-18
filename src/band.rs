@@ -1,7 +1,7 @@
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::{
-    graph::{DotIndex, Ends, Interior, Label, Tag, TaggedIndex, TaggedWeight},
+    graph::{DotIndex, Ends, Interior, Label, Tag, TaggedIndex, Weight},
     primitive::Primitive,
 };
 
@@ -14,7 +14,7 @@ pub struct Band {
 impl Band {
     pub fn from_dot_prev(
         dot: DotIndex,
-        graph: &StableDiGraph<TaggedWeight, Label, usize>,
+        graph: &StableDiGraph<Weight, Label, usize>,
     ) -> Option<Self> {
         let mut next_index = dot.tag();
         let mut interior = vec![];
@@ -38,7 +38,7 @@ impl Band {
 
     pub fn from_dot_next(
         dot: DotIndex,
-        graph: &StableDiGraph<TaggedWeight, Label, usize>,
+        graph: &StableDiGraph<Weight, Label, usize>,
     ) -> Option<Self> {
         let mut prev_index = dot.tag();
         let mut interior = vec![];

@@ -1,8 +1,6 @@
 use petgraph::stable_graph::StableDiGraph;
 
-use crate::graph::{
-    BendIndex, DotIndex, Ends, Interior, Label, SegIndex, TaggedIndex, TaggedWeight,
-};
+use crate::graph::{BendIndex, DotIndex, Ends, Interior, Label, SegIndex, TaggedIndex, Weight};
 use crate::primitive::{Bend, Dot, Seg};
 
 #[derive(Debug, Clone, Copy)]
@@ -17,7 +15,7 @@ pub struct Bow {
 }
 
 impl Bow {
-    pub fn from_bend(index: BendIndex, graph: &StableDiGraph<TaggedWeight, Label, usize>) -> Self {
+    pub fn from_bend(index: BendIndex, graph: &StableDiGraph<Weight, Label, usize>) -> Self {
         let bend = index;
 
         let seg1_dot2 = Bend::new(bend, graph).prev().unwrap();

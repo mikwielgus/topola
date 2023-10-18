@@ -1,7 +1,7 @@
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::{
-    graph::{BendIndex, DotIndex, Ends, Interior, Label, SegIndex, TaggedIndex, TaggedWeight},
+    graph::{BendIndex, DotIndex, Ends, Interior, Label, SegIndex, TaggedIndex, Weight},
     primitive::{Bend, Dot},
 };
 
@@ -19,7 +19,7 @@ impl Segbend {
 
     pub fn from_dot_prev(
         dot: DotIndex,
-        graph: &StableDiGraph<TaggedWeight, Label, usize>,
+        graph: &StableDiGraph<Weight, Label, usize>,
     ) -> Option<Self> {
         let bend = *Dot::new(dot, graph).tagged_prev()?.as_bend()?;
         let dot = Bend::new(bend, graph).prev().unwrap();
@@ -33,7 +33,7 @@ impl Segbend {
 
     pub fn from_dot_next(
         dot: DotIndex,
-        graph: &StableDiGraph<TaggedWeight, Label, usize>,
+        graph: &StableDiGraph<Weight, Label, usize>,
     ) -> Option<Self> {
         let bend = *Dot::new(dot, graph).tagged_next()?.as_bend()?;
         let dot = Bend::new(bend, graph).next().unwrap();
