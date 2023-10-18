@@ -4,7 +4,7 @@ use petgraph::stable_graph::StableDiGraph;
 use petgraph::visit::EdgeRef;
 use petgraph::Direction::Incoming;
 use rstar::primitives::GeomWithData;
-use rstar::RTree;
+use rstar::{RTree, RTreeObject};
 use spade::Triangulation;
 
 use crate::band::Band;
@@ -15,7 +15,7 @@ use crate::graph::{
 };
 use crate::primitive::Primitive;
 use crate::segbend::Segbend;
-use crate::shape::Shape;
+use crate::shape::{Shape, ShapeTrait};
 
 pub type RTreeWrapper = GeomWithData<Shape, TaggedIndex>;
 
@@ -323,7 +323,7 @@ impl Layout {
         let shape = primitive.shape();
 
         self.rtree
-            .locate_in_envelope_intersecting(&shape.envelope())
+            .locate_in_envelope_intersecting(&RTreeObject::envelope(&shape))
             .filter(|wrapper| {
                 let other_index = wrapper.data;
                 !untag!(other_index, primitive.connectable(other_index))
@@ -358,7 +358,7 @@ impl Layout {
             let wrapper = RTreeWrapper::new(shape, index);
             !self
                 .rtree
-                .locate_in_envelope(&shape.envelope())
+                .locate_in_envelope(&RTreeObject::envelope(&shape))
                 .any(|w| *w == wrapper)
         })
     }

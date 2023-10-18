@@ -7,11 +7,12 @@ use spade::{
     DelaunayTriangulation, HasPosition, InsertionError, Point2, Triangulation,
 };
 
+use crate::shape::ShapeTrait;
 use crate::{graph::DotIndex, layout::Layout};
 
 #[derive(Debug, Clone)]
 struct Vertex {
-    pub dot: DotIndex,
+    dot: DotIndex,
     x: f64,
     y: f64,
 }

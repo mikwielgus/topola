@@ -8,7 +8,7 @@ use crate::graph::{
     TaggedIndex, TaggedWeight,
 };
 use crate::math::{self, Circle};
-use crate::shape::{BendShape, DotShape, SegShape, Shape};
+use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
 
 #[derive(Debug)]
 pub struct Primitive<'a, Weight> {

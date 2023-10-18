@@ -2,7 +2,7 @@ use contracts::debug_ensures;
 
 use crate::{
     bow::Bow,
-    draw::{BareHead, Draw, Head, HeadDot, SegbendHead},
+    draw::{BareHead, Draw, Head, HeadTrait, SegbendHead},
     graph::{BendIndex, DotIndex, Ends},
     layout::Layout,
     mesh::{Mesh, MeshEdgeReference, VertexIndex},

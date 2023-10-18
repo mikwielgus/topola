@@ -30,6 +30,7 @@ use layout::Layout;
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use router::RouterObserver;
+use rstar::RTreeObject;
 use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
@@ -68,7 +69,7 @@ impl<'a> DebugRouterObserver<'a> {
 
 impl<'a> RouterObserver for DebugRouterObserver<'a> {
     fn on_rework(&mut self, tracer: &Tracer, trace: &Trace) {
-        /*render_times(
+        render_times(
             self.event_pump,
             self.canvas,
             RouterOrLayout::Layout(tracer.layout),
@@ -77,13 +78,13 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             Some(tracer.mesh.clone()),
             &trace.path,
             20,
-        );*/
+        );
     }
 
     fn before_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference) {
         let mut path = trace.path.clone();
         path.push(edge.target());
-        /*render_times(
+        render_times(
             self.event_pump,
             self.canvas,
             RouterOrLayout::Layout(tracer.layout),
@@ -92,11 +93,11 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             Some(tracer.mesh.clone()),
             &path,
             5,
-        );*/
+        );
     }
 
     fn on_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference) {
-        /*render_times(
+        render_times(
             self.event_pump,
             self.canvas,
             RouterOrLayout::Layout(tracer.layout),
@@ -105,7 +106,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             Some(tracer.mesh.clone()),
             &trace.path,
             5,
-        );*/
+        );
     }
 
     fn on_estimate(&mut self, _tracer: &Tracer, _vertex: VertexIndex) {}
@@ -335,7 +336,7 @@ fn main() {
         },
     );*/
 
-    render_times(
+    /*render_times(
         &mut event_pump,
         &mut canvas,
         RouterOrLayout::Layout(&router.layout),
@@ -355,6 +356,12 @@ fn main() {
         None,
         &[],
         -1,
+    );*/
+
+    let _ = router.enroute(
+        dot1,
+        dot_end,
+        &mut DebugRouterObserver::new(&mut event_pump, &mut canvas),
     );
 
     render_times(
@@ -486,17 +493,17 @@ fn render_times(
                     }
                 }
             }
-            /*let envelope = shape.envelope();
+            let envelope = shape.envelope();
             let _ = canvas.rectangle(
                 envelope.lower()[0] as i16,
                 envelope.lower()[1] as i16,
                 envelope.upper()[0] as i16,
                 envelope.upper()[1] as i16,
                 Color::RGB(100, 100, 100),
-            );*/
+            );
         }
 
-        /*if let Some(ref mesh) = mesh {
+        if let Some(ref mesh) = mesh {
             for edge in mesh.edge_references() {
                 let endpoints = (mesh.position(edge.source()), mesh.position(edge.target()));
 
@@ -514,7 +521,7 @@ fn render_times(
                     color,
                 );
             }
-        }*/
+        }
         //});
 
         canvas.present();

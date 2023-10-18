@@ -1,12 +1,78 @@
 use enum_as_inner::EnumAsInner;
+use enum_dispatch::enum_dispatch;
 use geo::{point, polygon, EuclideanDistance, Intersects, Point, Polygon, Rotate};
 use rstar::{RTreeObject, AABB};
 
 use crate::math::{self, Circle};
 
+#[enum_dispatch]
+pub trait ShapeTrait {
+    fn priority(&self) -> u64;
+    fn center(&self) -> Point;
+    fn intersects(&self, other: &Shape) -> bool;
+    fn envelope(&self) -> AABB<[f64; 2]>;
+    fn width(&self) -> f64;
+}
+
+#[enum_dispatch(ShapeTrait)]
+#[derive(Debug, Clone, Copy, EnumAsInner, PartialEq)]
+pub enum Shape {
+    // Intentionally in different order to reorder `self.intersects(...)` properly.
+    Dot(DotShape),
+    Seg(SegShape),
+    Bend(BendShape),
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DotShape {
     pub c: Circle,
+}
+
+impl ShapeTrait for DotShape {
+    fn priority(&self) -> u64 {
+        3
+    }
+
+    fn center(&self) -> Point {
+        self.c.pos
+    }
+
+    fn intersects(&self, other: &Shape) -> bool {
+        if self.priority() < other.priority() {
+            return other.intersects(&Shape::from(*self));
+        }
+
+        match other {
+            Shape::Dot(other) => self.c.pos.euclidean_distance(&other.c.pos) < self.c.r + other.c.r,
+            Shape::Seg(other) => self.c.pos.euclidean_distance(&other.polygon()) < self.c.r,
+            Shape::Bend(other) => {
+                for point in math::intersect_circles(&self.c, &other.inner_circle()) {
+                    if other.between_ends(point) {
+                        return true;
+                    }
+                }
+
+                for point in math::intersect_circles(&self.c, &other.outer_circle()) {
+                    if other.between_ends(point) {
+                        return true;
+                    }
+                }
+
+                false
+            }
+        }
+    }
+
+    fn envelope(&self) -> AABB<[f64; 2]> {
+        AABB::from_corners(
+            [self.c.pos.x() - self.c.r, self.c.pos.y() - self.c.r],
+            [self.c.pos.x() + self.c.r, self.c.pos.y() + self.c.r],
+        )
+    }
+
+    fn width(&self) -> f64 {
+        self.c.r * 2.0
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -30,6 +96,61 @@ impl SegShape {
         let p4 = self.to - normal * (self.width / 2.);
 
         polygon![p1.0, p2.0, p3.0, p4.0]
+    }
+}
+
+impl ShapeTrait for SegShape {
+    fn priority(&self) -> u64 {
+        2
+    }
+
+    fn center(&self) -> Point {
+        (self.from + self.to) / 2.0
+    }
+
+    fn intersects(&self, other: &Shape) -> bool {
+        if self.priority() < other.priority() {
+            return other.intersects(&Shape::from(*self));
+        }
+
+        match other {
+            Shape::Dot(..) => unreachable!(),
+            Shape::Seg(other) => self.polygon().intersects(&other.polygon()),
+            Shape::Bend(other) => {
+                for segment in self.polygon().exterior().lines() {
+                    let inner_circle = other.inner_circle();
+                    let outer_circle = other.outer_circle();
+
+                    for point in math::intersect_circle_segment(&inner_circle, &segment) {
+                        if other.between_ends(point) {
+                            return true;
+                        }
+                    }
+
+                    for point in math::intersect_circle_segment(&outer_circle, &segment) {
+                        if other.between_ends(point) {
+                            return true;
+                        }
+                    }
+                }
+
+                false
+            }
+        }
+    }
+
+    fn envelope(&self) -> AABB<[f64; 2]> {
+        let points: Vec<[f64; 2]> = self
+            .polygon()
+            .exterior()
+            .points()
+            .map(|p| [p.x(), p.y()])
+            .collect();
+        AABB::<[f64; 2]>::from_points(points.iter())
+    }
+
+    fn width(&self) -> f64 {
+        self.width
     }
 }
 
@@ -69,172 +190,69 @@ impl BendShape {
     }
 }
 
-// TODO: Use enum_dispatch.
-#[derive(Debug, Clone, Copy, EnumAsInner, PartialEq)]
-pub enum Shape {
-    // Intentionally in different order to reorder `self.intersects(...)` properly.
-    Dot(DotShape),
-    Seg(SegShape),
-    Bend(BendShape),
-}
-
-impl Shape {
-    pub fn principal_point(&self) -> Point {
-        match self {
-            Shape::Dot(dot) => dot.c.pos,
-            Shape::Seg(seg) => seg.from,
-            Shape::Bend(bend) => bend.from,
-        }
+impl ShapeTrait for BendShape {
+    fn priority(&self) -> u64 {
+        1
     }
 
-    pub fn center(&self) -> Point {
-        match self {
-            Shape::Dot(dot) => dot.c.pos,
-            Shape::Seg(seg) => (seg.from + seg.to) / 2.0,
-            Shape::Bend(bend) => {
-                let sum = (bend.from - bend.c.pos) + (bend.to - bend.c.pos);
-                bend.c.pos + (sum / sum.euclidean_distance(&point! {x: 0.0, y: 0.0})) * bend.c.r
-            }
-        }
+    fn center(&self) -> Point {
+        let sum = (self.from - self.c.pos) + (self.to - self.c.pos);
+        self.c.pos + (sum / sum.euclidean_distance(&point! {x: 0.0, y: 0.0})) * self.c.r
     }
 
-    fn priority(&self) -> i64 {
-        match self {
-            Shape::Dot(..) => 3,
-            Shape::Seg(..) => 2,
-            Shape::Bend(..) => 1,
-        }
-    }
-
-    pub fn intersects(&self, other: &Shape) -> bool {
+    fn intersects(&self, other: &Shape) -> bool {
         if self.priority() < other.priority() {
-            return other.intersects(self);
+            return other.intersects(&Shape::from(*self));
         }
 
-        match self {
-            Shape::Dot(dot) => match other {
-                Shape::Dot(other) => {
-                    dot.c.pos.euclidean_distance(&other.c.pos) < dot.c.r + other.c.r
+        match other {
+            Shape::Dot(..) | Shape::Seg(..) => unreachable!(),
+            Shape::Bend(other) => {
+                for point in math::intersect_circles(&self.inner_circle(), &other.inner_circle()) {
+                    if self.between_ends(point) && other.between_ends(point) {
+                        return true;
+                    }
                 }
-                Shape::Seg(other) => dot.c.pos.euclidean_distance(&other.polygon()) < dot.c.r,
-                Shape::Bend(other) => {
-                    for point in math::intersect_circles(&dot.c, &other.inner_circle()) {
-                        if other.between_ends(point) {
-                            return true;
-                        }
-                    }
 
-                    for point in math::intersect_circles(&dot.c, &other.outer_circle()) {
-                        if other.between_ends(point) {
-                            return true;
-                        }
+                for point in math::intersect_circles(&self.inner_circle(), &other.outer_circle()) {
+                    if self.between_ends(point) && other.between_ends(point) {
+                        return true;
                     }
-
-                    false
                 }
-            },
-            Shape::Seg(seg) => match other {
-                Shape::Dot(..) => unreachable!(),
-                Shape::Seg(other) => seg.polygon().intersects(&other.polygon()),
-                Shape::Bend(other) => {
-                    for segment in seg.polygon().exterior().lines() {
-                        let inner_circle = other.inner_circle();
-                        let outer_circle = other.outer_circle();
 
-                        for point in math::intersect_circle_segment(&inner_circle, &segment) {
-                            if other.between_ends(point) {
-                                return true;
-                            }
-                        }
-
-                        for point in math::intersect_circle_segment(&outer_circle, &segment) {
-                            if other.between_ends(point) {
-                                return true;
-                            }
-                        }
+                for point in math::intersect_circles(&self.outer_circle(), &other.inner_circle()) {
+                    if self.between_ends(point) && other.between_ends(point) {
+                        return true;
                     }
-
-                    false
                 }
-            },
-            Shape::Bend(bend) => match other {
-                Shape::Dot(..) | Shape::Seg(..) => unreachable!(),
-                Shape::Bend(other) => {
-                    for point in
-                        math::intersect_circles(&bend.inner_circle(), &other.inner_circle())
-                    {
-                        if bend.between_ends(point) && other.between_ends(point) {
-                            return true;
-                        }
-                    }
 
-                    for point in
-                        math::intersect_circles(&bend.inner_circle(), &other.outer_circle())
-                    {
-                        if bend.between_ends(point) && other.between_ends(point) {
-                            return true;
-                        }
+                for point in math::intersect_circles(&self.outer_circle(), &other.outer_circle()) {
+                    if self.between_ends(point) && other.between_ends(point) {
+                        return true;
                     }
-
-                    for point in
-                        math::intersect_circles(&bend.outer_circle(), &other.inner_circle())
-                    {
-                        if bend.between_ends(point) && other.between_ends(point) {
-                            return true;
-                        }
-                    }
-
-                    for point in
-                        math::intersect_circles(&bend.outer_circle(), &other.outer_circle())
-                    {
-                        if bend.between_ends(point) && other.between_ends(point) {
-                            return true;
-                        }
-                    }
-
-                    false
                 }
-            },
-        }
-    }
 
-    pub fn envelope(&self) -> AABB<[f64; 2]> {
-        match self {
-            Shape::Dot(dot) => AABB::from_corners(
-                [dot.c.pos.x() - dot.c.r, dot.c.pos.y() - dot.c.r],
-                [dot.c.pos.x() + dot.c.r, dot.c.pos.y() + dot.c.r],
-            ),
-            Shape::Seg(seg) => {
-                let points: Vec<[f64; 2]> = seg
-                    .polygon()
-                    .exterior()
-                    .points()
-                    .map(|p| [p.x(), p.y()])
-                    .collect();
-                AABB::<[f64; 2]>::from_points(points.iter())
-            }
-            Shape::Bend(bend) => {
-                let halfwidth = bend.c.r + bend.width;
-                AABB::from_corners(
-                    [bend.c.pos.x() - halfwidth, bend.c.pos.y() - halfwidth],
-                    [bend.c.pos.x() + halfwidth, bend.c.pos.y() + halfwidth],
-                )
+                false
             }
         }
     }
 
-    pub fn width(&self) -> f64 {
-        match self {
-            Shape::Dot(dot) => dot.c.r * 2.0,
-            Shape::Seg(seg) => seg.width,
-            Shape::Bend(bend) => bend.width,
-        }
+    fn envelope(&self) -> AABB<[f64; 2]> {
+        let halfwidth = self.c.r + self.width;
+        AABB::from_corners(
+            [self.c.pos.x() - halfwidth, self.c.pos.y() - halfwidth],
+            [self.c.pos.x() + halfwidth, self.c.pos.y() + halfwidth],
+        )
+    }
+
+    fn width(&self) -> f64 {
+        self.width
     }
 }
 
 impl RTreeObject for Shape {
     type Envelope = AABB<[f64; 2]>;
     fn envelope(&self) -> Self::Envelope {
-        return self.envelope();
+        return ShapeTrait::envelope(self);
     }
 }

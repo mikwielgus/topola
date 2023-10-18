@@ -12,11 +12,11 @@ use crate::{
 };
 
 #[enum_dispatch]
-pub trait HeadDot {
+pub trait HeadTrait {
     fn dot(&self) -> DotIndex;
 }
 
-#[enum_dispatch(HeadDot)]
+#[enum_dispatch(HeadTrait)]
 #[derive(Debug, Clone, Copy)]
 pub enum Head {
     Bare(BareHead),
@@ -28,7 +28,7 @@ pub struct BareHead {
     pub dot: DotIndex,
 }
 
-impl HeadDot for BareHead {
+impl HeadTrait for BareHead {
     fn dot(&self) -> DotIndex {
         self.dot
     }
@@ -40,7 +40,7 @@ pub struct SegbendHead {
     pub segbend: Segbend,
 }
 
-impl HeadDot for SegbendHead {
+impl HeadTrait for SegbendHead {
     fn dot(&self) -> DotIndex {
         self.dot
     }
