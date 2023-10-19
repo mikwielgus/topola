@@ -1,7 +1,7 @@
 use geo::Line;
 
 use crate::{
-    draw::{Head, HeadTrait, SegbendHead},
+    draw::{Head, HeadTrait},
     graph::{BendIndex, DotIndex},
     layout::Layout,
     math::{self, Circle},

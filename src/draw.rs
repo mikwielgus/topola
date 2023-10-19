@@ -1,6 +1,6 @@
 use contracts::{debug_ensures, debug_requires};
 use enum_dispatch::enum_dispatch;
-use geo::{EuclideanDistance, EuclideanLength, Point};
+use geo::{EuclideanLength, Point};
 
 use crate::{
     graph::{BendIndex, BendWeight, DotIndex, DotWeight, Ends, Index, SegIndex, SegWeight},
@@ -148,7 +148,7 @@ impl<'a> Draw<'a> {
     #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
     pub fn segbend_around_bend(
         &mut self,
-        mut head: Head,
+        head: Head,
         around: BendIndex,
         width: f64,
     ) -> Result<SegbendHead, ()> {

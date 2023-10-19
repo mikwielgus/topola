@@ -1,4 +1,4 @@
-use std::mem::{self, swap};
+use std::mem::swap;
 
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
@@ -57,7 +57,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
             })
             .next()
         {
-            let weight = *self.graph.node_weight(index).unwrap();
+            let _weight = *self.graph.node_weight(index).unwrap();
 
             if let Some(Weight::Bend(..)) = self.graph.node_weight(index) {
                 return Some(BendIndex::new(index));
@@ -103,7 +103,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
             })
             .next()
         {
-            let weight = *self.graph.node_weight(index).unwrap();
+            let _weight = *self.graph.node_weight(index).unwrap();
 
             if let Some(Weight::Bend(..)) = self.graph.node_weight(index) {
                 return Some(BendIndex::new(index));

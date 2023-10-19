@@ -96,7 +96,7 @@ impl Router {
         let mut tracer = self.tracer(&mesh);
         let trace = tracer.start(mesh.vertex(from));
 
-        let (_cost, path) = astar(
+        let (_cost, _path) = astar(
             &mesh,
             mesh.vertex(from),
             &mut RouterAstarStrategy::new(tracer, trace, mesh.vertex(to), observer),

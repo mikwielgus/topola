@@ -1,11 +1,10 @@
-use contracts::{debug_ensures, debug_invariant};
+use contracts::debug_invariant;
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
 use petgraph::visit::EdgeRef;
 use petgraph::Direction::Incoming;
 use rstar::primitives::GeomWithData;
 use rstar::{RTree, RTreeObject};
-use spade::Triangulation;
 
 use crate::band::Band;
 use crate::bow::Bow;

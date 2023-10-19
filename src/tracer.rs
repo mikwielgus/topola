@@ -5,7 +5,7 @@ use crate::{
     draw::{BareHead, Draw, Head, HeadTrait, SegbendHead},
     graph::{BendIndex, DotIndex, Ends},
     layout::Layout,
-    mesh::{Mesh, MeshEdgeReference, VertexIndex},
+    mesh::{Mesh, VertexIndex},
     primitive::MakeShape,
     rules::Rules,
 };
@@ -94,8 +94,8 @@ impl<'a> Tracer<'a> {
     }
 
     fn wrap(&mut self, head: Head, around: DotIndex, width: f64) -> Result<SegbendHead, ()> {
-        let around_pos = self.layout.primitive(around).weight().circle.pos;
-        let around_primitive = self.layout.primitive(around);
+        let _around_pos = self.layout.primitive(around).weight().circle.pos;
+        let _around_primitive = self.layout.primitive(around);
 
         'blk: {
             if let Some(mut layer) = self.layout.primitive(around).outer() {

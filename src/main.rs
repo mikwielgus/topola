@@ -39,7 +39,7 @@ use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::EventPump;
 use shape::Shape;
-use std::panic;
+
 use std::time::Duration;
 use tracer::{Trace, Tracer};
 
@@ -96,7 +96,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
         );
     }
 
-    fn on_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference) {
+    fn on_probe(&mut self, tracer: &Tracer, trace: &Trace, _edge: MeshEdgeReference) {
         render_times(
             self.event_pump,
             self.canvas,
