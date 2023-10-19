@@ -5,56 +5,43 @@ use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, Ends, Index, Interior, Label, Retag, SegWeight,
-    TaggedIndex, Weight,
+    BendIndex, BendWeight, DotIndex, DotWeight, Ends, GenericIndex, GetNodeIndex, Index, Interior,
+    Label, Retag, SegWeight, Weight,
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
 
+#[enum_dispatch]
 pub trait MakeShape {
     fn shape(&self) -> Shape;
 }
 
+#[enum_dispatch(MakeShape)]
+pub enum Primitive<'a> {
+    Dot(Dot<'a>),
+    Seg(Seg<'a>),
+    Bend(Bend<'a>),
+}
+
 #[derive(Debug)]
-pub struct Primitive<'a, W> {
-    pub index: Index<W>,
+pub struct GenericPrimitive<'a, W> {
+    pub index: GenericIndex<W>,
     graph: &'a StableDiGraph<Weight, Label, usize>,
 }
 
-impl<'a, W> Primitive<'a, W> {
-    pub fn new(index: Index<W>, graph: &'a StableDiGraph<Weight, Label, usize>) -> Self {
+impl<'a, W> GenericPrimitive<'a, W> {
+    pub fn new(index: GenericIndex<W>, graph: &'a StableDiGraph<Weight, Label, usize>) -> Self {
         Self { index, graph }
     }
 
-    fn inner_radius(&self) -> f64 {
-        let mut r = 0.0;
-        let mut layer = BendIndex::new(self.index.index);
-
-        while let Some(inner) = self.primitive(layer).inner() {
-            r += self.primitive(inner).shape().width();
-            layer = inner;
-        }
-
-        let core_circle = self
-            .primitive(
-                self.primitive(BendIndex::new(self.index.index))
-                    .core()
-                    .unwrap(),
-            )
-            .weight()
-            .circle;
-
-        core_circle.r + r + 3.0
-    }
-
-    pub fn neighbors(&self) -> impl Iterator<Item = TaggedIndex> + '_ {
+    pub fn neighbors(&self) -> impl Iterator<Item = Index> + '_ {
         self.graph
-            .neighbors_undirected(self.index.index)
+            .neighbors_undirected(self.index.node_index())
             .map(|index| self.graph.node_weight(index).unwrap().retag(index))
     }
 
     pub fn prev_bend(&self) -> Option<BendIndex> {
-        let mut prev_index = self.index.index;
+        let mut prev_index = self.index.node_index();
 
         while let Some(index) = self
             .graph
@@ -82,17 +69,17 @@ impl<'a, W> Primitive<'a, W> {
         None
     }
 
-    pub fn tagged_prev(&self) -> Option<TaggedIndex> {
+    pub fn tagged_prev(&self) -> Option<Index> {
         self.prev_node()
             .map(|ni| self.graph.node_weight(ni).unwrap().retag(ni))
     }
 
     fn prev_node(&self) -> Option<NodeIndex<usize>> {
         self.graph
-            .neighbors_directed(self.index.index, Incoming)
+            .neighbors_directed(self.index.node_index(), Incoming)
             .filter(|ni| {
                 self.graph
-                    .edge_weight(self.graph.find_edge(*ni, self.index.index).unwrap())
+                    .edge_weight(self.graph.find_edge(*ni, self.index.node_index()).unwrap())
                     .unwrap()
                     .is_end()
             })
@@ -100,7 +87,7 @@ impl<'a, W> Primitive<'a, W> {
     }
 
     pub fn next_bend(&self) -> Option<BendIndex> {
-        let mut prev_index = self.index.index;
+        let mut prev_index = self.index.node_index();
 
         while let Some(index) = self
             .graph
@@ -128,17 +115,17 @@ impl<'a, W> Primitive<'a, W> {
         None
     }
 
-    pub fn tagged_next(&self) -> Option<TaggedIndex> {
+    pub fn tagged_next(&self) -> Option<Index> {
         self.next_node()
             .map(|ni| self.graph.node_weight(ni).unwrap().retag(ni))
     }
 
     fn next_node(&self) -> Option<NodeIndex<usize>> {
         self.graph
-            .neighbors_directed(self.index.index, Outgoing)
+            .neighbors_directed(self.index.node_index(), Outgoing)
             .filter(|ni| {
                 self.graph
-                    .edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap())
+                    .edge_weight(self.graph.find_edge(self.index.node_index(), *ni).unwrap())
                     .unwrap()
                     .is_end()
             })
@@ -147,10 +134,10 @@ impl<'a, W> Primitive<'a, W> {
 
     pub fn core(&self) -> Option<DotIndex> {
         self.graph
-            .neighbors(self.index.index)
+            .neighbors(self.index.node_index())
             .filter(|ni| {
                 self.graph
-                    .edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap())
+                    .edge_weight(self.graph.find_edge(self.index.node_index(), *ni).unwrap())
                     .unwrap()
                     .is_core()
             })
@@ -158,7 +145,7 @@ impl<'a, W> Primitive<'a, W> {
             .next()
     }
 
-    pub fn connectable<WW>(&self, index: Index<WW>) -> bool {
+    pub fn connectable<WW>(&self, index: GenericIndex<WW>) -> bool {
         let this = self.net(&self.index);
         let other = self.net(&index);
 
@@ -173,46 +160,46 @@ impl<'a, W> Primitive<'a, W> {
         }
     }
 
-    fn net<WW>(&self, index: &Index<WW>) -> i64 {
-        match self.graph.node_weight(index.index).unwrap() {
+    fn net<WW>(&self, index: &GenericIndex<WW>) -> i64 {
+        match self.graph.node_weight(index.node_index()).unwrap() {
             Weight::Dot(dot) => dot.net,
             Weight::Seg(seg) => seg.net,
             Weight::Bend(bend) => bend.net,
         }
     }
 
-    pub fn tagged_index(&self) -> TaggedIndex {
+    pub fn tagged_index(&self) -> Index {
         self.graph
-            .node_weight(self.index.index)
+            .node_weight(self.index.node_index())
             .unwrap()
-            .retag(self.index.index)
+            .retag(self.index.node_index())
     }
 
     pub fn tagged_weight(&self) -> Weight {
-        *self.graph.node_weight(self.index.index).unwrap()
+        *self.graph.node_weight(self.index.node_index()).unwrap()
     }
 
-    fn primitive<WW>(&self, index: Index<WW>) -> Primitive<WW> {
-        Primitive::new(index, &self.graph)
+    fn primitive<WW>(&self, index: GenericIndex<WW>) -> GenericPrimitive<WW> {
+        GenericPrimitive::new(index, &self.graph)
     }
 }
 
-impl<'a, W> Interior<TaggedIndex> for Primitive<'a, W> {
-    fn interior(&self) -> Vec<TaggedIndex> {
+impl<'a, W> Interior<Index> for GenericPrimitive<'a, W> {
+    fn interior(&self) -> Vec<Index> {
         vec![self.tagged_index()]
     }
 }
 
-impl<'a, W> Ends<DotIndex, DotIndex> for Primitive<'a, W> {
+impl<'a, W> Ends<DotIndex, DotIndex> for GenericPrimitive<'a, W> {
     fn ends(&self) -> (DotIndex, DotIndex) {
         let v = self
             .graph
-            .neighbors_undirected(self.index.index)
+            .neighbors_undirected(self.index.node_index())
             .filter(|ni| {
                 self.graph
                     .edge_weight(
                         self.graph
-                            .find_edge_undirected(self.index.index, *ni)
+                            .find_edge_undirected(self.index.node_index(), *ni)
                             .unwrap()
                             .0,
                     )
@@ -226,17 +213,17 @@ impl<'a, W> Ends<DotIndex, DotIndex> for Primitive<'a, W> {
     }
 }
 
-pub type Dot<'a> = Primitive<'a, DotWeight>;
+pub type Dot<'a> = GenericPrimitive<'a, DotWeight>;
 
 impl<'a> Dot<'a> {
     pub fn bend(&self) -> Option<BendIndex> {
         self.graph
-            .neighbors_undirected(self.index.index)
+            .neighbors_undirected(self.index.node_index())
             .filter(|ni| {
                 self.graph
                     .edge_weight(
                         self.graph
-                            .find_edge_undirected(self.index.index, *ni)
+                            .find_edge_undirected(self.index.node_index(), *ni)
                             .unwrap()
                             .0,
                     )
@@ -250,10 +237,10 @@ impl<'a> Dot<'a> {
 
     pub fn outer(&self) -> Option<BendIndex> {
         self.graph
-            .neighbors_directed(self.index.index, Incoming)
+            .neighbors_directed(self.index.node_index(), Incoming)
             .filter(|ni| {
                 self.graph
-                    .edge_weight(self.graph.find_edge(*ni, self.index.index).unwrap())
+                    .edge_weight(self.graph.find_edge(*ni, self.index.node_index()).unwrap())
                     .unwrap()
                     .is_core()
             })
@@ -275,7 +262,7 @@ impl<'a> MakeShape for Dot<'a> {
     }
 }
 
-pub type Seg<'a> = Primitive<'a, SegWeight>;
+pub type Seg<'a> = GenericPrimitive<'a, SegWeight>;
 
 impl<'a> Seg<'a> {
     pub fn next(&self) -> Option<DotIndex> {
@@ -302,23 +289,23 @@ impl<'a> MakeShape for Seg<'a> {
     }
 }
 
-pub type Bend<'a> = Primitive<'a, BendWeight>;
+pub type Bend<'a> = GenericPrimitive<'a, BendWeight>;
 
 impl<'a> Bend<'a> {
-    pub fn around(&self) -> TaggedIndex {
+    pub fn around(&self) -> Index {
         if let Some(inner) = self.inner() {
-            TaggedIndex::Bend(inner)
+            Index::Bend(inner)
         } else {
-            TaggedIndex::Dot(self.core().unwrap())
+            Index::Dot(self.core().unwrap())
         }
     }
 
     pub fn inner(&self) -> Option<BendIndex> {
         self.graph
-            .neighbors_directed(self.index.index, Incoming)
+            .neighbors_directed(self.index.node_index(), Incoming)
             .filter(|ni| {
                 self.graph
-                    .edge_weight(self.graph.find_edge(*ni, self.index.index).unwrap())
+                    .edge_weight(self.graph.find_edge(*ni, self.index.node_index()).unwrap())
                     .unwrap()
                     .is_outer()
             })
@@ -328,10 +315,10 @@ impl<'a> Bend<'a> {
 
     pub fn outer(&self) -> Option<BendIndex> {
         self.graph
-            .neighbors_directed(self.index.index, Outgoing)
+            .neighbors_directed(self.index.node_index(), Outgoing)
             .filter(|ni| {
                 self.graph
-                    .edge_weight(self.graph.find_edge(self.index.index, *ni).unwrap())
+                    .edge_weight(self.graph.find_edge(self.index.node_index(), *ni).unwrap())
                     .unwrap()
                     .is_outer()
             })
@@ -349,6 +336,27 @@ impl<'a> Bend<'a> {
 
     pub fn weight(&self) -> BendWeight {
         self.tagged_weight().into_bend().unwrap()
+    }
+
+    fn inner_radius(&self) -> f64 {
+        let mut r = 0.0;
+        let mut layer = BendIndex::new(self.index.node_index());
+
+        while let Some(inner) = self.primitive(layer).inner() {
+            r += self.primitive(inner).shape().width();
+            layer = inner;
+        }
+
+        let core_circle = self
+            .primitive(
+                self.primitive(BendIndex::new(self.index.node_index()))
+                    .core()
+                    .unwrap(),
+            )
+            .weight()
+            .circle;
+
+        core_circle.r + r + 3.0
     }
 
     pub fn cross_product(&self) -> f64 {

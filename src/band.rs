@@ -1,14 +1,14 @@
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::{
-    graph::{DotIndex, Ends, Interior, Label, Tag, TaggedIndex, Weight},
-    primitive::Primitive,
+    graph::{DotIndex, Ends, Index, Interior, Label, Tag, Weight},
+    primitive::GenericPrimitive,
 };
 
 pub struct Band {
     from: DotIndex,
     to: DotIndex,
-    interior: Vec<TaggedIndex>,
+    interior: Vec<Index>,
 }
 
 impl Band {
@@ -19,8 +19,10 @@ impl Band {
         let mut next_index = dot.tag();
         let mut interior = vec![];
 
-        while let Some(index) = untag!(next_index, Primitive::new(next_index, graph).tagged_next())
-        {
+        while let Some(index) = untag!(
+            next_index,
+            GenericPrimitive::new(next_index, graph).tagged_next()
+        ) {
             interior.push(index);
             next_index = index;
         }
@@ -43,8 +45,10 @@ impl Band {
         let mut prev_index = dot.tag();
         let mut interior = vec![];
 
-        while let Some(index) = untag!(prev_index, Primitive::new(prev_index, graph).tagged_next())
-        {
+        while let Some(index) = untag!(
+            prev_index,
+            GenericPrimitive::new(prev_index, graph).tagged_next()
+        ) {
             interior.push(index);
             prev_index = index;
         }
@@ -61,8 +65,8 @@ impl Band {
     }
 }
 
-impl Interior<TaggedIndex> for Band {
-    fn interior(&self) -> Vec<TaggedIndex> {
+impl Interior<Index> for Band {
+    fn interior(&self) -> Vec<Index> {
         // FIXME: Unnecessary clone. There should be a better way to do it.
         self.interior.clone()
     }

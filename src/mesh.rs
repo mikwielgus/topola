@@ -7,7 +7,10 @@ use spade::{
     DelaunayTriangulation, HasPosition, InsertionError, Point2, Triangulation,
 };
 
-use crate::{graph::DotIndex, layout::Layout};
+use crate::{
+    graph::{DotIndex, GetNodeIndex},
+    layout::Layout,
+};
 use crate::{primitive::MakeShape, shape::ShapeTrait};
 
 #[derive(Debug, Clone)]
@@ -51,7 +54,7 @@ impl Mesh {
         for dot in layout.dots() {
             let center = layout.primitive(dot).shape().center();
 
-            self.dot_to_vertex[dot.index.index()] = Some(VertexIndex {
+            self.dot_to_vertex[dot.node_index().index()] = Some(VertexIndex {
                 handle: self.triangulation.insert(Vertex {
                     dot,
                     x: center.x(),
@@ -68,7 +71,7 @@ impl Mesh {
     }
 
     pub fn vertex(&self, dot: DotIndex) -> VertexIndex {
-        self.dot_to_vertex[dot.index.index()].unwrap()
+        self.dot_to_vertex[dot.node_index().index()].unwrap()
     }
 
     pub fn position(&self, vertex: VertexIndex) -> Point {

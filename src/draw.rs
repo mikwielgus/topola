@@ -3,7 +3,7 @@ use enum_dispatch::enum_dispatch;
 use geo::{EuclideanDistance, EuclideanLength, Point};
 
 use crate::{
-    graph::{BendIndex, BendWeight, DotIndex, DotWeight, Ends, SegIndex, SegWeight, TaggedIndex},
+    graph::{BendIndex, BendWeight, DotIndex, DotWeight, Ends, Index, SegIndex, SegWeight},
     guide::Guide,
     layout::Layout,
     math::Circle,
@@ -133,7 +133,7 @@ impl<'a> Draw<'a> {
             .find_map(|(i, tangent)| {
                 self.segbend_around(
                     head,
-                    TaggedIndex::Dot(around),
+                    Index::Dot(around),
                     tangent.start_point(),
                     tangent.end_point(),
                     dirs[i],
@@ -168,7 +168,7 @@ impl<'a> Draw<'a> {
             .find_map(|(i, tangent)| {
                 self.segbend_around(
                     head,
-                    TaggedIndex::Bend(around),
+                    Index::Bend(around),
                     tangent.start_point(),
                     tangent.end_point(),
                     dirs[i],
@@ -184,7 +184,7 @@ impl<'a> Draw<'a> {
     fn segbend_around(
         &mut self,
         head: Head,
-        around: TaggedIndex,
+        around: Index,
         from: Point,
         to: Point,
         cw: bool,
@@ -234,7 +234,7 @@ impl<'a> Draw<'a> {
     fn segbend(
         &mut self,
         head: Head,
-        around: TaggedIndex,
+        around: Index,
         to: Point,
         cw: bool,
         width: f64,
@@ -255,7 +255,7 @@ impl<'a> Draw<'a> {
             .layout
             .add_bend(head.dot, bend_to, around, BendWeight { net, cw })
             .map_err(|err| {
-                self.layout.remove(bend_to);
+                self.layout.remove(Index::Dot(bend_to));
                 self.undo_seg(head, seg);
                 err
             })?;
@@ -273,7 +273,7 @@ impl<'a> Draw<'a> {
             .prev()
             .map(|prev_dot| {
                 self.layout.remove_interior(&head.segbend);
-                self.layout.remove(head.dot());
+                self.layout.remove(Index::Dot(head.dot()));
 
                 self.prev_head(prev_dot)
             })
@@ -295,7 +295,7 @@ impl<'a> Draw<'a> {
             .layout
             .add_seg(head.dot(), to_index, SegWeight { net, width })
             .map_err(|err| {
-                self.layout.remove(to_index);
+                self.layout.remove(Index::Dot(to_index));
                 err
             })?;
         Ok((BareHead { dot: to_index }, seg))
@@ -303,8 +303,8 @@ impl<'a> Draw<'a> {
 
     #[debug_ensures(self.layout.node_count() == old(self.layout.node_count() - 2))]
     fn undo_seg(&mut self, head: BareHead, seg: SegIndex) {
-        self.layout.remove(seg);
-        self.layout.remove(head.dot);
+        self.layout.remove(Index::Seg(seg));
+        self.layout.remove(Index::Dot(head.dot));
     }
 
     fn prev_head(&self, dot: DotIndex) -> Head {

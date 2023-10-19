@@ -10,14 +10,14 @@ use spade::Triangulation;
 use crate::band::Band;
 use crate::bow::Bow;
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, Index, Interior, Label, Retag, SegIndex, SegWeight,
-    Tag, TaggedIndex, Weight,
+    BendIndex, BendWeight, DotIndex, DotWeight, GenericIndex, GetNodeIndex, Index, Interior, Label,
+    Retag, SegIndex, SegWeight, Tag, Weight,
 };
-use crate::primitive::{MakeShape, Primitive};
+use crate::primitive::{GenericPrimitive, MakeShape};
 use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
 
-pub type RTreeWrapper = GeomWithData<Shape, TaggedIndex>;
+pub type RTreeWrapper = GeomWithData<Shape, Index>;
 
 pub struct Layout {
     rtree: RTree<RTreeWrapper>,
@@ -35,26 +35,26 @@ impl Layout {
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() - path.interior().len()))]
-    pub fn remove_interior(&mut self, path: &impl Interior<TaggedIndex>) {
-        for index in path.interior().iter().filter(|index| !index.is_dot()) {
-            untag!(index, self.remove(*index));
+    pub fn remove_interior(&mut self, path: &impl Interior<Index>) {
+        for index in path.interior().into_iter().filter(|index| !index.is_dot()) {
+            self.remove(index);
         }
 
         // We must remove the dots only after the segs and bends because we need dots to calculate
         // the shapes, which we need to remove the segs and bends from the R-tree.
 
-        for index in path.interior().iter().filter(|index| index.is_dot()) {
-            untag!(index, self.remove(*index));
+        for index in path.interior().into_iter().filter(|index| index.is_dot()) {
+            self.remove(index);
         }
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() - 1))]
-    pub fn remove<W: std::marker::Copy>(&mut self, index: Index<W>) {
+    pub fn remove(&mut self, index: Index) {
         // Unnecessary retag. It should be possible to elide it.
-        let weight = *self.graph.node_weight(index.index).unwrap();
+        let weight = *self.graph.node_weight(index.node_index()).unwrap();
 
-        self.remove_from_rtree(weight.retag(index.index));
-        self.graph.remove_node(index.index);
+        self.remove_from_rtree(weight.retag(index.node_index()));
+        self.graph.remove_node(index.node_index());
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() + 1))]
@@ -62,7 +62,7 @@ impl Layout {
         let dot = DotIndex::new(self.graph.add_node(Weight::Dot(weight)));
 
         self.insert_into_rtree(dot.tag());
-        self.fail_and_remove_if_collides_except(dot, &[])?;
+        self.fail_and_remove_if_collides_except(dot.tag(), &[])?;
 
         Ok(dot)
     }
@@ -77,20 +77,22 @@ impl Layout {
     ) -> Result<SegIndex, ()> {
         let seg = SegIndex::new(self.graph.add_node(Weight::Seg(weight)));
 
-        self.graph.add_edge(from.index, seg.index, Label::End);
-        self.graph.add_edge(seg.index, to.index, Label::End);
+        self.graph
+            .add_edge(from.node_index(), seg.node_index(), Label::End);
+        self.graph
+            .add_edge(seg.node_index(), to.node_index(), Label::End);
 
         self.insert_into_rtree(seg.tag());
-        self.fail_and_remove_if_collides_except(seg, &[from.tag(), to.tag()])?;
+        self.fail_and_remove_if_collides_except(seg.tag(), &[from.tag(), to.tag()])?;
 
         self.graph
-            .node_weight_mut(from.index)
+            .node_weight_mut(from.node_index())
             .unwrap()
             .as_dot_mut()
             .unwrap()
             .net = weight.net;
         self.graph
-            .node_weight_mut(to.index)
+            .node_weight_mut(to.node_index())
             .unwrap()
             .as_dot_mut()
             .unwrap()
@@ -105,13 +107,13 @@ impl Layout {
         &mut self,
         from: DotIndex,
         to: DotIndex,
-        around: TaggedIndex,
+        around: Index,
         weight: BendWeight,
     ) -> Result<BendIndex, ()> {
         match around {
-            TaggedIndex::Dot(core) => self.add_core_bend(from, to, core, weight),
-            TaggedIndex::Bend(around) => self.add_outer_bend(from, to, around, weight),
-            TaggedIndex::Seg(..) => unreachable!(),
+            Index::Dot(core) => self.add_core_bend(from, to, core, weight),
+            Index::Bend(around) => self.add_outer_bend(from, to, around, weight),
+            Index::Seg(..) => unreachable!(),
         }
     }
 
@@ -128,12 +130,15 @@ impl Layout {
     ) -> Result<BendIndex, ()> {
         let bend = BendIndex::new(self.graph.add_node(Weight::Bend(weight)));
 
-        self.graph.add_edge(from.index, bend.index, Label::End);
-        self.graph.add_edge(bend.index, to.index, Label::End);
-        self.graph.add_edge(bend.index, core.index, Label::Core);
+        self.graph
+            .add_edge(from.node_index(), bend.node_index(), Label::End);
+        self.graph
+            .add_edge(bend.node_index(), to.node_index(), Label::End);
+        self.graph
+            .add_edge(bend.node_index(), core.node_index(), Label::Core);
 
         self.insert_into_rtree(bend.tag());
-        self.fail_and_remove_if_collides_except(bend, &[from.tag(), to.tag(), core.tag()])?;
+        self.fail_and_remove_if_collides_except(bend.tag(), &[from.tag(), to.tag(), core.tag()])?;
         Ok(bend)
     }
 
@@ -150,10 +155,10 @@ impl Layout {
     ) -> Result<BendIndex, ()> {
         let core = *self
             .graph
-            .neighbors(inner.index)
+            .neighbors(inner.node_index())
             .filter(|ni| {
                 self.graph
-                    .edge_weight(self.graph.find_edge(inner.index, *ni).unwrap())
+                    .edge_weight(self.graph.find_edge(inner.node_index(), *ni).unwrap())
                     .unwrap()
                     .is_core()
             })
@@ -164,13 +169,17 @@ impl Layout {
 
         let bend = BendIndex::new(self.graph.add_node(Weight::Bend(weight)));
 
-        self.graph.add_edge(from.index, bend.index, Label::End);
-        self.graph.add_edge(bend.index, to.index, Label::End);
-        self.graph.add_edge(bend.index, core.index, Label::Core);
-        self.graph.add_edge(inner.index, bend.index, Label::Outer);
+        self.graph
+            .add_edge(from.node_index(), bend.node_index(), Label::End);
+        self.graph
+            .add_edge(bend.node_index(), to.node_index(), Label::End);
+        self.graph
+            .add_edge(bend.node_index(), core.node_index(), Label::Core);
+        self.graph
+            .add_edge(inner.node_index(), bend.node_index(), Label::Outer);
 
         self.insert_into_rtree(bend.tag());
-        self.fail_and_remove_if_collides_except(bend, &[from.tag(), to.tag(), core.tag()])?;
+        self.fail_and_remove_if_collides_except(bend.tag(), &[from.tag(), to.tag(), core.tag()])?;
         Ok(bend)
     }
 
@@ -182,14 +191,15 @@ impl Layout {
 
         if let Some(old_inner_edge) = self
             .graph
-            .edges_directed(bend.index, Incoming)
+            .edges_directed(bend.node_index(), Incoming)
             .filter(|edge| *edge.weight() == Label::Outer)
             .next()
         {
             self.graph.remove_edge(old_inner_edge.id());
         }
 
-        self.graph.add_edge(inner.index, bend.index, Label::Outer);
+        self.graph
+            .add_edge(inner.node_index(), bend.node_index(), Label::Outer);
         self.insert_into_rtree(bend.tag());
     }
 
@@ -199,13 +209,13 @@ impl Layout {
         self.remove_from_rtree(bend.tag());
         let cw = self
             .graph
-            .node_weight(bend.index)
+            .node_weight(bend.node_index())
             .unwrap()
             .into_bend()
             .unwrap()
             .cw;
         self.graph
-            .node_weight_mut(bend.index)
+            .node_weight_mut(bend.node_index())
             .unwrap()
             .as_bend_mut()
             .unwrap()
@@ -236,14 +246,11 @@ impl Layout {
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count()))]
     #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count() - 1))]
-    fn fail_and_remove_if_collides_except<W: std::marker::Copy>(
+    fn fail_and_remove_if_collides_except(
         &mut self,
-        index: Index<W>,
-        except: &[TaggedIndex],
-    ) -> Result<(), ()>
-    where
-        for<'a> Primitive<'a, W>: MakeShape,
-    {
+        index: Index,
+        except: &[Index],
+    ) -> Result<(), ()> {
         if let Some(..) = self.detect_collision_except(index, except) {
             self.remove(index);
             return Err(());
@@ -264,7 +271,7 @@ impl Layout {
         self.graph.node_count()
     }
 
-    fn nodes(&self) -> impl Iterator<Item = TaggedIndex> + '_ {
+    fn nodes(&self) -> impl Iterator<Item = Index> + '_ {
         self.rtree.iter().map(|wrapper| wrapper.data)
     }
 }
@@ -286,11 +293,11 @@ impl Layout {
         let old_weight = dot_weight;
 
         dot_weight.circle.pos = to;
-        *self.graph.node_weight_mut(dot.index).unwrap() = Weight::Dot(dot_weight);
+        *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::Dot(dot_weight);
 
-        if let Some(..) = self.detect_collision_except(dot, &[]) {
+        if let Some(..) = self.detect_collision_except(dot.tag(), &[]) {
             // Restore original state.
-            *self.graph.node_weight_mut(dot.index).unwrap() = Weight::Dot(old_weight);
+            *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::Dot(old_weight);
 
             self.insert_into_rtree(dot.tag());
             self.primitive(dot)
@@ -313,26 +320,21 @@ impl Layout {
         Ok(())
     }
 
-    pub fn primitive<W>(&self, index: Index<W>) -> Primitive<W> {
-        Primitive::new(index, &self.graph)
+    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W> {
+        GenericPrimitive::new(index, &self.graph)
     }
 
-    fn detect_collision_except<W>(
-        &self,
-        index: Index<W>,
-        except: &[TaggedIndex],
-    ) -> Option<TaggedIndex>
-    where
-        for<'a> Primitive<'a, W>: MakeShape,
-    {
-        let primitive = self.primitive(index);
-        let shape = primitive.shape();
+    fn detect_collision_except(&self, index: Index, except: &[Index]) -> Option<Index> {
+        let shape = untag!(index, self.primitive(index).shape());
 
         self.rtree
             .locate_in_envelope_intersecting(&RTreeObject::envelope(&shape))
             .filter(|wrapper| {
                 let other_index = wrapper.data;
-                !untag!(other_index, primitive.connectable(other_index))
+                !untag!(
+                    other_index,
+                    untag!(index, self.primitive(index).connectable(other_index))
+                )
             })
             .filter(|wrapper| !except.contains(&wrapper.data))
             .filter(|wrapper| shape.intersects(wrapper.geom()))
@@ -342,14 +344,14 @@ impl Layout {
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
-    fn insert_into_rtree(&mut self, index: TaggedIndex) {
+    fn insert_into_rtree(&mut self, index: Index) {
         let shape = untag!(index, self.primitive(index).shape());
         self.rtree.insert(RTreeWrapper::new(shape, index));
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
-    fn remove_from_rtree(&mut self, index: TaggedIndex) {
+    fn remove_from_rtree(&mut self, index: Index) {
         let shape = untag!(index, self.primitive(index).shape());
         let removed_element = self.rtree.remove(&RTreeWrapper::new(shape, index));
         debug_assert!(removed_element.is_some());
@@ -360,7 +362,7 @@ impl Layout {
     fn test_envelopes(&self) -> bool {
         !self.rtree.iter().any(|wrapper| {
             let index = wrapper.data;
-            let shape = untag!(index, Primitive::new(index, &self.graph).shape());
+            let shape = untag!(index, GenericPrimitive::new(index, &self.graph).shape());
             let wrapper = RTreeWrapper::new(shape, index);
             !self
                 .rtree

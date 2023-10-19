@@ -15,7 +15,7 @@ pub trait Ends<Start, Stop> {
 
 #[enum_dispatch]
 pub trait Retag {
-    fn retag(&self, index: NodeIndex<usize>) -> TaggedIndex;
+    fn retag(&self, index: NodeIndex<usize>) -> Index;
 }
 
 #[enum_dispatch(Retag)]
@@ -33,9 +33,9 @@ pub struct DotWeight {
 }
 
 impl Retag for DotWeight {
-    fn retag(&self, index: NodeIndex<usize>) -> TaggedIndex {
-        TaggedIndex::Dot(DotIndex {
-            index,
+    fn retag(&self, index: NodeIndex<usize>) -> Index {
+        Index::Dot(DotIndex {
+            node_index: index,
             marker: PhantomData,
         })
     }
@@ -48,9 +48,9 @@ pub struct SegWeight {
 }
 
 impl Retag for SegWeight {
-    fn retag(&self, index: NodeIndex<usize>) -> TaggedIndex {
-        TaggedIndex::Seg(SegIndex {
-            index,
+    fn retag(&self, index: NodeIndex<usize>) -> Index {
+        Index::Seg(SegIndex {
+            node_index: index,
             marker: PhantomData,
         })
     }
@@ -63,9 +63,9 @@ pub struct BendWeight {
 }
 
 impl Retag for BendWeight {
-    fn retag(&self, index: NodeIndex<usize>) -> TaggedIndex {
-        TaggedIndex::Bend(BendIndex {
-            index,
+    fn retag(&self, index: NodeIndex<usize>) -> Index {
+        Index::Bend(BendIndex {
+            node_index: index,
             marker: PhantomData,
         })
     }
@@ -78,62 +78,74 @@ pub enum Label {
     Core,
 }
 
+#[enum_dispatch]
+pub trait GetNodeIndex {
+    fn node_index(&self) -> NodeIndex<usize>;
+}
+
+#[enum_dispatch(GetNodeIndex)]
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
-pub enum TaggedIndex {
+pub enum Index {
     Dot(DotIndex),
     Seg(SegIndex),
     Bend(BendIndex),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct Index<T> {
-    pub index: NodeIndex<usize>,
-    marker: PhantomData<T>,
+pub struct GenericIndex<W> {
+    node_index: NodeIndex<usize>,
+    marker: PhantomData<W>,
 }
 
-impl<T> Index<T> {
+impl<W> GenericIndex<W> {
     pub fn new(index: NodeIndex<usize>) -> Self {
         Self {
-            index,
+            node_index: index,
             marker: PhantomData,
         }
     }
 }
 
+impl<W> GetNodeIndex for GenericIndex<W> {
+    fn node_index(&self) -> NodeIndex<usize> {
+        self.node_index
+    }
+}
+
 pub trait Tag {
-    fn tag(&self) -> TaggedIndex;
+    fn tag(&self) -> Index;
 }
 
 macro_rules! untag {
     ($index:ident, $expr:expr) => {
         match $index {
-            TaggedIndex::Dot($index) => $expr,
-            TaggedIndex::Seg($index) => $expr,
-            TaggedIndex::Bend($index) => $expr,
+            Index::Dot($index) => $expr,
+            Index::Seg($index) => $expr,
+            Index::Bend($index) => $expr,
         }
     };
 }
 
-pub type DotIndex = Index<DotWeight>;
+pub type DotIndex = GenericIndex<DotWeight>;
 
 impl Tag for DotIndex {
-    fn tag(&self) -> TaggedIndex {
-        TaggedIndex::Dot(*self)
+    fn tag(&self) -> Index {
+        Index::Dot(*self)
     }
 }
 
-pub type SegIndex = Index<SegWeight>;
+pub type SegIndex = GenericIndex<SegWeight>;
 
 impl Tag for SegIndex {
-    fn tag(&self) -> TaggedIndex {
-        TaggedIndex::Seg(*self)
+    fn tag(&self) -> Index {
+        Index::Seg(*self)
     }
 }
 
-pub type BendIndex = Index<BendWeight>;
+pub type BendIndex = GenericIndex<BendWeight>;
 
 impl Tag for BendIndex {
-    fn tag(&self) -> TaggedIndex {
-        TaggedIndex::Bend(*self)
+    fn tag(&self) -> Index {
+        Index::Bend(*self)
     }
 }
