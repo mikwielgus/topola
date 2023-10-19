@@ -13,7 +13,7 @@ use crate::graph::{
     BendIndex, BendWeight, DotIndex, DotWeight, Index, Interior, Label, Retag, SegIndex, SegWeight,
     Tag, TaggedIndex, Weight,
 };
-use crate::primitive::Primitive;
+use crate::primitive::{MakeShape, Primitive};
 use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
 
@@ -49,7 +49,7 @@ impl Layout {
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() - 1))]
-    pub fn remove<Weight: std::marker::Copy>(&mut self, index: Index<Weight>) {
+    pub fn remove<W: std::marker::Copy>(&mut self, index: Index<W>) {
         // Unnecessary retag. It should be possible to elide it.
         let weight = *self.graph.node_weight(index.index).unwrap();
 
@@ -236,11 +236,14 @@ impl Layout {
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count()))]
     #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count() - 1))]
-    fn fail_and_remove_if_collides_except<Weight: std::marker::Copy>(
+    fn fail_and_remove_if_collides_except<W: std::marker::Copy>(
         &mut self,
-        index: Index<Weight>,
+        index: Index<W>,
         except: &[TaggedIndex],
-    ) -> Result<(), ()> {
+    ) -> Result<(), ()>
+    where
+        for<'a> Primitive<'a, W>: MakeShape,
+    {
         if let Some(..) = self.detect_collision_except(index, except) {
             self.remove(index);
             return Err(());
@@ -310,15 +313,18 @@ impl Layout {
         Ok(())
     }
 
-    pub fn primitive<Weight>(&self, index: Index<Weight>) -> Primitive<Weight> {
+    pub fn primitive<W>(&self, index: Index<W>) -> Primitive<W> {
         Primitive::new(index, &self.graph)
     }
 
-    fn detect_collision_except<Weight: std::marker::Copy>(
+    fn detect_collision_except<W>(
         &self,
-        index: Index<Weight>,
+        index: Index<W>,
         except: &[TaggedIndex],
-    ) -> Option<TaggedIndex> {
+    ) -> Option<TaggedIndex>
+    where
+        for<'a> Primitive<'a, W>: MakeShape,
+    {
         let primitive = self.primitive(index);
         let shape = primitive.shape();
 

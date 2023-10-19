@@ -7,8 +7,8 @@ use spade::{
     DelaunayTriangulation, HasPosition, InsertionError, Point2, Triangulation,
 };
 
-use crate::shape::ShapeTrait;
 use crate::{graph::DotIndex, layout::Layout};
+use crate::{primitive::MakeShape, shape::ShapeTrait};
 
 #[derive(Debug, Clone)]
 struct Vertex {

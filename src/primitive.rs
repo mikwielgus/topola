@@ -1,5 +1,6 @@
 use std::mem::{self, swap};
 
+use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction::{Incoming, Outgoing};
 
@@ -10,6 +11,10 @@ use crate::graph::{
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
 
+pub trait MakeShape {
+    fn shape(&self) -> Shape;
+}
+
 #[derive(Debug)]
 pub struct Primitive<'a, W> {
     pub index: Index<W>,
@@ -19,38 +24,6 @@ pub struct Primitive<'a, W> {
 impl<'a, W> Primitive<'a, W> {
     pub fn new(index: Index<W>, graph: &'a StableDiGraph<Weight, Label, usize>) -> Self {
         Self { index, graph }
-    }
-
-    pub fn shape(&self) -> Shape {
-        match self.tagged_weight() {
-            Weight::Dot(dot) => Shape::Dot(DotShape { c: dot.circle }),
-            Weight::Seg(seg) => {
-                let ends = self.ends();
-                Shape::Seg(SegShape {
-                    from: self.primitive(ends.0).weight().circle.pos,
-                    to: self.primitive(ends.1).weight().circle.pos,
-                    width: seg.width,
-                })
-            }
-            Weight::Bend(bend) => {
-                let ends = self.ends();
-
-                let mut bend_shape = BendShape {
-                    from: self.primitive(ends.0).weight().circle.pos,
-                    to: self.primitive(ends.1).weight().circle.pos,
-                    c: Circle {
-                        pos: self.primitive(self.core().unwrap()).weight().circle.pos,
-                        r: self.inner_radius(),
-                    },
-                    width: self.primitive(ends.0).weight().circle.r * 2.0,
-                };
-
-                if bend.cw {
-                    swap(&mut bend_shape.from, &mut bend_shape.to);
-                }
-                Shape::Bend(bend_shape)
-            }
-        }
     }
 
     fn inner_radius(&self) -> f64 {
@@ -224,13 +197,13 @@ impl<'a, W> Primitive<'a, W> {
     }
 }
 
-impl<'a, Weight> Interior<TaggedIndex> for Primitive<'a, Weight> {
+impl<'a, W> Interior<TaggedIndex> for Primitive<'a, W> {
     fn interior(&self) -> Vec<TaggedIndex> {
         vec![self.tagged_index()]
     }
 }
 
-impl<'a, Weight> Ends<DotIndex, DotIndex> for Primitive<'a, Weight> {
+impl<'a, W> Ends<DotIndex, DotIndex> for Primitive<'a, W> {
     fn ends(&self) -> (DotIndex, DotIndex) {
         let v = self
             .graph
@@ -254,8 +227,6 @@ impl<'a, Weight> Ends<DotIndex, DotIndex> for Primitive<'a, Weight> {
 }
 
 pub type Dot<'a> = Primitive<'a, DotWeight>;
-pub type Seg<'a> = Primitive<'a, SegWeight>;
-pub type Bend<'a> = Primitive<'a, BendWeight>;
 
 impl<'a> Dot<'a> {
     pub fn bend(&self) -> Option<BendIndex> {
@@ -296,6 +267,16 @@ impl<'a> Dot<'a> {
     }
 }
 
+impl<'a> MakeShape for Dot<'a> {
+    fn shape(&self) -> Shape {
+        Shape::Dot(DotShape {
+            c: self.weight().circle,
+        })
+    }
+}
+
+pub type Seg<'a> = Primitive<'a, SegWeight>;
+
 impl<'a> Seg<'a> {
     pub fn next(&self) -> Option<DotIndex> {
         self.next_node().map(|ni| DotIndex::new(ni))
@@ -309,6 +290,19 @@ impl<'a> Seg<'a> {
         self.tagged_weight().into_seg().unwrap()
     }
 }
+
+impl<'a> MakeShape for Seg<'a> {
+    fn shape(&self) -> Shape {
+        let ends = self.ends();
+        Shape::Seg(SegShape {
+            from: self.primitive(ends.0).weight().circle.pos,
+            to: self.primitive(ends.1).weight().circle.pos,
+            width: self.weight().width,
+        })
+    }
+}
+
+pub type Bend<'a> = Primitive<'a, BendWeight>;
 
 impl<'a> Bend<'a> {
     pub fn around(&self) -> TaggedIndex {
@@ -363,5 +357,26 @@ impl<'a> Bend<'a> {
         let end1 = self.primitive(ends.0).weight().circle.pos;
         let end2 = self.primitive(ends.1).weight().circle.pos;
         math::cross_product(end1 - center, end2 - center)
+    }
+}
+
+impl<'a> MakeShape for Bend<'a> {
+    fn shape(&self) -> Shape {
+        let ends = self.ends();
+
+        let mut bend_shape = BendShape {
+            from: self.primitive(ends.0).weight().circle.pos,
+            to: self.primitive(ends.1).weight().circle.pos,
+            c: Circle {
+                pos: self.primitive(self.core().unwrap()).weight().circle.pos,
+                r: self.inner_radius(),
+            },
+            width: self.primitive(ends.0).weight().circle.r * 2.0,
+        };
+
+        if self.weight().cw {
+            swap(&mut bend_shape.from, &mut bend_shape.to);
+        }
+        Shape::Bend(bend_shape)
     }
 }
