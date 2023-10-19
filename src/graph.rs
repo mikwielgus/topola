@@ -112,10 +112,6 @@ impl<W> GetNodeIndex for GenericIndex<W> {
     }
 }
 
-pub trait Tag {
-    fn tag(&self) -> Index;
-}
-
 macro_rules! untag {
     ($index:ident, $expr:expr) => {
         match $index {
@@ -127,25 +123,5 @@ macro_rules! untag {
 }
 
 pub type DotIndex = GenericIndex<DotWeight>;
-
-impl Tag for DotIndex {
-    fn tag(&self) -> Index {
-        Index::Dot(*self)
-    }
-}
-
 pub type SegIndex = GenericIndex<SegWeight>;
-
-impl Tag for SegIndex {
-    fn tag(&self) -> Index {
-        Index::Seg(*self)
-    }
-}
-
 pub type BendIndex = GenericIndex<BendWeight>;
-
-impl Tag for BendIndex {
-    fn tag(&self) -> Index {
-        Index::Bend(*self)
-    }
-}

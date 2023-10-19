@@ -10,7 +10,7 @@ use crate::band::Band;
 use crate::bow::Bow;
 use crate::graph::{
     BendIndex, BendWeight, DotIndex, DotWeight, GenericIndex, GetNodeIndex, Index, Interior, Label,
-    Retag, SegIndex, SegWeight, Tag, Weight,
+    Retag, SegIndex, SegWeight, Weight,
 };
 use crate::primitive::{GenericPrimitive, MakeShape};
 use crate::segbend::Segbend;
@@ -60,8 +60,8 @@ impl Layout {
     pub fn add_dot(&mut self, weight: DotWeight) -> Result<DotIndex, ()> {
         let dot = DotIndex::new(self.graph.add_node(Weight::Dot(weight)));
 
-        self.insert_into_rtree(dot.tag());
-        self.fail_and_remove_if_collides_except(dot.tag(), &[])?;
+        self.insert_into_rtree(Index::Dot(dot));
+        self.fail_and_remove_if_collides_except(Index::Dot(dot), &[])?;
 
         Ok(dot)
     }
@@ -81,8 +81,8 @@ impl Layout {
         self.graph
             .add_edge(seg.node_index(), to.node_index(), Label::End);
 
-        self.insert_into_rtree(seg.tag());
-        self.fail_and_remove_if_collides_except(seg.tag(), &[from.tag(), to.tag()])?;
+        self.insert_into_rtree(Index::Seg(seg));
+        self.fail_and_remove_if_collides_except(Index::Seg(seg), &[])?;
 
         self.graph
             .node_weight_mut(from.node_index())
@@ -136,8 +136,8 @@ impl Layout {
         self.graph
             .add_edge(bend.node_index(), core.node_index(), Label::Core);
 
-        self.insert_into_rtree(bend.tag());
-        self.fail_and_remove_if_collides_except(bend.tag(), &[from.tag(), to.tag(), core.tag()])?;
+        self.insert_into_rtree(Index::Bend(bend));
+        self.fail_and_remove_if_collides_except(Index::Bend(bend), &[Index::Dot(core)])?;
         Ok(bend)
     }
 
@@ -177,8 +177,8 @@ impl Layout {
         self.graph
             .add_edge(inner.node_index(), bend.node_index(), Label::Outer);
 
-        self.insert_into_rtree(bend.tag());
-        self.fail_and_remove_if_collides_except(bend.tag(), &[from.tag(), to.tag(), core.tag()])?;
+        self.insert_into_rtree(Index::Bend(bend));
+        self.fail_and_remove_if_collides_except(Index::Bend(bend), &[Index::Dot(core)])?;
         Ok(bend)
     }
 
@@ -186,7 +186,7 @@ impl Layout {
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count())
         || self.graph.edge_count() == old(self.graph.edge_count() + 1))]
     pub fn reattach_bend(&mut self, bend: BendIndex, inner: BendIndex) {
-        self.remove_from_rtree(bend.tag());
+        self.remove_from_rtree(Index::Bend(bend));
 
         if let Some(old_inner_edge) = self
             .graph
@@ -199,13 +199,13 @@ impl Layout {
 
         self.graph
             .add_edge(inner.node_index(), bend.node_index(), Label::Outer);
-        self.insert_into_rtree(bend.tag());
+        self.insert_into_rtree(Index::Bend(bend));
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn flip_bend(&mut self, bend: BendIndex) {
-        self.remove_from_rtree(bend.tag());
+        self.remove_from_rtree(Index::Bend(bend));
         let cw = self
             .graph
             .node_weight(bend.node_index())
@@ -219,7 +219,7 @@ impl Layout {
             .as_bend_mut()
             .unwrap()
             .cw = !cw;
-        self.insert_into_rtree(bend.tag());
+        self.insert_into_rtree(Index::Bend(bend));
     }
 
     pub fn bow(&self, bend: BendIndex) -> Bow {
@@ -286,7 +286,7 @@ impl Layout {
         self.primitive(dot)
             .tagged_next()
             .map(|next| self.remove_from_rtree(next));
-        self.remove_from_rtree(dot.tag());
+        self.remove_from_rtree(Index::Dot(dot));
 
         let mut dot_weight = self.primitive(dot).weight();
         let old_weight = dot_weight;
@@ -294,11 +294,11 @@ impl Layout {
         dot_weight.circle.pos = to;
         *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::Dot(dot_weight);
 
-        if let Some(..) = self.detect_collision_except(dot.tag(), &[]) {
+        if let Some(..) = self.detect_collision_except(Index::Dot(dot), &[]) {
             // Restore original state.
             *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::Dot(old_weight);
 
-            self.insert_into_rtree(dot.tag());
+            self.insert_into_rtree(Index::Dot(dot));
             self.primitive(dot)
                 .tagged_prev()
                 .map(|prev| self.insert_into_rtree(prev));
@@ -308,7 +308,7 @@ impl Layout {
             return Err(());
         }
 
-        self.insert_into_rtree(dot.tag());
+        self.insert_into_rtree(Index::Dot(dot));
         self.primitive(dot)
             .tagged_prev()
             .map(|prev| self.insert_into_rtree(prev));

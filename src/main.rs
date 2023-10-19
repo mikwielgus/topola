@@ -146,7 +146,7 @@ fn main() {
     let dot2 = router
         .layout
         .add_dot(DotWeight {
-            net: 15,
+            net: 1,
             circle: Circle {
                 pos: (100.5, 500.5).into(),
                 r: 8.0,
@@ -157,7 +157,7 @@ fn main() {
     let dot_end = router
         .layout
         .add_dot(DotWeight {
-            net: 10,
+            net: 1,
             circle: Circle {
                 pos: (470.5, 350.5).into(),
                 r: 8.0,
@@ -191,7 +191,7 @@ fn main() {
         dot1_1,
         dot2_1,
         SegWeight {
-            net: 20,
+            net: 2,
             width: 16.0,
         },
     );
@@ -211,7 +211,7 @@ fn main() {
         dot2_1,
         dot2_2,
         SegWeight {
-            net: 20,
+            net: 2,
             width: 16.0,
         },
     );
@@ -242,7 +242,7 @@ fn main() {
         dot3,
         dot4,
         SegWeight {
-            net: 20,
+            net: 2,
             width: 16.0,
         },
     );
@@ -262,7 +262,7 @@ fn main() {
         dot4,
         dot5,
         SegWeight {
-            net: 20,
+            net: 2,
             width: 16.0,
         },
     );
@@ -282,7 +282,7 @@ fn main() {
         dot3,
         dot1_2,
         SegWeight {
-            net: 20,
+            net: 2,
             width: 16.0,
         },
     );
@@ -291,7 +291,7 @@ fn main() {
         dot1_2,
         dot2_2,
         SegWeight {
-            net: 20,
+            net: 2,
             width: 16.0,
         },
     );
@@ -311,7 +311,7 @@ fn main() {
         dot5,
         dot6,
         SegWeight {
-            net: 20,
+            net: 2,
             width: 16.0,
         },
     );
