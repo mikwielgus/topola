@@ -5,7 +5,7 @@ use crate::{
     graph::{BendIndex, DotIndex},
     layout::Layout,
     math::{self, Circle},
-    primitive::MakeShape,
+    primitive::{GetWeight, MakeShape},
     rules::{Conditions, Rules},
 };
 

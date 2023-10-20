@@ -12,6 +12,11 @@ use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
 
 #[enum_dispatch]
+pub trait GetWeight<W> {
+    fn weight(&self) -> W;
+}
+
+#[enum_dispatch]
 pub trait MakeShape {
     fn shape(&self) -> Shape;
 }
@@ -248,8 +253,10 @@ impl<'a> Dot<'a> {
             .filter(|bend| self.primitive(*bend).inner().is_none())
             .next()
     }
+}
 
-    pub fn weight(&self) -> DotWeight {
+impl<'a> GetWeight<DotWeight> for Dot<'a> {
+    fn weight(&self) -> DotWeight {
         self.tagged_weight().into_dot().unwrap()
     }
 }
@@ -272,8 +279,10 @@ impl<'a> Seg<'a> {
     pub fn prev(&self) -> Option<DotIndex> {
         self.prev_node().map(|ni| DotIndex::new(ni))
     }
+}
 
-    pub fn weight(&self) -> SegWeight {
+impl<'a> GetWeight<SegWeight> for Seg<'a> {
+    fn weight(&self) -> SegWeight {
         self.tagged_weight().into_seg().unwrap()
     }
 }
@@ -334,10 +343,6 @@ impl<'a> Bend<'a> {
         self.prev_node().map(|ni| DotIndex::new(ni))
     }
 
-    pub fn weight(&self) -> BendWeight {
-        self.tagged_weight().into_bend().unwrap()
-    }
-
     fn inner_radius(&self) -> f64 {
         let mut r = 0.0;
         let mut layer = BendIndex::new(self.index.node_index());
@@ -365,6 +370,12 @@ impl<'a> Bend<'a> {
         let end1 = self.primitive(ends.0).weight().circle.pos;
         let end2 = self.primitive(ends.1).weight().circle.pos;
         math::cross_product(end1 - center, end2 - center)
+    }
+}
+
+impl<'a> GetWeight<BendWeight> for Bend<'a> {
+    fn weight(&self) -> BendWeight {
+        self.tagged_weight().into_bend().unwrap()
     }
 }
 

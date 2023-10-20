@@ -12,7 +12,7 @@ use crate::graph::{
     BendIndex, BendWeight, DotIndex, DotWeight, GenericIndex, GetNodeIndex, Index, Interior, Label,
     Retag, SegIndex, SegWeight, Weight,
 };
-use crate::primitive::{GenericPrimitive, MakeShape};
+use crate::primitive::{GenericPrimitive, GetWeight, MakeShape};
 use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
 

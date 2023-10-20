@@ -7,6 +7,7 @@ use crate::{
     guide::Guide,
     layout::Layout,
     math::Circle,
+    primitive::GetWeight,
     rules::{Conditions, Rules},
     segbend::Segbend,
 };

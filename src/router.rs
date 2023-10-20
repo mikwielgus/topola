@@ -8,6 +8,7 @@ use crate::layout::Layout;
 
 use crate::math::Circle;
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
+use crate::primitive::GetWeight;
 use crate::rules::Rules;
 use crate::tracer::{Trace, Tracer};
 

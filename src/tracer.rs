@@ -6,7 +6,7 @@ use crate::{
     graph::{BendIndex, DotIndex, Ends},
     layout::Layout,
     mesh::{Mesh, VertexIndex},
-    primitive::MakeShape,
+    primitive::{GetWeight, MakeShape},
     rules::Rules,
 };
 
