@@ -1,8 +1,8 @@
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::{
-    graph::{DotIndex, Ends, Index, Interior, Label, Weight},
-    primitive::GenericPrimitive,
+    graph::{DotIndex, Ends, Index, Interior, Label, MakePrimitive, Weight},
+    primitive::TaggedPrevTaggedNext,
 };
 
 pub struct Band {
@@ -19,10 +19,7 @@ impl Band {
         let mut next_index = Index::Dot(dot);
         let mut interior = vec![];
 
-        while let Some(index) = untag!(
-            next_index,
-            GenericPrimitive::new(next_index, graph).tagged_prev()
-        ) {
+        while let Some(index) = next_index.primitive(graph).tagged_prev() {
             interior.push(index);
             next_index = index;
         }
@@ -45,10 +42,7 @@ impl Band {
         let mut prev_index = Index::Dot(dot);
         let mut interior = vec![];
 
-        while let Some(index) = untag!(
-            prev_index,
-            GenericPrimitive::new(prev_index, graph).tagged_next()
-        ) {
+        while let Some(index) = prev_index.primitive(graph).tagged_next() {
             interior.push(index);
             prev_index = index;
         }

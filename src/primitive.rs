@@ -12,6 +12,12 @@ use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
 
 #[enum_dispatch]
+pub trait TaggedPrevTaggedNext {
+    fn tagged_prev(&self) -> Option<Index>;
+    fn tagged_next(&self) -> Option<Index>;
+}
+
+#[enum_dispatch]
 pub trait GetWeight<W> {
     fn weight(&self) -> W;
 }
@@ -21,7 +27,7 @@ pub trait MakeShape {
     fn shape(&self) -> Shape;
 }
 
-#[enum_dispatch(MakeShape)]
+#[enum_dispatch(MakeShape, TaggedPrevTaggedNext)]
 pub enum Primitive<'a> {
     Dot(Dot<'a>),
     Seg(Seg<'a>),
@@ -74,11 +80,6 @@ impl<'a, W> GenericPrimitive<'a, W> {
         None
     }
 
-    pub fn tagged_prev(&self) -> Option<Index> {
-        self.prev_node()
-            .map(|ni| self.graph.node_weight(ni).unwrap().retag(ni))
-    }
-
     fn prev_node(&self) -> Option<NodeIndex<usize>> {
         self.graph
             .neighbors_directed(self.index.node_index(), Incoming)
@@ -118,11 +119,6 @@ impl<'a, W> GenericPrimitive<'a, W> {
         }
 
         None
-    }
-
-    pub fn tagged_next(&self) -> Option<Index> {
-        self.next_node()
-            .map(|ni| self.graph.node_weight(ni).unwrap().retag(ni))
     }
 
     fn next_node(&self) -> Option<NodeIndex<usize>> {
@@ -215,6 +211,18 @@ impl<'a, W> Ends<DotIndex, DotIndex> for GenericPrimitive<'a, W> {
             .map(|ni| DotIndex::new(ni))
             .collect::<Vec<_>>();
         (v[0], v[1])
+    }
+}
+
+impl<'a, W> TaggedPrevTaggedNext for GenericPrimitive<'a, W> {
+    fn tagged_prev(&self) -> Option<Index> {
+        self.prev_node()
+            .map(|ni| self.graph.node_weight(ni).unwrap().retag(ni))
+    }
+
+    fn tagged_next(&self) -> Option<Index> {
+        self.next_node()
+            .map(|ni| self.graph.node_weight(ni).unwrap().retag(ni))
     }
 }
 

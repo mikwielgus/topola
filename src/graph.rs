@@ -1,9 +1,12 @@
 use enum_as_inner::EnumAsInner;
 use enum_dispatch::enum_dispatch;
-use petgraph::stable_graph::NodeIndex;
+use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use std::marker::PhantomData;
 
-use crate::math::Circle;
+use crate::{
+    math::Circle,
+    primitive::{GenericPrimitive, Primitive},
+};
 
 pub trait Interior<T> {
     fn interior(&self) -> Vec<T>;
@@ -83,7 +86,12 @@ pub trait GetNodeIndex {
     fn node_index(&self) -> NodeIndex<usize>;
 }
 
-#[enum_dispatch(GetNodeIndex)]
+#[enum_dispatch]
+pub trait MakePrimitive {
+    fn primitive<'a>(&self, graph: &'a StableDiGraph<Weight, Label, usize>) -> Primitive<'a>;
+}
+
+#[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
 pub enum Index {
     Dot(DotIndex),
@@ -123,5 +131,25 @@ macro_rules! untag {
 }
 
 pub type DotIndex = GenericIndex<DotWeight>;
+
+impl MakePrimitive for DotIndex {
+    fn primitive<'a>(&self, graph: &'a StableDiGraph<Weight, Label, usize>) -> Primitive<'a> {
+        Primitive::Dot(GenericPrimitive::new(*self, graph))
+    }
+}
+
 pub type SegIndex = GenericIndex<SegWeight>;
+
+impl MakePrimitive for SegIndex {
+    fn primitive<'a>(&self, graph: &'a StableDiGraph<Weight, Label, usize>) -> Primitive<'a> {
+        Primitive::Seg(GenericPrimitive::new(*self, graph))
+    }
+}
+
 pub type BendIndex = GenericIndex<BendWeight>;
+
+impl MakePrimitive for BendIndex {
+    fn primitive<'a>(&self, graph: &'a StableDiGraph<Weight, Label, usize>) -> Primitive<'a> {
+        Primitive::Bend(GenericPrimitive::new(*self, graph))
+    }
+}

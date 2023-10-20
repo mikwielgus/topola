@@ -1,7 +1,7 @@
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::graph::{BendIndex, DotIndex, Ends, Index, Interior, Label, SegIndex, Weight};
-use crate::primitive::{Bend, Dot, Seg};
+use crate::primitive::{Bend, Dot, Seg, TaggedPrevTaggedNext};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Bow {

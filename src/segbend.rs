@@ -2,7 +2,7 @@ use petgraph::stable_graph::StableDiGraph;
 
 use crate::{
     graph::{BendIndex, DotIndex, Ends, Index, Interior, Label, SegIndex, Weight},
-    primitive::{Bend, Dot},
+    primitive::{Bend, Dot, TaggedPrevTaggedNext},
 };
 
 #[derive(Debug, Clone, Copy)]
