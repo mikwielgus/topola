@@ -34,26 +34,43 @@ pub enum Weight {
     Bend(BendWeight),
 }
 
+macro_rules! impl_type {
+    ($weight_struct_name:ident, $weight_variant_name:ident, $index_struct_name:ident) => {
+        impl Retag for $weight_struct_name {
+            fn retag(&self, index: NodeIndex<usize>) -> Index {
+                Index::$weight_variant_name($index_struct_name {
+                    node_index: index,
+                    marker: PhantomData,
+                })
+            }
+        }
+
+        impl GetNet for $weight_struct_name {
+            fn net(&self) -> i64 {
+                self.net
+            }
+        }
+
+        pub type $index_struct_name = GenericIndex<$weight_struct_name>;
+
+        impl MakePrimitive for $index_struct_name {
+            fn primitive<'a>(
+                &self,
+                graph: &'a StableDiGraph<Weight, Label, usize>,
+            ) -> Primitive<'a> {
+                Primitive::$weight_variant_name(GenericPrimitive::new(*self, graph))
+            }
+        }
+    };
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DotWeight {
     pub net: i64,
     pub circle: Circle,
 }
 
-impl Retag for DotWeight {
-    fn retag(&self, index: NodeIndex<usize>) -> Index {
-        Index::Dot(DotIndex {
-            node_index: index,
-            marker: PhantomData,
-        })
-    }
-}
-
-impl GetNet for DotWeight {
-    fn net(&self) -> i64 {
-        self.net
-    }
-}
+impl_type!(DotWeight, Dot, DotIndex);
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SegWeight {
@@ -61,20 +78,7 @@ pub struct SegWeight {
     pub width: f64,
 }
 
-impl Retag for SegWeight {
-    fn retag(&self, index: NodeIndex<usize>) -> Index {
-        Index::Seg(SegIndex {
-            node_index: index,
-            marker: PhantomData,
-        })
-    }
-}
-
-impl GetNet for SegWeight {
-    fn net(&self) -> i64 {
-        self.net
-    }
-}
+impl_type!(SegWeight, Seg, SegIndex);
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BendWeight {
@@ -82,20 +86,7 @@ pub struct BendWeight {
     pub cw: bool,
 }
 
-impl Retag for BendWeight {
-    fn retag(&self, index: NodeIndex<usize>) -> Index {
-        Index::Bend(BendIndex {
-            node_index: index,
-            marker: PhantomData,
-        })
-    }
-}
-
-impl GetNet for BendWeight {
-    fn net(&self) -> i64 {
-        self.net
-    }
-}
+impl_type!(BendWeight, Bend, BendIndex);
 
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
 pub enum Label {
@@ -140,29 +131,5 @@ impl<W> GenericIndex<W> {
 impl<W> GetNodeIndex for GenericIndex<W> {
     fn node_index(&self) -> NodeIndex<usize> {
         self.node_index
-    }
-}
-
-pub type DotIndex = GenericIndex<DotWeight>;
-
-impl MakePrimitive for DotIndex {
-    fn primitive<'a>(&self, graph: &'a StableDiGraph<Weight, Label, usize>) -> Primitive<'a> {
-        Primitive::Dot(GenericPrimitive::new(*self, graph))
-    }
-}
-
-pub type SegIndex = GenericIndex<SegWeight>;
-
-impl MakePrimitive for SegIndex {
-    fn primitive<'a>(&self, graph: &'a StableDiGraph<Weight, Label, usize>) -> Primitive<'a> {
-        Primitive::Seg(GenericPrimitive::new(*self, graph))
-    }
-}
-
-pub type BendIndex = GenericIndex<BendWeight>;
-
-impl MakePrimitive for BendIndex {
-    fn primitive<'a>(&self, graph: &'a StableDiGraph<Weight, Label, usize>) -> Primitive<'a> {
-        Primitive::Bend(GenericPrimitive::new(*self, graph))
     }
 }

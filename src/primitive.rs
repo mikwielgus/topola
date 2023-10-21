@@ -22,15 +22,7 @@ pub trait GetConnectable: GetNet + GetGraph {
         let this = self.net();
         let other = index.primitive(self.graph()).net();
 
-        if this == other {
-            true
-        } else if this == -1 || other == -1 {
-            true
-        } else if this == -2 || other == -2 {
-            false
-        } else {
-            this == other
-        }
+        (this == other) || this == -1 || other == -1
     }
 }
 
