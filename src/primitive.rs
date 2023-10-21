@@ -5,11 +5,34 @@ use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, Ends, GenericIndex, GetNodeIndex, Index, Interior,
-    Label, Retag, SegWeight, Weight,
+    BendIndex, BendWeight, DotIndex, DotWeight, Ends, GenericIndex, GetNet, GetNodeIndex, Index,
+    Interior, Label, MakePrimitive, Retag, SegWeight, Weight,
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
+
+#[enum_dispatch]
+pub trait GetGraph {
+    fn graph(&self) -> &StableDiGraph<Weight, Label, usize>;
+}
+
+#[enum_dispatch]
+pub trait GetConnectable: GetNet + GetGraph {
+    fn connectable(&self, index: Index) -> bool {
+        let this = self.net();
+        let other = index.primitive(self.graph()).net();
+
+        if this == other {
+            true
+        } else if this == -1 || other == -1 {
+            true
+        } else if this == -2 || other == -2 {
+            false
+        } else {
+            this == other
+        }
+    }
+}
 
 #[enum_dispatch]
 pub trait TaggedPrevTaggedNext {
@@ -27,7 +50,7 @@ pub trait MakeShape {
     fn shape(&self) -> Shape;
 }
 
-#[enum_dispatch(MakeShape, TaggedPrevTaggedNext)]
+#[enum_dispatch(GetNet, GetGraph, GetConnectable, TaggedPrevTaggedNext, MakeShape)]
 pub enum Primitive<'a> {
     Dot(Dot<'a>),
     Seg(Seg<'a>),
@@ -146,7 +169,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
             .next()
     }
 
-    pub fn connectable<WW>(&self, index: GenericIndex<WW>) -> bool {
+    /*pub fn connectable<WW>(&self, index: GenericIndex<WW>) -> bool {
         let this = self.net(&self.index);
         let other = self.net(&index);
 
@@ -167,7 +190,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
             Weight::Seg(seg) => seg.net,
             Weight::Bend(bend) => bend.net,
         }
-    }
+    }*/
 
     pub fn tagged_index(&self) -> Index {
         self.graph
@@ -211,6 +234,26 @@ impl<'a, W> Ends<DotIndex, DotIndex> for GenericPrimitive<'a, W> {
             .map(|ni| DotIndex::new(ni))
             .collect::<Vec<_>>();
         (v[0], v[1])
+    }
+}
+
+impl<'a, W> GetGraph for GenericPrimitive<'a, W> {
+    fn graph(&self) -> &StableDiGraph<Weight, Label, usize> {
+        self.graph
+    }
+}
+
+impl<'a, W: GetNet> GetConnectable for GenericPrimitive<'a, W> where
+    GenericPrimitive<'a, W>: GetWeight<W>
+{
+}
+
+impl<'a, W: GetNet> GetNet for GenericPrimitive<'a, W>
+where
+    GenericPrimitive<'a, W>: GetWeight<W>,
+{
+    fn net(&self) -> i64 {
+        self.weight().net()
     }
 }
 

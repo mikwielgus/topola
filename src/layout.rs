@@ -10,9 +10,11 @@ use crate::band::Band;
 use crate::bow::Bow;
 use crate::graph::{
     BendIndex, BendWeight, DotIndex, DotWeight, GenericIndex, GetNodeIndex, Index, Interior, Label,
-    Retag, SegIndex, SegWeight, Weight,
+    MakePrimitive, Retag, SegIndex, SegWeight, Weight,
 };
-use crate::primitive::{GenericPrimitive, GetWeight, MakeShape, TaggedPrevTaggedNext};
+use crate::primitive::{
+    GenericPrimitive, GetConnectable, GetWeight, MakeShape, TaggedPrevTaggedNext,
+};
 use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
 
@@ -262,8 +264,7 @@ impl Layout {
     }
 
     pub fn shapes(&self) -> impl Iterator<Item = Shape> + '_ {
-        self.nodes()
-            .map(|ni| untag!(ni, self.primitive(ni).shape()))
+        self.nodes().map(|ni| ni.primitive(&self.graph).shape())
     }
 
     pub fn node_count(&self) -> usize {
@@ -324,16 +325,13 @@ impl Layout {
     }
 
     fn detect_collision_except(&self, index: Index, except: &[Index]) -> Option<Index> {
-        let shape = untag!(index, self.primitive(index).shape());
+        let shape = index.primitive(&self.graph).shape();
 
         self.rtree
             .locate_in_envelope_intersecting(&RTreeObject::envelope(&shape))
             .filter(|wrapper| {
                 let other_index = wrapper.data;
-                !untag!(
-                    other_index,
-                    untag!(index, self.primitive(index).connectable(other_index))
-                )
+                !index.primitive(&self.graph).connectable(other_index)
             })
             .filter(|wrapper| !except.contains(&wrapper.data))
             .filter(|wrapper| shape.intersects(wrapper.geom()))
@@ -344,14 +342,14 @@ impl Layout {
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     fn insert_into_rtree(&mut self, index: Index) {
-        let shape = untag!(index, self.primitive(index).shape());
+        let shape = index.primitive(&self.graph).shape();
         self.rtree.insert(RTreeWrapper::new(shape, index));
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     fn remove_from_rtree(&mut self, index: Index) {
-        let shape = untag!(index, self.primitive(index).shape());
+        let shape = index.primitive(&self.graph).shape();
         let removed_element = self.rtree.remove(&RTreeWrapper::new(shape, index));
         debug_assert!(removed_element.is_some());
     }
@@ -361,7 +359,7 @@ impl Layout {
     fn test_envelopes(&self) -> bool {
         !self.rtree.iter().any(|wrapper| {
             let index = wrapper.data;
-            let shape = untag!(index, GenericPrimitive::new(index, &self.graph).shape());
+            let shape = index.primitive(&self.graph).shape();
             let wrapper = RTreeWrapper::new(shape, index);
             !self
                 .rtree

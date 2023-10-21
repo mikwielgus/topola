@@ -21,7 +21,12 @@ pub trait Retag {
     fn retag(&self, index: NodeIndex<usize>) -> Index;
 }
 
-#[enum_dispatch(Retag)]
+#[enum_dispatch]
+pub trait GetNet {
+    fn net(&self) -> i64;
+}
+
+#[enum_dispatch(Retag, GetNet)]
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
 pub enum Weight {
     Dot(DotWeight),
@@ -44,6 +49,12 @@ impl Retag for DotWeight {
     }
 }
 
+impl GetNet for DotWeight {
+    fn net(&self) -> i64 {
+        self.net
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SegWeight {
     pub net: i64,
@@ -59,6 +70,12 @@ impl Retag for SegWeight {
     }
 }
 
+impl GetNet for SegWeight {
+    fn net(&self) -> i64 {
+        self.net
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct BendWeight {
     pub net: i64,
@@ -71,6 +88,12 @@ impl Retag for BendWeight {
             node_index: index,
             marker: PhantomData,
         })
+    }
+}
+
+impl GetNet for BendWeight {
+    fn net(&self) -> i64 {
+        self.net
     }
 }
 
@@ -118,16 +141,6 @@ impl<W> GetNodeIndex for GenericIndex<W> {
     fn node_index(&self) -> NodeIndex<usize> {
         self.node_index
     }
-}
-
-macro_rules! untag {
-    ($index:ident, $expr:expr) => {
-        match $index {
-            Index::Dot($index) => $expr,
-            Index::Seg($index) => $expr,
-            Index::Bend($index) => $expr,
-        }
-    };
 }
 
 pub type DotIndex = GenericIndex<DotWeight>;
