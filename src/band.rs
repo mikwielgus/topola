@@ -1,22 +1,22 @@
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::{
-    graph::{DotIndex, Ends, Index, Interior, Label, MakePrimitive, Weight},
+    graph::{DotIndex, Ends, FixedDotIndex, Index, Interior, Label, MakePrimitive, Weight},
     primitive::TaggedPrevTaggedNext,
 };
 
 pub struct Band {
-    from: DotIndex,
-    to: DotIndex,
+    from: FixedDotIndex,
+    to: FixedDotIndex,
     interior: Vec<Index>,
 }
 
 impl Band {
     pub fn from_dot_prev(
-        dot: DotIndex,
+        dot: FixedDotIndex,
         graph: &StableDiGraph<Weight, Label, usize>,
     ) -> Option<Self> {
-        let mut next_index = Index::Dot(dot);
+        let mut next_index: Index = dot.into();
         let mut interior = vec![];
 
         while let Some(index) = next_index.primitive(graph).tagged_prev() {
@@ -28,7 +28,7 @@ impl Band {
             None
         } else {
             Some(Self {
-                from: interior.pop().unwrap().into_dot().unwrap(),
+                from: interior.pop().unwrap().into_fixed_dot().unwrap(),
                 to: dot,
                 interior,
             })
@@ -36,10 +36,10 @@ impl Band {
     }
 
     pub fn from_dot_next(
-        dot: DotIndex,
+        dot: FixedDotIndex,
         graph: &StableDiGraph<Weight, Label, usize>,
     ) -> Option<Self> {
-        let mut prev_index = Index::Dot(dot);
+        let mut prev_index: Index = dot.into();
         let mut interior = vec![];
 
         while let Some(index) = prev_index.primitive(graph).tagged_next() {
@@ -52,7 +52,7 @@ impl Band {
         } else {
             Some(Self {
                 from: dot,
-                to: interior.pop().unwrap().into_dot().unwrap(),
+                to: interior.pop().unwrap().into_fixed_dot().unwrap(),
                 interior,
             })
         }
@@ -66,8 +66,8 @@ impl Interior<Index> for Band {
     }
 }
 
-impl Ends<DotIndex, DotIndex> for Band {
-    fn ends(&self) -> (DotIndex, DotIndex) {
+impl Ends<FixedDotIndex, FixedDotIndex> for Band {
+    fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
         (self.from, self.to)
     }
 }

@@ -9,8 +9,9 @@ use rstar::{RTree, RTreeObject};
 use crate::band::Band;
 use crate::bow::Bow;
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, GenericIndex, GetNodeIndex, Index, Interior, Label,
-    MakePrimitive, Retag, SegIndex, SegWeight, Weight,
+    BendIndex, DotIndex, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
+    FixedSegIndex, FixedSegWeight, GenericIndex, GetNodeIndex, Index, Interior, Label,
+    MakePrimitive, Retag, SegIndex, Weight,
 };
 use crate::primitive::{
     GenericPrimitive, GetConnectable, GetWeight, MakeShape, TaggedPrevTaggedNext,
@@ -37,14 +38,22 @@ impl Layout {
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() - path.interior().len()))]
     pub fn remove_interior(&mut self, path: &impl Interior<Index>) {
-        for index in path.interior().into_iter().filter(|index| !index.is_dot()) {
+        for index in path
+            .interior()
+            .into_iter()
+            .filter(|index| !index.is_fixed_dot())
+        {
             self.remove(index);
         }
 
         // We must remove the dots only after the segs and bends because we need dots to calculate
         // the shapes, which we need to remove the segs and bends from the R-tree.
 
-        for index in path.interior().into_iter().filter(|index| index.is_dot()) {
+        for index in path
+            .interior()
+            .into_iter()
+            .filter(|index| index.is_fixed_dot())
+        {
             self.remove(index);
         }
     }
@@ -59,11 +68,11 @@ impl Layout {
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() + 1))]
-    pub fn add_dot(&mut self, weight: DotWeight) -> Result<DotIndex, ()> {
-        let dot = DotIndex::new(self.graph.add_node(Weight::Dot(weight)));
+    pub fn add_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, ()> {
+        let dot = FixedDotIndex::new(self.graph.add_node(Weight::FixedDot(weight)));
 
-        self.insert_into_rtree(Index::Dot(dot));
-        self.fail_and_remove_if_collides_except(Index::Dot(dot), &[])?;
+        self.insert_into_rtree(dot.into());
+        self.fail_and_remove_if_collides_except(dot.into(), &[])?;
 
         Ok(dot)
     }
@@ -72,30 +81,30 @@ impl Layout {
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count() + 2))]
     pub fn add_seg(
         &mut self,
-        from: DotIndex,
-        to: DotIndex,
-        weight: SegWeight,
-    ) -> Result<SegIndex, ()> {
-        let seg = SegIndex::new(self.graph.add_node(Weight::Seg(weight)));
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+        weight: FixedSegWeight,
+    ) -> Result<FixedSegIndex, ()> {
+        let seg = FixedSegIndex::new(self.graph.add_node(Weight::FixedSeg(weight)));
 
         self.graph
             .add_edge(from.node_index(), seg.node_index(), Label::End);
         self.graph
             .add_edge(seg.node_index(), to.node_index(), Label::End);
 
-        self.insert_into_rtree(Index::Seg(seg));
-        self.fail_and_remove_if_collides_except(Index::Seg(seg), &[])?;
+        self.insert_into_rtree(seg.into());
+        self.fail_and_remove_if_collides_except(seg.into(), &[])?;
 
         self.graph
             .node_weight_mut(from.node_index())
             .unwrap()
-            .as_dot_mut()
+            .as_fixed_dot_mut()
             .unwrap()
             .net = weight.net;
         self.graph
             .node_weight_mut(to.node_index())
             .unwrap()
-            .as_dot_mut()
+            .as_fixed_dot_mut()
             .unwrap()
             .net = weight.net;
 
@@ -106,15 +115,16 @@ impl Layout {
     #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
     pub fn add_bend(
         &mut self,
-        from: DotIndex,
-        to: DotIndex,
+        from: FixedDotIndex,
+        to: FixedDotIndex,
         around: Index,
-        weight: BendWeight,
-    ) -> Result<BendIndex, ()> {
+        weight: FixedBendWeight,
+    ) -> Result<FixedBendIndex, ()> {
         match around {
-            Index::Dot(core) => self.add_core_bend(from, to, core, weight),
-            Index::Bend(around) => self.add_outer_bend(from, to, around, weight),
-            Index::Seg(..) => unreachable!(),
+            Index::FixedDot(core) => self.add_core_bend(from, to, core, weight),
+            Index::FixedBend(around) => self.add_outer_bend(from, to, around, weight),
+            Index::FixedSeg(..) => unreachable!(),
+            _ => unreachable!(),
         }
     }
 
@@ -124,12 +134,12 @@ impl Layout {
     #[debug_ensures(ret.is_err() -> self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn add_core_bend(
         &mut self,
-        from: DotIndex,
-        to: DotIndex,
-        core: DotIndex,
-        weight: BendWeight,
-    ) -> Result<BendIndex, ()> {
-        let bend = BendIndex::new(self.graph.add_node(Weight::Bend(weight)));
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+        core: FixedDotIndex,
+        weight: FixedBendWeight,
+    ) -> Result<FixedBendIndex, ()> {
+        let bend = FixedBendIndex::new(self.graph.add_node(Weight::FixedBend(weight)));
 
         self.graph
             .add_edge(from.node_index(), bend.node_index(), Label::End);
@@ -138,8 +148,8 @@ impl Layout {
         self.graph
             .add_edge(bend.node_index(), core.node_index(), Label::Core);
 
-        self.insert_into_rtree(Index::Bend(bend));
-        self.fail_and_remove_if_collides_except(Index::Bend(bend), &[Index::Dot(core)])?;
+        self.insert_into_rtree(bend.into());
+        self.fail_and_remove_if_collides_except(bend.into(), &[core.into()])?;
         Ok(bend)
     }
 
@@ -149,11 +159,11 @@ impl Layout {
     #[debug_ensures(ret.is_err() -> self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn add_outer_bend(
         &mut self,
-        from: DotIndex,
-        to: DotIndex,
-        inner: BendIndex,
-        weight: BendWeight,
-    ) -> Result<BendIndex, ()> {
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+        inner: FixedBendIndex,
+        weight: FixedBendWeight,
+    ) -> Result<FixedBendIndex, ()> {
         let core = *self
             .graph
             .neighbors(inner.node_index())
@@ -163,12 +173,12 @@ impl Layout {
                     .unwrap()
                     .is_core()
             })
-            .map(|ni| DotIndex::new(ni))
-            .collect::<Vec<DotIndex>>()
+            .map(|ni| FixedDotIndex::new(ni))
+            .collect::<Vec<FixedDotIndex>>()
             .first()
             .unwrap();
 
-        let bend = BendIndex::new(self.graph.add_node(Weight::Bend(weight)));
+        let bend = FixedBendIndex::new(self.graph.add_node(Weight::FixedBend(weight)));
 
         self.graph
             .add_edge(from.node_index(), bend.node_index(), Label::End);
@@ -179,16 +189,16 @@ impl Layout {
         self.graph
             .add_edge(inner.node_index(), bend.node_index(), Label::Outer);
 
-        self.insert_into_rtree(Index::Bend(bend));
-        self.fail_and_remove_if_collides_except(Index::Bend(bend), &[Index::Dot(core)])?;
+        self.insert_into_rtree(bend.into());
+        self.fail_and_remove_if_collides_except(bend.into(), &[core.into()])?;
         Ok(bend)
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count())
         || self.graph.edge_count() == old(self.graph.edge_count() + 1))]
-    pub fn reattach_bend(&mut self, bend: BendIndex, inner: BendIndex) {
-        self.remove_from_rtree(Index::Bend(bend));
+    pub fn reattach_bend(&mut self, bend: FixedBendIndex, inner: FixedBendIndex) {
+        self.remove_from_rtree(bend.into());
 
         if let Some(old_inner_edge) = self
             .graph
@@ -201,46 +211,46 @@ impl Layout {
 
         self.graph
             .add_edge(inner.node_index(), bend.node_index(), Label::Outer);
-        self.insert_into_rtree(Index::Bend(bend));
+        self.insert_into_rtree(bend.into());
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
-    pub fn flip_bend(&mut self, bend: BendIndex) {
-        self.remove_from_rtree(Index::Bend(bend));
+    pub fn flip_bend(&mut self, bend: FixedBendIndex) {
+        self.remove_from_rtree(bend.into());
         let cw = self
             .graph
             .node_weight(bend.node_index())
             .unwrap()
-            .into_bend()
+            .into_fixed_bend()
             .unwrap()
             .cw;
         self.graph
             .node_weight_mut(bend.node_index())
             .unwrap()
-            .as_bend_mut()
+            .as_fixed_bend_mut()
             .unwrap()
             .cw = !cw;
-        self.insert_into_rtree(Index::Bend(bend));
+        self.insert_into_rtree(bend.into());
     }
 
-    pub fn bow(&self, bend: BendIndex) -> Bow {
+    pub fn bow(&self, bend: FixedBendIndex) -> Bow {
         Bow::from_bend(bend, &self.graph)
     }
 
-    pub fn prev_segbend(&self, dot: DotIndex) -> Option<Segbend> {
+    pub fn prev_segbend(&self, dot: FixedDotIndex) -> Option<Segbend> {
         Segbend::from_dot_prev(dot, &self.graph)
     }
 
-    pub fn next_segbend(&self, dot: DotIndex) -> Option<Segbend> {
+    pub fn next_segbend(&self, dot: FixedDotIndex) -> Option<Segbend> {
         Segbend::from_dot_next(dot, &self.graph)
     }
 
-    pub fn prev_band(&self, to: DotIndex) -> Option<Band> {
+    pub fn prev_band(&self, to: FixedDotIndex) -> Option<Band> {
         Band::from_dot_prev(to, &self.graph)
     }
 
-    pub fn next_band(&self, from: DotIndex) -> Option<Band> {
+    pub fn next_band(&self, from: FixedDotIndex) -> Option<Band> {
         Band::from_dot_next(from, &self.graph)
     }
 
@@ -259,8 +269,9 @@ impl Layout {
         Ok(())
     }
 
-    pub fn dots(&self) -> impl Iterator<Item = DotIndex> + '_ {
-        self.nodes().filter_map(|ni| ni.as_dot().map(|di| *di))
+    pub fn dots(&self) -> impl Iterator<Item = FixedDotIndex> + '_ {
+        self.nodes()
+            .filter_map(|ni| ni.as_fixed_dot().map(|di| *di))
     }
 
     pub fn shapes(&self) -> impl Iterator<Item = Shape> + '_ {
@@ -280,26 +291,26 @@ impl Layout {
 impl Layout {
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
-    pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), ()> {
+    pub fn move_dot(&mut self, dot: FixedDotIndex, to: Point) -> Result<(), ()> {
         self.primitive(dot)
             .tagged_prev()
             .map(|prev| self.remove_from_rtree(prev));
         self.primitive(dot)
             .tagged_next()
             .map(|next| self.remove_from_rtree(next));
-        self.remove_from_rtree(Index::Dot(dot));
+        self.remove_from_rtree(dot.into());
 
         let mut dot_weight = self.primitive(dot).weight();
         let old_weight = dot_weight;
 
         dot_weight.circle.pos = to;
-        *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::Dot(dot_weight);
+        *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::FixedDot(dot_weight);
 
-        if let Some(..) = self.detect_collision_except(Index::Dot(dot), &[]) {
+        if let Some(..) = self.detect_collision_except(dot.into(), &[]) {
             // Restore original state.
-            *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::Dot(old_weight);
+            *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::FixedDot(old_weight);
 
-            self.insert_into_rtree(Index::Dot(dot));
+            self.insert_into_rtree(dot.into());
             self.primitive(dot)
                 .tagged_prev()
                 .map(|prev| self.insert_into_rtree(prev));
@@ -309,7 +320,7 @@ impl Layout {
             return Err(());
         }
 
-        self.insert_into_rtree(Index::Dot(dot));
+        self.insert_into_rtree(dot.into());
         self.primitive(dot)
             .tagged_prev()
             .map(|prev| self.insert_into_rtree(prev));

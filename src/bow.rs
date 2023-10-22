@@ -1,38 +1,41 @@
 use petgraph::stable_graph::StableDiGraph;
 
-use crate::graph::{BendIndex, DotIndex, Ends, Index, Interior, Label, SegIndex, Weight};
-use crate::primitive::{Bend, Dot, Seg, TaggedPrevTaggedNext};
+use crate::graph::{
+    BendIndex, DotIndex, Ends, FixedBendIndex, FixedDotIndex, FixedSegIndex, Index, Interior,
+    Label, SegIndex, Weight,
+};
+use crate::primitive::{FixedBend, FixedDot, FixedSeg, TaggedPrevTaggedNext};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Bow {
-    seg1_dot1: DotIndex,
-    seg1: SegIndex,
-    seg1_dot2: DotIndex,
-    bend: BendIndex,
-    seg2_dot1: DotIndex,
-    seg2: SegIndex,
-    seg2_dot2: DotIndex,
+    seg1_dot1: FixedDotIndex,
+    seg1: FixedSegIndex,
+    seg1_dot2: FixedDotIndex,
+    bend: FixedBendIndex,
+    seg2_dot1: FixedDotIndex,
+    seg2: FixedSegIndex,
+    seg2_dot2: FixedDotIndex,
 }
 
 impl Bow {
-    pub fn from_bend(index: BendIndex, graph: &StableDiGraph<Weight, Label, usize>) -> Self {
+    pub fn from_bend(index: FixedBendIndex, graph: &StableDiGraph<Weight, Label, usize>) -> Self {
         let bend = index;
 
-        let seg1_dot2 = Bend::new(bend, graph).prev().unwrap();
-        let seg1 = Dot::new(seg1_dot2, graph)
+        let seg1_dot2 = FixedBend::new(bend, graph).prev().unwrap();
+        let seg1 = FixedDot::new(seg1_dot2, graph)
             .tagged_prev()
             .unwrap()
-            .into_seg()
+            .into_fixed_seg()
             .unwrap();
-        let seg1_dot1 = Seg::new(seg1, graph).prev().unwrap();
+        let seg1_dot1 = FixedSeg::new(seg1, graph).prev().unwrap();
 
-        let seg2_dot1 = Bend::new(bend, graph).next().unwrap();
-        let seg2 = Dot::new(seg2_dot1, graph)
+        let seg2_dot1 = FixedBend::new(bend, graph).next().unwrap();
+        let seg2 = FixedDot::new(seg2_dot1, graph)
             .tagged_next()
             .unwrap()
-            .into_seg()
+            .into_fixed_seg()
             .unwrap();
-        let seg2_dot2 = Seg::new(seg2, graph).next().unwrap();
+        let seg2_dot2 = FixedSeg::new(seg2, graph).next().unwrap();
 
         Self {
             seg1_dot1,
@@ -49,17 +52,17 @@ impl Bow {
 impl Interior<Index> for Bow {
     fn interior(&self) -> Vec<Index> {
         vec![
-            Index::Seg(self.seg1),
-            Index::Dot(self.seg1_dot2),
-            Index::Bend(self.bend),
-            Index::Dot(self.seg2_dot1),
-            Index::Seg(self.seg2),
+            self.seg1.into(),
+            self.seg1_dot2.into(),
+            self.bend.into(),
+            self.seg2_dot1.into(),
+            self.seg2.into(),
         ]
     }
 }
 
-impl Ends<DotIndex, DotIndex> for Bow {
-    fn ends(&self) -> (DotIndex, DotIndex) {
+impl Ends<FixedDotIndex, FixedDotIndex> for Bow {
+    fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
         (self.seg1_dot1, self.seg2_dot2)
     }
 }

@@ -3,7 +3,7 @@ use contracts::debug_ensures;
 use crate::{
     bow::Bow,
     draw::{BareHead, Draw, Head, HeadTrait, SegbendHead},
-    graph::{BendIndex, DotIndex, Ends},
+    graph::{Ends, FixedBendIndex, FixedDotIndex},
     layout::Layout,
     mesh::{Mesh, VertexIndex},
     primitive::{GetWeight, MakeShape},
@@ -93,7 +93,7 @@ impl<'a> Tracer<'a> {
         Ok(())
     }
 
-    fn wrap(&mut self, head: Head, around: DotIndex, width: f64) -> Result<SegbendHead, ()> {
+    fn wrap(&mut self, head: Head, around: FixedDotIndex, width: f64) -> Result<SegbendHead, ()> {
         let _around_pos = self.layout.primitive(around).weight().circle.pos;
         let _around_primitive = self.layout.primitive(around);
 
@@ -122,7 +122,12 @@ impl<'a> Tracer<'a> {
         self.draw().segbend_around_dot(head, around, width)
     }
 
-    fn is_under(&mut self, head: Head, around: DotIndex, layer: BendIndex) -> Option<bool> {
+    fn is_under(
+        &mut self,
+        head: Head,
+        around: FixedDotIndex,
+        layer: FixedBendIndex,
+    ) -> Option<bool> {
         let around_pos = self.layout.primitive(around).weight().circle.pos;
 
         if Some(layer) != self.layout.primitive(head.dot()).prev_bend() {
@@ -142,7 +147,7 @@ impl<'a> Tracer<'a> {
     fn tuck_around_dot(
         &mut self,
         head: Head,
-        around: DotIndex,
+        around: FixedDotIndex,
         width: f64,
     ) -> Result<SegbendHead, ()> {
         let outer = self.layout.primitive(around).outer().unwrap();
@@ -158,7 +163,7 @@ impl<'a> Tracer<'a> {
     fn tuck_around_bend(
         &mut self,
         head: Head,
-        around: BendIndex,
+        around: FixedBendIndex,
         width: f64,
     ) -> Result<SegbendHead, ()> {
         let outer = self.layout.primitive(around).outer().unwrap();
@@ -171,7 +176,7 @@ impl<'a> Tracer<'a> {
         Ok(head)
     }
 
-    fn redraw_outward(&mut self, bend: BendIndex) -> Result<(), ()> {
+    fn redraw_outward(&mut self, bend: FixedBendIndex) -> Result<(), ()> {
         let mut bows: Vec<Bow> = vec![];
 
         let mut cur_bend = bend;
@@ -210,7 +215,7 @@ impl<'a> Tracer<'a> {
         Ok(())
     }
 
-    fn relax_band(&mut self, bend: BendIndex) {
+    fn relax_band(&mut self, bend: FixedBendIndex) {
         let mut prev_bend = bend;
         while let Some(cur_bend) = self.layout.primitive(prev_bend).prev_bend() {
             if self.layout.primitive(cur_bend).cross_product() >= 0. {
@@ -230,7 +235,7 @@ impl<'a> Tracer<'a> {
         }
     }
 
-    fn release_bow(&mut self, bend: BendIndex) {
+    fn release_bow(&mut self, bend: FixedBendIndex) {
         let bow = self.layout.bow(bend);
         let ends = bow.ends();
 

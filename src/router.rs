@@ -3,7 +3,7 @@ use petgraph::visit::EdgeRef;
 use spade::InsertionError;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
-use crate::graph::{DotIndex, DotWeight, Ends};
+use crate::graph::{DotIndex, Ends, FixedDotIndex, FixedDotWeight};
 use crate::layout::Layout;
 
 use crate::math::Circle;
@@ -84,8 +84,8 @@ impl Router {
 
     pub fn enroute(
         &mut self,
-        from: DotIndex,
-        to: DotIndex,
+        from: FixedDotIndex,
+        to: FixedDotIndex,
         observer: &mut impl RouterObserver,
     ) -> Result<Mesh, InsertionError> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
@@ -95,12 +95,17 @@ impl Router {
         mesh.triangulate(&self.layout)?;
 
         let mut tracer = self.tracer(&mesh);
-        let trace = tracer.start(mesh.vertex(from));
+        let trace = tracer.start(mesh.vertex(DotIndex::Fixed(from)));
 
         let (_cost, _path) = astar(
             &mesh,
-            mesh.vertex(from),
-            &mut RouterAstarStrategy::new(tracer, trace, mesh.vertex(to), observer),
+            mesh.vertex(DotIndex::Fixed(from)),
+            &mut RouterAstarStrategy::new(
+                tracer,
+                trace,
+                mesh.vertex(DotIndex::Fixed(to)),
+                observer,
+            ),
         )
         .unwrap(); // TODO.
 
@@ -109,7 +114,7 @@ impl Router {
 
     pub fn reroute(
         &mut self,
-        from: DotIndex,
+        from: FixedDotIndex,
         to: Point,
         observer: &mut impl RouterObserver,
     ) -> Result<Mesh, InsertionError> {
@@ -122,7 +127,7 @@ impl Router {
         } else {
             let from_weight = self.layout.primitive(from).weight();
             self.layout
-                .add_dot(DotWeight {
+                .add_dot(FixedDotWeight {
                     net: from_weight.net,
                     circle: Circle { pos: to, r: 2.0 },
                 })
@@ -135,7 +140,7 @@ impl Router {
     /*pub fn squeeze_around_dot(
         &mut self,
         head: Head,
-        around: DotIndex,
+        around: FixedDotIndex,
         cw: bool,
         width: f64,
     ) -> Result<Head, ()> {
@@ -151,7 +156,7 @@ impl Router {
     pub fn squeeze_around_bend(
         &mut self,
         head: Head,
-        around: BendIndex,
+        around: FixedBendIndex,
         cw: bool,
         width: f64,
     ) -> Result<Head, ()> {
@@ -164,7 +169,7 @@ impl Router {
         Ok(head)
     }
 
-    fn reroute_outward(&mut self, bend: BendIndex) -> Result<(), ()> {
+    fn reroute_outward(&mut self, bend: FixedBendIndex) -> Result<(), ()> {
         let mut bows: Vec<Bow> = vec![];
         let cw = self.layout.primitive(bend).weight().cw;
 
@@ -204,7 +209,7 @@ impl Router {
         Ok(())
     }
 
-    fn relax_band(&mut self, bend: BendIndex) {
+    fn relax_band(&mut self, bend: FixedBendIndex) {
         let mut prev_bend = bend;
         while let Some(cur_bend) = self.layout.primitive(prev_bend).find_prev_akin() {
             if self.layout.primitive(cur_bend).cross_product() >= 0. {
@@ -224,7 +229,7 @@ impl Router {
         }
     }
 
-    fn release_bow(&mut self, bend: BendIndex) {
+    fn release_bow(&mut self, bend: FixedBendIndex) {
         let bow = self.layout.bow(bend);
         let ends = bow.ends();
 
@@ -234,7 +239,7 @@ impl Router {
         let _ = self.draw().finish(head, ends.1, 5.0);
     }
 
-    pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), ()> {
+    pub fn move_dot(&mut self, dot: FixedDotIndex, to: Point) -> Result<(), ()> {
         self.layout.move_dot(dot, to)?;
 
         if let Some(outer) = self.layout.primitive(dot).outer() {

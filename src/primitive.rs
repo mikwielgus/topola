@@ -5,8 +5,10 @@ use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
-    BendIndex, BendWeight, DotIndex, DotWeight, Ends, GenericIndex, GetNet, GetNodeIndex, Index,
-    Interior, Label, MakePrimitive, Retag, SegWeight, Weight,
+    BendIndex, DotIndex, Ends, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
+    FixedSegWeight, FullyLooseSegWeight, GenericIndex, GetNet, GetNodeIndex, HalfLooseSegWeight,
+    Index, Interior, Label, LooseBendIndex, LooseBendWeight, LooseDotWeight, MakePrimitive, Retag,
+    Weight,
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
@@ -44,9 +46,13 @@ pub trait MakeShape {
 
 #[enum_dispatch(GetNet, GetGraph, GetConnectable, TaggedPrevTaggedNext, MakeShape)]
 pub enum Primitive<'a> {
-    Dot(Dot<'a>),
-    Seg(Seg<'a>),
-    Bend(Bend<'a>),
+    FixedDot(FixedDot<'a>),
+    LooseDot(LooseDot<'a>),
+    FixedSeg(FixedSeg<'a>),
+    HalfLooseSeg(HalfLooseSeg<'a>),
+    FullyLooseSeg(FullyLooseSeg<'a>),
+    FixedBend(FixedBend<'a>),
+    LooseBend(LooseBend<'a>),
 }
 
 #[derive(Debug)]
@@ -66,7 +72,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
             .map(|index| self.graph.node_weight(index).unwrap().retag(index))
     }
 
-    pub fn prev_bend(&self) -> Option<BendIndex> {
+    pub fn prev_bend(&self) -> Option<FixedBendIndex> {
         let mut prev_index = self.index.node_index();
 
         while let Some(index) = self
@@ -85,8 +91,8 @@ impl<'a, W> GenericPrimitive<'a, W> {
         {
             let _weight = *self.graph.node_weight(index).unwrap();
 
-            if let Some(Weight::Bend(..)) = self.graph.node_weight(index) {
-                return Some(BendIndex::new(index));
+            if let Some(Weight::FixedBend(..)) = self.graph.node_weight(index) {
+                return Some(FixedBendIndex::new(index));
             }
 
             prev_index = index;
@@ -107,7 +113,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
             .next()
     }
 
-    pub fn next_bend(&self) -> Option<BendIndex> {
+    pub fn next_bend(&self) -> Option<FixedBendIndex> {
         let mut prev_index = self.index.node_index();
 
         while let Some(index) = self
@@ -126,8 +132,8 @@ impl<'a, W> GenericPrimitive<'a, W> {
         {
             let _weight = *self.graph.node_weight(index).unwrap();
 
-            if let Some(Weight::Bend(..)) = self.graph.node_weight(index) {
-                return Some(BendIndex::new(index));
+            if let Some(Weight::FixedBend(..)) = self.graph.node_weight(index) {
+                return Some(FixedBendIndex::new(index));
             }
 
             prev_index = index;
@@ -148,7 +154,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
             .next()
     }
 
-    pub fn core(&self) -> Option<DotIndex> {
+    pub fn core(&self) -> Option<FixedDotIndex> {
         self.graph
             .neighbors(self.index.node_index())
             .filter(|ni| {
@@ -157,32 +163,9 @@ impl<'a, W> GenericPrimitive<'a, W> {
                     .unwrap()
                     .is_core()
             })
-            .map(|ni| DotIndex::new(ni))
+            .map(|ni| FixedDotIndex::new(ni))
             .next()
     }
-
-    /*pub fn connectable<WW>(&self, index: GenericIndex<WW>) -> bool {
-        let this = self.net(&self.index);
-        let other = self.net(&index);
-
-        if this == other {
-            true
-        } else if this == -1 || other == -1 {
-            true
-        } else if this == -2 || other == -2 {
-            false
-        } else {
-            this == other
-        }
-    }
-
-    fn net<WW>(&self, index: &GenericIndex<WW>) -> i64 {
-        match self.graph.node_weight(index.node_index()).unwrap() {
-            Weight::Dot(dot) => dot.net,
-            Weight::Seg(seg) => seg.net,
-            Weight::Bend(bend) => bend.net,
-        }
-    }*/
 
     pub fn tagged_index(&self) -> Index {
         self.graph
@@ -206,8 +189,8 @@ impl<'a, W> Interior<Index> for GenericPrimitive<'a, W> {
     }
 }
 
-impl<'a, W> Ends<DotIndex, DotIndex> for GenericPrimitive<'a, W> {
-    fn ends(&self) -> (DotIndex, DotIndex) {
+impl<'a, W> Ends<FixedDotIndex, FixedDotIndex> for GenericPrimitive<'a, W> {
+    fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
         let v = self
             .graph
             .neighbors_undirected(self.index.node_index())
@@ -222,8 +205,8 @@ impl<'a, W> Ends<DotIndex, DotIndex> for GenericPrimitive<'a, W> {
                     .unwrap()
                     .is_end()
             })
-            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_dot())
-            .map(|ni| DotIndex::new(ni))
+            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_fixed_dot())
+            .map(|ni| FixedDotIndex::new(ni))
             .collect::<Vec<_>>();
         (v[0], v[1])
     }
@@ -261,10 +244,10 @@ impl<'a, W> TaggedPrevTaggedNext for GenericPrimitive<'a, W> {
     }
 }
 
-pub type Dot<'a> = GenericPrimitive<'a, DotWeight>;
+pub type FixedDot<'a> = GenericPrimitive<'a, FixedDotWeight>;
 
-impl<'a> Dot<'a> {
-    pub fn bend(&self) -> Option<BendIndex> {
+impl<'a> FixedDot<'a> {
+    pub fn bend(&self) -> Option<FixedBendIndex> {
         self.graph
             .neighbors_undirected(self.index.node_index())
             .filter(|ni| {
@@ -278,12 +261,12 @@ impl<'a> Dot<'a> {
                     .unwrap()
                     .is_end()
             })
-            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_bend())
-            .map(|ni| BendIndex::new(ni))
+            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_fixed_bend())
+            .map(|ni| FixedBendIndex::new(ni))
             .next()
     }
 
-    pub fn outer(&self) -> Option<BendIndex> {
+    pub fn outer(&self) -> Option<FixedBendIndex> {
         self.graph
             .neighbors_directed(self.index.node_index(), Incoming)
             .filter(|ni| {
@@ -292,19 +275,19 @@ impl<'a> Dot<'a> {
                     .unwrap()
                     .is_core()
             })
-            .map(|ni| BendIndex::new(ni))
+            .map(|ni| FixedBendIndex::new(ni))
             .filter(|bend| self.primitive(*bend).inner().is_none())
             .next()
     }
 }
 
-impl<'a> GetWeight<DotWeight> for Dot<'a> {
-    fn weight(&self) -> DotWeight {
-        self.tagged_weight().into_dot().unwrap()
+impl<'a> GetWeight<FixedDotWeight> for FixedDot<'a> {
+    fn weight(&self) -> FixedDotWeight {
+        self.tagged_weight().into_fixed_dot().unwrap()
     }
 }
 
-impl<'a> MakeShape for Dot<'a> {
+impl<'a> MakeShape for FixedDot<'a> {
     fn shape(&self) -> Shape {
         Shape::Dot(DotShape {
             c: self.weight().circle,
@@ -312,25 +295,41 @@ impl<'a> MakeShape for Dot<'a> {
     }
 }
 
-pub type Seg<'a> = GenericPrimitive<'a, SegWeight>;
+pub type LooseDot<'a> = GenericPrimitive<'a, LooseDotWeight>;
 
-impl<'a> Seg<'a> {
-    pub fn next(&self) -> Option<DotIndex> {
-        self.next_node().map(|ni| DotIndex::new(ni))
-    }
-
-    pub fn prev(&self) -> Option<DotIndex> {
-        self.prev_node().map(|ni| DotIndex::new(ni))
+impl<'a> GetWeight<LooseDotWeight> for LooseDot<'a> {
+    fn weight(&self) -> LooseDotWeight {
+        self.tagged_weight().into_loose_dot().unwrap()
     }
 }
 
-impl<'a> GetWeight<SegWeight> for Seg<'a> {
-    fn weight(&self) -> SegWeight {
-        self.tagged_weight().into_seg().unwrap()
+impl<'a> MakeShape for LooseDot<'a> {
+    fn shape(&self) -> Shape {
+        Shape::Dot(DotShape {
+            c: self.weight().circle,
+        })
     }
 }
 
-impl<'a> MakeShape for Seg<'a> {
+pub type FixedSeg<'a> = GenericPrimitive<'a, FixedSegWeight>;
+
+impl<'a> FixedSeg<'a> {
+    pub fn next(&self) -> Option<FixedDotIndex> {
+        self.next_node().map(|ni| FixedDotIndex::new(ni))
+    }
+
+    pub fn prev(&self) -> Option<FixedDotIndex> {
+        self.prev_node().map(|ni| FixedDotIndex::new(ni))
+    }
+}
+
+impl<'a> GetWeight<FixedSegWeight> for FixedSeg<'a> {
+    fn weight(&self) -> FixedSegWeight {
+        self.tagged_weight().into_fixed_seg().unwrap()
+    }
+}
+
+impl<'a> MakeShape for FixedSeg<'a> {
     fn shape(&self) -> Shape {
         let ends = self.ends();
         Shape::Seg(SegShape {
@@ -341,18 +340,56 @@ impl<'a> MakeShape for Seg<'a> {
     }
 }
 
-pub type Bend<'a> = GenericPrimitive<'a, BendWeight>;
+pub type HalfLooseSeg<'a> = GenericPrimitive<'a, HalfLooseSegWeight>;
 
-impl<'a> Bend<'a> {
+impl<'a> GetWeight<HalfLooseSegWeight> for HalfLooseSeg<'a> {
+    fn weight(&self) -> HalfLooseSegWeight {
+        self.tagged_weight().into_half_loose_seg().unwrap()
+    }
+}
+
+impl<'a> MakeShape for HalfLooseSeg<'a> {
+    fn shape(&self) -> Shape {
+        let ends = self.ends();
+        Shape::Seg(SegShape {
+            from: self.primitive(ends.0).weight().circle.pos,
+            to: self.primitive(ends.1).weight().circle.pos,
+            width: self.weight().width,
+        })
+    }
+}
+
+pub type FullyLooseSeg<'a> = GenericPrimitive<'a, FullyLooseSegWeight>;
+
+impl<'a> GetWeight<FullyLooseSegWeight> for FullyLooseSeg<'a> {
+    fn weight(&self) -> FullyLooseSegWeight {
+        self.tagged_weight().into_fully_loose_seg().unwrap()
+    }
+}
+
+impl<'a> MakeShape for FullyLooseSeg<'a> {
+    fn shape(&self) -> Shape {
+        let ends = self.ends();
+        Shape::Seg(SegShape {
+            from: self.primitive(ends.0).weight().circle.pos,
+            to: self.primitive(ends.1).weight().circle.pos,
+            width: self.weight().width,
+        })
+    }
+}
+
+pub type FixedBend<'a> = GenericPrimitive<'a, FixedBendWeight>;
+
+impl<'a> FixedBend<'a> {
     pub fn around(&self) -> Index {
         if let Some(inner) = self.inner() {
-            Index::Bend(inner)
+            inner.into()
         } else {
-            Index::Dot(self.core().unwrap())
+            self.core().unwrap().into()
         }
     }
 
-    pub fn inner(&self) -> Option<BendIndex> {
+    pub fn inner(&self) -> Option<FixedBendIndex> {
         self.graph
             .neighbors_directed(self.index.node_index(), Incoming)
             .filter(|ni| {
@@ -361,11 +398,11 @@ impl<'a> Bend<'a> {
                     .unwrap()
                     .is_outer()
             })
-            .map(|ni| BendIndex::new(ni))
+            .map(|ni| FixedBendIndex::new(ni))
             .next()
     }
 
-    pub fn outer(&self) -> Option<BendIndex> {
+    pub fn outer(&self) -> Option<FixedBendIndex> {
         self.graph
             .neighbors_directed(self.index.node_index(), Outgoing)
             .filter(|ni| {
@@ -374,21 +411,21 @@ impl<'a> Bend<'a> {
                     .unwrap()
                     .is_outer()
             })
-            .map(|ni| BendIndex::new(ni))
+            .map(|ni| FixedBendIndex::new(ni))
             .next()
     }
 
-    pub fn next(&self) -> Option<DotIndex> {
-        self.next_node().map(|ni| DotIndex::new(ni))
+    pub fn next(&self) -> Option<FixedDotIndex> {
+        self.next_node().map(|ni| FixedDotIndex::new(ni))
     }
 
-    pub fn prev(&self) -> Option<DotIndex> {
-        self.prev_node().map(|ni| DotIndex::new(ni))
+    pub fn prev(&self) -> Option<FixedDotIndex> {
+        self.prev_node().map(|ni| FixedDotIndex::new(ni))
     }
 
     fn inner_radius(&self) -> f64 {
         let mut r = 0.0;
-        let mut layer = BendIndex::new(self.index.node_index());
+        let mut layer = FixedBendIndex::new(self.index.node_index());
 
         while let Some(inner) = self.primitive(layer).inner() {
             r += self.primitive(inner).shape().width();
@@ -397,7 +434,7 @@ impl<'a> Bend<'a> {
 
         let core_circle = self
             .primitive(
-                self.primitive(BendIndex::new(self.index.node_index()))
+                self.primitive(FixedBendIndex::new(self.index.node_index()))
                     .core()
                     .unwrap(),
             )
@@ -416,13 +453,78 @@ impl<'a> Bend<'a> {
     }
 }
 
-impl<'a> GetWeight<BendWeight> for Bend<'a> {
-    fn weight(&self) -> BendWeight {
-        self.tagged_weight().into_bend().unwrap()
+impl<'a> GetWeight<FixedBendWeight> for FixedBend<'a> {
+    fn weight(&self) -> FixedBendWeight {
+        self.tagged_weight().into_fixed_bend().unwrap()
     }
 }
 
-impl<'a> MakeShape for Bend<'a> {
+impl<'a> MakeShape for FixedBend<'a> {
+    fn shape(&self) -> Shape {
+        let ends = self.ends();
+
+        let mut bend_shape = BendShape {
+            from: self.primitive(ends.0).weight().circle.pos,
+            to: self.primitive(ends.1).weight().circle.pos,
+            c: Circle {
+                pos: self.primitive(self.core().unwrap()).weight().circle.pos,
+                r: self.inner_radius(),
+            },
+            width: self.primitive(ends.0).weight().circle.r * 2.0,
+        };
+
+        if self.weight().cw {
+            swap(&mut bend_shape.from, &mut bend_shape.to);
+        }
+        Shape::Bend(bend_shape)
+    }
+}
+
+pub type LooseBend<'a> = GenericPrimitive<'a, LooseBendWeight>;
+
+impl<'a> LooseBend<'a> {
+    pub fn inner(&self) -> Option<LooseBendIndex> {
+        self.graph
+            .neighbors_directed(self.index.node_index(), Incoming)
+            .filter(|ni| {
+                self.graph
+                    .edge_weight(self.graph.find_edge(*ni, self.index.node_index()).unwrap())
+                    .unwrap()
+                    .is_outer()
+            })
+            .map(|ni| LooseBendIndex::new(ni))
+            .next()
+    }
+
+    fn inner_radius(&self) -> f64 {
+        let mut r = 0.0;
+        let mut layer = LooseBendIndex::new(self.index.node_index());
+
+        while let Some(inner) = self.primitive(layer).inner() {
+            r += self.primitive(inner).shape().width();
+            layer = inner;
+        }
+
+        let core_circle = self
+            .primitive(
+                self.primitive(LooseBendIndex::new(self.index.node_index()))
+                    .core()
+                    .unwrap(),
+            )
+            .weight()
+            .circle;
+
+        core_circle.r + r + 3.0
+    }
+}
+
+impl<'a> GetWeight<LooseBendWeight> for LooseBend<'a> {
+    fn weight(&self) -> LooseBendWeight {
+        self.tagged_weight().into_loose_bend().unwrap()
+    }
+}
+
+impl<'a> MakeShape for LooseBend<'a> {
     fn shape(&self) -> Shape {
         let ends = self.ends();
 

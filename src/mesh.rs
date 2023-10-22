@@ -8,14 +8,14 @@ use spade::{
 };
 
 use crate::{
-    graph::{DotIndex, GetNodeIndex},
+    graph::{DotIndex, FixedDotIndex, GetNodeIndex},
     layout::Layout,
 };
 use crate::{primitive::MakeShape, shape::ShapeTrait};
 
 #[derive(Debug, Clone)]
 struct Vertex {
-    dot: DotIndex,
+    dot: FixedDotIndex,
     x: f64,
     y: f64,
 }
@@ -66,7 +66,7 @@ impl Mesh {
         Ok(())
     }
 
-    pub fn dot(&self, vertex: VertexIndex) -> DotIndex {
+    pub fn dot(&self, vertex: VertexIndex) -> FixedDotIndex {
         self.triangulation.vertex(vertex.handle).as_ref().dot
     }
 

@@ -2,7 +2,7 @@ use geo::Line;
 
 use crate::{
     draw::{Head, HeadTrait},
-    graph::{BendIndex, DotIndex},
+    graph::{FixedBendIndex, FixedDotIndex},
     layout::Layout,
     math::{self, Circle},
     primitive::{GetWeight, MakeShape},
@@ -27,7 +27,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     pub fn head_into_dot_segment(
         &self,
         head: &Head,
-        into: DotIndex,
+        into: FixedDotIndex,
         width: f64,
     ) -> Result<Line, ()> {
         let from_circle = self.head_circle(head, width);
@@ -43,7 +43,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     pub fn head_around_dot_segments(
         &self,
         head: &Head,
-        around: DotIndex,
+        around: FixedDotIndex,
         width: f64,
     ) -> Result<(Line, Line), ()> {
         let from_circle = self.head_circle(head, width);
@@ -58,7 +58,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     pub fn head_around_dot_segment(
         &self,
         head: &Head,
-        around: DotIndex,
+        around: FixedDotIndex,
         cw: bool,
         width: f64,
     ) -> Result<Line, ()> {
@@ -72,7 +72,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     pub fn head_around_bend_segments(
         &self,
         head: &Head,
-        around: BendIndex,
+        around: FixedBendIndex,
         width: f64,
     ) -> Result<(Line, Line), ()> {
         let from_circle = self.head_circle(head, width);
@@ -87,7 +87,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     pub fn head_around_bend_segment(
         &self,
         head: &Head,
-        around: BendIndex,
+        around: FixedBendIndex,
         cw: bool,
         width: f64,
     ) -> Result<Line, ()> {
@@ -132,7 +132,7 @@ impl<'a, 'b> Guide<'a, 'b> {
         }
     }
 
-    fn bend_circle(&self, bend: BendIndex, _width: f64) -> Circle {
+    fn bend_circle(&self, bend: FixedBendIndex, _width: f64) -> Circle {
         let mut circle = self
             .layout
             .primitive(bend)
@@ -144,7 +144,7 @@ impl<'a, 'b> Guide<'a, 'b> {
         circle
     }
 
-    fn dot_circle(&self, dot: DotIndex, width: f64) -> Circle {
+    fn dot_circle(&self, dot: FixedDotIndex, width: f64) -> Circle {
         let circle = self.layout.primitive(dot).weight().circle;
         Circle {
             pos: circle.pos,

@@ -26,14 +26,6 @@ pub trait GetNet {
     fn net(&self) -> i64;
 }
 
-#[enum_dispatch(Retag, GetNet)]
-#[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
-pub enum Weight {
-    Dot(DotWeight),
-    Seg(SegWeight),
-    Bend(BendWeight),
-}
-
 macro_rules! impl_type {
     ($weight_struct_name:ident, $weight_variant_name:ident, $index_struct_name:ident) => {
         impl Retag for $weight_struct_name {
@@ -64,29 +56,114 @@ macro_rules! impl_type {
     };
 }
 
+#[enum_dispatch(Retag, GetNet)]
+#[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
+pub enum Weight {
+    FixedDot(FixedDotWeight),
+    LooseDot(LooseDotWeight),
+    FixedSeg(FixedSegWeight),
+    HalfLooseSeg(HalfLooseSegWeight),
+    FullyLooseSeg(FullyLooseSegWeight),
+    FixedBend(FixedBendWeight),
+    LooseBend(LooseBendWeight),
+}
+
+#[enum_dispatch(GetNodeIndex, MakePrimitive)]
+#[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
+pub enum Index {
+    FixedDot(FixedDotIndex),
+    LooseDot(LooseDotIndex),
+    FixedSeg(FixedSegIndex),
+    HalfLooseSeg(HalfLooseSegIndex),
+    FullyLooseSeg(FullyLooseSegIndex),
+    FixedBend(FixedBendIndex),
+    LooseBend(LooseBendIndex),
+}
+
+#[enum_dispatch(GetNodeIndex, MakePrimitive)]
+#[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
+pub enum DotIndex {
+    Fixed(FixedDotIndex),
+    Loose(LooseDotIndex),
+}
+
+#[enum_dispatch(GetNodeIndex, MakePrimitive)]
+#[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
+pub enum SegIndex {
+    Fixed(FixedSegIndex),
+    HalfLoose(HalfLooseSegIndex),
+    FullyLoose(FullyLooseSegIndex),
+}
+
+#[enum_dispatch(GetNodeIndex, MakePrimitive)]
+#[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
+pub enum LooseSegIndex {
+    Half(HalfLooseSegIndex),
+    Fully(FullyLooseSegIndex),
+}
+
+#[enum_dispatch(GetNodeIndex, MakePrimitive)]
+#[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
+pub enum BendIndex {
+    Fixed(FixedBendIndex),
+    Loose(LooseBendIndex),
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct DotWeight {
+pub struct FixedDotWeight {
     pub net: i64,
     pub circle: Circle,
 }
 
-impl_type!(DotWeight, Dot, DotIndex);
+impl_type!(FixedDotWeight, FixedDot, FixedDotIndex);
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct SegWeight {
+pub struct LooseDotWeight {
+    pub net: i64,
+    pub circle: Circle,
+}
+
+impl_type!(LooseDotWeight, LooseDot, LooseDotIndex);
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FixedSegWeight {
     pub net: i64,
     pub width: f64,
 }
 
-impl_type!(SegWeight, Seg, SegIndex);
+impl_type!(FixedSegWeight, FixedSeg, FixedSegIndex);
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct BendWeight {
+pub struct HalfLooseSegWeight {
+    pub net: i64,
+    pub width: f64,
+}
+
+impl_type!(HalfLooseSegWeight, HalfLooseSeg, HalfLooseSegIndex);
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FullyLooseSegWeight {
+    pub net: i64,
+    pub width: f64,
+}
+
+impl_type!(FullyLooseSegWeight, FullyLooseSeg, FullyLooseSegIndex);
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct FixedBendWeight {
     pub net: i64,
     pub cw: bool,
 }
 
-impl_type!(BendWeight, Bend, BendIndex);
+impl_type!(FixedBendWeight, FixedBend, FixedBendIndex);
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct LooseBendWeight {
+    pub net: i64,
+    pub cw: bool,
+}
+
+impl_type!(LooseBendWeight, LooseBend, LooseBendIndex);
 
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
 pub enum Label {
@@ -103,14 +180,6 @@ pub trait GetNodeIndex {
 #[enum_dispatch]
 pub trait MakePrimitive {
     fn primitive<'a>(&self, graph: &'a StableDiGraph<Weight, Label, usize>) -> Primitive<'a>;
-}
-
-#[enum_dispatch(GetNodeIndex, MakePrimitive)]
-#[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
-pub enum Index {
-    Dot(DotIndex),
-    Seg(SegIndex),
-    Bend(BendIndex),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

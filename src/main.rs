@@ -2,8 +2,8 @@ extern crate sdl2;
 
 macro_rules! dbg_dot {
     ($graph:expr) => {
-        use petgraph::dot::Dot;
-        println!("{:?}", Dot::new(&$graph));
+        use petgraph::FixedDot::FixedDot;
+        println!("{:?}", FixedDot::new(&$graph));
     };
 }
 
@@ -25,7 +25,7 @@ mod shape;
 mod tracer;
 
 use geo::point;
-use graph::{DotIndex, SegWeight};
+use graph::{FixedDotIndex, FixedSegWeight};
 use layout::Layout;
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
@@ -43,7 +43,7 @@ use shape::Shape;
 use std::time::Duration;
 use tracer::{Trace, Tracer};
 
-use crate::graph::DotWeight;
+use crate::graph::FixedDotWeight;
 use crate::math::Circle;
 use crate::router::Router;
 
@@ -134,7 +134,7 @@ fn main() {
 
     let dot1 = router
         .layout
-        .add_dot(DotWeight {
+        .add_dot(FixedDotWeight {
             net: 1,
             circle: Circle {
                 pos: (100.5, 400.5).into(),
@@ -145,7 +145,7 @@ fn main() {
 
     let dot2 = router
         .layout
-        .add_dot(DotWeight {
+        .add_dot(FixedDotWeight {
             net: 1,
             circle: Circle {
                 pos: (100.5, 500.5).into(),
@@ -156,7 +156,7 @@ fn main() {
 
     let dot_end = router
         .layout
-        .add_dot(DotWeight {
+        .add_dot(FixedDotWeight {
             net: 1,
             circle: Circle {
                 pos: (470.5, 350.5).into(),
@@ -167,7 +167,7 @@ fn main() {
 
     let dot1_1 = router
         .layout
-        .add_dot(DotWeight {
+        .add_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (200.5, 200.5).into(),
@@ -178,7 +178,7 @@ fn main() {
 
     let dot2_1 = router
         .layout
-        .add_dot(DotWeight {
+        .add_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (200.5, 500.5).into(),
@@ -190,7 +190,7 @@ fn main() {
     let _ = router.layout.add_seg(
         dot1_1,
         dot2_1,
-        SegWeight {
+        FixedSegWeight {
             net: 2,
             width: 16.0,
         },
@@ -198,7 +198,7 @@ fn main() {
 
     let dot2_2 = router
         .layout
-        .add_dot(DotWeight {
+        .add_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (600.5, 500.5).into(),
@@ -210,7 +210,7 @@ fn main() {
     let _ = router.layout.add_seg(
         dot2_1,
         dot2_2,
-        SegWeight {
+        FixedSegWeight {
             net: 2,
             width: 16.0,
         },
@@ -218,7 +218,7 @@ fn main() {
 
     let dot3 = router
         .layout
-        .add_dot(DotWeight {
+        .add_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (400.5, 200.5).into(),
@@ -229,7 +229,7 @@ fn main() {
 
     let dot4 = router
         .layout
-        .add_dot(DotWeight {
+        .add_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (400.5, 400.5).into(),
@@ -241,7 +241,7 @@ fn main() {
     let _ = router.layout.add_seg(
         dot3,
         dot4,
-        SegWeight {
+        FixedSegWeight {
             net: 2,
             width: 16.0,
         },
@@ -249,7 +249,7 @@ fn main() {
 
     let dot5 = router
         .layout
-        .add_dot(DotWeight {
+        .add_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (530.5, 400.5).into(),
@@ -261,7 +261,7 @@ fn main() {
     let _ = router.layout.add_seg(
         dot4,
         dot5,
-        SegWeight {
+        FixedSegWeight {
             net: 2,
             width: 16.0,
         },
@@ -269,7 +269,7 @@ fn main() {
 
     let dot1_2 = router
         .layout
-        .add_dot(DotWeight {
+        .add_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (600.5, 200.5).into(),
@@ -281,7 +281,7 @@ fn main() {
     let _ = router.layout.add_seg(
         dot3,
         dot1_2,
-        SegWeight {
+        FixedSegWeight {
             net: 2,
             width: 16.0,
         },
@@ -290,7 +290,7 @@ fn main() {
     let _ = router.layout.add_seg(
         dot1_2,
         dot2_2,
-        SegWeight {
+        FixedSegWeight {
             net: 2,
             width: 16.0,
         },
@@ -298,7 +298,7 @@ fn main() {
 
     let dot6 = router
         .layout
-        .add_dot(DotWeight {
+        .add_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (530.5, 300.5).into(),
@@ -310,7 +310,7 @@ fn main() {
     let _ = router.layout.add_seg(
         dot5,
         dot6,
-        SegWeight {
+        FixedSegWeight {
             net: 2,
             width: 16.0,
         },
@@ -318,7 +318,7 @@ fn main() {
 
     /*let dot7 = router
         .layout
-        .add_dot(DotWeight {
+        .add_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (400.5, 440.5).into(),
@@ -330,7 +330,7 @@ fn main() {
     let _ = router.layout.add_seg(
         dot4,
         dot7,
-        SegWeight {
+        FixedSegWeight {
             net: 20,
             width: 16.0,
         },
@@ -402,8 +402,8 @@ fn render_times(
     event_pump: &mut EventPump,
     canvas: &mut Canvas<Window>,
     mut router_or_layout: RouterOrLayout,
-    from: Option<DotIndex>,
-    follower: Option<DotIndex>,
+    from: Option<FixedDotIndex>,
+    follower: Option<FixedDotIndex>,
     mut mesh: Option<Mesh>,
     path: &[VertexIndex],
     times: i64,
@@ -453,27 +453,27 @@ fn render_times(
         //let result = panic::catch_unwind(|| {
         for shape in layout.shapes() {
             match shape {
-                Shape::Dot(dot) => {
+                Shape::Dot(FixedDot) => {
                     let _ = canvas.filled_circle(
-                        dot.c.pos.x() as i16,
-                        dot.c.pos.y() as i16,
-                        dot.c.r as i16,
+                        FixedDot.c.pos.x() as i16,
+                        FixedDot.c.pos.y() as i16,
+                        FixedDot.c.r as i16,
                         Color::RGB(200, 52, 52),
                     );
                 }
-                Shape::Seg(seg) => {
+                Shape::Seg(FixedSeg) => {
                     let _ = canvas.thick_line(
-                        seg.from.x() as i16,
-                        seg.from.y() as i16,
-                        seg.to.x() as i16,
-                        seg.to.y() as i16,
-                        seg.width as u8,
+                        FixedSeg.from.x() as i16,
+                        FixedSeg.from.y() as i16,
+                        FixedSeg.to.x() as i16,
+                        FixedSeg.to.y() as i16,
+                        FixedSeg.width as u8,
                         Color::RGB(200, 52, 52),
                     );
                 }
-                Shape::Bend(bend) => {
-                    let delta1 = bend.from - bend.c.pos;
-                    let delta2 = bend.to - bend.c.pos;
+                Shape::Bend(FixedBend) => {
+                    let delta1 = FixedBend.from - FixedBend.c.pos;
+                    let delta2 = FixedBend.to - FixedBend.c.pos;
 
                     let angle1 = delta1.y().atan2(delta1.x());
                     let angle2 = delta2.y().atan2(delta2.x());
@@ -482,10 +482,10 @@ fn render_times(
                         let _ = canvas.arc(
                             //around_circle.pos.x() as i16,
                             //around_circle.pos.y() as i16,
-                            bend.c.pos.x() as i16,
-                            bend.c.pos.y() as i16,
+                            FixedBend.c.pos.x() as i16,
+                            FixedBend.c.pos.y() as i16,
                             //(shape.around_weight.unwrap().circle.r + 10.0 + (d as f64)) as i16,
-                            (bend.circle().r + (d as f64)) as i16,
+                            (FixedBend.circle().r + (d as f64)) as i16,
                             angle1.to_degrees() as i16,
                             angle2.to_degrees() as i16,
                             Color::RGB(200, 52, 52),
