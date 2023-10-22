@@ -85,7 +85,7 @@ impl<'a> Draw<'a> {
 
         let net = self.layout.primitive(head.dot()).weight().net;
         self.layout
-            .add_seg(head.dot(), into, FixedSegWeight { net, width })?;
+            .add_fixed_seg(head.dot(), into, FixedSegWeight { net, width })?;
         Ok(())
     }
 
@@ -109,7 +109,7 @@ impl<'a> Draw<'a> {
 
         let net = self.layout.primitive(head.dot()).weight().net;
         self.layout
-            .add_seg(head.dot(), into, FixedSegWeight { net, width })?;
+            .add_fixed_seg(head.dot(), into, FixedSegWeight { net, width })?;
         Ok(())
     }
 
@@ -247,7 +247,7 @@ impl<'a> Draw<'a> {
         let dot = head.dot;
         let bend_to = self
             .layout
-            .add_dot(self.layout.primitive(head.dot).weight())
+            .add_fixed_dot(self.layout.primitive(head.dot).weight())
             .map_err(|err| {
                 self.undo_seg(head, seg);
                 err
@@ -257,7 +257,7 @@ impl<'a> Draw<'a> {
 
         let bend = self
             .layout
-            .add_bend(head.dot, bend_to, around, FixedBendWeight { net, cw })
+            .add_fixed_bend(head.dot, bend_to, around, FixedBendWeight { net, cw })
             .map_err(|err| {
                 self.layout.remove(bend_to.into());
                 self.undo_seg(head, seg);
@@ -288,7 +288,7 @@ impl<'a> Draw<'a> {
     #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
     fn seg(&mut self, head: Head, to: Point, width: f64) -> Result<(BareHead, FixedSegIndex), ()> {
         let net = self.layout.primitive(head.dot()).weight().net;
-        let to_index = self.layout.add_dot(FixedDotWeight {
+        let to_index = self.layout.add_fixed_dot(FixedDotWeight {
             net,
             circle: Circle {
                 pos: to,
@@ -297,7 +297,7 @@ impl<'a> Draw<'a> {
         })?;
         let seg = self
             .layout
-            .add_seg(head.dot(), to_index, FixedSegWeight { net, width })
+            .add_fixed_seg(head.dot(), to_index, FixedSegWeight { net, width })
             .map_err(|err| {
                 self.layout.remove(to_index.into());
                 err

@@ -134,7 +134,7 @@ fn main() {
 
     let dot1 = router
         .layout
-        .add_dot(FixedDotWeight {
+        .add_fixed_dot(FixedDotWeight {
             net: 1,
             circle: Circle {
                 pos: (100.5, 400.5).into(),
@@ -143,20 +143,20 @@ fn main() {
         })
         .unwrap();
 
-    let dot2 = router
-        .layout
-        .add_dot(FixedDotWeight {
-            net: 1,
-            circle: Circle {
-                pos: (100.5, 500.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
+    /*let dot2 = router
+    .layout
+    .add_fixed_dot(FixedDotWeight {
+        net: 1,
+        circle: Circle {
+            pos: (100.5, 500.5).into(),
+            r: 8.0,
+        },
+    })
+    .unwrap();*/
 
     let dot_end = router
         .layout
-        .add_dot(FixedDotWeight {
+        .add_fixed_dot(FixedDotWeight {
             net: 1,
             circle: Circle {
                 pos: (470.5, 350.5).into(),
@@ -167,7 +167,7 @@ fn main() {
 
     let dot1_1 = router
         .layout
-        .add_dot(FixedDotWeight {
+        .add_fixed_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (200.5, 200.5).into(),
@@ -178,7 +178,7 @@ fn main() {
 
     let dot2_1 = router
         .layout
-        .add_dot(FixedDotWeight {
+        .add_fixed_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (200.5, 500.5).into(),
@@ -187,7 +187,7 @@ fn main() {
         })
         .unwrap();
 
-    let _ = router.layout.add_seg(
+    let _ = router.layout.add_fixed_seg(
         dot1_1,
         dot2_1,
         FixedSegWeight {
@@ -198,7 +198,7 @@ fn main() {
 
     let dot2_2 = router
         .layout
-        .add_dot(FixedDotWeight {
+        .add_fixed_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (600.5, 500.5).into(),
@@ -207,7 +207,7 @@ fn main() {
         })
         .unwrap();
 
-    let _ = router.layout.add_seg(
+    let _ = router.layout.add_fixed_seg(
         dot2_1,
         dot2_2,
         FixedSegWeight {
@@ -218,7 +218,7 @@ fn main() {
 
     let dot3 = router
         .layout
-        .add_dot(FixedDotWeight {
+        .add_fixed_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (400.5, 200.5).into(),
@@ -229,7 +229,7 @@ fn main() {
 
     let dot4 = router
         .layout
-        .add_dot(FixedDotWeight {
+        .add_fixed_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (400.5, 400.5).into(),
@@ -238,7 +238,7 @@ fn main() {
         })
         .unwrap();
 
-    let _ = router.layout.add_seg(
+    let _ = router.layout.add_fixed_seg(
         dot3,
         dot4,
         FixedSegWeight {
@@ -249,7 +249,7 @@ fn main() {
 
     let dot5 = router
         .layout
-        .add_dot(FixedDotWeight {
+        .add_fixed_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (530.5, 400.5).into(),
@@ -258,7 +258,7 @@ fn main() {
         })
         .unwrap();
 
-    let _ = router.layout.add_seg(
+    let _ = router.layout.add_fixed_seg(
         dot4,
         dot5,
         FixedSegWeight {
@@ -269,7 +269,7 @@ fn main() {
 
     let dot1_2 = router
         .layout
-        .add_dot(FixedDotWeight {
+        .add_fixed_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (600.5, 200.5).into(),
@@ -278,7 +278,7 @@ fn main() {
         })
         .unwrap();
 
-    let _ = router.layout.add_seg(
+    let _ = router.layout.add_fixed_seg(
         dot3,
         dot1_2,
         FixedSegWeight {
@@ -287,7 +287,7 @@ fn main() {
         },
     );
 
-    let _ = router.layout.add_seg(
+    let _ = router.layout.add_fixed_seg(
         dot1_2,
         dot2_2,
         FixedSegWeight {
@@ -298,7 +298,7 @@ fn main() {
 
     let dot6 = router
         .layout
-        .add_dot(FixedDotWeight {
+        .add_fixed_dot(FixedDotWeight {
             net: 2,
             circle: Circle {
                 pos: (530.5, 300.5).into(),
@@ -307,7 +307,7 @@ fn main() {
         })
         .unwrap();
 
-    let _ = router.layout.add_seg(
+    let _ = router.layout.add_fixed_seg(
         dot5,
         dot6,
         FixedSegWeight {
@@ -375,7 +375,7 @@ fn main() {
         -1,
     );
 
-    render_times(
+    /*render_times(
         &mut event_pump,
         &mut canvas,
         RouterOrLayout::Router(&mut router),
@@ -384,7 +384,7 @@ fn main() {
         None,
         &[],
         -1,
-    );
+    );*/
 
     render_times(
         &mut event_pump,

@@ -127,7 +127,7 @@ impl Router {
         } else {
             let from_weight = self.layout.primitive(from).weight();
             self.layout
-                .add_dot(FixedDotWeight {
+                .add_fixed_dot(FixedDotWeight {
                     net: from_weight.net,
                     circle: Circle { pos: to, r: 2.0 },
                 })
