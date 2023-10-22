@@ -130,7 +130,7 @@ impl<'a> Tracer<'a> {
     ) -> Option<bool> {
         let around_pos = self.layout.primitive(around).weight().circle.pos;
 
-        if Some(layer) != self.layout.primitive(head.dot()).prev_bend() {
+        /*if Some(layer) != self.layout.primitive(head.dot()).prev_bend() {
             Some(
                 self.layout
                     .primitive(layer)
@@ -139,9 +139,9 @@ impl<'a> Tracer<'a> {
                     .unwrap()
                     .between_ends(around_pos),
             )
-        } else {
-            None
-        }
+        } else {*/
+        None
+        //}
     }
 
     fn tuck_around_dot(
@@ -209,13 +209,13 @@ impl<'a> Tracer<'a> {
 
             maybe_inner = Some(segbend_head.segbend.bend);
             self.draw().finish(head, ends.1, width)?;
-            self.relax_band(maybe_inner.unwrap());
+            //self.relax_band(maybe_inner.unwrap());
         }
 
         Ok(())
     }
 
-    fn relax_band(&mut self, bend: FixedBendIndex) {
+    /*fn relax_band(&mut self, bend: FixedBendIndex) {
         let mut prev_bend = bend;
         while let Some(cur_bend) = self.layout.primitive(prev_bend).prev_bend() {
             if self.layout.primitive(cur_bend).cross_product() >= 0. {
@@ -233,7 +233,7 @@ impl<'a> Tracer<'a> {
 
             prev_bend = cur_bend;
         }
-    }
+    }*/
 
     fn release_bow(&mut self, bend: FixedBendIndex) {
         let bow = self.layout.bow(bend);

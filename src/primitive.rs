@@ -72,35 +72,6 @@ impl<'a, W> GenericPrimitive<'a, W> {
             .map(|index| self.graph.node_weight(index).unwrap().retag(index))
     }
 
-    pub fn prev_bend(&self) -> Option<FixedBendIndex> {
-        let mut prev_index = self.index.node_index();
-
-        while let Some(index) = self
-            .graph
-            .neighbors_directed(prev_index, Incoming)
-            // Ensure subsequent unwrap doesn't panic.
-            .filter(|ni| self.graph.find_edge(*ni, prev_index).is_some())
-            // Filter out non-End edges.
-            .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(*ni, prev_index).unwrap())
-                    .unwrap()
-                    .is_fixed_end()
-            })
-            .next()
-        {
-            let _weight = *self.graph.node_weight(index).unwrap();
-
-            if let Some(Weight::FixedBend(..)) = self.graph.node_weight(index) {
-                return Some(FixedBendIndex::new(index));
-            }
-
-            prev_index = index;
-        }
-
-        None
-    }
-
     fn prev_node(&self) -> Option<NodeIndex<usize>> {
         self.graph
             .neighbors_directed(self.index.node_index(), Incoming)
@@ -111,35 +82,6 @@ impl<'a, W> GenericPrimitive<'a, W> {
                     .is_fixed_end()
             })
             .next()
-    }
-
-    pub fn next_bend(&self) -> Option<FixedBendIndex> {
-        let mut prev_index = self.index.node_index();
-
-        while let Some(index) = self
-            .graph
-            .neighbors_directed(prev_index, Outgoing)
-            // Ensure subsequent unwrap doesn't panic.
-            .filter(|ni| self.graph.find_edge(prev_index, *ni).is_some())
-            // Filter out non-End edges.
-            .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(prev_index, *ni).unwrap())
-                    .unwrap()
-                    .is_fixed_end()
-            })
-            .next()
-        {
-            let _weight = *self.graph.node_weight(index).unwrap();
-
-            if let Some(Weight::FixedBend(..)) = self.graph.node_weight(index) {
-                return Some(FixedBendIndex::new(index));
-            }
-
-            prev_index = index;
-        }
-
-        None
     }
 
     fn next_node(&self) -> Option<NodeIndex<usize>> {
