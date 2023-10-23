@@ -98,9 +98,9 @@ impl Layout {
         let seg = FixedSegIndex::new(self.graph.add_node(weight.into()));
 
         self.graph
-            .add_edge(from.node_index(), seg.node_index(), Label::FixedEnd);
+            .add_edge(from.node_index(), seg.node_index(), Label::Adjacent);
         self.graph
-            .add_edge(seg.node_index(), to.node_index(), Label::FixedEnd);
+            .add_edge(seg.node_index(), to.node_index(), Label::Adjacent);
 
         self.insert_into_rtree(seg.into());
         self.fail_and_remove_if_collides_except(seg.into(), &[])?;
@@ -132,9 +132,9 @@ impl Layout {
         let seg = FixedSegIndex::new(self.graph.add_node(weight.into()));
 
         self.graph
-            .add_edge(from.node_index(), seg.node_index(), Label::FixedEnd);
+            .add_edge(from.node_index(), seg.node_index(), Label::Adjacent);
         self.graph
-            .add_edge(seg.node_index(), to.node_index(), Label::LooseEnd);
+            .add_edge(seg.node_index(), to.node_index(), Label::Adjacent);
 
         self.insert_into_rtree(seg.into());
         self.fail_and_remove_if_collides_except(seg.into(), &[])?;
@@ -166,9 +166,9 @@ impl Layout {
         let seg = FixedSegIndex::new(self.graph.add_node(weight.into()));
 
         self.graph
-            .add_edge(from.node_index(), seg.node_index(), Label::LooseEnd);
+            .add_edge(from.node_index(), seg.node_index(), Label::Adjacent);
         self.graph
-            .add_edge(seg.node_index(), to.node_index(), Label::LooseEnd);
+            .add_edge(seg.node_index(), to.node_index(), Label::Adjacent);
 
         self.insert_into_rtree(seg.into());
         self.fail_and_remove_if_collides_except(seg.into(), &[])?;
@@ -235,9 +235,9 @@ impl Layout {
         let bend = FixedBendIndex::new(self.graph.add_node(weight.into()));
 
         self.graph
-            .add_edge(from.node_index(), bend.node_index(), Label::FixedEnd);
+            .add_edge(from.node_index(), bend.node_index(), Label::Adjacent);
         self.graph
-            .add_edge(bend.node_index(), to.node_index(), Label::FixedEnd);
+            .add_edge(bend.node_index(), to.node_index(), Label::Adjacent);
         self.graph
             .add_edge(bend.node_index(), core.node_index(), Label::Core);
 
@@ -274,9 +274,9 @@ impl Layout {
         let bend = FixedBendIndex::new(self.graph.add_node(weight.into()));
 
         self.graph
-            .add_edge(from.node_index(), bend.node_index(), Label::FixedEnd);
+            .add_edge(from.node_index(), bend.node_index(), Label::Adjacent);
         self.graph
-            .add_edge(bend.node_index(), to.node_index(), Label::FixedEnd);
+            .add_edge(bend.node_index(), to.node_index(), Label::Adjacent);
         self.graph
             .add_edge(bend.node_index(), core.node_index(), Label::Core);
         self.graph

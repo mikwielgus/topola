@@ -167,8 +167,7 @@ impl_type!(LooseBendWeight, LooseBend, LooseBendIndex);
 
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
 pub enum Label {
-    FixedEnd,
-    LooseEnd,
+    Adjacent,
     Outer,
     Core,
 }

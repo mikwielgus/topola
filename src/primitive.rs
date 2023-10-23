@@ -79,7 +79,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
                 self.graph
                     .edge_weight(self.graph.find_edge(*ni, self.index.node_index()).unwrap())
                     .unwrap()
-                    .is_fixed_end()
+                    .is_adjacent()
             })
             .next()
     }
@@ -91,7 +91,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
                 self.graph
                     .edge_weight(self.graph.find_edge(self.index.node_index(), *ni).unwrap())
                     .unwrap()
-                    .is_fixed_end()
+                    .is_adjacent()
             })
             .next()
     }
@@ -145,7 +145,7 @@ impl<'a, W> Ends<FixedDotIndex, FixedDotIndex> for GenericPrimitive<'a, W> {
                             .0,
                     )
                     .unwrap()
-                    .is_fixed_end()
+                    .is_adjacent()
             })
             .filter(|ni| self.graph.node_weight(*ni).unwrap().is_fixed_dot())
             .map(|ni| FixedDotIndex::new(ni))
@@ -201,7 +201,7 @@ impl<'a> FixedDot<'a> {
                             .0,
                     )
                     .unwrap()
-                    .is_fixed_end()
+                    .is_adjacent()
             })
             .filter(|ni| self.graph.node_weight(*ni).unwrap().is_fixed_bend())
             .map(|ni| FixedBendIndex::new(ni))
