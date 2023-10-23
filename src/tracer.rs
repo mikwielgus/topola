@@ -6,7 +6,7 @@ use crate::{
     graph::{Ends, FixedBendIndex, FixedDotIndex},
     layout::Layout,
     mesh::{Mesh, VertexIndex},
-    primitive::{GetWeight, MakeShape},
+    primitive::GetWeight,
     rules::Rules,
 };
 
@@ -124,11 +124,11 @@ impl<'a> Tracer<'a> {
 
     fn is_under(
         &mut self,
-        head: Head,
+        _head: Head,
         around: FixedDotIndex,
-        layer: FixedBendIndex,
+        _layer: FixedBendIndex,
     ) -> Option<bool> {
-        let around_pos = self.layout.primitive(around).weight().circle.pos;
+        let _around_pos = self.layout.primitive(around).weight().circle.pos;
 
         /*if Some(layer) != self.layout.primitive(head.dot()).prev_bend() {
             Some(

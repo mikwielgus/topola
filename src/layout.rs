@@ -6,16 +6,13 @@ use petgraph::Direction::Incoming;
 use rstar::primitives::GeomWithData;
 use rstar::{RTree, RTreeObject};
 
-use crate::band::Band;
 use crate::bow::Bow;
 use crate::graph::{
-    BendIndex, DotIndex, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
-    FixedSegIndex, FixedSegWeight, GenericIndex, GetNodeIndex, HalfLooseSegWeight, Index, Interior,
-    Label, LooseDotIndex, LooseDotWeight, MakePrimitive, Retag, SegIndex, Weight,
+    FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegIndex, FixedSegWeight,
+    GenericIndex, GetNodeIndex, HalfLooseSegWeight, Index, Interior, Label, LooseDotIndex,
+    LooseDotWeight, MakePrimitive, Retag, Weight,
 };
-use crate::primitive::{
-    GenericPrimitive, GetConnectable, GetWeight, MakeShape, TaggedPrevTaggedNext,
-};
+use crate::primitive::{GenericPrimitive, GetConnectable, GetWeight, MakeShape};
 use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
 
@@ -339,13 +336,13 @@ impl Layout {
         Segbend::from_dot_next(dot, &self.graph)
     }
 
-    pub fn prev_band(&self, to: FixedDotIndex) -> Option<Band> {
+    /*pub fn prev_band(&self, to: FixedDotIndex) -> Option<Band> {
         Band::from_dot_prev(to, &self.graph)
     }
 
     pub fn next_band(&self, from: FixedDotIndex) -> Option<Band> {
         Band::from_dot_next(from, &self.graph)
-    }
+    }*/
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count()))]
@@ -386,11 +383,11 @@ impl Layout {
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn move_dot(&mut self, dot: FixedDotIndex, to: Point) -> Result<(), ()> {
         self.primitive(dot)
-            .tagged_prev()
-            .map(|prev| self.remove_from_rtree(prev));
+            .seg()
+            .map(|seg| self.remove_from_rtree(seg.into()));
         self.primitive(dot)
-            .tagged_next()
-            .map(|next| self.remove_from_rtree(next));
+            .bend()
+            .map(|bend| self.remove_from_rtree(bend.into()));
         self.remove_from_rtree(dot.into());
 
         let mut dot_weight = self.primitive(dot).weight();
@@ -405,21 +402,21 @@ impl Layout {
 
             self.insert_into_rtree(dot.into());
             self.primitive(dot)
-                .tagged_prev()
-                .map(|prev| self.insert_into_rtree(prev));
+                .seg()
+                .map(|prev| self.insert_into_rtree(prev.into()));
             self.primitive(dot)
-                .tagged_next()
-                .map(|next| self.insert_into_rtree(next));
+                .bend()
+                .map(|next| self.insert_into_rtree(next.into()));
             return Err(());
         }
 
         self.insert_into_rtree(dot.into());
         self.primitive(dot)
-            .tagged_prev()
-            .map(|prev| self.insert_into_rtree(prev));
+            .seg()
+            .map(|prev| self.insert_into_rtree(prev.into()));
         self.primitive(dot)
-            .tagged_next()
-            .map(|next| self.insert_into_rtree(next));
+            .bend()
+            .map(|next| self.insert_into_rtree(next.into()));
 
         Ok(())
     }

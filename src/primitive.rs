@@ -5,7 +5,7 @@ use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
-    BendIndex, DotIndex, Ends, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
+    Ends, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegIndex,
     FixedSegWeight, FullyLooseSegWeight, GenericIndex, GetNet, GetNodeIndex, HalfLooseSegWeight,
     Index, Interior, Label, LooseBendIndex, LooseBendWeight, LooseDotWeight, MakePrimitive, Retag,
     Weight,
@@ -26,12 +26,6 @@ pub trait GetConnectable: GetNet + GetGraph {
 
         (this == other) || this == -1 || other == -1
     }
-}
-
-#[enum_dispatch]
-pub trait TaggedPrevTaggedNext {
-    fn tagged_prev(&self) -> Option<Index>;
-    fn tagged_next(&self) -> Option<Index>;
 }
 
 #[enum_dispatch]
@@ -174,21 +168,28 @@ where
     }
 }
 
-impl<'a, W> TaggedPrevTaggedNext for GenericPrimitive<'a, W> {
-    fn tagged_prev(&self) -> Option<Index> {
-        self.prev_node()
-            .map(|ni| self.graph.node_weight(ni).unwrap().retag(ni))
-    }
-
-    fn tagged_next(&self) -> Option<Index> {
-        self.next_node()
-            .map(|ni| self.graph.node_weight(ni).unwrap().retag(ni))
-    }
-}
-
 pub type FixedDot<'a> = GenericPrimitive<'a, FixedDotWeight>;
 
 impl<'a> FixedDot<'a> {
+    pub fn seg(&self) -> Option<FixedSegIndex> {
+        self.graph
+            .neighbors_undirected(self.index.node_index())
+            .filter(|ni| {
+                self.graph
+                    .edge_weight(
+                        self.graph
+                            .find_edge_undirected(self.index.node_index(), *ni)
+                            .unwrap()
+                            .0,
+                    )
+                    .unwrap()
+                    .is_adjacent()
+            })
+            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_fixed_seg())
+            .map(|ni| FixedSegIndex::new(ni))
+            .next()
+    }
+
     pub fn bend(&self) -> Option<FixedBendIndex> {
         self.graph
             .neighbors_undirected(self.index.node_index())

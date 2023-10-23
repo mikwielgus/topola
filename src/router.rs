@@ -3,12 +3,11 @@ use petgraph::visit::EdgeRef;
 use spade::InsertionError;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
-use crate::graph::{DotIndex, Ends, FixedDotIndex, FixedDotWeight};
+use crate::graph::{DotIndex, FixedDotIndex};
 use crate::layout::Layout;
 
-use crate::math::Circle;
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
-use crate::primitive::GetWeight;
+
 use crate::rules::Rules;
 use crate::tracer::{Trace, Tracer};
 
@@ -114,11 +113,11 @@ impl Router {
 
     pub fn reroute(
         &mut self,
-        from: FixedDotIndex,
-        to: Point,
-        observer: &mut impl RouterObserver,
+        _from: FixedDotIndex,
+        _to: Point,
+        _observer: &mut impl RouterObserver,
     ) -> Result<Mesh, InsertionError> {
-        let to_dot = if let Some(band) = self.layout.next_band(from) {
+        /*let to_dot = if let Some(band) = self.layout.next_band(from) {
             let to_dot = band.ends().1;
 
             self.layout.remove_interior(&band);
@@ -134,7 +133,8 @@ impl Router {
                 .unwrap() // TODO.
         };
 
-        self.enroute(from, to_dot, observer)
+        self.enroute(from, to_dot, observer)*/
+        Ok(Mesh::new())
     }
 
     /*pub fn squeeze_around_dot(

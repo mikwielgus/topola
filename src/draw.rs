@@ -4,8 +4,8 @@ use geo::{EuclideanLength, Point};
 
 use crate::{
     graph::{
-        BendIndex, DotIndex, Ends, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
-        FixedSegIndex, FixedSegWeight, Index, SegIndex,
+        Ends, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegIndex,
+        FixedSegWeight, Index,
     },
     guide::Guide,
     layout::Layout,

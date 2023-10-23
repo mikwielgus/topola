@@ -1,9 +1,4 @@
-use petgraph::stable_graph::StableDiGraph;
-
-use crate::{
-    graph::{DotIndex, Ends, FixedDotIndex, Index, Interior, Label, MakePrimitive, Weight},
-    primitive::TaggedPrevTaggedNext,
-};
+use crate::graph::{Ends, FixedDotIndex, Index, Interior};
 
 pub struct Band {
     from: FixedDotIndex,
@@ -11,7 +6,7 @@ pub struct Band {
     interior: Vec<Index>,
 }
 
-impl Band {
+/*impl Band {
     pub fn from_dot_prev(
         dot: FixedDotIndex,
         graph: &StableDiGraph<Weight, Label, usize>,
@@ -57,7 +52,7 @@ impl Band {
             })
         }
     }
-}
+}*/
 
 impl Interior<Index> for Band {
     fn interior(&self) -> Vec<Index> {

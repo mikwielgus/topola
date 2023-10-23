@@ -1,10 +1,9 @@
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::graph::{
-    BendIndex, DotIndex, Ends, FixedBendIndex, FixedDotIndex, FixedSegIndex, Index, Interior,
-    Label, SegIndex, Weight,
+    Ends, FixedBendIndex, FixedDotIndex, FixedSegIndex, Index, Interior, Label, Weight,
 };
-use crate::primitive::{FixedBend, FixedDot, FixedSeg, TaggedPrevTaggedNext};
+use crate::primitive::{FixedBend, FixedDot, FixedSeg};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Bow {
@@ -22,19 +21,11 @@ impl Bow {
         let bend = index;
 
         let seg1_dot2 = FixedBend::new(bend, graph).prev().unwrap();
-        let seg1 = FixedDot::new(seg1_dot2, graph)
-            .tagged_prev()
-            .unwrap()
-            .into_fixed_seg()
-            .unwrap();
+        let seg1 = FixedDot::new(seg1_dot2, graph).seg().unwrap();
         let seg1_dot1 = FixedSeg::new(seg1, graph).prev().unwrap();
 
         let seg2_dot1 = FixedBend::new(bend, graph).next().unwrap();
-        let seg2 = FixedDot::new(seg2_dot1, graph)
-            .tagged_next()
-            .unwrap()
-            .into_fixed_seg()
-            .unwrap();
+        let seg2 = FixedDot::new(seg2_dot1, graph).seg().unwrap();
         let seg2_dot2 = FixedSeg::new(seg2, graph).next().unwrap();
 
         Self {
