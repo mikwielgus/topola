@@ -20,13 +20,13 @@ impl Bow {
     pub fn from_bend(index: FixedBendIndex, graph: &StableDiGraph<Weight, Label, usize>) -> Self {
         let bend = index;
 
-        let seg1_dot2 = FixedBend::new(bend, graph).prev().unwrap();
+        let seg1_dot2 = FixedBend::new(bend, graph).ends().0;
         let seg1 = FixedDot::new(seg1_dot2, graph).seg().unwrap();
-        let seg1_dot1 = FixedSeg::new(seg1, graph).prev().unwrap();
+        let seg1_dot1 = FixedSeg::new(seg1, graph).other_end(seg1_dot2);
 
-        let seg2_dot1 = FixedBend::new(bend, graph).next().unwrap();
+        let seg2_dot1 = FixedBend::new(bend, graph).ends().1;
         let seg2 = FixedDot::new(seg2_dot1, graph).seg().unwrap();
-        let seg2_dot2 = FixedSeg::new(seg2, graph).next().unwrap();
+        let seg2_dot2 = FixedSeg::new(seg2, graph).other_end(seg2_dot1);
 
         Self {
             seg1_dot1,

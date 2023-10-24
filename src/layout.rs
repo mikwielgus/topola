@@ -328,21 +328,9 @@ impl Layout {
         Bow::from_bend(bend, &self.graph)
     }
 
-    pub fn prev_segbend(&self, dot: FixedDotIndex) -> Option<Segbend> {
-        Segbend::from_dot_prev(dot, &self.graph)
+    pub fn segbend(&self, dot: FixedDotIndex) -> Option<Segbend> {
+        Segbend::from_dot(dot, &self.graph)
     }
-
-    pub fn next_segbend(&self, dot: FixedDotIndex) -> Option<Segbend> {
-        Segbend::from_dot_next(dot, &self.graph)
-    }
-
-    /*pub fn prev_band(&self, to: FixedDotIndex) -> Option<Band> {
-        Band::from_dot_prev(to, &self.graph)
-    }
-
-    pub fn next_band(&self, from: FixedDotIndex) -> Option<Band> {
-        Band::from_dot_next(from, &self.graph)
-    }*/
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count()))]

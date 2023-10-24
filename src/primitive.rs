@@ -66,30 +66,6 @@ impl<'a, W> GenericPrimitive<'a, W> {
             .map(|index| self.graph.node_weight(index).unwrap().retag(index))
     }
 
-    fn prev_node(&self) -> Option<NodeIndex<usize>> {
-        self.graph
-            .neighbors_directed(self.index.node_index(), Incoming)
-            .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(*ni, self.index.node_index()).unwrap())
-                    .unwrap()
-                    .is_adjacent()
-            })
-            .next()
-    }
-
-    fn next_node(&self) -> Option<NodeIndex<usize>> {
-        self.graph
-            .neighbors_directed(self.index.node_index(), Outgoing)
-            .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(self.index.node_index(), *ni).unwrap())
-                    .unwrap()
-                    .is_adjacent()
-            })
-            .next()
-    }
-
     pub fn core(&self) -> Option<FixedDotIndex> {
         self.graph
             .neighbors(self.index.node_index())
@@ -257,12 +233,12 @@ impl<'a> MakeShape for LooseDot<'a> {
 pub type FixedSeg<'a> = GenericPrimitive<'a, FixedSegWeight>;
 
 impl<'a> FixedSeg<'a> {
-    pub fn next(&self) -> Option<FixedDotIndex> {
-        self.next_node().map(|ni| FixedDotIndex::new(ni))
-    }
-
-    pub fn prev(&self) -> Option<FixedDotIndex> {
-        self.prev_node().map(|ni| FixedDotIndex::new(ni))
+    pub fn other_end(&self, dot: FixedDotIndex) -> FixedDotIndex {
+        let ends = self.ends();
+        [ends.0, ends.1]
+            .into_iter()
+            .find(|end| end.node_index() != dot.node_index())
+            .unwrap()
     }
 }
 
@@ -358,12 +334,12 @@ impl<'a> FixedBend<'a> {
             .next()
     }
 
-    pub fn next(&self) -> Option<FixedDotIndex> {
-        self.next_node().map(|ni| FixedDotIndex::new(ni))
-    }
-
-    pub fn prev(&self) -> Option<FixedDotIndex> {
-        self.prev_node().map(|ni| FixedDotIndex::new(ni))
+    pub fn other_end(&self, dot: FixedDotIndex) -> FixedDotIndex {
+        let ends = self.ends();
+        [ends.0, ends.1]
+            .into_iter()
+            .find(|end| end.node_index() != dot.node_index())
+            .unwrap()
     }
 
     fn inner_radius(&self) -> f64 {

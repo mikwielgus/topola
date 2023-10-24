@@ -61,7 +61,7 @@ impl<'a> Draw<'a> {
     }
 
     pub fn start(&mut self, from: FixedDotIndex) -> Head {
-        self.prev_head(from)
+        self.head(from)
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
@@ -98,7 +98,7 @@ impl<'a> Draw<'a> {
         into: FixedDotIndex,
         width: f64,
     ) -> Result<(), ()> {
-        let to_head = self.next_head(into);
+        let to_head = self.head(into);
         let to_cw = self.guide(&Default::default()).head_cw(&to_head).unwrap();
         let tangent = self
             .guide(&Default::default())
@@ -272,15 +272,15 @@ impl<'a> Draw<'a> {
     #[debug_ensures(ret.is_some() -> self.layout.node_count() == old(self.layout.node_count() - 4))]
     #[debug_ensures(ret.is_none() -> self.layout.node_count() == old(self.layout.node_count()))]
     pub fn undo_segbend(&mut self, head: SegbendHead) -> Option<Head> {
-        self.layout
-            .primitive(head.segbend.ends().0)
-            .prev()
-            .map(|prev_dot| {
-                self.layout.remove_interior(&head.segbend);
-                self.layout.remove(head.dot().into());
+        let prev_dot = self
+            .layout
+            .primitive(head.segbend.seg)
+            .other_end(head.segbend.dot);
 
-                self.prev_head(prev_dot)
-            })
+        self.layout.remove_interior(&head.segbend);
+        self.layout.remove(head.dot().into());
+
+        Some(self.head(prev_dot))
     }
 
     #[debug_requires(width <= self.layout.primitive(head.dot()).weight().circle.r * 2.0)]
@@ -311,19 +311,11 @@ impl<'a> Draw<'a> {
         self.layout.remove(head.dot.into());
     }
 
-    fn prev_head(&self, dot: FixedDotIndex) -> Head {
-        if let Some(segbend) = self.layout.prev_segbend(dot) {
-            Head::from(SegbendHead { dot, segbend })
+    fn head(&self, dot: FixedDotIndex) -> Head {
+        if let Some(segbend) = self.layout.segbend(dot) {
+            SegbendHead { dot, segbend }.into()
         } else {
-            Head::from(BareHead { dot })
-        }
-    }
-
-    fn next_head(&self, dot: FixedDotIndex) -> Head {
-        if let Some(segbend) = self.layout.next_segbend(dot) {
-            Head::from(SegbendHead { dot, segbend })
-        } else {
-            Head::from(BareHead { dot })
+            BareHead { dot }.into()
         }
     }
 

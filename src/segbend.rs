@@ -13,27 +13,13 @@ pub struct Segbend {
 }
 
 impl Segbend {
-    pub fn new(bend: FixedBendIndex, dot: FixedDotIndex, seg: FixedSegIndex) -> Self {
-        Self { seg, dot, bend }
-    }
-
-    pub fn from_dot_prev(
+    pub fn from_dot(
         dot: FixedDotIndex,
         graph: &StableDiGraph<Weight, Label, usize>,
     ) -> Option<Self> {
         let bend = FixedDot::new(dot, graph).bend()?;
-        let dot = FixedBend::new(bend, graph).prev().unwrap();
-        let seg = FixedDot::new(dot, graph).seg().unwrap();
-        Some(Self { bend, dot, seg })
-    }
-
-    pub fn from_dot_next(
-        dot: FixedDotIndex,
-        graph: &StableDiGraph<Weight, Label, usize>,
-    ) -> Option<Self> {
-        let bend = FixedDot::new(dot, graph).bend()?;
-        let dot = FixedBend::new(bend, graph).next().unwrap();
-        let seg = FixedDot::new(dot, graph).seg().unwrap();
+        let dot = FixedBend::new(bend, graph).other_end(dot);
+        let seg = FixedDot::new(dot, graph).seg()?;
         Some(Self { bend, dot, seg })
     }
 }
