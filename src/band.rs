@@ -1,4 +1,4 @@
-use crate::graph::{Ends, FixedDotIndex, Index, Interior};
+use crate::graph::{FixedDotIndex, GetEnds, Index, Interior};
 
 pub struct Band {
     from: FixedDotIndex,
@@ -61,7 +61,7 @@ impl Interior<Index> for Band {
     }
 }
 
-impl Ends<FixedDotIndex, FixedDotIndex> for Band {
+impl GetEnds<FixedDotIndex, FixedDotIndex> for Band {
     fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
         (self.from, self.to)
     }

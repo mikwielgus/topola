@@ -12,7 +12,7 @@ pub trait Interior<T> {
     fn interior(&self) -> Vec<T>;
 }
 
-pub trait Ends<Start, Stop> {
+pub trait GetEnds<Start, Stop> {
     fn ends(&self) -> (Start, Stop);
 }
 

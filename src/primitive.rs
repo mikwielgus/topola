@@ -5,10 +5,10 @@ use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
-    Ends, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegIndex,
-    FixedSegWeight, FullyLooseSegWeight, GenericIndex, GetNet, GetNodeIndex, HalfLooseSegWeight,
-    Index, Interior, Label, LooseBendIndex, LooseBendWeight, LooseDotWeight, MakePrimitive, Retag,
-    Weight,
+    FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegIndex, FixedSegWeight,
+    FullyLooseSegWeight, GenericIndex, GetEnds, GetNet, GetNodeIndex, HalfLooseSegWeight, Index,
+    Interior, Label, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, MakePrimitive,
+    Retag, Weight,
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
@@ -79,32 +79,12 @@ impl<'a, W> GenericPrimitive<'a, W> {
             .next()
     }
 
-    pub fn tagged_index(&self) -> Index {
-        self.graph
-            .node_weight(self.index.node_index())
-            .unwrap()
-            .retag(self.index.node_index())
-    }
-
-    pub fn tagged_weight(&self) -> Weight {
+    fn tagged_weight(&self) -> Weight {
         *self.graph.node_weight(self.index.node_index()).unwrap()
     }
 
-    fn primitive<WW>(&self, index: GenericIndex<WW>) -> GenericPrimitive<WW> {
-        GenericPrimitive::new(index, &self.graph)
-    }
-}
-
-impl<'a, W> Interior<Index> for GenericPrimitive<'a, W> {
-    fn interior(&self) -> Vec<Index> {
-        vec![self.tagged_index()]
-    }
-}
-
-impl<'a, W> Ends<FixedDotIndex, FixedDotIndex> for GenericPrimitive<'a, W> {
-    fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
-        let v = self
-            .graph
+    fn adjacents(&self) -> Vec<NodeIndex<usize>> {
+        self.graph
             .neighbors_undirected(self.index.node_index())
             .filter(|ni| {
                 self.graph
@@ -117,10 +97,17 @@ impl<'a, W> Ends<FixedDotIndex, FixedDotIndex> for GenericPrimitive<'a, W> {
                     .unwrap()
                     .is_adjacent()
             })
-            .filter(|ni| self.graph.node_weight(*ni).unwrap().is_fixed_dot())
-            .map(|ni| FixedDotIndex::new(ni))
-            .collect::<Vec<_>>();
-        (v[0], v[1])
+            .collect()
+    }
+
+    fn primitive<WW>(&self, index: GenericIndex<WW>) -> GenericPrimitive<WW> {
+        GenericPrimitive::new(index, &self.graph)
+    }
+}
+
+impl<'a, W> Interior<Index> for GenericPrimitive<'a, W> {
+    fn interior(&self) -> Vec<Index> {
+        vec![self.tagged_weight().retag(self.index.node_index())]
     }
 }
 
@@ -259,6 +246,13 @@ impl<'a> MakeShape for FixedSeg<'a> {
     }
 }
 
+impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedSeg<'a> {
+    fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
+        let v = self.adjacents();
+        (FixedDotIndex::new(v[0]), FixedDotIndex::new(v[1]))
+    }
+}
+
 pub type HalfLooseSeg<'a> = GenericPrimitive<'a, HalfLooseSegWeight>;
 
 impl<'a> GetWeight<HalfLooseSegWeight> for HalfLooseSeg<'a> {
@@ -278,6 +272,13 @@ impl<'a> MakeShape for HalfLooseSeg<'a> {
     }
 }
 
+impl<'a> GetEnds<FixedDotIndex, LooseDotIndex> for HalfLooseSeg<'a> {
+    fn ends(&self) -> (FixedDotIndex, LooseDotIndex) {
+        let v = self.adjacents();
+        (FixedDotIndex::new(v[0]), LooseDotIndex::new(v[1]))
+    }
+}
+
 pub type FullyLooseSeg<'a> = GenericPrimitive<'a, FullyLooseSegWeight>;
 
 impl<'a> GetWeight<FullyLooseSegWeight> for FullyLooseSeg<'a> {
@@ -294,6 +295,13 @@ impl<'a> MakeShape for FullyLooseSeg<'a> {
             to: self.primitive(ends.1).weight().circle.pos,
             width: self.weight().width,
         })
+    }
+}
+
+impl<'a> GetEnds<LooseDotIndex, LooseDotIndex> for FullyLooseSeg<'a> {
+    fn ends(&self) -> (LooseDotIndex, LooseDotIndex) {
+        let v = self.adjacents();
+        (LooseDotIndex::new(v[0]), LooseDotIndex::new(v[1]))
     }
 }
 
@@ -399,6 +407,13 @@ impl<'a> MakeShape for FixedBend<'a> {
     }
 }
 
+impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {
+    fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
+        let v = self.adjacents();
+        (FixedDotIndex::new(v[0]), FixedDotIndex::new(v[1]))
+    }
+}
+
 pub type LooseBend<'a> = GenericPrimitive<'a, LooseBendWeight>;
 
 impl<'a> LooseBend<'a> {
@@ -461,5 +476,12 @@ impl<'a> MakeShape for LooseBend<'a> {
             swap(&mut bend_shape.from, &mut bend_shape.to);
         }
         Shape::Bend(bend_shape)
+    }
+}
+
+impl<'a> GetEnds<LooseDotIndex, LooseDotIndex> for LooseBend<'a> {
+    fn ends(&self) -> (LooseDotIndex, LooseDotIndex) {
+        let v = self.adjacents();
+        (LooseDotIndex::new(v[0]), LooseDotIndex::new(v[1]))
     }
 }

@@ -1,7 +1,7 @@
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::graph::{
-    Ends, FixedBendIndex, FixedDotIndex, FixedSegIndex, Index, Interior, Label, Weight,
+    FixedBendIndex, FixedDotIndex, FixedSegIndex, GetEnds, Index, Interior, Label, Weight,
 };
 use crate::primitive::{FixedBend, FixedDot, FixedSeg};
 
@@ -52,7 +52,7 @@ impl Interior<Index> for Bow {
     }
 }
 
-impl Ends<FixedDotIndex, FixedDotIndex> for Bow {
+impl GetEnds<FixedDotIndex, FixedDotIndex> for Bow {
     fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
         (self.seg1_dot1, self.seg2_dot2)
     }

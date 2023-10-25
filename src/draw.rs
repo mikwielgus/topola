@@ -4,8 +4,8 @@ use geo::{EuclideanLength, Point};
 
 use crate::{
     graph::{
-        DotIndex, Ends, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
-        FixedSegIndex, FixedSegWeight, Index,
+        BendIndex, DotIndex, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
+        FixedSegIndex, FixedSegWeight, GetEnds, Index, LooseBendWeight,
     },
     guide::Guide,
     layout::Layout,
@@ -156,7 +156,7 @@ impl<'a> Draw<'a> {
     pub fn segbend_around_bend(
         &mut self,
         head: Head,
-        around: FixedBendIndex,
+        around: BendIndex,
         width: f64,
     ) -> Result<SegbendHead, ()> {
         let mut tangents = self.guide(&Default::default()).head_around_bend_segments(
