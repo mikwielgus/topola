@@ -4,8 +4,8 @@ use geo::{EuclideanLength, Point};
 
 use crate::{
     graph::{
-        Ends, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegIndex,
-        FixedSegWeight, Index,
+        DotIndex, Ends, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
+        FixedSegIndex, FixedSegWeight, Index,
     },
     guide::Guide,
     layout::Layout,
@@ -100,9 +100,12 @@ impl<'a> Draw<'a> {
     ) -> Result<(), ()> {
         let to_head = self.head(into);
         let to_cw = self.guide(&Default::default()).head_cw(&to_head).unwrap();
-        let tangent = self
-            .guide(&Default::default())
-            .head_around_bend_segment(&head, into_bend, to_cw, width)?;
+        let tangent = self.guide(&Default::default()).head_around_bend_segment(
+            &head,
+            into_bend.into(),
+            to_cw,
+            width,
+        )?;
 
         let head = self.extend_head(head, tangent.start_point())?;
         let _to_head = self.extend_head(to_head, tangent.end_point())?;
@@ -118,7 +121,7 @@ impl<'a> Draw<'a> {
     pub fn segbend_around_dot(
         &mut self,
         head: Head,
-        around: FixedDotIndex,
+        around: DotIndex,
         width: f64,
     ) -> Result<SegbendHead, ()> {
         let mut tangents = self
@@ -156,9 +159,11 @@ impl<'a> Draw<'a> {
         around: FixedBendIndex,
         width: f64,
     ) -> Result<SegbendHead, ()> {
-        let mut tangents = self
-            .guide(&Default::default())
-            .head_around_bend_segments(&head, around, width)?;
+        let mut tangents = self.guide(&Default::default()).head_around_bend_segments(
+            &head,
+            around.into(),
+            width,
+        )?;
         let mut dirs = [true, false];
 
         if tangents.1.euclidean_length() < tangents.0.euclidean_length() {

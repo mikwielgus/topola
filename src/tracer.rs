@@ -119,7 +119,7 @@ impl<'a> Tracer<'a> {
             }
         }
 
-        self.draw().segbend_around_dot(head, around, width)
+        self.draw().segbend_around_dot(head, around.into(), width)
     }
 
     fn is_under(
@@ -153,7 +153,7 @@ impl<'a> Tracer<'a> {
         let outer = self.layout.primitive(around).outer().unwrap();
         let head = self
             .draw()
-            .segbend_around_dot(Head::from(head), around, width)?;
+            .segbend_around_dot(Head::from(head), around.into(), width)?;
         self.layout.reattach_bend(outer, head.segbend.bend);
 
         self.redraw_outward(outer)?;
@@ -204,7 +204,7 @@ impl<'a> Tracer<'a> {
             let segbend_head = if let Some(inner) = maybe_inner {
                 self.draw().segbend_around_bend(head, inner, width)?
             } else {
-                self.draw().segbend_around_dot(head, core, width)?
+                self.draw().segbend_around_dot(head, core.into(), width)?
             };
 
             maybe_inner = Some(segbend_head.segbend.bend);

@@ -2,11 +2,12 @@ use geo::Line;
 
 use crate::{
     draw::{Head, HeadTrait},
-    graph::{FixedBendIndex, FixedDotIndex},
+    graph::{BendIndex, DotIndex, FixedBendIndex, FixedDotIndex, MakePrimitive},
     layout::Layout,
     math::{self, Circle},
     primitive::{GetWeight, MakeShape},
     rules::{Conditions, Rules},
+    shape::ShapeTrait,
 };
 
 pub struct Guide<'a, 'b> {
@@ -43,7 +44,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     pub fn head_around_dot_segments(
         &self,
         head: &Head,
-        around: FixedDotIndex,
+        around: DotIndex,
         width: f64,
     ) -> Result<(Line, Line), ()> {
         let from_circle = self.head_circle(head, width);
@@ -58,7 +59,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     pub fn head_around_dot_segment(
         &self,
         head: &Head,
-        around: FixedDotIndex,
+        around: DotIndex,
         cw: bool,
         width: f64,
     ) -> Result<Line, ()> {
@@ -72,7 +73,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     pub fn head_around_bend_segments(
         &self,
         head: &Head,
-        around: FixedBendIndex,
+        around: BendIndex,
         width: f64,
     ) -> Result<(Line, Line), ()> {
         let from_circle = self.head_circle(head, width);
@@ -87,7 +88,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     pub fn head_around_bend_segment(
         &self,
         head: &Head,
-        around: FixedBendIndex,
+        around: BendIndex,
         cw: bool,
         width: f64,
     ) -> Result<Line, ()> {
@@ -121,10 +122,14 @@ impl<'a, 'b> Guide<'a, 'b> {
             },
             Head::Segbend(head) => {
                 if let Some(inner) = self.layout.primitive(head.segbend.bend).inner() {
-                    self.bend_circle(inner, width)
+                    self.bend_circle(inner.into(), width)
                 } else {
                     self.dot_circle(
-                        self.layout.primitive(head.segbend.bend).core().unwrap(),
+                        self.layout
+                            .primitive(head.segbend.bend)
+                            .core()
+                            .unwrap()
+                            .into(),
                         width,
                     )
                 }
@@ -132,10 +137,9 @@ impl<'a, 'b> Guide<'a, 'b> {
         }
     }
 
-    fn bend_circle(&self, bend: FixedBendIndex, _width: f64) -> Circle {
-        let mut circle = self
-            .layout
-            .primitive(bend)
+    fn bend_circle(&self, bend: BendIndex, _width: f64) -> Circle {
+        let mut circle = bend
+            .primitive(&self.layout.graph)
             .shape()
             .into_bend()
             .unwrap()
@@ -144,11 +148,11 @@ impl<'a, 'b> Guide<'a, 'b> {
         circle
     }
 
-    fn dot_circle(&self, dot: FixedDotIndex, width: f64) -> Circle {
-        let circle = self.layout.primitive(dot).weight().circle;
+    fn dot_circle(&self, dot: DotIndex, width: f64) -> Circle {
+        let shape = dot.primitive(&self.layout.graph).shape();
         Circle {
-            pos: circle.pos,
-            r: circle.r + width + self.rules.ruleset(self.conditions).clearance.min,
+            pos: shape.center(),
+            r: shape.width() / 2.0 + width + self.rules.ruleset(self.conditions).clearance.min,
         }
     }
 }

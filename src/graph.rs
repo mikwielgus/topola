@@ -87,12 +87,31 @@ pub enum DotIndex {
     Loose(LooseDotIndex),
 }
 
+impl From<DotIndex> for Index {
+    fn from(dot: DotIndex) -> Self {
+        match dot {
+            DotIndex::Fixed(fixed) => Index::FixedDot(fixed),
+            DotIndex::Loose(loose) => Index::LooseDot(loose),
+        }
+    }
+}
+
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
 pub enum SegIndex {
     Fixed(FixedSegIndex),
     HalfLoose(HalfLooseSegIndex),
     FullyLoose(FullyLooseSegIndex),
+}
+
+impl From<SegIndex> for Index {
+    fn from(seg: SegIndex) -> Self {
+        match seg {
+            SegIndex::Fixed(fixed) => Index::FixedSeg(fixed),
+            SegIndex::HalfLoose(half_loose) => Index::HalfLooseSeg(half_loose),
+            SegIndex::FullyLoose(fully_loose) => Index::FullyLooseSeg(fully_loose),
+        }
+    }
 }
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
@@ -107,6 +126,15 @@ pub enum LooseSegIndex {
 pub enum BendIndex {
     Fixed(FixedBendIndex),
     Loose(LooseBendIndex),
+}
+
+impl From<BendIndex> for Index {
+    fn from(bend: BendIndex) -> Self {
+        match bend {
+            BendIndex::Fixed(fixed) => Index::FixedBend(fixed),
+            BendIndex::Loose(loose) => Index::LooseBend(loose),
+        }
+    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
