@@ -267,7 +267,7 @@ impl<'a> MakeShape for HalfLooseSeg<'a> {
         Shape::Seg(SegShape {
             from: self.primitive(ends.0).weight().circle.pos,
             to: self.primitive(ends.1).weight().circle.pos,
-            width: self.weight().width,
+            width: self.primitive(ends.1).weight().circle.r * 2.0,
         })
     }
 }
@@ -293,7 +293,7 @@ impl<'a> MakeShape for FullyLooseSeg<'a> {
         Shape::Seg(SegShape {
             from: self.primitive(ends.0).weight().circle.pos,
             to: self.primitive(ends.1).weight().circle.pos,
-            width: self.weight().width,
+            width: self.primitive(ends.1).weight().circle.r * 2.0,
         })
     }
 }

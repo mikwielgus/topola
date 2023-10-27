@@ -262,7 +262,12 @@ impl<'a> Draw<'a> {
 
         let bend = self
             .layout
-            .add_fixed_bend(head.dot, bend_to, around, FixedBendWeight { net, cw })
+            .add_fixed_bend(
+                head.dot,
+                bend_to,
+                around,
+                FixedBendWeight { net, width, cw },
+            )
             .map_err(|err| {
                 self.layout.remove(bend_to.into());
                 self.undo_seg(head, seg);

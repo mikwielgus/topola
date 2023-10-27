@@ -171,7 +171,6 @@ impl SegWeight for FixedSegWeight {}
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HalfLooseSegWeight {
     pub net: i64,
-    pub width: f64,
 }
 
 impl_type!(HalfLooseSegWeight, HalfLooseSeg, HalfLooseSegIndex);
@@ -180,7 +179,6 @@ impl SegWeight for HalfLooseSegWeight {}
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FullyLooseSegWeight {
     pub net: i64,
-    pub width: f64,
 }
 
 impl_type!(FullyLooseSegWeight, FullyLooseSeg, FullyLooseSegIndex);
@@ -191,6 +189,7 @@ pub trait BendWeight: GetNet + Into<Weight> + Copy {}
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedBendWeight {
     pub net: i64,
+    pub width: f64,
     pub cw: bool,
 }
 
