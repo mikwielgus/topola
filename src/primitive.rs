@@ -6,9 +6,8 @@ use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
     FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegIndex, FixedSegWeight,
-    FullyLooseSegWeight, GenericIndex, GetEnds, GetNet, GetNodeIndex, GetWidth, HalfLooseSegWeight,
-    Index, Interior, Label, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight,
-    MakePrimitive, Retag, Weight,
+    GenericIndex, GetEnds, GetNet, GetNodeIndex, GetWidth, Index, Interior, Label, LooseBendIndex,
+    LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight, MakePrimitive, Retag, Weight,
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
@@ -50,8 +49,7 @@ pub enum Primitive<'a> {
     FixedDot(FixedDot<'a>),
     LooseDot(LooseDot<'a>),
     FixedSeg(FixedSeg<'a>),
-    HalfLooseSeg(HalfLooseSeg<'a>),
-    FullyLooseSeg(FullyLooseSeg<'a>),
+    LooseSeg(LooseSeg<'a>),
     FixedBend(FixedBend<'a>),
     LooseBend(LooseBend<'a>),
 }
@@ -269,15 +267,15 @@ impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedSeg<'a> {
     }
 }
 
-pub type HalfLooseSeg<'a> = GenericPrimitive<'a, HalfLooseSegWeight>;
+pub type LooseSeg<'a> = GenericPrimitive<'a, LooseSegWeight>;
 
-impl<'a> GetWeight<HalfLooseSegWeight> for HalfLooseSeg<'a> {
-    fn weight(&self) -> HalfLooseSegWeight {
-        self.tagged_weight().into_half_loose_seg().unwrap()
+impl<'a> GetWeight<LooseSegWeight> for LooseSeg<'a> {
+    fn weight(&self) -> LooseSegWeight {
+        self.tagged_weight().into_loose_seg().unwrap()
     }
 }
 
-impl<'a> MakeShape for HalfLooseSeg<'a> {
+impl<'a> MakeShape for LooseSeg<'a> {
     fn shape(&self) -> Shape {
         let ends = self.ends();
         Shape::Seg(SegShape {
@@ -288,45 +286,13 @@ impl<'a> MakeShape for HalfLooseSeg<'a> {
     }
 }
 
-impl<'a> GetWidth for HalfLooseSeg<'a> {
+impl<'a> GetWidth for LooseSeg<'a> {
     fn width(&self) -> f64 {
         self.primitive(self.ends().1).weight().width()
     }
 }
 
-impl<'a> GetEnds<FixedDotIndex, LooseDotIndex> for HalfLooseSeg<'a> {
-    fn ends(&self) -> (FixedDotIndex, LooseDotIndex) {
-        let v = self.adjacents();
-        (FixedDotIndex::new(v[0]), LooseDotIndex::new(v[1]))
-    }
-}
-
-pub type FullyLooseSeg<'a> = GenericPrimitive<'a, FullyLooseSegWeight>;
-
-impl<'a> GetWeight<FullyLooseSegWeight> for FullyLooseSeg<'a> {
-    fn weight(&self) -> FullyLooseSegWeight {
-        self.tagged_weight().into_fully_loose_seg().unwrap()
-    }
-}
-
-impl<'a> MakeShape for FullyLooseSeg<'a> {
-    fn shape(&self) -> Shape {
-        let ends = self.ends();
-        Shape::Seg(SegShape {
-            from: self.primitive(ends.0).weight().circle.pos,
-            to: self.primitive(ends.1).weight().circle.pos,
-            width: self.width(),
-        })
-    }
-}
-
-impl<'a> GetWidth for FullyLooseSeg<'a> {
-    fn width(&self) -> f64 {
-        self.primitive(self.ends().1).weight().width()
-    }
-}
-
-impl<'a> GetEnds<LooseDotIndex, LooseDotIndex> for FullyLooseSeg<'a> {
+impl<'a> GetEnds<LooseDotIndex, LooseDotIndex> for LooseSeg<'a> {
     fn ends(&self) -> (LooseDotIndex, LooseDotIndex) {
         let v = self.adjacents();
         (LooseDotIndex::new(v[0]), LooseDotIndex::new(v[1]))

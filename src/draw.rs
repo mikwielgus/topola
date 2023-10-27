@@ -5,7 +5,7 @@ use geo::{EuclideanLength, Point};
 use crate::{
     graph::{
         BendIndex, DotIndex, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
-        FixedSegIndex, FixedSegWeight, GetEnds, Index, LooseBendWeight,
+        FixedSegIndex, FixedSegWeight, Index,
     },
     guide::Guide,
     layout::Layout,

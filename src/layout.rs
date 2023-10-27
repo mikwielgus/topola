@@ -8,10 +8,9 @@ use rstar::{RTree, RTreeObject};
 
 use crate::bow::Bow;
 use crate::graph::{
-    BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedBendWeight, FixedDotIndex,
-    FixedDotWeight, FixedSegIndex, FixedSegWeight, FullyLooseSegIndex, FullyLooseSegWeight,
-    GenericIndex, GetNodeIndex, HalfLooseSegIndex, HalfLooseSegWeight, Index, Interior, Label,
-    LooseDotIndex, LooseDotWeight, LooseSegIndex, MakePrimitive, Retag, SegWeight, Weight,
+    BendWeight, DotWeight, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
+    FixedSegIndex, FixedSegWeight, GenericIndex, GetNodeIndex, Index, Interior, Label,
+    LooseDotIndex, LooseSegIndex, LooseSegWeight, MakePrimitive, Retag, SegWeight, Weight,
 };
 use crate::primitive::{GenericPrimitive, GetConnectable, GetWeight, MakeShape};
 use crate::segbend::Segbend;
@@ -100,25 +99,12 @@ impl Layout {
     #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(ret.is_err() -> self.graph.edge_count() == old(self.graph.edge_count()))]
-    pub fn add_half_loose_seg(
-        &mut self,
-        from: FixedDotIndex,
-        to: LooseDotIndex,
-        weight: HalfLooseSegWeight,
-    ) -> Result<HalfLooseSegIndex, ()> {
-        self.add_seg(from, to, weight)
-    }
-
-    #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
-    #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count() + 2))]
-    #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
-    #[debug_ensures(ret.is_err() -> self.graph.edge_count() == old(self.graph.edge_count()))]
-    pub fn add_fully_loose_seg(
+    pub fn add_loose_seg(
         &mut self,
         from: LooseDotIndex,
         to: LooseDotIndex,
-        weight: FullyLooseSegWeight,
-    ) -> Result<FullyLooseSegIndex, ()> {
+        weight: LooseSegWeight,
+    ) -> Result<LooseSegIndex, ()> {
         self.add_seg(from, to, weight)
     }
 

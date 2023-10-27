@@ -5,7 +5,7 @@ use std::marker::PhantomData;
 
 use crate::{
     math::Circle,
-    primitive::{GenericPrimitive, GetWeight, Primitive},
+    primitive::{GenericPrimitive, Primitive},
 };
 
 pub trait Interior<T> {
@@ -67,8 +67,7 @@ pub enum Weight {
     FixedDot(FixedDotWeight),
     LooseDot(LooseDotWeight),
     FixedSeg(FixedSegWeight),
-    HalfLooseSeg(HalfLooseSegWeight),
-    FullyLooseSeg(FullyLooseSegWeight),
+    LooseSeg(LooseSegWeight),
     FixedBend(FixedBendWeight),
     LooseBend(LooseBendWeight),
 }
@@ -79,8 +78,7 @@ pub enum Index {
     FixedDot(FixedDotIndex),
     LooseDot(LooseDotIndex),
     FixedSeg(FixedSegIndex),
-    HalfLooseSeg(HalfLooseSegIndex),
-    FullyLooseSeg(FullyLooseSegIndex),
+    LooseSeg(LooseSegIndex),
     FixedBend(FixedBendIndex),
     LooseBend(LooseBendIndex),
 }
@@ -105,25 +103,16 @@ impl From<DotIndex> for Index {
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
 pub enum SegIndex {
     Fixed(FixedSegIndex),
-    HalfLoose(HalfLooseSegIndex),
-    FullyLoose(FullyLooseSegIndex),
+    Loose(LooseSegIndex),
 }
 
 impl From<SegIndex> for Index {
     fn from(seg: SegIndex) -> Self {
         match seg {
             SegIndex::Fixed(fixed) => Index::FixedSeg(fixed),
-            SegIndex::HalfLoose(half_loose) => Index::HalfLooseSeg(half_loose),
-            SegIndex::FullyLoose(fully_loose) => Index::FullyLooseSeg(fully_loose),
+            SegIndex::Loose(fully_loose) => Index::LooseSeg(fully_loose),
         }
     }
-}
-
-#[enum_dispatch(GetNodeIndex, MakePrimitive)]
-#[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
-pub enum LooseSegIndex {
-    Half(HalfLooseSegIndex),
-    Fully(FullyLooseSegIndex),
 }
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
@@ -192,20 +181,12 @@ impl GetWidth for FixedSegWeight {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct HalfLooseSegWeight {
+pub struct LooseSegWeight {
     pub net: i64,
 }
 
-impl_type!(HalfLooseSegWeight, HalfLooseSeg, HalfLooseSegIndex);
-impl SegWeight for HalfLooseSegWeight {}
-
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct FullyLooseSegWeight {
-    pub net: i64,
-}
-
-impl_type!(FullyLooseSegWeight, FullyLooseSeg, FullyLooseSegIndex);
-impl SegWeight for FullyLooseSegWeight {}
+impl_type!(LooseSegWeight, LooseSeg, LooseSegIndex);
+impl SegWeight for LooseSegWeight {}
 
 pub trait BendWeight: GetNet + Into<Weight> + Copy {}
 

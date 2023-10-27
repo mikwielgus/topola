@@ -2,7 +2,7 @@ use geo::Line;
 
 use crate::{
     draw::{Head, HeadTrait},
-    graph::{BendIndex, DotIndex, FixedBendIndex, FixedDotIndex, MakePrimitive},
+    graph::{BendIndex, DotIndex, FixedDotIndex, MakePrimitive},
     layout::Layout,
     math::{self, Circle},
     primitive::{GetWeight, MakeShape},
