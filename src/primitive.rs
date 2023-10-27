@@ -6,9 +6,9 @@ use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
     FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegIndex, FixedSegWeight,
-    FullyLooseSegWeight, GenericIndex, GetEnds, GetNet, GetNodeIndex, HalfLooseSegWeight, Index,
-    Interior, Label, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, MakePrimitive,
-    Retag, Weight,
+    FullyLooseSegWeight, GenericIndex, GetEnds, GetNet, GetNodeIndex, GetWidth, HalfLooseSegWeight,
+    Index, Interior, Label, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight,
+    MakePrimitive, Retag, Weight,
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
@@ -38,7 +38,14 @@ pub trait MakeShape {
     fn shape(&self) -> Shape;
 }
 
-#[enum_dispatch(GetNet, GetGraph, GetConnectable, TaggedPrevTaggedNext, MakeShape)]
+#[enum_dispatch(
+    GetNet,
+    GetWidth,
+    GetGraph,
+    GetConnectable,
+    TaggedPrevTaggedNext,
+    MakeShape
+)]
 pub enum Primitive<'a> {
     FixedDot(FixedDot<'a>),
     LooseDot(LooseDot<'a>),
@@ -128,6 +135,15 @@ where
 {
     fn net(&self) -> i64 {
         self.weight().net()
+    }
+}
+
+impl<'a, W: GetWidth> GetWidth for GenericPrimitive<'a, W>
+where
+    GenericPrimitive<'a, W>: GetWeight<W>,
+{
+    fn width(&self) -> f64 {
+        self.weight().width()
     }
 }
 
@@ -241,7 +257,7 @@ impl<'a> MakeShape for FixedSeg<'a> {
         Shape::Seg(SegShape {
             from: self.primitive(ends.0).weight().circle.pos,
             to: self.primitive(ends.1).weight().circle.pos,
-            width: self.weight().width,
+            width: self.width(),
         })
     }
 }
@@ -267,8 +283,14 @@ impl<'a> MakeShape for HalfLooseSeg<'a> {
         Shape::Seg(SegShape {
             from: self.primitive(ends.0).weight().circle.pos,
             to: self.primitive(ends.1).weight().circle.pos,
-            width: self.primitive(ends.1).weight().circle.r * 2.0,
+            width: self.width(),
         })
+    }
+}
+
+impl<'a> GetWidth for HalfLooseSeg<'a> {
+    fn width(&self) -> f64 {
+        self.primitive(self.ends().1).weight().width()
     }
 }
 
@@ -293,8 +315,14 @@ impl<'a> MakeShape for FullyLooseSeg<'a> {
         Shape::Seg(SegShape {
             from: self.primitive(ends.0).weight().circle.pos,
             to: self.primitive(ends.1).weight().circle.pos,
-            width: self.primitive(ends.1).weight().circle.r * 2.0,
+            width: self.width(),
         })
+    }
+}
+
+impl<'a> GetWidth for FullyLooseSeg<'a> {
+    fn width(&self) -> f64 {
+        self.primitive(self.ends().1).weight().width()
     }
 }
 
@@ -355,7 +383,7 @@ impl<'a> FixedBend<'a> {
         let mut layer = FixedBendIndex::new(self.index.node_index());
 
         while let Some(inner) = self.primitive(layer).inner() {
-            r += self.primitive(inner).shape().width();
+            r += self.primitive(inner).width();
             layer = inner;
         }
 
@@ -397,7 +425,7 @@ impl<'a> MakeShape for FixedBend<'a> {
                 pos: self.primitive(self.core().unwrap()).weight().circle.pos,
                 r: self.inner_radius(),
             },
-            width: self.primitive(ends.0).weight().circle.r * 2.0,
+            width: self.width(),
         };
 
         if self.weight().cw {
@@ -435,7 +463,7 @@ impl<'a> LooseBend<'a> {
         let mut layer = LooseBendIndex::new(self.index.node_index());
 
         while let Some(inner) = self.primitive(layer).inner() {
-            r += self.primitive(inner).shape().width();
+            r += self.primitive(inner).width();
             layer = inner;
         }
 
@@ -469,13 +497,19 @@ impl<'a> MakeShape for LooseBend<'a> {
                 pos: self.primitive(self.core().unwrap()).weight().circle.pos,
                 r: self.inner_radius(),
             },
-            width: self.primitive(ends.0).weight().circle.r * 2.0,
+            width: self.width(),
         };
 
         if self.weight().cw {
             swap(&mut bend_shape.from, &mut bend_shape.to);
         }
         Shape::Bend(bend_shape)
+    }
+}
+
+impl<'a> GetWidth for LooseBend<'a> {
+    fn width(&self) -> f64 {
+        self.primitive(self.ends().1).weight().width()
     }
 }
 

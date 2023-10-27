@@ -5,15 +5,15 @@ use std::marker::PhantomData;
 
 use crate::{
     math::Circle,
-    primitive::{GenericPrimitive, Primitive},
+    primitive::{GenericPrimitive, GetWeight, Primitive},
 };
 
 pub trait Interior<T> {
     fn interior(&self) -> Vec<T>;
 }
 
-pub trait GetEnds<Start, Stop> {
-    fn ends(&self) -> (Start, Stop);
+pub trait GetEnds<F, T> {
+    fn ends(&self) -> (F, T);
 }
 
 #[enum_dispatch]
@@ -24,6 +24,11 @@ pub trait Retag {
 #[enum_dispatch]
 pub trait GetNet {
     fn net(&self) -> i64;
+}
+
+#[enum_dispatch]
+pub trait GetWidth {
+    fn width(&self) -> f64;
 }
 
 macro_rules! impl_type {
@@ -137,7 +142,7 @@ impl From<BendIndex> for Index {
     }
 }
 
-pub trait DotWeight: GetNet + Into<Weight> + Copy {}
+pub trait DotWeight: GetNet + GetWidth + Into<Weight> + Copy {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedDotWeight {
@@ -148,6 +153,12 @@ pub struct FixedDotWeight {
 impl_type!(FixedDotWeight, FixedDot, FixedDotIndex);
 impl DotWeight for FixedDotWeight {}
 
+impl GetWidth for FixedDotWeight {
+    fn width(&self) -> f64 {
+        self.circle.r * 2.0
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseDotWeight {
     pub net: i64,
@@ -156,6 +167,12 @@ pub struct LooseDotWeight {
 
 impl_type!(LooseDotWeight, LooseDot, LooseDotIndex);
 impl DotWeight for LooseDotWeight {}
+
+impl GetWidth for LooseDotWeight {
+    fn width(&self) -> f64 {
+        self.circle.r * 2.0
+    }
+}
 
 pub trait SegWeight: GetNet + Into<Weight> + Copy {}
 
@@ -167,6 +184,12 @@ pub struct FixedSegWeight {
 
 impl_type!(FixedSegWeight, FixedSeg, FixedSegIndex);
 impl SegWeight for FixedSegWeight {}
+
+impl GetWidth for FixedSegWeight {
+    fn width(&self) -> f64 {
+        self.width
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct HalfLooseSegWeight {
@@ -195,6 +218,12 @@ pub struct FixedBendWeight {
 
 impl_type!(FixedBendWeight, FixedBend, FixedBendIndex);
 impl BendWeight for FixedBendWeight {}
+
+impl GetWidth for FixedBendWeight {
+    fn width(&self) -> f64 {
+        self.width
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseBendWeight {
