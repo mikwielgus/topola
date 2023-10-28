@@ -42,7 +42,7 @@ impl<'a> Tracer<'a> {
 
     pub fn finish(&mut self, trace: &mut Trace, into: VertexIndex, width: f64) -> Result<(), ()> {
         let into_dot = self.mesh.dot(into);
-        self.draw().finish(trace.head, into_dot, width)
+        self.draw().finish_in_dot(trace.head, into_dot, width)
     }
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == path.len())]
@@ -87,14 +87,14 @@ impl<'a> Tracer<'a> {
     #[debug_ensures(ret.is_err() -> trace.path.len() == old(trace.path.len()))]
     pub fn step(&mut self, trace: &mut Trace, to: VertexIndex, width: f64) -> Result<(), ()> {
         let to_dot = self.mesh.dot(to);
-        trace.head = Head::from(self.wrap(trace.head, to_dot, width)?);
+        trace.head = self.wrap(trace.head, to_dot, width)?.into();
 
         trace.path.push(to);
         Ok(())
     }
 
     fn wrap(&mut self, head: Head, around: FixedDotIndex, width: f64) -> Result<SegbendHead, ()> {
-        let _around_pos = self.layout.primitive(around).weight().circle.pos;
+        /*let _around_pos = self.layout.primitive(around).weight().circle.pos;
         let _around_primitive = self.layout.primitive(around);
 
         'blk: {
@@ -117,12 +117,12 @@ impl<'a> Tracer<'a> {
 
                 return self.draw().segbend_around_bend(head, layer.into(), width);
             }
-        }
+        }*/
 
         self.draw().segbend_around_dot(head, around.into(), width)
     }
 
-    fn is_under(
+    /*fn is_under(
         &mut self,
         _head: Head,
         around: FixedDotIndex,
@@ -142,9 +142,9 @@ impl<'a> Tracer<'a> {
         } else {*/
         None
         //}
-    }
+    }*/
 
-    fn tuck_around_dot(
+    /*fn tuck_around_dot(
         &mut self,
         head: Head,
         around: FixedDotIndex,
@@ -213,7 +213,7 @@ impl<'a> Tracer<'a> {
         }
 
         Ok(())
-    }
+    }*/
 
     /*fn relax_band(&mut self, bend: FixedBendIndex) {
         let mut prev_bend = bend;
@@ -235,15 +235,16 @@ impl<'a> Tracer<'a> {
         }
     }*/
 
-    fn release_bow(&mut self, bend: FixedBendIndex) {
+    /*fn release_bow(&mut self, bend: FixedBendIndex) {
         let bow = self.layout.bow(bend);
         let ends = bow.ends();
 
         self.layout.remove_interior(&bow);
 
         let head = self.draw().start(ends.0);
+
         let _ = self.draw().finish(head, ends.1, 5.0);
-    }
+    }*/
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() - 1))]
     #[debug_ensures(ret.is_err() -> trace.path.len() == old(trace.path.len()))]

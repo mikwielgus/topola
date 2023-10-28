@@ -2,8 +2,8 @@ extern crate sdl2;
 
 macro_rules! dbg_dot {
     ($graph:expr) => {
-        use petgraph::FixedDot::FixedDot;
-        println!("{:?}", FixedDot::new(&$graph));
+        use petgraph::dot::Dot;
+        println!("{:?}", Dot::new(&$graph));
     };
 }
 
@@ -25,7 +25,7 @@ mod shape;
 mod tracer;
 
 use geo::point;
-use graph::{FixedDotIndex, FixedSegWeight};
+use graph::{FixedDotIndex, FixedSegWeight, LooseDotIndex};
 use layout::Layout;
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
@@ -403,7 +403,7 @@ fn render_times(
     canvas: &mut Canvas<Window>,
     mut router_or_layout: RouterOrLayout,
     from: Option<FixedDotIndex>,
-    follower: Option<FixedDotIndex>,
+    follower: Option<LooseDotIndex>,
     mut mesh: Option<Mesh>,
     path: &[VertexIndex],
     times: i64,

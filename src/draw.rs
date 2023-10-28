@@ -4,20 +4,21 @@ use geo::{EuclideanLength, Point};
 
 use crate::{
     graph::{
-        BendIndex, DotIndex, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
-        FixedSegIndex, FixedSegWeight, Index,
+        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetNet, Index, LooseBendIndex,
+        LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight,
+        MakePrimitive,
     },
     guide::Guide,
     layout::Layout,
     math::Circle,
-    primitive::GetWeight,
+    primitive::{GetOtherEnd, GetWeight},
     rules::{Conditions, Rules},
     segbend::Segbend,
 };
 
 #[enum_dispatch]
 pub trait HeadTrait {
-    fn dot(&self) -> FixedDotIndex;
+    fn dot(&self) -> DotIndex;
 }
 
 #[enum_dispatch(HeadTrait)]
@@ -33,20 +34,20 @@ pub struct BareHead {
 }
 
 impl HeadTrait for BareHead {
-    fn dot(&self) -> FixedDotIndex {
-        self.dot
+    fn dot(&self) -> DotIndex {
+        self.dot.into()
     }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct SegbendHead {
-    pub dot: FixedDotIndex,
+    pub dot: LooseDotIndex,
     pub segbend: Segbend,
 }
 
 impl HeadTrait for SegbendHead {
-    fn dot(&self) -> FixedDotIndex {
-        self.dot
+    fn dot(&self) -> DotIndex {
+        self.dot.into()
     }
 }
 
@@ -60,45 +61,54 @@ impl<'a> Draw<'a> {
         Self { layout, rules }
     }
 
-    pub fn start(&mut self, from: FixedDotIndex) -> Head {
-        self.head(from)
+    pub fn start(&mut self, from: LooseDotIndex) -> Head {
+        self.head(from.into())
     }
 
-    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
+    /*#[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
-    pub fn finish(&mut self, head: Head, into: FixedDotIndex, width: f64) -> Result<(), ()> {
+    pub fn finish(&mut self, head: Head, into: LooseDotIndex, width: f64) -> Result<(), ()> {
         if let Some(bend) = self.layout.primitive(into).bend() {
             self.finish_in_bend(head, bend, into, width)?;
         } else {
-            self.finish_in_dot(head, into, width)?;
+            self.finish_in_dot(head, into.into(), width)?;
+        }
+        Ok(())
+    }*/
+
+    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
+    pub fn finish_in_dot(&mut self, head: Head, into: FixedDotIndex, width: f64) -> Result<(), ()> {
+        let tangent = self
+            .guide(&Default::default())
+            .head_into_dot_segment(&head, into, width)?;
+        let head = self.extend_head(head, tangent.start_point())?;
+
+        let net = head.dot().primitive(&self.layout.graph).net();
+
+        match head.dot() {
+            DotIndex::Fixed(dot) => {
+                self.layout
+                    .add_fixed_seg(into.into(), dot, FixedSegWeight { net, width })?;
+            }
+            DotIndex::Loose(dot) => {
+                self.layout
+                    .add_loose_seg(into.into(), dot, LooseSegWeight { net })?;
+            }
         }
         Ok(())
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
-    fn finish_in_dot(&mut self, head: Head, into: FixedDotIndex, width: f64) -> Result<(), ()> {
-        let tangent = self
-            .guide(&Default::default())
-            .head_into_dot_segment(&head, into, width)?;
-        let head = self.extend_head(head, tangent.start_point())?;
-
-        let net = self.layout.primitive(head.dot()).weight().net;
-        self.layout
-            .add_fixed_seg(head.dot(), into, FixedSegWeight { net, width })?;
-        Ok(())
-    }
-
-    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
-    fn finish_in_bend(
+    pub fn finish_in_bend(
         &mut self,
         head: Head,
-        into_bend: FixedBendIndex,
-        into: FixedDotIndex,
+        into_bend: LooseBendIndex,
+        into: LooseDotIndex,
         width: f64,
     ) -> Result<(), ()> {
-        let to_head = self.head(into);
+        let to_head = self.head(into.into());
         let to_cw = self.guide(&Default::default()).head_cw(&to_head).unwrap();
         let tangent = self.guide(&Default::default()).head_around_bend_segment(
             &head,
@@ -110,9 +120,9 @@ impl<'a> Draw<'a> {
         let head = self.extend_head(head, tangent.start_point())?;
         let _to_head = self.extend_head(to_head, tangent.end_point())?;
 
-        let net = self.layout.primitive(head.dot()).weight().net;
+        let net = head.dot().primitive(&self.layout.graph).net();
         self.layout
-            .add_fixed_seg(head.dot(), into, FixedSegWeight { net, width })?;
+            .add_loose_seg(head.dot(), into.into(), LooseSegWeight { net })?;
         Ok(())
     }
 
@@ -248,34 +258,27 @@ impl<'a> Draw<'a> {
         cw: bool,
         width: f64,
     ) -> Result<SegbendHead, ()> {
-        let (head, seg) = self.seg(head, to, width)?;
-        let dot = head.dot;
+        let (seg, dot) = self.seg(head, to, width)?;
+        let net = head.dot().primitive(&self.layout.graph).net();
         let bend_to = self
             .layout
-            .add_fixed_dot(self.layout.primitive(head.dot).weight())
+            .add_loose_dot(self.layout.primitive(dot).weight())
             .map_err(|err| {
-                self.undo_seg(head, seg);
+                self.undo_seg(seg, dot);
                 err
             })?;
 
-        let net = self.layout.primitive(head.dot).weight().net;
-
         let bend = self
             .layout
-            .add_fixed_bend(
-                head.dot,
-                bend_to,
-                around,
-                FixedBendWeight { net, width, cw },
-            )
+            .add_loose_bend(dot, bend_to, around, LooseBendWeight { net, cw })
             .map_err(|err| {
                 self.layout.remove(bend_to.into());
-                self.undo_seg(head, seg);
+                self.undo_seg(seg, dot);
                 err
             })?;
         Ok(SegbendHead {
             dot: bend_to,
-            segbend: Segbend { bend, dot, seg },
+            segbend: Segbend { seg, dot, bend },
         })
     }
 
@@ -285,20 +288,25 @@ impl<'a> Draw<'a> {
         let prev_dot = self
             .layout
             .primitive(head.segbend.seg)
-            .other_end(head.segbend.dot);
+            .other_end(head.segbend.dot.into());
 
         self.layout.remove_interior(&head.segbend);
         self.layout.remove(head.dot().into());
 
-        Some(self.head(prev_dot))
+        Some(self.head(prev_dot.into()))
     }
 
-    #[debug_requires(width <= self.layout.primitive(head.dot()).weight().circle.r * 2.0)]
+    //#[debug_requires(width <= self.layout.primitive(head.dot()).weight().circle.r * 2.0)]
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
-    fn seg(&mut self, head: Head, to: Point, width: f64) -> Result<(BareHead, FixedSegIndex), ()> {
-        let net = self.layout.primitive(head.dot()).weight().net;
-        let to_index = self.layout.add_fixed_dot(FixedDotWeight {
+    fn seg(
+        &mut self,
+        head: Head,
+        to: Point,
+        width: f64,
+    ) -> Result<(LooseSegIndex, LooseDotIndex), ()> {
+        let net = head.dot().primitive(&self.layout.graph).net();
+        let to_index = self.layout.add_loose_dot(LooseDotWeight {
             net,
             circle: Circle {
                 pos: to,
@@ -307,25 +315,28 @@ impl<'a> Draw<'a> {
         })?;
         let seg = self
             .layout
-            .add_fixed_seg(head.dot(), to_index, FixedSegWeight { net, width })
+            .add_loose_seg(head.dot(), to_index, LooseSegWeight { net })
             .map_err(|err| {
                 self.layout.remove(to_index.into());
                 err
             })?;
-        Ok((BareHead { dot: to_index }, seg))
+        Ok((seg, to_index))
     }
 
     #[debug_ensures(self.layout.node_count() == old(self.layout.node_count() - 2))]
-    fn undo_seg(&mut self, head: BareHead, seg: FixedSegIndex) {
+    fn undo_seg(&mut self, seg: LooseSegIndex, dot: LooseDotIndex) {
         self.layout.remove(seg.into());
-        self.layout.remove(head.dot.into());
+        self.layout.remove(dot.into());
     }
 
-    fn head(&self, dot: FixedDotIndex) -> Head {
-        if let Some(segbend) = self.layout.segbend(dot) {
-            SegbendHead { dot, segbend }.into()
-        } else {
-            BareHead { dot }.into()
+    fn head(&self, dot: DotIndex) -> Head {
+        match dot {
+            DotIndex::Fixed(loose) => BareHead { dot: loose }.into(),
+            DotIndex::Loose(fixed) => SegbendHead {
+                dot: fixed,
+                segbend: self.layout.segbend(fixed).unwrap(),
+            }
+            .into(),
         }
     }
 

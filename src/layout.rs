@@ -8,9 +8,10 @@ use rstar::{RTree, RTreeObject};
 
 use crate::bow::Bow;
 use crate::graph::{
-    BendWeight, DotWeight, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
-    FixedSegIndex, FixedSegWeight, GenericIndex, GetNodeIndex, Index, Interior, Label,
-    LooseDotIndex, LooseSegIndex, LooseSegWeight, MakePrimitive, Retag, SegWeight, Weight,
+    BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedBendWeight, FixedDotIndex,
+    FixedDotWeight, FixedSegIndex, FixedSegWeight, GenericIndex, GetNetMut, GetNodeIndex, Index,
+    Interior, Label, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex,
+    LooseSegWeight, MakePrimitive, Retag, SegWeight, Weight,
 };
 use crate::primitive::{GenericPrimitive, GetConnectable, GetWeight, MakeShape};
 use crate::segbend::Segbend;
@@ -38,7 +39,7 @@ impl Layout {
         for index in path
             .interior()
             .into_iter()
-            .filter(|index| !index.is_fixed_dot())
+            .filter(|index| !index.is_loose_dot())
         {
             self.remove(index);
         }
@@ -49,7 +50,7 @@ impl Layout {
         for index in path
             .interior()
             .into_iter()
-            .filter(|index| index.is_fixed_dot())
+            .filter(|index| index.is_loose_dot())
         {
             self.remove(index);
         }
@@ -65,7 +66,17 @@ impl Layout {
     }
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, ()> {
+        self.add_dot(weight)
+    }
+
+    // TODO: Remove.
+    #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
+    pub fn add_loose_dot(&mut self, weight: LooseDotWeight) -> Result<LooseDotIndex, ()> {
         self.add_dot(weight)
     }
 
@@ -101,7 +112,7 @@ impl Layout {
     #[debug_ensures(ret.is_err() -> self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn add_loose_seg(
         &mut self,
-        from: LooseDotIndex,
+        from: DotIndex,
         to: LooseDotIndex,
         weight: LooseSegWeight,
     ) -> Result<LooseSegIndex, ()> {
@@ -131,23 +142,21 @@ impl Layout {
         self.insert_into_rtree(seg.into());
         self.fail_and_remove_if_collides_except(seg.into(), &[])?;
 
-        self.graph
+        *self
+            .graph
             .node_weight_mut(from.node_index())
             .unwrap()
-            .as_fixed_dot_mut()
-            .unwrap()
-            .net = weight.net();
-        self.graph
+            .net_mut() = weight.net();
+        *self
+            .graph
             .node_weight_mut(to.node_index())
             .unwrap()
-            .as_fixed_dot_mut()
-            .unwrap()
-            .net = weight.net();
+            .net_mut() = weight.net();
 
         Ok(seg)
     }
 
-    #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
+    /*#[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
     pub fn add_fixed_bend(
         &mut self,
@@ -161,7 +170,7 @@ impl Layout {
             Index::FixedBend(around) => self.add_outer_bend(from, to, around, weight),
             _ => unreachable!(),
         }
-    }
+    }*/
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
@@ -170,8 +179,8 @@ impl Layout {
         from: LooseDotIndex,
         to: LooseDotIndex,
         around: Index,
-        weight: FixedBendWeight,
-    ) -> Result<FixedBendIndex, ()> {
+        weight: LooseBendWeight,
+    ) -> Result<LooseBendIndex, ()> {
         match around {
             Index::FixedDot(core) => self.add_core_bend(from, to, core, weight),
             Index::FixedBend(around) => self.add_outer_bend(from, to, around, weight),
@@ -189,11 +198,11 @@ impl Layout {
         to: impl GetNodeIndex,
         core: FixedDotIndex,
         weight: W,
-    ) -> Result<FixedBendIndex, ()>
+    ) -> Result<LooseBendIndex, ()>
     where
         GenericIndex<W>: Into<Index> + Copy,
     {
-        let bend = FixedBendIndex::new(self.graph.add_node(weight.into()));
+        let bend = LooseBendIndex::new(self.graph.add_node(weight.into()));
 
         self.graph
             .add_edge(from.node_index(), bend.node_index(), Label::Adjacent);
@@ -217,7 +226,7 @@ impl Layout {
         to: impl GetNodeIndex,
         inner: impl GetNodeIndex,
         weight: W,
-    ) -> Result<FixedBendIndex, ()> {
+    ) -> Result<LooseBendIndex, ()> {
         let core = *self
             .graph
             .neighbors(inner.node_index())
@@ -232,7 +241,7 @@ impl Layout {
             .first()
             .unwrap();
 
-        let bend = FixedBendIndex::new(self.graph.add_node(weight.into()));
+        let bend = LooseBendIndex::new(self.graph.add_node(weight.into()));
 
         self.graph
             .add_edge(from.node_index(), bend.node_index(), Label::Adjacent);
@@ -288,11 +297,11 @@ impl Layout {
         self.insert_into_rtree(bend.into());
     }
 
-    pub fn bow(&self, bend: FixedBendIndex) -> Bow {
+    /*pub fn bow(&self, bend: LooseBendIndex) -> Bow {
         Bow::from_bend(bend, &self.graph)
-    }
+    }*/
 
-    pub fn segbend(&self, dot: FixedDotIndex) -> Option<Segbend> {
+    pub fn segbend(&self, dot: LooseDotIndex) -> Option<Segbend> {
         Segbend::from_dot(dot, &self.graph)
     }
 
@@ -333,7 +342,7 @@ impl Layout {
 impl Layout {
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
-    pub fn move_dot(&mut self, dot: FixedDotIndex, to: Point) -> Result<(), ()> {
+    pub fn move_dot(&mut self, dot: LooseDotIndex, to: Point) -> Result<(), ()> {
         self.primitive(dot)
             .seg()
             .map(|seg| self.remove_from_rtree(seg.into()));
@@ -346,11 +355,11 @@ impl Layout {
         let old_weight = dot_weight;
 
         dot_weight.circle.pos = to;
-        *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::FixedDot(dot_weight);
+        *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::LooseDot(dot_weight);
 
         if let Some(..) = self.detect_collision_except(dot.into(), &[]) {
             // Restore original state.
-            *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::FixedDot(old_weight);
+            *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::LooseDot(old_weight);
 
             self.insert_into_rtree(dot.into());
             self.primitive(dot)

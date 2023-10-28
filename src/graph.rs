@@ -27,6 +27,11 @@ pub trait GetNet {
 }
 
 #[enum_dispatch]
+pub trait GetNetMut {
+    fn net_mut(&mut self) -> &mut i64;
+}
+
+#[enum_dispatch]
 pub trait GetWidth {
     fn width(&self) -> f64;
 }
@@ -48,6 +53,12 @@ macro_rules! impl_type {
             }
         }
 
+        impl GetNetMut for $weight_struct {
+            fn net_mut(&mut self) -> &mut i64 {
+                &mut self.net
+            }
+        }
+
         pub type $index_struct = GenericIndex<$weight_struct>;
 
         impl MakePrimitive for $index_struct {
@@ -61,7 +72,7 @@ macro_rules! impl_type {
     };
 }
 
-#[enum_dispatch(Retag, GetNet)]
+#[enum_dispatch(Retag, GetNet, GetNetMut)]
 #[derive(Debug, EnumAsInner, Clone, Copy, PartialEq)]
 pub enum Weight {
     FixedDot(FixedDotWeight),
@@ -109,8 +120,8 @@ pub enum SegIndex {
 impl From<SegIndex> for Index {
     fn from(seg: SegIndex) -> Self {
         match seg {
-            SegIndex::Fixed(fixed) => Index::FixedSeg(fixed),
-            SegIndex::Loose(fully_loose) => Index::LooseSeg(fully_loose),
+            SegIndex::Fixed(seg) => Index::FixedSeg(seg),
+            SegIndex::Loose(seg) => Index::LooseSeg(seg),
         }
     }
 }
@@ -125,8 +136,8 @@ pub enum BendIndex {
 impl From<BendIndex> for Index {
     fn from(bend: BendIndex) -> Self {
         match bend {
-            BendIndex::Fixed(fixed) => Index::FixedBend(fixed),
-            BendIndex::Loose(loose) => Index::LooseBend(loose),
+            BendIndex::Fixed(bend) => Index::FixedBend(bend),
+            BendIndex::Loose(bend) => Index::LooseBend(bend),
         }
     }
 }

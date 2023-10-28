@@ -2,26 +2,27 @@ use petgraph::stable_graph::StableDiGraph;
 
 use crate::{
     graph::{
-        FixedBendIndex, FixedDotIndex, FixedSegIndex, GetEnds, Index, Interior, Label, Weight,
+        FixedBendIndex, FixedDotIndex, FixedSegIndex, GetEnds, Index, Interior, Label,
+        LooseBendIndex, LooseDotIndex, LooseSegIndex, Weight,
     },
-    primitive::{FixedBend, FixedDot},
+    primitive::{FixedBend, FixedDot, GetOtherEnd, LooseBend, LooseDot},
 };
 
 #[derive(Debug, Clone, Copy)]
 pub struct Segbend {
-    pub seg: FixedSegIndex,
-    pub dot: FixedDotIndex,
-    pub bend: FixedBendIndex,
+    pub seg: LooseSegIndex,
+    pub dot: LooseDotIndex,
+    pub bend: LooseBendIndex,
 }
 
 impl Segbend {
     pub fn from_dot(
-        dot: FixedDotIndex,
+        dot: LooseDotIndex,
         graph: &StableDiGraph<Weight, Label, usize>,
     ) -> Option<Self> {
-        let bend = FixedDot::new(dot, graph).bend()?;
-        let dot = FixedBend::new(bend, graph).other_end(dot);
-        let seg = FixedDot::new(dot, graph).seg()?;
+        let bend = LooseDot::new(dot, graph).bend()?;
+        let dot = LooseBend::new(bend, graph).other_end(dot);
+        let seg = LooseDot::new(dot, graph).seg()?;
         Some(Self { bend, dot, seg })
     }
 }
@@ -32,8 +33,8 @@ impl Interior<Index> for Segbend {
     }
 }
 
-impl GetEnds<FixedSegIndex, FixedBendIndex> for Segbend {
-    fn ends(&self) -> (FixedSegIndex, FixedBendIndex) {
+impl GetEnds<LooseSegIndex, LooseBendIndex> for Segbend {
+    fn ends(&self) -> (LooseSegIndex, LooseBendIndex) {
         (self.seg, self.bend)
     }
 }

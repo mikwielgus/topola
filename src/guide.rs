@@ -117,7 +117,7 @@ impl<'a, 'b> Guide<'a, 'b> {
 
         match *head {
             Head::Bare(head) => Circle {
-                pos: self.layout.primitive(head.dot()).weight().circle.pos,
+                pos: head.dot().primitive(&self.layout.graph).shape().center(), // TODO.
                 r: 0.0,
             },
             Head::Segbend(head) => {

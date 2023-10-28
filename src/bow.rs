@@ -1,32 +1,32 @@
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::graph::{
-    FixedBendIndex, FixedDotIndex, FixedSegIndex, GetEnds, Index, Interior, Label, Weight,
+    GetEnds, Index, Interior, Label, LooseBendIndex, LooseDotIndex, LooseSegIndex, Weight,
 };
-use crate::primitive::{FixedBend, FixedDot, FixedSeg};
+use crate::primitive::{GetOtherEnd, LooseBend, LooseDot, LooseSeg};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Bow {
-    seg1_dot1: FixedDotIndex,
-    seg1: FixedSegIndex,
-    seg1_dot2: FixedDotIndex,
-    bend: FixedBendIndex,
-    seg2_dot1: FixedDotIndex,
-    seg2: FixedSegIndex,
-    seg2_dot2: FixedDotIndex,
+    seg1_dot1: LooseDotIndex,
+    seg1: LooseSegIndex,
+    seg1_dot2: LooseDotIndex,
+    bend: LooseBendIndex,
+    seg2_dot1: LooseDotIndex,
+    seg2: LooseSegIndex,
+    seg2_dot2: LooseDotIndex,
 }
 
-impl Bow {
-    pub fn from_bend(index: FixedBendIndex, graph: &StableDiGraph<Weight, Label, usize>) -> Self {
+/*impl Bow {
+    pub fn from_bend(index: LooseBendIndex, graph: &StableDiGraph<Weight, Label, usize>) -> Self {
         let bend = index;
 
-        let seg1_dot2 = FixedBend::new(bend, graph).ends().0;
-        let seg1 = FixedDot::new(seg1_dot2, graph).seg().unwrap();
-        let seg1_dot1 = FixedSeg::new(seg1, graph).other_end(seg1_dot2);
+        let seg1_dot2 = LooseBend::new(bend, graph).ends().0;
+        let seg1 = LooseDot::new(seg1_dot2, graph).seg().unwrap();
+        let seg1_dot1 = LooseSeg::new(seg1, graph).other_end(seg1_dot2);
 
-        let seg2_dot1 = FixedBend::new(bend, graph).ends().1;
-        let seg2 = FixedDot::new(seg2_dot1, graph).seg().unwrap();
-        let seg2_dot2 = FixedSeg::new(seg2, graph).other_end(seg2_dot1);
+        let seg2_dot1 = LooseBend::new(bend, graph).ends().1;
+        let seg2 = LooseDot::new(seg2_dot1, graph).seg().unwrap();
+        let seg2_dot2 = LooseSeg::new(seg2, graph).other_end(seg2_dot1);
 
         Self {
             seg1_dot1,
@@ -38,7 +38,7 @@ impl Bow {
             seg2_dot2,
         }
     }
-}
+}*/
 
 impl Interior<Index> for Bow {
     fn interior(&self) -> Vec<Index> {
@@ -52,8 +52,8 @@ impl Interior<Index> for Bow {
     }
 }
 
-impl GetEnds<FixedDotIndex, FixedDotIndex> for Bow {
-    fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
+impl GetEnds<LooseDotIndex, LooseDotIndex> for Bow {
+    fn ends(&self) -> (LooseDotIndex, LooseDotIndex) {
         (self.seg1_dot1, self.seg2_dot2)
     }
 }
