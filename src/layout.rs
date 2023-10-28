@@ -6,12 +6,11 @@ use petgraph::Direction::Incoming;
 use rstar::primitives::GeomWithData;
 use rstar::{RTree, RTreeObject};
 
-use crate::bow::Bow;
 use crate::graph::{
-    BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedBendWeight, FixedDotIndex,
-    FixedDotWeight, FixedSegIndex, FixedSegWeight, GenericIndex, GetNetMut, GetNodeIndex, Index,
-    Interior, Label, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex,
-    LooseSegWeight, MakePrimitive, Retag, SegWeight, Weight,
+    BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedDotIndex, FixedDotWeight, FixedSegIndex,
+    FixedSegWeight, GenericIndex, GetNetMut, GetNodeIndex, Index, Interior, Label, LooseBendIndex,
+    LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight, MakePrimitive,
+    Retag, SegWeight, Weight,
 };
 use crate::primitive::{GenericPrimitive, GetConnectable, GetWeight, MakeShape};
 use crate::segbend::Segbend;
@@ -301,7 +300,7 @@ impl Layout {
         Bow::from_bend(bend, &self.graph)
     }*/
 
-    pub fn segbend(&self, dot: LooseDotIndex) -> Option<Segbend> {
+    pub fn segbend(&self, dot: LooseDotIndex) -> Segbend {
         Segbend::from_dot(dot, &self.graph)
     }
 
@@ -346,9 +345,7 @@ impl Layout {
         self.primitive(dot)
             .seg()
             .map(|seg| self.remove_from_rtree(seg.into()));
-        self.primitive(dot)
-            .bend()
-            .map(|bend| self.remove_from_rtree(bend.into()));
+        self.remove_from_rtree(self.primitive(dot).bend().into());
         self.remove_from_rtree(dot.into());
 
         let mut dot_weight = self.primitive(dot).weight();
@@ -364,20 +361,16 @@ impl Layout {
             self.insert_into_rtree(dot.into());
             self.primitive(dot)
                 .seg()
-                .map(|prev| self.insert_into_rtree(prev.into()));
-            self.primitive(dot)
-                .bend()
-                .map(|next| self.insert_into_rtree(next.into()));
+                .map(|seg| self.remove_from_rtree(seg.into()));
+            self.insert_into_rtree(self.primitive(dot).bend().into());
             return Err(());
         }
 
         self.insert_into_rtree(dot.into());
         self.primitive(dot)
             .seg()
-            .map(|prev| self.insert_into_rtree(prev.into()));
-        self.primitive(dot)
-            .bend()
-            .map(|next| self.insert_into_rtree(next.into()));
+            .map(|seg| self.remove_from_rtree(seg.into()));
+        self.insert_into_rtree(self.primitive(dot).bend().into());
 
         Ok(())
     }

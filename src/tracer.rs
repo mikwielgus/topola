@@ -1,12 +1,10 @@
 use contracts::debug_ensures;
 
 use crate::{
-    bow::Bow,
     draw::{BareHead, Draw, Head, HeadTrait, SegbendHead},
-    graph::{FixedBendIndex, FixedDotIndex, GetEnds},
+    graph::FixedDotIndex,
     layout::Layout,
     mesh::{Mesh, VertexIndex},
-    primitive::GetWeight,
     rules::Rules,
 };
 

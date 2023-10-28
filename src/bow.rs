@@ -1,9 +1,4 @@
-use petgraph::stable_graph::StableDiGraph;
-
-use crate::graph::{
-    GetEnds, Index, Interior, Label, LooseBendIndex, LooseDotIndex, LooseSegIndex, Weight,
-};
-use crate::primitive::{GetOtherEnd, LooseBend, LooseDot, LooseSeg};
+use crate::graph::{GetEnds, Index, Interior, LooseBendIndex, LooseDotIndex, LooseSegIndex};
 
 #[derive(Debug, Clone, Copy)]
 pub struct Bow {

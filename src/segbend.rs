@@ -2,10 +2,9 @@ use petgraph::stable_graph::StableDiGraph;
 
 use crate::{
     graph::{
-        FixedBendIndex, FixedDotIndex, FixedSegIndex, GetEnds, Index, Interior, Label,
-        LooseBendIndex, LooseDotIndex, LooseSegIndex, Weight,
+        GetEnds, Index, Interior, Label, LooseBendIndex, LooseDotIndex, LooseSegIndex, Weight,
     },
-    primitive::{FixedBend, FixedDot, GetOtherEnd, LooseBend, LooseDot},
+    primitive::{GetOtherEnd, LooseBend, LooseDot},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -16,14 +15,11 @@ pub struct Segbend {
 }
 
 impl Segbend {
-    pub fn from_dot(
-        dot: LooseDotIndex,
-        graph: &StableDiGraph<Weight, Label, usize>,
-    ) -> Option<Self> {
-        let bend = LooseDot::new(dot, graph).bend()?;
+    pub fn from_dot(dot: LooseDotIndex, graph: &StableDiGraph<Weight, Label, usize>) -> Self {
+        let bend = LooseDot::new(dot, graph).bend();
         let dot = LooseBend::new(bend, graph).other_end(dot);
-        let seg = LooseDot::new(dot, graph).seg()?;
-        Some(Self { bend, dot, seg })
+        let seg = LooseDot::new(dot, graph).seg().unwrap();
+        Self { bend, dot, seg }
     }
 }
 

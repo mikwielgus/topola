@@ -1,4 +1,4 @@
-use contracts::{debug_ensures, debug_requires};
+use contracts::debug_ensures;
 use enum_dispatch::enum_dispatch;
 use geo::{EuclideanLength, Point};
 
@@ -334,7 +334,7 @@ impl<'a> Draw<'a> {
             DotIndex::Fixed(loose) => BareHead { dot: loose }.into(),
             DotIndex::Loose(fixed) => SegbendHead {
                 dot: fixed,
-                segbend: self.layout.segbend(fixed).unwrap(),
+                segbend: self.layout.segbend(fixed),
             }
             .into(),
         }

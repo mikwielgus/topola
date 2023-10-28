@@ -5,10 +5,10 @@ use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
-    DotIndex, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegIndex,
-    FixedSegWeight, GenericIndex, GetEnds, GetNet, GetNodeIndex, GetWidth, Index, Interior, Label,
-    LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight,
-    MakePrimitive, Retag, Weight,
+    DotIndex, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegWeight,
+    GenericIndex, GetEnds, GetNet, GetNodeIndex, GetWidth, Index, Interior, Label, LooseBendIndex,
+    LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight, MakePrimitive,
+    Retag, Weight,
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
@@ -204,7 +204,7 @@ impl<'a> LooseDot<'a> {
             .next()
     }
 
-    pub fn bend(&self) -> Option<LooseBendIndex> {
+    pub fn bend(&self) -> LooseBendIndex {
         self.graph
             .neighbors_undirected(self.index.node_index())
             .filter(|ni| {
@@ -221,6 +221,7 @@ impl<'a> LooseDot<'a> {
             .filter(|ni| self.graph.node_weight(*ni).unwrap().is_loose_bend())
             .map(|ni| LooseBendIndex::new(ni))
             .next()
+            .unwrap()
     }
 }
 
