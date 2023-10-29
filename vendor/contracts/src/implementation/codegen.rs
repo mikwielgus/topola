@@ -5,8 +5,8 @@
 use proc_macro2::{Ident, Span, TokenStream};
 use quote::ToTokens;
 use syn::{
-    spanned::Spanned, visit_mut as visitor, Attribute, Expr, ExprCall,
-    ReturnType, TypeImplTrait,
+    spanned::Spanned, visit_mut as visitor, Attribute, Expr, ExprCall, ExprTry,
+    ReturnType, Type, TypeImplTrait,
 };
 
 use crate::implementation::{
@@ -341,7 +341,14 @@ pub(crate) fn generate(
             if let ReturnType::Type(.., ref return_type) =
                 func.function.sig.output
             {
-                break 'blk quote::quote! { let ret: #return_type = 'run: #block; };
+                let mut try_detector = TryDetector { found_try: false };
+                syn::visit::visit_block(&mut try_detector, &mut block);
+
+                if try_detector.found_try {
+                    break 'blk quote::quote! { let ret: #return_type = 'run: { try { #block? } }; };
+                } else {
+                    break 'blk quote::quote! { let ret: #return_type = 'run: #block; };
+                }
             }
         }
 
@@ -399,5 +406,15 @@ struct ImplDetector {
 impl<'a> syn::visit::Visit<'a> for ImplDetector {
     fn visit_type_impl_trait(&mut self, _node: &'a TypeImplTrait) {
         self.found_impl = true;
+    }
+}
+
+struct TryDetector {
+    found_try: bool,
+}
+
+impl<'a> syn::visit::Visit<'a> for TryDetector {
+    fn visit_expr_try(&mut self, _node: &'a ExprTry) {
+        self.found_try = true;
     }
 }

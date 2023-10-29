@@ -1,3 +1,4 @@
+#![feature(try_blocks)]
 extern crate sdl2;
 
 macro_rules! dbg_dot {
