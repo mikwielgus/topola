@@ -75,11 +75,12 @@ impl Layout {
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
-    pub fn add_loose_dot(&mut self, weight: LooseDotWeight) -> Result<LooseDotIndex, ()> {
+    fn add_loose_dot(&mut self, weight: LooseDotWeight) -> Result<LooseDotIndex, ()> {
         self.add_dot(weight)
     }
 
-    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() + 1))]
+    #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
     fn add_dot<W: DotWeight>(&mut self, weight: W) -> Result<GenericIndex<W>, ()>
     where
         GenericIndex<W>: Into<Index> + Copy,
@@ -103,6 +104,42 @@ impl Layout {
         weight: FixedSegWeight,
     ) -> Result<FixedSegIndex, ()> {
         self.add_seg(from, to, weight)
+    }
+
+    #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 4))]
+    #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count() + 5))]
+    #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(ret.is_err() -> self.graph.edge_count() == old(self.graph.edge_count()))]
+    pub fn add_segbend(
+        &mut self,
+        from: DotIndex,
+        around: Index,
+        dot_weight: LooseDotWeight,
+        seg_weight: LooseSegWeight,
+        bend_weight: LooseBendWeight,
+    ) -> Result<Segbend, ()> {
+        let seg_to = self.add_loose_dot(dot_weight)?;
+        let seg = self.add_loose_seg(from, seg_to, seg_weight).map_err(|_| {
+            self.remove(seg_to.into());
+        })?;
+
+        let bend_to = self.add_loose_dot(dot_weight).map_err(|_| {
+            self.remove(seg.into());
+            self.remove(seg_to.into());
+        })?;
+        let bend = self
+            .add_loose_bend(seg_to, bend_to, around, bend_weight)
+            .map_err(|_| {
+                self.remove(bend_to.into());
+                self.remove(seg.into());
+                self.remove(seg_to.into());
+            })?;
+
+        Ok(Segbend {
+            seg,
+            dot: seg_to,
+            bend,
+        })
     }
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
@@ -173,7 +210,7 @@ impl Layout {
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
-    pub fn add_loose_bend(
+    fn add_loose_bend(
         &mut self,
         from: LooseDotIndex,
         to: LooseDotIndex,

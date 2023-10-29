@@ -258,27 +258,23 @@ impl<'a> Draw<'a> {
         cw: bool,
         width: f64,
     ) -> Result<SegbendHead, ()> {
-        let (seg, dot) = self.seg(head, to, width)?;
         let net = head.dot().primitive(&self.layout.graph).net();
-        let bend_to = self
-            .layout
-            .add_loose_dot(self.layout.primitive(dot).weight())
-            .map_err(|err| {
-                self.undo_seg(seg, dot);
-                err
-            })?;
-
-        let bend = self
-            .layout
-            .add_loose_bend(dot, bend_to, around, LooseBendWeight { net, cw })
-            .map_err(|err| {
-                self.layout.remove(bend_to.into());
-                self.undo_seg(seg, dot);
-                err
-            })?;
+        let segbend = self.layout.add_segbend(
+            head.dot(),
+            around,
+            LooseDotWeight {
+                net,
+                circle: Circle {
+                    pos: to,
+                    r: width / 2.0,
+                },
+            },
+            LooseSegWeight { net },
+            LooseBendWeight { net, cw },
+        )?;
         Ok(SegbendHead {
-            dot: bend_to,
-            segbend: Segbend { seg, dot, bend },
+            dot: self.layout.primitive(segbend.bend).other_end(segbend.dot),
+            segbend,
         })
     }
 
@@ -294,39 +290,6 @@ impl<'a> Draw<'a> {
         self.layout.remove(head.dot().into());
 
         Some(self.head(prev_dot.into()))
-    }
-
-    //#[debug_requires(width <= self.layout.primitive(head.dot()).weight().circle.r * 2.0)]
-    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 2))]
-    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
-    fn seg(
-        &mut self,
-        head: Head,
-        to: Point,
-        width: f64,
-    ) -> Result<(LooseSegIndex, LooseDotIndex), ()> {
-        let net = head.dot().primitive(&self.layout.graph).net();
-        let to_index = self.layout.add_loose_dot(LooseDotWeight {
-            net,
-            circle: Circle {
-                pos: to,
-                r: width / 2.0,
-            },
-        })?;
-        let seg = self
-            .layout
-            .add_loose_seg(head.dot(), to_index, LooseSegWeight { net })
-            .map_err(|err| {
-                self.layout.remove(to_index.into());
-                err
-            })?;
-        Ok((seg, to_index))
-    }
-
-    #[debug_ensures(self.layout.node_count() == old(self.layout.node_count() - 2))]
-    fn undo_seg(&mut self, seg: LooseSegIndex, dot: LooseDotIndex) {
-        self.layout.remove(seg.into());
-        self.layout.remove(dot.into());
     }
 
     fn head(&self, dot: DotIndex) -> Head {
