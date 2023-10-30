@@ -29,18 +29,15 @@ impl<'a> Tracer<'a> {
         }
     }
 
-    pub fn start(&mut self, from: VertexIndex) -> Trace {
+    pub fn start(&mut self, from: FixedDotIndex) -> Trace {
         Trace {
-            path: vec![from],
-            head: Head::from(BareHead {
-                dot: self.mesh.dot(from),
-            }),
+            path: vec![self.mesh.vertex(from)],
+            head: BareHead { dot: from }.into(),
         }
     }
 
-    pub fn finish(&mut self, trace: &mut Trace, into: VertexIndex, width: f64) -> Result<(), ()> {
-        let into_dot = self.mesh.dot(into);
-        self.draw().finish_in_dot(trace.head, into_dot, width)
+    pub fn finish(&mut self, trace: &mut Trace, into: FixedDotIndex, width: f64) -> Result<(), ()> {
+        self.draw().finish_in_dot(trace.head, into, width)
     }
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == path.len())]

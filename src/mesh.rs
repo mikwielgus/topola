@@ -70,7 +70,7 @@ impl Mesh {
         self.triangulation.vertex(vertex.handle).as_ref().dot
     }
 
-    pub fn vertex(&self, dot: DotIndex) -> VertexIndex {
+    pub fn vertex(&self, dot: FixedDotIndex) -> VertexIndex {
         self.dot_to_vertex[dot.node_index().index()].unwrap()
     }
 
