@@ -356,20 +356,25 @@ impl Layout {
         Ok(())
     }
 
-    pub fn dots(&self) -> impl Iterator<Item = FixedDotIndex> + '_ {
-        self.nodes()
-            .filter_map(|ni| ni.as_fixed_dot().map(|di| *di))
+    pub fn nodes(&self) -> impl Iterator<Item = Index> + '_ {
+        self.node_indexes().map(|ni| {
+            self.graph
+                .node_weight(ni.node_index())
+                .unwrap()
+                .retag(ni.node_index())
+        })
     }
 
     pub fn shapes(&self) -> impl Iterator<Item = Shape> + '_ {
-        self.nodes().map(|ni| ni.primitive(&self.graph).shape())
+        self.node_indexes()
+            .map(|ni| ni.primitive(&self.graph).shape())
     }
 
     pub fn node_count(&self) -> usize {
         self.graph.node_count()
     }
 
-    fn nodes(&self) -> impl Iterator<Item = Index> + '_ {
+    fn node_indexes(&self) -> impl Iterator<Item = Index> + '_ {
         self.rtree.iter().map(|wrapper| wrapper.data)
     }
 }

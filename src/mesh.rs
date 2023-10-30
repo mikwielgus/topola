@@ -8,7 +8,7 @@ use spade::{
 };
 
 use crate::{
-    graph::{DotIndex, FixedDotIndex, GetNodeIndex},
+    graph::{DotIndex, FixedDotIndex, GetNodeIndex, Index},
     layout::Layout,
 };
 use crate::{primitive::MakeShape, shape::ShapeTrait};
@@ -51,16 +51,18 @@ impl Mesh {
         self.dot_to_vertex = Vec::new();
         self.dot_to_vertex.resize(layout.graph.node_bound(), None);
 
-        for dot in layout.dots() {
-            let center = layout.primitive(dot).shape().center();
+        for node in layout.nodes() {
+            if let Index::FixedDot(dot) = node {
+                let center = layout.primitive(dot).shape().center();
 
-            self.dot_to_vertex[dot.node_index().index()] = Some(VertexIndex {
-                handle: self.triangulation.insert(Vertex {
-                    dot,
-                    x: center.x(),
-                    y: center.y(),
-                })?,
-            });
+                self.dot_to_vertex[dot.node_index().index()] = Some(VertexIndex {
+                    handle: self.triangulation.insert(Vertex {
+                        dot,
+                        x: center.x(),
+                        y: center.y(),
+                    })?,
+                });
+            }
         }
 
         Ok(())
