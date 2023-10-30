@@ -3,7 +3,7 @@ use petgraph::visit::EdgeRef;
 use spade::InsertionError;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
-use crate::graph::{DotIndex, FixedDotIndex};
+use crate::graph::FixedDotIndex;
 use crate::layout::Layout;
 
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
@@ -26,12 +26,12 @@ pub struct Router {
 struct RouterAstarStrategy<'a, RO: RouterObserver> {
     tracer: Tracer<'a>,
     trace: Trace,
-    to: VertexIndex,
+    to: FixedDotIndex,
     observer: &'a mut RO,
 }
 
 impl<'a, RO: RouterObserver> RouterAstarStrategy<'a, RO> {
-    pub fn new(tracer: Tracer<'a>, trace: Trace, to: VertexIndex, observer: &'a mut RO) -> Self {
+    pub fn new(tracer: Tracer<'a>, trace: Trace, to: FixedDotIndex, observer: &'a mut RO) -> Self {
         Self {
             tracer,
             trace,
@@ -48,14 +48,12 @@ impl<'a, RO: RouterObserver> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'
         self.tracer.rework_path(&mut self.trace, &new_path, 5.0);
         self.observer.on_rework(&self.tracer, &self.trace);
 
-        self.tracer
-            .finish(&mut self.trace, self.tracer.mesh.dot(self.to), 5.0)
-            .is_ok()
+        self.tracer.finish(&mut self.trace, self.to, 5.0).is_ok()
     }
 
     fn edge_cost(&mut self, edge: MeshEdgeReference) -> Option<u64> {
         self.observer.before_probe(&self.tracer, &self.trace, edge);
-        if edge.target() != self.to
+        if edge.target() != self.tracer.mesh.vertex(self.to.into())
             && self
                 .tracer
                 .step(&mut self.trace, edge.target(), 5.0)
@@ -100,8 +98,8 @@ impl Router {
 
         let (_cost, _path) = astar(
             &mesh,
-            mesh.vertex(from),
-            &mut RouterAstarStrategy::new(tracer, trace, mesh.vertex(to), observer),
+            mesh.vertex(from.into()),
+            &mut RouterAstarStrategy::new(tracer, trace, to.into(), observer),
         )
         .unwrap(); // TODO.
 

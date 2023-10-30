@@ -1,5 +1,7 @@
+use enum_dispatch::enum_dispatch;
 use fixedbitset::FixedBitSet;
 use geo::{point, Point};
+use petgraph::stable_graph::NodeIndex;
 use petgraph::visit::{self, NodeIndexable};
 use spade::{
     handles::{DirectedEdgeHandle, FixedDirectedEdgeHandle, FixedVertexHandle},
@@ -8,16 +10,24 @@ use spade::{
 };
 
 use crate::{
-    graph::{DotIndex, FixedDotIndex, GetNodeIndex, Index},
+    graph::{FixedBendIndex, FixedDotIndex, GetNodeIndex, Index, LooseBendIndex},
     layout::Layout,
 };
 use crate::{primitive::MakeShape, shape::ShapeTrait};
 
 #[derive(Debug, Clone)]
 struct Vertex {
-    dot: FixedDotIndex,
+    graph_index: VertexGraphIndex,
     x: f64,
     y: f64,
+}
+
+#[enum_dispatch(GetNodeIndex)]
+#[derive(Debug, Clone, Copy)]
+pub enum VertexGraphIndex {
+    FixedDot(FixedDotIndex),
+    FixedBend(FixedBendIndex),
+    LooseBend(LooseBendIndex),
 }
 
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
@@ -35,29 +45,30 @@ impl HasPosition for Vertex {
 #[derive(Debug, Clone)]
 pub struct Mesh {
     triangulation: DelaunayTriangulation<Vertex>,
-    dot_to_vertex: Vec<Option<VertexIndex>>,
+    graph_index_to_vertex: Vec<Option<VertexIndex>>,
 }
 
 impl Mesh {
     pub fn new() -> Self {
         Self {
             triangulation: DelaunayTriangulation::new(),
-            dot_to_vertex: Vec::new(),
+            graph_index_to_vertex: Vec::new(),
         }
     }
 
     pub fn triangulate(&mut self, layout: &Layout) -> Result<(), InsertionError> {
         self.triangulation.clear();
-        self.dot_to_vertex = Vec::new();
-        self.dot_to_vertex.resize(layout.graph.node_bound(), None);
+        self.graph_index_to_vertex = Vec::new();
+        self.graph_index_to_vertex
+            .resize(layout.graph.node_bound(), None);
 
         for node in layout.nodes() {
             if let Index::FixedDot(dot) = node {
                 let center = layout.primitive(dot).shape().center();
 
-                self.dot_to_vertex[dot.node_index().index()] = Some(VertexIndex {
+                self.graph_index_to_vertex[dot.node_index().index()] = Some(VertexIndex {
                     handle: self.triangulation.insert(Vertex {
-                        dot,
+                        graph_index: dot.into(),
                         x: center.x(),
                         y: center.y(),
                     })?,
@@ -68,12 +79,15 @@ impl Mesh {
         Ok(())
     }
 
-    pub fn dot(&self, vertex: VertexIndex) -> FixedDotIndex {
-        self.triangulation.vertex(vertex.handle).as_ref().dot
+    pub fn graph_index(&self, vertex: VertexIndex) -> VertexGraphIndex {
+        self.triangulation
+            .vertex(vertex.handle)
+            .as_ref()
+            .graph_index
     }
 
-    pub fn vertex(&self, dot: FixedDotIndex) -> VertexIndex {
-        self.dot_to_vertex[dot.node_index().index()].unwrap()
+    pub fn vertex(&self, graph_index: VertexGraphIndex) -> VertexIndex {
+        self.graph_index_to_vertex[graph_index.node_index().index()].unwrap()
     }
 
     pub fn position(&self, vertex: VertexIndex) -> Point {

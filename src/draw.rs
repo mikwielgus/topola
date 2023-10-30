@@ -5,13 +5,12 @@ use geo::{EuclideanLength, Point};
 use crate::{
     graph::{
         BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetNet, Index, LooseBendIndex,
-        LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight,
-        MakePrimitive,
+        LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight, MakePrimitive,
     },
     guide::Guide,
     layout::Layout,
     math::Circle,
-    primitive::{GetOtherEnd, GetWeight},
+    primitive::GetOtherEnd,
     rules::{Conditions, Rules},
     segbend::Segbend,
 };

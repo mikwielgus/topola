@@ -454,27 +454,27 @@ fn render_times(
         //let result = panic::catch_unwind(|| {
         for shape in layout.shapes() {
             match shape {
-                Shape::Dot(FixedDot) => {
+                Shape::Dot(dot) => {
                     let _ = canvas.filled_circle(
-                        FixedDot.c.pos.x() as i16,
-                        FixedDot.c.pos.y() as i16,
-                        FixedDot.c.r as i16,
+                        dot.c.pos.x() as i16,
+                        dot.c.pos.y() as i16,
+                        dot.c.r as i16,
                         Color::RGB(200, 52, 52),
                     );
                 }
-                Shape::Seg(FixedSeg) => {
+                Shape::Seg(seg) => {
                     let _ = canvas.thick_line(
-                        FixedSeg.from.x() as i16,
-                        FixedSeg.from.y() as i16,
-                        FixedSeg.to.x() as i16,
-                        FixedSeg.to.y() as i16,
-                        FixedSeg.width as u8,
+                        seg.from.x() as i16,
+                        seg.from.y() as i16,
+                        seg.to.x() as i16,
+                        seg.to.y() as i16,
+                        seg.width as u8,
                         Color::RGB(200, 52, 52),
                     );
                 }
-                Shape::Bend(FixedBend) => {
-                    let delta1 = FixedBend.from - FixedBend.c.pos;
-                    let delta2 = FixedBend.to - FixedBend.c.pos;
+                Shape::Bend(bend) => {
+                    let delta1 = bend.from - bend.c.pos;
+                    let delta2 = bend.to - bend.c.pos;
 
                     let angle1 = delta1.y().atan2(delta1.x());
                     let angle2 = delta2.y().atan2(delta2.x());
@@ -483,10 +483,10 @@ fn render_times(
                         let _ = canvas.arc(
                             //around_circle.pos.x() as i16,
                             //around_circle.pos.y() as i16,
-                            FixedBend.c.pos.x() as i16,
-                            FixedBend.c.pos.y() as i16,
+                            bend.c.pos.x() as i16,
+                            bend.c.pos.y() as i16,
                             //(shape.around_weight.unwrap().circle.r + 10.0 + (d as f64)) as i16,
-                            (FixedBend.circle().r + (d as f64)) as i16,
+                            (bend.circle().r + (d as f64)) as i16,
                             angle1.to_degrees() as i16,
                             angle2.to_degrees() as i16,
                             Color::RGB(200, 52, 52),

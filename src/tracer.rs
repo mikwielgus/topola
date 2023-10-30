@@ -1,10 +1,10 @@
 use contracts::debug_ensures;
 
 use crate::{
-    draw::{BareHead, Draw, Head, HeadTrait, SegbendHead},
+    draw::{BareHead, Draw, Head, SegbendHead},
     graph::FixedDotIndex,
     layout::Layout,
-    mesh::{Mesh, VertexIndex},
+    mesh::{Mesh, VertexGraphIndex, VertexIndex},
     rules::Rules,
 };
 
@@ -31,7 +31,7 @@ impl<'a> Tracer<'a> {
 
     pub fn start(&mut self, from: FixedDotIndex) -> Trace {
         Trace {
-            path: vec![self.mesh.vertex(from)],
+            path: vec![self.mesh.vertex(from.into())],
             head: BareHead { dot: from }.into(),
         }
     }
@@ -81,14 +81,13 @@ impl<'a> Tracer<'a> {
     #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() + 1))]
     #[debug_ensures(ret.is_err() -> trace.path.len() == old(trace.path.len()))]
     pub fn step(&mut self, trace: &mut Trace, to: VertexIndex, width: f64) -> Result<(), ()> {
-        let to_dot = self.mesh.dot(to);
-        trace.head = self.wrap(trace.head, to_dot, width)?.into();
+        trace.head = self.wrap(trace.head, to, width)?.into();
 
         trace.path.push(to);
         Ok(())
     }
 
-    fn wrap(&mut self, head: Head, around: FixedDotIndex, width: f64) -> Result<SegbendHead, ()> {
+    fn wrap(&mut self, head: Head, around: VertexIndex, width: f64) -> Result<SegbendHead, ()> {
         /*let _around_pos = self.layout.primitive(around).weight().circle.pos;
         let _around_primitive = self.layout.primitive(around);
 
@@ -114,6 +113,19 @@ impl<'a> Tracer<'a> {
             }
         }*/
 
+        match self.mesh.graph_index(around) {
+            VertexGraphIndex::FixedDot(dot) => self.wrap_around_fixed_dot(head, dot, width),
+            VertexGraphIndex::FixedBend(_fixed_bend) => todo!(),
+            VertexGraphIndex::LooseBend(_loose_bend) => todo!(),
+        }
+    }
+
+    fn wrap_around_fixed_dot(
+        &mut self,
+        head: Head,
+        around: FixedDotIndex,
+        width: f64,
+    ) -> Result<SegbendHead, ()> {
         self.draw().segbend_around_dot(head, around.into(), width)
     }
 

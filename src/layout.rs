@@ -357,7 +357,7 @@ impl Layout {
     }
 
     pub fn nodes(&self) -> impl Iterator<Item = Index> + '_ {
-        self.node_indexes().map(|ni| {
+        self.node_indices().map(|ni| {
             self.graph
                 .node_weight(ni.node_index())
                 .unwrap()
@@ -366,7 +366,7 @@ impl Layout {
     }
 
     pub fn shapes(&self) -> impl Iterator<Item = Shape> + '_ {
-        self.node_indexes()
+        self.node_indices()
             .map(|ni| ni.primitive(&self.graph).shape())
     }
 
@@ -374,7 +374,7 @@ impl Layout {
         self.graph.node_count()
     }
 
-    fn node_indexes(&self) -> impl Iterator<Item = Index> + '_ {
+    fn node_indices(&self) -> impl Iterator<Item = Index> + '_ {
         self.rtree.iter().map(|wrapper| wrapper.data)
     }
 }
