@@ -98,7 +98,7 @@ impl Mesh {
 
 impl visit::GraphBase for Mesh {
     type NodeId = VertexIndex;
-    type EdgeId = FixedDirectedEdgeHandle;
+    type EdgeId = (VertexIndex, VertexIndex);
 }
 
 pub struct MeshVisitMap {
@@ -160,25 +160,22 @@ impl visit::Data for Mesh {
 }
 
 #[derive(Clone, Copy)]
-pub struct MeshEdgeReference<'a> {
-    handle: DirectedEdgeHandle<'a, Vertex, (), (), ()>,
+pub struct MeshEdgeReference {
+    from: VertexIndex,
+    to: VertexIndex,
 }
 
-impl<'a> visit::EdgeRef for MeshEdgeReference<'a> {
+impl<'a> visit::EdgeRef for MeshEdgeReference {
     type NodeId = VertexIndex;
-    type EdgeId = FixedDirectedEdgeHandle;
+    type EdgeId = (VertexIndex, VertexIndex);
     type Weight = ();
 
     fn source(&self) -> Self::NodeId {
-        VertexIndex {
-            handle: self.handle.from().fix(),
-        }
+        self.from
     }
 
     fn target(&self) -> Self::NodeId {
-        VertexIndex {
-            handle: self.handle.to().fix(),
-        }
+        self.to
     }
 
     fn weight(&self) -> &Self::Weight {
@@ -186,78 +183,61 @@ impl<'a> visit::EdgeRef for MeshEdgeReference<'a> {
     }
 
     fn id(&self) -> Self::EdgeId {
-        self.handle.fix()
-    }
-}
-
-pub struct MeshEdgeReferences<'a> {
-    iter: DirectedEdgeIterator<'a, Vertex, (), (), ()>,
-}
-
-impl<'a> Iterator for MeshEdgeReferences<'a> {
-    type Item = MeshEdgeReference<'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let handle = self.iter.next()?;
-        Some(MeshEdgeReference { handle })
+        (self.from, self.to)
     }
 }
 
 impl<'a> visit::IntoEdgeReferences for &'a Mesh {
-    type EdgeRef = MeshEdgeReference<'a>;
-    type EdgeReferences = MeshEdgeReferences<'a>;
+    type EdgeRef = MeshEdgeReference;
+    type EdgeReferences = Box<dyn Iterator<Item = MeshEdgeReference> + 'a>;
 
     fn edge_references(self) -> Self::EdgeReferences {
-        MeshEdgeReferences {
-            iter: self.triangulation.directed_edges(),
-        }
-    }
-}
-
-pub struct MeshNeighbors<'a> {
-    iter: Box<dyn Iterator<Item = DirectedEdgeHandle<'a, Vertex, (), (), ()>> + 'a>,
-}
-
-impl<'a> Iterator for MeshNeighbors<'a> {
-    type Item = VertexIndex;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let handle = self.iter.next()?;
-        Some(VertexIndex {
-            handle: handle.to().fix(),
-        })
+        Box::new(
+            self.triangulation
+                .directed_edges()
+                .map(|edge| MeshEdgeReference {
+                    from: VertexIndex {
+                        handle: edge.from().fix(),
+                    },
+                    to: VertexIndex {
+                        handle: edge.to().fix(),
+                    },
+                }),
+        )
     }
 }
 
 impl<'a> visit::IntoNeighbors for &'a Mesh {
-    type Neighbors = MeshNeighbors<'a>;
+    type Neighbors = Box<dyn Iterator<Item = VertexIndex> + 'a>;
 
     fn neighbors(self, a: Self::NodeId) -> Self::Neighbors {
-        MeshNeighbors {
-            iter: Box::new(self.triangulation.vertex(a.handle).out_edges()),
-        }
-    }
-}
-
-pub struct MeshEdges<'a> {
-    iter: Box<dyn Iterator<Item = DirectedEdgeHandle<'a, Vertex, (), (), ()>> + 'a>,
-}
-
-impl<'a> Iterator for MeshEdges<'a> {
-    type Item = MeshEdgeReference<'a>;
-
-    fn next(&mut self) -> Option<Self::Item> {
-        let handle = self.iter.next()?;
-        Some(MeshEdgeReference { handle })
+        Box::new(
+            self.triangulation
+                .vertex(a.handle)
+                .out_edges()
+                .map(|handle| VertexIndex {
+                    handle: handle.to().fix(),
+                }),
+        )
     }
 }
 
 impl<'a> visit::IntoEdges for &'a Mesh {
-    type Edges = MeshEdges<'a>;
+    type Edges = Box<dyn Iterator<Item = MeshEdgeReference> + 'a>;
 
     fn edges(self, a: Self::NodeId) -> Self::Edges {
-        MeshEdges {
-            iter: Box::new(self.triangulation.vertex(a.handle).out_edges()),
-        }
+        Box::new(
+            self.triangulation
+                .vertex(a.handle)
+                .out_edges()
+                .map(|edge| MeshEdgeReference {
+                    from: VertexIndex {
+                        handle: edge.from().fix(),
+                    },
+                    to: VertexIndex {
+                        handle: edge.to().fix(),
+                    },
+                }),
+        )
     }
 }
