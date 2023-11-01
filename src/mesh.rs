@@ -4,9 +4,8 @@ use geo::{point, Point};
 use petgraph::stable_graph::NodeIndex;
 use petgraph::visit::{self, NodeIndexable};
 use spade::{
-    handles::{DirectedEdgeHandle, FixedDirectedEdgeHandle, FixedVertexHandle},
-    iterators::DirectedEdgeIterator,
-    DelaunayTriangulation, HasPosition, InsertionError, Point2, Triangulation,
+    handles::FixedVertexHandle, DelaunayTriangulation, HasPosition, InsertionError, Point2,
+    Triangulation,
 };
 
 use crate::{

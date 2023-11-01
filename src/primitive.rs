@@ -12,6 +12,7 @@ use crate::graph::{
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
+use crate::traverser::OutwardLayerTraverser;
 
 #[enum_dispatch]
 pub trait GetGraph {
@@ -49,6 +50,42 @@ pub trait GetOtherEnd<F: GetNodeIndex, T: GetNodeIndex + Into<F>>: GetEnds<F, T>
     }
 }
 
+pub trait TraverseOutward: GetFirstLayer {
+    fn traverse_outward(&self) -> OutwardLayerTraverser {
+        OutwardLayerTraverser::new(self.first_layer(), self.graph())
+    }
+}
+
+pub trait GetFirstLayer: GetGraph + GetNodeIndex {
+    fn first_layer(&self) -> Option<LooseBendIndex> {
+        self.graph()
+            .neighbors_directed(self.node_index(), Incoming)
+            .filter(|ni| {
+                self.graph()
+                    .edge_weight(self.graph().find_edge(self.node_index(), *ni).unwrap())
+                    .unwrap()
+                    .is_core()
+            })
+            .map(|ni| LooseBendIndex::new(ni))
+            .next()
+    }
+}
+
+pub trait GetOuter: GetGraph + GetNodeIndex {
+    fn outer(&self) -> Option<LooseBendIndex> {
+        self.graph()
+            .neighbors_directed(self.node_index(), Outgoing)
+            .filter(|ni| {
+                self.graph()
+                    .edge_weight(self.graph().find_edge(self.node_index(), *ni).unwrap())
+                    .unwrap()
+                    .is_outer()
+            })
+            .map(|ni| LooseBendIndex::new(ni))
+            .next()
+    }
+}
+
 #[enum_dispatch(GetNet, GetWidth, GetGraph, GetConnectable, MakeShape)]
 pub enum Primitive<'a> {
     FixedDot(FixedDot<'a>),
@@ -68,12 +105,6 @@ pub struct GenericPrimitive<'a, W> {
 impl<'a, W> GenericPrimitive<'a, W> {
     pub fn new(index: GenericIndex<W>, graph: &'a StableDiGraph<Weight, Label, usize>) -> Self {
         Self { index, graph }
-    }
-
-    pub fn neighbors(&self) -> impl Iterator<Item = Index> + '_ {
-        self.graph
-            .neighbors_undirected(self.index.node_index())
-            .map(|index| self.graph.node_weight(index).unwrap().retag(index))
     }
 
     pub fn core(&self) -> Option<FixedDotIndex> {
@@ -127,6 +158,12 @@ impl<'a, W> GetGraph for GenericPrimitive<'a, W> {
     }
 }
 
+impl<'a, W> GetNodeIndex for GenericPrimitive<'a, W> {
+    fn node_index(&self) -> NodeIndex<usize> {
+        self.index.node_index()
+    }
+}
+
 impl<'a, W: GetNet> GetConnectable for GenericPrimitive<'a, W> where
     GenericPrimitive<'a, W>: GetWeight<W>
 {
@@ -152,22 +189,6 @@ where
 
 pub type FixedDot<'a> = GenericPrimitive<'a, FixedDotWeight>;
 
-impl<'a> FixedDot<'a> {
-    pub fn outer(&self) -> Option<FixedBendIndex> {
-        self.graph
-            .neighbors_directed(self.index.node_index(), Incoming)
-            .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(*ni, self.index.node_index()).unwrap())
-                    .unwrap()
-                    .is_core()
-            })
-            .map(|ni| FixedBendIndex::new(ni))
-            .filter(|bend| self.primitive(*bend).inner().is_none())
-            .next()
-    }
-}
-
 impl<'a> GetWeight<FixedDotWeight> for FixedDot<'a> {
     fn weight(&self) -> FixedDotWeight {
         self.tagged_weight().into_fixed_dot().unwrap()
@@ -181,6 +202,10 @@ impl<'a> MakeShape for FixedDot<'a> {
         })
     }
 }
+
+impl<'a> TraverseOutward for FixedDot<'a> {}
+
+impl<'a> GetFirstLayer for FixedDot<'a> {}
 
 pub type LooseDot<'a> = GenericPrimitive<'a, LooseDotWeight>;
 
@@ -334,19 +359,6 @@ impl<'a> FixedBend<'a> {
             .next()
     }
 
-    pub fn outer(&self) -> Option<FixedBendIndex> {
-        self.graph
-            .neighbors_directed(self.index.node_index(), Outgoing)
-            .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(self.index.node_index(), *ni).unwrap())
-                    .unwrap()
-                    .is_outer()
-            })
-            .map(|ni| FixedBendIndex::new(ni))
-            .next()
-    }
-
     fn inner_radius(&self) -> f64 {
         let mut r = 0.0;
         let mut layer = FixedBendIndex::new(self.index.node_index());
@@ -412,6 +424,12 @@ impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {
 }
 
 impl<'a> GetOtherEnd<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {}
+
+impl<'a> TraverseOutward for FixedBend<'a> {}
+
+impl<'a> GetFirstLayer for FixedBend<'a> {}
+
+impl<'a> GetOuter for FixedBend<'a> {}
 
 pub type LooseBend<'a> = GenericPrimitive<'a, LooseBendWeight>;
 
@@ -492,3 +510,5 @@ impl<'a> GetEnds<LooseDotIndex, LooseDotIndex> for LooseBend<'a> {
 }
 
 impl<'a> GetOtherEnd<LooseDotIndex, LooseDotIndex> for LooseBend<'a> {}
+
+impl<'a> GetOuter for LooseBend<'a> {}
