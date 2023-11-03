@@ -91,50 +91,6 @@ impl visit::GraphBase for Mesh {
     type EdgeId = (VertexIndex, VertexIndex);
 }
 
-pub struct MeshVisitMap {
-    fixedbitset: FixedBitSet,
-}
-
-impl MeshVisitMap {
-    pub fn with_capacity(bits: usize) -> Self {
-        Self {
-            fixedbitset: FixedBitSet::with_capacity(bits),
-        }
-    }
-
-    pub fn clear(&mut self) {
-        self.fixedbitset.clear();
-    }
-
-    pub fn grow(&mut self, bits: usize) {
-        self.fixedbitset.grow(bits);
-    }
-}
-
-impl<T: GetNodeIndex> visit::VisitMap<T> for MeshVisitMap {
-    fn visit(&mut self, a: T) -> bool {
-        !self.fixedbitset.put(a.node_index().index())
-    }
-
-    fn is_visited(&self, a: &T) -> bool {
-        self.fixedbitset.contains(a.node_index().index())
-    }
-}
-
-impl visit::Visitable for Mesh {
-    type Map = MeshVisitMap;
-
-    fn visit_map(&self) -> Self::Map {
-        // FIXME: This seems wrong, but pathfinding works for some reason. Investigate.
-        MeshVisitMap::with_capacity(self.triangulation.num_vertices())
-    }
-
-    fn reset_map(&self, map: &mut Self::Map) {
-        map.clear();
-        map.grow(self.triangulation.num_vertices());
-    }
-}
-
 impl visit::Data for Mesh {
     type NodeWeight = ();
     type EdgeWeight = ();

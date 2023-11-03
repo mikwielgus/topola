@@ -10,7 +10,7 @@ use std::collections::{BinaryHeap, HashMap};
 use std::hash::Hash;
 
 use petgraph::algo::Measure;
-use petgraph::visit::{EdgeRef, GraphBase, IntoEdges, Visitable};
+use petgraph::visit::{EdgeRef, GraphBase, IntoEdges};
 
 use std::cmp::Ordering;
 
@@ -96,7 +96,7 @@ where
 
 pub trait AstarStrategy<G, K>
 where
-    G: IntoEdges + Visitable,
+    G: IntoEdges,
     K: Measure + Copy,
     G::NodeId: Eq + Hash,
 {
@@ -111,7 +111,7 @@ pub fn astar<G, K>(
     strategy: &mut impl AstarStrategy<G, K>,
 ) -> Option<(K, Vec<G::NodeId>)>
 where
-    G: IntoEdges + Visitable,
+    G: IntoEdges,
     G::NodeId: Eq + Hash,
     K: Measure + Copy,
 {
