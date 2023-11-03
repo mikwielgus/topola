@@ -4,7 +4,7 @@ use crate::{
     draw::{BareHead, Draw, Head, SegbendHead},
     graph::FixedDotIndex,
     layout::Layout,
-    mesh::{Mesh, VertexGraphIndex, VertexIndex},
+    mesh::{Mesh, VertexIndex},
     rules::Rules,
 };
 
@@ -31,7 +31,7 @@ impl<'a> Tracer<'a> {
 
     pub fn start(&mut self, from: FixedDotIndex) -> Trace {
         Trace {
-            path: vec![self.mesh.vertex(from.into())],
+            path: vec![from.into()],
             head: BareHead { dot: from }.into(),
         }
     }
@@ -113,10 +113,10 @@ impl<'a> Tracer<'a> {
             }
         }*/
 
-        match self.mesh.graph_index(around) {
-            VertexGraphIndex::FixedDot(dot) => self.wrap_around_fixed_dot(head, dot, width),
-            VertexGraphIndex::FixedBend(_fixed_bend) => todo!(),
-            VertexGraphIndex::LooseBend(_loose_bend) => todo!(),
+        match around {
+            VertexIndex::FixedDot(dot) => self.wrap_around_fixed_dot(head, dot, width),
+            VertexIndex::FixedBend(_fixed_bend) => todo!(),
+            VertexIndex::LooseBend(_loose_bend) => todo!(),
         }
     }
 

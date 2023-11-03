@@ -16,22 +16,17 @@ use crate::{primitive::MakeShape, shape::ShapeTrait};
 
 #[derive(Debug, Clone)]
 struct Vertex {
-    graph_index: VertexGraphIndex,
+    graph_index: VertexIndex,
     x: f64,
     y: f64,
 }
 
 #[enum_dispatch(GetNodeIndex)]
-#[derive(Debug, Clone, Copy)]
-pub enum VertexGraphIndex {
+#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+pub enum VertexIndex {
     FixedDot(FixedDotIndex),
     FixedBend(FixedBendIndex),
     LooseBend(LooseBendIndex),
-}
-
-#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
-pub struct VertexIndex {
-    handle: FixedVertexHandle,
 }
 
 impl HasPosition for Vertex {
@@ -44,53 +39,49 @@ impl HasPosition for Vertex {
 #[derive(Debug, Clone)]
 pub struct Mesh {
     triangulation: DelaunayTriangulation<Vertex>,
-    graph_index_to_vertex: Vec<Option<VertexIndex>>,
+    vertex_to_handle: Vec<Option<FixedVertexHandle>>,
 }
 
 impl Mesh {
     pub fn new() -> Self {
         Self {
             triangulation: DelaunayTriangulation::new(),
-            graph_index_to_vertex: Vec::new(),
+            vertex_to_handle: Vec::new(),
         }
     }
 
     pub fn triangulate(&mut self, layout: &Layout) -> Result<(), InsertionError> {
         self.triangulation.clear();
-        self.graph_index_to_vertex = Vec::new();
-        self.graph_index_to_vertex
+        self.vertex_to_handle = Vec::new();
+        self.vertex_to_handle
             .resize(layout.graph.node_bound(), None);
 
         for node in layout.nodes() {
             if let Index::FixedDot(dot) = node {
                 let center = layout.primitive(dot).shape().center();
 
-                self.graph_index_to_vertex[dot.node_index().index()] = Some(VertexIndex {
-                    handle: self.triangulation.insert(Vertex {
+                self.vertex_to_handle[dot.node_index().index()] =
+                    Some(self.triangulation.insert(Vertex {
                         graph_index: dot.into(),
                         x: center.x(),
                         y: center.y(),
-                    })?,
-                });
+                    })?);
             }
         }
 
         Ok(())
     }
 
-    pub fn graph_index(&self, vertex: VertexIndex) -> VertexGraphIndex {
-        self.triangulation
-            .vertex(vertex.handle)
-            .as_ref()
-            .graph_index
+    pub fn vertex(&self, handle: FixedVertexHandle) -> VertexIndex {
+        self.triangulation.vertex(handle).as_ref().graph_index
     }
 
-    pub fn vertex(&self, graph_index: VertexGraphIndex) -> VertexIndex {
-        self.graph_index_to_vertex[graph_index.node_index().index()].unwrap()
+    pub fn handle(&self, graph_index: VertexIndex) -> FixedVertexHandle {
+        self.vertex_to_handle[graph_index.node_index().index()].unwrap()
     }
 
     pub fn position(&self, vertex: VertexIndex) -> Point {
-        let position = self.triangulation.vertex(vertex.handle).position();
+        let position = self.triangulation.vertex(self.handle(vertex)).position();
         point! {x: position.x, y: position.y}
     }
 }
@@ -120,23 +111,13 @@ impl MeshVisitMap {
     }
 }
 
-pub trait IndexHolder {
-    fn index(&self) -> usize;
-}
-
-impl IndexHolder for VertexIndex {
-    fn index(&self) -> usize {
-        self.handle.index()
-    }
-}
-
-impl<T: IndexHolder> visit::VisitMap<T> for MeshVisitMap {
+impl<T: GetNodeIndex> visit::VisitMap<T> for MeshVisitMap {
     fn visit(&mut self, a: T) -> bool {
-        !self.fixedbitset.put(a.index())
+        !self.fixedbitset.put(a.node_index().index())
     }
 
     fn is_visited(&self, a: &T) -> bool {
-        self.fixedbitset.contains(a.index())
+        self.fixedbitset.contains(a.node_index().index())
     }
 }
 
@@ -144,6 +125,7 @@ impl visit::Visitable for Mesh {
     type Map = MeshVisitMap;
 
     fn visit_map(&self) -> Self::Map {
+        // FIXME: This seems wrong, but pathfinding works for some reason. Investigate.
         MeshVisitMap::with_capacity(self.triangulation.num_vertices())
     }
 
@@ -195,12 +177,8 @@ impl<'a> visit::IntoEdgeReferences for &'a Mesh {
             self.triangulation
                 .directed_edges()
                 .map(|edge| MeshEdgeReference {
-                    from: VertexIndex {
-                        handle: edge.from().fix(),
-                    },
-                    to: VertexIndex {
-                        handle: edge.to().fix(),
-                    },
+                    from: self.vertex(edge.from().fix()),
+                    to: self.vertex(edge.to().fix()),
                 }),
         )
     }
@@ -209,14 +187,12 @@ impl<'a> visit::IntoEdgeReferences for &'a Mesh {
 impl<'a> visit::IntoNeighbors for &'a Mesh {
     type Neighbors = Box<dyn Iterator<Item = VertexIndex> + 'a>;
 
-    fn neighbors(self, a: Self::NodeId) -> Self::Neighbors {
+    fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
         Box::new(
             self.triangulation
-                .vertex(a.handle)
+                .vertex(self.handle(vertex))
                 .out_edges()
-                .map(|handle| VertexIndex {
-                    handle: handle.to().fix(),
-                }),
+                .map(|handle| self.vertex(handle.to().fix())),
         )
     }
 }
@@ -227,15 +203,11 @@ impl<'a> visit::IntoEdges for &'a Mesh {
     fn edges(self, a: Self::NodeId) -> Self::Edges {
         Box::new(
             self.triangulation
-                .vertex(a.handle)
+                .vertex(self.handle(a))
                 .out_edges()
                 .map(|edge| MeshEdgeReference {
-                    from: VertexIndex {
-                        handle: edge.from().fix(),
-                    },
-                    to: VertexIndex {
-                        handle: edge.to().fix(),
-                    },
+                    from: self.vertex(edge.from().fix()),
+                    to: self.vertex(edge.to().fix()),
                 }),
         )
     }

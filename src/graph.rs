@@ -1,7 +1,10 @@
 use enum_as_inner::EnumAsInner;
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
-use std::marker::PhantomData;
+use std::{
+    hash::{Hash, Hasher},
+    marker::PhantomData,
+};
 
 use crate::{
     math::Circle,
@@ -243,7 +246,7 @@ pub trait MakePrimitive {
     fn primitive<'a>(&self, graph: &'a StableDiGraph<Weight, Label, usize>) -> Primitive<'a>;
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy)]
 pub struct GenericIndex<W> {
     node_index: NodeIndex<usize>,
     marker: PhantomData<W>,
@@ -257,6 +260,20 @@ impl<W> GenericIndex<W> {
         }
     }
 }
+
+impl<W> Hash for GenericIndex<W> {
+    fn hash<H: Hasher>(&self, state: &mut H) {
+        self.node_index.hash(state)
+    }
+}
+
+impl<W> PartialEq for GenericIndex<W> {
+    fn eq(&self, other: &Self) -> bool {
+        self.node_index == other.node_index
+    }
+}
+
+impl<W> Eq for GenericIndex<W> {}
 
 impl<W> GetNodeIndex for GenericIndex<W> {
     fn node_index(&self) -> NodeIndex<usize> {

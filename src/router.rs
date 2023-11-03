@@ -53,7 +53,7 @@ impl<'a, RO: RouterObserver> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'
 
     fn edge_cost(&mut self, edge: MeshEdgeReference) -> Option<u64> {
         self.observer.before_probe(&self.tracer, &self.trace, edge);
-        if edge.target() != self.tracer.mesh.vertex(self.to.into())
+        if edge.target() != self.to.into()
             && self
                 .tracer
                 .step(&mut self.trace, edge.target(), 5.0)
@@ -98,7 +98,7 @@ impl Router {
 
         let (_cost, _path) = astar(
             &mesh,
-            mesh.vertex(from.into()),
+            from.into(),
             &mut RouterAstarStrategy::new(tracer, trace, to.into(), observer),
         )
         .unwrap(); // TODO.
