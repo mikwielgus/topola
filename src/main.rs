@@ -23,6 +23,7 @@ mod segbend;
 mod shape;
 mod tracer;
 mod traverser;
+mod triangulation;
 
 use geo::point;
 use graph::{FixedDotIndex, FixedSegWeight, LooseDotIndex};

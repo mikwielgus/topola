@@ -90,8 +90,8 @@ impl Router {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
         //self.mesh.triangulate(&self.layout)?;
-        let mut mesh = Mesh::new();
-        mesh.triangulate(&self.layout)?;
+        let mut mesh = Mesh::new(&self.layout);
+        mesh.generate(&self.layout)?;
 
         let mut tracer = self.tracer(&mesh);
         let trace = tracer.start(from);
@@ -129,7 +129,7 @@ impl Router {
         };
 
         self.enroute(from, to_dot, observer)*/
-        Ok(Mesh::new())
+        Ok(Mesh::new(&self.layout))
     }
 
     /*pub fn squeeze_around_dot(
