@@ -1,99 +1,121 @@
+use std::marker::PhantomData;
+
 use geo::{point, Point};
 use petgraph::visit::{self, NodeIndexable};
-use spade::{
-    handles::FixedVertexHandle, DelaunayTriangulation, HasPosition, InsertionError, Point2,
-};
+use spade::{handles::FixedVertexHandle, DelaunayTriangulation, HasPosition, InsertionError};
 
-use crate::{
-    graph::GetNodeIndex,
-    layout::Layout,
-    mesh::{MeshEdgeReference, VertexIndex},
-};
+use crate::{graph::GetNodeIndex, layout::Layout};
 
-#[derive(Debug, Clone)]
-struct VertexWeight {
-    vertex: VertexIndex,
-    x: f64,
-    y: f64,
-}
-
-impl HasPosition for VertexWeight {
-    type Scalar = f64;
-    fn position(&self) -> Point2<Self::Scalar> {
-        Point2::new(self.x, self.y)
-    }
+pub trait GetVertexIndex<I> {
+    fn vertex(&self) -> I;
 }
 
 #[derive(Debug, Clone)]
-pub struct Triangulation {
-    triangulation: DelaunayTriangulation<VertexWeight>,
+pub struct Triangulation<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition> {
+    triangulation: DelaunayTriangulation<W>,
     vertex_to_handle: Vec<Option<FixedVertexHandle>>,
+    index_marker: PhantomData<I>,
 }
 
-impl Triangulation {
+impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
+    Triangulation<I, W>
+{
     pub fn new(layout: &Layout) -> Self {
         let mut this = Self {
-            triangulation: <DelaunayTriangulation<VertexWeight> as spade::Triangulation>::new(),
+            triangulation: <DelaunayTriangulation<W> as spade::Triangulation>::new(),
             vertex_to_handle: Vec::new(),
+            index_marker: PhantomData,
         };
         this.vertex_to_handle
             .resize(layout.graph.node_bound(), None);
         this
     }
 
-    pub fn add_vertex(
-        &mut self,
-        vertex: VertexIndex,
-        x: f64,
-        y: f64,
-    ) -> Result<(), InsertionError> {
-        self.vertex_to_handle[vertex.node_index().index()] = Some(spade::Triangulation::insert(
+    pub fn add_vertex(&mut self, weight: W) -> Result<(), InsertionError> {
+        let index = weight.vertex().node_index().index();
+        self.vertex_to_handle[index] = Some(spade::Triangulation::insert(
             &mut self.triangulation,
-            VertexWeight { vertex, x, y },
+            weight,
         )?);
         Ok(())
     }
 
-    pub fn project_vertex(&mut self, from: VertexIndex, to: VertexIndex) {
-        self.vertex_to_handle[from.node_index().index()] =
-            self.vertex_to_handle[to.node_index().index()]
+    pub fn weight_mut(&mut self, vertex: I) -> &mut W {
+        spade::Triangulation::vertex_data_mut(
+            &mut self.triangulation,
+            self.vertex_to_handle[vertex.node_index().index()].unwrap(),
+        )
     }
 
-    pub fn position(&self, vertex: VertexIndex) -> Point {
+    pub fn position(&self, vertex: I) -> Point {
         let position =
             spade::Triangulation::vertex(&self.triangulation, self.handle(vertex)).position();
         point! {x: position.x, y: position.y}
     }
 
-    fn vertex(&self, handle: FixedVertexHandle) -> VertexIndex {
+    fn vertex(&self, handle: FixedVertexHandle) -> I {
         spade::Triangulation::vertex(&self.triangulation, handle)
             .as_ref()
-            .vertex
+            .vertex()
     }
 
-    fn handle(&self, vertex: VertexIndex) -> FixedVertexHandle {
+    fn handle(&self, vertex: I) -> FixedVertexHandle {
         self.vertex_to_handle[vertex.node_index().index()].unwrap()
     }
 }
 
-impl visit::GraphBase for Triangulation {
-    type NodeId = VertexIndex;
-    type EdgeId = (VertexIndex, VertexIndex);
+impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
+    visit::GraphBase for Triangulation<I, W>
+{
+    type NodeId = I;
+    type EdgeId = (I, I);
 }
 
-impl visit::Data for Triangulation {
+impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
+    visit::Data for Triangulation<I, W>
+{
     type NodeWeight = ();
     type EdgeWeight = ();
 }
 
-impl<'a> visit::IntoEdgeReferences for &'a Triangulation {
-    type EdgeRef = MeshEdgeReference;
-    type EdgeReferences = Box<dyn Iterator<Item = MeshEdgeReference> + 'a>;
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TriangulationEdgeReference<I> {
+    from: I,
+    to: I,
+}
+
+impl<I: Copy> visit::EdgeRef for TriangulationEdgeReference<I> {
+    type NodeId = I;
+    type EdgeId = (I, I);
+    type Weight = ();
+
+    fn source(&self) -> Self::NodeId {
+        self.from
+    }
+
+    fn target(&self) -> Self::NodeId {
+        self.to
+    }
+
+    fn weight(&self) -> &Self::Weight {
+        &()
+    }
+
+    fn id(&self) -> Self::EdgeId {
+        (self.from, self.to)
+    }
+}
+
+impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
+    visit::IntoEdgeReferences for &'a Triangulation<I, W>
+{
+    type EdgeRef = TriangulationEdgeReference<I>;
+    type EdgeReferences = Box<dyn Iterator<Item = TriangulationEdgeReference<I>> + 'a>;
 
     fn edge_references(self) -> Self::EdgeReferences {
         Box::new(
             spade::Triangulation::directed_edges(&self.triangulation).map(|edge| {
-                MeshEdgeReference {
+                TriangulationEdgeReference {
                     from: self.vertex(edge.from().fix()),
                     to: self.vertex(edge.to().fix()),
                 }
@@ -102,8 +124,10 @@ impl<'a> visit::IntoEdgeReferences for &'a Triangulation {
     }
 }
 
-impl<'a> visit::IntoNeighbors for &'a Triangulation {
-    type Neighbors = Box<dyn Iterator<Item = VertexIndex> + 'a>;
+impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
+    visit::IntoNeighbors for &'a Triangulation<I, W>
+{
+    type Neighbors = Box<dyn Iterator<Item = I> + 'a>;
 
     fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
         Box::new(
@@ -114,14 +138,16 @@ impl<'a> visit::IntoNeighbors for &'a Triangulation {
     }
 }
 
-impl<'a> visit::IntoEdges for &'a Triangulation {
-    type Edges = Box<dyn Iterator<Item = MeshEdgeReference> + 'a>;
+impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
+    visit::IntoEdges for &'a Triangulation<I, W>
+{
+    type Edges = Box<dyn Iterator<Item = TriangulationEdgeReference<I>> + 'a>;
 
     fn edges(self, node: Self::NodeId) -> Self::Edges {
         Box::new(
             spade::Triangulation::vertex(&self.triangulation, self.handle(node))
                 .out_edges()
-                .map(|edge| MeshEdgeReference {
+                .map(|edge| TriangulationEdgeReference {
                     from: self.vertex(edge.from().fix()),
                     to: self.vertex(edge.to().fix()),
                 }),
