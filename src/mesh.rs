@@ -5,9 +5,9 @@ use petgraph::visit;
 use spade::InsertionError;
 
 use crate::{
-    graph::{FixedBendIndex, FixedDotIndex, GetNodeIndex, Index, LooseBendIndex},
+    graph::{FixedBendIndex, FixedDotIndex, GetNodeIndex, Index, LooseBendIndex, MakePrimitive},
     layout::Layout,
-    primitive::MakeShape,
+    primitive::{GetCore, MakeShape},
     shape::ShapeTrait,
     triangulation::Triangulation,
 };
@@ -34,11 +34,24 @@ impl Mesh {
 
     pub fn generate(&mut self, layout: &Layout) -> Result<(), InsertionError> {
         for node in layout.nodes() {
-            if let Index::FixedDot(dot) = node {
-                let center = layout.primitive(dot).shape().center();
+            let center = node.primitive(&layout.graph).shape().center();
 
-                self.triangulation
-                    .add_vertex(dot.into(), center.x(), center.y());
+            match node {
+                Index::FixedDot(fixed_dot) => {
+                    self.triangulation
+                        .add_vertex(fixed_dot.into(), center.x(), center.y())?;
+                }
+                Index::FixedBend(fixed_bend) => {
+                    self.triangulation
+                        .add_vertex(fixed_bend.into(), center.x(), center.y())?;
+                }
+                /*Index::LooseBend(loose_bend) => {
+                    self.triangulation.add_bend(
+                        loose_bend.into(),
+                        layout.primitive(loose_bend).core().into(),
+                    );
+                }*/
+                _ => (),
             }
         }
         Ok(())

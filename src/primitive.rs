@@ -71,6 +71,22 @@ pub trait GetFirstLayer: GetGraph + GetNodeIndex {
     }
 }
 
+pub trait GetCore: GetGraph + GetNodeIndex {
+    fn core(&self) -> FixedDotIndex {
+        self.graph()
+            .neighbors(self.node_index())
+            .filter(|ni| {
+                self.graph()
+                    .edge_weight(self.graph().find_edge(self.node_index(), *ni).unwrap())
+                    .unwrap()
+                    .is_core()
+            })
+            .map(|ni| FixedDotIndex::new(ni))
+            .next()
+            .unwrap()
+    }
+}
+
 pub trait GetOuter: GetGraph + GetNodeIndex {
     fn outer(&self) -> Option<LooseBendIndex> {
         self.graph()
@@ -105,19 +121,6 @@ pub struct GenericPrimitive<'a, W> {
 impl<'a, W> GenericPrimitive<'a, W> {
     pub fn new(index: GenericIndex<W>, graph: &'a StableDiGraph<Weight, Label, usize>) -> Self {
         Self { index, graph }
-    }
-
-    pub fn core(&self) -> Option<FixedDotIndex> {
-        self.graph
-            .neighbors(self.index.node_index())
-            .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(self.index.node_index(), *ni).unwrap())
-                    .unwrap()
-                    .is_core()
-            })
-            .map(|ni| FixedDotIndex::new(ni))
-            .next()
     }
 
     fn tagged_weight(&self) -> Weight {
@@ -204,7 +207,6 @@ impl<'a> MakeShape for FixedDot<'a> {
 }
 
 impl<'a> TraverseOutward for FixedDot<'a> {}
-
 impl<'a> GetFirstLayer for FixedDot<'a> {}
 
 pub type LooseDot<'a> = GenericPrimitive<'a, LooseDotWeight>;
@@ -342,7 +344,7 @@ impl<'a> FixedBend<'a> {
         if let Some(inner) = self.inner() {
             inner.into()
         } else {
-            self.core().unwrap().into()
+            self.core().into()
         }
     }
 
@@ -371,8 +373,7 @@ impl<'a> FixedBend<'a> {
         let core_circle = self
             .primitive(
                 self.primitive(FixedBendIndex::new(self.index.node_index()))
-                    .core()
-                    .unwrap(),
+                    .core(),
             )
             .weight()
             .circle;
@@ -381,7 +382,7 @@ impl<'a> FixedBend<'a> {
     }
 
     pub fn cross_product(&self) -> f64 {
-        let center = self.primitive(self.core().unwrap()).weight().circle.pos;
+        let center = self.primitive(self.core()).weight().circle.pos;
         let ends = self.ends();
         let end1 = self.primitive(ends.0).weight().circle.pos;
         let end2 = self.primitive(ends.1).weight().circle.pos;
@@ -403,7 +404,7 @@ impl<'a> MakeShape for FixedBend<'a> {
             from: self.primitive(ends.0).weight().circle.pos,
             to: self.primitive(ends.1).weight().circle.pos,
             c: Circle {
-                pos: self.primitive(self.core().unwrap()).weight().circle.pos,
+                pos: self.primitive(self.core()).weight().circle.pos,
                 r: self.inner_radius(),
             },
             width: self.width(),
@@ -424,11 +425,9 @@ impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {
 }
 
 impl<'a> GetOtherEnd<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {}
-
 impl<'a> TraverseOutward for FixedBend<'a> {}
-
 impl<'a> GetFirstLayer for FixedBend<'a> {}
-
+impl<'a> GetCore for FixedBend<'a> {} // TODO: Fixed bends don't have cores actually.
 impl<'a> GetOuter for FixedBend<'a> {}
 
 pub type LooseBend<'a> = GenericPrimitive<'a, LooseBendWeight>;
@@ -459,8 +458,7 @@ impl<'a> LooseBend<'a> {
         let core_circle = self
             .primitive(
                 self.primitive(LooseBendIndex::new(self.index.node_index()))
-                    .core()
-                    .unwrap(),
+                    .core(),
             )
             .weight()
             .circle;
@@ -483,7 +481,7 @@ impl<'a> MakeShape for LooseBend<'a> {
             from: self.primitive(ends.0).weight().circle.pos,
             to: self.primitive(ends.1).weight().circle.pos,
             c: Circle {
-                pos: self.primitive(self.core().unwrap()).weight().circle.pos,
+                pos: self.primitive(self.core()).weight().circle.pos,
                 r: self.inner_radius(),
             },
             width: self.width(),
@@ -510,5 +508,5 @@ impl<'a> GetEnds<LooseDotIndex, LooseDotIndex> for LooseBend<'a> {
 }
 
 impl<'a> GetOtherEnd<LooseDotIndex, LooseDotIndex> for LooseBend<'a> {}
-
+impl<'a> GetCore for LooseBend<'a> {}
 impl<'a> GetOuter for LooseBend<'a> {}

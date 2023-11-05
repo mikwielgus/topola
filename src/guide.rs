@@ -5,7 +5,7 @@ use crate::{
     graph::{BendIndex, DotIndex, FixedDotIndex, MakePrimitive},
     layout::Layout,
     math::{self, Circle},
-    primitive::{GetWeight, MakeShape},
+    primitive::{GetCore, GetWeight, MakeShape},
     rules::{Conditions, Rules},
     shape::ShapeTrait,
 };
@@ -125,11 +125,7 @@ impl<'a, 'b> Guide<'a, 'b> {
                     self.bend_circle(inner.into(), width)
                 } else {
                     self.dot_circle(
-                        self.layout
-                            .primitive(head.segbend.bend)
-                            .core()
-                            .unwrap()
-                            .into(),
+                        self.layout.primitive(head.segbend.bend).core().into(),
                         width,
                     )
                 }
