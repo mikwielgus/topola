@@ -26,10 +26,11 @@ mod traverser;
 mod triangulation;
 
 use geo::point;
-use graph::{FixedDotIndex, FixedSegWeight, LooseDotIndex};
+use graph::{FixedDotIndex, FixedSegWeight, LooseDotIndex, MakePrimitive};
 use layout::Layout;
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use primitive::MakeShape;
 use router::RouterObserver;
 use rstar::RTreeObject;
 use sdl2::event::Event;
@@ -39,7 +40,7 @@ use sdl2::pixels::Color;
 use sdl2::render::Canvas;
 use sdl2::video::Window;
 use sdl2::EventPump;
-use shape::Shape;
+use shape::{Shape, ShapeTrait};
 
 use std::time::Duration;
 use tracer::{Trace, Tracer};
@@ -144,16 +145,16 @@ fn main() {
         })
         .unwrap();
 
-    /*let dot2 = router
-    .layout
-    .add_fixed_dot(FixedDotWeight {
-        net: 1,
-        circle: Circle {
-            pos: (100.5, 500.5).into(),
-            r: 8.0,
-        },
-    })
-    .unwrap();*/
+    let dot2 = router
+        .layout
+        .add_fixed_dot(FixedDotWeight {
+            net: 1,
+            circle: Circle {
+                pos: (100.5, 500.5).into(),
+                r: 8.0,
+            },
+        })
+        .unwrap();
 
     let dot_end = router
         .layout
@@ -161,6 +162,17 @@ fn main() {
             net: 1,
             circle: Circle {
                 pos: (470.5, 350.5).into(),
+                r: 8.0,
+            },
+        })
+        .unwrap();
+
+    let dot_end2 = router
+        .layout
+        .add_fixed_dot(FixedDotWeight {
+            net: 1,
+            circle: Circle {
+                pos: (500.5, 150.5).into(),
                 r: 8.0,
             },
         })
@@ -387,6 +399,12 @@ fn main() {
         -1,
     );*/
 
+    let _ = router.enroute(
+        dot2,
+        dot_end2,
+        &mut DebugRouterObserver::new(&mut event_pump, &mut canvas),
+    );
+
     render_times(
         &mut event_pump,
         &mut canvas,
@@ -494,7 +512,7 @@ fn render_times(
                     }
                 }
             }
-            let envelope = shape.envelope();
+            let envelope = ShapeTrait::envelope(&shape);
             let _ = canvas.rectangle(
                 envelope.lower()[0] as i16,
                 envelope.lower()[1] as i16,
@@ -506,7 +524,8 @@ fn render_times(
 
         if let Some(ref mesh) = mesh {
             for edge in mesh.edge_references() {
-                let endpoints = (mesh.position(edge.source()), mesh.position(edge.target()));
+                let start_point = edge.source().primitive(&layout.graph).shape().center();
+                let end_point = edge.target().primitive(&layout.graph).shape().center();
 
                 let color = if path.contains(&edge.source()) && path.contains(&edge.target()) {
                     Color::RGB(250, 250, 0)
@@ -515,10 +534,10 @@ fn render_times(
                 };
 
                 let _ = canvas.line(
-                    endpoints.0.x() as i16,
-                    endpoints.0.y() as i16,
-                    endpoints.1.x() as i16,
-                    endpoints.1.y() as i16,
+                    start_point.x() as i16,
+                    start_point.y() as i16,
+                    end_point.x() as i16,
+                    end_point.y() as i16,
                     color,
                 );
             }

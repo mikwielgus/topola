@@ -17,14 +17,14 @@ version = "0.6.3"
 [dependencies.spade]
 version = "2.2.0"
 
-[dependencies.fixedbitset]
-version = "0.4.0"
-
 [dependencies.enum_dispatch]
 version = "0.3.12"
 
 [dependencies.enum-as-inner]
 version = "0.6.0"
+
+[dependencies.itertools]
+version = "0.8.2"
 
 [dependencies.contracts]
 version = "0.6.3"

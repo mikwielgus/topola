@@ -1,18 +1,29 @@
+use std::iter;
+
 use enum_dispatch::enum_dispatch;
 use geo::Point;
+use itertools::Itertools;
 use petgraph::visit;
-use petgraph::{stable_graph::NodeIndex, visit::EdgeRef};
+use petgraph::{
+    stable_graph::{NodeIndex, StableDiGraph},
+    visit::EdgeRef,
+};
 use spade::{HasPosition, InsertionError, Point2};
 
+use crate::primitive::{GetCore, Primitive};
+use crate::triangulation::TriangulationEdgeReference;
 use crate::{
-    graph::{FixedBendIndex, FixedDotIndex, GetNodeIndex, Index, LooseBendIndex, MakePrimitive},
+    graph::{
+        FixedBendIndex, FixedDotIndex, GetNodeIndex, Index, Label, LooseBendIndex, MakePrimitive,
+        Weight,
+    },
     layout::Layout,
     primitive::MakeShape,
     shape::ShapeTrait,
     triangulation::{GetVertexIndex, Triangulation},
 };
 
-#[enum_dispatch(GetNodeIndex)]
+#[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
 pub enum VertexIndex {
     FixedDot(FixedDotIndex),
@@ -23,6 +34,7 @@ pub enum VertexIndex {
 #[derive(Debug, Clone)]
 struct TriangulationWeight {
     vertex: VertexIndex,
+    layers: Vec<LooseBendIndex>,
     pos: Point,
 }
 
@@ -59,29 +71,34 @@ impl Mesh {
                 Index::FixedDot(fixed_dot) => {
                     self.triangulation.add_vertex(TriangulationWeight {
                         vertex: fixed_dot.into(),
+                        layers: vec![],
                         pos: center,
                     })?;
                 }
                 Index::FixedBend(fixed_bend) => {
                     self.triangulation.add_vertex(TriangulationWeight {
                         vertex: fixed_bend.into(),
+                        layers: vec![],
                         pos: center,
                     })?;
                 }
-                /*Index::LooseBend(loose_bend) => {
-                    self.triangulation.add_bend(
-                        loose_bend.into(),
-                        layout.primitive(loose_bend).core().into(),
-                    );
-                }*/
                 _ => (),
             }
         }
-        Ok(())
-    }
 
-    pub fn position(&self, vertex: VertexIndex) -> Point {
-        self.triangulation.position(vertex)
+        for node in layout.nodes() {
+            match node {
+                Index::LooseBend(loose_bend) => {
+                    self.triangulation
+                        .weight_mut(layout.primitive(loose_bend).core().into())
+                        .layers
+                        .push(loose_bend.into());
+                }
+                _ => (),
+            }
+        }
+
+        Ok(())
     }
 }
 
@@ -123,6 +140,53 @@ impl visit::EdgeRef for MeshEdgeReference {
     }
 }
 
+impl<'a> visit::IntoNeighbors for &'a Mesh {
+    type Neighbors = Box<dyn Iterator<Item = VertexIndex> + 'a>;
+
+    fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
+        Box::new(self.triangulation.neighbors(vertex).flat_map(|neighbor| {
+            iter::once(neighbor).chain(
+                self.triangulation
+                    .weight(neighbor)
+                    .layers
+                    .iter()
+                    .map(|index| VertexIndex::from(*index)),
+            )
+        }))
+    }
+}
+
+fn edges(
+    triangulation: &Triangulation<VertexIndex, TriangulationWeight>,
+    edge: TriangulationEdgeReference<VertexIndex>,
+) -> impl Iterator<Item = MeshEdgeReference> {
+    let mut from_vertices = vec![edge.source()];
+    from_vertices.extend(
+        triangulation
+            .weight(edge.source())
+            .layers
+            .iter()
+            .map(|bend| VertexIndex::from(*bend)),
+    );
+
+    let mut to_vertices = vec![edge.target()];
+    to_vertices.extend(
+        triangulation
+            .weight(edge.target())
+            .layers
+            .iter()
+            .map(|bend| VertexIndex::from(*bend)),
+    );
+
+    from_vertices
+        .into_iter()
+        .cartesian_product(to_vertices.into_iter())
+        .map(|pair| MeshEdgeReference {
+            from: pair.0,
+            to: pair.1,
+        })
+}
+
 impl<'a> visit::IntoEdgeReferences for &'a Mesh {
     type EdgeRef = MeshEdgeReference;
     type EdgeReferences = Box<dyn Iterator<Item = MeshEdgeReference> + 'a>;
@@ -131,19 +195,8 @@ impl<'a> visit::IntoEdgeReferences for &'a Mesh {
         Box::new(
             self.triangulation
                 .edge_references()
-                .map(|edge| MeshEdgeReference {
-                    from: edge.source(),
-                    to: edge.target(),
-                }),
+                .flat_map(move |edge| edges(&self.triangulation, edge)),
         )
-    }
-}
-
-impl<'a> visit::IntoNeighbors for &'a Mesh {
-    type Neighbors = Box<dyn Iterator<Item = VertexIndex> + 'a>;
-
-    fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
-        self.triangulation.neighbors(vertex)
     }
 }
 
@@ -154,10 +207,7 @@ impl<'a> visit::IntoEdges for &'a Mesh {
         Box::new(
             self.triangulation
                 .edges(node)
-                .map(|edge| MeshEdgeReference {
-                    from: edge.source(),
-                    to: edge.target(),
-                }),
+                .flat_map(move |edge| edges(&self.triangulation, edge)),
         )
     }
 }

@@ -40,6 +40,11 @@ impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scal
         Ok(())
     }
 
+    pub fn weight(&self, vertex: I) -> &W {
+        spade::Triangulation::s(&self.triangulation)
+            .vertex_data(self.vertex_to_handle[vertex.node_index().index()].unwrap())
+    }
+
     pub fn weight_mut(&mut self, vertex: I) -> &mut W {
         spade::Triangulation::vertex_data_mut(
             &mut self.triangulation,
@@ -107,6 +112,20 @@ impl<I: Copy> visit::EdgeRef for TriangulationEdgeReference<I> {
 }
 
 impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
+    visit::IntoNeighbors for &'a Triangulation<I, W>
+{
+    type Neighbors = Box<dyn Iterator<Item = I> + 'a>;
+
+    fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
+        Box::new(
+            spade::Triangulation::vertex(&self.triangulation, self.handle(vertex))
+                .out_edges()
+                .map(|handle| self.vertex(handle.to().fix())),
+        )
+    }
+}
+
+impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
     visit::IntoEdgeReferences for &'a Triangulation<I, W>
 {
     type EdgeRef = TriangulationEdgeReference<I>;
@@ -120,20 +139,6 @@ impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<
                     to: self.vertex(edge.to().fix()),
                 }
             }),
-        )
-    }
-}
-
-impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
-    visit::IntoNeighbors for &'a Triangulation<I, W>
-{
-    type Neighbors = Box<dyn Iterator<Item = I> + 'a>;
-
-    fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
-        Box::new(
-            spade::Triangulation::vertex(&self.triangulation, self.handle(vertex))
-                .out_edges()
-                .map(|handle| self.vertex(handle.to().fix())),
         )
     }
 }
