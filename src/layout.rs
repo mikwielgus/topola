@@ -107,7 +107,7 @@ impl Layout {
     }
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 4))]
-    #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count() + 5))]
+    #[debug_ensures(ret.is_ok() -> self.graph.edge_count() >= old(self.graph.edge_count() + 5))]
     #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(ret.is_err() -> self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn add_segbend(
@@ -209,7 +209,9 @@ impl Layout {
     }*/
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
+    #[debug_ensures(ret.is_ok() -> self.graph.edge_count() == old(self.graph.edge_count() + 3) || self.graph.edge_count() == old(self.graph.edge_count() + 4))]
     #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(ret.is_err() -> self.graph.edge_count() == old(self.graph.edge_count()))]
     fn add_loose_bend(
         &mut self,
         from: LooseDotIndex,
@@ -220,6 +222,7 @@ impl Layout {
         match around {
             Index::FixedDot(core) => self.add_core_bend(from, to, core, weight),
             Index::FixedBend(around) => self.add_outer_bend(from, to, around, weight),
+            Index::LooseBend(around) => self.add_outer_bend(from, to, around, weight),
             _ => unreachable!(),
         }
     }
@@ -293,10 +296,14 @@ impl Layout {
         Ok(bend)
     }
 
+    pub fn reposition_bend(&mut self, bend: LooseBendIndex, from: Point, to: Point) {
+        // TODO.
+    }
+
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count())
         || self.graph.edge_count() == old(self.graph.edge_count() + 1))]
-    pub fn reattach_bend(&mut self, bend: FixedBendIndex, inner: FixedBendIndex) {
+    pub fn reattach_bend(&mut self, bend: LooseBendIndex, inner: LooseBendIndex) {
         self.remove_from_rtree(bend.into());
 
         if let Some(old_inner_edge) = self

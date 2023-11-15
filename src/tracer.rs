@@ -2,9 +2,10 @@ use contracts::debug_ensures;
 
 use crate::{
     draw::{BareHead, Draw, Head, SegbendHead},
-    graph::FixedDotIndex,
+    graph::{FixedDotIndex, LooseBendIndex},
     layout::Layout,
     mesh::{Mesh, VertexIndex},
+    primitive::{GetFirstLayer, GetInnerOuter},
     rules::Rules,
 };
 
@@ -88,35 +89,12 @@ impl<'a> Tracer<'a> {
     }
 
     fn wrap(&mut self, head: Head, around: VertexIndex, width: f64) -> Result<SegbendHead, ()> {
-        /*let _around_pos = self.layout.primitive(around).weight().circle.pos;
-        let _around_primitive = self.layout.primitive(around);
-
-        'blk: {
-            if let Some(mut layer) = self.layout.primitive(around).outer() {
-                match self.is_under(head, around, layer) {
-                    Some(true) => return self.tuck_around_dot(head, around, width),
-                    Some(false) => (),
-                    None => break 'blk,
-                }
-
-                while let Some(outer) = self.layout.primitive(layer).outer() {
-                    match self.is_under(head, around, outer) {
-                        Some(true) => return self.tuck_around_bend(head, layer, width),
-                        Some(false) => (),
-                        None => break 'blk,
-                    }
-
-                    layer = outer;
-                }
-
-                return self.draw().segbend_around_bend(head, layer.into(), width);
-            }
-        }*/
-
         match around {
             VertexIndex::FixedDot(dot) => self.wrap_around_fixed_dot(head, dot, width),
             VertexIndex::FixedBend(_fixed_bend) => todo!(),
-            VertexIndex::LooseBend(_loose_bend) => todo!(),
+            VertexIndex::LooseBend(loose_bend) => {
+                self.wrap_around_loose_bend(head, loose_bend, width)
+            }
         }
     }
 
@@ -126,64 +104,45 @@ impl<'a> Tracer<'a> {
         around: FixedDotIndex,
         width: f64,
     ) -> Result<SegbendHead, ()> {
-        self.draw().segbend_around_dot(head, around.into(), width)
-    }
+        let head = self.draw().segbend_around_dot(head, around.into(), width)?;
 
-    /*fn is_under(
-        &mut self,
-        _head: Head,
-        around: FixedDotIndex,
-        _layer: FixedBendIndex,
-    ) -> Option<bool> {
-        let _around_pos = self.layout.primitive(around).weight().circle.pos;
+        if let Some(first_layer) = self.layout.primitive(around).first_layer() {
+            self.layout.reattach_bend(first_layer, head.segbend.bend);
+            self.update_outward(head.segbend.bend);
+        }
 
-        /*if Some(layer) != self.layout.primitive(head.dot()).prev_bend() {
-            Some(
-                self.layout
-                    .primitive(layer)
-                    .shape()
-                    .into_bend()
-                    .unwrap()
-                    .between_ends(around_pos),
-            )
-        } else {*/
-        None
-        //}
-    }*/
-
-    /*fn tuck_around_dot(
-        &mut self,
-        head: Head,
-        around: FixedDotIndex,
-        width: f64,
-    ) -> Result<SegbendHead, ()> {
-        let outer = self.layout.primitive(around).outer().unwrap();
-        let head = self
-            .draw()
-            .segbend_around_dot(Head::from(head), around.into(), width)?;
-        self.layout.reattach_bend(outer, head.segbend.bend);
-
-        self.redraw_outward(outer)?;
         Ok(head)
     }
 
-    fn tuck_around_bend(
+    fn wrap_around_loose_bend(
         &mut self,
         head: Head,
-        around: FixedBendIndex,
+        around: LooseBendIndex,
         width: f64,
     ) -> Result<SegbendHead, ()> {
-        let outer = self.layout.primitive(around).outer().unwrap();
+        let maybe_outer = self.layout.primitive(around).outer();
         let head = self
             .draw()
-            .segbend_around_bend(Head::from(head), around.into(), width)?;
-        self.layout.reattach_bend(outer, head.segbend.bend);
+            .segbend_around_bend(head, around.into(), width)?;
 
-        self.redraw_outward(outer)?;
+        if let Some(outer) = maybe_outer {
+            self.layout.reattach_bend(outer, head.segbend.bend);
+            self.update_outward(head.segbend.bend);
+        }
+
         Ok(head)
     }
 
-    fn redraw_outward(&mut self, bend: FixedBendIndex) -> Result<(), ()> {
+    fn update_outward(&mut self, bend: LooseBendIndex) {
+        let mut layer = bend;
+
+        while let Some(outer) = self.layout.primitive(layer).outer() {
+            self.draw().update_bow(bend);
+            layer = outer;
+        }
+    }
+
+    /*fn redraw_outward(&mut self, bend: FixedBendIndex) -> Result<(), ()> {
         let mut bows: Vec<Bow> = vec![];
 
         let mut cur_bend = bend;

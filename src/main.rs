@@ -148,7 +148,7 @@ fn main() {
     let dot2 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 1,
+            net: 5,
             circle: Circle {
                 pos: (100.5, 500.5).into(),
                 r: 8.0,
@@ -170,7 +170,7 @@ fn main() {
     let dot_end2 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 1,
+            net: 5,
             circle: Circle {
                 pos: (500.5, 150.5).into(),
                 r: 8.0,

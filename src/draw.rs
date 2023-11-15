@@ -4,13 +4,13 @@ use geo::{EuclideanLength, Point};
 
 use crate::{
     graph::{
-        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetNet, Index, LooseBendIndex,
+        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetEnds, GetNet, Index, LooseBendIndex,
         LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight, MakePrimitive,
     },
     guide::Guide,
     layout::Layout,
     math::Circle,
-    primitive::GetOtherEnd,
+    primitive::{GetOtherEnd, GetWeight},
     rules::{Conditions, Rules},
     segbend::Segbend,
 };
@@ -258,6 +258,22 @@ impl<'a> Draw<'a> {
         Some(self.head(prev_dot))
     }
 
+    #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
+    pub fn update_bow(&mut self, bend: LooseBendIndex) {
+        /*let cw = self.layout.primitive(bend).weight().cw;
+        let ends = self.layout.primitive(bend).ends();
+        let from_head = self.rear_head(ends.0);
+        let to_head = self.rear_head(ends.1);
+
+        let from = self
+            .guide(&Default::default())
+            .head_around_bend_segment(&from_head, inner, cw, 3.0);
+        let to = self
+            .guide(&Default::default())
+            .head_around_bend_segment(&from_head, inner, cw, 3.0);
+        self.layout.reposition_bend(bend, from, to);*/
+    }
+
     fn head(&self, dot: DotIndex) -> Head {
         match dot {
             DotIndex::Fixed(loose) => BareHead { dot: loose }.into(),
@@ -270,6 +286,16 @@ impl<'a> Draw<'a> {
             dot,
             segbend: self.layout.segbend(dot),
         }
+    }
+
+    fn rear_head(&self, dot: LooseDotIndex) -> Head {
+        self.head(self.rear(self.segbend_head(dot)))
+    }
+
+    fn rear(&self, head: SegbendHead) -> DotIndex {
+        self.layout
+            .primitive(head.segbend.seg)
+            .other_end(head.segbend.dot.into())
     }
 
     fn guide(&'a self, conditions: &'a Conditions) -> Guide {

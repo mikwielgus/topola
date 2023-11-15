@@ -60,6 +60,7 @@ pub trait GetFirstLayer: GetGraph + GetNodeIndex {
     fn first_layer(&self) -> Option<LooseBendIndex> {
         self.graph()
             .neighbors_directed(self.node_index(), Incoming)
+            .filter(|ni| self.graph().find_edge(self.node_index(), *ni).is_some())
             .filter(|ni| {
                 self.graph()
                     .edge_weight(self.graph().find_edge(self.node_index(), *ni).unwrap())
@@ -87,7 +88,20 @@ pub trait GetCore: GetGraph + GetNodeIndex {
     }
 }
 
-pub trait GetOuter: GetGraph + GetNodeIndex {
+pub trait GetInnerOuter: GetGraph + GetNodeIndex {
+    fn inner(&self) -> Option<LooseBendIndex> {
+        self.graph()
+            .neighbors_directed(self.node_index(), Incoming)
+            .filter(|ni| {
+                self.graph()
+                    .edge_weight(self.graph().find_edge(*ni, self.node_index()).unwrap())
+                    .unwrap()
+                    .is_outer()
+            })
+            .map(|ni| LooseBendIndex::new(ni))
+            .next()
+    }
+
     fn outer(&self) -> Option<LooseBendIndex> {
         self.graph()
             .neighbors_directed(self.node_index(), Outgoing)
@@ -340,45 +354,8 @@ impl<'a> GetOtherEnd<DotIndex, LooseDotIndex> for LooseSeg<'a> {}
 pub type FixedBend<'a> = GenericPrimitive<'a, FixedBendWeight>;
 
 impl<'a> FixedBend<'a> {
-    pub fn around(&self) -> Index {
-        if let Some(inner) = self.inner() {
-            inner.into()
-        } else {
-            self.core().into()
-        }
-    }
-
-    pub fn inner(&self) -> Option<FixedBendIndex> {
-        self.graph
-            .neighbors_directed(self.index.node_index(), Incoming)
-            .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(*ni, self.index.node_index()).unwrap())
-                    .unwrap()
-                    .is_outer()
-            })
-            .map(|ni| FixedBendIndex::new(ni))
-            .next()
-    }
-
     fn inner_radius(&self) -> f64 {
-        let mut r = 0.0;
-        let mut layer = FixedBendIndex::new(self.index.node_index());
-
-        while let Some(inner) = self.primitive(layer).inner() {
-            r += self.primitive(inner).width();
-            layer = inner;
-        }
-
-        let core_circle = self
-            .primitive(
-                self.primitive(FixedBendIndex::new(self.index.node_index()))
-                    .core(),
-            )
-            .weight()
-            .circle;
-
-        core_circle.r + r + 3.0
+        todo!();
     }
 
     pub fn cross_product(&self) -> f64 {
@@ -428,24 +405,11 @@ impl<'a> GetOtherEnd<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {}
 impl<'a> TraverseOutward for FixedBend<'a> {}
 impl<'a> GetFirstLayer for FixedBend<'a> {}
 impl<'a> GetCore for FixedBend<'a> {} // TODO: Fixed bends don't have cores actually.
-impl<'a> GetOuter for FixedBend<'a> {}
+                                      //impl<'a> GetInnerOuter for FixedBend<'a> {}
 
 pub type LooseBend<'a> = GenericPrimitive<'a, LooseBendWeight>;
 
 impl<'a> LooseBend<'a> {
-    pub fn inner(&self) -> Option<LooseBendIndex> {
-        self.graph
-            .neighbors_directed(self.index.node_index(), Incoming)
-            .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(*ni, self.index.node_index()).unwrap())
-                    .unwrap()
-                    .is_outer()
-            })
-            .map(|ni| LooseBendIndex::new(ni))
-            .next()
-    }
-
     fn inner_radius(&self) -> f64 {
         let mut r = 0.0;
         let mut layer = LooseBendIndex::new(self.index.node_index());
@@ -509,4 +473,4 @@ impl<'a> GetEnds<LooseDotIndex, LooseDotIndex> for LooseBend<'a> {
 
 impl<'a> GetOtherEnd<LooseDotIndex, LooseDotIndex> for LooseBend<'a> {}
 impl<'a> GetCore for LooseBend<'a> {}
-impl<'a> GetOuter for LooseBend<'a> {}
+impl<'a> GetInnerOuter for LooseBend<'a> {}

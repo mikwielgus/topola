@@ -5,7 +5,7 @@ use crate::{
     graph::{BendIndex, DotIndex, FixedDotIndex, MakePrimitive},
     layout::Layout,
     math::{self, Circle},
-    primitive::{GetCore, GetWeight, MakeShape},
+    primitive::{GetCore, GetInnerOuter, GetWeight, MakeShape},
     rules::{Conditions, Rules},
     shape::ShapeTrait,
 };
@@ -133,15 +133,15 @@ impl<'a, 'b> Guide<'a, 'b> {
         }
     }
 
-    fn bend_circle(&self, bend: BendIndex, _width: f64) -> Circle {
-        let mut circle = bend
-            .primitive(&self.layout.graph)
-            .shape()
-            .into_bend()
-            .unwrap()
-            .circle();
-        circle.r += self.rules.ruleset(&self.conditions).clearance.min;
-        circle
+    fn bend_circle(&self, bend: BendIndex, width: f64) -> Circle {
+        let shape = bend.primitive(&self.layout.graph).shape();
+        Circle {
+            pos: shape.center(),
+            r: shape.width() / 2.0
+                + width
+                + 6.0
+                + self.rules.ruleset(self.conditions).clearance.min,
+        }
     }
 
     fn dot_circle(&self, dot: DotIndex, width: f64) -> Circle {

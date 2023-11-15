@@ -2,7 +2,7 @@ use petgraph::stable_graph::StableDiGraph;
 
 use crate::{
     graph::{Label, LooseBendIndex, Weight},
-    primitive::{GenericPrimitive, GetOuter},
+    primitive::{GenericPrimitive, GetInnerOuter},
 };
 
 pub struct OutwardLayerTraverser<'a> {
