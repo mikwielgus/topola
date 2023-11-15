@@ -61,19 +61,8 @@ impl<'a> Draw<'a> {
     }
 
     pub fn start(&mut self, from: LooseDotIndex) -> Head {
-        self.head(from.into())
+        self.segbend_head(from).into()
     }
-
-    /*#[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
-    pub fn finish(&mut self, head: Head, into: LooseDotIndex, width: f64) -> Result<(), ()> {
-        if let Some(bend) = self.layout.primitive(into).bend() {
-            self.finish_in_bend(head, bend, into, width)?;
-        } else {
-            self.finish_in_dot(head, into.into(), width)?;
-        }
-        Ok(())
-    }*/
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
@@ -107,8 +96,11 @@ impl<'a> Draw<'a> {
         into: LooseDotIndex,
         width: f64,
     ) -> Result<(), ()> {
-        let to_head = self.head(into.into());
-        let to_cw = self.guide(&Default::default()).head_cw(&to_head).unwrap();
+        let to_head = self.segbend_head(into);
+        let to_cw = self
+            .guide(&Default::default())
+            .head_cw(&to_head.into())
+            .unwrap();
         let tangent = self.guide(&Default::default()).head_around_bend_segment(
             &head,
             into_bend.into(),
@@ -117,7 +109,7 @@ impl<'a> Draw<'a> {
         )?;
 
         let head = self.extend_head(head, tangent.start_point())?;
-        let _to_head = self.extend_head(to_head, tangent.end_point())?;
+        let _to_head = self.extend_head(to_head.into(), tangent.end_point())?;
 
         let net = head.dot().primitive(&self.layout.graph).net();
         self.layout
@@ -216,34 +208,9 @@ impl<'a> Draw<'a> {
     fn extend_head(&mut self, head: Head, to: Point) -> Result<Head, ()> {
         if let Head::Segbend(head) = head {
             self.layout.move_dot(head.dot, to)?;
-
-            /*if let TaggedIndex::Dot(around) = self.layout.primitive(head.segbend.bend).around() {
-                let cw = self.layout.primitive(head.segbend.bend).weight().cw;
-                let prev_dot = self.layout.primitive(head.segbend.ends().0).prev().unwrap();
-                let prev_head = self.prev_head(prev_dot);
-
-                let alternate_tangent = self
-                    .guide(&Default::default())
-                    .head_around_dot_segment(&prev_head, around, cw, 5.0)?;
-
-                let segbend_dot_pos = self.layout.primitive(head.segbend.dot).weight().circle.pos;
-
-                if alternate_tangent.end_point().euclidean_distance(&to)
-                    < segbend_dot_pos.euclidean_distance(&to)
-                {
-                    self.layout.flip_bend(head.segbend.bend);
-                    self.layout
-                        .move_dot(head.segbend.dot, alternate_tangent.end_point())?;
-                }
-            }*/
-
             Ok(Head::Segbend(head))
         } else {
             Ok(head)
-            // No assertion for now because we temporarily use floats.
-
-            //println!("{:?} {:?}", self.layout.weight(TaggedIndex::Dot(from)).as_dot().unwrap().circle.pos, to);
-            //assert!(self.layout.weight(TaggedIndex::Dot(from)).as_dot().unwrap().circle.pos == to);
         }
     }
 
@@ -288,17 +255,20 @@ impl<'a> Draw<'a> {
         self.layout.remove_interior(&head.segbend);
         self.layout.remove(head.dot().into());
 
-        Some(self.head(prev_dot.into()))
+        Some(self.head(prev_dot))
     }
 
     fn head(&self, dot: DotIndex) -> Head {
         match dot {
             DotIndex::Fixed(loose) => BareHead { dot: loose }.into(),
-            DotIndex::Loose(fixed) => SegbendHead {
-                dot: fixed,
-                segbend: self.layout.segbend(fixed),
-            }
-            .into(),
+            DotIndex::Loose(fixed) => self.segbend_head(fixed).into(),
+        }
+    }
+
+    fn segbend_head(&self, dot: LooseDotIndex) -> SegbendHead {
+        SegbendHead {
+            dot,
+            segbend: self.layout.segbend(dot),
         }
     }
 
