@@ -2,6 +2,8 @@
 
 Work-in-progress interactive topological router in Rust.
 
+[GitHub mirror](https://github.com/mikwielgus/topola)
+
 ## Gallery
 ![Animation. There's a rubber band-like trace following cursor, navigating a very simple maze. The maze and the trace are red, the background is solid black but also very slightly white and dark blue](./assets/interactive_routing.gif)
 
