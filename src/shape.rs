@@ -1,4 +1,3 @@
-use enum_as_inner::EnumAsInner;
 use enum_dispatch::enum_dispatch;
 use geo::{point, polygon, EuclideanDistance, Intersects, Point, Polygon, Rotate};
 use rstar::{RTreeObject, AABB};
@@ -15,7 +14,7 @@ pub trait ShapeTrait {
 }
 
 #[enum_dispatch(ShapeTrait)]
-#[derive(Debug, Clone, Copy, EnumAsInner, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Shape {
     // Intentionally in different order to reorder `self.intersects(...)` properly.
     Dot(DotShape),

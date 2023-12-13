@@ -38,7 +38,7 @@ impl Layout {
         for index in path
             .interior()
             .into_iter()
-            .filter(|index| !index.is_loose_dot())
+            .filter(|index| !matches!(index, Index::LooseDot(..)))
         {
             self.remove(index);
         }
@@ -49,7 +49,7 @@ impl Layout {
         for index in path
             .interior()
             .into_iter()
-            .filter(|index| index.is_loose_dot())
+            .filter(|index| matches!(index, Index::LooseDot(..)))
         {
             self.remove(index);
         }
@@ -270,10 +270,12 @@ impl Layout {
             .graph
             .neighbors(inner.node_index())
             .filter(|ni| {
-                self.graph
-                    .edge_weight(self.graph.find_edge(inner.node_index(), *ni).unwrap())
-                    .unwrap()
-                    .is_core()
+                matches!(
+                    self.graph
+                        .edge_weight(self.graph.find_edge(inner.node_index(), *ni).unwrap())
+                        .unwrap(),
+                    Label::Core
+                )
             })
             .map(|ni| FixedDotIndex::new(ni))
             .collect::<Vec<FixedDotIndex>>()
@@ -324,19 +326,13 @@ impl Layout {
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn flip_bend(&mut self, bend: FixedBendIndex) {
         self.remove_from_rtree(bend.into());
-        let cw = self
-            .graph
-            .node_weight(bend.node_index())
-            .unwrap()
-            .into_fixed_bend()
-            .unwrap()
-            .cw;
-        self.graph
-            .node_weight_mut(bend.node_index())
-            .unwrap()
-            .as_fixed_bend_mut()
-            .unwrap()
-            .cw = !cw;
+
+        let Some(Weight::FixedBend(weight)) = self.graph.node_weight_mut(bend.node_index()) else {
+            unreachable!();
+        };
+
+        weight.cw = !weight.cw;
+
         self.insert_into_rtree(bend.into());
     }
 
