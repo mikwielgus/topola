@@ -12,7 +12,7 @@ use crate::graph::{
 };
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
-use crate::traverser::OutwardLayerTraverser;
+use crate::traverser::OutwardRailTraverser;
 
 #[enum_dispatch]
 pub trait GetGraph {
@@ -50,14 +50,14 @@ pub trait GetOtherEnd<F: GetNodeIndex, T: GetNodeIndex + Into<F>>: GetEnds<F, T>
     }
 }
 
-pub trait TraverseOutward: GetFirstLayer {
-    fn traverse_outward(&self) -> OutwardLayerTraverser {
-        OutwardLayerTraverser::new(self.first_layer(), self.graph())
+pub trait TraverseOutward: GetFirstRail {
+    fn traverse_outward(&self) -> OutwardRailTraverser {
+        OutwardRailTraverser::new(self.first_rail(), self.graph())
     }
 }
 
-pub trait GetFirstLayer: GetGraph + GetNodeIndex {
-    fn first_layer(&self) -> Option<LooseBendIndex> {
+pub trait GetFirstRail: GetGraph + GetNodeIndex {
+    fn first_rail(&self) -> Option<LooseBendIndex> {
         self.graph()
             .neighbors_directed(self.node_index(), Incoming)
             .filter(|ni| self.graph().find_edge(self.node_index(), *ni).is_some())
@@ -240,7 +240,7 @@ impl<'a> MakeShape for FixedDot<'a> {
 }
 
 impl<'a> TraverseOutward for FixedDot<'a> {}
-impl<'a> GetFirstLayer for FixedDot<'a> {}
+impl<'a> GetFirstRail for FixedDot<'a> {}
 
 pub type LooseDot<'a> = GenericPrimitive<'a, LooseDotWeight>;
 impl_primitive!(LooseDot, LooseDotWeight);
@@ -406,7 +406,7 @@ impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {
 
 impl<'a> GetOtherEnd<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {}
 impl<'a> TraverseOutward for FixedBend<'a> {}
-impl<'a> GetFirstLayer for FixedBend<'a> {}
+impl<'a> GetFirstRail for FixedBend<'a> {}
 impl<'a> GetCore for FixedBend<'a> {} // TODO: Fixed bends don't have cores actually.
                                       //impl<'a> GetInnerOuter for FixedBend<'a> {}
 
@@ -416,11 +416,11 @@ impl_primitive!(LooseBend, LooseBendWeight);
 impl<'a> LooseBend<'a> {
     fn inner_radius(&self) -> f64 {
         let mut r = 0.0;
-        let mut layer = LooseBendIndex::new(self.index.node_index());
+        let mut rail = LooseBendIndex::new(self.index.node_index());
 
-        while let Some(inner) = self.primitive(layer).inner() {
+        while let Some(inner) = self.primitive(rail).inner() {
             r += self.primitive(inner).width();
-            layer = inner;
+            rail = inner;
         }
 
         let core_circle = self

@@ -5,7 +5,7 @@ use crate::{
     graph::{FixedDotIndex, LooseBendIndex},
     layout::Layout,
     mesh::{Mesh, VertexIndex},
-    primitive::{GetFirstLayer, GetInnerOuter},
+    primitive::{GetFirstRail, GetInnerOuter},
     rules::Rules,
 };
 
@@ -106,8 +106,8 @@ impl<'a> Tracer<'a> {
     ) -> Result<SegbendHead, ()> {
         let head = self.draw().segbend_around_dot(head, around.into(), width)?;
 
-        if let Some(first_layer) = self.layout.primitive(around).first_layer() {
-            self.layout.reattach_bend(first_layer, head.segbend.bend);
+        if let Some(first_rail) = self.layout.primitive(around).first_rail() {
+            self.layout.reattach_bend(first_rail, head.segbend.bend);
             self.update_outward(head.segbend.bend);
         }
 
@@ -134,11 +134,11 @@ impl<'a> Tracer<'a> {
     }
 
     fn update_outward(&mut self, bend: LooseBendIndex) {
-        let mut layer = bend;
+        let mut rail = bend;
 
-        while let Some(outer) = self.layout.primitive(layer).outer() {
+        while let Some(outer) = self.layout.primitive(rail).outer() {
             self.draw().update_bow(bend);
-            layer = outer;
+            rail = outer;
         }
     }
 

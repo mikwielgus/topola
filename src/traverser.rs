@@ -5,27 +5,27 @@ use crate::{
     primitive::{GenericPrimitive, GetInnerOuter},
 };
 
-pub struct OutwardLayerTraverser<'a> {
-    layer: Option<LooseBendIndex>,
+pub struct OutwardRailTraverser<'a> {
+    rail: Option<LooseBendIndex>,
     graph: &'a StableDiGraph<Weight, Label, usize>,
 }
 
-impl<'a> OutwardLayerTraverser<'a> {
+impl<'a> OutwardRailTraverser<'a> {
     pub fn new(
-        layer: Option<LooseBendIndex>,
+        rail: Option<LooseBendIndex>,
         graph: &'a StableDiGraph<Weight, Label, usize>,
     ) -> Self {
-        Self { layer, graph }
+        Self { rail, graph }
     }
 }
 
-impl<'a> Iterator for OutwardLayerTraverser<'a> {
+impl<'a> Iterator for OutwardRailTraverser<'a> {
     type Item = LooseBendIndex;
 
     fn next(&mut self) -> Option<Self::Item> {
-        self.layer.map(|layer| {
-            self.layer = GenericPrimitive::new(layer, self.graph).outer();
-            layer
+        self.rail.map(|rail| {
+            self.rail = GenericPrimitive::new(rail, self.graph).outer();
+            rail
         })
     }
 }

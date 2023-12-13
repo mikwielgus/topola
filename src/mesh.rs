@@ -34,7 +34,7 @@ pub enum VertexIndex {
 #[derive(Debug, Clone)]
 struct TriangulationWeight {
     vertex: VertexIndex,
-    layers: Vec<LooseBendIndex>,
+    rails: Vec<LooseBendIndex>,
     pos: Point,
 }
 
@@ -71,14 +71,14 @@ impl Mesh {
                 Index::FixedDot(fixed_dot) => {
                     self.triangulation.add_vertex(TriangulationWeight {
                         vertex: fixed_dot.into(),
-                        layers: vec![],
+                        rails: vec![],
                         pos: center,
                     })?;
                 }
                 Index::FixedBend(fixed_bend) => {
                     self.triangulation.add_vertex(TriangulationWeight {
                         vertex: fixed_bend.into(),
-                        layers: vec![],
+                        rails: vec![],
                         pos: center,
                     })?;
                 }
@@ -91,7 +91,7 @@ impl Mesh {
                 Index::LooseBend(loose_bend) => {
                     self.triangulation
                         .weight_mut(layout.primitive(loose_bend).core().into())
-                        .layers
+                        .rails
                         .push(loose_bend.into());
                 }
                 _ => (),
@@ -148,7 +148,7 @@ impl<'a> visit::IntoNeighbors for &'a Mesh {
             iter::once(neighbor).chain(
                 self.triangulation
                     .weight(neighbor)
-                    .layers
+                    .rails
                     .iter()
                     .map(|index| VertexIndex::from(*index)),
             )
@@ -164,7 +164,7 @@ fn edges(
     from_vertices.extend(
         triangulation
             .weight(edge.source())
-            .layers
+            .rails
             .iter()
             .map(|bend| VertexIndex::from(*bend)),
     );
@@ -173,7 +173,7 @@ fn edges(
     to_vertices.extend(
         triangulation
             .weight(edge.target())
-            .layers
+            .rails
             .iter()
             .map(|bend| VertexIndex::from(*bend)),
     );
