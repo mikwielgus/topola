@@ -4,6 +4,7 @@ use crate::{
     graph::{
         GetEnds, Index, Interior, Label, LooseBendIndex, LooseDotIndex, LooseSegIndex, Weight,
     },
+    layout::Layout,
     primitive::{GetOtherEnd, LooseBend, LooseDot},
 };
 
@@ -15,10 +16,10 @@ pub struct Segbend {
 }
 
 impl Segbend {
-    pub fn from_dot(dot: LooseDotIndex, graph: &StableDiGraph<Weight, Label, usize>) -> Self {
-        let bend = LooseDot::new(dot, graph).bend();
-        let dot = LooseBend::new(bend, graph).other_end(dot);
-        let seg = LooseDot::new(dot, graph).seg().unwrap();
+    pub fn from_dot(dot: LooseDotIndex, layout: &Layout) -> Self {
+        let bend = LooseDot::new(dot, layout).bend();
+        let dot = LooseBend::new(bend, layout).other_end(dot);
+        let seg = LooseDot::new(dot, layout).seg().unwrap();
         Self { bend, dot, seg }
     }
 }

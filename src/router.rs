@@ -94,7 +94,7 @@ impl Router {
         mesh.generate(&self.layout)?;
 
         let mut tracer = self.tracer(&mesh);
-        let trace = tracer.start(from);
+        let trace = tracer.start(from, 3.0);
 
         let (_cost, _path) = astar(
             &mesh,

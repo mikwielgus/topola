@@ -524,8 +524,8 @@ fn render_times(
 
         if let Some(ref mesh) = mesh {
             for edge in mesh.edge_references() {
-                let start_point = edge.source().primitive(&layout.graph).shape().center();
-                let end_point = edge.target().primitive(&layout.graph).shape().center();
+                let start_point = edge.source().primitive(layout).shape().center();
+                let end_point = edge.target().primitive(layout).shape().center();
 
                 let color = if path.contains(&edge.source()) && path.contains(&edge.target()) {
                     Color::RGB(250, 250, 0)

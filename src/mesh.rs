@@ -65,7 +65,7 @@ impl Mesh {
 
     pub fn generate(&mut self, layout: &Layout) -> Result<(), InsertionError> {
         for node in layout.nodes() {
-            let center = node.primitive(&layout.graph).shape().center();
+            let center = node.primitive(layout).shape().center();
 
             match node {
                 Index::FixedDot(fixed_dot) => {

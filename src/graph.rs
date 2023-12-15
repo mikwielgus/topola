@@ -6,6 +6,7 @@ use std::{
 };
 
 use crate::{
+    layout::Layout,
     math::Circle,
     primitive::{GenericPrimitive, Primitive},
 };
@@ -34,6 +35,11 @@ pub trait GetNetMut {
 }
 
 #[enum_dispatch]
+pub trait GetBand {
+    fn band(&self) -> usize;
+}
+
+#[enum_dispatch]
 pub trait GetWidth {
     fn width(&self) -> f64;
 }
@@ -49,6 +55,20 @@ macro_rules! impl_weight {
             }
         }
 
+        pub type $index_struct = GenericIndex<$weight_struct>;
+
+        impl MakePrimitive for $index_struct {
+            fn primitive<'a>(&self, layout: &'a Layout) -> Primitive<'a> {
+                Primitive::$weight_variant(GenericPrimitive::new(*self, layout))
+            }
+        }
+    };
+}
+
+macro_rules! impl_fixed_weight {
+    ($weight_struct:ident, $weight_variant:ident, $index_struct:ident) => {
+        impl_weight!($weight_struct, $weight_variant, $index_struct);
+
         impl GetNet for $weight_struct {
             fn net(&self) -> i64 {
                 self.net
@@ -60,21 +80,22 @@ macro_rules! impl_weight {
                 &mut self.net
             }
         }
+    };
+}
 
-        pub type $index_struct = GenericIndex<$weight_struct>;
+macro_rules! impl_loose_weight {
+    ($weight_struct:ident, $weight_variant:ident, $index_struct:ident) => {
+        impl_weight!($weight_struct, $weight_variant, $index_struct);
 
-        impl MakePrimitive for $index_struct {
-            fn primitive<'a>(
-                &self,
-                graph: &'a StableDiGraph<Weight, Label, usize>,
-            ) -> Primitive<'a> {
-                Primitive::$weight_variant(GenericPrimitive::new(*self, graph))
+        impl GetBand for $weight_struct {
+            fn band(&self) -> usize {
+                self.band
             }
         }
     };
 }
 
-#[enum_dispatch(Retag, GetNet, GetNetMut)]
+#[enum_dispatch(Retag)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum Weight {
     FixedDot(FixedDotWeight),
@@ -144,7 +165,7 @@ impl From<BendIndex> for Index {
     }
 }
 
-pub trait DotWeight: GetNet + GetWidth + Into<Weight> + Copy {}
+pub trait DotWeight: GetWidth + Into<Weight> + Copy {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedDotWeight {
@@ -152,7 +173,7 @@ pub struct FixedDotWeight {
     pub circle: Circle,
 }
 
-impl_weight!(FixedDotWeight, FixedDot, FixedDotIndex);
+impl_fixed_weight!(FixedDotWeight, FixedDot, FixedDotIndex);
 impl DotWeight for FixedDotWeight {}
 
 impl GetWidth for FixedDotWeight {
@@ -163,11 +184,11 @@ impl GetWidth for FixedDotWeight {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseDotWeight {
-    pub net: i64,
+    pub band: usize,
     pub circle: Circle,
 }
 
-impl_weight!(LooseDotWeight, LooseDot, LooseDotIndex);
+impl_loose_weight!(LooseDotWeight, LooseDot, LooseDotIndex);
 impl DotWeight for LooseDotWeight {}
 
 impl GetWidth for LooseDotWeight {
@@ -176,7 +197,7 @@ impl GetWidth for LooseDotWeight {
     }
 }
 
-pub trait SegWeight: GetNet + Into<Weight> + Copy {}
+pub trait SegWeight: Into<Weight> + Copy {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedSegWeight {
@@ -184,7 +205,7 @@ pub struct FixedSegWeight {
     pub width: f64,
 }
 
-impl_weight!(FixedSegWeight, FixedSeg, FixedSegIndex);
+impl_fixed_weight!(FixedSegWeight, FixedSeg, FixedSegIndex);
 impl SegWeight for FixedSegWeight {}
 
 impl GetWidth for FixedSegWeight {
@@ -195,13 +216,13 @@ impl GetWidth for FixedSegWeight {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseSegWeight {
-    pub net: i64,
+    pub band: usize,
 }
 
-impl_weight!(LooseSegWeight, LooseSeg, LooseSegIndex);
+impl_loose_weight!(LooseSegWeight, LooseSeg, LooseSegIndex);
 impl SegWeight for LooseSegWeight {}
 
-pub trait BendWeight: GetNet + Into<Weight> + Copy {}
+pub trait BendWeight: Into<Weight> + Copy {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedBendWeight {
@@ -210,7 +231,7 @@ pub struct FixedBendWeight {
     pub cw: bool,
 }
 
-impl_weight!(FixedBendWeight, FixedBend, FixedBendIndex);
+impl_fixed_weight!(FixedBendWeight, FixedBend, FixedBendIndex);
 impl BendWeight for FixedBendWeight {}
 
 impl GetWidth for FixedBendWeight {
@@ -221,11 +242,11 @@ impl GetWidth for FixedBendWeight {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseBendWeight {
-    pub net: i64,
+    pub band: usize,
     pub cw: bool,
 }
 
-impl_weight!(LooseBendWeight, LooseBend, LooseBendIndex);
+impl_loose_weight!(LooseBendWeight, LooseBend, LooseBendIndex);
 impl BendWeight for LooseBendWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -242,7 +263,7 @@ pub trait GetNodeIndex {
 
 #[enum_dispatch]
 pub trait MakePrimitive {
-    fn primitive<'a>(&self, graph: &'a StableDiGraph<Weight, Label, usize>) -> Primitive<'a>;
+    fn primitive<'a>(&self, layout: &'a Layout) -> Primitive<'a>;
 }
 
 #[derive(Debug, Clone, Copy)]

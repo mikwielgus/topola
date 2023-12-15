@@ -2,8 +2,8 @@ use contracts::debug_ensures;
 
 use crate::{
     draw::{BareHead, Draw, Head, SegbendHead},
-    graph::{FixedDotIndex, LooseBendIndex},
-    layout::Layout,
+    graph::{FixedDotIndex, GetNet, LooseBendIndex},
+    layout::{Band, Layout},
     mesh::{Mesh, VertexIndex},
     primitive::{GetFirstRail, GetInnerOuter},
     rules::Rules,
@@ -30,10 +30,14 @@ impl<'a> Tracer<'a> {
         }
     }
 
-    pub fn start(&mut self, from: FixedDotIndex) -> Trace {
+    pub fn start(&mut self, from: FixedDotIndex, width: f64) -> Trace {
+        let band = self.layout.bands.insert(Band {
+            width,
+            net: self.layout.primitive(from).net(),
+        });
         Trace {
             path: vec![from.into()],
-            head: BareHead { dot: from }.into(),
+            head: BareHead { dot: from, band }.into(),
         }
     }
 

@@ -6,24 +6,25 @@ use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
     DotIndex, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegWeight,
-    GenericIndex, GetEnds, GetNet, GetNodeIndex, GetWidth, Index, Interior, Label, LooseBendIndex,
-    LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight, MakePrimitive,
-    Retag, Weight,
+    GenericIndex, GetBand, GetEnds, GetNet, GetNodeIndex, GetWidth, Index, Interior, Label,
+    LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight,
+    MakePrimitive, Retag, Weight,
 };
+use crate::layout::Layout;
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
 use crate::traverser::OutwardRailTraverser;
 
 #[enum_dispatch]
-pub trait GetGraph {
-    fn graph(&self) -> &StableDiGraph<Weight, Label, usize>;
+pub trait GetLayout {
+    fn layout(&self) -> &Layout;
 }
 
 #[enum_dispatch]
-pub trait GetConnectable: GetNet + GetGraph {
+pub trait GetConnectable: GetNet + GetLayout {
     fn connectable(&self, index: Index) -> bool {
         let this = self.net();
-        let other = index.primitive(self.graph()).net();
+        let other = index.primitive(self.layout()).net();
 
         (this == other) || this == -1 || other == -1
     }
@@ -52,19 +53,31 @@ pub trait GetOtherEnd<F: GetNodeIndex, T: GetNodeIndex + Into<F>>: GetEnds<F, T>
 
 pub trait TraverseOutward: GetFirstRail {
     fn traverse_outward(&self) -> OutwardRailTraverser {
-        OutwardRailTraverser::new(self.first_rail(), self.graph())
+        OutwardRailTraverser::new(self.first_rail(), self.layout())
     }
 }
 
-pub trait GetFirstRail: GetGraph + GetNodeIndex {
+pub trait GetFirstRail: GetLayout + GetNodeIndex {
     fn first_rail(&self) -> Option<LooseBendIndex> {
-        self.graph()
+        self.layout()
+            .graph
             .neighbors_directed(self.node_index(), Incoming)
-            .filter(|ni| self.graph().find_edge(self.node_index(), *ni).is_some())
+            .filter(|ni| {
+                self.layout()
+                    .graph
+                    .find_edge(self.node_index(), *ni)
+                    .is_some()
+            })
             .filter(|ni| {
                 matches!(
-                    self.graph()
-                        .edge_weight(self.graph().find_edge(self.node_index(), *ni).unwrap())
+                    self.layout()
+                        .graph
+                        .edge_weight(
+                            self.layout()
+                                .graph
+                                .find_edge(self.node_index(), *ni)
+                                .unwrap()
+                        )
                         .unwrap(),
                     Label::Core
                 )
@@ -74,14 +87,21 @@ pub trait GetFirstRail: GetGraph + GetNodeIndex {
     }
 }
 
-pub trait GetCore: GetGraph + GetNodeIndex {
+pub trait GetCore: GetLayout + GetNodeIndex {
     fn core(&self) -> FixedDotIndex {
-        self.graph()
+        self.layout()
+            .graph
             .neighbors(self.node_index())
             .filter(|ni| {
                 matches!(
-                    self.graph()
-                        .edge_weight(self.graph().find_edge(self.node_index(), *ni).unwrap())
+                    self.layout()
+                        .graph
+                        .edge_weight(
+                            self.layout()
+                                .graph
+                                .find_edge(self.node_index(), *ni)
+                                .unwrap()
+                        )
                         .unwrap(),
                     Label::Core
                 )
@@ -92,14 +112,21 @@ pub trait GetCore: GetGraph + GetNodeIndex {
     }
 }
 
-pub trait GetInnerOuter: GetGraph + GetNodeIndex {
+pub trait GetInnerOuter: GetLayout + GetNodeIndex {
     fn inner(&self) -> Option<LooseBendIndex> {
-        self.graph()
+        self.layout()
+            .graph
             .neighbors_directed(self.node_index(), Incoming)
             .filter(|ni| {
                 matches!(
-                    self.graph()
-                        .edge_weight(self.graph().find_edge(*ni, self.node_index()).unwrap())
+                    self.layout()
+                        .graph
+                        .edge_weight(
+                            self.layout()
+                                .graph
+                                .find_edge(*ni, self.node_index())
+                                .unwrap()
+                        )
                         .unwrap(),
                     Label::Outer
                 )
@@ -109,12 +136,19 @@ pub trait GetInnerOuter: GetGraph + GetNodeIndex {
     }
 
     fn outer(&self) -> Option<LooseBendIndex> {
-        self.graph()
+        self.layout()
+            .graph
             .neighbors_directed(self.node_index(), Outgoing)
             .filter(|ni| {
                 matches!(
-                    self.graph()
-                        .edge_weight(self.graph().find_edge(self.node_index(), *ni).unwrap())
+                    self.layout()
+                        .graph
+                        .edge_weight(
+                            self.layout()
+                                .graph
+                                .find_edge(self.node_index(), *ni)
+                                .unwrap()
+                        )
                         .unwrap(),
                     Label::Outer
                 )
@@ -138,7 +172,31 @@ macro_rules! impl_primitive {
     };
 }
 
-#[enum_dispatch(GetNet, GetWidth, GetGraph, GetConnectable, MakeShape)]
+macro_rules! impl_fixed_primitive {
+    ($primitive_struct:ident, $weight_struct:ident) => {
+        impl_primitive!($primitive_struct, $weight_struct);
+
+        impl<'a> GetNet for $primitive_struct<'a> {
+            fn net(&self) -> i64 {
+                self.weight().net()
+            }
+        }
+    };
+}
+
+macro_rules! impl_loose_primitive {
+    ($primitive_struct:ident, $weight_struct:ident) => {
+        impl_primitive!($primitive_struct, $weight_struct);
+
+        impl<'a> GetNet for $primitive_struct<'a> {
+            fn net(&self) -> i64 {
+                self.layout().bands[self.weight().band()].net
+            }
+        }
+    };
+}
+
+#[enum_dispatch(GetNet, GetWidth, GetLayout, GetConnectable, MakeShape)]
 pub enum Primitive<'a> {
     FixedDot(FixedDot<'a>),
     LooseDot(LooseDot<'a>),
@@ -151,26 +209,33 @@ pub enum Primitive<'a> {
 #[derive(Debug)]
 pub struct GenericPrimitive<'a, W> {
     pub index: GenericIndex<W>,
-    graph: &'a StableDiGraph<Weight, Label, usize>,
+    layout: &'a Layout,
 }
 
 impl<'a, W> GenericPrimitive<'a, W> {
-    pub fn new(index: GenericIndex<W>, graph: &'a StableDiGraph<Weight, Label, usize>) -> Self {
-        Self { index, graph }
+    pub fn new(index: GenericIndex<W>, layout: &'a Layout) -> Self {
+        Self { index, layout }
     }
 
     fn tagged_weight(&self) -> Weight {
-        *self.graph.node_weight(self.index.node_index()).unwrap()
+        *self
+            .layout
+            .graph
+            .node_weight(self.index.node_index())
+            .unwrap()
     }
 
     fn adjacents(&self) -> Vec<NodeIndex<usize>> {
-        self.graph
+        self.layout
+            .graph
             .neighbors_undirected(self.index.node_index())
             .filter(|ni| {
                 matches!(
-                    self.graph
+                    self.layout
+                        .graph
                         .edge_weight(
-                            self.graph
+                            self.layout
+                                .graph
                                 .find_edge_undirected(self.index.node_index(), *ni)
                                 .unwrap()
                                 .0,
@@ -183,7 +248,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
     }
 
     fn primitive<WW>(&self, index: GenericIndex<WW>) -> GenericPrimitive<WW> {
-        GenericPrimitive::new(index, &self.graph)
+        GenericPrimitive::new(index, &self.layout)
     }
 }
 
@@ -193,9 +258,9 @@ impl<'a, W> Interior<Index> for GenericPrimitive<'a, W> {
     }
 }
 
-impl<'a, W> GetGraph for GenericPrimitive<'a, W> {
-    fn graph(&self) -> &StableDiGraph<Weight, Label, usize> {
-        self.graph
+impl<'a, W> GetLayout for GenericPrimitive<'a, W> {
+    fn layout(&self) -> &Layout {
+        self.layout
     }
 }
 
@@ -205,19 +270,7 @@ impl<'a, W> GetNodeIndex for GenericPrimitive<'a, W> {
     }
 }
 
-impl<'a, W: GetNet> GetConnectable for GenericPrimitive<'a, W> where
-    GenericPrimitive<'a, W>: GetWeight<W>
-{
-}
-
-impl<'a, W: GetNet> GetNet for GenericPrimitive<'a, W>
-where
-    GenericPrimitive<'a, W>: GetWeight<W>,
-{
-    fn net(&self) -> i64 {
-        self.weight().net()
-    }
-}
+impl<'a, W> GetConnectable for GenericPrimitive<'a, W> where GenericPrimitive<'a, W>: GetNet {}
 
 impl<'a, W: GetWidth> GetWidth for GenericPrimitive<'a, W>
 where
@@ -229,7 +282,7 @@ where
 }
 
 pub type FixedDot<'a> = GenericPrimitive<'a, FixedDotWeight>;
-impl_primitive!(FixedDot, FixedDotWeight);
+impl_fixed_primitive!(FixedDot, FixedDotWeight);
 
 impl<'a> MakeShape for FixedDot<'a> {
     fn shape(&self) -> Shape {
@@ -243,17 +296,20 @@ impl<'a> TraverseOutward for FixedDot<'a> {}
 impl<'a> GetFirstRail for FixedDot<'a> {}
 
 pub type LooseDot<'a> = GenericPrimitive<'a, LooseDotWeight>;
-impl_primitive!(LooseDot, LooseDotWeight);
+impl_loose_primitive!(LooseDot, LooseDotWeight);
 
 impl<'a> LooseDot<'a> {
     pub fn seg(&self) -> Option<LooseSegIndex> {
-        self.graph
+        self.layout
+            .graph
             .neighbors_undirected(self.index.node_index())
             .filter(|ni| {
                 matches!(
-                    self.graph
+                    self.layout
+                        .graph
                         .edge_weight(
-                            self.graph
+                            self.layout
+                                .graph
                                 .find_edge_undirected(self.index.node_index(), *ni)
                                 .unwrap()
                                 .0,
@@ -262,19 +318,27 @@ impl<'a> LooseDot<'a> {
                     Label::Adjacent
                 )
             })
-            .filter(|ni| matches!(self.graph.node_weight(*ni).unwrap(), Weight::LooseSeg(..)))
+            .filter(|ni| {
+                matches!(
+                    self.layout.graph.node_weight(*ni).unwrap(),
+                    Weight::LooseSeg(..)
+                )
+            })
             .map(|ni| LooseSegIndex::new(ni))
             .next()
     }
 
     pub fn bend(&self) -> LooseBendIndex {
-        self.graph
+        self.layout
+            .graph
             .neighbors_undirected(self.index.node_index())
             .filter(|ni| {
                 matches!(
-                    self.graph
+                    self.layout
+                        .graph
                         .edge_weight(
-                            self.graph
+                            self.layout
+                                .graph
                                 .find_edge_undirected(self.index.node_index(), *ni)
                                 .unwrap()
                                 .0,
@@ -283,7 +347,12 @@ impl<'a> LooseDot<'a> {
                     Label::Adjacent
                 )
             })
-            .filter(|ni| matches!(self.graph.node_weight(*ni).unwrap(), Weight::LooseBend(..)))
+            .filter(|ni| {
+                matches!(
+                    self.layout.graph.node_weight(*ni).unwrap(),
+                    Weight::LooseBend(..)
+                )
+            })
             .map(|ni| LooseBendIndex::new(ni))
             .next()
             .unwrap()
@@ -299,7 +368,7 @@ impl<'a> MakeShape for LooseDot<'a> {
 }
 
 pub type FixedSeg<'a> = GenericPrimitive<'a, FixedSegWeight>;
-impl_primitive!(FixedSeg, FixedSegWeight);
+impl_fixed_primitive!(FixedSeg, FixedSegWeight);
 
 impl<'a> MakeShape for FixedSeg<'a> {
     fn shape(&self) -> Shape {
@@ -322,7 +391,7 @@ impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedSeg<'a> {
 impl<'a> GetOtherEnd<FixedDotIndex, FixedDotIndex> for FixedSeg<'a> {}
 
 pub type LooseSeg<'a> = GenericPrimitive<'a, LooseSegWeight>;
-impl_primitive!(LooseSeg, LooseSegWeight);
+impl_loose_primitive!(LooseSeg, LooseSegWeight);
 
 impl<'a> MakeShape for LooseSeg<'a> {
     fn shape(&self) -> Shape {
@@ -347,9 +416,9 @@ impl<'a> GetWidth for LooseSeg<'a> {
 impl<'a> GetEnds<DotIndex, LooseDotIndex> for LooseSeg<'a> {
     fn ends(&self) -> (DotIndex, LooseDotIndex) {
         let v = self.adjacents();
-        if let Weight::FixedDot(..) = self.graph.node_weight(v[0]).unwrap() {
+        if let Weight::FixedDot(..) = self.layout.graph.node_weight(v[0]).unwrap() {
             (FixedDotIndex::new(v[0]).into(), LooseDotIndex::new(v[1]))
-        } else if let Weight::FixedDot(..) = self.graph.node_weight(v[1]).unwrap() {
+        } else if let Weight::FixedDot(..) = self.layout.graph.node_weight(v[1]).unwrap() {
             (FixedDotIndex::new(v[1]).into(), LooseDotIndex::new(v[0]))
         } else {
             (LooseDotIndex::new(v[0]).into(), LooseDotIndex::new(v[1]))
@@ -360,7 +429,7 @@ impl<'a> GetEnds<DotIndex, LooseDotIndex> for LooseSeg<'a> {
 impl<'a> GetOtherEnd<DotIndex, LooseDotIndex> for LooseSeg<'a> {}
 
 pub type FixedBend<'a> = GenericPrimitive<'a, FixedBendWeight>;
-impl_primitive!(FixedBend, FixedBendWeight);
+impl_fixed_primitive!(FixedBend, FixedBendWeight);
 
 impl<'a> FixedBend<'a> {
     fn inner_radius(&self) -> f64 {
@@ -411,7 +480,7 @@ impl<'a> GetCore for FixedBend<'a> {} // TODO: Fixed bends don't have cores actu
                                       //impl<'a> GetInnerOuter for FixedBend<'a> {}
 
 pub type LooseBend<'a> = GenericPrimitive<'a, LooseBendWeight>;
-impl_primitive!(LooseBend, LooseBendWeight);
+impl_loose_primitive!(LooseBend, LooseBendWeight);
 
 impl<'a> LooseBend<'a> {
     fn inner_radius(&self) -> f64 {

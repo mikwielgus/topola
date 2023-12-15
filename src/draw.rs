@@ -4,11 +4,12 @@ use geo::{EuclideanLength, Point};
 
 use crate::{
     graph::{
-        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetEnds, GetNet, Index, LooseBendIndex,
-        LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight, MakePrimitive,
+        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetBand, GetEnds, GetNet, Index,
+        LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight,
+        MakePrimitive,
     },
     guide::Guide,
-    layout::Layout,
+    layout::{Band, Layout},
     math::Circle,
     primitive::{GetOtherEnd, GetWeight},
     rules::{Conditions, Rules},
@@ -18,6 +19,7 @@ use crate::{
 #[enum_dispatch]
 pub trait HeadTrait {
     fn dot(&self) -> DotIndex;
+    fn band(&self) -> usize;
 }
 
 #[enum_dispatch(HeadTrait)]
@@ -30,11 +32,16 @@ pub enum Head {
 #[derive(Debug, Clone, Copy)]
 pub struct BareHead {
     pub dot: FixedDotIndex,
+    pub band: usize,
 }
 
 impl HeadTrait for BareHead {
     fn dot(&self) -> DotIndex {
         self.dot.into()
+    }
+
+    fn band(&self) -> usize {
+        self.band
     }
 }
 
@@ -42,11 +49,16 @@ impl HeadTrait for BareHead {
 pub struct SegbendHead {
     pub dot: LooseDotIndex,
     pub segbend: Segbend,
+    pub band: usize,
 }
 
 impl HeadTrait for SegbendHead {
     fn dot(&self) -> DotIndex {
         self.dot.into()
+    }
+
+    fn band(&self) -> usize {
+        self.band
     }
 }
 
@@ -72,7 +84,7 @@ impl<'a> Draw<'a> {
             .head_into_dot_segment(&head, into, width)?;
         let head = self.extend_head(head, tangent.start_point())?;
 
-        let net = head.dot().primitive(&self.layout.graph).net();
+        let net = head.dot().primitive(self.layout).net();
 
         match head.dot() {
             DotIndex::Fixed(dot) => {
@@ -80,8 +92,11 @@ impl<'a> Draw<'a> {
                     .add_fixed_seg(into.into(), dot, FixedSegWeight { net, width })?;
             }
             DotIndex::Loose(dot) => {
-                self.layout
-                    .add_loose_seg(into.into(), dot, LooseSegWeight { net })?;
+                self.layout.add_loose_seg(
+                    into.into(),
+                    dot,
+                    LooseSegWeight { band: head.band() },
+                )?;
             }
         }
         Ok(())
@@ -111,9 +126,12 @@ impl<'a> Draw<'a> {
         let head = self.extend_head(head, tangent.start_point())?;
         let _to_head = self.extend_head(to_head.into(), tangent.end_point())?;
 
-        let net = head.dot().primitive(&self.layout.graph).net();
-        self.layout
-            .add_loose_seg(head.dot(), into.into(), LooseSegWeight { net })?;
+        let net = head.dot().primitive(self.layout).net();
+        self.layout.add_loose_seg(
+            head.dot(),
+            into.into(),
+            LooseSegWeight { band: head.band() },
+        )?;
         Ok(())
     }
 
@@ -224,23 +242,26 @@ impl<'a> Draw<'a> {
         cw: bool,
         width: f64,
     ) -> Result<SegbendHead, ()> {
-        let net = head.dot().primitive(&self.layout.graph).net();
         let segbend = self.layout.add_segbend(
             head.dot(),
             around,
             LooseDotWeight {
-                net,
+                band: head.band(),
                 circle: Circle {
                     pos: to,
                     r: width / 2.0,
                 },
             },
-            LooseSegWeight { net },
-            LooseBendWeight { net, cw },
+            LooseSegWeight { band: head.band() },
+            LooseBendWeight {
+                band: head.band(),
+                cw,
+            },
         )?;
         Ok(SegbendHead {
             dot: self.layout.primitive(segbend.bend).other_end(segbend.dot),
             segbend,
+            band: head.band(),
         })
     }
 
@@ -251,11 +272,12 @@ impl<'a> Draw<'a> {
             .layout
             .primitive(head.segbend.seg)
             .other_end(head.segbend.dot.into());
+        let band = head.band;
 
         self.layout.remove_interior(&head.segbend);
         self.layout.remove(head.dot().into());
 
-        Some(self.head(prev_dot))
+        Some(self.head(prev_dot, band))
     }
 
     #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
@@ -274,9 +296,9 @@ impl<'a> Draw<'a> {
         self.layout.reposition_bend(bend, from, to);*/
     }
 
-    fn head(&self, dot: DotIndex) -> Head {
+    fn head(&self, dot: DotIndex, band: usize) -> Head {
         match dot {
-            DotIndex::Fixed(loose) => BareHead { dot: loose }.into(),
+            DotIndex::Fixed(loose) => BareHead { dot: loose, band }.into(),
             DotIndex::Loose(fixed) => self.segbend_head(fixed).into(),
         }
     }
@@ -285,11 +307,15 @@ impl<'a> Draw<'a> {
         SegbendHead {
             dot,
             segbend: self.layout.segbend(dot),
+            band: self.layout.primitive(dot).weight().band(),
         }
     }
 
     fn rear_head(&self, dot: LooseDotIndex) -> Head {
-        self.head(self.rear(self.segbend_head(dot)))
+        self.head(
+            self.rear(self.segbend_head(dot)),
+            self.layout.primitive(dot).weight().band(),
+        )
     }
 
     fn rear(&self, head: SegbendHead) -> DotIndex {

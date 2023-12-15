@@ -117,7 +117,7 @@ impl<'a, 'b> Guide<'a, 'b> {
 
         match *head {
             Head::Bare(head) => Circle {
-                pos: head.dot().primitive(&self.layout.graph).shape().center(), // TODO.
+                pos: head.dot().primitive(self.layout).shape().center(), // TODO.
                 r: 0.0,
             },
             Head::Segbend(head) => {
@@ -134,7 +134,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     }
 
     fn bend_circle(&self, bend: BendIndex, width: f64) -> Circle {
-        let shape = bend.primitive(&self.layout.graph).shape();
+        let shape = bend.primitive(self.layout).shape();
         Circle {
             pos: shape.center(),
             r: shape.width() / 2.0
@@ -145,7 +145,7 @@ impl<'a, 'b> Guide<'a, 'b> {
     }
 
     fn dot_circle(&self, dot: DotIndex, width: f64) -> Circle {
-        let shape = dot.primitive(&self.layout.graph).shape();
+        let shape = dot.primitive(self.layout).shape();
         Circle {
             pos: shape.center(),
             r: shape.width() / 2.0 + width + self.rules.ruleset(self.conditions).clearance.min,
