@@ -1,5 +1,5 @@
 use enum_dispatch::enum_dispatch;
-use petgraph::stable_graph::{NodeIndex, StableDiGraph};
+use petgraph::stable_graph::NodeIndex;
 use std::{
     hash::{Hash, Hasher},
     marker::PhantomData,

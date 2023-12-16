@@ -1,19 +1,18 @@
 use std::mem::swap;
 
 use enum_dispatch::enum_dispatch;
-use petgraph::stable_graph::{NodeIndex, StableDiGraph};
+use petgraph::stable_graph::NodeIndex;
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
-    DotIndex, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegWeight,
-    GenericIndex, GetBand, GetEnds, GetNet, GetNodeIndex, GetOffset, GetWidth, Index, Interior,
-    Label, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex,
-    LooseSegWeight, MakePrimitive, Retag, Weight,
+    DotIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegWeight, GenericIndex,
+    GetBand, GetEnds, GetNet, GetNodeIndex, GetOffset, GetWidth, Index, Interior, Label,
+    LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight,
+    MakePrimitive, Retag, Weight,
 };
 use crate::layout::Layout;
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
-use crate::traverser::OutwardRailTraverser;
 
 #[enum_dispatch]
 pub trait GetLayout {
@@ -48,12 +47,6 @@ pub trait GetOtherEnd<F: GetNodeIndex, T: GetNodeIndex + Into<F>>: GetEnds<F, T>
         } else {
             ends.1.into()
         }
-    }
-}
-
-pub trait TraverseOutward: GetFirstRail {
-    fn traverse_outward(&self) -> OutwardRailTraverser {
-        OutwardRailTraverser::new(self.first_rail(), self.layout())
     }
 }
 
@@ -292,7 +285,6 @@ impl<'a> MakeShape for FixedDot<'a> {
     }
 }
 
-impl<'a> TraverseOutward for FixedDot<'a> {}
 impl<'a> GetFirstRail for FixedDot<'a> {}
 
 pub type LooseDot<'a> = GenericPrimitive<'a, LooseDotWeight>;
@@ -474,7 +466,6 @@ impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {
 }
 
 impl<'a> GetOtherEnd<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {}
-impl<'a> TraverseOutward for FixedBend<'a> {}
 impl<'a> GetFirstRail for FixedBend<'a> {}
 impl<'a> GetCore for FixedBend<'a> {} // TODO: Fixed bends don't have cores actually.
                                       //impl<'a> GetInnerOuter for FixedBend<'a> {}

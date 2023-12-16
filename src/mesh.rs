@@ -4,19 +4,13 @@ use enum_dispatch::enum_dispatch;
 use geo::Point;
 use itertools::Itertools;
 use petgraph::visit;
-use petgraph::{
-    stable_graph::{NodeIndex, StableDiGraph},
-    visit::EdgeRef,
-};
+use petgraph::{stable_graph::NodeIndex, visit::EdgeRef};
 use spade::{HasPosition, InsertionError, Point2};
 
 use crate::primitive::{GetCore, Primitive};
 use crate::triangulation::TriangulationEdgeReference;
 use crate::{
-    graph::{
-        FixedBendIndex, FixedDotIndex, GetNodeIndex, Index, Label, LooseBendIndex, MakePrimitive,
-        Weight,
-    },
+    graph::{FixedBendIndex, FixedDotIndex, GetNodeIndex, Index, LooseBendIndex, MakePrimitive},
     layout::Layout,
     primitive::MakeShape,
     shape::ShapeTrait,

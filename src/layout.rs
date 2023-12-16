@@ -9,7 +9,7 @@ use slab::Slab;
 
 use crate::graph::{
     BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedDotIndex, FixedDotWeight, FixedSegIndex,
-    FixedSegWeight, GenericIndex, GetNetMut, GetNodeIndex, Index, Interior, Label, LooseBendIndex,
+    FixedSegWeight, GenericIndex, GetNodeIndex, Index, Interior, Label, LooseBendIndex,
     LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight, MakePrimitive,
     Retag, SegWeight, Weight,
 };
@@ -297,7 +297,7 @@ impl Layout {
         Ok(bend)
     }
 
-    pub fn reposition_bend(&mut self, bend: LooseBendIndex, from: Point, to: Point) {
+    pub fn reposition_bend(&mut self, _bend: LooseBendIndex, _from: Point, _to: Point) {
         // TODO.
     }
 

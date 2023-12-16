@@ -22,7 +22,6 @@ mod rules;
 mod segbend;
 mod shape;
 mod tracer;
-mod traverser;
 mod triangulation;
 
 use geo::point;
@@ -32,7 +31,7 @@ use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use primitive::MakeShape;
 use router::RouterObserver;
-use rstar::RTreeObject;
+
 use sdl2::event::Event;
 use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;

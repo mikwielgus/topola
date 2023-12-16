@@ -115,7 +115,7 @@ impl ShapeTrait for SegShape {
         match other {
             Shape::Dot(..) => unreachable!(),
             Shape::Seg(other) => self.polygon().intersects(&other.polygon()),
-            Shape::Bend(other) => {
+            Shape::Bend(_other) => {
                 /*for segment in self.polygon().exterior().lines() {
                     let inner_circle = other.inner_circle();
                     let outer_circle = other.outer_circle();

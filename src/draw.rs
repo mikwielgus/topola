@@ -4,12 +4,11 @@ use geo::{EuclideanLength, Point};
 
 use crate::{
     graph::{
-        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetBand, GetEnds, GetNet, Index,
-        LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight,
-        MakePrimitive,
+        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetBand, GetNet, Index, LooseBendIndex,
+        LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight, MakePrimitive,
     },
     guide::Guide,
-    layout::{Band, Layout},
+    layout::Layout,
     math::Circle,
     primitive::{GetOtherEnd, GetWeight},
     rules::{Conditions, Rules},
@@ -126,7 +125,7 @@ impl<'a> Draw<'a> {
         let head = self.extend_head(head, tangent.start_point())?;
         let _to_head = self.extend_head(to_head.into(), tangent.end_point())?;
 
-        let net = head.dot().primitive(self.layout).net();
+        let _net = head.dot().primitive(self.layout).net();
         self.layout.add_loose_seg(
             head.dot(),
             into.into(),
@@ -282,7 +281,7 @@ impl<'a> Draw<'a> {
     }
 
     #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
-    pub fn update_bow(&mut self, bend: LooseBendIndex) {
+    pub fn update_bow(&mut self, _bend: LooseBendIndex) {
         /*let cw = self.layout.primitive(bend).weight().cw;
         let ends = self.layout.primitive(bend).ends();
         let from_head = self.rear_head(ends.0);
