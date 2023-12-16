@@ -6,9 +6,9 @@ use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
     DotIndex, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegWeight,
-    GenericIndex, GetBand, GetEnds, GetNet, GetNodeIndex, GetWidth, Index, Interior, Label,
-    LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight,
-    MakePrimitive, Retag, Weight,
+    GenericIndex, GetBand, GetEnds, GetNet, GetNodeIndex, GetOffset, GetWidth, Index, Interior,
+    Label, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex,
+    LooseSegWeight, MakePrimitive, Retag, Weight,
 };
 use crate::layout::Layout;
 use crate::math::{self, Circle};
@@ -484,11 +484,12 @@ impl_loose_primitive!(LooseBend, LooseBendWeight);
 
 impl<'a> LooseBend<'a> {
     fn inner_radius(&self) -> f64 {
-        let mut r = 0.0;
+        let mut r = self.offset();
         let mut rail = LooseBendIndex::new(self.index.node_index());
 
         while let Some(inner) = self.primitive(rail).inner() {
-            r += self.primitive(inner).width();
+            let primitive = self.primitive(inner);
+            r += primitive.width() + primitive.offset();
             rail = inner;
         }
 
@@ -500,7 +501,7 @@ impl<'a> LooseBend<'a> {
             .weight()
             .circle;
 
-        core_circle.r + r + 3.0
+        core_circle.r + r
     }
 }
 
@@ -528,6 +529,12 @@ impl<'a> MakeShape for LooseBend<'a> {
 impl<'a> GetWidth for LooseBend<'a> {
     fn width(&self) -> f64 {
         self.primitive(self.ends().1).weight().width()
+    }
+}
+
+impl<'a> GetOffset for LooseBend<'a> {
+    fn offset(&self) -> f64 {
+        self.weight().offset
     }
 }
 

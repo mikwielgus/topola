@@ -255,6 +255,7 @@ impl<'a> Draw<'a> {
             LooseSegWeight { band: head.band() },
             LooseBendWeight {
                 band: head.band(),
+                offset: 3.0,
                 cw,
             },
         )?;

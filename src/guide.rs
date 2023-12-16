@@ -7,7 +7,7 @@ use crate::{
     math::{self, Circle},
     primitive::{GetCore, GetInnerOuter, GetWeight, MakeShape},
     rules::{Conditions, Rules},
-    shape::ShapeTrait,
+    shape::{Shape, ShapeTrait},
 };
 
 pub struct Guide<'a, 'b> {
@@ -134,13 +134,14 @@ impl<'a, 'b> Guide<'a, 'b> {
     }
 
     fn bend_circle(&self, bend: BendIndex, width: f64) -> Circle {
-        let shape = bend.primitive(self.layout).shape();
+        let outer_circle = match bend.primitive(self.layout).shape() {
+            Shape::Bend(shape) => shape.outer_circle(),
+            _ => unreachable!(),
+        };
+
         Circle {
-            pos: shape.center(),
-            r: shape.width() / 2.0
-                + width
-                + 6.0
-                + self.rules.ruleset(self.conditions).clearance.min,
+            pos: outer_circle.pos,
+            r: outer_circle.r + width,
         }
     }
 

@@ -29,12 +29,10 @@ pub trait GetNet {
     fn net(&self) -> i64;
 }
 
-#[enum_dispatch]
 pub trait GetNetMut {
     fn net_mut(&mut self) -> &mut i64;
 }
 
-#[enum_dispatch]
 pub trait GetBand {
     fn band(&self) -> usize;
 }
@@ -42,6 +40,10 @@ pub trait GetBand {
 #[enum_dispatch]
 pub trait GetWidth {
     fn width(&self) -> f64;
+}
+
+pub trait GetOffset {
+    fn offset(&self) -> f64;
 }
 
 macro_rules! impl_weight {
@@ -243,7 +245,14 @@ impl GetWidth for FixedBendWeight {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseBendWeight {
     pub band: usize,
+    pub offset: f64,
     pub cw: bool,
+}
+
+impl GetOffset for LooseBendWeight {
+    fn offset(&self) -> f64 {
+        self.offset
+    }
 }
 
 impl_loose_weight!(LooseBendWeight, LooseBend, LooseBendIndex);
