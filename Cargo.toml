@@ -5,6 +5,14 @@ edition = "2021"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
+[dependencies]
+gl = "0.14.0"
+pathfinder_canvas = { git = "https://github.com/servo/pathfinder" }
+pathfinder_geometry = { git = "https://github.com/servo/pathfinder" }
+pathfinder_gl = { git = "https://github.com/servo/pathfinder" }
+pathfinder_renderer = { git = "https://github.com/servo/pathfinder" }
+pathfinder_resources = { git = "https://github.com/servo/pathfinder" }
+
 [dependencies.geo]
 version = "0.25.1"
 
@@ -32,7 +40,7 @@ version = "0.6.3"
 [dependencies.sdl2]
 version = "0.35.2"
 default-features = false
-features = ["gfx"]
+features = ["bundled"]
 
 [patch.crates-io]
 contracts = { path = "vendor/contracts" }

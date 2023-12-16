@@ -33,13 +33,22 @@ use primitive::MakeShape;
 use router::RouterObserver;
 
 use sdl2::event::Event;
-use sdl2::gfx::primitives::DrawRenderer;
 use sdl2::keyboard::Keycode;
-use sdl2::pixels::Color;
-use sdl2::render::Canvas;
-use sdl2::video::Window;
+use sdl2::video::{Window, GLProfile};
 use sdl2::EventPump;
 use shape::{Shape, ShapeTrait};
+
+use pathfinder_canvas::{Canvas, CanvasFontContext, Path2D};
+use pathfinder_canvas::{ColorU, FillRule, ArcDirection};
+use pathfinder_geometry::rect::RectF;
+use pathfinder_geometry::vector::{vec2f, vec2i};
+use pathfinder_gl::{GLDevice, GLVersion};
+use pathfinder_renderer::concurrent::rayon::RayonExecutor;
+use pathfinder_renderer::concurrent::scene_proxy::SceneProxy;
+use pathfinder_renderer::gpu::options::{DestFramebuffer, RendererMode, RendererOptions};
+use pathfinder_renderer::gpu::renderer::Renderer;
+use pathfinder_renderer::options::BuildOptions;
+use pathfinder_resources::embedded::EmbeddedResourceLoader;
 
 use std::time::Duration;
 use tracer::{Trace, Tracer};
@@ -56,15 +65,19 @@ enum RouterOrLayout<'a> {
 
 struct DebugRouterObserver<'a> {
     event_pump: &'a mut sdl2::EventPump,
-    canvas: &'a mut sdl2::render::Canvas<Window>,
+    window: &'a Window,
+    renderer: &'a mut Renderer<GLDevice>,
+    font_context: &'a CanvasFontContext,
 }
 
 impl<'a> DebugRouterObserver<'a> {
     pub fn new(
         event_pump: &'a mut sdl2::EventPump,
-        canvas: &'a mut sdl2::render::Canvas<Window>,
+        window: &'a Window,
+        renderer: &'a mut  Renderer<GLDevice>,
+        font_context: &'a CanvasFontContext,
     ) -> Self {
-        Self { event_pump, canvas }
+        Self { event_pump, window, renderer, font_context }
     }
 }
 
@@ -72,7 +85,9 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
     fn on_rework(&mut self, tracer: &Tracer, trace: &Trace) {
         render_times(
             self.event_pump,
-            self.canvas,
+            self.window,
+            self.renderer,
+            self.font_context,
             RouterOrLayout::Layout(tracer.layout),
             None,
             None,
@@ -87,7 +102,9 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
         path.push(edge.target());
         render_times(
             self.event_pump,
-            self.canvas,
+            self.window,
+            self.renderer,
+            self.font_context,
             RouterOrLayout::Layout(tracer.layout),
             None,
             None,
@@ -100,7 +117,9 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
     fn on_probe(&mut self, tracer: &Tracer, trace: &Trace, _edge: MeshEdgeReference) {
         render_times(
             self.event_pump,
-            self.canvas,
+            self.window,
+            self.renderer,
+            self.font_context,
             RouterOrLayout::Layout(tracer.layout),
             None,
             None,
@@ -117,17 +136,46 @@ fn main() {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
+    let gl_attr = video_subsystem.gl_attr();
+    gl_attr.set_context_profile(GLProfile::Core);
+    gl_attr.set_context_version(4, 0);
+
     let window = video_subsystem
         .window("Topola demo", 800, 600)
+        .opengl()
         .position_centered()
         .build()
         .unwrap();
 
-    let mut canvas = window.into_canvas().build().unwrap();
+    let _context = window.gl_create_context().unwrap();
+    gl::load_with(|name| video_subsystem.gl_get_proc_address(name) as *const _);
 
-    canvas.set_draw_color(Color::RGB(0, 0, 0));
-    canvas.clear();
-    canvas.present();
+    // doing this later (after pathfinder assumes control of the context) would be a bad idea
+    // but for the early clear it's simpler than passing a blank canvas to pathfinder
+    unsafe {
+        gl::ClearColor(0.0, 0.0, 0.0, 1.0);
+        gl::Clear(gl::COLOR_BUFFER_BIT);
+    }
+    window.gl_swap_window();
+
+    // XXX: not sure if this automatically fallbacks if we get a GL3 context
+    // or if we have to detect it and/or retry
+    let device = GLDevice::new(GLVersion::GL4, 0);
+
+    let mode = RendererMode::default_for_device(&device);
+    let options = RendererOptions {
+        dest: DestFramebuffer::full_window(vec2i(800, 600)),
+        background_color: Some(ColorU::black().to_f32()),
+        //show_debug_ui: true,
+        ..RendererOptions::default()
+    };
+    let resource_loader = EmbeddedResourceLoader::new();
+    let mut renderer = Renderer::new(device, &resource_loader, mode, options);
+    let font_context = CanvasFontContext::from_system_source();
+
+    // TODO: make a type like this wrapping the details of pathfinder
+    // so we don't pass so many arguments to render_times() and through the debug observer
+    //let mut canvas = window.into_canvas().build().unwrap();
 
     let mut event_pump = sdl_context.event_pump().unwrap();
     let _i = 0;
@@ -373,12 +421,14 @@ fn main() {
     let _ = router.enroute(
         dot1,
         dot_end,
-        &mut DebugRouterObserver::new(&mut event_pump, &mut canvas),
+        &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     );
 
     render_times(
         &mut event_pump,
-        &mut canvas,
+        &window,
+        &mut renderer,
+        &font_context,
         RouterOrLayout::Layout(&router.layout),
         None,
         None,
@@ -401,12 +451,14 @@ fn main() {
     let _ = router.enroute(
         dot2,
         dot_end2,
-        &mut DebugRouterObserver::new(&mut event_pump, &mut canvas),
+        &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     );
 
     render_times(
         &mut event_pump,
-        &mut canvas,
+        &window,
+        &mut renderer,
+        &font_context,
         RouterOrLayout::Layout(&router.layout),
         None,
         None,
@@ -418,7 +470,9 @@ fn main() {
 
 fn render_times(
     event_pump: &mut EventPump,
-    canvas: &mut Canvas<Window>,
+    window: &Window,
+    renderer: &mut Renderer<GLDevice>,
+    font_context: &CanvasFontContext,
     mut router_or_layout: RouterOrLayout,
     from: Option<FixedDotIndex>,
     follower: Option<LooseDotIndex>,
@@ -429,9 +483,6 @@ fn render_times(
     let mut i = 0;
 
     'running: loop {
-        canvas.set_draw_color(Color::RGB(0, 10, 35));
-        canvas.clear();
-
         for event in event_pump.poll_iter() {
             match event {
                 Event::Quit { .. }
@@ -443,6 +494,12 @@ fn render_times(
             }
         }
 
+        renderer.options_mut().background_color = Some(ColorU::new(0, 10, 35, 255).to_f32());
+
+        let window_size = window.size();
+        let mut canvas = Canvas::new(vec2f(window_size.0 as f32, window_size.1 as f32))
+            .get_context_2d(font_context.clone());
+
         let layout = match router_or_layout {
             RouterOrLayout::Router(ref mut router) => {
                 if let Some(follower) = follower {
@@ -453,7 +510,7 @@ fn render_times(
                             .reroute(
                                 from,
                                 point! {x: state.x() as f64, y: state.y() as f64},
-                                &mut DebugRouterObserver::new(event_pump, canvas),
+                                &mut DebugRouterObserver::new(event_pump, window, renderer, font_context),
                             )
                             .ok();
                     } else {
@@ -470,24 +527,34 @@ fn render_times(
 
         //let result = panic::catch_unwind(|| {
         for shape in layout.shapes() {
+            canvas.set_stroke_style(ColorU::new(200, 52, 52, 255));
+            canvas.set_fill_style(ColorU::new(200, 52, 52, 255));
+
             match shape {
                 Shape::Dot(dot) => {
-                    let _ = canvas.filled_circle(
-                        dot.c.pos.x() as i16,
-                        dot.c.pos.y() as i16,
-                        dot.c.r as i16,
-                        Color::RGB(200, 52, 52),
+                    let mut path = Path2D::new();
+                    path.ellipse(
+                        vec2f(
+                            dot.c.pos.x() as f32,
+                            dot.c.pos.y() as f32
+                        ),
+                        dot.c.r as f32,
+                        0.0, 0.0, std::f32::consts::TAU
                     );
+                    canvas.fill_path(path, FillRule::Winding);
                 }
                 Shape::Seg(seg) => {
-                    let _ = canvas.thick_line(
-                        seg.from.x() as i16,
-                        seg.from.y() as i16,
-                        seg.to.x() as i16,
-                        seg.to.y() as i16,
-                        seg.width as u8,
-                        Color::RGB(200, 52, 52),
-                    );
+                    let mut path = Path2D::new();
+                    path.move_to(vec2f(
+                        seg.from.x() as f32,
+                        seg.from.y() as f32
+                    ));
+                    path.line_to(vec2f(
+                        seg.to.x() as f32,
+                        seg.to.y() as f32
+                    ));
+                    canvas.set_line_width(seg.width as f32);
+                    canvas.stroke_path(path);
                 }
                 Shape::Bend(bend) => {
                     let delta1 = bend.from - bend.c.pos;
@@ -496,29 +563,28 @@ fn render_times(
                     let angle1 = delta1.y().atan2(delta1.x());
                     let angle2 = delta2.y().atan2(delta2.x());
 
-                    for d in -2..3 {
-                        let _ = canvas.arc(
-                            //around_circle.pos.x() as i16,
-                            //around_circle.pos.y() as i16,
-                            bend.c.pos.x() as i16,
-                            bend.c.pos.y() as i16,
-                            //(shape.around_weight.unwrap().circle.r + 10.0 + (d as f64)) as i16,
-                            (bend.circle().r + (d as f64)) as i16,
-                            angle1.to_degrees() as i16,
-                            angle2.to_degrees() as i16,
-                            Color::RGB(200, 52, 52),
-                        );
-                    }
+                    let mut path = Path2D::new();
+                    path.arc(
+                        vec2f(
+                            bend.c.pos.x() as f32,
+                            bend.c.pos.y() as f32
+                        ),
+                        bend.circle().r as f32,
+                        angle1 as f32,
+                        angle2 as f32,
+                        ArcDirection::CW
+                    );
+                    canvas.set_line_width(bend.width as f32);
+                    canvas.stroke_path(path);
                 }
             }
             let envelope = ShapeTrait::envelope(&shape);
-            let _ = canvas.rectangle(
-                envelope.lower()[0] as i16,
-                envelope.lower()[1] as i16,
-                envelope.upper()[0] as i16,
-                envelope.upper()[1] as i16,
-                Color::RGB(100, 100, 100),
-            );
+            // XXX: points represented as arrays can't be conveniently converted to vector types
+            let topleft = vec2f(envelope.lower()[0] as f32, envelope.lower()[1] as f32);
+            let bottomright = vec2f(envelope.upper()[0] as f32, envelope.upper()[1] as f32);
+            canvas.set_line_width(1.0);
+            canvas.set_stroke_style(ColorU::new(100, 100, 100, 255));
+            canvas.stroke_rect(RectF::new(topleft, bottomright-topleft));
         }
 
         if let Some(ref mesh) = mesh {
@@ -527,23 +593,32 @@ fn render_times(
                 let end_point = edge.target().primitive(layout).shape().center();
 
                 let color = if path.contains(&edge.source()) && path.contains(&edge.target()) {
-                    Color::RGB(250, 250, 0)
+                    ColorU::new(250, 250, 0, 255)
                 } else {
-                    Color::RGB(125, 125, 125)
+                    ColorU::new(125, 125, 125, 255)
                 };
 
-                let _ = canvas.line(
-                    start_point.x() as i16,
-                    start_point.y() as i16,
-                    end_point.x() as i16,
-                    end_point.y() as i16,
-                    color,
-                );
+                let mut path = Path2D::new();
+                path.move_to(vec2f(
+                    start_point.x() as f32,
+                    start_point.y() as f32
+                ));
+                path.line_to(vec2f(
+                    end_point.x() as f32,
+                    end_point.y() as f32
+                ));
+                canvas.set_stroke_style(color);
+                canvas.set_line_width(1.0);
+                canvas.stroke_path(path);
             }
         }
         //});
 
-        canvas.present();
+        let mut scene = SceneProxy::from_scene(canvas.into_canvas().into_scene(),
+                                               renderer.mode().level,
+                                               RayonExecutor);
+        scene.build_and_render(renderer, BuildOptions::default());
+        window.gl_swap_window();
 
         i += 1;
         if times != -1 && i >= times {
