@@ -167,6 +167,23 @@ impl From<BendIndex> for Index {
     }
 }
 
+impl From<BendIndex> for WraparoundableIndex {
+    fn from(bend: BendIndex) -> Self {
+        match bend {
+            BendIndex::Fixed(bend) => WraparoundableIndex::FixedBend(bend),
+            BendIndex::Loose(bend) => WraparoundableIndex::LooseBend(bend),
+        }
+    }
+}
+
+#[enum_dispatch(GetNodeIndex, MakePrimitive, GetWraparound)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum WraparoundableIndex {
+    FixedBend(FixedBendIndex),
+    LooseBend(LooseBendIndex),
+    FixedDot(FixedDotIndex),
+}
+
 pub trait DotWeight: GetWidth + Into<Weight> + Copy {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]

@@ -6,6 +6,7 @@ use crate::{
     graph::{
         BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetBand, GetNet, Index, LooseBendIndex,
         LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight, MakePrimitive,
+        WraparoundableIndex,
     },
     guide::Guide,
     layout::Layout,
@@ -139,12 +140,14 @@ impl<'a> Draw<'a> {
     pub fn segbend_around_dot(
         &mut self,
         head: Head,
-        around: DotIndex,
+        around: FixedDotIndex,
         width: f64,
     ) -> Result<SegbendHead, ()> {
-        let mut tangents = self
-            .guide(&Default::default())
-            .head_around_dot_segments(&head, around, width)?;
+        let mut tangents = self.guide(&Default::default()).head_around_dot_segments(
+            &head,
+            around.into(),
+            width,
+        )?;
         let mut dirs = [true, false];
 
         if tangents.1.euclidean_length() < tangents.0.euclidean_length() {
@@ -211,7 +214,7 @@ impl<'a> Draw<'a> {
     fn segbend_around(
         &mut self,
         head: Head,
-        around: Index,
+        around: WraparoundableIndex,
         from: Point,
         to: Point,
         cw: bool,
@@ -236,7 +239,7 @@ impl<'a> Draw<'a> {
     fn segbend(
         &mut self,
         head: Head,
-        around: Index,
+        around: WraparoundableIndex,
         to: Point,
         cw: bool,
         width: f64,

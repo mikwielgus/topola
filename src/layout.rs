@@ -11,7 +11,7 @@ use crate::graph::{
     BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedDotIndex, FixedDotWeight, FixedSegIndex,
     FixedSegWeight, GenericIndex, GetNodeIndex, Index, Interior, Label, LooseBendIndex,
     LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight, MakePrimitive,
-    Retag, SegWeight, Weight,
+    Retag, SegWeight, Weight, WraparoundableIndex,
 };
 use crate::primitive::{GenericPrimitive, GetConnectable, GetWeight, MakeShape};
 use crate::segbend::Segbend;
@@ -123,7 +123,7 @@ impl Layout {
     pub fn add_segbend(
         &mut self,
         from: DotIndex,
-        around: Index,
+        around: WraparoundableIndex,
         dot_weight: LooseDotWeight,
         seg_weight: LooseSegWeight,
         bend_weight: LooseBendWeight,
@@ -215,13 +215,13 @@ impl Layout {
         &mut self,
         from: LooseDotIndex,
         to: LooseDotIndex,
-        around: Index,
+        around: WraparoundableIndex,
         weight: LooseBendWeight,
     ) -> Result<LooseBendIndex, ()> {
         match around {
-            Index::FixedDot(core) => self.add_core_bend(from, to, core, weight),
-            Index::FixedBend(around) => self.add_outer_bend(from, to, around, weight),
-            Index::LooseBend(around) => self.add_outer_bend(from, to, around, weight),
+            WraparoundableIndex::FixedDot(core) => self.add_core_bend(from, to, core, weight),
+            WraparoundableIndex::FixedBend(around) => self.add_outer_bend(from, to, around, weight),
+            WraparoundableIndex::LooseBend(around) => self.add_outer_bend(from, to, around, weight),
             _ => unreachable!(),
         }
     }
