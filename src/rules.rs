@@ -19,6 +19,7 @@ impl Conditions {
     }
 }
 
+#[derive(Debug, Default, Clone)]
 pub struct Rules {
     rulesets: [Option<HashMap<Conditions, Ruleset>>; 16],
 }
@@ -55,6 +56,7 @@ impl Rules {
     }
 }
 
+#[derive(Debug, Default, Clone)]
 pub struct Ruleset {
     pub length: Rule,
     pub clearance: Rule,
@@ -69,6 +71,7 @@ impl Ruleset {
     }
 }
 
+#[derive(Debug, Default, Clone)]
 pub struct Rule {
     pub min: f64,
     pub opt: Option<f64>,

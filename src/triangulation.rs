@@ -143,8 +143,11 @@ impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<
     }
 }
 
-impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
-    visit::IntoEdges for &'a Triangulation<I, W>
+impl<
+        'a,
+        I: Copy + PartialEq + GetNodeIndex + std::fmt::Debug,
+        W: GetVertexIndex<I> + HasPosition<Scalar = f64>,
+    > visit::IntoEdges for &'a Triangulation<I, W>
 {
     type Edges = Box<dyn Iterator<Item = TriangulationEdgeReference<I>> + 'a>;
 

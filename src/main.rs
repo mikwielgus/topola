@@ -34,12 +34,12 @@ use router::RouterObserver;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
-use sdl2::video::{Window, GLProfile};
+use sdl2::video::{GLProfile, Window};
 use sdl2::EventPump;
 use shape::{Shape, ShapeTrait};
 
+use pathfinder_canvas::{ArcDirection, ColorU, FillRule};
 use pathfinder_canvas::{Canvas, CanvasFontContext, Path2D};
-use pathfinder_canvas::{ColorU, FillRule, ArcDirection};
 use pathfinder_geometry::rect::RectF;
 use pathfinder_geometry::vector::{vec2f, vec2i};
 use pathfinder_gl::{GLDevice, GLVersion};
@@ -63,6 +63,15 @@ enum RouterOrLayout<'a> {
     Layout(&'a Layout),
 }
 
+struct EmptyRouterObserver;
+
+impl RouterObserver for EmptyRouterObserver {
+    fn on_rework(&mut self, tracer: &Tracer, trace: &Trace) {}
+    fn before_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference) {}
+    fn on_probe(&mut self, tracer: &Tracer, trace: &Trace, _edge: MeshEdgeReference) {}
+    fn on_estimate(&mut self, _tracer: &Tracer, _vertex: VertexIndex) {}
+}
+
 struct DebugRouterObserver<'a> {
     event_pump: &'a mut sdl2::EventPump,
     window: &'a Window,
@@ -74,10 +83,15 @@ impl<'a> DebugRouterObserver<'a> {
     pub fn new(
         event_pump: &'a mut sdl2::EventPump,
         window: &'a Window,
-        renderer: &'a mut  Renderer<GLDevice>,
+        renderer: &'a mut Renderer<GLDevice>,
         font_context: &'a CanvasFontContext,
     ) -> Self {
-        Self { event_pump, window, renderer, font_context }
+        Self {
+            event_pump,
+            window,
+            renderer,
+            font_context,
+        }
     }
 }
 
@@ -93,7 +107,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
-            20,
+            40,
         );
     }
 
@@ -110,7 +124,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             None,
             Some(tracer.mesh.clone()),
             &path,
-            5,
+            10,
         );
     }
 
@@ -125,7 +139,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
-            5,
+            10,
         );
     }
 
@@ -181,7 +195,7 @@ fn main() {
     let _i = 0;
     let mut router = Router::new();
 
-    let dot1 = router
+    let dot_start = router
         .layout
         .add_fixed_dot(FixedDotWeight {
             net: 1,
@@ -192,12 +206,23 @@ fn main() {
         })
         .unwrap();
 
-    let dot2 = router
+    let dot_start2 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 5,
+            net: 3,
             circle: Circle {
                 pos: (100.5, 500.5).into(),
+                r: 8.0,
+            },
+        })
+        .unwrap();
+
+    let dot_start3 = router
+        .layout
+        .add_fixed_dot(FixedDotWeight {
+            net: 4,
+            circle: Circle {
+                pos: (160.5, 430.5).into(),
                 r: 8.0,
             },
         })
@@ -217,9 +242,20 @@ fn main() {
     let dot_end2 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 5,
+            net: 3,
             circle: Circle {
                 pos: (500.5, 150.5).into(),
+                r: 8.0,
+            },
+        })
+        .unwrap();
+
+    let dot_end3 = router
+        .layout
+        .add_fixed_dot(FixedDotWeight {
+            net: 4,
+            circle: Circle {
+                pos: (350.5, 200.5).into(),
                 r: 8.0,
             },
         })
@@ -411,7 +447,7 @@ fn main() {
         &mut event_pump,
         &mut canvas,
         RouterOrLayout::Router(&mut router),
-        Some(dot1),
+        Some(dot_start),
         Some(dot_end),
         None,
         &[],
@@ -419,9 +455,10 @@ fn main() {
     );*/
 
     let _ = router.enroute(
-        dot1,
+        dot_start,
         dot_end,
-        &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
+        &mut EmptyRouterObserver,
+        //&mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     );
 
     render_times(
@@ -441,7 +478,7 @@ fn main() {
         &mut event_pump,
         &mut canvas,
         RouterOrLayout::Router(&mut router),
-        Some(dot2),
+        Some(dot_start2),
         Some(dot_end),
         None,
         &[],
@@ -449,8 +486,28 @@ fn main() {
     );*/
 
     let _ = router.enroute(
-        dot2,
+        dot_start2,
         dot_end2,
+        &mut EmptyRouterObserver,
+        //&mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
+    );
+
+    render_times(
+        &mut event_pump,
+        &window,
+        &mut renderer,
+        &font_context,
+        RouterOrLayout::Layout(&router.layout),
+        None,
+        None,
+        None,
+        &[],
+        -1,
+    );
+
+    let _ = router.enroute(
+        dot_start3,
+        dot_end3,
         &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     );
 
@@ -510,7 +567,12 @@ fn render_times(
                             .reroute(
                                 from,
                                 point! {x: state.x() as f64, y: state.y() as f64},
-                                &mut DebugRouterObserver::new(event_pump, window, renderer, font_context),
+                                &mut DebugRouterObserver::new(
+                                    event_pump,
+                                    window,
+                                    renderer,
+                                    font_context,
+                                ),
                             )
                             .ok();
                     } else {
@@ -534,25 +596,18 @@ fn render_times(
                 Shape::Dot(dot) => {
                     let mut path = Path2D::new();
                     path.ellipse(
-                        vec2f(
-                            dot.c.pos.x() as f32,
-                            dot.c.pos.y() as f32
-                        ),
+                        vec2f(dot.c.pos.x() as f32, dot.c.pos.y() as f32),
                         dot.c.r as f32,
-                        0.0, 0.0, std::f32::consts::TAU
+                        0.0,
+                        0.0,
+                        std::f32::consts::TAU,
                     );
                     canvas.fill_path(path, FillRule::Winding);
                 }
                 Shape::Seg(seg) => {
                     let mut path = Path2D::new();
-                    path.move_to(vec2f(
-                        seg.from.x() as f32,
-                        seg.from.y() as f32
-                    ));
-                    path.line_to(vec2f(
-                        seg.to.x() as f32,
-                        seg.to.y() as f32
-                    ));
+                    path.move_to(vec2f(seg.from.x() as f32, seg.from.y() as f32));
+                    path.line_to(vec2f(seg.to.x() as f32, seg.to.y() as f32));
                     canvas.set_line_width(seg.width as f32);
                     canvas.stroke_path(path);
                 }
@@ -565,14 +620,11 @@ fn render_times(
 
                     let mut path = Path2D::new();
                     path.arc(
-                        vec2f(
-                            bend.c.pos.x() as f32,
-                            bend.c.pos.y() as f32
-                        ),
+                        vec2f(bend.c.pos.x() as f32, bend.c.pos.y() as f32),
                         bend.circle().r as f32,
                         angle1 as f32,
                         angle2 as f32,
-                        ArcDirection::CW
+                        ArcDirection::CW,
                     );
                     canvas.set_line_width(bend.width as f32);
                     canvas.stroke_path(path);
@@ -584,7 +636,7 @@ fn render_times(
             let bottomright = vec2f(envelope.upper()[0] as f32, envelope.upper()[1] as f32);
             canvas.set_line_width(1.0);
             canvas.set_stroke_style(ColorU::new(100, 100, 100, 255));
-            canvas.stroke_rect(RectF::new(topleft, bottomright-topleft));
+            canvas.stroke_rect(RectF::new(topleft, bottomright - topleft));
         }
 
         if let Some(ref mesh) = mesh {
@@ -599,14 +651,8 @@ fn render_times(
                 };
 
                 let mut path = Path2D::new();
-                path.move_to(vec2f(
-                    start_point.x() as f32,
-                    start_point.y() as f32
-                ));
-                path.line_to(vec2f(
-                    end_point.x() as f32,
-                    end_point.y() as f32
-                ));
+                path.move_to(vec2f(start_point.x() as f32, start_point.y() as f32));
+                path.line_to(vec2f(end_point.x() as f32, end_point.y() as f32));
                 canvas.set_stroke_style(color);
                 canvas.set_line_width(1.0);
                 canvas.stroke_path(path);
@@ -614,9 +660,11 @@ fn render_times(
         }
         //});
 
-        let mut scene = SceneProxy::from_scene(canvas.into_canvas().into_scene(),
-                                               renderer.mode().level,
-                                               RayonExecutor);
+        let mut scene = SceneProxy::from_scene(
+            canvas.into_canvas().into_scene(),
+            renderer.mode().level,
+            RayonExecutor,
+        );
         scene.build_and_render(renderer, BuildOptions::default());
         window.gl_swap_window();
 

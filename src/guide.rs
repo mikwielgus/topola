@@ -1,14 +1,61 @@
+use enum_dispatch::enum_dispatch;
 use geo::Line;
 
 use crate::{
-    draw::{Head, HeadTrait},
-    graph::{BendIndex, DotIndex, FixedDotIndex, MakePrimitive},
+    graph::{BendIndex, DotIndex, FixedDotIndex, GetBand, LooseDotIndex, MakePrimitive},
     layout::Layout,
     math::{self, Circle},
-    primitive::{GetCore, GetInnerOuter, GetWeight, MakeShape},
+    primitive::{GetCore, GetInnerOuter, GetOtherEnd, GetWeight, MakeShape},
     rules::{Conditions, Rules},
+    segbend::Segbend,
     shape::{Shape, ShapeTrait},
 };
+
+#[enum_dispatch]
+pub trait HeadTrait {
+    fn dot(&self) -> DotIndex;
+    fn band(&self) -> usize;
+}
+
+#[enum_dispatch(HeadTrait)]
+#[derive(Debug, Clone, Copy)]
+pub enum Head {
+    Bare(BareHead),
+    Segbend(SegbendHead),
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct BareHead {
+    pub dot: FixedDotIndex,
+    pub band: usize,
+}
+
+impl HeadTrait for BareHead {
+    fn dot(&self) -> DotIndex {
+        self.dot.into()
+    }
+
+    fn band(&self) -> usize {
+        self.band
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct SegbendHead {
+    pub dot: LooseDotIndex,
+    pub segbend: Segbend,
+    pub band: usize,
+}
+
+impl HeadTrait for SegbendHead {
+    fn dot(&self) -> DotIndex {
+        self.dot.into()
+    }
+
+    fn band(&self) -> usize {
+        self.band
+    }
+}
 
 pub struct Guide<'a, 'b> {
     layout: &'a Layout,
@@ -149,7 +196,35 @@ impl<'a, 'b> Guide<'a, 'b> {
         let shape = dot.primitive(self.layout).shape();
         Circle {
             pos: shape.center(),
-            r: shape.width() / 2.0 + width + self.rules.ruleset(self.conditions).clearance.min,
+            r: shape.width() / 2.0 + width + 0.0,
         }
+    }
+
+    pub fn segbend_head(&self, dot: LooseDotIndex) -> SegbendHead {
+        SegbendHead {
+            dot,
+            segbend: self.layout.segbend(dot),
+            band: self.layout.primitive(dot).weight().band(),
+        }
+    }
+
+    pub fn rear_head(&self, dot: LooseDotIndex) -> Head {
+        self.head(
+            self.rear(self.segbend_head(dot)),
+            self.layout.primitive(dot).weight().band(),
+        )
+    }
+
+    pub fn head(&self, dot: DotIndex, band: usize) -> Head {
+        match dot {
+            DotIndex::Fixed(fixed) => BareHead { dot: fixed, band }.into(),
+            DotIndex::Loose(loose) => self.segbend_head(loose).into(),
+        }
+    }
+
+    fn rear(&self, head: SegbendHead) -> DotIndex {
+        self.layout
+            .primitive(head.segbend.seg)
+            .other_end(head.segbend.dot.into())
     }
 }

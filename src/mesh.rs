@@ -200,6 +200,7 @@ impl<'a> visit::IntoEdges for &'a Mesh {
     fn edges(self, node: Self::NodeId) -> Self::Edges {
         Box::new(
             self.triangulation
+                // FIXME: node has to be converted to triangulation vertex (?)
                 .edges(node)
                 .flat_map(move |edge| edges(&self.triangulation, edge)),
         )

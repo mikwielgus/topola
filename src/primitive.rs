@@ -6,9 +6,9 @@ use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::graph::{
     DotIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegWeight, GenericIndex,
-    GetBand, GetEnds, GetNet, GetNodeIndex, GetOffset, GetWidth, Index, Interior, Label,
-    LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight,
-    MakePrimitive, Retag, Weight,
+    GetBand, GetNet, GetNodeIndex, GetOffset, GetWidth, Index, Label, LooseBendIndex,
+    LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight, MakePrimitive,
+    Retag, Weight,
 };
 use crate::layout::Layout;
 use crate::math::{self, Circle};
@@ -39,6 +39,10 @@ pub trait MakeShape {
     fn shape(&self) -> Shape;
 }
 
+pub trait GetInterior<T> {
+    fn interior(&self) -> Vec<T>;
+}
+
 pub trait GetOtherEnd<F: GetNodeIndex, T: GetNodeIndex + Into<F>>: GetEnds<F, T> {
     fn other_end(&self, end: F) -> F {
         let ends = self.ends();
@@ -48,6 +52,10 @@ pub trait GetOtherEnd<F: GetNodeIndex, T: GetNodeIndex + Into<F>>: GetEnds<F, T>
             ends.1.into()
         }
     }
+}
+
+pub trait GetEnds<F, T> {
+    fn ends(&self) -> (F, T);
 }
 
 pub trait GetWraparound: GetLayout + GetNodeIndex {
@@ -60,19 +68,13 @@ pub trait GetFirstRail: GetLayout + GetNodeIndex {
             .graph
             .neighbors_directed(self.node_index(), Incoming)
             .filter(|ni| {
-                self.layout()
-                    .graph
-                    .find_edge(self.node_index(), *ni)
-                    .is_some()
-            })
-            .filter(|ni| {
                 matches!(
                     self.layout()
                         .graph
                         .edge_weight(
                             self.layout()
                                 .graph
-                                .find_edge(self.node_index(), *ni)
+                                .find_edge(*ni, self.node_index())
                                 .unwrap()
                         )
                         .unwrap(),
@@ -249,7 +251,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
     }
 }
 
-impl<'a, W> Interior<Index> for GenericPrimitive<'a, W> {
+impl<'a, W> GetInterior<Index> for GenericPrimitive<'a, W> {
     fn interior(&self) -> Vec<Index> {
         vec![self.tagged_weight().retag(self.index.node_index())]
     }
@@ -288,9 +290,7 @@ impl<'a> MakeShape for FixedDot<'a> {
         })
     }
 }
-
 impl<'a> GetFirstRail for FixedDot<'a> {}
-
 impl<'a> GetWraparound for FixedDot<'a> {
     fn wraparound(&self) -> Option<LooseBendIndex> {
         self.first_rail()
@@ -557,5 +557,6 @@ impl<'a> GetWraparound for LooseBend<'a> {
         self.outer()
     }
 }
+
 impl<'a> GetCore for LooseBend<'a> {}
 impl<'a> GetInnerOuter for LooseBend<'a> {}

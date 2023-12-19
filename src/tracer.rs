@@ -1,11 +1,12 @@
 use contracts::debug_ensures;
 
 use crate::{
-    draw::{BareHead, Draw, Head, SegbendHead},
+    draw::Draw,
     graph::{FixedDotIndex, GetNet, LooseBendIndex},
+    guide::{BareHead, Head, SegbendHead},
     layout::{Band, Layout},
     mesh::{Mesh, VertexIndex},
-    primitive::{GetFirstRail, GetInnerOuter},
+    primitive::{GetInnerOuter, GetWraparound},
     rules::Rules,
 };
 
@@ -109,12 +110,6 @@ impl<'a> Tracer<'a> {
         width: f64,
     ) -> Result<SegbendHead, ()> {
         let head = self.draw().segbend_around_dot(head, around.into(), width)?;
-
-        if let Some(first_rail) = self.layout.primitive(around).first_rail() {
-            self.layout.reattach_bend(first_rail, head.segbend.bend);
-            self.update_outward(head.segbend.bend);
-        }
-
         Ok(head)
     }
 
@@ -124,97 +119,12 @@ impl<'a> Tracer<'a> {
         around: LooseBendIndex,
         width: f64,
     ) -> Result<SegbendHead, ()> {
-        let maybe_outer = self.layout.primitive(around).outer();
         let head = self
             .draw()
             .segbend_around_bend(head, around.into(), width)?;
 
-        if let Some(outer) = maybe_outer {
-            self.layout.reattach_bend(outer, head.segbend.bend);
-            self.update_outward(head.segbend.bend);
-        }
-
         Ok(head)
     }
-
-    fn update_outward(&mut self, bend: LooseBendIndex) {
-        let mut rail = bend;
-
-        while let Some(outer) = self.layout.primitive(rail).outer() {
-            self.draw().update_bow(bend);
-            rail = outer;
-        }
-    }
-
-    /*fn redraw_outward(&mut self, bend: FixedBendIndex) -> Result<(), ()> {
-        let mut bows: Vec<Bow> = vec![];
-
-        let mut cur_bend = bend;
-        loop {
-            bows.push(self.layout.bow(cur_bend));
-
-            cur_bend = match self.layout.primitive(cur_bend).outer() {
-                Some(new_bend) => new_bend,
-                None => break,
-            }
-        }
-
-        let core = self.layout.primitive(bend).core().unwrap();
-        let mut maybe_inner = self.layout.primitive(bend).inner();
-
-        for bow in &bows {
-            self.layout.remove_interior(bow);
-        }
-
-        for bow in &bows {
-            let ends = bow.ends();
-            let head = self.draw().start(ends.0);
-            let width = 5.0;
-
-            let segbend_head = if let Some(inner) = maybe_inner {
-                self.draw().segbend_around_bend(head, inner.into(), width)?
-            } else {
-                self.draw().segbend_around_dot(head, core.into(), width)?
-            };
-
-            maybe_inner = Some(segbend_head.segbend.bend);
-            self.draw().finish(head, ends.1, width)?;
-            //self.relax_band(maybe_inner.unwrap());
-        }
-
-        Ok(())
-    }*/
-
-    /*fn relax_band(&mut self, bend: FixedBendIndex) {
-        let mut prev_bend = bend;
-        while let Some(cur_bend) = self.layout.primitive(prev_bend).prev_bend() {
-            if self.layout.primitive(cur_bend).cross_product() >= 0. {
-                self.release_bow(cur_bend);
-            }
-
-            prev_bend = cur_bend;
-        }
-
-        let mut prev_bend = bend;
-        while let Some(cur_bend) = self.layout.primitive(prev_bend).next_bend() {
-            if self.layout.primitive(cur_bend).cross_product() >= 0. {
-                self.release_bow(cur_bend);
-            }
-
-            prev_bend = cur_bend;
-        }
-    }*/
-
-    /*fn release_bow(&mut self, bend: FixedBendIndex) {
-        let bow = self.layout.bow(bend);
-        let ends = bow.ends();
-
-        self.layout.remove_interior(&bow);
-
-        let head = self.draw().start(ends.0);
-
-        let _ = self.draw().finish(head, ends.1, 5.0);
-    }*/
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() - 1))]
     #[debug_ensures(ret.is_err() -> trace.path.len() == old(trace.path.len()))]

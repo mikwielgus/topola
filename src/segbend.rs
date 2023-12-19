@@ -1,7 +1,7 @@
 use crate::{
-    graph::{GetEnds, Index, Interior, LooseBendIndex, LooseDotIndex, LooseSegIndex},
+    graph::{Index, LooseBendIndex, LooseDotIndex, LooseSegIndex},
     layout::Layout,
-    primitive::{GetOtherEnd, LooseBend, LooseDot},
+    primitive::{GetEnds, GetInterior, GetOtherEnd, LooseBend, LooseDot},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -20,7 +20,7 @@ impl Segbend {
     }
 }
 
-impl Interior<Index> for Segbend {
+impl GetInterior<Index> for Segbend {
     fn interior(&self) -> Vec<Index> {
         vec![self.bend.into(), self.dot.into(), self.seg.into()]
     }

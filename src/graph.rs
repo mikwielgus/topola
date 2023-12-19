@@ -11,14 +11,6 @@ use crate::{
     primitive::{GenericPrimitive, Primitive},
 };
 
-pub trait Interior<T> {
-    fn interior(&self) -> Vec<T>;
-}
-
-pub trait GetEnds<F, T> {
-    fn ends(&self) -> (F, T);
-}
-
 #[enum_dispatch]
 pub trait Retag {
     fn retag(&self, index: NodeIndex<usize>) -> Index;
@@ -176,14 +168,23 @@ impl From<BendIndex> for WraparoundableIndex {
     }
 }
 
-#[enum_dispatch(GetNodeIndex, MakePrimitive, GetWraparound)]
+#[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WraparoundableIndex {
+    FixedDot(FixedDotIndex),
     FixedBend(FixedBendIndex),
     LooseBend(LooseBendIndex),
-    FixedDot(FixedDotIndex),
 }
 
+impl From<WraparoundableIndex> for Index {
+    fn from(wraparoundable: WraparoundableIndex) -> Self {
+        match wraparoundable {
+            WraparoundableIndex::FixedDot(dot) => Index::FixedDot(dot),
+            WraparoundableIndex::FixedBend(bend) => Index::FixedBend(bend),
+            WraparoundableIndex::LooseBend(bend) => Index::LooseBend(bend),
+        }
+    }
+}
 pub trait DotWeight: GetWidth + Into<Weight> + Copy {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]

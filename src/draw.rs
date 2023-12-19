@@ -8,59 +8,13 @@ use crate::{
         LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight, MakePrimitive,
         WraparoundableIndex,
     },
-    guide::Guide,
+    guide::{Guide, Head, HeadTrait, SegbendHead},
     layout::Layout,
     math::Circle,
     primitive::{GetOtherEnd, GetWeight},
     rules::{Conditions, Rules},
     segbend::Segbend,
 };
-
-#[enum_dispatch]
-pub trait HeadTrait {
-    fn dot(&self) -> DotIndex;
-    fn band(&self) -> usize;
-}
-
-#[enum_dispatch(HeadTrait)]
-#[derive(Debug, Clone, Copy)]
-pub enum Head {
-    Bare(BareHead),
-    Segbend(SegbendHead),
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct BareHead {
-    pub dot: FixedDotIndex,
-    pub band: usize,
-}
-
-impl HeadTrait for BareHead {
-    fn dot(&self) -> DotIndex {
-        self.dot.into()
-    }
-
-    fn band(&self) -> usize {
-        self.band
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct SegbendHead {
-    pub dot: LooseDotIndex,
-    pub segbend: Segbend,
-    pub band: usize,
-}
-
-impl HeadTrait for SegbendHead {
-    fn dot(&self) -> DotIndex {
-        self.dot.into()
-    }
-
-    fn band(&self) -> usize {
-        self.band
-    }
-}
 
 pub struct Draw<'a> {
     layout: &'a mut Layout,
@@ -73,7 +27,7 @@ impl<'a> Draw<'a> {
     }
 
     pub fn start(&mut self, from: LooseDotIndex) -> Head {
-        self.segbend_head(from).into()
+        self.guide(&Default::default()).segbend_head(from).into()
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
@@ -111,7 +65,7 @@ impl<'a> Draw<'a> {
         into: LooseDotIndex,
         width: f64,
     ) -> Result<(), ()> {
-        let to_head = self.segbend_head(into);
+        let to_head = self.guide(&Default::default()).segbend_head(into);
         let to_cw = self
             .guide(&Default::default())
             .head_cw(&to_head.into())
@@ -244,7 +198,7 @@ impl<'a> Draw<'a> {
         cw: bool,
         width: f64,
     ) -> Result<SegbendHead, ()> {
-        let segbend = self.layout.add_segbend(
+        let segbend = self.layout.insert_segbend(
             head.dot(),
             around,
             LooseDotWeight {
@@ -280,51 +234,7 @@ impl<'a> Draw<'a> {
         self.layout.remove_interior(&head.segbend);
         self.layout.remove(head.dot().into());
 
-        Some(self.head(prev_dot, band))
-    }
-
-    #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
-    pub fn update_bow(&mut self, _bend: LooseBendIndex) {
-        /*let cw = self.layout.primitive(bend).weight().cw;
-        let ends = self.layout.primitive(bend).ends();
-        let from_head = self.rear_head(ends.0);
-        let to_head = self.rear_head(ends.1);
-
-        let from = self
-            .guide(&Default::default())
-            .head_around_bend_segment(&from_head, inner, cw, 3.0);
-        let to = self
-            .guide(&Default::default())
-            .head_around_bend_segment(&from_head, inner, cw, 3.0);
-        self.layout.reposition_bend(bend, from, to);*/
-    }
-
-    fn head(&self, dot: DotIndex, band: usize) -> Head {
-        match dot {
-            DotIndex::Fixed(loose) => BareHead { dot: loose, band }.into(),
-            DotIndex::Loose(fixed) => self.segbend_head(fixed).into(),
-        }
-    }
-
-    fn segbend_head(&self, dot: LooseDotIndex) -> SegbendHead {
-        SegbendHead {
-            dot,
-            segbend: self.layout.segbend(dot),
-            band: self.layout.primitive(dot).weight().band(),
-        }
-    }
-
-    fn rear_head(&self, dot: LooseDotIndex) -> Head {
-        self.head(
-            self.rear(self.segbend_head(dot)),
-            self.layout.primitive(dot).weight().band(),
-        )
-    }
-
-    fn rear(&self, head: SegbendHead) -> DotIndex {
-        self.layout
-            .primitive(head.segbend.seg)
-            .other_end(head.segbend.dot.into())
+        Some(self.guide(&Default::default()).head(prev_dot, band))
     }
 
     fn guide(&'a self, conditions: &'a Conditions) -> Guide {
