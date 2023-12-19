@@ -3,7 +3,7 @@ use std::iter;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use itertools::Itertools;
-use petgraph::visit;
+use petgraph::visit::{self, NodeIndexable};
 use petgraph::{stable_graph::NodeIndex, visit::EdgeRef};
 use spade::{HasPosition, InsertionError, Point2};
 
@@ -25,15 +25,31 @@ pub enum VertexIndex {
     LooseBend(LooseBendIndex),
 }
 
+#[enum_dispatch(GetNodeIndex, MakePrimitive)]
+#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+pub enum TriangulationVertexIndex {
+    FixedDot(FixedDotIndex),
+    FixedBend(FixedBendIndex),
+}
+
+impl From<TriangulationVertexIndex> for VertexIndex {
+    fn from(vertex: TriangulationVertexIndex) -> Self {
+        match vertex {
+            TriangulationVertexIndex::FixedDot(dot) => VertexIndex::FixedDot(dot),
+            TriangulationVertexIndex::FixedBend(bend) => VertexIndex::FixedBend(bend),
+        }
+    }
+}
+
 #[derive(Debug, Clone)]
 struct TriangulationWeight {
-    vertex: VertexIndex,
+    vertex: TriangulationVertexIndex,
     rails: Vec<LooseBendIndex>,
     pos: Point,
 }
 
-impl GetVertexIndex<VertexIndex> for TriangulationWeight {
-    fn vertex(&self) -> VertexIndex {
+impl GetVertexIndex<TriangulationVertexIndex> for TriangulationWeight {
+    fn vertex(&self) -> TriangulationVertexIndex {
         self.vertex
     }
 }
@@ -47,14 +63,19 @@ impl HasPosition for TriangulationWeight {
 
 #[derive(Debug, Clone)]
 pub struct Mesh {
-    triangulation: Triangulation<VertexIndex, TriangulationWeight>,
+    triangulation: Triangulation<TriangulationVertexIndex, TriangulationWeight>,
+    vertex_to_triangulation_vertex: Vec<Option<TriangulationVertexIndex>>,
 }
 
 impl Mesh {
     pub fn new(layout: &Layout) -> Self {
-        Self {
+        let mut this = Self {
             triangulation: Triangulation::new(layout),
-        }
+            vertex_to_triangulation_vertex: Vec::new(),
+        };
+        this.vertex_to_triangulation_vertex
+            .resize(layout.graph.node_bound(), None);
+        this
     }
 
     pub fn generate(&mut self, layout: &Layout) -> Result<(), InsertionError> {
@@ -62,16 +83,16 @@ impl Mesh {
             let center = node.primitive(layout).shape().center();
 
             match node {
-                Index::FixedDot(fixed_dot) => {
+                Index::FixedDot(dot) => {
                     self.triangulation.add_vertex(TriangulationWeight {
-                        vertex: fixed_dot.into(),
+                        vertex: dot.into(),
                         rails: vec![],
                         pos: center,
                     })?;
                 }
-                Index::FixedBend(fixed_bend) => {
+                Index::FixedBend(bend) => {
                     self.triangulation.add_vertex(TriangulationWeight {
-                        vertex: fixed_bend.into(),
+                        vertex: bend.into(),
                         rails: vec![],
                         pos: center,
                     })?;
@@ -81,18 +102,31 @@ impl Mesh {
         }
 
         for node in layout.nodes() {
+            // Add rails as vertices. This is how the mesh differs from the triangulation.
             match node {
-                Index::LooseBend(loose_bend) => {
+                Index::LooseBend(bend) => {
                     self.triangulation
-                        .weight_mut(layout.primitive(loose_bend).core().into())
+                        .weight_mut(layout.primitive(bend).core().into())
                         .rails
-                        .push(loose_bend.into());
+                        .push(bend.into());
+                    self.vertex_to_triangulation_vertex[bend.node_index().index()] =
+                        Some(layout.primitive(bend).core().into());
                 }
                 _ => (),
             }
         }
 
         Ok(())
+    }
+
+    pub fn triangulation_vertex(&self, vertex: VertexIndex) -> TriangulationVertexIndex {
+        match vertex {
+            VertexIndex::FixedDot(dot) => TriangulationVertexIndex::FixedDot(dot),
+            VertexIndex::FixedBend(bend) => TriangulationVertexIndex::FixedBend(bend),
+            VertexIndex::LooseBend(bend) => {
+                self.vertex_to_triangulation_vertex[bend.node_index().index()].unwrap()
+            }
+        }
     }
 }
 
@@ -138,23 +172,29 @@ impl<'a> visit::IntoNeighbors for &'a Mesh {
     type Neighbors = Box<dyn Iterator<Item = VertexIndex> + 'a>;
 
     fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
-        Box::new(self.triangulation.neighbors(vertex).flat_map(|neighbor| {
-            iter::once(neighbor).chain(
-                self.triangulation
-                    .weight(neighbor)
-                    .rails
-                    .iter()
-                    .map(|index| VertexIndex::from(*index)),
-            )
-        }))
+        Box::new(
+            self.triangulation
+                .neighbors(self.triangulation_vertex(vertex))
+                .flat_map(|neighbor| {
+                    iter::once(neighbor.into()).chain(
+                        self.triangulation
+                            .weight(neighbor)
+                            .rails
+                            .iter()
+                            .map(|index| VertexIndex::from(*index)),
+                    )
+                }),
+        )
     }
 }
 
-fn edges(
-    triangulation: &Triangulation<VertexIndex, TriangulationWeight>,
-    edge: TriangulationEdgeReference<VertexIndex>,
+fn edge_with_near_edges(
+    triangulation: &Triangulation<TriangulationVertexIndex, TriangulationWeight>,
+    edge: TriangulationEdgeReference<TriangulationVertexIndex>,
 ) -> impl Iterator<Item = MeshEdgeReference> {
-    let mut from_vertices = vec![edge.source()];
+    let mut from_vertices = vec![edge.source().into()];
+
+    // Append rails to the source.
     from_vertices.extend(
         triangulation
             .weight(edge.source())
@@ -163,7 +203,9 @@ fn edges(
             .map(|bend| VertexIndex::from(*bend)),
     );
 
-    let mut to_vertices = vec![edge.target()];
+    let mut to_vertices = vec![edge.target().into()];
+
+    // Append rails to the target.
     to_vertices.extend(
         triangulation
             .weight(edge.target())
@@ -172,12 +214,13 @@ fn edges(
             .map(|bend| VertexIndex::from(*bend)),
     );
 
+    // Return cartesian product.
     from_vertices
         .into_iter()
         .cartesian_product(to_vertices.into_iter())
         .map(|pair| MeshEdgeReference {
             from: pair.0,
-            to: pair.1,
+            to: pair.1.into(),
         })
 }
 
@@ -189,20 +232,46 @@ impl<'a> visit::IntoEdgeReferences for &'a Mesh {
         Box::new(
             self.triangulation
                 .edge_references()
-                .flat_map(move |edge| edges(&self.triangulation, edge)),
+                .flat_map(move |edge| edge_with_near_edges(&self.triangulation, edge)),
         )
     }
+}
+
+fn vertex_edges(
+    triangulation: &Triangulation<TriangulationVertexIndex, TriangulationWeight>,
+    from: VertexIndex,
+    to: TriangulationVertexIndex,
+) -> impl Iterator<Item = MeshEdgeReference> {
+    let from_vertices = vec![from];
+    let mut to_vertices = vec![to.into()];
+
+    // Append rails to the target.
+    to_vertices.extend(
+        triangulation
+            .weight(to)
+            .rails
+            .iter()
+            .map(|bend| VertexIndex::from(*bend)),
+    );
+
+    // Return cartesian product.
+    from_vertices
+        .into_iter()
+        .cartesian_product(to_vertices.into_iter())
+        .map(|pair| MeshEdgeReference {
+            from: pair.0,
+            to: pair.1,
+        })
 }
 
 impl<'a> visit::IntoEdges for &'a Mesh {
     type Edges = Box<dyn Iterator<Item = MeshEdgeReference> + 'a>;
 
-    fn edges(self, node: Self::NodeId) -> Self::Edges {
+    fn edges(self, vertex: Self::NodeId) -> Self::Edges {
         Box::new(
             self.triangulation
-                // FIXME: node has to be converted to triangulation vertex (?)
-                .edges(node)
-                .flat_map(move |edge| edges(&self.triangulation, edge)),
+                .edges(self.triangulation_vertex(vertex))
+                .flat_map(move |edge| vertex_edges(&self.triangulation, vertex, edge.target())),
         )
     }
 }
