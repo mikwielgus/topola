@@ -2,6 +2,9 @@ use geo::{geometry::Point, point, EuclideanDistance, Line};
 use std::ops::Sub;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
+pub struct NoTangent(pub Circle, pub Circle);
+
+#[derive(Debug, Clone, Copy, PartialEq)]
 pub struct CanonicalLine {
     pub a: f64,
     pub b: f64,
@@ -69,8 +72,8 @@ fn cast_point_to_canonical_line(pt: Point, line: CanonicalLine) -> Point {
         .into();
 }
 
-fn tangent_point_pairs(circle1: Circle, circle2: Circle) -> Result<[(Point, Point); 4], ()> {
-    let tgs = _tangents(circle1, circle2)?;
+fn tangent_point_pairs(circle1: Circle, circle2: Circle) -> Result<[(Point, Point); 4], NoTangent> {
+    let tgs = _tangents(circle1, circle2).map_err(|_| NoTangent(circle1, circle2))?;
 
     Ok([
         (
@@ -97,7 +100,7 @@ pub fn tangent_segments(
     cw1: Option<bool>,
     circle2: Circle,
     cw2: Option<bool>,
-) -> Result<impl Iterator<Item = Line>, ()> {
+) -> Result<impl Iterator<Item = Line>, NoTangent> {
     Ok(tangent_point_pairs(circle1, circle2)?
         .into_iter()
         .filter_map(move |tangent_point_pair| {
@@ -128,7 +131,7 @@ pub fn tangent_segment(
     cw1: Option<bool>,
     circle2: Circle,
     cw2: Option<bool>,
-) -> Result<Line, ()> {
+) -> Result<Line, NoTangent> {
     Ok(tangent_segments(circle1, cw1, circle2, cw2)?
         .next()
         .unwrap())

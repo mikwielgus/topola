@@ -4,7 +4,7 @@ use crate::{
     draw::Draw,
     graph::{FixedDotIndex, GetNet, LooseBendIndex},
     guide::{BareHead, Head, SegbendHead},
-    layout::{Band, Layout},
+    layout::{Band, Exception, Layout},
     mesh::{Mesh, VertexIndex},
     primitive::{GetInnerOuter, GetWraparound},
     rules::Rules,
@@ -42,7 +42,12 @@ impl<'a> Tracer<'a> {
         }
     }
 
-    pub fn finish(&mut self, trace: &mut Trace, into: FixedDotIndex, width: f64) -> Result<(), ()> {
+    pub fn finish(
+        &mut self,
+        trace: &mut Trace,
+        into: FixedDotIndex,
+        width: f64,
+    ) -> Result<(), Exception> {
         self.draw().finish_in_dot(trace.head, into, width)
     }
 
@@ -52,7 +57,7 @@ impl<'a> Tracer<'a> {
         trace: &mut Trace,
         path: &[VertexIndex],
         width: f64,
-    ) -> Result<(), ()> {
+    ) -> Result<(), Exception> {
         let prefix_length = trace
             .path
             .iter()
@@ -61,39 +66,54 @@ impl<'a> Tracer<'a> {
             .count();
 
         let length = trace.path.len();
-        self.undo_path(trace, length - prefix_length)?;
+        self.undo_path(trace, length - prefix_length);
         self.path(trace, &path[prefix_length..], width)
     }
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() + path.len()))]
-    pub fn path(&mut self, trace: &mut Trace, path: &[VertexIndex], width: f64) -> Result<(), ()> {
+    pub fn path(
+        &mut self,
+        trace: &mut Trace,
+        path: &[VertexIndex],
+        width: f64,
+    ) -> Result<(), Exception> {
         for (i, vertex) in path.iter().enumerate() {
             if let Err(err) = self.step(trace, *vertex, width) {
-                self.undo_path(trace, i)?;
+                self.undo_path(trace, i);
                 return Err(err);
             }
         }
+
         Ok(())
     }
 
-    #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() - step_count))]
-    pub fn undo_path(&mut self, trace: &mut Trace, step_count: usize) -> Result<(), ()> {
+    #[debug_ensures(trace.path.len() == old(trace.path.len() - step_count))]
+    pub fn undo_path(&mut self, trace: &mut Trace, step_count: usize) {
         for _ in 0..step_count {
-            self.undo_step(trace)?;
+            self.undo_step(trace);
         }
-        Ok(())
     }
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() + 1))]
     #[debug_ensures(ret.is_err() -> trace.path.len() == old(trace.path.len()))]
-    pub fn step(&mut self, trace: &mut Trace, to: VertexIndex, width: f64) -> Result<(), ()> {
+    pub fn step(
+        &mut self,
+        trace: &mut Trace,
+        to: VertexIndex,
+        width: f64,
+    ) -> Result<(), Exception> {
         trace.head = self.wrap(trace.head, to, width)?.into();
-
         trace.path.push(to);
-        Ok(())
+
+        Ok::<(), Exception>(())
     }
 
-    fn wrap(&mut self, head: Head, around: VertexIndex, width: f64) -> Result<SegbendHead, ()> {
+    fn wrap(
+        &mut self,
+        head: Head,
+        around: VertexIndex,
+        width: f64,
+    ) -> Result<SegbendHead, Exception> {
         match around {
             VertexIndex::FixedDot(dot) => self.wrap_around_fixed_dot(head, dot, width),
             VertexIndex::FixedBend(_fixed_bend) => todo!(),
@@ -108,7 +128,7 @@ impl<'a> Tracer<'a> {
         head: Head,
         around: FixedDotIndex,
         width: f64,
-    ) -> Result<SegbendHead, ()> {
+    ) -> Result<SegbendHead, Exception> {
         let head = self.draw().segbend_around_dot(head, around.into(), width)?;
         Ok(head)
     }
@@ -118,7 +138,7 @@ impl<'a> Tracer<'a> {
         head: Head,
         around: LooseBendIndex,
         width: f64,
-    ) -> Result<SegbendHead, ()> {
+    ) -> Result<SegbendHead, Exception> {
         let head = self
             .draw()
             .segbend_around_bend(head, around.into(), width)?;
@@ -126,17 +146,15 @@ impl<'a> Tracer<'a> {
         Ok(head)
     }
 
-    #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() - 1))]
-    #[debug_ensures(ret.is_err() -> trace.path.len() == old(trace.path.len()))]
-    pub fn undo_step(&mut self, trace: &mut Trace) -> Result<(), ()> {
+    #[debug_ensures(trace.path.len() == old(trace.path.len() - 1))]
+    pub fn undo_step(&mut self, trace: &mut Trace) {
         if let Head::Segbend(head) = trace.head {
             trace.head = self.draw().undo_segbend(head).unwrap();
         } else {
-            return Err(());
+            panic!();
         }
 
         trace.path.pop();
-        Ok(())
     }
 
     fn draw(&mut self) -> Draw {
