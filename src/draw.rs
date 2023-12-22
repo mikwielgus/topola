@@ -1,20 +1,32 @@
 use contracts::debug_ensures;
-use enum_dispatch::enum_dispatch;
+
 use geo::{EuclideanLength, Point};
 
 use crate::{
     graph::{
-        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetBand, GetNet, Index, LooseBendIndex,
+        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetBand, GetNet, LooseBendIndex,
         LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight, MakePrimitive,
         WraparoundableIndex,
     },
     guide::{Guide, Head, HeadTrait, SegbendHead},
-    layout::{Exception, Infringement, Layout},
-    math::Circle,
-    primitive::{GetOtherEnd, GetWeight},
+    layout::{Infringement, Layout, LayoutException},
+    math::{Circle, NoTangents},
+    primitive::GetOtherEnd,
     rules::{Conditions, Rules},
-    segbend::Segbend,
 };
+
+#[derive(Debug, Clone, Copy)]
+pub enum DrawException {
+    NoTangents(NoTangents),
+    CannotFinishIn(FixedDotIndex, LayoutException),
+    CannotWrapAround(WraparoundableIndex, LayoutException, LayoutException),
+}
+
+impl From<NoTangents> for DrawException {
+    fn from(err: NoTangents) -> Self {
+        DrawException::NoTangents(err)
+    }
+}
 
 pub struct Draw<'a> {
     layout: &'a mut Layout,
@@ -37,61 +49,30 @@ impl<'a> Draw<'a> {
         head: Head,
         into: FixedDotIndex,
         width: f64,
-    ) -> Result<(), Exception> {
+    ) -> Result<(), DrawException> {
         let tangent = self
             .guide(&Default::default())
-            .head_into_dot_segment(&head, into, width)?;
-        let head = self.extend_head(head, tangent.start_point())?;
+            .head_into_dot_segment(&head, into, width)
+            .map_err(Into::<DrawException>::into)?;
+        let head = self
+            .extend_head(head, tangent.start_point())
+            .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
 
         let net = head.dot().primitive(self.layout).net();
 
         match head.dot() {
             DotIndex::Fixed(dot) => {
                 self.layout
-                    .add_fixed_seg(into.into(), dot, FixedSegWeight { net, width })?;
+                    .add_fixed_seg(into.into(), dot, FixedSegWeight { net, width })
+                    .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
             DotIndex::Loose(dot) => {
-                self.layout.add_loose_seg(
-                    into.into(),
-                    dot,
-                    LooseSegWeight { band: head.band() },
-                )?;
+                self.layout
+                    .add_loose_seg(into.into(), dot, LooseSegWeight { band: head.band() })
+                    .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
         }
-        Ok::<(), Exception>(())
-    }
-
-    #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.layout.node_count() == old(self.layout.node_count()))]
-    pub fn finish_in_bend(
-        &mut self,
-        head: Head,
-        into_bend: LooseBendIndex,
-        into: LooseDotIndex,
-        width: f64,
-    ) -> Result<(), Exception> {
-        let to_head = self.guide(&Default::default()).segbend_head(into);
-        let to_cw = self
-            .guide(&Default::default())
-            .head_cw(&to_head.into())
-            .unwrap();
-        let tangent = self.guide(&Default::default()).head_around_bend_segment(
-            &head,
-            into_bend.into(),
-            to_cw,
-            width,
-        )?;
-
-        let head = self.extend_head(head, tangent.start_point())?;
-        let _to_head = self.extend_head(to_head.into(), tangent.end_point())?;
-
-        let _net = head.dot().primitive(self.layout).net();
-        self.layout.add_loose_seg(
-            head.dot(),
-            into.into(),
-            LooseSegWeight { band: head.band() },
-        )?;
-        Ok::<(), Exception>(())
+        Ok::<(), DrawException>(())
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 4))]
@@ -101,7 +82,7 @@ impl<'a> Draw<'a> {
         head: Head,
         around: FixedDotIndex,
         width: f64,
-    ) -> Result<SegbendHead, Exception> {
+    ) -> Result<SegbendHead, DrawException> {
         let mut tangents = self.guide(&Default::default()).head_around_dot_segments(
             &head,
             around.into(),
@@ -114,25 +95,27 @@ impl<'a> Draw<'a> {
             dirs = [false, true];
         }
 
-        [tangents.0, tangents.1]
-            .iter()
-            .enumerate()
-            .find_map(|(i, tangent)| {
-                self.segbend_around(
-                    head,
-                    around.into(),
-                    tangent.start_point(),
-                    tangent.end_point(),
-                    dirs[i],
-                    width,
-                )
-                .ok()
-            })
-            // XXX: Use proper exceptions instead of this temporary.
-            .ok_or(Exception::Infringement(Infringement(
-                head.dot().into(),
-                head.dot().into(),
-            )))
+        let mut errs = vec![];
+
+        for (i, tangent) in [tangents.0, tangents.1].iter().enumerate() {
+            match self.segbend_around(
+                head,
+                around.into(),
+                tangent.start_point(),
+                tangent.end_point(),
+                dirs[i],
+                width,
+            ) {
+                Ok(ok) => return Ok(ok),
+                Err(err) => errs.push(err),
+            }
+        }
+
+        Err(DrawException::CannotWrapAround(
+            around.into(),
+            errs[0],
+            errs[1],
+        ))
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 4))]
@@ -142,7 +125,7 @@ impl<'a> Draw<'a> {
         head: Head,
         around: BendIndex,
         width: f64,
-    ) -> Result<SegbendHead, Exception> {
+    ) -> Result<SegbendHead, DrawException> {
         let mut tangents = self.guide(&Default::default()).head_around_bend_segments(
             &head,
             around.into(),
@@ -155,25 +138,27 @@ impl<'a> Draw<'a> {
             dirs = [false, true];
         }
 
-        [tangents.0, tangents.1]
-            .iter()
-            .enumerate()
-            .find_map(|(i, tangent)| {
-                self.segbend_around(
-                    head,
-                    around.into(),
-                    tangent.start_point(),
-                    tangent.end_point(),
-                    dirs[i],
-                    width,
-                )
-                .ok()
-            })
-            // XXX: Use proper exceptions instead of this temporary.
-            .ok_or(Exception::Infringement(Infringement(
-                head.dot().into(),
-                head.dot().into(),
-            )))
+        let mut errs = vec![];
+
+        for (i, tangent) in [tangents.0, tangents.1].iter().enumerate() {
+            match self.segbend_around(
+                head,
+                around.into(),
+                tangent.start_point(),
+                tangent.end_point(),
+                dirs[i],
+                width,
+            ) {
+                Ok(ok) => return Ok(ok),
+                Err(err) => errs.push(err),
+            }
+        }
+
+        Err(DrawException::CannotWrapAround(
+            around.into(),
+            errs[0],
+            errs[1],
+        ))
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 4))]
@@ -186,7 +171,7 @@ impl<'a> Draw<'a> {
         to: Point,
         cw: bool,
         width: f64,
-    ) -> Result<SegbendHead, Exception> {
+    ) -> Result<SegbendHead, LayoutException> {
         let head = self.extend_head(head, from)?;
         self.segbend(head, around, to, cw, width)
     }
@@ -210,7 +195,7 @@ impl<'a> Draw<'a> {
         to: Point,
         cw: bool,
         width: f64,
-    ) -> Result<SegbendHead, Exception> {
+    ) -> Result<SegbendHead, LayoutException> {
         let segbend = self.layout.insert_segbend(
             head.dot(),
             around,
@@ -228,7 +213,7 @@ impl<'a> Draw<'a> {
                 cw,
             },
         )?;
-        Ok::<SegbendHead, Exception>(SegbendHead {
+        Ok::<SegbendHead, LayoutException>(SegbendHead {
             dot: self.layout.primitive(segbend.bend).other_end(segbend.dot),
             segbend,
             band: head.band(),

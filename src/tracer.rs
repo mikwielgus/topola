@@ -1,12 +1,11 @@
 use contracts::debug_ensures;
 
 use crate::{
-    draw::Draw,
+    draw::{Draw, DrawException},
     graph::{FixedDotIndex, GetNet, LooseBendIndex},
     guide::{BareHead, Head, SegbendHead},
-    layout::{Band, Exception, Layout},
+    layout::{Band, Layout, LayoutException},
     mesh::{Mesh, VertexIndex},
-    primitive::{GetInnerOuter, GetWraparound},
     rules::Rules,
 };
 
@@ -47,7 +46,7 @@ impl<'a> Tracer<'a> {
         trace: &mut Trace,
         into: FixedDotIndex,
         width: f64,
-    ) -> Result<(), Exception> {
+    ) -> Result<(), DrawException> {
         self.draw().finish_in_dot(trace.head, into, width)
     }
 
@@ -57,7 +56,7 @@ impl<'a> Tracer<'a> {
         trace: &mut Trace,
         path: &[VertexIndex],
         width: f64,
-    ) -> Result<(), Exception> {
+    ) -> Result<(), DrawException> {
         let prefix_length = trace
             .path
             .iter()
@@ -76,7 +75,7 @@ impl<'a> Tracer<'a> {
         trace: &mut Trace,
         path: &[VertexIndex],
         width: f64,
-    ) -> Result<(), Exception> {
+    ) -> Result<(), DrawException> {
         for (i, vertex) in path.iter().enumerate() {
             if let Err(err) = self.step(trace, *vertex, width) {
                 self.undo_path(trace, i);
@@ -101,11 +100,11 @@ impl<'a> Tracer<'a> {
         trace: &mut Trace,
         to: VertexIndex,
         width: f64,
-    ) -> Result<(), Exception> {
+    ) -> Result<(), DrawException> {
         trace.head = self.wrap(trace.head, to, width)?.into();
         trace.path.push(to);
 
-        Ok::<(), Exception>(())
+        Ok::<(), DrawException>(())
     }
 
     fn wrap(
@@ -113,7 +112,7 @@ impl<'a> Tracer<'a> {
         head: Head,
         around: VertexIndex,
         width: f64,
-    ) -> Result<SegbendHead, Exception> {
+    ) -> Result<SegbendHead, DrawException> {
         match around {
             VertexIndex::FixedDot(dot) => self.wrap_around_fixed_dot(head, dot, width),
             VertexIndex::FixedBend(_fixed_bend) => todo!(),
@@ -128,7 +127,7 @@ impl<'a> Tracer<'a> {
         head: Head,
         around: FixedDotIndex,
         width: f64,
-    ) -> Result<SegbendHead, Exception> {
+    ) -> Result<SegbendHead, DrawException> {
         let head = self.draw().segbend_around_dot(head, around.into(), width)?;
         Ok(head)
     }
@@ -138,7 +137,7 @@ impl<'a> Tracer<'a> {
         head: Head,
         around: LooseBendIndex,
         width: f64,
-    ) -> Result<SegbendHead, Exception> {
+    ) -> Result<SegbendHead, DrawException> {
         let head = self
             .draw()
             .segbend_around_bend(head, around.into(), width)?;

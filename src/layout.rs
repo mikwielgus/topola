@@ -15,7 +15,7 @@ use crate::graph::{
     Retag, SegWeight, Weight, WraparoundableIndex,
 };
 use crate::guide::Guide;
-use crate::math::NoTangent;
+use crate::math::NoTangents;
 use crate::primitive::{
     GenericPrimitive, GetConnectable, GetCore, GetEnds, GetFirstRail, GetInnerOuter, GetInterior,
     GetOtherEnd, GetWeight, GetWraparound, MakeShape,
@@ -27,34 +27,34 @@ pub type RTreeWrapper = GeomWithData<Shape, Index>;
 
 #[enum_dispatch]
 #[derive(Debug, Clone, Copy)]
-pub enum Exception {
-    NoTangent(NoTangent),
+pub enum LayoutException {
+    NoTangents(NoTangents),
     Infringement(Infringement),
     Collision(Collision),
     AreConnected(AreConnected),
 }
 
-impl From<NoTangent> for Exception {
-    fn from(err: NoTangent) -> Self {
-        Exception::NoTangent(err)
+impl From<NoTangents> for LayoutException {
+    fn from(err: NoTangents) -> Self {
+        LayoutException::NoTangents(err)
     }
 }
 
-impl From<Infringement> for Exception {
+impl From<Infringement> for LayoutException {
     fn from(err: Infringement) -> Self {
-        Exception::Infringement(err)
+        LayoutException::Infringement(err)
     }
 }
 
-impl From<Collision> for Exception {
+impl From<Collision> for LayoutException {
     fn from(err: Collision) -> Self {
-        Exception::Collision(err)
+        LayoutException::Collision(err)
     }
 }
 
-impl From<AreConnected> for Exception {
+impl From<AreConnected> for LayoutException {
     fn from(err: AreConnected) -> Self {
-        Exception::AreConnected(err)
+        LayoutException::AreConnected(err)
     }
 }
 
@@ -186,7 +186,7 @@ impl Layout {
         dot_weight: LooseDotWeight,
         seg_weight: LooseSegWeight,
         bend_weight: LooseBendWeight,
-    ) -> Result<Segbend, Exception> {
+    ) -> Result<Segbend, LayoutException> {
         let maybe_wraparound = match around {
             WraparoundableIndex::FixedDot(around) => self.primitive(around).wraparound(),
             WraparoundableIndex::FixedBend(around) => self.primitive(around).wraparound(),
@@ -224,7 +224,7 @@ impl Layout {
             return Err(collision.into());
         }
 
-        Ok::<Segbend, Exception>(segbend)
+        Ok::<Segbend, LayoutException>(segbend)
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
@@ -370,7 +370,10 @@ impl Layout {
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
-    fn update_this_and_outward_bows(&mut self, around: LooseBendIndex) -> Result<(), Exception> {
+    fn update_this_and_outward_bows(
+        &mut self,
+        around: LooseBendIndex,
+    ) -> Result<(), LayoutException> {
         let mut maybe_rail = Some(around);
 
         while let Some(rail) = maybe_rail {
@@ -418,7 +421,7 @@ impl Layout {
             maybe_rail = self.primitive(rail).outer();
         }
 
-        Ok::<(), Exception>(())
+        Ok::<(), LayoutException>(())
     }
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 4))]
@@ -432,7 +435,7 @@ impl Layout {
         dot_weight: LooseDotWeight,
         seg_weight: LooseSegWeight,
         bend_weight: LooseBendWeight,
-    ) -> Result<Segbend, Exception> {
+    ) -> Result<Segbend, LayoutException> {
         self.add_segbend_infringably(
             from,
             around,
@@ -455,7 +458,7 @@ impl Layout {
         seg_weight: LooseSegWeight,
         bend_weight: LooseBendWeight,
         infringables: &[Index],
-    ) -> Result<Segbend, Exception> {
+    ) -> Result<Segbend, LayoutException> {
         let seg_to = self.add_dot_infringably(dot_weight, infringables)?;
         let seg = self
             .add_seg_infringably(from, seg_to, seg_weight, infringables)
@@ -463,7 +466,7 @@ impl Layout {
                 self.remove(seg_to.into());
                 err
             })
-            .map_err(|err| Exception::Infringement(err))?;
+            .map_err(|err| LayoutException::Infringement(err))?;
 
         let bend_to = self
             .add_dot_infringably(dot_weight, infringables)
@@ -472,7 +475,7 @@ impl Layout {
                 self.remove(seg_to.into());
                 err
             })
-            .map_err(|err| Exception::Infringement(err))?;
+            .map_err(|err| LayoutException::Infringement(err))?;
         let bend = self
             .add_loose_bend_infringably(seg_to, bend_to, around, bend_weight, infringables)
             .map_err(|err| {
@@ -482,7 +485,7 @@ impl Layout {
                 err
             })?;
 
-        Ok::<Segbend, Exception>(Segbend {
+        Ok::<Segbend, LayoutException>(Segbend {
             seg,
             dot: seg_to,
             bend,
@@ -557,10 +560,10 @@ impl Layout {
         around: WraparoundableIndex,
         weight: LooseBendWeight,
         infringables: &[Index],
-    ) -> Result<LooseBendIndex, Exception> {
+    ) -> Result<LooseBendIndex, LayoutException> {
         // It makes no sense to wrap something around or under one of its connectables.
         if self.bands[weight.band].net == around.primitive(self).net() {
-            return Err(Exception::AreConnected(AreConnected(
+            return Err(LayoutException::AreConnected(AreConnected(
                 weight.into(),
                 around.into(),
             )));
@@ -572,7 +575,7 @@ impl Layout {
             WraparoundableIndex::LooseBend(around) => self.primitive(around).wraparound(),
         } {
             if self.bands[weight.band].net == wraparound.primitive(self).net() {
-                return Err(Exception::AreConnected(AreConnected(
+                return Err(LayoutException::AreConnected(AreConnected(
                     weight.into(),
                     wraparound.into(),
                 )));

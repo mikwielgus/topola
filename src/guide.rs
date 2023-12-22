@@ -4,7 +4,7 @@ use geo::Line;
 use crate::{
     graph::{BendIndex, DotIndex, FixedDotIndex, GetBand, LooseDotIndex, MakePrimitive},
     layout::Layout,
-    math::{self, Circle, NoTangent},
+    math::{self, Circle, NoTangents},
     primitive::{GetCore, GetInnerOuter, GetOtherEnd, GetWeight, MakeShape},
     rules::{Conditions, Rules},
     segbend::Segbend,
@@ -77,7 +77,7 @@ impl<'a, 'b> Guide<'a, 'b> {
         head: &Head,
         into: FixedDotIndex,
         width: f64,
-    ) -> Result<Line, NoTangent> {
+    ) -> Result<Line, NoTangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle = Circle {
             pos: self.layout.primitive(into).weight().circle.pos,
@@ -93,7 +93,7 @@ impl<'a, 'b> Guide<'a, 'b> {
         head: &Head,
         around: DotIndex,
         width: f64,
-    ) -> Result<(Line, Line), NoTangent> {
+    ) -> Result<(Line, Line), NoTangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle = self.dot_circle(around, width);
 
@@ -109,7 +109,7 @@ impl<'a, 'b> Guide<'a, 'b> {
         around: DotIndex,
         cw: bool,
         width: f64,
-    ) -> Result<Line, NoTangent> {
+    ) -> Result<Line, NoTangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle = self.dot_circle(around, width);
 
@@ -122,7 +122,7 @@ impl<'a, 'b> Guide<'a, 'b> {
         head: &Head,
         around: BendIndex,
         width: f64,
-    ) -> Result<(Line, Line), NoTangent> {
+    ) -> Result<(Line, Line), NoTangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle = self.bend_circle(around, width);
 
@@ -138,7 +138,7 @@ impl<'a, 'b> Guide<'a, 'b> {
         around: BendIndex,
         cw: bool,
         width: f64,
-    ) -> Result<Line, NoTangent> {
+    ) -> Result<Line, NoTangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle = self.bend_circle(around, width);
 
