@@ -658,9 +658,22 @@ fn render_times(
                 let start_point = edge.source().primitive(layout).shape().center();
                 let end_point = edge.target().primitive(layout).shape().center();
 
-                let color = if path.contains(&edge.source()) && path.contains(&edge.target()) {
+                /*let color = if path.contains(&edge.source()) && path.contains(&edge.target()) {
                     ColorU::new(250, 250, 0, 255)
                 } else {
+                    ColorU::new(125, 125, 125, 255)
+                };*/
+
+                let color = 'blk: {
+                    if let (Some(source_pos), Some(target_pos)) = (
+                        path.iter().position(|node| *node == edge.source()),
+                        path.iter().position(|node| *node == edge.target()),
+                    ) {
+                        if target_pos == source_pos + 1 {
+                            break 'blk ColorU::new(250, 250, 0, 255);
+                        }
+                    }
+
                     ColorU::new(125, 125, 125, 255)
                 };
 
