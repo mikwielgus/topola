@@ -3,6 +3,7 @@ use petgraph::visit::EdgeRef;
 use spade::InsertionError;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
+use crate::draw::DrawException;
 use crate::graph::FixedDotIndex;
 use crate::layout::Layout;
 
@@ -14,7 +15,13 @@ use crate::tracer::{Trace, Tracer};
 pub trait RouterObserver {
     fn on_rework(&mut self, tracer: &Tracer, trace: &Trace);
     fn before_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference);
-    fn on_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference);
+    fn on_probe(
+        &mut self,
+        tracer: &Tracer,
+        trace: &Trace,
+        edge: MeshEdgeReference,
+        result: Result<(), DrawException>,
+    );
     fn on_estimate(&mut self, tracer: &Tracer, vertex: VertexIndex);
 }
 
@@ -45,7 +52,9 @@ impl<'a, RO: RouterObserver> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'
     fn is_goal(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Mesh>) -> bool {
         let new_path = tracker.reconstruct_path_to(vertex);
 
-        self.tracer.rework_path(&mut self.trace, &new_path, 5.0);
+        self.tracer
+            .rework_path(&mut self.trace, &new_path, 5.0)
+            .unwrap();
         self.observer.on_rework(&self.tracer, &self.trace);
 
         self.tracer.finish(&mut self.trace, self.to, 5.0).is_ok()
@@ -53,13 +62,15 @@ impl<'a, RO: RouterObserver> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'
 
     fn edge_cost(&mut self, edge: MeshEdgeReference) -> Option<u64> {
         self.observer.before_probe(&self.tracer, &self.trace, edge);
-        if edge.target() != self.to.into()
-            && self
-                .tracer
-                .step(&mut self.trace, edge.target(), 5.0)
-                .is_ok()
-        {
-            self.observer.on_probe(&self.tracer, &self.trace, edge);
+        if edge.target() == self.to.into() {
+            return None;
+        }
+
+        let result = self.tracer.step(&mut self.trace, edge.target(), 5.0);
+        self.observer
+            .on_probe(&self.tracer, &self.trace, edge, result);
+
+        if result.is_ok() {
             self.tracer.undo_step(&mut self.trace);
             Some(1)
         } else {

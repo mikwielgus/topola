@@ -24,8 +24,9 @@ mod shape;
 mod tracer;
 mod triangulation;
 
+use draw::DrawException;
 use geo::point;
-use graph::{FixedDotIndex, FixedSegWeight, LooseDotIndex, MakePrimitive};
+use graph::{FixedDotIndex, FixedSegWeight, Index, LooseDotIndex, MakePrimitive};
 use layout::Layout;
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
@@ -68,7 +69,14 @@ struct EmptyRouterObserver;
 impl RouterObserver for EmptyRouterObserver {
     fn on_rework(&mut self, tracer: &Tracer, trace: &Trace) {}
     fn before_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference) {}
-    fn on_probe(&mut self, tracer: &Tracer, trace: &Trace, _edge: MeshEdgeReference) {}
+    fn on_probe(
+        &mut self,
+        tracer: &Tracer,
+        trace: &Trace,
+        _edge: MeshEdgeReference,
+        result: Result<(), DrawException>,
+    ) {
+    }
     fn on_estimate(&mut self, _tracer: &Tracer, _vertex: VertexIndex) {}
 }
 
@@ -128,7 +136,13 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
         );
     }
 
-    fn on_probe(&mut self, tracer: &Tracer, trace: &Trace, _edge: MeshEdgeReference) {
+    fn on_probe(
+        &mut self,
+        tracer: &Tracer,
+        trace: &Trace,
+        _edge: MeshEdgeReference,
+        result: Result<(), DrawException>,
+    ) {
         render_times(
             self.event_pump,
             self.window,
