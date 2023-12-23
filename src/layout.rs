@@ -706,16 +706,11 @@ impl Layout {
     }
 
     pub fn nodes(&self) -> impl Iterator<Item = Index> + '_ {
-        self.node_indices().map(|ni| {
-            self.graph
-                .node_weight(ni.node_index())
-                .unwrap()
-                .retag(ni.node_index())
-        })
+        self.rtree.iter().map(|wrapper| wrapper.data)
     }
 
     pub fn shapes(&self) -> impl Iterator<Item = Shape> + '_ {
-        self.node_indices().map(|ni| ni.primitive(self).shape())
+        self.nodes().map(|node| node.primitive(self).shape())
     }
 
     pub fn node_count(&self) -> usize {

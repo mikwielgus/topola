@@ -27,7 +27,7 @@ mod triangulation;
 use draw::DrawException;
 use geo::point;
 use graph::{FixedDotIndex, FixedSegWeight, Index, LooseDotIndex, MakePrimitive};
-use layout::Layout;
+use layout::{Infringement, Layout, LayoutException};
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use primitive::MakeShape;
@@ -115,6 +115,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
+            &[],
             40,
         );
     }
@@ -132,6 +133,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             None,
             Some(tracer.mesh.clone()),
             &path,
+            &[],
             10,
         );
     }
@@ -143,6 +145,17 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
         _edge: MeshEdgeReference,
         result: Result<(), DrawException>,
     ) {
+        let highlight = match result {
+            Err(DrawException::CannotWrapAround(
+                ..,
+                LayoutException::Infringement(Infringement(.., infringee1)),
+                LayoutException::Infringement(Infringement(.., infringee2)),
+            )) => {
+                vec![infringee1, infringee2]
+            }
+            _ => vec![],
+        };
+
         render_times(
             self.event_pump,
             self.window,
@@ -153,6 +166,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
+            &highlight,
             10,
         );
     }
@@ -471,8 +485,8 @@ fn main() {
     let _ = router.enroute(
         dot_start,
         dot_end,
-        &mut EmptyRouterObserver,
-        //&mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
+        //&mut EmptyRouterObserver,
+        &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     );
 
     render_times(
@@ -484,6 +498,7 @@ fn main() {
         None,
         None,
         None,
+        &[],
         &[],
         -1,
     );
@@ -502,8 +517,8 @@ fn main() {
     let _ = router.enroute(
         dot_start2,
         dot_end2,
-        &mut EmptyRouterObserver,
-        //&mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
+        //&mut EmptyRouterObserver,
+        &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     );
 
     render_times(
@@ -515,6 +530,7 @@ fn main() {
         None,
         None,
         None,
+        &[],
         &[],
         -1,
     );
@@ -535,6 +551,7 @@ fn main() {
         None,
         None,
         &[],
+        &[],
         -1,
     );
 }
@@ -549,6 +566,7 @@ fn render_times(
     follower: Option<LooseDotIndex>,
     mut mesh: Option<Mesh>,
     path: &[VertexIndex],
+    highlight: &[Index],
     times: i64,
 ) {
     let mut i = 0;
@@ -602,9 +620,17 @@ fn render_times(
         };
 
         //let result = panic::catch_unwind(|| {
-        for shape in layout.shapes() {
-            canvas.set_stroke_style(ColorU::new(200, 52, 52, 255));
-            canvas.set_fill_style(ColorU::new(200, 52, 52, 255));
+        for node in layout.nodes() {
+            let color = if highlight.contains(&node) {
+                ColorU::new(255, 100, 100, 255)
+            } else {
+                ColorU::new(200, 52, 52, 255)
+            };
+
+            canvas.set_stroke_style(color);
+            canvas.set_fill_style(color);
+
+            let shape = node.primitive(layout).shape();
 
             match shape {
                 Shape::Dot(dot) => {
@@ -657,12 +683,6 @@ fn render_times(
             for edge in mesh.edge_references() {
                 let start_point = edge.source().primitive(layout).shape().center();
                 let end_point = edge.target().primitive(layout).shape().center();
-
-                /*let color = if path.contains(&edge.source()) && path.contains(&edge.target()) {
-                    ColorU::new(250, 250, 0, 255)
-                } else {
-                    ColorU::new(125, 125, 125, 255)
-                };*/
 
                 let color = 'blk: {
                     if let (Some(source_pos), Some(target_pos)) = (
