@@ -31,7 +31,7 @@ pub enum LayoutException {
     NoTangents(NoTangents),
     Infringement(Infringement),
     Collision(Collision),
-    AreConnected(AreConnected),
+    IsConnected(IsConnected),
 }
 
 impl From<NoTangents> for LayoutException {
@@ -52,20 +52,20 @@ impl From<Collision> for LayoutException {
     }
 }
 
-impl From<AreConnected> for LayoutException {
-    fn from(err: AreConnected) -> Self {
-        LayoutException::AreConnected(err)
+impl From<IsConnected> for LayoutException {
+    fn from(err: IsConnected) -> Self {
+        LayoutException::IsConnected(err)
     }
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct Infringement(pub Index, pub Index);
+pub struct Infringement(pub Shape, pub Index);
 
 #[derive(Debug, Clone, Copy)]
-pub struct Collision(pub Index, pub Index);
+pub struct Collision(pub Shape, pub Index);
 
 #[derive(Debug, Clone, Copy)]
-pub struct AreConnected(pub Weight, pub Index);
+pub struct IsConnected(pub i64, pub Index);
 
 #[derive(Debug, Clone, Copy)]
 pub struct Band {
@@ -562,9 +562,11 @@ impl Layout {
         infringables: &[Index],
     ) -> Result<LooseBendIndex, LayoutException> {
         // It makes no sense to wrap something around or under one of its connectables.
-        if self.bands[weight.band].net == around.primitive(self).net() {
-            return Err(LayoutException::AreConnected(AreConnected(
-                weight.into(),
+        let net = self.bands[weight.band].net;
+        //
+        if net == around.primitive(self).net() {
+            return Err(LayoutException::IsConnected(IsConnected(
+                net,
                 around.into(),
             )));
         }
@@ -574,9 +576,9 @@ impl Layout {
             WraparoundableIndex::FixedBend(around) => self.primitive(around).wraparound(),
             WraparoundableIndex::LooseBend(around) => self.primitive(around).wraparound(),
         } {
-            if self.bands[weight.band].net == wraparound.primitive(self).net() {
-                return Err(LayoutException::AreConnected(AreConnected(
-                    weight.into(),
+            if net == wraparound.primitive(self).net() {
+                return Err(LayoutException::IsConnected(IsConnected(
+                    net,
                     wraparound.into(),
                 )));
             }
@@ -799,7 +801,7 @@ impl Layout {
             .filter(|wrapper| shape.intersects(wrapper.geom()))
             .map(|wrapper| wrapper.data)
             .next()
-            .and_then(|infringee| Some(Infringement(index, infringee)))
+            .and_then(|infringee| Some(Infringement(shape, infringee)))
     }
 
     // TODO: Collision and infringement are the same for now. Change this.
@@ -815,7 +817,7 @@ impl Layout {
             .filter(|wrapper| shape.intersects(wrapper.geom()))
             .map(|wrapper| wrapper.data)
             .next()
-            .and_then(|collidee| Some(Collision(index, collidee)))
+            .and_then(|collidee| Some(Collision(shape, collidee)))
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]

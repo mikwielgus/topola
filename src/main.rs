@@ -39,7 +39,7 @@ use sdl2::video::{GLProfile, Window};
 use sdl2::EventPump;
 use shape::{Shape, ShapeTrait};
 
-use pathfinder_canvas::{ArcDirection, ColorU, FillRule};
+use pathfinder_canvas::{ArcDirection, CanvasRenderingContext2D, ColorU, FillRule};
 use pathfinder_canvas::{Canvas, CanvasFontContext, Path2D};
 use pathfinder_geometry::rect::RectF;
 use pathfinder_geometry::vector::{vec2f, vec2i};
@@ -116,6 +116,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             Some(tracer.mesh.clone()),
             &trace.path,
             &[],
+            &[],
             40,
         );
     }
@@ -134,6 +135,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             Some(tracer.mesh.clone()),
             &path,
             &[],
+            &[],
             10,
         );
     }
@@ -145,15 +147,13 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
         _edge: MeshEdgeReference,
         result: Result<(), DrawException>,
     ) {
-        let highlight = match result {
+        let (ghosts, highlighteds, delay) = match result {
             Err(DrawException::CannotWrapAround(
                 ..,
-                LayoutException::Infringement(Infringement(.., infringee1)),
-                LayoutException::Infringement(Infringement(.., infringee2)),
-            )) => {
-                vec![infringee1, infringee2]
-            }
-            _ => vec![],
+                LayoutException::Infringement(Infringement(shape1, infringee1)),
+                LayoutException::Infringement(Infringement(shape2, infringee2)),
+            )) => (vec![shape1, shape2], vec![infringee1, infringee2], 30),
+            _ => (vec![], vec![], 10),
         };
 
         render_times(
@@ -166,8 +166,9 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
-            &highlight,
-            10,
+            &ghosts,
+            &highlighteds,
+            delay,
         );
     }
 
@@ -500,6 +501,7 @@ fn main() {
         None,
         &[],
         &[],
+        &[],
         -1,
     );
 
@@ -532,6 +534,7 @@ fn main() {
         None,
         &[],
         &[],
+        &[],
         -1,
     );
 
@@ -552,6 +555,7 @@ fn main() {
         None,
         &[],
         &[],
+        &[],
         -1,
     );
 }
@@ -566,7 +570,8 @@ fn render_times(
     follower: Option<LooseDotIndex>,
     mut mesh: Option<Mesh>,
     path: &[VertexIndex],
-    highlight: &[Index],
+    ghosts: &[Shape],
+    highlighteds: &[Index],
     times: i64,
 ) {
     let mut i = 0;
@@ -621,62 +626,18 @@ fn render_times(
 
         //let result = panic::catch_unwind(|| {
         for node in layout.nodes() {
-            let color = if highlight.contains(&node) {
+            let color = if highlighteds.contains(&node) {
                 ColorU::new(255, 100, 100, 255)
             } else {
                 ColorU::new(200, 52, 52, 255)
             };
 
-            canvas.set_stroke_style(color);
-            canvas.set_fill_style(color);
-
             let shape = node.primitive(layout).shape();
+            render_shape(&mut canvas, &shape, color);
+        }
 
-            match shape {
-                Shape::Dot(dot) => {
-                    let mut path = Path2D::new();
-                    path.ellipse(
-                        vec2f(dot.c.pos.x() as f32, dot.c.pos.y() as f32),
-                        dot.c.r as f32,
-                        0.0,
-                        0.0,
-                        std::f32::consts::TAU,
-                    );
-                    canvas.fill_path(path, FillRule::Winding);
-                }
-                Shape::Seg(seg) => {
-                    let mut path = Path2D::new();
-                    path.move_to(vec2f(seg.from.x() as f32, seg.from.y() as f32));
-                    path.line_to(vec2f(seg.to.x() as f32, seg.to.y() as f32));
-                    canvas.set_line_width(seg.width as f32);
-                    canvas.stroke_path(path);
-                }
-                Shape::Bend(bend) => {
-                    let delta1 = bend.from - bend.c.pos;
-                    let delta2 = bend.to - bend.c.pos;
-
-                    let angle1 = delta1.y().atan2(delta1.x());
-                    let angle2 = delta2.y().atan2(delta2.x());
-
-                    let mut path = Path2D::new();
-                    path.arc(
-                        vec2f(bend.c.pos.x() as f32, bend.c.pos.y() as f32),
-                        bend.circle().r as f32,
-                        angle1 as f32,
-                        angle2 as f32,
-                        ArcDirection::CW,
-                    );
-                    canvas.set_line_width(bend.width as f32);
-                    canvas.stroke_path(path);
-                }
-            }
-            let envelope = ShapeTrait::envelope(&shape);
-            // XXX: points represented as arrays can't be conveniently converted to vector types
-            let topleft = vec2f(envelope.lower()[0] as f32, envelope.lower()[1] as f32);
-            let bottomright = vec2f(envelope.upper()[0] as f32, envelope.upper()[1] as f32);
-            canvas.set_line_width(1.0);
-            canvas.set_stroke_style(ColorU::new(100, 100, 100, 255));
-            canvas.stroke_rect(RectF::new(topleft, bottomright - topleft));
+        for ghost in ghosts {
+            render_shape(&mut canvas, &ghost, ColorU::new(75, 75, 150, 255));
         }
 
         if let Some(ref mesh) = mesh {
@@ -722,4 +683,55 @@ fn render_times(
 
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
+}
+
+fn render_shape(canvas: &mut CanvasRenderingContext2D, shape: &Shape, color: ColorU) {
+    canvas.set_stroke_style(color);
+    canvas.set_fill_style(color);
+
+    match shape {
+        Shape::Dot(dot) => {
+            let mut path = Path2D::new();
+            path.ellipse(
+                vec2f(dot.c.pos.x() as f32, dot.c.pos.y() as f32),
+                dot.c.r as f32,
+                0.0,
+                0.0,
+                std::f32::consts::TAU,
+            );
+            canvas.fill_path(path, FillRule::Winding);
+        }
+        Shape::Seg(seg) => {
+            let mut path = Path2D::new();
+            path.move_to(vec2f(seg.from.x() as f32, seg.from.y() as f32));
+            path.line_to(vec2f(seg.to.x() as f32, seg.to.y() as f32));
+            canvas.set_line_width(seg.width as f32);
+            canvas.stroke_path(path);
+        }
+        Shape::Bend(bend) => {
+            let delta1 = bend.from - bend.c.pos;
+            let delta2 = bend.to - bend.c.pos;
+
+            let angle1 = delta1.y().atan2(delta1.x());
+            let angle2 = delta2.y().atan2(delta2.x());
+
+            let mut path = Path2D::new();
+            path.arc(
+                vec2f(bend.c.pos.x() as f32, bend.c.pos.y() as f32),
+                bend.circle().r as f32,
+                angle1 as f32,
+                angle2 as f32,
+                ArcDirection::CW,
+            );
+            canvas.set_line_width(bend.width as f32);
+            canvas.stroke_path(path);
+        }
+    }
+    let envelope = ShapeTrait::envelope(shape);
+    // XXX: points represented as arrays can't be conveniently converted to vector types
+    let topleft = vec2f(envelope.lower()[0] as f32, envelope.lower()[1] as f32);
+    let bottomright = vec2f(envelope.upper()[0] as f32, envelope.upper()[1] as f32);
+    canvas.set_line_width(1.0);
+    canvas.set_stroke_style(ColorU::new(100, 100, 100, 255));
+    canvas.stroke_rect(RectF::new(topleft, bottomright - topleft));
 }
