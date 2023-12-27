@@ -241,6 +241,29 @@ impl Layout {
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
+    fn inner_bow_and_outer_bows(&self, bend: LooseBendIndex) -> Vec<Index> {
+        let bend_primitive = self.primitive(bend);
+        let mut v = vec![];
+
+        if let Some(inner) = bend_primitive.inner() {
+            v.append(&mut self.bow(inner.into()));
+        } else {
+            let core = bend_primitive.core();
+            v.push(core.into());
+        }
+
+        let mut rail = bend;
+
+        while let Some(outer) = self.primitive(rail).outer() {
+            v.append(&mut self.bow(outer.into()));
+            rail = outer;
+        }
+
+        v
+    }
+
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     fn this_and_wraparound_bow(&self, around: WraparoundableIndex) -> Vec<Index> {
         match around {
             WraparoundableIndex::FixedDot(dot) => {
@@ -387,8 +410,8 @@ impl Layout {
                 let to = guide
                     .head_around_bend_segment(&to_head.into(), inner.into(), cw, 6.0)?
                     .end_point();
-                self.move_dot(ends.0, from)?;
-                self.move_dot(ends.1, to)?;
+                self.move_dot_infringably(ends.0, from, &self.inner_bow_and_outer_bows(rail))?;
+                self.move_dot_infringably(ends.1, to, &self.inner_bow_and_outer_bows(rail))?;
             } else {
                 let core = primitive.core();
                 let from = guide
@@ -397,18 +420,9 @@ impl Layout {
                 let to = guide
                     .head_around_dot_segment(&to_head.into(), core.into(), cw, 6.0)?
                     .end_point();
-                self.move_dot(ends.0, from)?;
-                self.move_dot(ends.1, to)?;
+                self.move_dot_infringably(ends.0, from, &self.inner_bow_and_outer_bows(rail))?;
+                self.move_dot_infringably(ends.1, to, &self.inner_bow_and_outer_bows(rail))?;
             }
-
-            /*let from = guide
-                .head_around_bend_segment(&from_head.into(), rail.into(), !cw, 0.0)?
-                .end_point();
-            let to = guide
-                .head_around_bend_segment(&to_head.into(), rail.into(), cw, 0.0)?
-                .end_point();
-            self.move_dot(ends.0, from)?;
-            self.move_dot(ends.1, to)?;*/
 
             maybe_rail = self.primitive(rail).outer();
         }
@@ -746,7 +760,7 @@ impl Layout {
         dot_weight.circle.pos = to;
         *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::LooseDot(dot_weight);
 
-        /*if let Some(infringement) = self.detect_infringement_except(dot.into(), infringables) {
+        if let Some(infringement) = self.detect_infringement_except(dot.into(), infringables) {
             // Restore original state.
             *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::LooseDot(old_weight);
 
@@ -756,7 +770,7 @@ impl Layout {
                 .seg()
                 .map(|seg| self.insert_into_rtree(seg.into()));
             return Err(infringement);
-        }*/
+        }
 
         self.insert_into_rtree(dot.into());
         self.insert_into_rtree(self.primitive(dot).bend().into());
@@ -767,10 +781,14 @@ impl Layout {
         Ok(())
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W> {
         GenericPrimitive::new(index, self)
     }
 
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     fn detect_infringement_except(&self, index: Index, except: &[Index]) -> Option<Infringement> {
         let shape = index.primitive(self).shape();
 
@@ -788,6 +806,8 @@ impl Layout {
     }
 
     // TODO: Collision and infringement are the same for now. Change this.
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
+    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
     fn detect_collision(&self, index: Index) -> Option<Collision> {
         let shape = index.primitive(self).shape();
 

@@ -486,8 +486,8 @@ fn main() {
     let _ = router.enroute(
         dot_start,
         dot_end,
-        //&mut EmptyRouterObserver,
-        &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
+        &mut EmptyRouterObserver,
+        //&mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     );
 
     render_times(
