@@ -91,38 +91,31 @@ impl Layout {
         }
     }
 
-    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() - path.interior().len()))]
-    pub fn remove_interior(&mut self, path: &impl GetInterior<Index>) {
-        for index in path
-            .interior()
-            .into_iter()
-            .filter(|index| !matches!(index, Index::LooseDot(..)))
-        {
-            self.remove(index);
+    #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() - 4))]
+    pub fn remove_segbend(&mut self, segbend: &Segbend, face: LooseDotIndex) {
+        let maybe_outer = self.primitive(segbend.bend).outer();
+
+        // Removing a loose bend affects its outer bends.
+        if let Some(outer) = maybe_outer {
+            self.reattach_bend(outer, self.primitive(segbend.bend).inner());
         }
 
-        // We must remove the dots only after the segs and bends because we need dots to calculate
-        // the shapes, which we need to remove the segs and bends from the R-tree.
+        self.remove(segbend.bend.into());
+        self.remove(segbend.seg.into());
 
-        for index in path
-            .interior()
-            .into_iter()
-            .filter(|index| matches!(index, Index::LooseDot(..)))
-        {
-            self.remove(index);
+        // We must remove the dots only after the segs and bends because we need dots to calculate
+        // the shapes, which we first need unchanged to remove the segs and bends from the R-tree.
+
+        self.remove(face.into());
+        self.remove(segbend.dot.into());
+
+        if let Some(outer) = maybe_outer {
+            self.update_this_and_outward_bows(outer).unwrap(); // Must never fail.
         }
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count() - 1))]
-    pub fn remove(&mut self, index: Index) {
-        // Removing a loose bend affects its outer bends.
-        if let Index::LooseBend(bend) = index {
-            if let Some(outer) = self.primitive(bend).outer() {
-                self.reattach_bend(outer, self.primitive(bend).inner());
-                self.update_this_and_outward_bows(outer).unwrap(); // Must never fail.
-            }
-        }
-
+    fn remove(&mut self, index: Index) {
         // Unnecessary retag. It should be possible to elide it.
         let weight = *self.graph.node_weight(index.node_index()).unwrap();
 
@@ -219,8 +212,7 @@ impl Layout {
         // Segs must not cross.
         if let Some(collision) = self.detect_collision(segbend.seg.into()) {
             let end = self.primitive(segbend.bend).other_end(segbend.dot);
-            self.remove_interior(&segbend);
-            self.remove(end.into());
+            self.remove_segbend(&segbend, end.into());
             return Err(collision.into());
         }
 
@@ -229,7 +221,7 @@ impl Layout {
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
     #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
-    fn inner_and_outer_bows(&self, bend: LooseBendIndex) -> Vec<Index> {
+    fn inner_bow_and_outer_bow(&self, bend: LooseBendIndex) -> Vec<Index> {
         let bend_primitive = self.primitive(bend);
         let mut v = vec![];
 
@@ -730,17 +722,8 @@ impl Layout {
         self.move_dot_infringably(
             dot,
             to,
-            &self.inner_and_outer_bows(self.primitive(dot).bend()),
+            &self.inner_bow_and_outer_bow(self.primitive(dot).bend()),
         )
-
-        //let bend_primitive = self.primitive(self.primitive(dot).bend());
-
-        /*if let Some(inner) = bend_primitive.inner() {
-        } else {
-            let core = bend_primitive.core();
-            //let v = vec![];
-            //self.move_dot_infringably(dot, to, &self.this_and_wraparound_bow(core.into()))
-        }*/
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]
@@ -763,7 +746,7 @@ impl Layout {
         dot_weight.circle.pos = to;
         *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::LooseDot(dot_weight);
 
-        /*if let Some(..) = dbg!(self.detect_infringement_except(dot.into(), infringables)) {
+        /*if let Some(infringement) = self.detect_infringement_except(dot.into(), infringables) {
             // Restore original state.
             *self.graph.node_weight_mut(dot.node_index()).unwrap() = Weight::LooseDot(old_weight);
 
@@ -772,7 +755,7 @@ impl Layout {
             self.primitive(dot)
                 .seg()
                 .map(|seg| self.insert_into_rtree(seg.into()));
-            return Err(());
+            return Err(infringement);
         }*/
 
         self.insert_into_rtree(dot.into());

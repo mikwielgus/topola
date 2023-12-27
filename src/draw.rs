@@ -58,9 +58,9 @@ impl<'a> Draw<'a> {
             .extend_head(head, tangent.start_point())
             .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
 
-        let net = head.dot().primitive(self.layout).net();
+        let net = head.face().primitive(self.layout).net();
 
-        match head.dot() {
+        match head.face() {
             DotIndex::Fixed(dot) => {
                 self.layout
                     .add_fixed_seg(into.into(), dot, FixedSegWeight { net, width })
@@ -179,7 +179,7 @@ impl<'a> Draw<'a> {
     #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
     fn extend_head(&mut self, head: Head, to: Point) -> Result<Head, Infringement> {
         if let Head::Segbend(head) = head {
-            self.layout.move_dot(head.dot, to)?;
+            self.layout.move_dot(head.face, to)?;
             Ok(Head::Segbend(head))
         } else {
             Ok(head)
@@ -197,7 +197,7 @@ impl<'a> Draw<'a> {
         width: f64,
     ) -> Result<SegbendHead, LayoutException> {
         let segbend = self.layout.insert_segbend(
-            head.dot(),
+            head.face(),
             around,
             LooseDotWeight {
                 band: head.band(),
@@ -214,7 +214,7 @@ impl<'a> Draw<'a> {
             },
         )?;
         Ok::<SegbendHead, LayoutException>(SegbendHead {
-            dot: self.layout.primitive(segbend.bend).other_end(segbend.dot),
+            face: self.layout.primitive(segbend.bend).other_end(segbend.dot),
             segbend,
             band: head.band(),
         })
@@ -229,9 +229,7 @@ impl<'a> Draw<'a> {
             .other_end(head.segbend.dot.into());
         let band = head.band;
 
-        self.layout.remove_interior(&head.segbend);
-        self.layout.remove(head.dot().into());
-
+        self.layout.remove_segbend(&head.segbend, head.face);
         Some(self.guide(&Default::default()).head(prev_dot, band))
     }
 

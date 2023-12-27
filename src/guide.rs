@@ -13,7 +13,7 @@ use crate::{
 
 #[enum_dispatch]
 pub trait HeadTrait {
-    fn dot(&self) -> DotIndex;
+    fn face(&self) -> DotIndex;
     fn band(&self) -> usize;
 }
 
@@ -31,7 +31,7 @@ pub struct BareHead {
 }
 
 impl HeadTrait for BareHead {
-    fn dot(&self) -> DotIndex {
+    fn face(&self) -> DotIndex {
         self.dot.into()
     }
 
@@ -42,14 +42,14 @@ impl HeadTrait for BareHead {
 
 #[derive(Debug, Clone, Copy)]
 pub struct SegbendHead {
-    pub dot: LooseDotIndex,
+    pub face: LooseDotIndex,
     pub segbend: Segbend,
     pub band: usize,
 }
 
 impl HeadTrait for SegbendHead {
-    fn dot(&self) -> DotIndex {
-        self.dot.into()
+    fn face(&self) -> DotIndex {
+        self.face.into()
     }
 
     fn band(&self) -> usize {
@@ -164,7 +164,7 @@ impl<'a, 'b> Guide<'a, 'b> {
 
         match *head {
             Head::Bare(head) => Circle {
-                pos: head.dot().primitive(self.layout).shape().center(), // TODO.
+                pos: head.face().primitive(self.layout).shape().center(), // TODO.
                 r: 0.0,
             },
             Head::Segbend(head) => {
@@ -202,7 +202,7 @@ impl<'a, 'b> Guide<'a, 'b> {
 
     pub fn segbend_head(&self, dot: LooseDotIndex) -> SegbendHead {
         SegbendHead {
-            dot,
+            face: dot,
             segbend: self.layout.segbend(dot),
             band: self.layout.primitive(dot).weight().band(),
         }
