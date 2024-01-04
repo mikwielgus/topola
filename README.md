@@ -2,9 +2,11 @@
 
 Work-in-progress interactive topological router in Rust.
 
+The project is funded by the [NLnet Foundation](https://nlnet.nl/) through the [NGI0 Entrust](https://nlnet.nl/entrust/) fund.
+
 ## Chat
 
-Join the official [Matrix chatroom](https://matrix.to/#/%23topola:tchncs.de) or [IRC channel](https://webchat.oftc.net/?channels=#topola) to talk with the developers. Both chats are bridged, so it does not matter which one you join.
+Join the official [Matrix chatroom](https://matrix.to/#/%23topola:tchncs.de) or [IRC channel](https://webchat.oftc.net/?channels=#topola) to talk with the developers. Both chatrooms are bridged, so it does not matter which one you join.
 
 ## Contributing
 
