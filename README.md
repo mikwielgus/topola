@@ -2,8 +2,9 @@
 
 Work-in-progress interactive topological router in Rust.
 
-Join the [official Matrix chatroom](https://matrix.to/#/%23topola:tchncs.de) to talk with the
-developers. 
+## Chat
+
+Join the official [Matrix chatroom](https://matrix.to/#/%23topola:tchncs.de) or [IRC channel](https://webchat.oftc.net/?channels=#topola) to talk with the developers. Both chats are bridged, so it does not matter which one you join.
 
 ## Contributing
 
