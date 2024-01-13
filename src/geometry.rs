@@ -1,10 +1,9 @@
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
-use std::marker::PhantomData;
 
 use crate::{
     connectivity::{BandIndex, BandWeight, ComponentWeight, ConnectivityWeight},
-    graph::{GenericIndex, GetNodeIndex},
+    graph::GenericIndex,
     layout::Layout,
     math::Circle,
     primitive::{GenericPrimitive, Primitive},

@@ -7,7 +7,7 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
 // Due to apparent limitations of enum_dispatch we're forced to import some types backwards.
-use crate::connectivity::{BandWeight, ComponentWeight, ConnectivityWeight};
+
 use crate::geometry::{BendIndex, DotIndex, Index, SegIndex, WraparoundableIndex};
 
 #[enum_dispatch]

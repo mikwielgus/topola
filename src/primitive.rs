@@ -66,15 +66,15 @@ pub trait GetWraparound: GetLayout + GetNodeIndex {
 pub trait GetFirstRail: GetLayout + GetNodeIndex {
     fn first_rail(&self) -> Option<LooseBendIndex> {
         self.layout()
-            .geometry
+            .geometry()
             .neighbors_directed(self.node_index(), Incoming)
             .filter(|ni| {
                 matches!(
                     self.layout()
-                        .geometry
+                        .geometry()
                         .edge_weight(
                             self.layout()
-                                .geometry
+                                .geometry()
                                 .find_edge(*ni, self.node_index())
                                 .unwrap()
                         )
@@ -90,15 +90,15 @@ pub trait GetFirstRail: GetLayout + GetNodeIndex {
 pub trait GetCore: GetLayout + GetNodeIndex {
     fn core(&self) -> FixedDotIndex {
         self.layout()
-            .geometry
+            .geometry()
             .neighbors(self.node_index())
             .filter(|ni| {
                 matches!(
                     self.layout()
-                        .geometry
+                        .geometry()
                         .edge_weight(
                             self.layout()
-                                .geometry
+                                .geometry()
                                 .find_edge(self.node_index(), *ni)
                                 .unwrap()
                         )
@@ -115,15 +115,15 @@ pub trait GetCore: GetLayout + GetNodeIndex {
 pub trait GetInnerOuter: GetLayout + GetNodeIndex {
     fn inner(&self) -> Option<LooseBendIndex> {
         self.layout()
-            .geometry
+            .geometry()
             .neighbors_directed(self.node_index(), Incoming)
             .filter(|ni| {
                 matches!(
                     self.layout()
-                        .geometry
+                        .geometry()
                         .edge_weight(
                             self.layout()
-                                .geometry
+                                .geometry()
                                 .find_edge(*ni, self.node_index())
                                 .unwrap()
                         )
@@ -137,15 +137,15 @@ pub trait GetInnerOuter: GetLayout + GetNodeIndex {
 
     fn outer(&self) -> Option<LooseBendIndex> {
         self.layout()
-            .geometry
+            .geometry()
             .neighbors_directed(self.node_index(), Outgoing)
             .filter(|ni| {
                 matches!(
                     self.layout()
-                        .geometry
+                        .geometry()
                         .edge_weight(
                             self.layout()
-                                .geometry
+                                .geometry()
                                 .find_edge(self.node_index(), *ni)
                                 .unwrap()
                         )
@@ -191,7 +191,7 @@ macro_rules! impl_loose_primitive {
         impl<'a> GetNet for $primitive_struct<'a> {
             fn net(&self) -> i64 {
                 self.layout()
-                    .connectivity
+                    .connectivity()
                     .node_weight(self.weight().band().node_index())
                     .unwrap()
                     .net()
@@ -224,22 +224,22 @@ impl<'a, W> GenericPrimitive<'a, W> {
     fn tagged_weight(&self) -> GeometryWeight {
         *self
             .layout
-            .geometry
+            .geometry()
             .node_weight(self.index.node_index())
             .unwrap()
     }
 
     fn adjacents(&self) -> Vec<NodeIndex<usize>> {
         self.layout
-            .geometry
+            .geometry()
             .neighbors_undirected(self.index.node_index())
             .filter(|ni| {
                 matches!(
                     self.layout
-                        .geometry
+                        .geometry()
                         .edge_weight(
                             self.layout
-                                .geometry
+                                .geometry()
                                 .find_edge_undirected(self.index.node_index(), *ni)
                                 .unwrap()
                                 .0,
@@ -308,15 +308,15 @@ impl_loose_primitive!(LooseDot, LooseDotWeight);
 impl<'a> LooseDot<'a> {
     pub fn seg(&self) -> Option<LooseSegIndex> {
         self.layout
-            .geometry
+            .geometry()
             .neighbors_undirected(self.index.node_index())
             .filter(|ni| {
                 matches!(
                     self.layout
-                        .geometry
+                        .geometry()
                         .edge_weight(
                             self.layout
-                                .geometry
+                                .geometry()
                                 .find_edge_undirected(self.index.node_index(), *ni)
                                 .unwrap()
                                 .0,
@@ -327,7 +327,7 @@ impl<'a> LooseDot<'a> {
             })
             .filter(|ni| {
                 matches!(
-                    self.layout.geometry.node_weight(*ni).unwrap(),
+                    self.layout.geometry().node_weight(*ni).unwrap(),
                     GeometryWeight::LooseSeg(..)
                 )
             })
@@ -337,15 +337,15 @@ impl<'a> LooseDot<'a> {
 
     pub fn bend(&self) -> LooseBendIndex {
         self.layout
-            .geometry
+            .geometry()
             .neighbors_undirected(self.index.node_index())
             .filter(|ni| {
                 matches!(
                     self.layout
-                        .geometry
+                        .geometry()
                         .edge_weight(
                             self.layout
-                                .geometry
+                                .geometry()
                                 .find_edge_undirected(self.index.node_index(), *ni)
                                 .unwrap()
                                 .0,
@@ -356,7 +356,7 @@ impl<'a> LooseDot<'a> {
             })
             .filter(|ni| {
                 matches!(
-                    self.layout.geometry.node_weight(*ni).unwrap(),
+                    self.layout.geometry().node_weight(*ni).unwrap(),
                     GeometryWeight::LooseBend(..)
                 )
             })
@@ -423,9 +423,10 @@ impl<'a> GetWidth for LooseSeg<'a> {
 impl<'a> GetEnds<DotIndex, LooseDotIndex> for LooseSeg<'a> {
     fn ends(&self) -> (DotIndex, LooseDotIndex) {
         let v = self.adjacents();
-        if let GeometryWeight::FixedDot(..) = self.layout.geometry.node_weight(v[0]).unwrap() {
+        if let GeometryWeight::FixedDot(..) = self.layout.geometry().node_weight(v[0]).unwrap() {
             (FixedDotIndex::new(v[0]).into(), LooseDotIndex::new(v[1]))
-        } else if let GeometryWeight::FixedDot(..) = self.layout.geometry.node_weight(v[1]).unwrap()
+        } else if let GeometryWeight::FixedDot(..) =
+            self.layout.geometry().node_weight(v[1]).unwrap()
         {
             (FixedDotIndex::new(v[1]).into(), LooseDotIndex::new(v[0]))
         } else {

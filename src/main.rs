@@ -32,7 +32,7 @@ use layout::{Infringement, Layout, LayoutException};
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use primitive::MakeShape;
-use router::{RouterObserver, RoutingError};
+use router::RouterObserver;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -68,14 +68,14 @@ enum RouterOrLayout<'a> {
 struct EmptyRouterObserver;
 
 impl RouterObserver for EmptyRouterObserver {
-    fn on_rework(&mut self, tracer: &Tracer, trace: &Trace) {}
-    fn before_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference) {}
+    fn on_rework(&mut self, _tracer: &Tracer, _trace: &Trace) {}
+    fn before_probe(&mut self, _tracer: &Tracer, _trace: &Trace, _edge: MeshEdgeReference) {}
     fn on_probe(
         &mut self,
-        tracer: &Tracer,
-        trace: &Trace,
+        _tracer: &Tracer,
+        _trace: &Trace,
         _edge: MeshEdgeReference,
-        result: Result<(), DrawException>,
+        _result: Result<(), DrawException>,
     ) {
     }
     fn on_estimate(&mut self, _tracer: &Tracer, _vertex: VertexIndex) {}

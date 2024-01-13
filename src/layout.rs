@@ -1,4 +1,4 @@
-use contracts::debug_invariant;
+use contracts::{debug_ensures, debug_invariant};
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
@@ -8,7 +8,7 @@ use rstar::primitives::GeomWithData;
 use rstar::{RTree, RTreeObject};
 use thiserror::Error;
 
-use crate::connectivity::{BandIndex, ConnectivityLabel, ConnectivityWeight};
+use crate::connectivity::{BandIndex, BandWeight, ConnectivityGraph, ConnectivityWeight};
 use crate::geometry::{
     BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedDotIndex, FixedDotWeight, FixedSegIndex,
     FixedSegWeight, GeometryGraph, GeometryLabel, GeometryWeight, GetNet, Index, LooseBendIndex,
@@ -19,8 +19,8 @@ use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;
 use crate::math::NoTangents;
 use crate::primitive::{
-    GenericPrimitive, GetConnectable, GetCore, GetEnds, GetFirstRail, GetInnerOuter, GetInterior,
-    GetOtherEnd, GetWeight, GetWraparound, MakeShape,
+    GenericPrimitive, GetConnectable, GetCore, GetEnds, GetFirstRail, GetInnerOuter, GetOtherEnd,
+    GetWeight, GetWraparound, MakeShape,
 };
 use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
@@ -56,8 +56,8 @@ pub struct AlreadyConnected(pub i64, pub Index);
 #[derive(Debug)]
 pub struct Layout {
     rtree: RTree<RTreeWrapper>,
-    pub connectivity: StableDiGraph<ConnectivityWeight, ConnectivityLabel, usize>,
-    pub geometry: GeometryGraph,
+    connectivity: ConnectivityGraph,
+    geometry: GeometryGraph,
 }
 
 #[debug_invariant(self.geometry.node_count() == self.rtree.size())]
@@ -101,6 +101,18 @@ impl Layout {
 
         self.remove_from_rtree(weight.retag(index.node_index()));
         self.geometry.remove_node(index.node_index());
+    }
+
+    #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
+    #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
+    pub fn add_band(&mut self, from: FixedDotIndex, width: f64) -> BandIndex {
+        BandIndex::new(
+            self.connectivity
+                .add_node(ConnectivityWeight::Band(BandWeight {
+                    width,
+                    net: self.primitive(from).net(),
+                })),
+        )
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry.node_count() == old(self.geometry.node_count() + 1))]
@@ -772,12 +784,6 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W> {
-        GenericPrimitive::new(index, self)
-    }
-
-    #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
-    #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
     fn detect_infringement_except(&self, index: Index, except: &[Index]) -> Option<Infringement> {
         let shape = index.primitive(self).shape();
 
@@ -829,6 +835,24 @@ impl Layout {
 }
 
 impl Layout {
+    #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
+    #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
+    pub fn connectivity(&self) -> &ConnectivityGraph {
+        &self.connectivity
+    }
+
+    #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
+    #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
+    pub fn geometry(&self) -> &GeometryGraph {
+        &self.geometry
+    }
+
+    #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
+    #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
+    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W> {
+        GenericPrimitive::new(index, self)
+    }
+
     fn test_envelopes(&self) -> bool {
         !self.rtree.iter().any(|wrapper| {
             let index = wrapper.data;

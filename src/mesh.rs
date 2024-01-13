@@ -75,7 +75,7 @@ impl Mesh {
             vertex_to_triangulation_vertex: Vec::new(),
         };
         this.vertex_to_triangulation_vertex
-            .resize(layout.geometry.node_bound(), None);
+            .resize(layout.geometry().node_bound(), None);
         this
     }
 
