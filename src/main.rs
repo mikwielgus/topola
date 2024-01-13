@@ -31,7 +31,7 @@ use layout::{Infringement, Layout, LayoutException};
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use primitive::MakeShape;
-use router::RouterObserver;
+use router::{RouterObserver, RoutingError};
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -175,7 +175,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
     fn on_estimate(&mut self, _tracer: &Tracer, _vertex: VertexIndex) {}
 }
 
-fn main() {
+fn main() -> Result<(), anyhow::Error> {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 
@@ -488,7 +488,7 @@ fn main() {
         dot_end,
         &mut EmptyRouterObserver,
         //&mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
-    );
+    )?;
 
     render_times(
         &mut event_pump,
@@ -521,7 +521,7 @@ fn main() {
         dot_end2,
         //&mut EmptyRouterObserver,
         &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
-    );
+    )?;
 
     render_times(
         &mut event_pump,
@@ -542,7 +542,7 @@ fn main() {
         dot_start3,
         dot_end3,
         &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
-    );
+    )?;
 
     render_times(
         &mut event_pump,
@@ -558,6 +558,8 @@ fn main() {
         &[],
         -1,
     );
+
+    Ok(())
 }
 
 fn render_times(

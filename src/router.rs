@@ -1,6 +1,7 @@
 use geo::geometry::Point;
 use petgraph::visit::EdgeRef;
 use spade::InsertionError;
+use thiserror::Error;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
 use crate::draw::DrawException;
@@ -11,6 +12,24 @@ use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
 
 use crate::rules::Rules;
 use crate::tracer::{Trace, Tracer};
+
+#[derive(Error, Debug, Clone, Copy)]
+#[error("failed to route from {from:?} to {to:?}")] // this should eventually use Display
+pub struct RoutingError {
+    from: FixedDotIndex,
+    to: FixedDotIndex,
+    source: RoutingErrorKind,
+}
+
+#[derive(Error, Debug, Clone, Copy)]
+pub enum RoutingErrorKind {
+    #[error(transparent)]
+    MeshInsertion(#[from] InsertionError),
+    // exposing more details here seems difficult
+    // TODO more descriptive message
+    #[error("A* found no path")]
+    AStar,
+}
 
 pub trait RouterObserver {
     fn on_rework(&mut self, tracer: &Tracer, trace: &Trace);
@@ -97,12 +116,17 @@ impl Router {
         from: FixedDotIndex,
         to: FixedDotIndex,
         observer: &mut impl RouterObserver,
-    ) -> Result<Mesh, InsertionError> {
+    ) -> Result<Mesh, RoutingError> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
         //self.mesh.triangulate(&self.layout)?;
         let mut mesh = Mesh::new(&self.layout);
-        mesh.generate(&self.layout)?;
+        mesh.generate(&self.layout)
+            .map_err(|err| RoutingError {
+                from,
+                to,
+                source: err.into(),
+            })?;
 
         let mut tracer = self.tracer(&mesh);
         let trace = tracer.start(from, 3.0);
@@ -111,8 +135,11 @@ impl Router {
             &mesh,
             from.into(),
             &mut RouterAstarStrategy::new(tracer, trace, to.into(), observer),
-        )
-        .unwrap(); // TODO.
+        ).ok_or(RoutingError {
+            from,
+            to,
+            source: RoutingErrorKind::AStar,
+        })?;
 
         Ok(mesh)
     }

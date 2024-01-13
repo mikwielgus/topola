@@ -7,6 +7,7 @@ use petgraph::Direction::Incoming;
 use rstar::primitives::GeomWithData;
 use rstar::{RTree, RTreeObject};
 use slab::Slab;
+use thiserror::Error;
 
 use crate::graph::{
     BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedDotIndex, FixedDotWeight, FixedSegIndex,
@@ -26,46 +27,30 @@ use crate::shape::{Shape, ShapeTrait};
 pub type RTreeWrapper = GeomWithData<Shape, Index>;
 
 #[enum_dispatch]
-#[derive(Debug, Clone, Copy)]
+#[derive(Error, Debug, Clone, Copy)]
 pub enum LayoutException {
-    NoTangents(NoTangents),
-    Infringement(Infringement),
-    Collision(Collision),
-    IsConnected(IsConnected),
+    #[error(transparent)]
+    NoTangents(#[from] NoTangents),
+    #[error(transparent)]
+    Infringement(#[from] Infringement),
+    #[error(transparent)]
+    Collision(#[from] Collision),
+    #[error(transparent)]
+    AlreadyConnected(#[from] AlreadyConnected),
 }
 
-impl From<NoTangents> for LayoutException {
-    fn from(err: NoTangents) -> Self {
-        LayoutException::NoTangents(err)
-    }
-}
-
-impl From<Infringement> for LayoutException {
-    fn from(err: Infringement) -> Self {
-        LayoutException::Infringement(err)
-    }
-}
-
-impl From<Collision> for LayoutException {
-    fn from(err: Collision) -> Self {
-        LayoutException::Collision(err)
-    }
-}
-
-impl From<IsConnected> for LayoutException {
-    fn from(err: IsConnected) -> Self {
-        LayoutException::IsConnected(err)
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
+// TODO add real error messages + these should eventually use Display
+#[derive(Error, Debug, Clone, Copy)]
+#[error("{0:?} infringes on {1:?}")]
 pub struct Infringement(pub Shape, pub Index);
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Error, Debug, Clone, Copy)]
+#[error("{0:?} collides with {1:?}")]
 pub struct Collision(pub Shape, pub Index);
 
-#[derive(Debug, Clone, Copy)]
-pub struct IsConnected(pub i64, pub Index);
+#[derive(Error, Debug, Clone, Copy)]
+#[error("{1:?} is already connected to net {0}")]
+pub struct AlreadyConnected(pub i64, pub Index);
 
 #[derive(Debug, Clone, Copy)]
 pub struct Band {
@@ -152,7 +137,7 @@ impl Layout {
         self.insert_into_rtree(dot.into());
         self.fail_and_remove_if_infringes_except(dot.into(), infringables)?;
 
-        Ok::<GenericIndex<W>, Infringement>(dot)
+        Ok(dot)
     }
 
     #[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
@@ -471,8 +456,7 @@ impl Layout {
             .map_err(|err| {
                 self.remove(seg_to.into());
                 err
-            })
-            .map_err(|err| LayoutException::Infringement(err))?;
+            })?;
 
         let bend_to = self
             .add_dot_infringably(dot_weight, infringables)
@@ -480,8 +464,7 @@ impl Layout {
                 self.remove(seg.into());
                 self.remove(seg_to.into());
                 err
-            })
-            .map_err(|err| LayoutException::Infringement(err))?;
+            })?;
         let bend = self
             .add_loose_bend_infringably(seg_to, bend_to, around, bend_weight, infringables)
             .map_err(|err| {
@@ -571,10 +554,10 @@ impl Layout {
         let net = self.bands[weight.band].net;
         //
         if net == around.primitive(self).net() {
-            return Err(LayoutException::IsConnected(IsConnected(
+            return Err(AlreadyConnected(
                 net,
                 around.into(),
-            )));
+            ).into());
         }
         //
         if let Some(wraparound) = match around {
@@ -583,10 +566,10 @@ impl Layout {
             WraparoundableIndex::LooseBend(around) => self.primitive(around).wraparound(),
         } {
             if net == wraparound.primitive(self).net() {
-                return Err(LayoutException::IsConnected(IsConnected(
+                return Err(AlreadyConnected(
                     net,
                     wraparound.into(),
-                )));
+                ).into());
             }
         }
 
@@ -673,7 +656,7 @@ impl Layout {
 
         self.insert_into_rtree(bend.into());
         self.fail_and_remove_if_infringes_except(bend.into(), infringables)?;
-        Ok::<LooseBendIndex, Infringement>(bend)
+        Ok(bend)
     }
 
     #[debug_ensures(self.graph.node_count() == old(self.graph.node_count()))]

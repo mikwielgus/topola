@@ -12,6 +12,8 @@ pathfinder_geometry = { git = "https://github.com/servo/pathfinder" }
 pathfinder_gl = { git = "https://github.com/servo/pathfinder" }
 pathfinder_renderer = { git = "https://github.com/servo/pathfinder" }
 pathfinder_resources = { git = "https://github.com/servo/pathfinder" }
+thiserror = "1.0.56"
+anyhow = "1.0.79"
 
 [dependencies.geo]
 version = "0.25.1"

@@ -1,7 +1,9 @@
 use geo::{geometry::Point, point, EuclideanDistance, Line};
 use std::ops::Sub;
+use thiserror::Error;
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Error, Debug, Clone, Copy, PartialEq)]
+#[error("no tangents for {0:?} and {1:?}")] // TODO add real error message
 pub struct NoTangents(pub Circle, pub Circle);
 
 #[derive(Debug, Clone, Copy, PartialEq)]

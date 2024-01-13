@@ -1,6 +1,6 @@
 use contracts::debug_ensures;
-
 use geo::{EuclideanLength, Point};
+use thiserror::Error;
 
 use crate::{
     graph::{
@@ -15,17 +15,16 @@ use crate::{
     rules::{Conditions, Rules},
 };
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Error, Debug, Clone, Copy)]
 pub enum DrawException {
-    NoTangents(NoTangents),
-    CannotFinishIn(FixedDotIndex, LayoutException),
+    #[error(transparent)]
+    NoTangents(#[from] NoTangents),
+    // TODO add real error messages + these should eventually use Display
+    #[error("cannot finish in {0:?}")]
+    CannotFinishIn(FixedDotIndex, #[source] LayoutException),
+    #[error("cannot wrap around {0:?}")]
+    // neither of the exceptions is the source on its own, might be useful to give them names?
     CannotWrapAround(WraparoundableIndex, LayoutException, LayoutException),
-}
-
-impl From<NoTangents> for DrawException {
-    fn from(err: NoTangents) -> Self {
-        DrawException::NoTangents(err)
-    }
 }
 
 pub struct Draw<'a> {
