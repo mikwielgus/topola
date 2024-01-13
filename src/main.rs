@@ -8,10 +8,11 @@ macro_rules! dbg_dot {
     };
 }
 
-#[macro_use]
-mod graph;
 mod astar;
+mod connectivity;
 mod draw;
+mod geometry;
+mod graph;
 mod guide;
 mod layout;
 mod math;
@@ -26,7 +27,7 @@ mod triangulation;
 
 use draw::DrawException;
 use geo::point;
-use graph::{FixedDotIndex, FixedSegWeight, Index, LooseDotIndex, MakePrimitive};
+use geometry::{FixedDotIndex, FixedSegWeight, Index, LooseDotIndex, MakePrimitive};
 use layout::{Infringement, Layout, LayoutException};
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
@@ -54,7 +55,7 @@ use pathfinder_resources::embedded::EmbeddedResourceLoader;
 use std::time::Duration;
 use tracer::{Trace, Tracer};
 
-use crate::graph::FixedDotWeight;
+use crate::geometry::FixedDotWeight;
 use crate::math::Circle;
 use crate::router::Router;
 

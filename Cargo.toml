@@ -24,9 +24,6 @@ version = "0.11.0"
 [dependencies.petgraph]
 version = "0.6.3"
 
-[dependencies.slab]
-version = "0.4.9"
-
 [dependencies.spade]
 version = "2.2.0"
 

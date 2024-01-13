@@ -1,5 +1,5 @@
 use crate::{
-    graph::{Index, LooseBendIndex, LooseDotIndex, LooseSegIndex},
+    geometry::{Index, LooseBendIndex, LooseDotIndex, LooseSegIndex},
     layout::Layout,
     primitive::{GetEnds, GetInterior, GetOtherEnd, LooseBend, LooseDot},
 };

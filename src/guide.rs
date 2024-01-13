@@ -2,7 +2,8 @@ use enum_dispatch::enum_dispatch;
 use geo::Line;
 
 use crate::{
-    graph::{BendIndex, DotIndex, FixedDotIndex, GetBand, LooseDotIndex, MakePrimitive},
+    connectivity::BandIndex,
+    geometry::{BendIndex, DotIndex, FixedDotIndex, GetBandIndex, LooseDotIndex, MakePrimitive},
     layout::Layout,
     math::{self, Circle, NoTangents},
     primitive::{GetCore, GetInnerOuter, GetOtherEnd, GetWeight, MakeShape},
@@ -14,7 +15,7 @@ use crate::{
 #[enum_dispatch]
 pub trait HeadTrait {
     fn face(&self) -> DotIndex;
-    fn band(&self) -> usize;
+    fn band(&self) -> BandIndex;
 }
 
 #[enum_dispatch(HeadTrait)]
@@ -27,7 +28,7 @@ pub enum Head {
 #[derive(Debug, Clone, Copy)]
 pub struct BareHead {
     pub dot: FixedDotIndex,
-    pub band: usize,
+    pub band: BandIndex,
 }
 
 impl HeadTrait for BareHead {
@@ -35,7 +36,7 @@ impl HeadTrait for BareHead {
         self.dot.into()
     }
 
-    fn band(&self) -> usize {
+    fn band(&self) -> BandIndex {
         self.band
     }
 }
@@ -44,7 +45,7 @@ impl HeadTrait for BareHead {
 pub struct SegbendHead {
     pub face: LooseDotIndex,
     pub segbend: Segbend,
-    pub band: usize,
+    pub band: BandIndex,
 }
 
 impl HeadTrait for SegbendHead {
@@ -52,7 +53,7 @@ impl HeadTrait for SegbendHead {
         self.face.into()
     }
 
-    fn band(&self) -> usize {
+    fn band(&self) -> BandIndex {
         self.band
     }
 }
@@ -215,7 +216,7 @@ impl<'a, 'b> Guide<'a, 'b> {
         )
     }
 
-    pub fn head(&self, dot: DotIndex, band: usize) -> Head {
+    pub fn head(&self, dot: DotIndex, band: BandIndex) -> Head {
         match dot {
             DotIndex::Fixed(fixed) => BareHead { dot: fixed, band }.into(),
             DotIndex::Loose(loose) => self.segbend_head(loose).into(),

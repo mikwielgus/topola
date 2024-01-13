@@ -5,7 +5,7 @@ use thiserror::Error;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
 use crate::draw::DrawException;
-use crate::graph::FixedDotIndex;
+use crate::geometry::FixedDotIndex;
 use crate::layout::Layout;
 
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
@@ -121,12 +121,11 @@ impl Router {
         // right.
         //self.mesh.triangulate(&self.layout)?;
         let mut mesh = Mesh::new(&self.layout);
-        mesh.generate(&self.layout)
-            .map_err(|err| RoutingError {
-                from,
-                to,
-                source: err.into(),
-            })?;
+        mesh.generate(&self.layout).map_err(|err| RoutingError {
+            from,
+            to,
+            source: err.into(),
+        })?;
 
         let mut tracer = self.tracer(&mesh);
         let trace = tracer.start(from, 3.0);
@@ -135,7 +134,8 @@ impl Router {
             &mesh,
             from.into(),
             &mut RouterAstarStrategy::new(tracer, trace, to.into(), observer),
-        ).ok_or(RoutingError {
+        )
+        .ok_or(RoutingError {
             from,
             to,
             source: RoutingErrorKind::AStar,

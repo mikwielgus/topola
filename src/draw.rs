@@ -3,8 +3,8 @@ use geo::{EuclideanLength, Point};
 use thiserror::Error;
 
 use crate::{
-    graph::{
-        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetBand, GetNet, LooseBendIndex,
+    geometry::{
+        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetBandIndex, GetNet, LooseBendIndex,
         LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight, MakePrimitive,
         WraparoundableIndex,
     },

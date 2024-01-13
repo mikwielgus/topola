@@ -1,10 +1,11 @@
 use contracts::debug_ensures;
 
 use crate::{
+    connectivity::{BandIndex, BandWeight, ConnectivityWeight},
     draw::{Draw, DrawException},
-    graph::{FixedDotIndex, GetNet, LooseBendIndex},
+    geometry::{FixedDotIndex, GetNet, LooseBendIndex},
     guide::{BareHead, Head, SegbendHead},
-    layout::{Band, Layout, LayoutException},
+    layout::{Layout, LayoutException},
     mesh::{Mesh, VertexIndex},
     rules::Rules,
 };
@@ -31,10 +32,12 @@ impl<'a> Tracer<'a> {
     }
 
     pub fn start(&mut self, from: FixedDotIndex, width: f64) -> Trace {
-        let band = self.layout.bands.insert(Band {
-            width,
-            net: self.layout.primitive(from).net(),
-        });
+        let band = BandIndex::new(self.layout.connectivity.add_node(ConnectivityWeight::Band(
+            BandWeight {
+                width,
+                net: self.layout.primitive(from).net(),
+            },
+        )));
         Trace {
             path: vec![from.into()],
             head: BareHead { dot: from, band }.into(),

@@ -10,7 +10,8 @@ use spade::{HasPosition, InsertionError, Point2};
 use crate::primitive::{GetCore, Primitive};
 use crate::triangulation::TriangulationEdgeReference;
 use crate::{
-    graph::{FixedBendIndex, FixedDotIndex, GetNodeIndex, Index, LooseBendIndex, MakePrimitive},
+    geometry::{FixedBendIndex, FixedDotIndex, Index, LooseBendIndex, MakePrimitive},
+    graph::GetNodeIndex,
     layout::Layout,
     primitive::MakeShape,
     shape::ShapeTrait,
@@ -74,7 +75,7 @@ impl Mesh {
             vertex_to_triangulation_vertex: Vec::new(),
         };
         this.vertex_to_triangulation_vertex
-            .resize(layout.graph.node_bound(), None);
+            .resize(layout.geometry.node_bound(), None);
         this
     }
 
