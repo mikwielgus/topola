@@ -3,14 +3,16 @@ use geo::{EuclideanLength, Point};
 use thiserror::Error;
 
 use crate::{
+    connectivity::{ComponentIndex, GetNet},
     geometry::{
-        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetBandIndex, GetNet, LooseBendWeight,
-        LooseDotIndex, LooseDotWeight, LooseSegWeight, MakePrimitive, WraparoundableIndex,
+        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetBandIndex, GetComponentIndex,
+        LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight, MakePrimitive,
+        WraparoundableIndex,
     },
     guide::{Guide, Head, HeadTrait, SegbendHead},
     layout::{Infringement, Layout, LayoutException},
     math::{Circle, NoTangents},
-    primitive::GetOtherEnd,
+    primitive::{GetOtherEnd, GetWeight},
     rules::{Conditions, Rules},
 };
 
@@ -60,8 +62,18 @@ impl<'a> Draw<'a> {
 
         match head.face() {
             DotIndex::Fixed(dot) => {
+                // TODO: This code is temporary (component is wrong). Fix this by splitting loose
+                // segs into direct and indirect ones, the former ending with fixed dots on both
+                // sides and the latter not.
                 self.layout
-                    .add_fixed_seg(into.into(), dot, FixedSegWeight { net, width })
+                    .add_fixed_seg(
+                        into.into(),
+                        dot,
+                        FixedSegWeight {
+                            component: self.layout.primitive(into).weight().component(),
+                            width,
+                        },
+                    )
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
             DotIndex::Loose(dot) => {

@@ -2,7 +2,7 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 
 use crate::{
-    connectivity::{BandIndex, BandWeight, ComponentWeight, ConnectivityWeight},
+    connectivity::{BandIndex, BandWeight, ComponentIndex, ComponentWeight, ConnectivityWeight},
     graph::GenericIndex,
     layout::Layout,
     math::Circle,
@@ -15,12 +15,12 @@ pub trait Retag {
 }
 
 #[enum_dispatch]
-pub trait GetNet {
-    fn net(&self) -> i64;
+pub trait GetComponentIndex {
+    fn component(&self) -> ComponentIndex;
 }
 
-pub trait GetNetMut {
-    fn net_mut(&mut self) -> &mut i64;
+pub trait GetComponentIndexMut {
+    fn component_mut(&mut self) -> &mut ComponentIndex;
 }
 
 pub trait GetBandIndex {
@@ -58,15 +58,15 @@ macro_rules! impl_fixed_weight {
     ($weight_struct:ident, $weight_variant:ident, $index_struct:ident) => {
         impl_weight!($weight_struct, $weight_variant, $index_struct);
 
-        impl GetNet for $weight_struct {
-            fn net(&self) -> i64 {
-                self.net
+        impl GetComponentIndex for $weight_struct {
+            fn component(&self) -> ComponentIndex {
+                self.component
             }
         }
 
-        impl GetNetMut for $weight_struct {
-            fn net_mut(&mut self) -> &mut i64 {
-                &mut self.net
+        impl GetComponentIndexMut for $weight_struct {
+            fn component_mut(&mut self) -> &mut ComponentIndex {
+                &mut self.component
             }
         }
     };
@@ -186,7 +186,7 @@ pub trait DotWeight: GetWidth + Into<GeometryWeight> + Copy {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedDotWeight {
-    pub net: i64,
+    pub component: ComponentIndex,
     pub circle: Circle,
 }
 
@@ -218,7 +218,7 @@ pub trait SegWeight: Into<GeometryWeight> + Copy {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedSegWeight {
-    pub net: i64,
+    pub component: ComponentIndex,
     pub width: f64,
 }
 
@@ -243,7 +243,7 @@ pub trait BendWeight: Into<GeometryWeight> + Copy {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedBendWeight {
-    pub net: i64,
+    pub component: ComponentIndex,
     pub width: f64,
     pub cw: bool,
 }

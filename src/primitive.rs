@@ -4,9 +4,10 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 use petgraph::Direction::{Incoming, Outgoing};
 
+use crate::connectivity::GetNet;
 use crate::geometry::{
     DotIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegWeight, GeometryLabel,
-    GeometryWeight, GetBandIndex, GetNet, GetOffset, GetWidth, Index, LooseBendIndex,
+    GeometryWeight, GetBandIndex, GetComponentIndex, GetOffset, GetWidth, Index, LooseBendIndex,
     LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight, MakePrimitive,
     Retag,
 };
@@ -178,7 +179,11 @@ macro_rules! impl_fixed_primitive {
 
         impl<'a> GetNet for $primitive_struct<'a> {
             fn net(&self) -> i64 {
-                self.weight().net()
+                self.layout()
+                    .connectivity()
+                    .node_weight(self.weight().component().node_index())
+                    .unwrap()
+                    .net()
             }
         }
     };

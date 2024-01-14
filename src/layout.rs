@@ -8,12 +8,15 @@ use rstar::primitives::GeomWithData;
 use rstar::{RTree, RTreeObject};
 use thiserror::Error;
 
-use crate::connectivity::{BandIndex, BandWeight, ConnectivityGraph, ConnectivityWeight};
+use crate::connectivity::{
+    BandIndex, BandWeight, ComponentIndex, ComponentWeight, ConnectivityGraph, ConnectivityWeight,
+    GetNet,
+};
 use crate::geometry::{
     BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedDotIndex, FixedDotWeight, FixedSegIndex,
-    FixedSegWeight, GeometryGraph, GeometryLabel, GeometryWeight, GetNet, Index, LooseBendIndex,
-    LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight, MakePrimitive,
-    Retag, SegWeight, WraparoundableIndex,
+    FixedSegWeight, GeometryGraph, GeometryLabel, GeometryWeight, GetComponentIndex, Index,
+    LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight,
+    MakePrimitive, Retag, SegWeight, WraparoundableIndex,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;
@@ -103,6 +106,17 @@ impl Layout {
         self.geometry.remove_node(index.node_index());
     }
 
+    // TODO: This method shouldn't be public.
+    #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
+    #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
+    pub fn add_component(&mut self, net: i64) -> ComponentIndex {
+        ComponentIndex::new(
+            self.connectivity
+                .add_node(ConnectivityWeight::Component(ComponentWeight { net })),
+        )
+    }
+
+    // TODO: This method shouldn't be public.
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
     pub fn add_band(&mut self, from: FixedDotIndex, width: f64) -> BandIndex {

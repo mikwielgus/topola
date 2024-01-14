@@ -1,7 +1,12 @@
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::StableDiGraph;
 
-use crate::{geometry::GetNet, graph::GenericIndex};
+use crate::graph::GenericIndex;
+
+#[enum_dispatch]
+pub trait GetNet {
+    fn net(&self) -> i64;
+}
 
 pub type ConnectivityGraph = StableDiGraph<ConnectivityWeight, ConnectivityLabel, usize>;
 
@@ -22,6 +27,8 @@ impl GetNet for ComponentWeight {
         self.net
     }
 }
+
+pub type ComponentIndex = GenericIndex<ComponentWeight>;
 
 #[derive(Debug, Clone, Copy)]
 pub struct BandWeight {

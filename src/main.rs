@@ -225,10 +225,18 @@ fn main() -> Result<(), anyhow::Error> {
     let _i = 0;
     let mut router = Router::new();
 
+    let component1_1 = router.layout.add_component(1);
+    let component1_2 = router.layout.add_component(1);
+    let component2 = router.layout.add_component(2);
+    let component3_1 = router.layout.add_component(3);
+    let component3_2 = router.layout.add_component(3);
+    let component4_1 = router.layout.add_component(4);
+    let component4_2 = router.layout.add_component(4);
+
     let dot_start = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 1,
+            component: component1_1,
             circle: Circle {
                 pos: (100.5, 400.5).into(),
                 r: 8.0,
@@ -239,7 +247,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot_start2 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 3,
+            component: component3_1,
             circle: Circle {
                 pos: (100.5, 500.5).into(),
                 r: 8.0,
@@ -250,7 +258,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot_start3 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 4,
+            component: component4_1,
             circle: Circle {
                 pos: (160.5, 430.5).into(),
                 r: 8.0,
@@ -261,7 +269,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot_end = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 1,
+            component: component1_2,
             circle: Circle {
                 pos: (470.5, 350.5).into(),
                 r: 8.0,
@@ -272,7 +280,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot_end2 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 3,
+            component: component3_2,
             circle: Circle {
                 pos: (500.5, 150.5).into(),
                 r: 8.0,
@@ -283,7 +291,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot_end3 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 4,
+            component: component4_2,
             circle: Circle {
                 pos: (350.5, 200.5).into(),
                 r: 8.0,
@@ -294,7 +302,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot1_1 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 2,
+            component: component2,
             circle: Circle {
                 pos: (200.5, 200.5).into(),
                 r: 8.0,
@@ -305,7 +313,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot2_1 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 2,
+            component: component2,
             circle: Circle {
                 pos: (200.5, 500.5).into(),
                 r: 8.0,
@@ -317,7 +325,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot1_1,
         dot2_1,
         FixedSegWeight {
-            net: 2,
+            component: component2,
             width: 16.0,
         },
     );
@@ -325,7 +333,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot2_2 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 2,
+            component: component2,
             circle: Circle {
                 pos: (600.5, 500.5).into(),
                 r: 8.0,
@@ -337,7 +345,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot2_1,
         dot2_2,
         FixedSegWeight {
-            net: 2,
+            component: component2,
             width: 16.0,
         },
     );
@@ -345,7 +353,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot3 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 2,
+            component: component2,
             circle: Circle {
                 pos: (400.5, 200.5).into(),
                 r: 8.0,
@@ -356,7 +364,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot4 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 2,
+            component: component2,
             circle: Circle {
                 pos: (400.5, 400.5).into(),
                 r: 8.0,
@@ -368,7 +376,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot3,
         dot4,
         FixedSegWeight {
-            net: 2,
+            component: component2,
             width: 16.0,
         },
     );
@@ -376,7 +384,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot5 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 2,
+            component: component2,
             circle: Circle {
                 pos: (530.5, 400.5).into(),
                 r: 8.0,
@@ -388,7 +396,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot4,
         dot5,
         FixedSegWeight {
-            net: 2,
+            component: component2,
             width: 16.0,
         },
     );
@@ -396,7 +404,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot1_2 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 2,
+            component: component2,
             circle: Circle {
                 pos: (600.5, 200.5).into(),
                 r: 8.0,
@@ -408,7 +416,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot3,
         dot1_2,
         FixedSegWeight {
-            net: 2,
+            component: component2,
             width: 16.0,
         },
     );
@@ -417,7 +425,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot1_2,
         dot2_2,
         FixedSegWeight {
-            net: 2,
+            component: component2,
             width: 16.0,
         },
     );
@@ -425,7 +433,7 @@ fn main() -> Result<(), anyhow::Error> {
     let dot6 = router
         .layout
         .add_fixed_dot(FixedDotWeight {
-            net: 2,
+            component: component2,
             circle: Circle {
                 pos: (530.5, 300.5).into(),
                 r: 8.0,
@@ -437,7 +445,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot5,
         dot6,
         FixedSegWeight {
-            net: 2,
+            component: component2,
             width: 16.0,
         },
     );
@@ -520,8 +528,8 @@ fn main() -> Result<(), anyhow::Error> {
     let _ = router.enroute(
         dot_start2,
         dot_end2,
-        //&mut EmptyRouterObserver,
-        &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
+        &mut EmptyRouterObserver,
+        //&mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     )?;
 
     render_times(
