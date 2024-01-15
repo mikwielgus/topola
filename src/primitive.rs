@@ -7,9 +7,9 @@ use petgraph::Direction::{Incoming, Outgoing};
 use crate::connectivity::GetNet;
 use crate::geometry::{
     DotIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegWeight, GeometryLabel,
-    GeometryWeight, GetBandIndex, GetComponentIndex, GetOffset, GetWidth, Index, LooseBendIndex,
-    LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight, MakePrimitive,
-    Retag,
+    GeometryWeight, GetBandIndex, GetComponentIndex, GetOffset, GetWidth, Index,
+    LoneLooseSegWeight, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight,
+    MakePrimitive, Retag, SeqLooseSegIndex, SeqLooseSegWeight,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::Layout;
@@ -210,7 +210,8 @@ pub enum Primitive<'a> {
     FixedDot(FixedDot<'a>),
     LooseDot(LooseDot<'a>),
     FixedSeg(FixedSeg<'a>),
-    LooseSeg(LooseSeg<'a>),
+    LoneLooseSeg(LoneLooseSeg<'a>),
+    SeqLooseSeg(SeqLooseSeg<'a>),
     FixedBend(FixedBend<'a>),
     LooseBend(LooseBend<'a>),
 }
@@ -311,7 +312,7 @@ pub type LooseDot<'a> = GenericPrimitive<'a, LooseDotWeight>;
 impl_loose_primitive!(LooseDot, LooseDotWeight);
 
 impl<'a> LooseDot<'a> {
-    pub fn seg(&self) -> Option<LooseSegIndex> {
+    pub fn seg(&self) -> Option<SeqLooseSegIndex> {
         self.layout
             .geometry()
             .neighbors_undirected(self.index.node_index())
@@ -333,10 +334,10 @@ impl<'a> LooseDot<'a> {
             .filter(|ni| {
                 matches!(
                     self.layout.geometry().node_weight(*ni).unwrap(),
-                    GeometryWeight::LooseSeg(..)
+                    GeometryWeight::SeqLooseSeg(..)
                 )
             })
-            .map(|ni| LooseSegIndex::new(ni))
+            .map(|ni| SeqLooseSegIndex::new(ni))
             .next()
     }
 
@@ -402,10 +403,39 @@ impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedSeg<'a> {
 
 impl<'a> GetOtherEnd<FixedDotIndex, FixedDotIndex> for FixedSeg<'a> {}
 
-pub type LooseSeg<'a> = GenericPrimitive<'a, LooseSegWeight>;
-impl_loose_primitive!(LooseSeg, LooseSegWeight);
+pub type LoneLooseSeg<'a> = GenericPrimitive<'a, LoneLooseSegWeight>;
+impl_loose_primitive!(LoneLooseSeg, LoneLooseSegWeight);
 
-impl<'a> MakeShape for LooseSeg<'a> {
+impl<'a> MakeShape for LoneLooseSeg<'a> {
+    fn shape(&self) -> Shape {
+        let ends = self.ends();
+        Shape::Seg(SegShape {
+            from: self.primitive(ends.0).weight().circle.pos,
+            to: self.primitive(ends.1).weight().circle.pos,
+            width: self.width(),
+        })
+    }
+}
+
+impl<'a> GetWidth for LoneLooseSeg<'a> {
+    fn width(&self) -> f64 {
+        self.primitive(self.ends().1).weight().width()
+    }
+}
+
+impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for LoneLooseSeg<'a> {
+    fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
+        let v = self.adjacents();
+        (FixedDotIndex::new(v[0]), FixedDotIndex::new(v[1]))
+    }
+}
+
+impl<'a> GetOtherEnd<FixedDotIndex, FixedDotIndex> for LoneLooseSeg<'a> {}
+
+pub type SeqLooseSeg<'a> = GenericPrimitive<'a, SeqLooseSegWeight>;
+impl_loose_primitive!(SeqLooseSeg, SeqLooseSegWeight);
+
+impl<'a> MakeShape for SeqLooseSeg<'a> {
     fn shape(&self) -> Shape {
         let ends = self.ends();
         Shape::Seg(SegShape {
@@ -419,13 +449,13 @@ impl<'a> MakeShape for LooseSeg<'a> {
     }
 }
 
-impl<'a> GetWidth for LooseSeg<'a> {
+impl<'a> GetWidth for SeqLooseSeg<'a> {
     fn width(&self) -> f64 {
         self.primitive(self.ends().1).weight().width()
     }
 }
 
-impl<'a> GetEnds<DotIndex, LooseDotIndex> for LooseSeg<'a> {
+impl<'a> GetEnds<DotIndex, LooseDotIndex> for SeqLooseSeg<'a> {
     fn ends(&self) -> (DotIndex, LooseDotIndex) {
         let v = self.adjacents();
         if let GeometryWeight::FixedDot(..) = self.layout.geometry().node_weight(v[0]).unwrap() {
@@ -440,7 +470,7 @@ impl<'a> GetEnds<DotIndex, LooseDotIndex> for LooseSeg<'a> {
     }
 }
 
-impl<'a> GetOtherEnd<DotIndex, LooseDotIndex> for LooseSeg<'a> {}
+impl<'a> GetOtherEnd<DotIndex, LooseDotIndex> for SeqLooseSeg<'a> {}
 
 pub type FixedBend<'a> = GenericPrimitive<'a, FixedBendWeight>;
 impl_fixed_primitive!(FixedBend, FixedBendWeight);

@@ -1,12 +1,12 @@
 use crate::{
-    geometry::{Index, LooseBendIndex, LooseDotIndex, LooseSegIndex},
+    geometry::{Index, LooseBendIndex, LooseDotIndex, SeqLooseSegIndex},
     layout::Layout,
     primitive::{GetEnds, GetInterior, GetOtherEnd, LooseBend, LooseDot},
 };
 
 #[derive(Debug, Clone, Copy)]
 pub struct Segbend {
-    pub seg: LooseSegIndex,
+    pub seg: SeqLooseSegIndex,
     pub dot: LooseDotIndex,
     pub bend: LooseBendIndex,
 }
@@ -26,8 +26,8 @@ impl GetInterior<Index> for Segbend {
     }
 }
 
-impl GetEnds<LooseSegIndex, LooseBendIndex> for Segbend {
-    fn ends(&self) -> (LooseSegIndex, LooseBendIndex) {
+impl GetEnds<SeqLooseSegIndex, LooseBendIndex> for Segbend {
+    fn ends(&self) -> (SeqLooseSegIndex, LooseBendIndex) {
         (self.seg, self.bend)
     }
 }

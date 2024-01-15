@@ -15,8 +15,9 @@ use crate::connectivity::{
 use crate::geometry::{
     BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedDotIndex, FixedDotWeight, FixedSegIndex,
     FixedSegWeight, GeometryGraph, GeometryLabel, GeometryWeight, GetComponentIndex, Index,
-    LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegIndex, LooseSegWeight,
-    MakePrimitive, Retag, SegWeight, WraparoundableIndex,
+    LoneLooseSegIndex, LoneLooseSegWeight, LooseBendIndex, LooseBendWeight, LooseDotIndex,
+    LooseDotWeight, MakePrimitive, Retag, SegWeight, SeqLooseSegIndex, SeqLooseSegWeight,
+    WraparoundableIndex,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;
@@ -183,7 +184,7 @@ impl Layout {
         from: DotIndex,
         around: WraparoundableIndex,
         dot_weight: LooseDotWeight,
-        seg_weight: LooseSegWeight,
+        seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
     ) -> Result<Segbend, LayoutException> {
         let maybe_wraparound = match around {
@@ -448,7 +449,7 @@ impl Layout {
         from: DotIndex,
         around: WraparoundableIndex,
         dot_weight: LooseDotWeight,
-        seg_weight: LooseSegWeight,
+        seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
     ) -> Result<Segbend, LayoutException> {
         self.add_segbend_infringably(
@@ -470,7 +471,7 @@ impl Layout {
         from: DotIndex,
         around: WraparoundableIndex,
         dot_weight: LooseDotWeight,
-        seg_weight: LooseSegWeight,
+        seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         infringables: &[Index],
     ) -> Result<Segbend, LayoutException> {
@@ -509,12 +510,25 @@ impl Layout {
     #[debug_ensures(ret.is_ok() -> self.geometry.edge_count() == old(self.geometry.edge_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(ret.is_err() -> self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    pub fn add_loose_seg(
+    pub fn add_lone_loose_seg(
+        &mut self,
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+        weight: LoneLooseSegWeight,
+    ) -> Result<LoneLooseSegIndex, Infringement> {
+        self.add_seg_infringably(from, to, weight, &[])
+    }
+
+    #[debug_ensures(ret.is_ok() -> self.geometry.node_count() == old(self.geometry.node_count() + 1))]
+    #[debug_ensures(ret.is_ok() -> self.geometry.edge_count() == old(self.geometry.edge_count() + 2))]
+    #[debug_ensures(ret.is_err() -> self.geometry.node_count() == old(self.geometry.node_count()))]
+    #[debug_ensures(ret.is_err() -> self.geometry.edge_count() == old(self.geometry.edge_count()))]
+    pub fn add_seq_loose_seg(
         &mut self,
         from: DotIndex,
         to: LooseDotIndex,
-        weight: LooseSegWeight,
-    ) -> Result<LooseSegIndex, Infringement> {
+        weight: SeqLooseSegWeight,
+    ) -> Result<SeqLooseSegIndex, Infringement> {
         self.add_seg_infringably(from, to, weight, &[])
     }
 

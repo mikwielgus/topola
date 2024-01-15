@@ -92,7 +92,8 @@ pub enum GeometryWeight {
     FixedDot(FixedDotWeight),
     LooseDot(LooseDotWeight),
     FixedSeg(FixedSegWeight),
-    LooseSeg(LooseSegWeight),
+    LoneLooseSeg(LoneLooseSegWeight),
+    SeqLooseSeg(SeqLooseSegWeight),
     FixedBend(FixedBendWeight),
     LooseBend(LooseBendWeight),
 }
@@ -103,7 +104,8 @@ pub enum Index {
     FixedDot(FixedDotIndex),
     LooseDot(LooseDotIndex),
     FixedSeg(FixedSegIndex),
-    LooseSeg(LooseSegIndex),
+    LoneLooseSeg(LoneLooseSegIndex),
+    SeqLooseSeg(SeqLooseSegIndex),
     FixedBend(FixedBendIndex),
     LooseBend(LooseBendIndex),
 }
@@ -128,14 +130,16 @@ impl From<DotIndex> for Index {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SegIndex {
     Fixed(FixedSegIndex),
-    Loose(LooseSegIndex),
+    LoneLoose(LoneLooseSegIndex),
+    SeqLoose(SeqLooseSegIndex),
 }
 
 impl From<SegIndex> for Index {
     fn from(seg: SegIndex) -> Self {
         match seg {
             SegIndex::Fixed(seg) => Index::FixedSeg(seg),
-            SegIndex::Loose(seg) => Index::LooseSeg(seg),
+            SegIndex::LoneLoose(seg) => Index::LoneLooseSeg(seg),
+            SegIndex::SeqLoose(seg) => Index::SeqLooseSeg(seg),
         }
     }
 }
@@ -232,12 +236,20 @@ impl GetWidth for FixedSegWeight {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct LooseSegWeight {
+pub struct LoneLooseSegWeight {
     pub band: BandIndex,
 }
 
-impl_loose_weight!(LooseSegWeight, LooseSeg, LooseSegIndex);
-impl SegWeight for LooseSegWeight {}
+impl_loose_weight!(LoneLooseSegWeight, LoneLooseSeg, LoneLooseSegIndex);
+impl SegWeight for LoneLooseSegWeight {}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SeqLooseSegWeight {
+    pub band: BandIndex,
+}
+
+impl_loose_weight!(SeqLooseSegWeight, SeqLooseSeg, SeqLooseSegIndex);
+impl SegWeight for SeqLooseSegWeight {}
 
 pub trait BendWeight: Into<GeometryWeight> + Copy {}
 

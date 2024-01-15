@@ -6,8 +6,8 @@ use crate::{
     connectivity::{ComponentIndex, GetNet},
     geometry::{
         BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetBandIndex, GetComponentIndex,
-        LooseBendWeight, LooseDotIndex, LooseDotWeight, LooseSegWeight, MakePrimitive,
-        WraparoundableIndex,
+        LoneLooseSegWeight, LooseBendWeight, LooseDotIndex, LooseDotWeight, MakePrimitive,
+        SeqLooseSegWeight, WraparoundableIndex,
     },
     guide::{Guide, Head, HeadTrait, SegbendHead},
     layout::{Infringement, Layout, LayoutException},
@@ -58,27 +58,15 @@ impl<'a> Draw<'a> {
             .extend_head(head, tangent.start_point())
             .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
 
-        let net = head.face().primitive(self.layout).net();
-
         match head.face() {
             DotIndex::Fixed(dot) => {
-                // TODO: This code is temporary (component is wrong). Fix this by splitting loose
-                // segs into direct and indirect ones, the former ending with fixed dots on both
-                // sides and the latter not.
                 self.layout
-                    .add_fixed_seg(
-                        into.into(),
-                        dot,
-                        FixedSegWeight {
-                            component: self.layout.primitive(into).weight().component(),
-                            width,
-                        },
-                    )
+                    .add_lone_loose_seg(dot, into.into(), LoneLooseSegWeight { band: head.band() })
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
             DotIndex::Loose(dot) => {
                 self.layout
-                    .add_loose_seg(into.into(), dot, LooseSegWeight { band: head.band() })
+                    .add_seq_loose_seg(into.into(), dot, SeqLooseSegWeight { band: head.band() })
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
         }
@@ -216,7 +204,7 @@ impl<'a> Draw<'a> {
                     r: width / 2.0,
                 },
             },
-            LooseSegWeight { band: head.band() },
+            SeqLooseSegWeight { band: head.band() },
             LooseBendWeight {
                 band: head.band(),
                 offset: 3.0,
