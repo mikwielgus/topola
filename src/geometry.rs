@@ -160,32 +160,6 @@ impl From<BendIndex> for GeometryIndex {
     }
 }
 
-impl From<BendIndex> for WraparoundableIndex {
-    fn from(bend: BendIndex) -> Self {
-        match bend {
-            BendIndex::Fixed(bend) => WraparoundableIndex::FixedBend(bend),
-            BendIndex::Loose(bend) => WraparoundableIndex::LooseBend(bend),
-        }
-    }
-}
-
-#[enum_dispatch(GetNodeIndex, MakePrimitive)]
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum WraparoundableIndex {
-    FixedDot(FixedDotIndex),
-    FixedBend(FixedBendIndex),
-    LooseBend(LooseBendIndex),
-}
-
-impl From<WraparoundableIndex> for GeometryIndex {
-    fn from(wraparoundable: WraparoundableIndex) -> Self {
-        match wraparoundable {
-            WraparoundableIndex::FixedDot(dot) => GeometryIndex::FixedDot(dot),
-            WraparoundableIndex::FixedBend(bend) => GeometryIndex::FixedBend(bend),
-            WraparoundableIndex::LooseBend(bend) => GeometryIndex::LooseBend(bend),
-        }
-    }
-}
 pub trait DotWeight: GetWidth + Into<GeometryWeight> + Copy {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]

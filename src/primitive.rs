@@ -60,6 +60,7 @@ pub trait GetEnds<F, T> {
     fn ends(&self) -> (F, T);
 }
 
+#[enum_dispatch]
 pub trait GetWraparound: GetLayout + GetNodeIndex {
     fn wraparound(&self) -> Option<LooseBendIndex>;
 }

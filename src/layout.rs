@@ -16,7 +16,7 @@ use crate::geometry::{
     BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedDotIndex, FixedDotWeight, FixedSegIndex,
     FixedSegWeight, GeometryGraph, GeometryIndex, GeometryLabel, GeometryWeight, LoneLooseSegIndex,
     LoneLooseSegWeight, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight,
-    MakePrimitive, Retag, SegWeight, SeqLooseSegIndex, SeqLooseSegWeight, WraparoundableIndex,
+    MakePrimitive, Retag, SegWeight, SeqLooseSegIndex, SeqLooseSegWeight,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;
@@ -27,6 +27,7 @@ use crate::primitive::{
 };
 use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
+use crate::wraparoundable::{Wraparoundable, WraparoundableIndex};
 
 pub type RTreeWrapper = GeomWithData<Shape, GeometryIndex>;
 
@@ -186,12 +187,7 @@ impl Layout {
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
     ) -> Result<Segbend, LayoutException> {
-        let maybe_wraparound = match around {
-            WraparoundableIndex::FixedDot(around) => self.primitive(around).wraparound(),
-            WraparoundableIndex::FixedBend(around) => self.primitive(around).wraparound(),
-            WraparoundableIndex::LooseBend(around) => self.primitive(around).wraparound(),
-        };
-
+        let maybe_wraparound = self.wraparoundable(around).wraparound();
         let mut infringables = self.this_and_wraparound_bow(around);
 
         if let Some(wraparound) = maybe_wraparound {
@@ -271,29 +267,15 @@ impl Layout {
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
     fn this_and_wraparound_bow(&self, around: WraparoundableIndex) -> Vec<GeometryIndex> {
-        match around {
-            WraparoundableIndex::FixedDot(dot) => {
-                let mut v = vec![around.into()];
-                if let Some(first_rail) = self.primitive(dot).first_rail() {
-                    v.append(&mut self.bow(first_rail));
-                }
-                v
-            }
-            WraparoundableIndex::FixedBend(bend) => {
-                let mut v = vec![around.into()];
-                if let Some(first_rail) = self.primitive(bend).first_rail() {
-                    v.append(&mut self.bow(first_rail));
-                }
-                v
-            }
-            WraparoundableIndex::LooseBend(bend) => {
-                let mut v = self.bow(bend);
-                if let Some(outer) = self.primitive(bend).outer() {
-                    v.append(&mut self.bow(outer));
-                }
-                v
-            }
+        let mut v = match around {
+            WraparoundableIndex::FixedDot(..) => vec![around.into()],
+            WraparoundableIndex::FixedBend(..) => vec![around.into()],
+            WraparoundableIndex::LooseBend(bend) => self.bow(bend),
+        };
+        if let Some(wraparound) = self.wraparoundable(around).wraparound() {
+            v.append(&mut self.bow(wraparound));
         }
+        v
     }
 
     // XXX: Move this to primitives?
@@ -340,29 +322,6 @@ impl Layout {
         }
 
         outer_bows
-
-        /*let mut outer_bows = vec![];
-
-        // XXX: Ugly all-same match.
-        let mut maybe_rail = match around {
-            WraparoundableIndex::FixedDot(around) => self.primitive(around).wraparound(),
-            WraparoundableIndex::FixedBend(around) => self.primitive(around).wraparound(),
-            WraparoundableIndex::LooseBend(around) => self.primitive(around).wraparound(),
-        };
-
-        while let Some(rail) = maybe_rail {
-            let primitive = self.primitive(rail);
-            outer_bows.push(rail.into());
-
-            let ends = primitive.ends();
-            outer_bows.push(ends.0.into());
-            outer_bows.push(ends.1.into());
-
-            outer_bows.push(self.primitive(ends.0).seg().unwrap().into());
-            maybe_rail = primitive.outer();
-        }
-
-        outer_bows*/
     }
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
@@ -598,11 +557,7 @@ impl Layout {
             return Err(AlreadyConnected(net, around.into()).into());
         }
         //
-        if let Some(wraparound) = match around {
-            WraparoundableIndex::FixedDot(around) => self.primitive(around).wraparound(),
-            WraparoundableIndex::FixedBend(around) => self.primitive(around).wraparound(),
-            WraparoundableIndex::LooseBend(around) => self.primitive(around).wraparound(),
-        } {
+        if let Some(wraparound) = self.wraparoundable(around).wraparound() {
             if net == wraparound.primitive(self).net() {
                 return Err(AlreadyConnected(net, wraparound.into()).into());
             }
@@ -882,6 +837,12 @@ impl Layout {
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
     pub fn primitive<W>(&self, node: GenericIndex<W>) -> GenericPrimitive<W> {
         GenericPrimitive::new(node, self)
+    }
+
+    #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
+    #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
+    pub fn wraparoundable(&self, node: WraparoundableIndex) -> Wraparoundable {
+        Wraparoundable::new(node, self)
     }
 
     fn test_envelopes(&self) -> bool {

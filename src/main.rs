@@ -24,6 +24,7 @@ mod segbend;
 mod shape;
 mod tracer;
 mod triangulation;
+mod wraparoundable;
 
 use draw::DrawException;
 use geo::point;

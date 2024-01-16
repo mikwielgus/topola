@@ -5,13 +5,14 @@ use thiserror::Error;
 use crate::{
     geometry::{
         BendIndex, DotIndex, FixedDotIndex, GetBandIndex, LoneLooseSegWeight, LooseBendWeight,
-        LooseDotIndex, LooseDotWeight, MakePrimitive, SeqLooseSegWeight, WraparoundableIndex,
+        LooseDotIndex, LooseDotWeight, MakePrimitive, SeqLooseSegWeight,
     },
     guide::{Guide, Head, HeadTrait, SegbendHead},
     layout::{Infringement, Layout, LayoutException},
     math::{Circle, NoTangents},
     primitive::GetOtherEnd,
     rules::{Conditions, Rules},
+    wraparoundable::WraparoundableIndex,
 };
 
 #[derive(Error, Debug, Clone, Copy)]
