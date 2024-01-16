@@ -7,8 +7,15 @@ use crate::{
     },
     graph::GetNodeIndex,
     layout::Layout,
-    primitive::{FixedBend, FixedDot, GetLayout, GetWraparound, LooseBend, Primitive},
+    primitive::{
+        FixedBend, FixedDot, GetFirstRail, GetInnerOuter, GetLayout, LooseBend, Primitive,
+    },
 };
+
+#[enum_dispatch]
+pub trait GetWraparound: GetLayout + GetNodeIndex {
+    fn wraparound(&self) -> Option<LooseBendIndex>;
+}
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -51,5 +58,23 @@ impl<'a> Wraparoundable<'a> {
             WraparoundableIndex::FixedBend(bend) => layout.primitive(bend).into(),
             WraparoundableIndex::LooseBend(bend) => layout.primitive(bend).into(),
         }
+    }
+}
+
+impl<'a> GetWraparound for FixedDot<'a> {
+    fn wraparound(&self) -> Option<LooseBendIndex> {
+        self.first_rail()
+    }
+}
+
+impl<'a> GetWraparound for LooseBend<'a> {
+    fn wraparound(&self) -> Option<LooseBendIndex> {
+        self.outer()
+    }
+}
+
+impl<'a> GetWraparound for FixedBend<'a> {
+    fn wraparound(&self) -> Option<LooseBendIndex> {
+        self.first_rail()
     }
 }

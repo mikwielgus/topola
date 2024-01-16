@@ -13,6 +13,7 @@ use crate::geometry::{
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::Layout;
+use crate::loose::Loose;
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
 
@@ -58,11 +59,6 @@ pub trait GetOtherEnd<F: GetNodeIndex, T: GetNodeIndex + Into<F>>: GetEnds<F, T>
 
 pub trait GetEnds<F, T> {
     fn ends(&self) -> (F, T);
-}
-
-#[enum_dispatch]
-pub trait GetWraparound: GetLayout + GetNodeIndex {
-    fn wraparound(&self) -> Option<LooseBendIndex>;
 }
 
 pub trait GetFirstRail: GetLayout + GetNodeIndex {
@@ -303,11 +299,6 @@ impl<'a> MakeShape for FixedDot<'a> {
     }
 }
 impl<'a> GetFirstRail for FixedDot<'a> {}
-impl<'a> GetWraparound for FixedDot<'a> {
-    fn wraparound(&self) -> Option<LooseBendIndex> {
-        self.first_rail()
-    }
-}
 
 pub type LooseDot<'a> = GenericPrimitive<'a, LooseDotWeight>;
 impl_loose_primitive!(LooseDot, LooseDotWeight);
@@ -520,11 +511,6 @@ impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {
 
 impl<'a> GetOtherEnd<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {}
 impl<'a> GetFirstRail for FixedBend<'a> {}
-impl<'a> GetWraparound for FixedBend<'a> {
-    fn wraparound(&self) -> Option<LooseBendIndex> {
-        self.first_rail()
-    }
-}
 impl<'a> GetCore for FixedBend<'a> {} // TODO: Fixed bends don't have cores actually.
                                       //impl<'a> GetInnerOuter for FixedBend<'a> {}
 
@@ -595,11 +581,5 @@ impl<'a> GetEnds<LooseDotIndex, LooseDotIndex> for LooseBend<'a> {
 }
 
 impl<'a> GetOtherEnd<LooseDotIndex, LooseDotIndex> for LooseBend<'a> {}
-impl<'a> GetWraparound for LooseBend<'a> {
-    fn wraparound(&self) -> Option<LooseBendIndex> {
-        self.outer()
-    }
-}
-
 impl<'a> GetCore for LooseBend<'a> {}
 impl<'a> GetInnerOuter for LooseBend<'a> {}

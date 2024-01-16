@@ -15,6 +15,7 @@ mod geometry;
 mod graph;
 mod guide;
 mod layout;
+mod loose;
 mod math;
 mod mesh;
 mod primitive;

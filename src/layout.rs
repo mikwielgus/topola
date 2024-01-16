@@ -22,12 +22,12 @@ use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;
 use crate::math::NoTangents;
 use crate::primitive::{
-    GenericPrimitive, GetConnectable, GetCore, GetEnds, GetFirstRail, GetInnerOuter, GetOtherEnd,
-    GetWeight, GetWraparound, MakeShape,
+    GenericPrimitive, GetConnectable, GetCore, GetEnds, GetInnerOuter, GetOtherEnd, GetWeight,
+    MakeShape,
 };
 use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
-use crate::wraparoundable::{Wraparoundable, WraparoundableIndex};
+use crate::wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex};
 
 pub type RTreeWrapper = GeomWithData<Shape, GeometryIndex>;
 
