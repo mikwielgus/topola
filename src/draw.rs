@@ -3,16 +3,14 @@ use geo::{EuclideanLength, Point};
 use thiserror::Error;
 
 use crate::{
-    connectivity::{ComponentIndex, GetNet},
     geometry::{
-        BendIndex, DotIndex, FixedDotIndex, FixedSegWeight, GetBandIndex, GetComponentIndex,
-        LoneLooseSegWeight, LooseBendWeight, LooseDotIndex, LooseDotWeight, MakePrimitive,
-        SeqLooseSegWeight, WraparoundableIndex,
+        BendIndex, DotIndex, FixedDotIndex, GetBandIndex, LoneLooseSegWeight, LooseBendWeight,
+        LooseDotIndex, LooseDotWeight, MakePrimitive, SeqLooseSegWeight, WraparoundableIndex,
     },
     guide::{Guide, Head, HeadTrait, SegbendHead},
     layout::{Infringement, Layout, LayoutException},
     math::{Circle, NoTangents},
-    primitive::{GetOtherEnd, GetWeight},
+    primitive::GetOtherEnd,
     rules::{Conditions, Rules},
 };
 

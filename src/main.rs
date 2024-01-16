@@ -27,7 +27,7 @@ mod triangulation;
 
 use draw::DrawException;
 use geo::point;
-use geometry::{FixedDotIndex, FixedSegWeight, Index, LooseDotIndex, MakePrimitive};
+use geometry::{FixedDotIndex, FixedSegWeight, GeometryIndex, LooseDotIndex, MakePrimitive};
 use layout::{Infringement, Layout, LayoutException};
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
@@ -582,7 +582,7 @@ fn render_times(
     mut mesh: Option<Mesh>,
     path: &[VertexIndex],
     ghosts: &[Shape],
-    highlighteds: &[Index],
+    highlighteds: &[GeometryIndex],
     times: i64,
 ) {
     let mut i = 0;

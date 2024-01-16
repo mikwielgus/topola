@@ -2,7 +2,7 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 
 use crate::{
-    connectivity::{BandIndex, BandWeight, ComponentIndex, ComponentWeight, ConnectivityWeight},
+    connectivity::{BandIndex, ComponentIndex},
     graph::GenericIndex,
     layout::Layout,
     math::Circle,
@@ -11,7 +11,7 @@ use crate::{
 
 #[enum_dispatch]
 pub trait Retag {
-    fn retag(&self, index: NodeIndex<usize>) -> Index;
+    fn retag(&self, index: NodeIndex<usize>) -> GeometryIndex;
 }
 
 #[enum_dispatch]
@@ -39,8 +39,8 @@ pub trait GetOffset {
 macro_rules! impl_weight {
     ($weight_struct:ident, $weight_variant:ident, $index_struct:ident) => {
         impl Retag for $weight_struct {
-            fn retag(&self, index: NodeIndex<usize>) -> Index {
-                Index::$weight_variant($index_struct::new(index))
+            fn retag(&self, index: NodeIndex<usize>) -> GeometryIndex {
+                GeometryIndex::$weight_variant($index_struct::new(index))
             }
         }
 
@@ -100,7 +100,7 @@ pub enum GeometryWeight {
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Index {
+pub enum GeometryIndex {
     FixedDot(FixedDotIndex),
     LooseDot(LooseDotIndex),
     FixedSeg(FixedSegIndex),
@@ -117,11 +117,11 @@ pub enum DotIndex {
     Loose(LooseDotIndex),
 }
 
-impl From<DotIndex> for Index {
+impl From<DotIndex> for GeometryIndex {
     fn from(dot: DotIndex) -> Self {
         match dot {
-            DotIndex::Fixed(fixed) => Index::FixedDot(fixed),
-            DotIndex::Loose(loose) => Index::LooseDot(loose),
+            DotIndex::Fixed(fixed) => GeometryIndex::FixedDot(fixed),
+            DotIndex::Loose(loose) => GeometryIndex::LooseDot(loose),
         }
     }
 }
@@ -134,12 +134,12 @@ pub enum SegIndex {
     SeqLoose(SeqLooseSegIndex),
 }
 
-impl From<SegIndex> for Index {
+impl From<SegIndex> for GeometryIndex {
     fn from(seg: SegIndex) -> Self {
         match seg {
-            SegIndex::Fixed(seg) => Index::FixedSeg(seg),
-            SegIndex::LoneLoose(seg) => Index::LoneLooseSeg(seg),
-            SegIndex::SeqLoose(seg) => Index::SeqLooseSeg(seg),
+            SegIndex::Fixed(seg) => GeometryIndex::FixedSeg(seg),
+            SegIndex::LoneLoose(seg) => GeometryIndex::LoneLooseSeg(seg),
+            SegIndex::SeqLoose(seg) => GeometryIndex::SeqLooseSeg(seg),
         }
     }
 }
@@ -151,11 +151,11 @@ pub enum BendIndex {
     Loose(LooseBendIndex),
 }
 
-impl From<BendIndex> for Index {
+impl From<BendIndex> for GeometryIndex {
     fn from(bend: BendIndex) -> Self {
         match bend {
-            BendIndex::Fixed(bend) => Index::FixedBend(bend),
-            BendIndex::Loose(bend) => Index::LooseBend(bend),
+            BendIndex::Fixed(bend) => GeometryIndex::FixedBend(bend),
+            BendIndex::Loose(bend) => GeometryIndex::LooseBend(bend),
         }
     }
 }
@@ -177,12 +177,12 @@ pub enum WraparoundableIndex {
     LooseBend(LooseBendIndex),
 }
 
-impl From<WraparoundableIndex> for Index {
+impl From<WraparoundableIndex> for GeometryIndex {
     fn from(wraparoundable: WraparoundableIndex) -> Self {
         match wraparoundable {
-            WraparoundableIndex::FixedDot(dot) => Index::FixedDot(dot),
-            WraparoundableIndex::FixedBend(bend) => Index::FixedBend(bend),
-            WraparoundableIndex::LooseBend(bend) => Index::LooseBend(bend),
+            WraparoundableIndex::FixedDot(dot) => GeometryIndex::FixedDot(dot),
+            WraparoundableIndex::FixedBend(bend) => GeometryIndex::FixedBend(bend),
+            WraparoundableIndex::LooseBend(bend) => GeometryIndex::LooseBend(bend),
         }
     }
 }

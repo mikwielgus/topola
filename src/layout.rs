@@ -14,10 +14,9 @@ use crate::connectivity::{
 };
 use crate::geometry::{
     BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedDotIndex, FixedDotWeight, FixedSegIndex,
-    FixedSegWeight, GeometryGraph, GeometryLabel, GeometryWeight, GetComponentIndex, Index,
-    LoneLooseSegIndex, LoneLooseSegWeight, LooseBendIndex, LooseBendWeight, LooseDotIndex,
-    LooseDotWeight, MakePrimitive, Retag, SegWeight, SeqLooseSegIndex, SeqLooseSegWeight,
-    WraparoundableIndex,
+    FixedSegWeight, GeometryGraph, GeometryIndex, GeometryLabel, GeometryWeight, LoneLooseSegIndex,
+    LoneLooseSegWeight, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight,
+    MakePrimitive, Retag, SegWeight, SeqLooseSegIndex, SeqLooseSegWeight, WraparoundableIndex,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;
@@ -29,7 +28,7 @@ use crate::primitive::{
 use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
 
-pub type RTreeWrapper = GeomWithData<Shape, Index>;
+pub type RTreeWrapper = GeomWithData<Shape, GeometryIndex>;
 
 #[enum_dispatch]
 #[derive(Error, Debug, Clone, Copy)]
@@ -47,15 +46,15 @@ pub enum LayoutException {
 // TODO add real error messages + these should eventually use Display
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{0:?} infringes on {1:?}")]
-pub struct Infringement(pub Shape, pub Index);
+pub struct Infringement(pub Shape, pub GeometryIndex);
 
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{0:?} collides with {1:?}")]
-pub struct Collision(pub Shape, pub Index);
+pub struct Collision(pub Shape, pub GeometryIndex);
 
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{1:?} is already connected to net {0}")]
-pub struct AlreadyConnected(pub i64, pub Index);
+pub struct AlreadyConnected(pub i64, pub GeometryIndex);
 
 #[derive(Debug)]
 pub struct Layout {
@@ -99,12 +98,12 @@ impl Layout {
     }
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count() - 1))]
-    fn remove(&mut self, index: Index) {
+    fn remove(&mut self, node: GeometryIndex) {
         // Unnecessary retag. It should be possible to elide it.
-        let weight = *self.geometry.node_weight(index.node_index()).unwrap();
+        let weight = *self.geometry.node_weight(node.node_index()).unwrap();
 
-        self.remove_from_rtree(weight.retag(index.node_index()));
-        self.geometry.remove_node(index.node_index());
+        self.remove_from_rtree(weight.retag(node.node_index()));
+        self.geometry.remove_node(node.node_index());
     }
 
     // TODO: This method shouldn't be public.
@@ -149,10 +148,10 @@ impl Layout {
     fn add_dot_infringably<W: DotWeight>(
         &mut self,
         weight: W,
-        infringables: &[Index],
+        infringables: &[GeometryIndex],
     ) -> Result<GenericIndex<W>, Infringement>
     where
-        GenericIndex<W>: Into<Index> + Copy,
+        GenericIndex<W>: Into<GeometryIndex> + Copy,
     {
         let dot = GenericIndex::<W>::new(self.geometry.add_node(weight.into()));
 
@@ -228,7 +227,7 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn inner_bow_and_outer_bow(&self, bend: LooseBendIndex) -> Vec<Index> {
+    fn inner_bow_and_outer_bow(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
         let bend_primitive = self.primitive(bend);
         let mut v = vec![];
 
@@ -248,7 +247,7 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn inner_bow_and_outer_bows(&self, bend: LooseBendIndex) -> Vec<Index> {
+    fn inner_bow_and_outer_bows(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
         let bend_primitive = self.primitive(bend);
         let mut v = vec![];
 
@@ -271,7 +270,7 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn this_and_wraparound_bow(&self, around: WraparoundableIndex) -> Vec<Index> {
+    fn this_and_wraparound_bow(&self, around: WraparoundableIndex) -> Vec<GeometryIndex> {
         match around {
             WraparoundableIndex::FixedDot(dot) => {
                 let mut v = vec![around.into()];
@@ -300,8 +299,8 @@ impl Layout {
     // XXX: Move this to primitives?
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn bow(&self, bend: LooseBendIndex) -> Vec<Index> {
-        let mut bow: Vec<Index> = vec![];
+    fn bow(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
+        let mut bow: Vec<GeometryIndex> = vec![];
         bow.push(bend.into());
 
         let ends = self.primitive(bend).ends();
@@ -321,7 +320,7 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn outer_bows(&self, bend: LooseBendIndex) -> Vec<Index> {
+    fn outer_bows(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
         let mut outer_bows = vec![];
         let mut rail = bend;
 
@@ -473,7 +472,7 @@ impl Layout {
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
-        infringables: &[Index],
+        infringables: &[GeometryIndex],
     ) -> Result<Segbend, LayoutException> {
         let seg_to = self.add_dot_infringably(dot_weight, infringables)?;
         let seg = self
@@ -541,10 +540,10 @@ impl Layout {
         from: impl GetNodeIndex,
         to: impl GetNodeIndex,
         weight: W,
-        infringables: &[Index],
+        infringables: &[GeometryIndex],
     ) -> Result<GenericIndex<W>, Infringement>
     where
-        GenericIndex<W>: Into<Index> + Copy,
+        GenericIndex<W>: Into<GeometryIndex> + Copy,
     {
         let seg = GenericIndex::<W>::new(self.geometry.add_node(weight.into()));
 
@@ -565,12 +564,12 @@ impl Layout {
         &mut self,
         from: FixedDotIndex,
         to: FixedDotIndex,
-        around: Index,
+        around: GeometryIndex,
         weight: FixedBendWeight,
     ) -> Result<FixedBendIndex, ()> {
         match around {
-            Index::FixedDot(core) => self.add_core_bend(from, to, core, weight),
-            Index::FixedBend(around) => self.add_outer_bend(from, to, around, weight),
+            GeometryIndex::FixedDot(core) => self.add_core_bend(from, to, core, weight),
+            GeometryIndex::FixedBend(around) => self.add_outer_bend(from, to, around, weight),
             _ => unreachable!(),
         }
     }*/
@@ -586,7 +585,7 @@ impl Layout {
         to: LooseDotIndex,
         around: WraparoundableIndex,
         weight: LooseBendWeight,
-        infringables: &[Index],
+        infringables: &[GeometryIndex],
     ) -> Result<LooseBendIndex, LayoutException> {
         // It makes no sense to wrap something around or under one of its connectables.
         let net = self
@@ -632,10 +631,10 @@ impl Layout {
         to: impl GetNodeIndex,
         core: FixedDotIndex,
         weight: W,
-        infringables: &[Index],
+        infringables: &[GeometryIndex],
     ) -> Result<LooseBendIndex, Infringement>
     where
-        GenericIndex<W>: Into<Index> + Copy,
+        GenericIndex<W>: Into<GeometryIndex> + Copy,
     {
         let bend = LooseBendIndex::new(self.geometry.add_node(weight.into()));
 
@@ -664,7 +663,7 @@ impl Layout {
         to: impl GetNodeIndex,
         inner: impl GetNodeIndex,
         weight: W,
-        infringables: &[Index],
+        infringables: &[GeometryIndex],
     ) -> Result<LooseBendIndex, Infringement> {
         let core = *self
             .geometry
@@ -730,17 +729,17 @@ impl Layout {
     #[debug_ensures(ret.is_err() -> self.geometry.node_count() == old(self.geometry.node_count() - 1))]
     fn fail_and_remove_if_infringes_except(
         &mut self,
-        index: Index,
-        except: &[Index],
+        node: GeometryIndex,
+        except: &[GeometryIndex],
     ) -> Result<(), Infringement> {
-        if let Some(infringement) = self.detect_infringement_except(index, except) {
-            self.remove(index);
+        if let Some(infringement) = self.detect_infringement_except(node, except) {
+            self.remove(node);
             return Err(infringement);
         }
         Ok(())
     }
 
-    pub fn nodes(&self) -> impl Iterator<Item = Index> + '_ {
+    pub fn nodes(&self) -> impl Iterator<Item = GeometryIndex> + '_ {
         self.rtree.iter().map(|wrapper| wrapper.data)
     }
 
@@ -752,7 +751,7 @@ impl Layout {
         self.geometry.node_count()
     }
 
-    fn node_indices(&self) -> impl Iterator<Item = Index> + '_ {
+    fn node_indices(&self) -> impl Iterator<Item = GeometryIndex> + '_ {
         self.rtree.iter().map(|wrapper| wrapper.data)
     }
 }
@@ -773,7 +772,7 @@ impl Layout {
         &mut self,
         dot: LooseDotIndex,
         to: Point,
-        infringables: &[Index],
+        infringables: &[GeometryIndex],
     ) -> Result<(), Infringement> {
         self.primitive(dot)
             .seg()
@@ -812,14 +811,18 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn detect_infringement_except(&self, index: Index, except: &[Index]) -> Option<Infringement> {
-        let shape = index.primitive(self).shape();
+    fn detect_infringement_except(
+        &self,
+        node: GeometryIndex,
+        except: &[GeometryIndex],
+    ) -> Option<Infringement> {
+        let shape = node.primitive(self).shape();
 
         self.rtree
             .locate_in_envelope_intersecting(&RTreeObject::envelope(&shape))
             .filter(|wrapper| {
                 let other_index = wrapper.data;
-                !index.primitive(self).connectable(other_index)
+                !node.primitive(self).connectable(other_index)
             })
             .filter(|wrapper| !except.contains(&wrapper.data))
             .filter(|wrapper| shape.intersects(wrapper.geom()))
@@ -831,14 +834,14 @@ impl Layout {
     // TODO: Collision and infringement are the same for now. Change this.
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn detect_collision(&self, index: Index) -> Option<Collision> {
-        let shape = index.primitive(self).shape();
+    fn detect_collision(&self, node: GeometryIndex) -> Option<Collision> {
+        let shape = node.primitive(self).shape();
 
         self.rtree
             .locate_in_envelope_intersecting(&RTreeObject::envelope(&shape))
             .filter(|wrapper| {
                 let other_index = wrapper.data;
-                !index.primitive(self).connectable(other_index)
+                !node.primitive(self).connectable(other_index)
             })
             .filter(|wrapper| shape.intersects(wrapper.geom()))
             .map(|wrapper| wrapper.data)
@@ -848,16 +851,16 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn insert_into_rtree(&mut self, index: Index) {
-        let shape = index.primitive(self).shape();
-        self.rtree.insert(RTreeWrapper::new(shape, index));
+    fn insert_into_rtree(&mut self, node: GeometryIndex) {
+        let shape = node.primitive(self).shape();
+        self.rtree.insert(RTreeWrapper::new(shape, node));
     }
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn remove_from_rtree(&mut self, index: Index) {
-        let shape = index.primitive(self).shape();
-        let removed_element = self.rtree.remove(&RTreeWrapper::new(shape, index));
+    fn remove_from_rtree(&mut self, node: GeometryIndex) {
+        let shape = node.primitive(self).shape();
+        let removed_element = self.rtree.remove(&RTreeWrapper::new(shape, node));
         debug_assert!(removed_element.is_some());
     }
 }
@@ -877,15 +880,15 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W> {
-        GenericPrimitive::new(index, self)
+    pub fn primitive<W>(&self, node: GenericIndex<W>) -> GenericPrimitive<W> {
+        GenericPrimitive::new(node, self)
     }
 
     fn test_envelopes(&self) -> bool {
         !self.rtree.iter().any(|wrapper| {
-            let index = wrapper.data;
-            let shape = index.primitive(self).shape();
-            let wrapper = RTreeWrapper::new(shape, index);
+            let node = wrapper.data;
+            let shape = node.primitive(self).shape();
+            let wrapper = RTreeWrapper::new(shape, node);
             !self
                 .rtree
                 .locate_in_envelope(&RTreeObject::envelope(&shape))

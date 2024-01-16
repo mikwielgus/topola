@@ -10,7 +10,7 @@ use spade::{HasPosition, InsertionError, Point2};
 use crate::primitive::{GetCore, Primitive};
 use crate::triangulation::TriangulationEdgeReference;
 use crate::{
-    geometry::{FixedBendIndex, FixedDotIndex, Index, LooseBendIndex, MakePrimitive},
+    geometry::{FixedBendIndex, FixedDotIndex, GeometryIndex, LooseBendIndex, MakePrimitive},
     graph::GetNodeIndex,
     layout::Layout,
     primitive::MakeShape,
@@ -84,14 +84,14 @@ impl Mesh {
             let center = node.primitive(layout).shape().center();
 
             match node {
-                Index::FixedDot(dot) => {
+                GeometryIndex::FixedDot(dot) => {
                     self.triangulation.add_vertex(TriangulationWeight {
                         vertex: dot.into(),
                         rails: vec![],
                         pos: center,
                     })?;
                 }
-                Index::FixedBend(bend) => {
+                GeometryIndex::FixedBend(bend) => {
                     self.triangulation.add_vertex(TriangulationWeight {
                         vertex: bend.into(),
                         rails: vec![],
@@ -105,7 +105,7 @@ impl Mesh {
         for node in layout.nodes() {
             // Add rails as vertices. This is how the mesh differs from the triangulation.
             match node {
-                Index::LooseBend(bend) => {
+                GeometryIndex::LooseBend(bend) => {
                     self.triangulation
                         .weight_mut(layout.primitive(bend).core().into())
                         .rails

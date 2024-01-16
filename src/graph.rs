@@ -8,7 +8,7 @@ use petgraph::stable_graph::NodeIndex;
 
 // Due to apparent limitations of enum_dispatch we're forced to import some types backwards.
 
-use crate::geometry::{BendIndex, DotIndex, Index, SegIndex, WraparoundableIndex};
+use crate::geometry::{BendIndex, DotIndex, GeometryIndex, SegIndex, WraparoundableIndex};
 
 #[enum_dispatch]
 pub trait GetNodeIndex {

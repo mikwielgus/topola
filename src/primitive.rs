@@ -6,8 +6,8 @@ use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::connectivity::GetNet;
 use crate::geometry::{
-    DotIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegWeight, GeometryLabel,
-    GeometryWeight, GetBandIndex, GetComponentIndex, GetOffset, GetWidth, Index,
+    DotIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegWeight, GeometryIndex,
+    GeometryLabel, GeometryWeight, GetBandIndex, GetComponentIndex, GetOffset, GetWidth,
     LoneLooseSegWeight, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight,
     MakePrimitive, Retag, SeqLooseSegIndex, SeqLooseSegWeight,
 };
@@ -23,9 +23,9 @@ pub trait GetLayout {
 
 #[enum_dispatch]
 pub trait GetConnectable: GetNet + GetLayout {
-    fn connectable(&self, index: Index) -> bool {
+    fn connectable(&self, node: GeometryIndex) -> bool {
         let this = self.net();
-        let other = index.primitive(self.layout()).net();
+        let other = node.primitive(self.layout()).net();
 
         (this == other) || this == -1 || other == -1
     }
@@ -262,8 +262,8 @@ impl<'a, W> GenericPrimitive<'a, W> {
     }
 }
 
-impl<'a, W> GetInterior<Index> for GenericPrimitive<'a, W> {
-    fn interior(&self) -> Vec<Index> {
+impl<'a, W> GetInterior<GeometryIndex> for GenericPrimitive<'a, W> {
+    fn interior(&self) -> Vec<GeometryIndex> {
         vec![self.tagged_weight().retag(self.index.node_index())]
     }
 }

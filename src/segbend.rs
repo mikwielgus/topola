@@ -1,5 +1,5 @@
 use crate::{
-    geometry::{Index, LooseBendIndex, LooseDotIndex, SeqLooseSegIndex},
+    geometry::{GeometryIndex, LooseBendIndex, LooseDotIndex, SeqLooseSegIndex},
     layout::Layout,
     primitive::{GetEnds, GetInterior, GetOtherEnd, LooseBend, LooseDot},
 };
@@ -20,8 +20,8 @@ impl Segbend {
     }
 }
 
-impl GetInterior<Index> for Segbend {
-    fn interior(&self) -> Vec<Index> {
+impl GetInterior<GeometryIndex> for Segbend {
+    fn interior(&self) -> Vec<GeometryIndex> {
         vec![self.bend.into(), self.dot.into(), self.seg.into()]
     }
 }
