@@ -305,24 +305,8 @@ impl_loose_primitive!(LooseDot, LooseDotWeight);
 
 impl<'a> LooseDot<'a> {
     pub fn seg(&self) -> Option<SeqLooseSegIndex> {
-        self.layout
-            .geometry()
-            .neighbors_undirected(self.index.node_index())
-            .filter(|ni| {
-                matches!(
-                    self.layout
-                        .geometry()
-                        .edge_weight(
-                            self.layout
-                                .geometry()
-                                .find_edge_undirected(self.index.node_index(), *ni)
-                                .unwrap()
-                                .0,
-                        )
-                        .unwrap(),
-                    GeometryLabel::Adjacent
-                )
-            })
+        self.adjacents()
+            .into_iter()
             .filter(|ni| {
                 matches!(
                     self.layout.geometry().node_weight(*ni).unwrap(),
@@ -334,24 +318,8 @@ impl<'a> LooseDot<'a> {
     }
 
     pub fn bend(&self) -> LooseBendIndex {
-        self.layout
-            .geometry()
-            .neighbors_undirected(self.index.node_index())
-            .filter(|ni| {
-                matches!(
-                    self.layout
-                        .geometry()
-                        .edge_weight(
-                            self.layout
-                                .geometry()
-                                .find_edge_undirected(self.index.node_index(), *ni)
-                                .unwrap()
-                                .0,
-                        )
-                        .unwrap(),
-                    GeometryLabel::Adjacent
-                )
-            })
+        self.adjacents()
+            .into_iter()
             .filter(|ni| {
                 matches!(
                     self.layout.geometry().node_weight(*ni).unwrap(),
