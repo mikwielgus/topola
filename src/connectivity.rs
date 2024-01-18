@@ -1,7 +1,7 @@
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::StableDiGraph;
 
-use crate::graph::GenericIndex;
+use crate::{geometry::FixedDotIndex, graph::GenericIndex};
 
 #[enum_dispatch]
 pub trait GetNet {
@@ -34,6 +34,7 @@ pub type ComponentIndex = GenericIndex<ComponentWeight>;
 pub struct BandWeight {
     pub net: i64,
     pub width: f64,
+    pub from: FixedDotIndex,
 }
 
 impl GetNet for BandWeight {

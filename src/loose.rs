@@ -11,8 +11,9 @@ use crate::{
     primitive::{GetEnds, LoneLooseSeg, LooseBend, LooseDot, Primitive, SeqLooseSeg},
 };
 
+#[enum_dispatch]
 pub trait GetNextLoose {
-    fn next(&self, prev: GeometryIndex) -> Option<LooseIndex>;
+    fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex>;
 }
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
@@ -55,26 +56,33 @@ impl<'a> Loose<'a> {
 }
 
 impl<'a> GetNextLoose for LooseDot<'a> {
-    fn next(&self, prev: GeometryIndex) -> Option<LooseIndex> {
+    fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let bend = self.bend();
+        let Some(prev) = maybe_prev else {
+            unreachable!();
+        };
 
         if bend.node_index() != prev.node_index() {
-            self.seg().map(Into::into)
-        } else {
             Some(bend.into())
+        } else {
+            self.seg().map(Into::into)
         }
     }
 }
 
 impl<'a> GetNextLoose for LoneLooseSeg<'a> {
-    fn next(&self, _prev: GeometryIndex) -> Option<LooseIndex> {
+    fn next_loose(&self, _maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         None
     }
 }
 
 impl<'a> GetNextLoose for SeqLooseSeg<'a> {
-    fn next(&self, prev: GeometryIndex) -> Option<LooseIndex> {
+    fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let ends = self.ends();
+        let Some(prev) = maybe_prev else {
+            return Some(ends.1.into());
+        };
+
         if ends.0.node_index() != prev.node_index() {
             match ends.0 {
                 DotIndex::Fixed(..) => None,
@@ -87,8 +95,12 @@ impl<'a> GetNextLoose for SeqLooseSeg<'a> {
 }
 
 impl<'a> GetNextLoose for LooseBend<'a> {
-    fn next(&self, prev: GeometryIndex) -> Option<LooseIndex> {
+    fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let ends = self.ends();
+        let Some(prev) = maybe_prev else {
+            unreachable!();
+        };
+
         if ends.0.node_index() != prev.node_index() {
             Some(ends.0.into())
         } else {

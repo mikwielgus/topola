@@ -4,8 +4,10 @@ use spade::InsertionError;
 use thiserror::Error;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
+use crate::connectivity::BandIndex;
 use crate::draw::DrawException;
 use crate::geometry::FixedDotIndex;
+use crate::guide::HeadTrait;
 use crate::layout::Layout;
 
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
@@ -111,12 +113,12 @@ impl Router {
         }
     }
 
-    pub fn enroute(
+    pub fn route_band(
         &mut self,
         from: FixedDotIndex,
         to: FixedDotIndex,
         observer: &mut impl RouterObserver,
-    ) -> Result<Mesh, RoutingError> {
+    ) -> Result<BandIndex, RoutingError> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
         //self.mesh.triangulate(&self.layout)?;
@@ -129,6 +131,7 @@ impl Router {
 
         let mut tracer = self.tracer(&mesh);
         let trace = tracer.start(from, 3.0);
+        let band = trace.head.band();
 
         let (_cost, _path) = astar(
             &mesh,
@@ -141,7 +144,7 @@ impl Router {
             source: RoutingErrorKind::AStar,
         })?;
 
-        Ok(mesh)
+        Ok(band)
     }
 
     pub fn reroute(

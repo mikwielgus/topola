@@ -20,6 +20,7 @@ use crate::geometry::{
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;
+use crate::loose::{GetNextLoose, Loose, LooseIndex};
 use crate::math::NoTangents;
 use crate::primitive::{
     GenericPrimitive, GetConnectable, GetCore, GetEnds, GetInnerOuter, GetOtherEnd, GetWeight,
@@ -75,6 +76,62 @@ impl Layout {
         }
     }
 
+    pub fn remove_band(&mut self, band: BandIndex) {
+        let mut dots = vec![];
+        let mut segs = vec![];
+        let mut bends = vec![];
+        let mut outers = vec![];
+
+        let from = self.band_weight(band).from;
+        let mut maybe_loose = self.primitive(from).first_loose(band);
+        let mut prev = None;
+
+        while let Some(loose) = maybe_loose {
+            match loose {
+                LooseIndex::Dot(dot) => {
+                    dots.push(dot);
+                }
+                LooseIndex::LoneSeg(..) => {
+                    unreachable!();
+                }
+                LooseIndex::SeqSeg(seg) => {
+                    segs.push(seg);
+                }
+                LooseIndex::Bend(bend) => {
+                    bends.push(bend);
+
+                    if let Some(outer) = self.primitive(bend).outer() {
+                        outers.push(outer);
+                        self.reattach_bend(outer, self.primitive(bend).inner());
+                    }
+                }
+            }
+
+            let prev_prev = prev;
+            prev = maybe_loose;
+            maybe_loose = self.loose(loose).next_loose(prev_prev);
+        }
+
+        for bend in bends {
+            self.remove(bend.into());
+        }
+
+        for seg in segs {
+            self.remove(seg.into());
+        }
+
+        // We must remove the dots only after the segs and bends because we need dots to calculate
+        // the shapes, which we first need unchanged to remove the segs and bends from the R-tree.
+
+        for dot in dots {
+            self.remove(dot.into());
+        }
+
+        for outer in outers {
+            self.update_this_and_outward_bows(outer).unwrap(); // Must never fail.
+        }
+    }
+
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count() - 4))]
     pub fn remove_segbend(&mut self, segbend: &Segbend, face: LooseDotIndex) {
         let maybe_outer = self.primitive(segbend.bend).outer();
@@ -126,6 +183,7 @@ impl Layout {
                 .add_node(ConnectivityWeight::Band(BandWeight {
                     width,
                     net: self.primitive(from).net(),
+                    from,
                 })),
         )
     }
@@ -547,11 +605,7 @@ impl Layout {
         infringables: &[GeometryIndex],
     ) -> Result<LooseBendIndex, LayoutException> {
         // It makes no sense to wrap something around or under one of its connectables.
-        let net = self
-            .connectivity
-            .node_weight(weight.band.node_index())
-            .unwrap()
-            .net();
+        let net = self.band_weight(weight.band).net();
         //
         if net == around.primitive(self).net() {
             return Err(AlreadyConnected(net, around.into()).into());
@@ -841,8 +895,26 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    pub fn wraparoundable(&self, node: WraparoundableIndex) -> Wraparoundable {
+    fn wraparoundable(&self, node: WraparoundableIndex) -> Wraparoundable {
         Wraparoundable::new(node, self)
+    }
+
+    #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
+    #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
+    fn loose(&self, node: LooseIndex) -> Loose {
+        Loose::new(node, self)
+    }
+
+    #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
+    #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
+    fn band_weight(&self, band: BandIndex) -> BandWeight {
+        if let Some(ConnectivityWeight::Band(band_weight)) =
+            self.connectivity.node_weight(band.node_index())
+        {
+            *band_weight
+        } else {
+            unreachable!()
+        }
     }
 
     fn test_envelopes(&self) -> bool {

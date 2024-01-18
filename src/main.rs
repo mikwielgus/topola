@@ -494,7 +494,7 @@ fn main() -> Result<(), anyhow::Error> {
         -1,
     );*/
 
-    let _ = router.enroute(
+    let _ = router.route_band(
         dot_start,
         dot_end,
         &mut EmptyRouterObserver,
@@ -527,7 +527,7 @@ fn main() -> Result<(), anyhow::Error> {
         -1,
     );*/
 
-    let _ = router.enroute(
+    let band2 = router.route_band(
         dot_start2,
         dot_end2,
         &mut EmptyRouterObserver,
@@ -549,11 +549,29 @@ fn main() -> Result<(), anyhow::Error> {
         -1,
     );
 
-    let _ = router.enroute(
+    let band3 = router.route_band(
         dot_start3,
         dot_end3,
-        &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
+        &mut EmptyRouterObserver,
+        //&mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     )?;
+
+    render_times(
+        &mut event_pump,
+        &window,
+        &mut renderer,
+        &font_context,
+        RouterOrLayout::Layout(&router.layout),
+        None,
+        None,
+        None,
+        &[],
+        &[],
+        &[],
+        -1,
+    );
+
+    router.layout.remove_band(band3);
 
     render_times(
         &mut event_pump,

@@ -12,7 +12,7 @@ use crate::{
 #[derive(Debug)]
 pub struct Trace {
     pub path: Vec<VertexIndex>,
-    head: Head,
+    pub head: Head,
 }
 
 pub struct Tracer<'a> {

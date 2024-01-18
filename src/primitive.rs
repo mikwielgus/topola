@@ -4,16 +4,16 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 use petgraph::Direction::{Incoming, Outgoing};
 
-use crate::connectivity::GetNet;
+use crate::connectivity::{BandIndex, GetNet};
 use crate::geometry::{
     DotIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight, FixedSegWeight, GeometryIndex,
     GeometryLabel, GeometryWeight, GetBandIndex, GetComponentIndex, GetOffset, GetWidth,
-    LoneLooseSegWeight, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight,
-    MakePrimitive, Retag, SeqLooseSegIndex, SeqLooseSegWeight,
+    LoneLooseSegIndex, LoneLooseSegWeight, LooseBendIndex, LooseBendWeight, LooseDotIndex,
+    LooseDotWeight, MakePrimitive, Retag, SeqLooseSegIndex, SeqLooseSegWeight,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::Layout;
-use crate::loose::Loose;
+use crate::loose::{Loose, LooseIndex};
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
 
@@ -66,21 +66,21 @@ pub trait GetFirstRail: GetLayout + GetNodeIndex {
         self.layout()
             .geometry()
             .neighbors_directed(self.node_index(), Incoming)
-            .filter(|ni| {
+            .filter(|node| {
                 matches!(
                     self.layout()
                         .geometry()
                         .edge_weight(
                             self.layout()
                                 .geometry()
-                                .find_edge(*ni, self.node_index())
+                                .find_edge(*node, self.node_index())
                                 .unwrap()
                         )
                         .unwrap(),
                     GeometryLabel::Core
                 )
             })
-            .map(|ni| LooseBendIndex::new(ni))
+            .map(|node| LooseBendIndex::new(node))
             .next()
     }
 }
@@ -90,21 +90,21 @@ pub trait GetCore: GetLayout + GetNodeIndex {
         self.layout()
             .geometry()
             .neighbors(self.node_index())
-            .filter(|ni| {
+            .filter(|node| {
                 matches!(
                     self.layout()
                         .geometry()
                         .edge_weight(
                             self.layout()
                                 .geometry()
-                                .find_edge(self.node_index(), *ni)
+                                .find_edge(self.node_index(), *node)
                                 .unwrap()
                         )
                         .unwrap(),
                     GeometryLabel::Core
                 )
             })
-            .map(|ni| FixedDotIndex::new(ni))
+            .map(|node| FixedDotIndex::new(node))
             .next()
             .unwrap()
     }
@@ -115,21 +115,21 @@ pub trait GetInnerOuter: GetLayout + GetNodeIndex {
         self.layout()
             .geometry()
             .neighbors_directed(self.node_index(), Incoming)
-            .filter(|ni| {
+            .filter(|node| {
                 matches!(
                     self.layout()
                         .geometry()
                         .edge_weight(
                             self.layout()
                                 .geometry()
-                                .find_edge(*ni, self.node_index())
+                                .find_edge(*node, self.node_index())
                                 .unwrap()
                         )
                         .unwrap(),
                     GeometryLabel::Outer
                 )
             })
-            .map(|ni| LooseBendIndex::new(ni))
+            .map(|node| LooseBendIndex::new(node))
             .next()
     }
 
@@ -137,21 +137,21 @@ pub trait GetInnerOuter: GetLayout + GetNodeIndex {
         self.layout()
             .geometry()
             .neighbors_directed(self.node_index(), Outgoing)
-            .filter(|ni| {
+            .filter(|node| {
                 matches!(
                     self.layout()
                         .geometry()
                         .edge_weight(
                             self.layout()
                                 .geometry()
-                                .find_edge(self.node_index(), *ni)
+                                .find_edge(self.node_index(), *node)
                                 .unwrap()
                         )
                         .unwrap(),
                     GeometryLabel::Outer
                 )
             })
-            .map(|ni| LooseBendIndex::new(ni))
+            .map(|node| LooseBendIndex::new(node))
             .next()
     }
 }
@@ -236,14 +236,14 @@ impl<'a, W> GenericPrimitive<'a, W> {
         self.layout
             .geometry()
             .neighbors_undirected(self.index.node_index())
-            .filter(|ni| {
+            .filter(|node| {
                 matches!(
                     self.layout
                         .geometry()
                         .edge_weight(
                             self.layout
                                 .geometry()
-                                .find_edge_undirected(self.index.node_index(), *ni)
+                                .find_edge_undirected(self.index.node_index(), *node)
                                 .unwrap()
                                 .0,
                         )
@@ -291,6 +291,21 @@ where
 pub type FixedDot<'a> = GenericPrimitive<'a, FixedDotWeight>;
 impl_fixed_primitive!(FixedDot, FixedDotWeight);
 
+impl<'a> FixedDot<'a> {
+    pub fn first_loose(&self, band: BandIndex) -> Option<LooseIndex> {
+        self.adjacents().into_iter().find_map(|node| {
+            let weight = self.layout.geometry().node_weight(node).unwrap();
+            if matches!(weight, GeometryWeight::LoneLooseSeg(..)) {
+                Some(LoneLooseSegIndex::new(node).into())
+            } else if matches!(weight, GeometryWeight::SeqLooseSeg(..)) {
+                Some(SeqLooseSegIndex::new(node).into())
+            } else {
+                None
+            }
+        })
+    }
+}
+
 impl<'a> MakeShape for FixedDot<'a> {
     fn shape(&self) -> Shape {
         Shape::Dot(DotShape {
@@ -307,26 +322,26 @@ impl<'a> LooseDot<'a> {
     pub fn seg(&self) -> Option<SeqLooseSegIndex> {
         self.adjacents()
             .into_iter()
-            .filter(|ni| {
+            .filter(|node| {
                 matches!(
-                    self.layout.geometry().node_weight(*ni).unwrap(),
+                    self.layout.geometry().node_weight(*node).unwrap(),
                     GeometryWeight::SeqLooseSeg(..)
                 )
             })
-            .map(|ni| SeqLooseSegIndex::new(ni))
+            .map(|node| SeqLooseSegIndex::new(node))
             .next()
     }
 
     pub fn bend(&self) -> LooseBendIndex {
         self.adjacents()
             .into_iter()
-            .filter(|ni| {
+            .filter(|node| {
                 matches!(
-                    self.layout.geometry().node_weight(*ni).unwrap(),
+                    self.layout.geometry().node_weight(*node).unwrap(),
                     GeometryWeight::LooseBend(..)
                 )
             })
-            .map(|ni| LooseBendIndex::new(ni))
+            .map(|node| LooseBendIndex::new(node))
             .next()
             .unwrap()
     }
