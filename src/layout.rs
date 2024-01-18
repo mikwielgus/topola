@@ -10,14 +10,14 @@ use thiserror::Error;
 
 use crate::band::Band;
 use crate::connectivity::{
-    BandIndex, BandWeight, ComponentIndex, ComponentWeight, ConnectivityGraph, ConnectivityWeight,
-    GetNet,
+    BandIndex, BandWeight, ComponentIndex, ComponentWeight, ConnectivityGraph, ConnectivityLabel,
+    ConnectivityWeight, GetNet,
 };
 use crate::geometry::{
     BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedDotIndex, FixedDotWeight, FixedSegIndex,
-    FixedSegWeight, GeometryGraph, GeometryIndex, GeometryLabel, GeometryWeight, LoneLooseSegIndex,
-    LoneLooseSegWeight, LooseBendIndex, LooseBendWeight, LooseDotIndex, LooseDotWeight,
-    MakePrimitive, Retag, SegWeight, SeqLooseSegIndex, SeqLooseSegWeight,
+    FixedSegWeight, GeometryGraph, GeometryIndex, GeometryLabel, GeometryWeight, GetComponentIndex,
+    LoneLooseSegIndex, LoneLooseSegWeight, LooseBendIndex, LooseBendWeight, LooseDotIndex,
+    LooseDotWeight, MakePrimitive, Retag, SegWeight, SeqLooseSegIndex, SeqLooseSegWeight,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;
@@ -131,6 +131,8 @@ impl Layout {
         for outer in outers {
             self.update_this_and_outward_bows(outer).unwrap(); // Must never fail.
         }
+
+        self.connectivity.remove_node(band.node_index());
     }
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count() - 4))]
@@ -533,7 +535,20 @@ impl Layout {
         to: FixedDotIndex,
         weight: LoneLooseSegWeight,
     ) -> Result<LoneLooseSegIndex, Infringement> {
-        self.add_seg_infringably(from, to, weight, &[])
+        let seg = self.add_seg_infringably(from, to, weight, &[])?;
+
+        self.connectivity.update_edge(
+            self.primitive(from).component().node_index(),
+            weight.band.node_index(),
+            ConnectivityLabel::Band,
+        );
+        self.connectivity.update_edge(
+            weight.band.node_index(),
+            self.primitive(to).component().node_index(),
+            ConnectivityLabel::Band,
+        );
+
+        Ok(seg)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry.node_count() == old(self.geometry.node_count() + 1))]
@@ -546,7 +561,17 @@ impl Layout {
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
     ) -> Result<SeqLooseSegIndex, Infringement> {
-        self.add_seg_infringably(from, to, weight, &[])
+        let seg = self.add_seg_infringably(from, to, weight, &[])?;
+
+        if let DotIndex::Fixed(dot) = from {
+            self.connectivity.update_edge(
+                self.primitive(dot).component().node_index(),
+                weight.band.node_index(),
+                ConnectivityLabel::Band,
+            );
+        }
+
+        Ok(seg)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry.node_count() == old(self.geometry.node_count() + 1))]

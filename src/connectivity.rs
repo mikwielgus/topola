@@ -45,6 +45,7 @@ impl GetNet for BandWeight {
 
 pub type BandIndex = GenericIndex<BandWeight>;
 
-#[enum_dispatch]
 #[derive(Debug, Clone, Copy)]
-pub enum ConnectivityLabel {}
+pub enum ConnectivityLabel {
+    Band,
+}
