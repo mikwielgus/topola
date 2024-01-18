@@ -9,6 +9,7 @@ macro_rules! dbg_dot {
 }
 
 mod astar;
+mod band;
 mod connectivity;
 mod draw;
 mod geometry;

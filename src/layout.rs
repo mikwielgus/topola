@@ -8,6 +8,7 @@ use rstar::primitives::GeomWithData;
 use rstar::{RTree, RTreeObject};
 use thiserror::Error;
 
+use crate::band::Band;
 use crate::connectivity::{
     BandIndex, BandWeight, ComponentIndex, ComponentWeight, ConnectivityGraph, ConnectivityWeight,
     GetNet,
@@ -82,7 +83,7 @@ impl Layout {
         let mut bends = vec![];
         let mut outers = vec![];
 
-        let from = self.band_weight(band).from;
+        let from = self.band(band).from();
         let mut maybe_loose = self.primitive(from).first_loose(band);
         let mut prev = None;
 
@@ -605,7 +606,7 @@ impl Layout {
         infringables: &[GeometryIndex],
     ) -> Result<LooseBendIndex, LayoutException> {
         // It makes no sense to wrap something around or under one of its connectables.
-        let net = self.band_weight(weight.band).net();
+        let net = self.band(weight.band).net();
         //
         if net == around.primitive(self).net() {
             return Err(AlreadyConnected(net, around.into()).into());
@@ -889,32 +890,26 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    pub fn primitive<W>(&self, node: GenericIndex<W>) -> GenericPrimitive<W> {
-        GenericPrimitive::new(node, self)
+    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W> {
+        GenericPrimitive::new(index, self)
     }
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn wraparoundable(&self, node: WraparoundableIndex) -> Wraparoundable {
-        Wraparoundable::new(node, self)
+    pub fn wraparoundable(&self, index: WraparoundableIndex) -> Wraparoundable {
+        Wraparoundable::new(index, self)
     }
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn loose(&self, node: LooseIndex) -> Loose {
-        Loose::new(node, self)
+    pub fn loose(&self, index: LooseIndex) -> Loose {
+        Loose::new(index, self)
     }
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn band_weight(&self, band: BandIndex) -> BandWeight {
-        if let Some(ConnectivityWeight::Band(band_weight)) =
-            self.connectivity.node_weight(band.node_index())
-        {
-            *band_weight
-        } else {
-            unreachable!()
-        }
+    pub fn band(&self, index: BandIndex) -> Band {
+        Band::new(index, self)
     }
 
     fn test_envelopes(&self) -> bool {
