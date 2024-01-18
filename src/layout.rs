@@ -400,7 +400,7 @@ impl Layout {
         }
 
         if let Some(new_inner) = maybe_new_inner {
-            self.geometry.add_edge(
+            self.geometry.update_edge(
                 new_inner.node_index(),
                 bend.node_index(),
                 GeometryLabel::Outer,
@@ -566,9 +566,9 @@ impl Layout {
         let seg = GenericIndex::<W>::new(self.geometry.add_node(weight.into()));
 
         self.geometry
-            .add_edge(from.node_index(), seg.node_index(), GeometryLabel::Adjacent);
+            .update_edge(from.node_index(), seg.node_index(), GeometryLabel::Adjacent);
         self.geometry
-            .add_edge(seg.node_index(), to.node_index(), GeometryLabel::Adjacent);
+            .update_edge(seg.node_index(), to.node_index(), GeometryLabel::Adjacent);
 
         self.insert_into_rtree(seg.into());
         self.fail_and_remove_if_infringes_except(seg.into(), infringables)?;
@@ -648,15 +648,15 @@ impl Layout {
     {
         let bend = LooseBendIndex::new(self.geometry.add_node(weight.into()));
 
-        self.geometry.add_edge(
+        self.geometry.update_edge(
             from.node_index(),
             bend.node_index(),
             GeometryLabel::Adjacent,
         );
         self.geometry
-            .add_edge(bend.node_index(), to.node_index(), GeometryLabel::Adjacent);
+            .update_edge(bend.node_index(), to.node_index(), GeometryLabel::Adjacent);
         self.geometry
-            .add_edge(bend.node_index(), core.node_index(), GeometryLabel::Core);
+            .update_edge(bend.node_index(), core.node_index(), GeometryLabel::Core);
 
         self.insert_into_rtree(bend.into());
         self.fail_and_remove_if_infringes_except(bend.into(), infringables)?;
@@ -693,17 +693,17 @@ impl Layout {
 
         let bend = LooseBendIndex::new(self.geometry.add_node(weight.into()));
 
-        self.geometry.add_edge(
+        self.geometry.update_edge(
             from.node_index(),
             bend.node_index(),
             GeometryLabel::Adjacent,
         );
         self.geometry
-            .add_edge(bend.node_index(), to.node_index(), GeometryLabel::Adjacent);
+            .update_edge(bend.node_index(), to.node_index(), GeometryLabel::Adjacent);
         self.geometry
-            .add_edge(bend.node_index(), core.node_index(), GeometryLabel::Core);
+            .update_edge(bend.node_index(), core.node_index(), GeometryLabel::Core);
         self.geometry
-            .add_edge(inner.node_index(), bend.node_index(), GeometryLabel::Outer);
+            .update_edge(inner.node_index(), bend.node_index(), GeometryLabel::Outer);
 
         self.insert_into_rtree(bend.into());
         self.fail_and_remove_if_infringes_except(bend.into(), infringables)?;
