@@ -24,8 +24,8 @@ use crate::guide::Guide;
 use crate::loose::{GetNextLoose, Loose, LooseIndex};
 use crate::math::NoTangents;
 use crate::primitive::{
-    GenericPrimitive, GetConnectable, GetCore, GetEnds, GetInnerOuter, GetOtherEnd, GetWeight,
-    MakeShape,
+    GenericPrimitive, GetConnectable, GetCore, GetDependents, GetEnds, GetInnerOuter, GetOtherEnd,
+    GetWeight, MakeShape,
 };
 use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
@@ -809,11 +809,7 @@ impl Layout {
         to: Point,
         infringables: &[GeometryIndex],
     ) -> Result<(), Infringement> {
-        self.primitive(dot)
-            .seg()
-            .map(|seg| self.remove_from_rtree(seg.into()));
-        self.remove_from_rtree(self.primitive(dot).bend().into());
-        self.remove_from_rtree(dot.into());
+        self.remove_from_rtree_with_dependents(dot.into());
 
         let mut dot_weight = self.primitive(dot).weight();
         let old_weight = dot_weight;
@@ -827,20 +823,11 @@ impl Layout {
             *self.geometry.node_weight_mut(dot.node_index()).unwrap() =
                 GeometryWeight::LooseDot(old_weight);
 
-            self.insert_into_rtree(dot.into());
-            self.insert_into_rtree(self.primitive(dot).bend().into());
-            self.primitive(dot)
-                .seg()
-                .map(|seg| self.insert_into_rtree(seg.into()));
+            self.insert_into_rtree_with_dependents(dot.into());
             return Err(infringement);
         }
 
-        self.insert_into_rtree(dot.into());
-        self.insert_into_rtree(self.primitive(dot).bend().into());
-        self.primitive(dot)
-            .seg()
-            .map(|seg| self.insert_into_rtree(seg.into()));
-
+        self.insert_into_rtree_with_dependents(dot.into());
         Ok(())
     }
 
@@ -886,9 +873,29 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
+    fn insert_into_rtree_with_dependents(&mut self, node: GeometryIndex) {
+        self.insert_into_rtree(node);
+
+        for dependent in node.primitive(self).dependents() {
+            self.insert_into_rtree(dependent);
+        }
+    }
+
+    #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
+    #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
     fn insert_into_rtree(&mut self, node: GeometryIndex) {
         let shape = node.primitive(self).shape();
         self.rtree.insert(RTreeWrapper::new(shape, node));
+    }
+
+    #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
+    #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
+    fn remove_from_rtree_with_dependents(&mut self, node: GeometryIndex) {
+        for dependent in node.primitive(self).dependents() {
+            self.remove_from_rtree(dependent);
+        }
+
+        self.remove_from_rtree(node);
     }
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
