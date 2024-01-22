@@ -647,7 +647,7 @@ fn render_times(
                     } else {
                         let _ = router
                             .layout
-                            .move_dot(follower, (state.x() as f64, state.y() as f64).into());
+                            .move_dot(follower.into(), (state.x() as f64, state.y() as f64).into());
                     }
                 }
 

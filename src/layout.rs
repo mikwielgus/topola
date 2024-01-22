@@ -439,8 +439,12 @@ impl Layout {
                 let to = guide
                     .head_around_bend_segment(&to_head.into(), inner.into(), cw, 6.0)?
                     .end_point();
-                self.move_dot_infringably(ends.0, from, &self.inner_bow_and_outer_bows(rail))?;
-                self.move_dot_infringably(ends.1, to, &self.inner_bow_and_outer_bows(rail))?;
+                self.move_dot_infringably(
+                    ends.0.into(),
+                    from,
+                    &self.inner_bow_and_outer_bows(rail),
+                )?;
+                self.move_dot_infringably(ends.1.into(), to, &self.inner_bow_and_outer_bows(rail))?;
             } else {
                 let core = primitive.core();
                 let from = guide
@@ -449,8 +453,12 @@ impl Layout {
                 let to = guide
                     .head_around_dot_segment(&to_head.into(), core.into(), cw, 6.0)?
                     .end_point();
-                self.move_dot_infringably(ends.0, from, &self.inner_bow_and_outer_bows(rail))?;
-                self.move_dot_infringably(ends.1, to, &self.inner_bow_and_outer_bows(rail))?;
+                self.move_dot_infringably(
+                    ends.0.into(),
+                    from,
+                    &self.inner_bow_and_outer_bows(rail),
+                )?;
+                self.move_dot_infringably(ends.1.into(), to, &self.inner_bow_and_outer_bows(rail))?;
             }
 
             maybe_rail = self.primitive(rail).outer();
@@ -793,35 +801,47 @@ impl Layout {
 
 #[debug_invariant(self.test_envelopes())]
 impl Layout {
-    pub fn move_dot(&mut self, dot: LooseDotIndex, to: Point) -> Result<(), Infringement> {
-        self.move_dot_infringably(
-            dot,
-            to,
-            &self.inner_bow_and_outer_bow(self.primitive(dot).bend()),
-        )
+    #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
+    #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
+    pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), Infringement> {
+        match dot {
+            DotIndex::Fixed(..) => self.move_dot_infringably(dot, to, &[]),
+            DotIndex::Loose(loose) => self.move_dot_infringably(
+                dot,
+                to,
+                &self.inner_bow_and_outer_bow(self.primitive(loose).bend()),
+            ),
+        }
     }
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    pub fn move_dot_infringably(
+    fn move_dot_infringably(
         &mut self,
-        dot: LooseDotIndex,
+        dot: DotIndex,
         to: Point,
         infringables: &[GeometryIndex],
     ) -> Result<(), Infringement> {
         self.remove_from_rtree_with_dependents(dot.into());
 
-        let mut dot_weight = self.primitive(dot).weight();
-        let old_weight = dot_weight;
+        let mut weight = *self.geometry.node_weight(dot.node_index()).unwrap();
+        let old_weight = weight;
 
-        dot_weight.circle.pos = to;
-        *self.geometry.node_weight_mut(dot.node_index()).unwrap() =
-            GeometryWeight::LooseDot(dot_weight);
+        match weight {
+            GeometryWeight::FixedDot(ref mut fixed) => {
+                fixed.circle.pos = to;
+            }
+            GeometryWeight::LooseDot(ref mut loose) => {
+                loose.circle.pos = to;
+            }
+            _ => unreachable!(),
+        }
+
+        *self.geometry.node_weight_mut(dot.node_index()).unwrap() = weight;
 
         if let Some(infringement) = self.detect_infringement_except(dot.into(), infringables) {
             // Restore original state.
-            *self.geometry.node_weight_mut(dot.node_index()).unwrap() =
-                GeometryWeight::LooseDot(old_weight);
+            *self.geometry.node_weight_mut(dot.node_index()).unwrap() = old_weight;
 
             self.insert_into_rtree_with_dependents(dot.into());
             return Err(infringement);

@@ -176,7 +176,7 @@ impl<'a> Draw<'a> {
     #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
     fn extend_head(&mut self, head: Head, to: Point) -> Result<Head, Infringement> {
         if let Head::Segbend(head) = head {
-            self.layout.move_dot(head.face, to)?;
+            self.layout.move_dot(head.face.into(), to)?;
             Ok(Head::Segbend(head))
         } else {
             Ok(head)
