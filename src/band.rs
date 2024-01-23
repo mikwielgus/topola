@@ -4,7 +4,7 @@ use crate::{
     graph::GetNodeIndex,
     layout::Layout,
     loose::{GetNextLoose, LooseIndex},
-    primitive::GetEnds,
+    primitive::{GetEnds, GetOtherEnd},
 };
 
 pub struct Band<'a> {
@@ -46,14 +46,18 @@ impl<'a> Band<'a> {
             maybe_loose = self.layout.loose(loose).next_loose(prev_prev);
         }
 
-        if let Some(LooseIndex::SeqSeg(seg)) = maybe_loose {
-            if let DotIndex::Fixed(dot) = self.layout.primitive(seg).ends().0 {
-                Some(dot)
-            } else {
-                unreachable!()
+        match prev {
+            Some(LooseIndex::LoneSeg(seg)) => {
+                Some(self.layout.primitive(seg).other_end(self.from()))
             }
-        } else {
-            None
+            Some(LooseIndex::SeqSeg(seg)) => {
+                if let DotIndex::Fixed(dot) = self.layout.primitive(seg).ends().0 {
+                    Some(dot)
+                } else {
+                    None
+                }
+            }
+            _ => unreachable!(),
         }
     }
 }

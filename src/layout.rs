@@ -92,8 +92,9 @@ impl Layout {
                 LooseIndex::Dot(dot) => {
                     dots.push(dot);
                 }
-                LooseIndex::LoneSeg(..) => {
-                    unreachable!();
+                LooseIndex::LoneSeg(seg) => {
+                    self.remove(seg.into());
+                    break;
                 }
                 LooseIndex::SeqSeg(seg) => {
                     segs.push(seg);

@@ -4,12 +4,13 @@ use spade::InsertionError;
 use thiserror::Error;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
-use crate::connectivity::BandIndex;
+use crate::connectivity::{BandIndex, GetNet};
 use crate::draw::DrawException;
-use crate::geometry::FixedDotIndex;
+use crate::geometry::{FixedDotIndex, FixedDotWeight};
 use crate::guide::HeadTrait;
 use crate::layout::Layout;
 
+use crate::math::Circle;
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
 
 use crate::rules::Rules;
@@ -147,13 +148,17 @@ impl Router {
         Ok(band)
     }
 
-    pub fn reroute(
+    pub fn reroute_band(
         &mut self,
-        _from: FixedDotIndex,
-        _to: Point,
-        _observer: &mut impl RouterObserver,
-    ) -> Result<Mesh, InsertionError> {
-        Ok(Mesh::new(&self.layout))
+        band: BandIndex,
+        to: Point,
+        observer: &mut impl RouterObserver,
+    ) -> Result<BandIndex, RoutingError> {
+        let from_dot = self.layout.band(band).from();
+        let to_dot = self.layout.band(band).to().unwrap();
+        self.layout.remove_band(band);
+        self.layout.move_dot(to_dot.into(), to).unwrap(); // TODO: Remove `.unwrap()`.
+        self.route_band(from_dot, to_dot, observer)
     }
 
     pub fn tracer<'a>(&'a mut self, mesh: &'a Mesh) -> Tracer {

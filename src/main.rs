@@ -28,6 +28,7 @@ mod tracer;
 mod triangulation;
 mod wraparoundable;
 
+use connectivity::BandIndex;
 use draw::DrawException;
 use geo::point;
 use geometry::{FixedDotIndex, FixedSegWeight, GeometryIndex, LooseDotIndex, MakePrimitive};
@@ -116,7 +117,6 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             self.font_context,
             RouterOrLayout::Layout(tracer.layout),
             None,
-            None,
             Some(tracer.mesh.clone()),
             &trace.path,
             &[],
@@ -134,7 +134,6 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             RouterOrLayout::Layout(tracer.layout),
-            None,
             None,
             Some(tracer.mesh.clone()),
             &path,
@@ -166,7 +165,6 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             RouterOrLayout::Layout(tracer.layout),
-            None,
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
@@ -510,7 +508,6 @@ fn main() -> Result<(), anyhow::Error> {
         RouterOrLayout::Layout(&router.layout),
         None,
         None,
-        None,
         &[],
         &[],
         &[],
@@ -543,7 +540,6 @@ fn main() -> Result<(), anyhow::Error> {
         RouterOrLayout::Layout(&router.layout),
         None,
         None,
-        None,
         &[],
         &[],
         &[],
@@ -565,7 +561,6 @@ fn main() -> Result<(), anyhow::Error> {
         RouterOrLayout::Layout(&router.layout),
         None,
         None,
-        None,
         &[],
         &[],
         &[],
@@ -581,6 +576,33 @@ fn main() -> Result<(), anyhow::Error> {
         &font_context,
         RouterOrLayout::Layout(&router.layout),
         None,
+        None,
+        &[],
+        &[],
+        &[],
+        -1,
+    );
+
+    render_times(
+        &mut event_pump,
+        &window,
+        &mut renderer,
+        &font_context,
+        RouterOrLayout::Router(&mut router),
+        Some(band2),
+        None,
+        &[],
+        &[],
+        &[],
+        -1,
+    );
+
+    render_times(
+        &mut event_pump,
+        &window,
+        &mut renderer,
+        &font_context,
+        RouterOrLayout::Layout(&router.layout),
         None,
         None,
         &[],
@@ -598,9 +620,8 @@ fn render_times(
     renderer: &mut Renderer<GLDevice>,
     font_context: &CanvasFontContext,
     mut router_or_layout: RouterOrLayout,
-    from: Option<FixedDotIndex>,
-    follower: Option<LooseDotIndex>,
-    mut mesh: Option<Mesh>,
+    maybe_band: Option<BandIndex>,
+    mut maybe_mesh: Option<Mesh>,
     path: &[VertexIndex],
     ghosts: &[Shape],
     highlighteds: &[GeometryIndex],
@@ -628,27 +649,22 @@ fn render_times(
 
         let layout = match router_or_layout {
             RouterOrLayout::Router(ref mut router) => {
-                if let Some(follower) = follower {
-                    let state = event_pump.mouse_state();
+                let state = event_pump.mouse_state();
 
-                    if let Some(from) = from {
-                        mesh = router
-                            .reroute(
-                                from,
-                                point! {x: state.x() as f64, y: state.y() as f64},
-                                &mut DebugRouterObserver::new(
-                                    event_pump,
-                                    window,
-                                    renderer,
-                                    font_context,
-                                ),
-                            )
-                            .ok();
-                    } else {
-                        let _ = router
-                            .layout
-                            .move_dot(follower.into(), (state.x() as f64, state.y() as f64).into());
-                    }
+                if let Some(band) = maybe_band {
+                    router
+                        .reroute_band(
+                            band,
+                            point! {x: state.x() as f64, y: state.y() as f64},
+                            &mut DebugRouterObserver::new(
+                                event_pump,
+                                window,
+                                renderer,
+                                font_context,
+                            ),
+                        )
+                        .ok();
+                    maybe_mesh = None;
                 }
 
                 &router.layout
@@ -672,7 +688,7 @@ fn render_times(
             render_shape(&mut canvas, &ghost, ColorU::new(75, 75, 150, 255));
         }
 
-        if let Some(ref mesh) = mesh {
+        if let Some(ref mesh) = maybe_mesh {
             for edge in mesh.edge_references() {
                 let start_point = edge.source().primitive(layout).shape().center();
                 let end_point = edge.target().primitive(layout).shape().center();
