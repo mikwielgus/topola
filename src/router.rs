@@ -1,4 +1,5 @@
 use geo::geometry::Point;
+use geo::EuclideanDistance;
 use petgraph::visit::EdgeRef;
 use spade::InsertionError;
 use thiserror::Error;
@@ -6,14 +7,16 @@ use thiserror::Error;
 use crate::astar::{astar, AstarStrategy, PathTracker};
 use crate::connectivity::{BandIndex, GetNet};
 use crate::draw::DrawException;
-use crate::geometry::{FixedDotIndex, FixedDotWeight};
+use crate::geometry::{FixedDotIndex, FixedDotWeight, GeometryIndex, MakePrimitive};
 use crate::guide::HeadTrait;
 use crate::layout::Layout;
 
 use crate::math::Circle;
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
 
+use crate::primitive::MakeShape;
 use crate::rules::Rules;
+use crate::shape::ShapeTrait;
 use crate::tracer::{Trace, Tracer};
 
 #[derive(Error, Debug, Clone, Copy)]
@@ -70,7 +73,7 @@ impl<'a, RO: RouterObserver> RouterAstarStrategy<'a, RO> {
     }
 }
 
-impl<'a, RO: RouterObserver> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'a, RO> {
+impl<'a, RO: RouterObserver> AstarStrategy<&Mesh, f64> for RouterAstarStrategy<'a, RO> {
     fn is_goal(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Mesh>) -> bool {
         let new_path = tracker.reconstruct_path_to(vertex);
 
@@ -82,27 +85,36 @@ impl<'a, RO: RouterObserver> AstarStrategy<&Mesh, u64> for RouterAstarStrategy<'
         self.tracer.finish(&mut self.trace, self.to, 5.0).is_ok()
     }
 
-    fn edge_cost(&mut self, edge: MeshEdgeReference) -> Option<u64> {
+    fn edge_cost(&mut self, edge: MeshEdgeReference) -> Option<f64> {
         self.observer.before_probe(&self.tracer, &self.trace, edge);
         if edge.target() == self.to.into() {
             return None;
         }
 
+        let before_probe_length = self.tracer.layout.band(self.trace.head.band()).length();
+
         let result = self.tracer.step(&mut self.trace, edge.target(), 5.0);
         self.observer
             .on_probe(&self.tracer, &self.trace, edge, result);
 
+        let probe_length = self.tracer.layout.band(self.trace.head.band()).length();
+
         if result.is_ok() {
             self.tracer.undo_step(&mut self.trace);
-            Some(1)
+            Some(probe_length - before_probe_length)
         } else {
             None
         }
     }
 
-    fn estimate_cost(&mut self, vertex: VertexIndex) -> u64 {
+    fn estimate_cost(&mut self, vertex: VertexIndex) -> f64 {
         self.observer.on_estimate(&self.tracer, vertex);
-        0
+        let start_point = GeometryIndex::from(vertex)
+            .primitive(self.tracer.layout)
+            .shape()
+            .center();
+        let end_point = self.tracer.layout.primitive(self.to).shape().center();
+        end_point.euclidean_distance(&start_point)
     }
 }
 

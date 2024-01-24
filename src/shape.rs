@@ -11,6 +11,7 @@ pub trait ShapeTrait {
     fn intersects(&self, other: &Shape) -> bool;
     fn envelope(&self) -> AABB<[f64; 2]>;
     fn width(&self) -> f64;
+    fn length(&self) -> f64;
 }
 
 #[enum_dispatch(ShapeTrait)]
@@ -71,6 +72,10 @@ impl ShapeTrait for DotShape {
 
     fn width(&self) -> f64 {
         self.c.r * 2.0
+    }
+
+    fn length(&self) -> f64 {
+        0.0
     }
 }
 
@@ -150,6 +155,10 @@ impl ShapeTrait for SegShape {
 
     fn width(&self) -> f64 {
         self.width
+    }
+
+    fn length(&self) -> f64 {
+        self.to.euclidean_distance(&self.from)
     }
 }
 
@@ -246,6 +255,17 @@ impl ShapeTrait for BendShape {
 
     fn width(&self) -> f64 {
         self.width
+    }
+
+    fn length(&self) -> f64 {
+        // We obtain the angle from the law of cosines and multiply with radius to get the length.
+        let d = self.to.euclidean_distance(&self.from);
+
+        if d > 0.0 {
+            (1.0 - d * d / (2.0 * d * d)).acos()
+        } else {
+            0.0
+        }
     }
 }
 

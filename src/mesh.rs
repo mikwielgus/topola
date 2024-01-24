@@ -33,6 +33,16 @@ pub enum TriangulationVertexIndex {
     FixedBend(FixedBendIndex),
 }
 
+impl From<VertexIndex> for GeometryIndex {
+    fn from(vertex: VertexIndex) -> Self {
+        match vertex {
+            VertexIndex::FixedDot(dot) => GeometryIndex::FixedDot(dot),
+            VertexIndex::FixedBend(bend) => GeometryIndex::FixedBend(bend),
+            VertexIndex::LooseBend(bend) => GeometryIndex::LooseBend(bend),
+        }
+    }
+}
+
 impl From<TriangulationVertexIndex> for VertexIndex {
     fn from(vertex: TriangulationVertexIndex) -> Self {
         match vertex {

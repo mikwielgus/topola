@@ -1,10 +1,11 @@
 use crate::{
     connectivity::{BandIndex, BandWeight, ConnectivityWeight, GetNet},
-    geometry::{DotIndex, FixedDotIndex},
+    geometry::{DotIndex, FixedDotIndex, GeometryIndex, MakePrimitive},
     graph::GetNodeIndex,
     layout::Layout,
     loose::{GetNextLoose, LooseIndex},
-    primitive::{GetEnds, GetOtherEnd},
+    primitive::{GetEnds, GetOtherEnd, MakeShape},
+    shape::ShapeTrait,
 };
 
 pub struct Band<'a> {
@@ -59,6 +60,25 @@ impl<'a> Band<'a> {
             }
             _ => unreachable!(),
         }
+    }
+
+    pub fn length(&self) -> f64 {
+        let mut maybe_loose = self.layout.primitive(self.from()).first_loose(self.index);
+        let mut prev = None;
+        let mut length = 0.0;
+
+        while let Some(loose) = maybe_loose {
+            length += GeometryIndex::from(loose)
+                .primitive(self.layout)
+                .shape()
+                .length();
+
+            let prev_prev = prev;
+            prev = maybe_loose;
+            maybe_loose = self.layout.loose(loose).next_loose(prev_prev);
+        }
+
+        length
     }
 }
 
