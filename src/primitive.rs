@@ -44,8 +44,8 @@ pub trait MakeShape {
 }
 
 #[enum_dispatch]
-pub trait GetDependents {
-    fn dependents(&self) -> Vec<GeometryIndex> {
+pub trait GetLegs {
+    fn legs(&self) -> Vec<GeometryIndex> {
         let mut v = vec![];
         v.extend(self.segs().into_iter().map(Into::<GeometryIndex>::into));
         v.extend(self.bends().into_iter().map(Into::<GeometryIndex>::into));
@@ -227,7 +227,7 @@ macro_rules! impl_loose_primitive {
     };
 }
 
-#[enum_dispatch(GetNet, GetWidth, GetLayout, GetConnectable, MakeShape, GetDependents)]
+#[enum_dispatch(GetNet, GetWidth, GetLayout, GetConnectable, MakeShape, GetLegs)]
 pub enum Primitive<'a> {
     FixedDot(FixedDot<'a>),
     LooseDot(LooseDot<'a>),
@@ -339,7 +339,7 @@ impl<'a> MakeShape for FixedDot<'a> {
     }
 }
 
-impl<'a> GetDependents for FixedDot<'a> {
+impl<'a> GetLegs for FixedDot<'a> {
     fn segs(&self) -> Vec<SegIndex> {
         self.adjacents()
             .into_iter()
@@ -416,7 +416,7 @@ impl<'a> MakeShape for LooseDot<'a> {
     }
 }
 
-impl<'a> GetDependents for LooseDot<'a> {
+impl<'a> GetLegs for LooseDot<'a> {
     fn segs(&self) -> Vec<SegIndex> {
         if let Some(seg) = self.seg() {
             vec![seg.into()]
@@ -444,7 +444,7 @@ impl<'a> MakeShape for FixedSeg<'a> {
     }
 }
 
-impl<'a> GetDependents for FixedSeg<'a> {}
+impl<'a> GetLegs for FixedSeg<'a> {}
 
 impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedSeg<'a> {
     fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
@@ -469,7 +469,7 @@ impl<'a> MakeShape for LoneLooseSeg<'a> {
     }
 }
 
-impl<'a> GetDependents for LoneLooseSeg<'a> {}
+impl<'a> GetLegs for LoneLooseSeg<'a> {}
 
 impl<'a> GetWidth for LoneLooseSeg<'a> {
     fn width(&self) -> f64 {
@@ -503,7 +503,7 @@ impl<'a> MakeShape for SeqLooseSeg<'a> {
     }
 }
 
-impl<'a> GetDependents for SeqLooseSeg<'a> {}
+impl<'a> GetLegs for SeqLooseSeg<'a> {}
 
 impl<'a> GetWidth for SeqLooseSeg<'a> {
     fn width(&self) -> f64 {
@@ -566,7 +566,7 @@ impl<'a> MakeShape for FixedBend<'a> {
     }
 }
 
-impl<'a> GetDependents for FixedBend<'a> {}
+impl<'a> GetLegs for FixedBend<'a> {}
 
 impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {
     fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
@@ -627,7 +627,7 @@ impl<'a> MakeShape for LooseBend<'a> {
     }
 }
 
-impl<'a> GetDependents for LooseBend<'a> {}
+impl<'a> GetLegs for LooseBend<'a> {}
 
 impl<'a> GetWidth for LooseBend<'a> {
     fn width(&self) -> f64 {

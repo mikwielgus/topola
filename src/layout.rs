@@ -24,7 +24,7 @@ use crate::guide::Guide;
 use crate::loose::{GetNextLoose, Loose, LooseIndex};
 use crate::math::NoTangents;
 use crate::primitive::{
-    GenericPrimitive, GetConnectable, GetCore, GetDependents, GetEnds, GetInnerOuter, GetOtherEnd,
+    GenericPrimitive, GetConnectable, GetCore, GetEnds, GetInnerOuter, GetLegs, GetOtherEnd,
     GetWeight, MakeShape,
 };
 use crate::segbend::Segbend;
@@ -823,7 +823,7 @@ impl Layout {
         to: Point,
         infringables: &[GeometryIndex],
     ) -> Result<(), Infringement> {
-        self.remove_from_rtree_with_dependents(dot.into());
+        self.remove_from_rtree_with_legs(dot.into());
 
         let mut weight = *self.geometry.node_weight(dot.node_index()).unwrap();
         let old_weight = weight;
@@ -844,11 +844,11 @@ impl Layout {
             // Restore original state.
             *self.geometry.node_weight_mut(dot.node_index()).unwrap() = old_weight;
 
-            self.insert_into_rtree_with_dependents(dot.into());
+            self.insert_into_rtree_with_legs(dot.into());
             return Err(infringement);
         }
 
-        self.insert_into_rtree_with_dependents(dot.into());
+        self.insert_into_rtree_with_legs(dot.into());
         Ok(())
     }
 
@@ -894,11 +894,11 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn insert_into_rtree_with_dependents(&mut self, node: GeometryIndex) {
+    fn insert_into_rtree_with_legs(&mut self, node: GeometryIndex) {
         self.insert_into_rtree(node);
 
-        for dependent in node.primitive(self).dependents() {
-            self.insert_into_rtree(dependent);
+        for leg in node.primitive(self).legs() {
+            self.insert_into_rtree(leg);
         }
     }
 
@@ -911,9 +911,9 @@ impl Layout {
 
     #[debug_ensures(self.geometry.node_count() == old(self.geometry.node_count()))]
     #[debug_ensures(self.geometry.edge_count() == old(self.geometry.edge_count()))]
-    fn remove_from_rtree_with_dependents(&mut self, node: GeometryIndex) {
-        for dependent in node.primitive(self).dependents() {
-            self.remove_from_rtree(dependent);
+    fn remove_from_rtree_with_legs(&mut self, node: GeometryIndex) {
+        for leg in node.primitive(self).legs() {
+            self.remove_from_rtree(leg);
         }
 
         self.remove_from_rtree(node);
