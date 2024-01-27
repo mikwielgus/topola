@@ -22,14 +22,14 @@ use crate::connectivity::{
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;
 use crate::layout::bend::BendIndex;
-use crate::layout::geometry::{BendWeight, DotWeight, Geometry, SegWeight};
+use crate::layout::dot::DotWeight;
+use crate::layout::geometry::{BendWeightTrait, DotWeightTrait, Geometry, SegWeightTrait};
 use crate::layout::seg::{SegIndex, SeqLooseSegWeight};
 use crate::layout::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     geometry::{
-        GeometryGraph, GeometryIndex, GeometryLabel, GeometryWeight, GetComponentIndex,
-        MakePrimitive, Retag,
+        GeometryIndex, GeometryLabel, GeometryWeight, GetComponentIndex, MakePrimitive, Retag,
     },
     seg::{FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex},
 };
@@ -75,7 +75,7 @@ pub struct AlreadyConnected(pub i64, pub GeometryIndex);
 pub struct Layout {
     rtree: RTree<RTreeWrapper>,
     connectivity: ConnectivityGraph,
-    geometry: Geometry<DotIndex, SegIndex, BendIndex>,
+    geometry: Geometry<GeometryWeight, DotWeight, DotIndex, SegIndex, BendIndex>,
 }
 
 #[debug_invariant(self.geometry.graph().node_count() == self.rtree.size())]
@@ -224,7 +224,7 @@ impl Layout {
 
     #[debug_ensures(ret.is_ok() -> self.geometry.graph().node_count() == old(self.geometry.graph().node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.geometry.graph().node_count() == old(self.geometry.graph().node_count()))]
-    fn add_dot_infringably<W: DotWeight>(
+    fn add_dot_infringably<W: DotWeightTrait<GeometryWeight>>(
         &mut self,
         weight: W,
         infringables: &[GeometryIndex],
@@ -604,7 +604,7 @@ impl Layout {
     #[debug_ensures(ret.is_ok() -> self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.geometry.graph().node_count() == old(self.geometry.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
-    fn add_seg_infringably<W: SegWeight>(
+    fn add_seg_infringably<W: SegWeightTrait<GeometryWeight>>(
         &mut self,
         from: DotIndex,
         to: DotIndex,
@@ -681,7 +681,7 @@ impl Layout {
     #[debug_ensures(ret.is_err() -> self.geometry.graph().node_count() == old(self.geometry.graph().node_count()))]
     #[debug_ensures(ret.is_ok() -> self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count() + 3))]
     #[debug_ensures(ret.is_err() -> self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
-    fn add_core_bend_infringably<W: BendWeight>(
+    fn add_core_bend_infringably<W: BendWeightTrait<GeometryWeight>>(
         &mut self,
         from: DotIndex,
         to: DotIndex,
@@ -703,7 +703,7 @@ impl Layout {
     #[debug_ensures(ret.is_err() -> self.geometry.graph().node_count() == old(self.geometry.graph().node_count()))]
     #[debug_ensures(ret.is_ok() -> self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count() + 4))]
     #[debug_ensures(ret.is_err() -> self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
-    fn add_outer_bend_infringably<W: BendWeight>(
+    fn add_outer_bend_infringably<W: BendWeightTrait<GeometryWeight>>(
         &mut self,
         from: LooseDotIndex,
         to: LooseDotIndex,
@@ -953,7 +953,7 @@ impl Layout {
 
     #[debug_ensures(self.geometry.graph().node_count() == old(self.geometry.graph().node_count()))]
     #[debug_ensures(self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
-    pub fn geometry(&self) -> &Geometry<DotIndex, SegIndex, BendIndex> {
+    pub fn geometry(&self) -> &Geometry<GeometryWeight, DotWeight, DotIndex, SegIndex, BendIndex> {
         &self.geometry
     }
 

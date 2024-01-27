@@ -44,6 +44,7 @@ pub trait GetWidth {
     fn width(&self) -> f64;
 }
 
+#[enum_dispatch]
 pub trait GetOffset {
     fn offset(&self) -> f64;
 }
@@ -96,8 +97,6 @@ macro_rules! impl_loose_weight {
     };
 }
 
-pub type GeometryGraph = StableDiGraph<GeometryWeight, GeometryLabel, usize>;
-
 #[enum_dispatch(Retag)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GeometryWeight {
@@ -134,33 +133,55 @@ pub trait MakePrimitive {
     fn primitive<'a>(&self, layout: &'a Layout) -> Primitive<'a>;
 }
 
-pub trait DotWeight: GetWidth + Into<GeometryWeight> + Copy {}
-pub trait SegWeight: Into<GeometryWeight> + Copy {}
-pub trait BendWeight: Into<GeometryWeight> + Copy {}
+pub trait DotWeightTrait<GW>: GetWidth + Into<GW> + Copy {}
+pub trait SegWeightTrait<GW>: Into<GW> + Copy {}
+pub trait BendWeightTrait<GW>: Into<GW> + Copy {}
 
 #[derive(Debug)]
-pub struct Geometry<DI: GetNodeIndex, SI: GetNodeIndex, BI: GetNodeIndex> {
-    pub graph: GeometryGraph,
+pub struct Geometry<
+    GW: TryInto<DW>,
+    DW: DotWeightTrait<GW>,
+    DI: GetNodeIndex,
+    SI: GetNodeIndex,
+    BI: GetNodeIndex,
+> {
+    pub graph: StableDiGraph<GW, GeometryLabel, usize>,
+    weight_marker: PhantomData<GW>,
+    dot_weight_marker: PhantomData<DW>,
     dot_index_marker: PhantomData<DI>,
     seg_index_marker: PhantomData<SI>,
     bend_index_marker: PhantomData<BI>,
 }
 
-impl<DI: GetNodeIndex, SI: GetNodeIndex, BI: GetNodeIndex> Geometry<DI, SI, BI> {
+impl<
+        GW: TryInto<DW>,
+        DW: DotWeightTrait<GW> + Copy,
+        DI: GetNodeIndex,
+        SI: GetNodeIndex,
+        BI: GetNodeIndex,
+    > Geometry<GW, DW, DI, SI, BI>
+{
     pub fn new() -> Self {
         Self {
             graph: StableDiGraph::default(),
+            weight_marker: PhantomData,
+            dot_weight_marker: PhantomData,
             dot_index_marker: PhantomData,
             seg_index_marker: PhantomData,
             bend_index_marker: PhantomData,
         }
     }
 
-    pub fn add_dot<W: DotWeight>(&mut self, weight: W) -> GenericIndex<W> {
+    pub fn add_dot<W: DotWeightTrait<GW>>(&mut self, weight: W) -> GenericIndex<W> {
         GenericIndex::<W>::new(self.graph.add_node(weight.into()))
     }
 
-    pub fn add_seg<W: SegWeight>(&mut self, from: DI, to: DI, weight: W) -> GenericIndex<W> {
+    pub fn add_seg<W: SegWeightTrait<GW>>(
+        &mut self,
+        from: DI,
+        to: DI,
+        weight: W,
+    ) -> GenericIndex<W> {
         let seg = GenericIndex::<W>::new(self.graph.add_node(weight.into()));
 
         self.graph
@@ -171,7 +192,7 @@ impl<DI: GetNodeIndex, SI: GetNodeIndex, BI: GetNodeIndex> Geometry<DI, SI, BI> 
         seg
     }
 
-    pub fn add_bend<W: BendWeight>(
+    pub fn add_bend<W: BendWeightTrait<GW>>(
         &mut self,
         from: DI,
         to: DI,
@@ -193,7 +214,7 @@ impl<DI: GetNodeIndex, SI: GetNodeIndex, BI: GetNodeIndex> Geometry<DI, SI, BI> 
         bend
     }
 
-    pub fn graph(&self) -> &GeometryGraph {
+    pub fn graph(&self) -> &StableDiGraph<GW, GeometryLabel, usize> {
         &self.graph
     }
 }

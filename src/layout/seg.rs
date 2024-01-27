@@ -9,7 +9,7 @@ use crate::{
 
 use super::geometry::{
     GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex, GetComponentIndexMut, GetWidth,
-    MakePrimitive, Retag, SegWeight,
+    MakePrimitive, Retag, SegWeightTrait,
 };
 use petgraph::stable_graph::NodeIndex;
 
@@ -38,7 +38,7 @@ pub struct FixedSegWeight {
 }
 
 impl_fixed_weight!(FixedSegWeight, FixedSeg, FixedSegIndex);
-impl SegWeight for FixedSegWeight {}
+impl SegWeightTrait<GeometryWeight> for FixedSegWeight {}
 
 impl GetWidth for FixedSegWeight {
     fn width(&self) -> f64 {
@@ -52,7 +52,7 @@ pub struct LoneLooseSegWeight {
 }
 
 impl_loose_weight!(LoneLooseSegWeight, LoneLooseSeg, LoneLooseSegIndex);
-impl SegWeight for LoneLooseSegWeight {}
+impl SegWeightTrait<GeometryWeight> for LoneLooseSegWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SeqLooseSegWeight {
@@ -60,4 +60,4 @@ pub struct SeqLooseSegWeight {
 }
 
 impl_loose_weight!(SeqLooseSegWeight, SeqLooseSeg, SeqLooseSegIndex);
-impl SegWeight for SeqLooseSegWeight {}
+impl SegWeightTrait<GeometryWeight> for SeqLooseSegWeight {}

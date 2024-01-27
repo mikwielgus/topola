@@ -9,7 +9,7 @@ use crate::{
 };
 
 use super::geometry::{
-    DotWeight, GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex,
+    DotWeightTrait, GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex,
     GetComponentIndexMut, GetWidth, MakePrimitive, Retag,
 };
 use petgraph::stable_graph::NodeIndex;
@@ -24,11 +24,41 @@ pub enum DotIndex {
 impl From<DotIndex> for GeometryIndex {
     fn from(dot: DotIndex) -> Self {
         match dot {
-            DotIndex::Fixed(fixed) => GeometryIndex::FixedDot(fixed),
-            DotIndex::Loose(loose) => GeometryIndex::LooseDot(loose),
+            DotIndex::Fixed(index) => GeometryIndex::FixedDot(index),
+            DotIndex::Loose(index) => GeometryIndex::LooseDot(index),
         }
     }
 }
+
+#[enum_dispatch(GetWidth)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum DotWeight {
+    Fixed(FixedDotWeight),
+    Loose(LooseDotWeight),
+}
+
+impl From<DotWeight> for GeometryWeight {
+    fn from(dot: DotWeight) -> Self {
+        match dot {
+            DotWeight::Fixed(weight) => GeometryWeight::FixedDot(weight),
+            DotWeight::Loose(weight) => GeometryWeight::LooseDot(weight),
+        }
+    }
+}
+
+impl TryFrom<GeometryWeight> for DotWeight {
+    type Error = (); // TODO.
+
+    fn try_from(weight: GeometryWeight) -> Result<DotWeight, ()> {
+        match weight {
+            GeometryWeight::FixedDot(weight) => Ok(DotWeight::Fixed(weight)),
+            GeometryWeight::LooseDot(weight) => Ok(DotWeight::Loose(weight)),
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl DotWeightTrait<GeometryWeight> for DotWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedDotWeight {
@@ -37,7 +67,7 @@ pub struct FixedDotWeight {
 }
 
 impl_fixed_weight!(FixedDotWeight, FixedDot, FixedDotIndex);
-impl DotWeight for FixedDotWeight {}
+impl DotWeightTrait<GeometryWeight> for FixedDotWeight {}
 
 impl GetWidth for FixedDotWeight {
     fn width(&self) -> f64 {
@@ -52,7 +82,7 @@ pub struct LooseDotWeight {
 }
 
 impl_loose_weight!(LooseDotWeight, LooseDot, LooseDotIndex);
-impl DotWeight for LooseDotWeight {}
+impl DotWeightTrait<GeometryWeight> for LooseDotWeight {}
 
 impl GetWidth for LooseDotWeight {
     fn width(&self) -> f64 {

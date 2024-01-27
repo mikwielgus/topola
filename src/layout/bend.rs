@@ -8,7 +8,7 @@ use crate::{
 };
 
 use super::geometry::{
-    BendWeight, GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex,
+    BendWeightTrait, GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex,
     GetComponentIndexMut, GetOffset, GetWidth, MakePrimitive, Retag,
 };
 use petgraph::stable_graph::NodeIndex;
@@ -37,7 +37,7 @@ pub struct FixedBendWeight {
 }
 
 impl_fixed_weight!(FixedBendWeight, FixedBend, FixedBendIndex);
-impl BendWeight for FixedBendWeight {}
+impl BendWeightTrait<GeometryWeight> for FixedBendWeight {}
 
 impl GetWidth for FixedBendWeight {
     fn width(&self) -> f64 {
@@ -59,4 +59,4 @@ impl GetOffset for LooseBendWeight {
 }
 
 impl_loose_weight!(LooseBendWeight, LooseBend, LooseBendIndex);
-impl BendWeight for LooseBendWeight {}
+impl BendWeightTrait<GeometryWeight> for LooseBendWeight {}
