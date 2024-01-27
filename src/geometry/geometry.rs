@@ -1,18 +1,21 @@
+use contracts::debug_invariant;
 use enum_dispatch::enum_dispatch;
+use geo::Point;
 use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 
 use crate::{
     connectivity::{BandIndex, ComponentIndex},
+    graph::{GenericIndex, GetNodeIndex},
     layout::Layout,
     primitive::Primitive,
 };
 
 use super::{
-    bend::{FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
-    dot::{FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+    bend::{BendWeight, FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
+    dot::{DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     seg::{
-        FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
-        SeqLooseSegWeight,
+        FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegWeight,
+        SeqLooseSegIndex, SeqLooseSegWeight,
     },
 };
 
@@ -127,4 +130,63 @@ pub enum GeometryLabel {
 #[enum_dispatch]
 pub trait MakePrimitive {
     fn primitive<'a>(&self, layout: &'a Layout) -> Primitive<'a>;
+}
+
+#[derive(Debug)]
+pub struct Geometry {
+    pub graph: GeometryGraph,
+}
+
+impl Geometry {
+    pub fn new() -> Self {
+        Self {
+            graph: StableDiGraph::default(),
+        }
+    }
+
+    pub fn add_dot<W: DotWeight>(&mut self, weight: W) -> GenericIndex<W> {
+        GenericIndex::<W>::new(self.graph.add_node(weight.into()))
+    }
+
+    pub fn add_seg<W: SegWeight>(
+        &mut self,
+        from: impl GetNodeIndex,
+        to: impl GetNodeIndex,
+        weight: W,
+    ) -> GenericIndex<W> {
+        let seg = GenericIndex::<W>::new(self.graph.add_node(weight.into()));
+
+        self.graph
+            .update_edge(from.node_index(), seg.node_index(), GeometryLabel::Adjacent);
+        self.graph
+            .update_edge(seg.node_index(), to.node_index(), GeometryLabel::Adjacent);
+
+        seg
+    }
+
+    pub fn add_bend<W: BendWeight>(
+        &mut self,
+        from: impl GetNodeIndex,
+        to: impl GetNodeIndex,
+        core: impl GetNodeIndex,
+        weight: W,
+    ) -> GenericIndex<W> {
+        let bend = GenericIndex::<W>::new(self.graph.add_node(weight.into()));
+
+        self.graph.update_edge(
+            from.node_index(),
+            bend.node_index(),
+            GeometryLabel::Adjacent,
+        );
+        self.graph
+            .update_edge(bend.node_index(), to.node_index(), GeometryLabel::Adjacent);
+        self.graph
+            .update_edge(bend.node_index(), core.node_index(), GeometryLabel::Core);
+
+        bend
+    }
+
+    pub fn graph(&self) -> &GeometryGraph {
+        &self.graph
+    }
 }

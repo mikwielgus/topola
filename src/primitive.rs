@@ -89,14 +89,17 @@ pub trait GetFirstRail: GetLayout + GetNodeIndex {
     fn first_rail(&self) -> Option<LooseBendIndex> {
         self.layout()
             .geometry()
+            .graph()
             .neighbors_directed(self.node_index(), Incoming)
             .filter(|node| {
                 matches!(
                     self.layout()
                         .geometry()
+                        .graph()
                         .edge_weight(
                             self.layout()
                                 .geometry()
+                                .graph()
                                 .find_edge(*node, self.node_index())
                                 .unwrap()
                         )
@@ -113,14 +116,17 @@ pub trait GetCore: GetLayout + GetNodeIndex {
     fn core(&self) -> FixedDotIndex {
         self.layout()
             .geometry()
+            .graph()
             .neighbors(self.node_index())
             .filter(|node| {
                 matches!(
                     self.layout()
                         .geometry()
+                        .graph()
                         .edge_weight(
                             self.layout()
                                 .geometry()
+                                .graph()
                                 .find_edge(self.node_index(), *node)
                                 .unwrap()
                         )
@@ -138,14 +144,17 @@ pub trait GetInnerOuter: GetLayout + GetNodeIndex {
     fn inner(&self) -> Option<LooseBendIndex> {
         self.layout()
             .geometry()
+            .graph()
             .neighbors_directed(self.node_index(), Incoming)
             .filter(|node| {
                 matches!(
                     self.layout()
                         .geometry()
+                        .graph()
                         .edge_weight(
                             self.layout()
                                 .geometry()
+                                .graph()
                                 .find_edge(*node, self.node_index())
                                 .unwrap()
                         )
@@ -160,14 +169,17 @@ pub trait GetInnerOuter: GetLayout + GetNodeIndex {
     fn outer(&self) -> Option<LooseBendIndex> {
         self.layout()
             .geometry()
+            .graph()
             .neighbors_directed(self.node_index(), Outgoing)
             .filter(|node| {
                 matches!(
                     self.layout()
                         .geometry()
+                        .graph()
                         .edge_weight(
                             self.layout()
                                 .geometry()
+                                .graph()
                                 .find_edge(self.node_index(), *node)
                                 .unwrap()
                         )
@@ -258,6 +270,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
         *self
             .layout
             .geometry()
+            .graph()
             .node_weight(self.index.node_index())
             .unwrap()
     }
@@ -265,14 +278,17 @@ impl<'a, W> GenericPrimitive<'a, W> {
     fn adjacents(&self) -> Vec<NodeIndex<usize>> {
         self.layout
             .geometry()
+            .graph()
             .neighbors_undirected(self.index.node_index())
             .filter(|node| {
                 matches!(
                     self.layout
                         .geometry()
+                        .graph()
                         .edge_weight(
                             self.layout
                                 .geometry()
+                                .graph()
                                 .find_edge_undirected(self.index.node_index(), *node)
                                 .unwrap()
                                 .0,
@@ -324,7 +340,7 @@ impl_fixed_primitive!(FixedDot, FixedDotWeight);
 impl<'a> FixedDot<'a> {
     pub fn first_loose(&self, _band: BandIndex) -> Option<LooseIndex> {
         self.adjacents().into_iter().find_map(|node| {
-            let weight = self.layout.geometry().node_weight(node).unwrap();
+            let weight = self.layout.geometry().graph().node_weight(node).unwrap();
             if matches!(weight, GeometryWeight::LoneLooseSeg(..)) {
                 Some(LoneLooseSegIndex::new(node).into())
             } else if matches!(weight, GeometryWeight::SeqLooseSeg(..)) {
@@ -349,7 +365,7 @@ impl<'a> GetLegs for FixedDot<'a> {
         self.adjacents()
             .into_iter()
             .filter_map(
-                |node| match self.layout.geometry().node_weight(node).unwrap() {
+                |node| match self.layout.geometry().graph().node_weight(node).unwrap() {
                     GeometryWeight::FixedSeg(_seg) => {
                         Some(SegIndex::Fixed(FixedSegIndex::new(node)))
                     }
@@ -370,7 +386,7 @@ impl<'a> GetLegs for FixedDot<'a> {
             .into_iter()
             .filter(|node| {
                 matches!(
-                    self.layout.geometry().node_weight(*node).unwrap(),
+                    self.layout.geometry().graph().node_weight(*node).unwrap(),
                     GeometryWeight::FixedBend(..)
                 )
             })
@@ -390,7 +406,7 @@ impl<'a> LooseDot<'a> {
             .into_iter()
             .filter(|node| {
                 matches!(
-                    self.layout.geometry().node_weight(*node).unwrap(),
+                    self.layout.geometry().graph().node_weight(*node).unwrap(),
                     GeometryWeight::SeqLooseSeg(..)
                 )
             })
@@ -403,7 +419,7 @@ impl<'a> LooseDot<'a> {
             .into_iter()
             .filter(|node| {
                 matches!(
-                    self.layout.geometry().node_weight(*node).unwrap(),
+                    self.layout.geometry().graph().node_weight(*node).unwrap(),
                     GeometryWeight::LooseBend(..)
                 )
             })
@@ -519,10 +535,12 @@ impl<'a> GetWidth for SeqLooseSeg<'a> {
 impl<'a> GetEnds<DotIndex, LooseDotIndex> for SeqLooseSeg<'a> {
     fn ends(&self) -> (DotIndex, LooseDotIndex) {
         let v = self.adjacents();
-        if let GeometryWeight::FixedDot(..) = self.layout.geometry().node_weight(v[0]).unwrap() {
+        if let GeometryWeight::FixedDot(..) =
+            self.layout.geometry().graph().node_weight(v[0]).unwrap()
+        {
             (FixedDotIndex::new(v[0]).into(), LooseDotIndex::new(v[1]))
         } else if let GeometryWeight::FixedDot(..) =
-            self.layout.geometry().node_weight(v[1]).unwrap()
+            self.layout.geometry().graph().node_weight(v[1]).unwrap()
         {
             (FixedDotIndex::new(v[1]).into(), LooseDotIndex::new(v[0]))
         } else {

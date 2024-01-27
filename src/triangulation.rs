@@ -27,7 +27,7 @@ impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scal
             index_marker: PhantomData,
         };
         this.vertex_to_handle
-            .resize(layout.geometry().node_bound(), None);
+            .resize(layout.geometry().graph().node_bound(), None);
         this
     }
 
