@@ -31,7 +31,9 @@ mod wraparoundable;
 use connectivity::BandIndex;
 use draw::DrawException;
 use geo::point;
-use geometry::{FixedDotIndex, FixedSegWeight, GeometryIndex, LooseDotIndex, MakePrimitive};
+use geometry::dot::FixedDotWeight;
+use geometry::geometry::{GeometryIndex, MakePrimitive};
+use geometry::seg::FixedSegWeight;
 use layout::{Infringement, Layout, LayoutException};
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
@@ -59,7 +61,6 @@ use pathfinder_resources::embedded::EmbeddedResourceLoader;
 use std::time::Duration;
 use tracer::{Trace, Tracer};
 
-use crate::geometry::FixedDotWeight;
 use crate::math::Circle;
 use crate::router::Router;
 

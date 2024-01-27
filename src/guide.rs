@@ -3,7 +3,11 @@ use geo::Line;
 
 use crate::{
     connectivity::BandIndex,
-    geometry::{BendIndex, DotIndex, FixedDotIndex, GetBandIndex, LooseDotIndex, MakePrimitive},
+    geometry::{
+        bend::BendIndex,
+        dot::{DotIndex, FixedDotIndex, LooseDotIndex},
+        geometry::{GetBandIndex, MakePrimitive},
+    },
     layout::Layout,
     math::{self, Circle, NoTangents},
     primitive::{GetCore, GetInnerOuter, GetOtherEnd, GetWeight, MakeShape},

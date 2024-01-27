@@ -13,11 +13,18 @@ use crate::connectivity::{
     BandIndex, BandWeight, ComponentIndex, ComponentWeight, ConnectivityGraph, ConnectivityLabel,
     ConnectivityWeight, GetNet,
 };
+use crate::geometry::seg::SeqLooseSegWeight;
 use crate::geometry::{
-    BendWeight, DotIndex, DotWeight, FixedBendIndex, FixedDotIndex, FixedDotWeight, FixedSegIndex,
-    FixedSegWeight, GeometryGraph, GeometryIndex, GeometryLabel, GeometryWeight, GetComponentIndex,
-    LoneLooseSegIndex, LoneLooseSegWeight, LooseBendIndex, LooseBendWeight, LooseDotIndex,
-    LooseDotWeight, MakePrimitive, Retag, SegWeight, SeqLooseSegIndex, SeqLooseSegWeight,
+    bend::{BendWeight, FixedBendIndex, LooseBendIndex, LooseBendWeight},
+    dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+    geometry::{
+        GeometryGraph, GeometryIndex, GeometryLabel, GeometryWeight, GetComponentIndex,
+        MakePrimitive, Retag,
+    },
+    seg::{
+        FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegWeight,
+        SeqLooseSegIndex,
+    },
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;

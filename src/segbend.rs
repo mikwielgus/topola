@@ -1,5 +1,7 @@
 use crate::{
-    geometry::{GeometryIndex, LooseBendIndex, LooseDotIndex, SeqLooseSegIndex},
+    geometry::{
+        bend::LooseBendIndex, dot::LooseDotIndex, geometry::GeometryIndex, seg::SeqLooseSegIndex,
+    },
     layout::Layout,
     primitive::{GetEnds, GetInterior, GetOtherEnd, LooseBend, LooseDot},
 };

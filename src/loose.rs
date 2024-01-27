@@ -3,8 +3,10 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     geometry::{
-        DotIndex, GeometryIndex, LoneLooseSegIndex, LooseBendIndex, LooseDotIndex, MakePrimitive,
-        SeqLooseSegIndex,
+        bend::LooseBendIndex,
+        dot::{DotIndex, LooseDotIndex},
+        geometry::{GeometryIndex, MakePrimitive},
+        seg::{LoneLooseSegIndex, SeqLooseSegIndex},
     },
     graph::GetNodeIndex,
     layout::Layout,

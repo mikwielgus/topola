@@ -3,7 +3,9 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     geometry::{
-        BendIndex, FixedBendIndex, FixedDotIndex, GeometryIndex, LooseBendIndex, MakePrimitive,
+        bend::{BendIndex, FixedBendIndex, LooseBendIndex},
+        dot::FixedDotIndex,
+        geometry::{GeometryIndex, MakePrimitive},
     },
     graph::GetNodeIndex,
     layout::Layout,

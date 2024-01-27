@@ -4,8 +4,10 @@ use thiserror::Error;
 
 use crate::{
     geometry::{
-        BendIndex, DotIndex, FixedDotIndex, GetBandIndex, LoneLooseSegWeight, LooseBendWeight,
-        LooseDotIndex, LooseDotWeight, MakePrimitive, SeqLooseSegWeight,
+        bend::{BendIndex, LooseBendWeight},
+        dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
+        geometry::{GetBandIndex, MakePrimitive},
+        seg::{LoneLooseSegWeight, SeqLooseSegWeight},
     },
     guide::{Guide, Head, HeadTrait, SegbendHead},
     layout::{Infringement, Layout, LayoutException},

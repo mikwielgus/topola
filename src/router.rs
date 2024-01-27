@@ -5,13 +5,15 @@ use spade::InsertionError;
 use thiserror::Error;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
-use crate::connectivity::{BandIndex, GetNet};
+use crate::connectivity::BandIndex;
 use crate::draw::DrawException;
-use crate::geometry::{FixedDotIndex, FixedDotWeight, GeometryIndex, MakePrimitive};
+use crate::geometry::{
+    dot::FixedDotIndex,
+    geometry::{GeometryIndex, MakePrimitive},
+};
 use crate::guide::HeadTrait;
 use crate::layout::Layout;
 
-use crate::math::Circle;
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
 
 use crate::primitive::MakeShape;

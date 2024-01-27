@@ -2,7 +2,7 @@ use contracts::debug_ensures;
 
 use crate::{
     draw::{Draw, DrawException},
-    geometry::{FixedDotIndex, LooseBendIndex},
+    geometry::{bend::LooseBendIndex, dot::FixedDotIndex},
     guide::{BareHead, Head, SegbendHead},
     layout::Layout,
     mesh::{Mesh, VertexIndex},

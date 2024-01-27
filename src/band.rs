@@ -1,6 +1,9 @@
 use crate::{
     connectivity::{BandIndex, BandWeight, ConnectivityWeight, GetNet},
-    geometry::{DotIndex, FixedDotIndex, GeometryIndex, MakePrimitive},
+    geometry::{
+        dot::{DotIndex, FixedDotIndex},
+        geometry::{GeometryIndex, MakePrimitive},
+    },
     graph::GetNodeIndex,
     layout::Layout,
     loose::{GetNextLoose, LooseIndex},

@@ -5,12 +5,17 @@ use petgraph::stable_graph::NodeIndex;
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::connectivity::{BandIndex, ComponentIndex, GetNet};
-use crate::geometry::{
-    BendIndex, DotIndex, FixedBendIndex, FixedBendWeight, FixedDotIndex, FixedDotWeight,
-    FixedSegIndex, FixedSegWeight, GeometryIndex, GeometryLabel, GeometryWeight, GetBandIndex,
-    GetComponentIndex, GetOffset, GetWidth, LoneLooseSegIndex, LoneLooseSegWeight, LooseBendIndex,
-    LooseBendWeight, LooseDotIndex, LooseDotWeight, MakePrimitive, Retag, SegIndex,
+use crate::geometry::seg::{
+    FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
     SeqLooseSegIndex, SeqLooseSegWeight,
+};
+use crate::geometry::{
+    bend::{BendIndex, FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
+    dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+    geometry::{
+        GeometryIndex, GeometryLabel, GeometryWeight, GetBandIndex, GetComponentIndex, GetOffset,
+        GetWidth, MakePrimitive, Retag,
+    },
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::Layout;
@@ -317,7 +322,7 @@ pub type FixedDot<'a> = GenericPrimitive<'a, FixedDotWeight>;
 impl_fixed_primitive!(FixedDot, FixedDotWeight);
 
 impl<'a> FixedDot<'a> {
-    pub fn first_loose(&self, band: BandIndex) -> Option<LooseIndex> {
+    pub fn first_loose(&self, _band: BandIndex) -> Option<LooseIndex> {
         self.adjacents().into_iter().find_map(|node| {
             let weight = self.layout.geometry().node_weight(node).unwrap();
             if matches!(weight, GeometryWeight::LoneLooseSeg(..)) {
@@ -345,13 +350,13 @@ impl<'a> GetLegs for FixedDot<'a> {
             .into_iter()
             .filter_map(
                 |node| match self.layout.geometry().node_weight(node).unwrap() {
-                    GeometryWeight::FixedSeg(seg) => {
+                    GeometryWeight::FixedSeg(_seg) => {
                         Some(SegIndex::Fixed(FixedSegIndex::new(node)))
                     }
-                    GeometryWeight::LoneLooseSeg(seg) => {
+                    GeometryWeight::LoneLooseSeg(_seg) => {
                         Some(SegIndex::LoneLoose(LoneLooseSegIndex::new(node).into()))
                     }
-                    GeometryWeight::SeqLooseSeg(seg) => {
+                    GeometryWeight::SeqLooseSeg(_seg) => {
                         Some(SegIndex::SeqLoose(SeqLooseSegIndex::new(node).into()))
                     }
                     _ => None,
