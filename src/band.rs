@@ -1,11 +1,11 @@
 use crate::{
     connectivity::{BandIndex, BandWeight, ConnectivityWeight, GetNet},
-    geometry::{
+    graph::GetNodeIndex,
+    layout::Layout,
+    layout::{
         dot::{DotIndex, FixedDotIndex},
         geometry::{GeometryIndex, MakePrimitive},
     },
-    graph::GetNodeIndex,
-    layout::Layout,
     loose::{GetNextLoose, LooseIndex},
     primitive::{GetEnds, GetOtherEnd, MakeShape},
     shape::ShapeTrait,

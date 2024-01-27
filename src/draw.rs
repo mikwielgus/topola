@@ -3,13 +3,13 @@ use geo::{EuclideanLength, Point};
 use thiserror::Error;
 
 use crate::{
-    geometry::{
+    guide::{Guide, Head, HeadTrait, SegbendHead},
+    layout::{
         bend::{BendIndex, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
         geometry::{GetBandIndex, MakePrimitive},
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
     },
-    guide::{Guide, Head, HeadTrait, SegbendHead},
     layout::{Infringement, Layout, LayoutException},
     math::{Circle, NoTangents},
     primitive::GetOtherEnd,

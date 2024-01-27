@@ -3,13 +3,13 @@ use enum_dispatch::enum_dispatch;
 use crate::{
     connectivity::{BandIndex, ComponentIndex},
     graph::GenericIndex,
-    layout::Layout,
+    layout::{GetNodeIndex, Layout},
     primitive::{GenericPrimitive, Primitive},
 };
 
 use super::geometry::{
-    GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex, GetComponentIndexMut,
-    GetOffset, GetWidth, MakePrimitive, Retag,
+    BendWeight, GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex,
+    GetComponentIndexMut, GetOffset, GetWidth, MakePrimitive, Retag,
 };
 use petgraph::stable_graph::NodeIndex;
 
@@ -28,8 +28,6 @@ impl From<BendIndex> for GeometryIndex {
         }
     }
 }
-
-pub trait BendWeight: Into<GeometryWeight> + Copy {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedBendWeight {

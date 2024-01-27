@@ -1,3 +1,5 @@
+use std::marker::PhantomData;
+
 use contracts::debug_invariant;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
@@ -11,11 +13,11 @@ use crate::{
 };
 
 use super::{
-    bend::{BendWeight, FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
-    dot::{DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+    bend::{FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
+    dot::{FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     seg::{
-        FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegWeight,
-        SeqLooseSegIndex, SeqLooseSegWeight,
+        FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
+        SeqLooseSegWeight,
     },
 };
 
@@ -132,15 +134,25 @@ pub trait MakePrimitive {
     fn primitive<'a>(&self, layout: &'a Layout) -> Primitive<'a>;
 }
 
+pub trait DotWeight: GetWidth + Into<GeometryWeight> + Copy {}
+pub trait SegWeight: Into<GeometryWeight> + Copy {}
+pub trait BendWeight: Into<GeometryWeight> + Copy {}
+
 #[derive(Debug)]
-pub struct Geometry {
+pub struct Geometry<DI: GetNodeIndex, SI: GetNodeIndex, BI: GetNodeIndex> {
     pub graph: GeometryGraph,
+    dot_index_marker: PhantomData<DI>,
+    seg_index_marker: PhantomData<SI>,
+    bend_index_marker: PhantomData<BI>,
 }
 
-impl Geometry {
+impl<DI: GetNodeIndex, SI: GetNodeIndex, BI: GetNodeIndex> Geometry<DI, SI, BI> {
     pub fn new() -> Self {
         Self {
             graph: StableDiGraph::default(),
+            dot_index_marker: PhantomData,
+            seg_index_marker: PhantomData,
+            bend_index_marker: PhantomData,
         }
     }
 
@@ -148,12 +160,7 @@ impl Geometry {
         GenericIndex::<W>::new(self.graph.add_node(weight.into()))
     }
 
-    pub fn add_seg<W: SegWeight>(
-        &mut self,
-        from: impl GetNodeIndex,
-        to: impl GetNodeIndex,
-        weight: W,
-    ) -> GenericIndex<W> {
+    pub fn add_seg<W: SegWeight>(&mut self, from: DI, to: DI, weight: W) -> GenericIndex<W> {
         let seg = GenericIndex::<W>::new(self.graph.add_node(weight.into()));
 
         self.graph
@@ -166,9 +173,9 @@ impl Geometry {
 
     pub fn add_bend<W: BendWeight>(
         &mut self,
-        from: impl GetNodeIndex,
-        to: impl GetNodeIndex,
-        core: impl GetNodeIndex,
+        from: DI,
+        to: DI,
+        core: DI,
         weight: W,
     ) -> GenericIndex<W> {
         let bend = GenericIndex::<W>::new(self.graph.add_node(weight.into()));

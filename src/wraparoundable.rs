@@ -2,13 +2,13 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
 use crate::{
-    geometry::{
+    graph::GetNodeIndex,
+    layout::Layout,
+    layout::{
         bend::{BendIndex, FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
         geometry::{GeometryIndex, MakePrimitive},
     },
-    graph::GetNodeIndex,
-    layout::Layout,
     primitive::{
         FixedBend, FixedDot, GetFirstRail, GetInnerOuter, GetLayout, LooseBend, Primitive,
     },

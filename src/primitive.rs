@@ -5,11 +5,13 @@ use petgraph::stable_graph::NodeIndex;
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::connectivity::{BandIndex, ComponentIndex, GetNet};
-use crate::geometry::seg::{
+use crate::graph::{GenericIndex, GetNodeIndex};
+use crate::layout::seg::{
     FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
     SeqLooseSegIndex, SeqLooseSegWeight,
 };
-use crate::geometry::{
+use crate::layout::Layout;
+use crate::layout::{
     bend::{BendIndex, FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     geometry::{
@@ -17,8 +19,6 @@ use crate::geometry::{
         GetWidth, MakePrimitive, Retag,
     },
 };
-use crate::graph::{GenericIndex, GetNodeIndex};
-use crate::layout::Layout;
 use crate::loose::{Loose, LooseIndex};
 use crate::math::{self, Circle};
 use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};

@@ -7,12 +7,12 @@ use thiserror::Error;
 use crate::astar::{astar, AstarStrategy, PathTracker};
 use crate::connectivity::BandIndex;
 use crate::draw::DrawException;
-use crate::geometry::{
+use crate::guide::HeadTrait;
+use crate::layout::Layout;
+use crate::layout::{
     dot::FixedDotIndex,
     geometry::{GeometryIndex, MakePrimitive},
 };
-use crate::guide::HeadTrait;
-use crate::layout::Layout;
 
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
 

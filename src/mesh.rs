@@ -10,13 +10,13 @@ use spade::{HasPosition, InsertionError, Point2};
 use crate::primitive::{GetCore, Primitive};
 use crate::triangulation::TriangulationEdgeReference;
 use crate::{
-    geometry::{
+    graph::GetNodeIndex,
+    layout::Layout,
+    layout::{
         bend::{FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
         geometry::{GeometryIndex, MakePrimitive},
     },
-    graph::GetNodeIndex,
-    layout::Layout,
     primitive::MakeShape,
     shape::ShapeTrait,
     triangulation::{GetVertexIndex, Triangulation},

@@ -1,7 +1,7 @@
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::StableDiGraph;
 
-use crate::{geometry::dot::FixedDotIndex, graph::GenericIndex};
+use crate::{graph::GenericIndex, layout::dot::FixedDotIndex};
 
 #[enum_dispatch]
 pub trait GetNet {

@@ -1,3 +1,9 @@
+#[macro_use]
+pub mod geometry;
+pub mod bend;
+pub mod dot;
+pub mod seg;
+
 use contracts::{debug_ensures, debug_invariant};
 use enum_dispatch::enum_dispatch;
 use geo::Point;
@@ -13,22 +19,20 @@ use crate::connectivity::{
     BandIndex, BandWeight, ComponentIndex, ComponentWeight, ConnectivityGraph, ConnectivityLabel,
     ConnectivityWeight, GetNet,
 };
-use crate::geometry::geometry::Geometry;
-use crate::geometry::seg::SeqLooseSegWeight;
-use crate::geometry::{
-    bend::{BendWeight, FixedBendIndex, LooseBendIndex, LooseBendWeight},
-    dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+use crate::graph::{GenericIndex, GetNodeIndex};
+use crate::guide::Guide;
+use crate::layout::bend::BendIndex;
+use crate::layout::geometry::{BendWeight, DotWeight, Geometry, SegWeight};
+use crate::layout::seg::{SegIndex, SeqLooseSegWeight};
+use crate::layout::{
+    bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
+    dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     geometry::{
         GeometryGraph, GeometryIndex, GeometryLabel, GeometryWeight, GetComponentIndex,
         MakePrimitive, Retag,
     },
-    seg::{
-        FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegWeight,
-        SeqLooseSegIndex,
-    },
+    seg::{FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex},
 };
-use crate::graph::{GenericIndex, GetNodeIndex};
-use crate::guide::Guide;
 use crate::loose::{GetNextLoose, Loose, LooseIndex};
 use crate::math::NoTangents;
 use crate::primitive::{
@@ -71,7 +75,7 @@ pub struct AlreadyConnected(pub i64, pub GeometryIndex);
 pub struct Layout {
     rtree: RTree<RTreeWrapper>,
     connectivity: ConnectivityGraph,
-    geometry: Geometry,
+    geometry: Geometry<DotIndex, SegIndex, BendIndex>,
 }
 
 #[debug_invariant(self.geometry.graph().node_count() == self.rtree.size())]
@@ -246,7 +250,7 @@ impl Layout {
         to: FixedDotIndex,
         weight: FixedSegWeight,
     ) -> Result<FixedSegIndex, Infringement> {
-        self.add_seg_infringably(from, to, weight, &[])
+        self.add_seg_infringably(from.into(), to.into(), weight, &[])
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry.graph().node_count() == old(self.geometry.graph().node_count() + 4))]
@@ -518,7 +522,7 @@ impl Layout {
     ) -> Result<Segbend, LayoutException> {
         let seg_to = self.add_dot_infringably(dot_weight, infringables)?;
         let seg = self
-            .add_seg_infringably(from, seg_to, seg_weight, infringables)
+            .add_seg_infringably(from, seg_to.into(), seg_weight, infringables)
             .map_err(|err| {
                 self.remove(seg_to.into());
                 err
@@ -557,7 +561,7 @@ impl Layout {
         to: FixedDotIndex,
         weight: LoneLooseSegWeight,
     ) -> Result<LoneLooseSegIndex, Infringement> {
-        let seg = self.add_seg_infringably(from, to, weight, &[])?;
+        let seg = self.add_seg_infringably(from.into(), to.into(), weight, &[])?;
 
         self.connectivity.update_edge(
             self.primitive(from).component().node_index(),
@@ -583,7 +587,7 @@ impl Layout {
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
     ) -> Result<SeqLooseSegIndex, Infringement> {
-        let seg = self.add_seg_infringably(from, to, weight, &[])?;
+        let seg = self.add_seg_infringably(from, to.into(), weight, &[])?;
 
         if let DotIndex::Fixed(dot) = from {
             self.connectivity.update_edge(
@@ -602,8 +606,8 @@ impl Layout {
     #[debug_ensures(ret.is_err() -> self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
     fn add_seg_infringably<W: SegWeight>(
         &mut self,
-        from: impl GetNodeIndex,
-        to: impl GetNodeIndex,
+        from: DotIndex,
+        to: DotIndex,
         weight: W,
         infringables: &[GeometryIndex],
     ) -> Result<GenericIndex<W>, Infringement>
@@ -662,7 +666,7 @@ impl Layout {
 
         match around {
             WraparoundableIndex::FixedDot(core) => self
-                .add_core_bend_infringably(from, to, core, weight, infringables)
+                .add_core_bend_infringably(from.into(), to.into(), core, weight, infringables)
                 .map_err(Into::into),
             WraparoundableIndex::FixedBend(around) => self
                 .add_outer_bend_infringably(from, to, around, weight, infringables)
@@ -679,8 +683,8 @@ impl Layout {
     #[debug_ensures(ret.is_err() -> self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
     fn add_core_bend_infringably<W: BendWeight>(
         &mut self,
-        from: impl GetNodeIndex,
-        to: impl GetNodeIndex,
+        from: DotIndex,
+        to: DotIndex,
         core: FixedDotIndex,
         weight: W,
         infringables: &[GeometryIndex],
@@ -688,7 +692,7 @@ impl Layout {
     where
         GenericIndex<W>: Into<GeometryIndex> + Copy,
     {
-        let bend = self.geometry.add_bend(from, to, core, weight);
+        let bend = self.geometry.add_bend(from, to, core.into(), weight);
 
         self.insert_into_rtree(bend.into());
         self.fail_and_remove_if_infringes_except(bend.into(), infringables)?;
@@ -701,8 +705,8 @@ impl Layout {
     #[debug_ensures(ret.is_err() -> self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
     fn add_outer_bend_infringably<W: BendWeight>(
         &mut self,
-        from: impl GetNodeIndex,
-        to: impl GetNodeIndex,
+        from: LooseDotIndex,
+        to: LooseDotIndex,
         inner: impl GetNodeIndex,
         weight: W,
         infringables: &[GeometryIndex],
@@ -733,7 +737,9 @@ impl Layout {
             .first()
             .unwrap();
 
-        let bend = self.geometry.add_bend(from, to, core, weight);
+        let bend = self
+            .geometry
+            .add_bend(from.into(), to.into(), core.into(), weight);
 
         self.geometry.graph.update_edge(
             inner.node_index(),
@@ -947,7 +953,7 @@ impl Layout {
 
     #[debug_ensures(self.geometry.graph().node_count() == old(self.geometry.graph().node_count()))]
     #[debug_ensures(self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
-    pub fn geometry(&self) -> &Geometry {
+    pub fn geometry(&self) -> &Geometry<DotIndex, SegIndex, BendIndex> {
         &self.geometry
     }
 
