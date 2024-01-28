@@ -4,7 +4,7 @@ use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
     stable_graph::{NodeIndex, StableDiGraph},
-    Direction::Incoming,
+    Direction::{Incoming, Outgoing},
 };
 
 use crate::{
@@ -26,7 +26,7 @@ use super::{
 };
 
 #[enum_dispatch]
-pub trait Retag {
+pub trait Retag<GeometryIndex> {
     fn retag(&self, index: NodeIndex<usize>) -> GeometryIndex;
 }
 
@@ -60,7 +60,7 @@ pub trait GetOffset {
 
 macro_rules! impl_weight {
     ($weight_struct:ident, $weight_variant:ident, $index_struct:ident) => {
-        impl Retag for $weight_struct {
+        impl Retag<GeometryIndex> for $weight_struct {
             fn retag(&self, index: NodeIndex<usize>) -> GeometryIndex {
                 GeometryIndex::$weight_variant($index_struct::new(index))
             }
@@ -106,7 +106,7 @@ macro_rules! impl_loose_weight {
     };
 }
 
-#[enum_dispatch(GetWidth, Retag)]
+#[enum_dispatch(GetWidth, Retag<GeometryIndex>)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GeometryWeight {
     FixedDot(FixedDotWeight),
@@ -148,37 +148,45 @@ pub trait BendWeightTrait<GW>: GetOffset + GetWidth + Into<GW> + Copy {}
 
 #[derive(Debug)]
 pub struct Geometry<
-    GW: GetWidth + TryInto<DW> + TryInto<BW> + Copy,
-    DW: DotWeightTrait<GW>,
-    BW: BendWeightTrait<GW>,
-    DI: GetNodeIndex,
-    SI: GetNodeIndex,
-    BI: GetNodeIndex,
+    GW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<GI> + Copy,
+    DW: DotWeightTrait<GW> + Copy,
+    SW: SegWeightTrait<GW> + Copy,
+    BW: BendWeightTrait<GW> + Copy,
+    GI: GetNodeIndex + Copy,
+    DI: GetNodeIndex + Copy,
+    SI: GetNodeIndex + Copy,
+    BI: GetNodeIndex + Copy,
 > {
     pub graph: StableDiGraph<GW, GeometryLabel, usize>,
     weight_marker: PhantomData<GW>,
     dot_weight_marker: PhantomData<DW>,
+    seg_weight_marker: PhantomData<SW>,
     bend_weight_marker: PhantomData<BW>,
+    index_marker: PhantomData<GI>,
     dot_index_marker: PhantomData<DI>,
     seg_index_marker: PhantomData<SI>,
     bend_index_marker: PhantomData<BI>,
 }
 
 impl<
-        GW: GetWidth + TryInto<DW> + TryInto<BW> + Copy,
-        DW: DotWeightTrait<GW>,
-        BW: BendWeightTrait<GW>,
+        GW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<GI> + Copy,
+        DW: DotWeightTrait<GW> + Copy,
+        SW: SegWeightTrait<GW> + Copy,
+        BW: BendWeightTrait<GW> + Copy,
+        GI: GetNodeIndex + Copy,
         DI: GetNodeIndex + Copy,
         SI: GetNodeIndex + Copy,
         BI: GetNodeIndex + Copy,
-    > Geometry<GW, DW, BW, DI, SI, BI>
+    > Geometry<GW, DW, SW, BW, GI, DI, SI, BI>
 {
     pub fn new() -> Self {
         Self {
             graph: StableDiGraph::default(),
             weight_marker: PhantomData,
             dot_weight_marker: PhantomData,
+            seg_weight_marker: PhantomData,
             bend_weight_marker: PhantomData,
+            index_marker: PhantomData,
             dot_index_marker: PhantomData,
             seg_index_marker: PhantomData,
             bend_index_marker: PhantomData,
@@ -273,26 +281,18 @@ impl<
         self.core_weight(bend).width() / 2.0 + r
     }
 
-    fn inner(&self, index: NodeIndex<usize>) -> Option<NodeIndex<usize>> {
-        self.graph
-            .neighbors_directed(index, Incoming)
-            .filter(|node| {
-                matches!(
-                    self.graph
-                        .edge_weight(self.graph.find_edge(*node, index).unwrap())
-                        .unwrap(),
-                    GeometryLabel::Outer
-                )
-            })
-            .next()
-    }
-
     fn weight(&self, index: NodeIndex<usize>) -> GW {
         *self.graph.node_weight(index).unwrap()
     }
 
     fn dot_weight(&self, dot: DI) -> DW {
         self.weight(dot.node_index())
+            .try_into()
+            .unwrap_or_else(|_| unreachable!())
+    }
+
+    fn seg_weight(&self, seg: SI) -> SW {
+        self.weight(seg.node_index())
             .try_into()
             .unwrap_or_else(|_| unreachable!())
     }
@@ -340,6 +340,62 @@ impl<
             })
             .next()
             .unwrap()
+    }
+
+    pub fn first_rail(&self, index: NodeIndex<usize>) -> Option<NodeIndex<usize>> {
+        self.graph
+            .neighbors_directed(index, Incoming)
+            .filter(|node| {
+                matches!(
+                    self.graph
+                        .edge_weight(self.graph.find_edge(*node, index).unwrap())
+                        .unwrap(),
+                    GeometryLabel::Core
+                )
+            })
+            .next()
+    }
+
+    pub fn core(&self, index: NodeIndex<usize>) -> Option<NodeIndex<usize>> {
+        self.graph
+            .neighbors(index)
+            .filter(|node| {
+                matches!(
+                    self.graph
+                        .edge_weight(self.graph.find_edge(index, *node).unwrap())
+                        .unwrap(),
+                    GeometryLabel::Core
+                )
+            })
+            .next()
+    }
+
+    pub fn inner(&self, index: NodeIndex<usize>) -> Option<NodeIndex<usize>> {
+        self.graph
+            .neighbors_directed(index, Incoming)
+            .filter(|node| {
+                matches!(
+                    self.graph
+                        .edge_weight(self.graph.find_edge(*node, index).unwrap())
+                        .unwrap(),
+                    GeometryLabel::Outer
+                )
+            })
+            .next()
+    }
+
+    pub fn outer(&self, index: NodeIndex<usize>) -> Option<NodeIndex<usize>> {
+        self.graph
+            .neighbors_directed(index, Outgoing)
+            .filter(|node| {
+                matches!(
+                    self.graph
+                        .edge_weight(self.graph.find_edge(index, *node).unwrap())
+                        .unwrap(),
+                    GeometryLabel::Outer
+                )
+            })
+            .next()
     }
 
     pub fn graph(&self) -> &StableDiGraph<GW, GeometryLabel, usize> {

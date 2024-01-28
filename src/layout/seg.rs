@@ -31,6 +31,39 @@ impl From<SegIndex> for GeometryIndex {
     }
 }
 
+#[enum_dispatch(GetWidth)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum SegWeight {
+    Fixed(FixedSegWeight),
+    LoneLoose(LoneLooseSegWeight),
+    SeqLoose(SeqLooseSegWeight),
+}
+
+impl From<SegWeight> for GeometryWeight {
+    fn from(seg: SegWeight) -> Self {
+        match seg {
+            SegWeight::Fixed(weight) => GeometryWeight::FixedSeg(weight),
+            SegWeight::LoneLoose(weight) => GeometryWeight::LoneLooseSeg(weight),
+            SegWeight::SeqLoose(weight) => GeometryWeight::SeqLooseSeg(weight),
+        }
+    }
+}
+
+impl TryFrom<GeometryWeight> for SegWeight {
+    type Error = (); // TODO.
+
+    fn try_from(weight: GeometryWeight) -> Result<SegWeight, ()> {
+        match weight {
+            GeometryWeight::FixedSeg(weight) => Ok(SegWeight::Fixed(weight)),
+            GeometryWeight::LoneLooseSeg(weight) => Ok(SegWeight::LoneLoose(weight)),
+            GeometryWeight::SeqLooseSeg(weight) => Ok(SegWeight::SeqLoose(weight)),
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl SegWeightTrait<GeometryWeight> for SegWeight {}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedSegWeight {
     pub component: ComponentIndex,

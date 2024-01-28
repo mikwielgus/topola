@@ -87,26 +87,8 @@ pub trait GetFirstRail: GetLayout + GetNodeIndex {
     fn first_rail(&self) -> Option<LooseBendIndex> {
         self.layout()
             .geometry()
-            .graph()
-            .neighbors_directed(self.node_index(), Incoming)
-            .filter(|node| {
-                matches!(
-                    self.layout()
-                        .geometry()
-                        .graph()
-                        .edge_weight(
-                            self.layout()
-                                .geometry()
-                                .graph()
-                                .find_edge(*node, self.node_index())
-                                .unwrap()
-                        )
-                        .unwrap(),
-                    GeometryLabel::Core
-                )
-            })
+            .first_rail(self.node_index())
             .map(|node| LooseBendIndex::new(node))
-            .next()
     }
 }
 
@@ -114,26 +96,8 @@ pub trait GetCore: GetLayout + GetNodeIndex {
     fn core(&self) -> FixedDotIndex {
         self.layout()
             .geometry()
-            .graph()
-            .neighbors(self.node_index())
-            .filter(|node| {
-                matches!(
-                    self.layout()
-                        .geometry()
-                        .graph()
-                        .edge_weight(
-                            self.layout()
-                                .geometry()
-                                .graph()
-                                .find_edge(self.node_index(), *node)
-                                .unwrap()
-                        )
-                        .unwrap(),
-                    GeometryLabel::Core
-                )
-            })
+            .core(self.node_index())
             .map(|node| FixedDotIndex::new(node))
-            .next()
             .unwrap()
     }
 }
@@ -142,51 +106,15 @@ pub trait GetInnerOuter: GetLayout + GetNodeIndex {
     fn inner(&self) -> Option<LooseBendIndex> {
         self.layout()
             .geometry()
-            .graph()
-            .neighbors_directed(self.node_index(), Incoming)
-            .filter(|node| {
-                matches!(
-                    self.layout()
-                        .geometry()
-                        .graph()
-                        .edge_weight(
-                            self.layout()
-                                .geometry()
-                                .graph()
-                                .find_edge(*node, self.node_index())
-                                .unwrap()
-                        )
-                        .unwrap(),
-                    GeometryLabel::Outer
-                )
-            })
+            .inner(self.node_index())
             .map(|node| LooseBendIndex::new(node))
-            .next()
     }
 
     fn outer(&self) -> Option<LooseBendIndex> {
         self.layout()
             .geometry()
-            .graph()
-            .neighbors_directed(self.node_index(), Outgoing)
-            .filter(|node| {
-                matches!(
-                    self.layout()
-                        .geometry()
-                        .graph()
-                        .edge_weight(
-                            self.layout()
-                                .geometry()
-                                .graph()
-                                .find_edge(self.node_index(), *node)
-                                .unwrap()
-                        )
-                        .unwrap(),
-                    GeometryLabel::Outer
-                )
-            })
+            .outer(self.node_index())
             .map(|node| LooseBendIndex::new(node))
-            .next()
     }
 }
 
