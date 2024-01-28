@@ -88,33 +88,38 @@ pub trait GetFirstRail: GetLayout + GetNodeIndex {
         self.layout()
             .geometry()
             .first_rail(self.node_index())
-            .map(|node| LooseBendIndex::new(node))
+            .map(|node| LooseBendIndex::new(node.node_index()))
     }
 }
 
-pub trait GetCore: GetLayout + GetNodeIndex {
+pub trait GetBendIndex {
+    fn bend_index(&self) -> BendIndex;
+}
+
+pub trait GetCore: GetLayout + GetBendIndex {
     fn core(&self) -> FixedDotIndex {
-        self.layout()
-            .geometry()
-            .core(self.node_index())
-            .map(|node| FixedDotIndex::new(node))
-            .unwrap()
+        FixedDotIndex::new(
+            self.layout()
+                .geometry()
+                .core(self.bend_index())
+                .node_index(),
+        )
     }
 }
 
-pub trait GetInnerOuter: GetLayout + GetNodeIndex {
+pub trait GetInnerOuter: GetLayout + GetBendIndex {
     fn inner(&self) -> Option<LooseBendIndex> {
         self.layout()
             .geometry()
-            .inner(self.node_index())
-            .map(|node| LooseBendIndex::new(node))
+            .inner(self.bend_index())
+            .map(|node| LooseBendIndex::new(node.node_index()))
     }
 
     fn outer(&self) -> Option<LooseBendIndex> {
         self.layout()
             .geometry()
-            .outer(self.node_index())
-            .map(|node| LooseBendIndex::new(node))
+            .outer(self.bend_index())
+            .map(|node| LooseBendIndex::new(node.node_index()))
     }
 }
 
@@ -446,6 +451,12 @@ impl<'a> GetOtherEnd<DotIndex, LooseDotIndex> for SeqLooseSeg<'a> {}
 pub type FixedBend<'a> = GenericPrimitive<'a, FixedBendWeight>;
 impl_fixed_primitive!(FixedBend, FixedBendWeight);
 
+impl<'a> GetBendIndex for FixedBend<'a> {
+    fn bend_index(&self) -> BendIndex {
+        self.index.into()
+    }
+}
+
 impl<'a> MakeShape for FixedBend<'a> {
     fn shape(&self) -> Shape {
         self.layout.geometry().bend_shape(self.index.into())
@@ -468,6 +479,18 @@ impl<'a> GetCore for FixedBend<'a> {} // TODO: Fixed bends don't have cores actu
 
 pub type LooseBend<'a> = GenericPrimitive<'a, LooseBendWeight>;
 impl_loose_primitive!(LooseBend, LooseBendWeight);
+
+impl<'a> GetBendIndex for LooseBend<'a> {
+    fn bend_index(&self) -> BendIndex {
+        self.index.into()
+    }
+}
+
+impl<'a> From<LooseBend<'a>> for BendIndex {
+    fn from(bend: LooseBend<'a>) -> BendIndex {
+        bend.index.into()
+    }
+}
 
 impl<'a> MakeShape for LooseBend<'a> {
     fn shape(&self) -> Shape {

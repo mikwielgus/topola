@@ -30,6 +30,18 @@ impl From<BendIndex> for GeometryIndex {
     }
 }
 
+impl TryFrom<GeometryIndex> for BendIndex {
+    type Error = (); // TODO.
+
+    fn try_from(index: GeometryIndex) -> Result<BendIndex, ()> {
+        match index {
+            GeometryIndex::FixedBend(index) => Ok(BendIndex::Fixed(index)),
+            GeometryIndex::LooseBend(index) => Ok(BendIndex::Loose(index)),
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[enum_dispatch(GetOffset, GetWidth)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BendWeight {

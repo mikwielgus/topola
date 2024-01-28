@@ -31,6 +31,19 @@ impl From<SegIndex> for GeometryIndex {
     }
 }
 
+impl TryFrom<GeometryIndex> for SegIndex {
+    type Error = (); // TODO.
+
+    fn try_from(index: GeometryIndex) -> Result<SegIndex, ()> {
+        match index {
+            GeometryIndex::FixedSeg(index) => Ok(SegIndex::Fixed(index)),
+            GeometryIndex::LoneLooseSeg(index) => Ok(SegIndex::LoneLoose(index)),
+            GeometryIndex::SeqLooseSeg(index) => Ok(SegIndex::SeqLoose(index)),
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[enum_dispatch(GetWidth)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SegWeight {

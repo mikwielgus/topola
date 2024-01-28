@@ -31,6 +31,18 @@ impl From<DotIndex> for GeometryIndex {
     }
 }
 
+impl TryFrom<GeometryIndex> for DotIndex {
+    type Error = (); // TODO.
+
+    fn try_from(index: GeometryIndex) -> Result<DotIndex, ()> {
+        match index {
+            GeometryIndex::FixedDot(index) => Ok(DotIndex::Fixed(index)),
+            GeometryIndex::LooseDot(index) => Ok(DotIndex::Loose(index)),
+            _ => unreachable!(),
+        }
+    }
+}
+
 #[enum_dispatch(GetPos, GetWidth)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DotWeight {
