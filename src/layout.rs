@@ -19,7 +19,7 @@ use crate::connectivity::{
     BandIndex, BandWeight, ComponentIndex, ComponentWeight, ConnectivityGraph, ConnectivityLabel,
     ConnectivityWeight, GetNet,
 };
-use crate::graph::{GenericIndex, GetNodeIndex, NewFromNodeIndex};
+use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;
 use crate::layout::bend::BendIndex;
 use crate::layout::dot::DotWeight;

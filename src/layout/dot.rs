@@ -4,7 +4,7 @@ use geo::Point;
 use crate::{
     connectivity::{BandIndex, ComponentIndex},
     graph::GenericIndex,
-    layout::{GetNodeIndex, Layout, NewFromNodeIndex},
+    layout::{GetNodeIndex, Layout},
     math::Circle,
     primitive::{GenericPrimitive, Primitive},
 };

@@ -3,7 +3,7 @@ use enum_dispatch::enum_dispatch;
 use crate::{
     connectivity::{BandIndex, ComponentIndex},
     graph::GenericIndex,
-    layout::{GetNodeIndex, Layout, NewFromNodeIndex},
+    layout::{GetNodeIndex, Layout},
     primitive::{GenericPrimitive, Primitive},
 };
 

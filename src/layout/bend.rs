@@ -3,15 +3,15 @@ use enum_dispatch::enum_dispatch;
 use crate::{
     connectivity::{BandIndex, ComponentIndex},
     graph::GenericIndex,
-    layout::{GetNodeIndex, Layout, NewFromNodeIndex},
+    layout::{GetNodeIndex, Layout},
     primitive::{GenericPrimitive, Primitive},
 };
 
 use super::geometry::{
     BendWeightTrait, GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex,
-    GetComponentIndexMut, GetOffset, GetPos, GetWidth, MakePrimitive, Retag,
+    GetComponentIndexMut, GetOffset, GetWidth, MakePrimitive, Retag,
 };
-use geo::Point;
+
 use petgraph::stable_graph::NodeIndex;
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]

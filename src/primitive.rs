@@ -1,11 +1,9 @@
-use std::mem::swap;
-
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::connectivity::{BandIndex, ComponentIndex, GetNet};
-use crate::graph::{GenericIndex, GetNodeIndex, NewFromNodeIndex};
+use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::seg::{
     FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
     SeqLooseSegIndex, SeqLooseSegWeight,
@@ -20,8 +18,8 @@ use crate::layout::{
     },
 };
 use crate::loose::{Loose, LooseIndex};
-use crate::math::{self, Circle};
-use crate::shape::{BendShape, DotShape, SegShape, Shape, ShapeTrait};
+
+use crate::shape::{Shape, ShapeTrait};
 
 #[enum_dispatch]
 pub trait GetLayout {

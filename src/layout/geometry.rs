@@ -1,6 +1,5 @@
 use std::marker::PhantomData;
 
-use contracts::debug_invariant;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
@@ -10,7 +9,7 @@ use petgraph::{
 
 use crate::{
     connectivity::{BandIndex, ComponentIndex},
-    graph::{GenericIndex, GetNodeIndex, NewFromNodeIndex},
+    graph::{GenericIndex, GetNodeIndex},
     layout::Layout,
     math::Circle,
     primitive::Primitive,
@@ -19,7 +18,7 @@ use crate::{
 
 use super::{
     bend::{FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
-    dot::{DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+    dot::{FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     seg::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
         SeqLooseSegWeight,
