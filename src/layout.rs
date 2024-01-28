@@ -36,7 +36,7 @@ use crate::layout::{
 use crate::loose::{GetNextLoose, Loose, LooseIndex};
 use crate::math::NoTangents;
 use crate::primitive::{
-    GenericPrimitive, GetConnectable, GetCore, GetEnds, GetInnerOuter, GetLegs, GetOtherEnd,
+    GenericPrimitive, GetConnectable, GetCore, GetInnerOuter, GetJoints, GetLimbs, GetOtherJoint,
     GetWeight, MakeShape,
 };
 use crate::segbend::Segbend;
@@ -303,7 +303,7 @@ impl Layout {
 
         // Segs must not cross.
         if let Some(collision) = self.detect_collision(segbend.seg.into()) {
-            let end = self.primitive(segbend.bend).other_end(segbend.dot);
+            let end = self.primitive(segbend.bend).other_joint(segbend.dot);
             self.remove_segbend(&segbend, end.into());
             return Err(collision.into());
         }
@@ -375,7 +375,7 @@ impl Layout {
         let mut bow: Vec<GeometryIndex> = vec![];
         bow.push(bend.into());
 
-        let ends = self.primitive(bend).ends();
+        let ends = self.primitive(bend).joints();
         bow.push(ends.0.into());
         bow.push(ends.1.into());
 
@@ -401,7 +401,7 @@ impl Layout {
 
             outer_bows.push(outer.into());
 
-            let ends = primitive.ends();
+            let ends = primitive.joints();
             outer_bows.push(ends.0.into());
             outer_bows.push(ends.1.into());
 
@@ -453,7 +453,7 @@ impl Layout {
         while let Some(rail) = maybe_rail {
             let primitive = self.primitive(rail);
             let cw = primitive.weight().cw;
-            let ends = primitive.ends();
+            let ends = primitive.joints();
 
             let rules = Default::default();
             let conditions = Default::default();
@@ -843,7 +843,7 @@ impl Layout {
         to: Point,
         infringables: &[GeometryIndex],
     ) -> Result<(), Infringement> {
-        self.remove_from_rtree_with_legs(dot.into());
+        self.remove_from_rtree_with_limbs(dot.into());
 
         let mut weight = *self.geometry.graph.node_weight(dot.node_index()).unwrap();
         let old_weight = weight;
@@ -872,11 +872,11 @@ impl Layout {
                 .node_weight_mut(dot.node_index())
                 .unwrap() = old_weight;
 
-            self.insert_into_rtree_with_legs(dot.into());
+            self.insert_into_rtree_with_limbs(dot.into());
             return Err(infringement);
         }
 
-        self.insert_into_rtree_with_legs(dot.into());
+        self.insert_into_rtree_with_limbs(dot.into());
         Ok(())
     }
 
@@ -922,11 +922,11 @@ impl Layout {
 
     #[debug_ensures(self.geometry.graph().node_count() == old(self.geometry.graph().node_count()))]
     #[debug_ensures(self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
-    fn insert_into_rtree_with_legs(&mut self, node: GeometryIndex) {
+    fn insert_into_rtree_with_limbs(&mut self, node: GeometryIndex) {
         self.insert_into_rtree(node);
 
-        for leg in node.primitive(self).legs() {
-            self.insert_into_rtree(leg);
+        for limb in node.primitive(self).limbs() {
+            self.insert_into_rtree(limb);
         }
     }
 
@@ -939,9 +939,9 @@ impl Layout {
 
     #[debug_ensures(self.geometry.graph().node_count() == old(self.geometry.graph().node_count()))]
     #[debug_ensures(self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
-    fn remove_from_rtree_with_legs(&mut self, node: GeometryIndex) {
-        for leg in node.primitive(self).legs() {
-            self.remove_from_rtree(leg);
+    fn remove_from_rtree_with_limbs(&mut self, node: GeometryIndex) {
+        for limb in node.primitive(self).limbs() {
+            self.remove_from_rtree(limb);
         }
 
         self.remove_from_rtree(node);

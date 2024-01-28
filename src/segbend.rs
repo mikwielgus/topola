@@ -3,7 +3,7 @@ use crate::{
     layout::{
         bend::LooseBendIndex, dot::LooseDotIndex, geometry::GeometryIndex, seg::SeqLooseSegIndex,
     },
-    primitive::{GetEnds, GetInterior, GetOtherEnd, LooseBend, LooseDot},
+    primitive::{GetInterior, GetJoints, GetOtherJoint, LooseBend, LooseDot},
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -16,7 +16,7 @@ pub struct Segbend {
 impl Segbend {
     pub fn from_dot(dot: LooseDotIndex, layout: &Layout) -> Self {
         let bend = LooseDot::new(dot, layout).bend();
-        let dot = LooseBend::new(bend, layout).other_end(dot);
+        let dot = LooseBend::new(bend, layout).other_joint(dot);
         let seg = LooseDot::new(dot, layout).seg().unwrap();
         Self { bend, dot, seg }
     }
@@ -28,8 +28,8 @@ impl GetInterior<GeometryIndex> for Segbend {
     }
 }
 
-impl GetEnds<SeqLooseSegIndex, LooseBendIndex> for Segbend {
-    fn ends(&self) -> (SeqLooseSegIndex, LooseBendIndex) {
+impl GetJoints<SeqLooseSegIndex, LooseBendIndex> for Segbend {
+    fn joints(&self) -> (SeqLooseSegIndex, LooseBendIndex) {
         (self.seg, self.bend)
     }
 }

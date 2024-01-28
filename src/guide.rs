@@ -10,7 +10,7 @@ use crate::{
         geometry::{GetBandIndex, MakePrimitive},
     },
     math::{self, Circle, NoTangents},
-    primitive::{GetCore, GetInnerOuter, GetOtherEnd, GetWeight, MakeShape},
+    primitive::{GetCore, GetInnerOuter, GetOtherJoint, GetWeight, MakeShape},
     rules::{Conditions, Rules},
     segbend::Segbend,
     shape::{Shape, ShapeTrait},
@@ -230,6 +230,6 @@ impl<'a, 'b> Guide<'a, 'b> {
     fn rear(&self, head: SegbendHead) -> DotIndex {
         self.layout
             .primitive(head.segbend.seg)
-            .other_end(head.segbend.dot.into())
+            .other_joint(head.segbend.dot.into())
     }
 }

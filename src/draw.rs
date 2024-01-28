@@ -12,7 +12,7 @@ use crate::{
     },
     layout::{Infringement, Layout, LayoutException},
     math::{Circle, NoTangents},
-    primitive::GetOtherEnd,
+    primitive::GetOtherJoint,
     rules::{Conditions, Rules},
     wraparoundable::WraparoundableIndex,
 };
@@ -231,7 +231,7 @@ impl<'a> Draw<'a> {
             },
         )?;
         Ok::<SegbendHead, LayoutException>(SegbendHead {
-            face: self.layout.primitive(segbend.bend).other_end(segbend.dot),
+            face: self.layout.primitive(segbend.bend).other_joint(segbend.dot),
             segbend,
             band: head.band(),
         })
@@ -243,7 +243,7 @@ impl<'a> Draw<'a> {
         let prev_dot = self
             .layout
             .primitive(head.segbend.seg)
-            .other_end(head.segbend.dot.into());
+            .other_joint(head.segbend.dot.into());
         let band = head.band;
 
         self.layout.remove_segbend(&head.segbend, head.face);

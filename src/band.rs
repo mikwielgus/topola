@@ -7,7 +7,7 @@ use crate::{
         geometry::{GeometryIndex, MakePrimitive},
     },
     loose::{GetNextLoose, LooseIndex},
-    primitive::{GetEnds, GetOtherEnd, MakeShape},
+    primitive::{GetJoints, GetOtherJoint, MakeShape},
     shape::ShapeTrait,
 };
 
@@ -52,10 +52,10 @@ impl<'a> Band<'a> {
 
         match prev {
             Some(LooseIndex::LoneSeg(seg)) => {
-                Some(self.layout.primitive(seg).other_end(self.from()))
+                Some(self.layout.primitive(seg).other_joint(self.from()))
             }
             Some(LooseIndex::SeqSeg(seg)) => {
-                if let DotIndex::Fixed(dot) = self.layout.primitive(seg).ends().0 {
+                if let DotIndex::Fixed(dot) = self.layout.primitive(seg).joints().0 {
                     Some(dot)
                 } else {
                     None

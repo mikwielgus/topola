@@ -132,7 +132,7 @@ pub enum GeometryIndex {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GeometryLabel {
-    Joint,
+    Connection,
     Outer,
     Core,
 }
@@ -153,9 +153,9 @@ pub struct Geometry<
     SW: SegWeightTrait<GW> + Copy,
     BW: BendWeightTrait<GW> + Copy,
     GI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
-    DI: GetNodeIndex + Copy,
-    SI: GetNodeIndex + Copy,
-    BI: GetNodeIndex + Copy,
+    DI: GetNodeIndex + Into<GI> + Copy,
+    SI: GetNodeIndex + Into<GI> + Copy,
+    BI: GetNodeIndex + Into<GI> + Copy,
 > {
     pub graph: StableDiGraph<GW, GeometryLabel, usize>,
     weight_marker: PhantomData<GW>,
@@ -174,9 +174,9 @@ impl<
         SW: SegWeightTrait<GW> + Copy,
         BW: BendWeightTrait<GW> + Copy,
         GI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
-        DI: GetNodeIndex + Copy,
-        SI: GetNodeIndex + Copy,
-        BI: GetNodeIndex + Copy,
+        DI: GetNodeIndex + Into<GI> + Copy,
+        SI: GetNodeIndex + Into<GI> + Copy,
+        BI: GetNodeIndex + Into<GI> + Copy,
     > Geometry<GW, DW, SW, BW, GI, DI, SI, BI>
 {
     pub fn new() -> Self {
@@ -205,10 +205,13 @@ impl<
     ) -> GenericIndex<W> {
         let seg = GenericIndex::<W>::new(self.graph.add_node(weight.into()));
 
+        self.graph.update_edge(
+            from.node_index(),
+            seg.node_index(),
+            GeometryLabel::Connection,
+        );
         self.graph
-            .update_edge(from.node_index(), seg.node_index(), GeometryLabel::Joint);
-        self.graph
-            .update_edge(seg.node_index(), to.node_index(), GeometryLabel::Joint);
+            .update_edge(seg.node_index(), to.node_index(), GeometryLabel::Connection);
 
         seg
     }
@@ -222,10 +225,16 @@ impl<
     ) -> GenericIndex<W> {
         let bend = GenericIndex::<W>::new(self.graph.add_node(weight.into()));
 
-        self.graph
-            .update_edge(from.node_index(), bend.node_index(), GeometryLabel::Joint);
-        self.graph
-            .update_edge(bend.node_index(), to.node_index(), GeometryLabel::Joint);
+        self.graph.update_edge(
+            from.node_index(),
+            bend.node_index(),
+            GeometryLabel::Connection,
+        );
+        self.graph.update_edge(
+            bend.node_index(),
+            to.node_index(),
+            GeometryLabel::Connection,
+        );
         self.graph
             .update_edge(bend.node_index(), core.node_index(), GeometryLabel::Core);
 
@@ -243,20 +252,20 @@ impl<
     }
 
     pub fn seg_shape(&self, seg: SI) -> Shape {
-        let joint_weights = self.joint_weights(seg.node_index());
+        let (from, to) = self.seg_joints(seg);
         Shape::Seg(SegShape {
-            from: joint_weights[0].pos(),
-            to: joint_weights[1].pos(),
+            from: self.dot_weight(from).pos(),
+            to: self.dot_weight(to).pos(),
             width: self.weight(seg.node_index()).width(),
         })
     }
 
     pub fn bend_shape(&self, bend: BI) -> Shape {
-        let joint_weights = self.joint_weights(bend.node_index());
+        let (from, to) = self.bend_joints(bend);
         let core_weight = self.core_weight(bend);
         Shape::Bend(BendShape {
-            from: joint_weights[0].pos(),
-            to: joint_weights[1].pos(),
+            from: self.dot_weight(from).pos(),
+            to: self.dot_weight(to).pos(),
             c: Circle {
                 pos: core_weight.pos(),
                 r: self.inner_radius(bend),
@@ -285,56 +294,37 @@ impl<
         *self.graph.node_weight(index).unwrap()
     }
 
-    fn dot_weight(&self, dot: DI) -> DW {
+    pub fn dot_weight(&self, dot: DI) -> DW {
         self.weight(dot.node_index())
             .try_into()
             .unwrap_or_else(|_| unreachable!())
     }
 
-    fn seg_weight(&self, seg: SI) -> SW {
+    pub fn seg_weight(&self, seg: SI) -> SW {
         self.weight(seg.node_index())
             .try_into()
             .unwrap_or_else(|_| unreachable!())
     }
 
-    fn bend_weight(&self, bend: BI) -> BW {
+    pub fn bend_weight(&self, bend: BI) -> BW {
         self.weight(bend.node_index())
             .try_into()
             .unwrap_or_else(|_| unreachable!())
     }
 
-    fn joint_weights(&self, index: NodeIndex<usize>) -> Vec<DW> {
-        self.graph
-            .neighbors_undirected(index)
-            .filter(|node| {
-                matches!(
-                    self.graph
-                        .edge_weight(self.graph.find_edge_undirected(index, *node).unwrap().0,)
-                        .unwrap(),
-                    GeometryLabel::Joint
-                )
-            })
-            .map(|node| {
-                self.weight(node)
-                    .try_into()
-                    .unwrap_or_else(|_| unreachable!())
-            })
-            .collect()
-    }
-
     fn core_weight(&self, bend: BI) -> DW {
         self.graph
             .neighbors(bend.node_index())
-            .filter(|node| {
+            .filter(|ni| {
                 matches!(
                     self.graph
-                        .edge_weight(self.graph.find_edge(bend.node_index(), *node).unwrap())
+                        .edge_weight(self.graph.find_edge(bend.node_index(), *ni).unwrap())
                         .unwrap(),
                     GeometryLabel::Core
                 )
             })
-            .map(|node| {
-                self.weight(node)
+            .map(|ni| {
+                self.weight(ni)
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
@@ -342,22 +332,60 @@ impl<
             .unwrap()
     }
 
-    pub fn first_rail(&self, index: NodeIndex<usize>) -> Option<BI> {
+    pub fn seg_joints(&self, seg: SI) -> (DI, DI) {
+        let v: Vec<_> = self.connections(seg.into()).collect();
+        (
+            v[0].try_into().unwrap_or_else(|_| unreachable!()),
+            v[1].try_into().unwrap_or_else(|_| unreachable!()),
+        )
+    }
+
+    pub fn bend_joints(&self, bend: BI) -> (DI, DI) {
+        let v: Vec<_> = self.connections(bend.into()).collect();
+        (
+            v[0].try_into().unwrap_or_else(|_| unreachable!()),
+            v[1].try_into().unwrap_or_else(|_| unreachable!()),
+        )
+    }
+
+    pub fn connections(&self, node: GI) -> impl Iterator<Item = GI> + '_ {
         self.graph
-            .neighbors_directed(index, Incoming)
-            .filter(|node| {
+            .neighbors_undirected(node.node_index())
+            .filter(move |ni| {
                 matches!(
                     self.graph
-                        .edge_weight(self.graph.find_edge(*node, index).unwrap())
+                        .edge_weight(
+                            self.graph
+                                .find_edge_undirected(node.node_index(), *ni)
+                                .unwrap()
+                                .0,
+                        )
+                        .unwrap(),
+                    GeometryLabel::Connection
+                )
+            })
+            .map(|ni| {
+                self.weight(ni)
+                    .retag(ni)
+                    .try_into()
+                    .unwrap_or_else(|_| unreachable!())
+            })
+    }
+
+    pub fn first_rail(&self, node: NodeIndex<usize>) -> Option<BI> {
+        self.graph
+            .neighbors_directed(node, Incoming)
+            .filter(|ni| {
+                matches!(
+                    self.graph
+                        .edge_weight(self.graph.find_edge(*ni, node).unwrap())
                         .unwrap(),
                     GeometryLabel::Core
                 )
             })
-            .map(|node| {
-                self.graph
-                    .node_weight(node)
-                    .unwrap()
-                    .retag(node)
+            .map(|ni| {
+                self.weight(ni)
+                    .retag(ni)
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
@@ -367,19 +395,17 @@ impl<
     pub fn core(&self, bend: BI) -> DI {
         self.graph
             .neighbors(bend.node_index())
-            .filter(|node| {
+            .filter(|ni| {
                 matches!(
                     self.graph
-                        .edge_weight(self.graph.find_edge(bend.node_index(), *node).unwrap())
+                        .edge_weight(self.graph.find_edge(bend.node_index(), *ni).unwrap())
                         .unwrap(),
                     GeometryLabel::Core
                 )
             })
-            .map(|node| {
-                self.graph
-                    .node_weight(node)
-                    .unwrap()
-                    .retag(node)
+            .map(|ni| {
+                self.weight(ni)
+                    .retag(ni)
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
@@ -390,19 +416,17 @@ impl<
     pub fn inner(&self, bend: BI) -> Option<BI> {
         self.graph
             .neighbors_directed(bend.node_index(), Incoming)
-            .filter(|node| {
+            .filter(|ni| {
                 matches!(
                     self.graph
-                        .edge_weight(self.graph.find_edge(*node, bend.node_index()).unwrap())
+                        .edge_weight(self.graph.find_edge(*ni, bend.node_index()).unwrap())
                         .unwrap(),
                     GeometryLabel::Outer
                 )
             })
-            .map(|node| {
-                self.graph
-                    .node_weight(node)
-                    .unwrap()
-                    .retag(node)
+            .map(|ni| {
+                self.weight(ni)
+                    .retag(ni)
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
@@ -412,19 +436,17 @@ impl<
     pub fn outer(&self, bend: BI) -> Option<BI> {
         self.graph
             .neighbors_directed(bend.node_index(), Outgoing)
-            .filter(|node| {
+            .filter(|ni| {
                 matches!(
                     self.graph
-                        .edge_weight(self.graph.find_edge(bend.node_index(), *node).unwrap())
+                        .edge_weight(self.graph.find_edge(bend.node_index(), *ni).unwrap())
                         .unwrap(),
                     GeometryLabel::Outer
                 )
             })
-            .map(|node| {
-                self.graph
-                    .node_weight(node)
-                    .unwrap()
-                    .retag(node)
+            .map(|ni| {
+                self.weight(ni)
+                    .retag(ni)
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })

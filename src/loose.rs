@@ -10,7 +10,7 @@ use crate::{
         geometry::{GeometryIndex, MakePrimitive},
         seg::{LoneLooseSegIndex, SeqLooseSegIndex},
     },
-    primitive::{GetEnds, LoneLooseSeg, LooseBend, LooseDot, Primitive, SeqLooseSeg},
+    primitive::{GetJoints, LoneLooseSeg, LooseBend, LooseDot, Primitive, SeqLooseSeg},
 };
 
 #[enum_dispatch]
@@ -80,7 +80,7 @@ impl<'a> GetNextLoose for LoneLooseSeg<'a> {
 
 impl<'a> GetNextLoose for SeqLooseSeg<'a> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
-        let ends = self.ends();
+        let ends = self.joints();
         let Some(prev) = maybe_prev else {
             return Some(ends.1.into());
         };
@@ -98,7 +98,7 @@ impl<'a> GetNextLoose for SeqLooseSeg<'a> {
 
 impl<'a> GetNextLoose for LooseBend<'a> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
-        let ends = self.ends();
+        let ends = self.joints();
         let Some(prev) = maybe_prev else {
             unreachable!();
         };
