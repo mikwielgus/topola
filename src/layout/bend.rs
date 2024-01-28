@@ -9,8 +9,9 @@ use crate::{
 
 use super::geometry::{
     BendWeightTrait, GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex,
-    GetComponentIndexMut, GetOffset, GetWidth, MakePrimitive, Retag,
+    GetComponentIndexMut, GetOffset, GetPos, GetWidth, MakePrimitive, Retag,
 };
+use geo::Point;
 use petgraph::stable_graph::NodeIndex;
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
@@ -29,15 +30,52 @@ impl From<BendIndex> for GeometryIndex {
     }
 }
 
+#[enum_dispatch(GetOffset, GetWidth)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum BendWeight {
+    Fixed(FixedBendWeight),
+    Loose(LooseBendWeight),
+}
+
+impl From<BendWeight> for GeometryWeight {
+    fn from(bend: BendWeight) -> Self {
+        match bend {
+            BendWeight::Fixed(weight) => GeometryWeight::FixedBend(weight),
+            BendWeight::Loose(weight) => GeometryWeight::LooseBend(weight),
+        }
+    }
+}
+
+impl TryFrom<GeometryWeight> for BendWeight {
+    type Error = (); // TODO.
+
+    fn try_from(weight: GeometryWeight) -> Result<BendWeight, ()> {
+        match weight {
+            GeometryWeight::FixedBend(weight) => Ok(BendWeight::Fixed(weight)),
+            GeometryWeight::LooseBend(weight) => Ok(BendWeight::Loose(weight)),
+            _ => unreachable!(),
+        }
+    }
+}
+
+impl BendWeightTrait<GeometryWeight> for BendWeight {}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedBendWeight {
     pub component: ComponentIndex,
     pub width: f64,
+    pub offset: f64,
     pub cw: bool,
 }
 
 impl_fixed_weight!(FixedBendWeight, FixedBend, FixedBendIndex);
 impl BendWeightTrait<GeometryWeight> for FixedBendWeight {}
+
+impl GetOffset for FixedBendWeight {
+    fn offset(&self) -> f64 {
+        self.offset
+    }
+}
 
 impl GetWidth for FixedBendWeight {
     fn width(&self) -> f64 {
@@ -53,15 +91,15 @@ pub struct LooseBendWeight {
     pub cw: bool,
 }
 
-impl GetWidth for LooseBendWeight {
-    fn width(&self) -> f64 {
-        self.width
-    }
-}
-
 impl GetOffset for LooseBendWeight {
     fn offset(&self) -> f64 {
         self.offset
+    }
+}
+
+impl GetWidth for LooseBendWeight {
+    fn width(&self) -> f64 {
+        self.width
     }
 }
 

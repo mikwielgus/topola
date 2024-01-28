@@ -43,6 +43,8 @@ use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
 use crate::wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex};
 
+use self::bend::BendWeight;
+
 pub type RTreeWrapper = GeomWithData<Shape, GeometryIndex>;
 
 #[enum_dispatch]
@@ -75,7 +77,7 @@ pub struct AlreadyConnected(pub i64, pub GeometryIndex);
 pub struct Layout {
     rtree: RTree<RTreeWrapper>,
     connectivity: ConnectivityGraph,
-    geometry: Geometry<GeometryWeight, DotWeight, DotIndex, SegIndex, BendIndex>,
+    geometry: Geometry<GeometryWeight, DotWeight, BendWeight, DotIndex, SegIndex, BendIndex>,
 }
 
 #[debug_invariant(self.geometry.graph().node_count() == self.rtree.size())]
@@ -953,7 +955,9 @@ impl Layout {
 
     #[debug_ensures(self.geometry.graph().node_count() == old(self.geometry.graph().node_count()))]
     #[debug_ensures(self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
-    pub fn geometry(&self) -> &Geometry<GeometryWeight, DotWeight, DotIndex, SegIndex, BendIndex> {
+    pub fn geometry(
+        &self,
+    ) -> &Geometry<GeometryWeight, DotWeight, BendWeight, DotIndex, SegIndex, BendIndex> {
         &self.geometry
     }
 

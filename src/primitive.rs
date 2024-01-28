@@ -520,38 +520,9 @@ impl<'a> GetOtherEnd<DotIndex, LooseDotIndex> for SeqLooseSeg<'a> {}
 pub type FixedBend<'a> = GenericPrimitive<'a, FixedBendWeight>;
 impl_fixed_primitive!(FixedBend, FixedBendWeight);
 
-impl<'a> FixedBend<'a> {
-    fn inner_radius(&self) -> f64 {
-        todo!();
-    }
-
-    pub fn cross_product(&self) -> f64 {
-        let center = self.primitive(self.core()).weight().circle.pos;
-        let ends = self.ends();
-        let end1 = self.primitive(ends.0).weight().circle.pos;
-        let end2 = self.primitive(ends.1).weight().circle.pos;
-        math::cross_product(end1 - center, end2 - center)
-    }
-}
-
 impl<'a> MakeShape for FixedBend<'a> {
     fn shape(&self) -> Shape {
-        let ends = self.ends();
-
-        let mut bend_shape = BendShape {
-            from: self.primitive(ends.0).weight().circle.pos,
-            to: self.primitive(ends.1).weight().circle.pos,
-            c: Circle {
-                pos: self.primitive(self.core()).weight().circle.pos,
-                r: self.inner_radius(),
-            },
-            width: self.width(),
-        };
-
-        if self.weight().cw {
-            swap(&mut bend_shape.from, &mut bend_shape.to);
-        }
-        Shape::Bend(bend_shape)
+        self.layout.geometry().bend_shape(self.index.into())
     }
 }
 
@@ -572,47 +543,9 @@ impl<'a> GetCore for FixedBend<'a> {} // TODO: Fixed bends don't have cores actu
 pub type LooseBend<'a> = GenericPrimitive<'a, LooseBendWeight>;
 impl_loose_primitive!(LooseBend, LooseBendWeight);
 
-impl<'a> LooseBend<'a> {
-    fn inner_radius(&self) -> f64 {
-        let mut r = self.offset();
-        let mut rail = LooseBendIndex::new(self.index.node_index());
-
-        while let Some(inner) = self.primitive(rail).inner() {
-            let primitive = self.primitive(inner);
-            r += primitive.width() + primitive.offset();
-            rail = inner;
-        }
-
-        let core_circle = self
-            .primitive(
-                self.primitive(LooseBendIndex::new(self.index.node_index()))
-                    .core(),
-            )
-            .weight()
-            .circle;
-
-        core_circle.r + r
-    }
-}
-
 impl<'a> MakeShape for LooseBend<'a> {
     fn shape(&self) -> Shape {
-        let ends = self.ends();
-
-        let mut bend_shape = BendShape {
-            from: self.primitive(ends.0).weight().circle.pos,
-            to: self.primitive(ends.1).weight().circle.pos,
-            c: Circle {
-                pos: self.primitive(self.core()).weight().circle.pos,
-                r: self.inner_radius(),
-            },
-            width: self.width(),
-        };
-
-        if self.weight().cw {
-            swap(&mut bend_shape.from, &mut bend_shape.to);
-        }
-        Shape::Bend(bend_shape)
+        self.layout.geometry().bend_shape(self.index.into())
     }
 }
 
