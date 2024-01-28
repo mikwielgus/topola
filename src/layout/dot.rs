@@ -1,16 +1,17 @@
 use enum_dispatch::enum_dispatch;
+use geo::Point;
 
 use crate::{
     connectivity::{BandIndex, ComponentIndex},
     graph::GenericIndex,
-    layout::{GetNodeIndex, Layout},
+    layout::{GetNodeIndex, Layout, NewFromNodeIndex},
     math::Circle,
     primitive::{GenericPrimitive, Primitive},
 };
 
 use super::geometry::{
     DotWeightTrait, GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex,
-    GetComponentIndexMut, GetWidth, MakePrimitive, Retag,
+    GetComponentIndexMut, GetPos, GetWidth, MakePrimitive, Retag,
 };
 use petgraph::stable_graph::NodeIndex;
 
@@ -30,7 +31,7 @@ impl From<DotIndex> for GeometryIndex {
     }
 }
 
-#[enum_dispatch(GetWidth)]
+#[enum_dispatch(GetPos, GetWidth)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DotWeight {
     Fixed(FixedDotWeight),
@@ -69,6 +70,12 @@ pub struct FixedDotWeight {
 impl_fixed_weight!(FixedDotWeight, FixedDot, FixedDotIndex);
 impl DotWeightTrait<GeometryWeight> for FixedDotWeight {}
 
+impl GetPos for FixedDotWeight {
+    fn pos(&self) -> Point {
+        self.circle.pos
+    }
+}
+
 impl GetWidth for FixedDotWeight {
     fn width(&self) -> f64 {
         self.circle.r * 2.0
@@ -83,6 +90,12 @@ pub struct LooseDotWeight {
 
 impl_loose_weight!(LooseDotWeight, LooseDot, LooseDotIndex);
 impl DotWeightTrait<GeometryWeight> for LooseDotWeight {}
+
+impl GetPos for LooseDotWeight {
+    fn pos(&self) -> Point {
+        self.circle.pos
+    }
+}
 
 impl GetWidth for LooseDotWeight {
     fn width(&self) -> f64 {

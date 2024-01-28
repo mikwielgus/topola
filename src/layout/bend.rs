@@ -3,7 +3,7 @@ use enum_dispatch::enum_dispatch;
 use crate::{
     connectivity::{BandIndex, ComponentIndex},
     graph::GenericIndex,
-    layout::{GetNodeIndex, Layout},
+    layout::{GetNodeIndex, Layout, NewFromNodeIndex},
     primitive::{GenericPrimitive, Primitive},
 };
 
@@ -48,8 +48,15 @@ impl GetWidth for FixedBendWeight {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseBendWeight {
     pub band: BandIndex,
+    pub width: f64,
     pub offset: f64,
     pub cw: bool,
+}
+
+impl GetWidth for LooseBendWeight {
+    fn width(&self) -> f64 {
+        self.width
+    }
 }
 
 impl GetOffset for LooseBendWeight {

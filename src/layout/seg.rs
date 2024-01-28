@@ -3,7 +3,7 @@ use enum_dispatch::enum_dispatch;
 use crate::{
     connectivity::{BandIndex, ComponentIndex},
     graph::GenericIndex,
-    layout::{GetNodeIndex, Layout},
+    layout::{GetNodeIndex, Layout, NewFromNodeIndex},
     primitive::{GenericPrimitive, Primitive},
 };
 
@@ -49,15 +49,29 @@ impl GetWidth for FixedSegWeight {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LoneLooseSegWeight {
     pub band: BandIndex,
+    pub width: f64,
 }
 
 impl_loose_weight!(LoneLooseSegWeight, LoneLooseSeg, LoneLooseSegIndex);
 impl SegWeightTrait<GeometryWeight> for LoneLooseSegWeight {}
 
+impl GetWidth for LoneLooseSegWeight {
+    fn width(&self) -> f64 {
+        self.width
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SeqLooseSegWeight {
     pub band: BandIndex,
+    pub width: f64,
 }
 
 impl_loose_weight!(SeqLooseSegWeight, SeqLooseSeg, SeqLooseSegIndex);
 impl SegWeightTrait<GeometryWeight> for SeqLooseSegWeight {}
+
+impl GetWidth for SeqLooseSegWeight {
+    fn width(&self) -> f64 {
+        self.width
+    }
+}

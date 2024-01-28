@@ -7,9 +7,11 @@ use petgraph::stable_graph::{NodeIndex, StableDiGraph};
 
 use crate::{
     connectivity::{BandIndex, ComponentIndex},
-    graph::{GenericIndex, GetNodeIndex},
+    graph::{GenericIndex, GetNodeIndex, NewFromNodeIndex},
     layout::Layout,
+    math::Circle,
     primitive::Primitive,
+    shape::{DotShape, SegShape, Shape},
 };
 
 use super::{
@@ -37,6 +39,11 @@ pub trait GetComponentIndexMut {
 
 pub trait GetBandIndex {
     fn band(&self) -> BandIndex;
+}
+
+#[enum_dispatch]
+pub trait GetPos {
+    fn pos(&self) -> Point;
 }
 
 #[enum_dispatch]
@@ -97,7 +104,7 @@ macro_rules! impl_loose_weight {
     };
 }
 
-#[enum_dispatch(Retag)]
+#[enum_dispatch(GetWidth, Retag)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GeometryWeight {
     FixedDot(FixedDotWeight),
@@ -123,7 +130,7 @@ pub enum GeometryIndex {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GeometryLabel {
-    Adjacent,
+    Joint,
     Outer,
     Core,
 }
@@ -133,13 +140,13 @@ pub trait MakePrimitive {
     fn primitive<'a>(&self, layout: &'a Layout) -> Primitive<'a>;
 }
 
-pub trait DotWeightTrait<GW>: GetWidth + Into<GW> + Copy {}
-pub trait SegWeightTrait<GW>: Into<GW> + Copy {}
-pub trait BendWeightTrait<GW>: Into<GW> + Copy {}
+pub trait DotWeightTrait<GW>: GetPos + GetWidth + Into<GW> + Copy {}
+pub trait SegWeightTrait<GW>: GetWidth + Into<GW> + Copy {}
+pub trait BendWeightTrait<GW>: GetWidth + Into<GW> + Copy {}
 
 #[derive(Debug)]
 pub struct Geometry<
-    GW: TryInto<DW>,
+    GW: GetWidth + TryInto<DW> + Copy,
     DW: DotWeightTrait<GW>,
     DI: GetNodeIndex,
     SI: GetNodeIndex,
@@ -154,11 +161,11 @@ pub struct Geometry<
 }
 
 impl<
-        GW: TryInto<DW>,
-        DW: DotWeightTrait<GW> + Copy,
-        DI: GetNodeIndex,
-        SI: GetNodeIndex,
-        BI: GetNodeIndex,
+        GW: GetWidth + TryInto<DW> + Copy,
+        DW: DotWeightTrait<GW>,
+        DI: GetNodeIndex + Copy,
+        SI: GetNodeIndex + Copy,
+        BI: GetNodeIndex + Copy,
     > Geometry<GW, DW, DI, SI, BI>
 {
     pub fn new() -> Self {
@@ -185,9 +192,9 @@ impl<
         let seg = GenericIndex::<W>::new(self.graph.add_node(weight.into()));
 
         self.graph
-            .update_edge(from.node_index(), seg.node_index(), GeometryLabel::Adjacent);
+            .update_edge(from.node_index(), seg.node_index(), GeometryLabel::Joint);
         self.graph
-            .update_edge(seg.node_index(), to.node_index(), GeometryLabel::Adjacent);
+            .update_edge(seg.node_index(), to.node_index(), GeometryLabel::Joint);
 
         seg
     }
@@ -201,17 +208,62 @@ impl<
     ) -> GenericIndex<W> {
         let bend = GenericIndex::<W>::new(self.graph.add_node(weight.into()));
 
-        self.graph.update_edge(
-            from.node_index(),
-            bend.node_index(),
-            GeometryLabel::Adjacent,
-        );
         self.graph
-            .update_edge(bend.node_index(), to.node_index(), GeometryLabel::Adjacent);
+            .update_edge(from.node_index(), bend.node_index(), GeometryLabel::Joint);
+        self.graph
+            .update_edge(bend.node_index(), to.node_index(), GeometryLabel::Joint);
         self.graph
             .update_edge(bend.node_index(), core.node_index(), GeometryLabel::Core);
 
         bend
+    }
+
+    pub fn dot_shape(&self, dot: DI) -> Shape {
+        let weight = self.dot_weight(dot);
+        Shape::Dot(DotShape {
+            c: Circle {
+                pos: weight.pos(),
+                r: weight.width() / 2.0,
+            },
+        })
+    }
+
+    pub fn seg_shape(&self, seg: SI) -> Shape {
+        let joint_weights = self.joint_weights(seg.node_index());
+        Shape::Seg(SegShape {
+            from: joint_weights[0].pos(),
+            to: joint_weights[1].pos(),
+            width: self.weight(seg.node_index()).width(),
+        })
+    }
+
+    fn weight(&self, index: NodeIndex<usize>) -> GW {
+        *self.graph.node_weight(index).unwrap()
+    }
+
+    fn dot_weight(&self, dot: DI) -> DW {
+        self.weight(dot.node_index())
+            .try_into()
+            .unwrap_or_else(|_| unreachable!())
+    }
+
+    fn joint_weights(&self, index: NodeIndex<usize>) -> Vec<DW> {
+        self.graph
+            .neighbors_undirected(index)
+            .filter(|node| {
+                matches!(
+                    self.graph
+                        .edge_weight(self.graph.find_edge_undirected(index, *node).unwrap().0,)
+                        .unwrap(),
+                    GeometryLabel::Joint
+                )
+            })
+            .map(|node| {
+                self.weight(node)
+                    .try_into()
+                    .unwrap_or_else(|_| unreachable!())
+            })
+            .collect()
     }
 
     pub fn graph(&self) -> &StableDiGraph<GW, GeometryLabel, usize> {

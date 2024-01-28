@@ -8,7 +8,10 @@ use petgraph::stable_graph::NodeIndex;
 
 // Due to apparent limitations of enum_dispatch we're forced to import some types backwards.
 
-use crate::layout::{bend::BendIndex, dot::DotIndex, geometry::GeometryIndex, seg::SegIndex};
+#[enum_dispatch]
+pub trait NewFromNodeIndex {
+    fn new(index: NodeIndex<usize>) -> Self;
+}
 
 #[enum_dispatch]
 pub trait GetNodeIndex {
@@ -19,15 +22,6 @@ pub trait GetNodeIndex {
 pub struct GenericIndex<W> {
     node_index: NodeIndex<usize>,
     marker: PhantomData<W>,
-}
-
-impl<W> GenericIndex<W> {
-    pub fn new(index: NodeIndex<usize>) -> Self {
-        Self {
-            node_index: index,
-            marker: PhantomData,
-        }
-    }
 }
 
 impl<W> Hash for GenericIndex<W> {
@@ -43,6 +37,15 @@ impl<W> PartialEq for GenericIndex<W> {
 }
 
 impl<W> Eq for GenericIndex<W> {}
+
+impl<W> NewFromNodeIndex for GenericIndex<W> {
+    fn new(index: NodeIndex<usize>) -> Self {
+        Self {
+            node_index: index,
+            marker: PhantomData,
+        }
+    }
+}
 
 impl<W> GetNodeIndex for GenericIndex<W> {
     fn node_index(&self) -> NodeIndex<usize> {

@@ -5,7 +5,7 @@ use petgraph::stable_graph::NodeIndex;
 use petgraph::Direction::{Incoming, Outgoing};
 
 use crate::connectivity::{BandIndex, ComponentIndex, GetNet};
-use crate::graph::{GenericIndex, GetNodeIndex};
+use crate::graph::{GenericIndex, GetNodeIndex, NewFromNodeIndex};
 use crate::layout::seg::{
     FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
     SeqLooseSegIndex, SeqLooseSegWeight,
@@ -275,7 +275,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
             .unwrap()
     }
 
-    fn adjacents(&self) -> Vec<NodeIndex<usize>> {
+    fn joints(&self) -> Vec<NodeIndex<usize>> {
         self.layout
             .geometry()
             .graph()
@@ -294,7 +294,7 @@ impl<'a, W> GenericPrimitive<'a, W> {
                                 .0,
                         )
                         .unwrap(),
-                    GeometryLabel::Adjacent
+                    GeometryLabel::Joint
                 )
             })
             .collect()
@@ -339,7 +339,7 @@ impl_fixed_primitive!(FixedDot, FixedDotWeight);
 
 impl<'a> FixedDot<'a> {
     pub fn first_loose(&self, _band: BandIndex) -> Option<LooseIndex> {
-        self.adjacents().into_iter().find_map(|node| {
+        self.joints().into_iter().find_map(|node| {
             let weight = self.layout.geometry().graph().node_weight(node).unwrap();
             if matches!(weight, GeometryWeight::LoneLooseSeg(..)) {
                 Some(LoneLooseSegIndex::new(node).into())
@@ -354,15 +354,13 @@ impl<'a> FixedDot<'a> {
 
 impl<'a> MakeShape for FixedDot<'a> {
     fn shape(&self) -> Shape {
-        Shape::Dot(DotShape {
-            c: self.weight().circle,
-        })
+        self.layout.geometry().dot_shape(self.index.into())
     }
 }
 
 impl<'a> GetLegs for FixedDot<'a> {
     fn segs(&self) -> Vec<SegIndex> {
-        self.adjacents()
+        self.joints()
             .into_iter()
             .filter_map(
                 |node| match self.layout.geometry().graph().node_weight(node).unwrap() {
@@ -382,7 +380,7 @@ impl<'a> GetLegs for FixedDot<'a> {
     }
 
     fn bends(&self) -> Vec<BendIndex> {
-        self.adjacents()
+        self.joints()
             .into_iter()
             .filter(|node| {
                 matches!(
@@ -402,7 +400,7 @@ impl_loose_primitive!(LooseDot, LooseDotWeight);
 
 impl<'a> LooseDot<'a> {
     pub fn seg(&self) -> Option<SeqLooseSegIndex> {
-        self.adjacents()
+        self.joints()
             .into_iter()
             .filter(|node| {
                 matches!(
@@ -415,7 +413,7 @@ impl<'a> LooseDot<'a> {
     }
 
     pub fn bend(&self) -> LooseBendIndex {
-        self.adjacents()
+        self.joints()
             .into_iter()
             .filter(|node| {
                 matches!(
@@ -431,9 +429,7 @@ impl<'a> LooseDot<'a> {
 
 impl<'a> MakeShape for LooseDot<'a> {
     fn shape(&self) -> Shape {
-        Shape::Dot(DotShape {
-            c: self.weight().circle,
-        })
+        self.layout.geometry().dot_shape(self.index.into())
     }
 }
 
@@ -456,12 +452,7 @@ impl_fixed_primitive!(FixedSeg, FixedSegWeight);
 
 impl<'a> MakeShape for FixedSeg<'a> {
     fn shape(&self) -> Shape {
-        let ends = self.ends();
-        Shape::Seg(SegShape {
-            from: self.primitive(ends.0).weight().circle.pos,
-            to: self.primitive(ends.1).weight().circle.pos,
-            width: self.width(),
-        })
+        self.layout.geometry().seg_shape(self.index.into())
     }
 }
 
@@ -469,7 +460,7 @@ impl<'a> GetLegs for FixedSeg<'a> {}
 
 impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedSeg<'a> {
     fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
-        let v = self.adjacents();
+        let v = self.joints();
         (FixedDotIndex::new(v[0]), FixedDotIndex::new(v[1]))
     }
 }
@@ -481,26 +472,15 @@ impl_loose_primitive!(LoneLooseSeg, LoneLooseSegWeight);
 
 impl<'a> MakeShape for LoneLooseSeg<'a> {
     fn shape(&self) -> Shape {
-        let ends = self.ends();
-        Shape::Seg(SegShape {
-            from: self.primitive(ends.0).weight().circle.pos,
-            to: self.primitive(ends.1).weight().circle.pos,
-            width: self.width(),
-        })
+        self.layout.geometry().seg_shape(self.index.into())
     }
 }
 
 impl<'a> GetLegs for LoneLooseSeg<'a> {}
 
-impl<'a> GetWidth for LoneLooseSeg<'a> {
-    fn width(&self) -> f64 {
-        self.primitive(self.ends().1).weight().width()
-    }
-}
-
 impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for LoneLooseSeg<'a> {
     fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
-        let v = self.adjacents();
+        let v = self.joints();
         (FixedDotIndex::new(v[0]), FixedDotIndex::new(v[1]))
     }
 }
@@ -512,29 +492,15 @@ impl_loose_primitive!(SeqLooseSeg, SeqLooseSegWeight);
 
 impl<'a> MakeShape for SeqLooseSeg<'a> {
     fn shape(&self) -> Shape {
-        let ends = self.ends();
-        Shape::Seg(SegShape {
-            from: match ends.0 {
-                DotIndex::Fixed(dot) => self.primitive(dot).weight().circle.pos,
-                DotIndex::Loose(dot) => self.primitive(dot).weight().circle.pos,
-            },
-            to: self.primitive(ends.1).weight().circle.pos,
-            width: self.width(),
-        })
+        self.layout.geometry().seg_shape(self.index.into())
     }
 }
 
 impl<'a> GetLegs for SeqLooseSeg<'a> {}
 
-impl<'a> GetWidth for SeqLooseSeg<'a> {
-    fn width(&self) -> f64 {
-        self.primitive(self.ends().1).weight().width()
-    }
-}
-
 impl<'a> GetEnds<DotIndex, LooseDotIndex> for SeqLooseSeg<'a> {
     fn ends(&self) -> (DotIndex, LooseDotIndex) {
-        let v = self.adjacents();
+        let v = self.joints();
         if let GeometryWeight::FixedDot(..) =
             self.layout.geometry().graph().node_weight(v[0]).unwrap()
         {
@@ -593,7 +559,7 @@ impl<'a> GetLegs for FixedBend<'a> {}
 
 impl<'a> GetEnds<FixedDotIndex, FixedDotIndex> for FixedBend<'a> {
     fn ends(&self) -> (FixedDotIndex, FixedDotIndex) {
-        let v = self.adjacents();
+        let v = self.joints();
         (FixedDotIndex::new(v[0]), FixedDotIndex::new(v[1]))
     }
 }
@@ -652,12 +618,6 @@ impl<'a> MakeShape for LooseBend<'a> {
 
 impl<'a> GetLegs for LooseBend<'a> {}
 
-impl<'a> GetWidth for LooseBend<'a> {
-    fn width(&self) -> f64 {
-        self.primitive(self.ends().1).weight().width()
-    }
-}
-
 impl<'a> GetOffset for LooseBend<'a> {
     fn offset(&self) -> f64 {
         self.weight().offset
@@ -666,7 +626,7 @@ impl<'a> GetOffset for LooseBend<'a> {
 
 impl<'a> GetEnds<LooseDotIndex, LooseDotIndex> for LooseBend<'a> {
     fn ends(&self) -> (LooseDotIndex, LooseDotIndex) {
-        let v = self.adjacents();
+        let v = self.joints();
         (LooseDotIndex::new(v[0]), LooseDotIndex::new(v[1]))
     }
 }

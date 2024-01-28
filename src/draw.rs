@@ -62,12 +62,26 @@ impl<'a> Draw<'a> {
         match head.face() {
             DotIndex::Fixed(dot) => {
                 self.layout
-                    .add_lone_loose_seg(dot, into.into(), LoneLooseSegWeight { band: head.band() })
+                    .add_lone_loose_seg(
+                        dot,
+                        into.into(),
+                        LoneLooseSegWeight {
+                            band: head.band(),
+                            width: 3.0,
+                        },
+                    )
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
             DotIndex::Loose(dot) => {
                 self.layout
-                    .add_seq_loose_seg(into.into(), dot, SeqLooseSegWeight { band: head.band() })
+                    .add_seq_loose_seg(
+                        into.into(),
+                        dot,
+                        SeqLooseSegWeight {
+                            band: head.band(),
+                            width: 3.0,
+                        },
+                    )
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
         }
@@ -205,9 +219,13 @@ impl<'a> Draw<'a> {
                     r: width / 2.0,
                 },
             },
-            SeqLooseSegWeight { band: head.band() },
+            SeqLooseSegWeight {
+                band: head.band(),
+                width: 3.0,
+            },
             LooseBendWeight {
                 band: head.band(),
+                width: 3.0,
                 offset: 3.0,
                 cw,
             },
