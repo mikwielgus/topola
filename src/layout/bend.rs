@@ -37,7 +37,7 @@ impl TryFrom<GeometryIndex> for BendIndex {
         match index {
             GeometryIndex::FixedBend(index) => Ok(BendIndex::Fixed(index)),
             GeometryIndex::LooseBend(index) => Ok(BendIndex::Loose(index)),
-            _ => unreachable!(),
+            _ => Err(()),
         }
     }
 }
@@ -65,7 +65,7 @@ impl TryFrom<GeometryWeight> for BendWeight {
         match weight {
             GeometryWeight::FixedBend(weight) => Ok(BendWeight::Fixed(weight)),
             GeometryWeight::LooseBend(weight) => Ok(BendWeight::Loose(weight)),
-            _ => unreachable!(),
+            _ => Err(()),
         }
     }
 }

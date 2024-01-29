@@ -38,7 +38,7 @@ impl TryFrom<GeometryIndex> for DotIndex {
         match index {
             GeometryIndex::FixedDot(index) => Ok(DotIndex::Fixed(index)),
             GeometryIndex::LooseDot(index) => Ok(DotIndex::Loose(index)),
-            _ => unreachable!(),
+            _ => Err(()),
         }
     }
 }
@@ -66,7 +66,7 @@ impl TryFrom<GeometryWeight> for DotWeight {
         match weight {
             GeometryWeight::FixedDot(weight) => Ok(DotWeight::Fixed(weight)),
             GeometryWeight::LooseDot(weight) => Ok(DotWeight::Loose(weight)),
-            _ => unreachable!(),
+            _ => Err(()),
         }
     }
 }

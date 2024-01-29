@@ -332,46 +332,6 @@ impl<
             .unwrap()
     }
 
-    pub fn seg_joints(&self, seg: SI) -> (DI, DI) {
-        let v: Vec<_> = self.connections(seg.into()).collect();
-        (
-            v[0].try_into().unwrap_or_else(|_| unreachable!()),
-            v[1].try_into().unwrap_or_else(|_| unreachable!()),
-        )
-    }
-
-    pub fn bend_joints(&self, bend: BI) -> (DI, DI) {
-        let v: Vec<_> = self.connections(bend.into()).collect();
-        (
-            v[0].try_into().unwrap_or_else(|_| unreachable!()),
-            v[1].try_into().unwrap_or_else(|_| unreachable!()),
-        )
-    }
-
-    pub fn connections(&self, node: GI) -> impl Iterator<Item = GI> + '_ {
-        self.graph
-            .neighbors_undirected(node.node_index())
-            .filter(move |ni| {
-                matches!(
-                    self.graph
-                        .edge_weight(
-                            self.graph
-                                .find_edge_undirected(node.node_index(), *ni)
-                                .unwrap()
-                                .0,
-                        )
-                        .unwrap(),
-                    GeometryLabel::Connection
-                )
-            })
-            .map(|ni| {
-                self.weight(ni)
-                    .retag(ni)
-                    .try_into()
-                    .unwrap_or_else(|_| unreachable!())
-            })
-    }
-
     pub fn first_rail(&self, node: NodeIndex<usize>) -> Option<BI> {
         self.graph
             .neighbors_directed(node, Incoming)
@@ -451,6 +411,56 @@ impl<
                     .unwrap_or_else(|_| unreachable!())
             })
             .next()
+    }
+
+    pub fn connecteds(&self, node: GI) -> impl Iterator<Item = GI> + '_ {
+        self.graph
+            .neighbors_undirected(node.node_index())
+            .filter(move |ni| {
+                matches!(
+                    self.graph
+                        .edge_weight(
+                            self.graph
+                                .find_edge_undirected(node.node_index(), *ni)
+                                .unwrap()
+                                .0,
+                        )
+                        .unwrap(),
+                    GeometryLabel::Connection
+                )
+            })
+            .map(|ni| {
+                self.weight(ni)
+                    .retag(ni)
+                    .try_into()
+                    .unwrap_or_else(|_| unreachable!())
+            })
+    }
+
+    pub fn seg_joints(&self, seg: SI) -> (DI, DI) {
+        let v: Vec<_> = self.connecteds(seg.into()).collect();
+        (
+            v[0].try_into().unwrap_or_else(|_| unreachable!()),
+            v[1].try_into().unwrap_or_else(|_| unreachable!()),
+        )
+    }
+
+    pub fn bend_joints(&self, bend: BI) -> (DI, DI) {
+        let v: Vec<_> = self.connecteds(bend.into()).collect();
+        (
+            v[0].try_into().unwrap_or_else(|_| unreachable!()),
+            v[1].try_into().unwrap_or_else(|_| unreachable!()),
+        )
+    }
+
+    pub fn connected_segs(&self, dot: DI) -> impl Iterator<Item = SI> + '_ {
+        self.connecteds(dot.into())
+            .filter_map(|ni| ni.try_into().ok())
+    }
+
+    pub fn connected_bends(&self, dot: DI) -> impl Iterator<Item = BI> + '_ {
+        self.connecteds(dot.into())
+            .filter_map(|ni| ni.try_into().ok())
     }
 
     pub fn graph(&self) -> &StableDiGraph<GW, GeometryLabel, usize> {

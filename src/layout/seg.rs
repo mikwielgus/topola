@@ -39,7 +39,7 @@ impl TryFrom<GeometryIndex> for SegIndex {
             GeometryIndex::FixedSeg(index) => Ok(SegIndex::Fixed(index)),
             GeometryIndex::LoneLooseSeg(index) => Ok(SegIndex::LoneLoose(index)),
             GeometryIndex::SeqLooseSeg(index) => Ok(SegIndex::SeqLoose(index)),
-            _ => unreachable!(),
+            _ => Err(()),
         }
     }
 }
@@ -70,7 +70,7 @@ impl TryFrom<GeometryWeight> for SegWeight {
             GeometryWeight::FixedSeg(weight) => Ok(SegWeight::Fixed(weight)),
             GeometryWeight::LoneLooseSeg(weight) => Ok(SegWeight::LoneLoose(weight)),
             GeometryWeight::SeqLooseSeg(weight) => Ok(SegWeight::SeqLoose(weight)),
-            _ => unreachable!(),
+            _ => Err(()),
         }
     }
 }

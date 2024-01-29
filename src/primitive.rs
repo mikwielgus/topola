@@ -248,7 +248,7 @@ impl<'a> FixedDot<'a> {
     pub fn first_loose(&self, _band: BandIndex) -> Option<LooseIndex> {
         self.layout
             .geometry()
-            .connections(self.index.into())
+            .connecteds(self.index.into())
             .into_iter()
             .find_map(|ni| {
                 let weight = self
@@ -278,47 +278,14 @@ impl<'a> GetLimbs for FixedDot<'a> {
     fn segs(&self) -> Vec<SegIndex> {
         self.layout
             .geometry()
-            .connections(self.index.into())
-            .into_iter()
-            .filter_map(|ni| {
-                match self
-                    .layout
-                    .geometry()
-                    .graph()
-                    .node_weight(ni.node_index())
-                    .unwrap()
-                {
-                    GeometryWeight::FixedSeg(..) => {
-                        Some(SegIndex::Fixed(FixedSegIndex::new(ni.node_index())))
-                    }
-                    GeometryWeight::LoneLooseSeg(..) => Some(SegIndex::LoneLoose(
-                        LoneLooseSegIndex::new(ni.node_index()).into(),
-                    )),
-                    GeometryWeight::SeqLooseSeg(..) => Some(SegIndex::SeqLoose(
-                        SeqLooseSegIndex::new(ni.node_index()).into(),
-                    )),
-                    _ => None,
-                }
-            })
+            .connected_segs(self.index.into())
             .collect()
     }
 
     fn bends(&self) -> Vec<BendIndex> {
         self.layout
             .geometry()
-            .connections(self.index.into())
-            .into_iter()
-            .filter(|ni| {
-                matches!(
-                    self.layout
-                        .geometry()
-                        .graph()
-                        .node_weight(ni.node_index())
-                        .unwrap(),
-                    GeometryWeight::FixedBend(..)
-                )
-            })
-            .map(|ni| FixedBendIndex::new(ni.node_index()).into())
+            .connected_bends(self.index.into())
             .collect()
     }
 }
@@ -332,18 +299,7 @@ impl<'a> LooseDot<'a> {
     pub fn seg(&self) -> Option<SeqLooseSegIndex> {
         self.layout
             .geometry()
-            .connections(self.index.into())
-            .into_iter()
-            .filter(|ni| {
-                matches!(
-                    self.layout
-                        .geometry()
-                        .graph()
-                        .node_weight(ni.node_index())
-                        .unwrap(),
-                    GeometryWeight::SeqLooseSeg(..)
-                )
-            })
+            .connected_segs(self.index.into())
             .map(|ni| SeqLooseSegIndex::new(ni.node_index()))
             .next()
     }
@@ -351,18 +307,7 @@ impl<'a> LooseDot<'a> {
     pub fn bend(&self) -> LooseBendIndex {
         self.layout
             .geometry()
-            .connections(self.index.into())
-            .into_iter()
-            .filter(|ni| {
-                matches!(
-                    self.layout
-                        .geometry()
-                        .graph()
-                        .node_weight(ni.node_index())
-                        .unwrap(),
-                    GeometryWeight::LooseBend(..)
-                )
-            })
+            .connected_bends(self.index.into())
             .map(|ni| LooseBendIndex::new(ni.node_index()))
             .next()
             .unwrap()
