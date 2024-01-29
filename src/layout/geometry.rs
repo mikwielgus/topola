@@ -4,6 +4,7 @@ use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
     stable_graph::{NodeIndex, StableDiGraph},
+    visit::EdgeRef,
     Direction::{Incoming, Outgoing},
 };
 
@@ -239,6 +240,25 @@ impl<
             .update_edge(bend.node_index(), core.node_index(), GeometryLabel::Core);
 
         bend
+    }
+
+    pub fn reattach_bend(&mut self, bend: BI, maybe_new_inner: Option<BI>) {
+        if let Some(old_inner_edge) = self
+            .graph
+            .edges_directed(bend.node_index(), Incoming)
+            .filter(|edge| *edge.weight() == GeometryLabel::Outer)
+            .next()
+        {
+            self.graph.remove_edge(old_inner_edge.id());
+        }
+
+        if let Some(new_inner) = maybe_new_inner {
+            self.graph.update_edge(
+                new_inner.node_index(),
+                bend.node_index(),
+                GeometryLabel::Outer,
+            );
+        }
     }
 
     pub fn dot_shape(&self, dot: DI) -> Shape {

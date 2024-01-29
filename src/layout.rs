@@ -420,25 +420,8 @@ impl Layout {
         || self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count() + 1))]
     fn reattach_bend(&mut self, bend: LooseBendIndex, maybe_new_inner: Option<LooseBendIndex>) {
         self.remove_from_rtree(bend.into());
-
-        if let Some(old_inner_edge) = self
-            .geometry()
-            .graph()
-            .edges_directed(bend.node_index(), Incoming)
-            .filter(|edge| *edge.weight() == GeometryLabel::Outer)
-            .next()
-        {
-            self.geometry.graph.remove_edge(old_inner_edge.id());
-        }
-
-        if let Some(new_inner) = maybe_new_inner {
-            self.geometry.graph.update_edge(
-                new_inner.node_index(),
-                bend.node_index(),
-                GeometryLabel::Outer,
-            );
-        }
-
+        self.geometry
+            .reattach_bend(bend.into(), maybe_new_inner.map(Into::into));
         self.insert_into_rtree(bend.into());
     }
 
@@ -681,10 +664,10 @@ impl Layout {
                 .add_core_bend_infringably(from.into(), to.into(), core, weight, infringables)
                 .map_err(Into::into),
             WraparoundableIndex::FixedBend(around) => self
-                .add_outer_bend_infringably(from, to, around, weight, infringables)
+                .add_outer_bend_infringably(from, to, around.into(), weight, infringables)
                 .map_err(Into::into),
             WraparoundableIndex::LooseBend(around) => self
-                .add_outer_bend_infringably(from, to, around, weight, infringables)
+                .add_outer_bend_infringably(from, to, around.into(), weight, infringables)
                 .map_err(Into::into),
         }
     }
@@ -715,17 +698,14 @@ impl Layout {
     #[debug_ensures(ret.is_err() -> self.geometry.graph().node_count() == old(self.geometry.graph().node_count()))]
     #[debug_ensures(ret.is_ok() -> self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count() + 4))]
     #[debug_ensures(ret.is_err() -> self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
-    fn add_outer_bend_infringably<W: BendWeightTrait<GeometryWeight>>(
+    fn add_outer_bend_infringably(
         &mut self,
         from: LooseDotIndex,
         to: LooseDotIndex,
-        inner: impl GetNodeIndex,
-        weight: W,
+        inner: BendIndex,
+        weight: LooseBendWeight,
         infringables: &[GeometryIndex],
-    ) -> Result<GenericIndex<W>, Infringement>
-    where
-        GenericIndex<W>: Into<GeometryIndex>,
-    {
+    ) -> Result<GenericIndex<LooseBendWeight>, Infringement> {
         let core = *self
             .geometry
             .graph()
@@ -752,6 +732,7 @@ impl Layout {
         let bend = self
             .geometry
             .add_bend(from.into(), to.into(), core.into(), weight);
+        self.geometry.reattach_bend(bend.into(), Some(inner));
 
         self.geometry.graph.update_edge(
             inner.node_index(),
