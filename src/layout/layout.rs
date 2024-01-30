@@ -18,7 +18,7 @@ use crate::guide::Guide;
 use crate::layout::bend::BendIndex;
 use crate::layout::dot::DotWeight;
 use crate::layout::geometry::{
-    BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, SegWeightTrait,
+    BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetPos, SegWeightTrait,
 };
 use crate::layout::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
@@ -188,7 +188,7 @@ impl Layout {
             .unwrap();
 
         self.remove_from_rtree(weight.retag(node.node_index()));
-        self.geometry.graph.remove_node(node.node_index());
+        self.geometry.remove(node);
     }
 
     // TODO: This method shouldn't be public.
@@ -729,12 +729,6 @@ impl Layout {
             .add_bend(from.into(), to.into(), core.into(), weight);
         self.geometry.reattach_bend(bend.into(), Some(inner));
 
-        self.geometry.graph.update_edge(
-            inner.node_index(),
-            bend.node_index(),
-            GeometryLabel::Outer,
-        );
-
         self.insert_into_rtree(bend.into());
         self.fail_and_remove_if_infringes_except(bend.into(), infringables)?;
         Ok(bend)
@@ -744,15 +738,7 @@ impl Layout {
     #[debug_ensures(self.geometry.graph().edge_count() == old(self.geometry.graph().edge_count()))]
     pub fn flip_bend(&mut self, bend: FixedBendIndex) {
         self.remove_from_rtree(bend.into());
-
-        let Some(GeometryWeight::FixedBend(weight)) =
-            self.geometry.graph.node_weight_mut(bend.node_index())
-        else {
-            unreachable!();
-        };
-
-        weight.cw = !weight.cw;
-
+        self.geometry.flip_bend(bend.into());
         self.insert_into_rtree(bend.into());
     }
 
@@ -821,32 +807,12 @@ impl Layout {
     ) -> Result<(), Infringement> {
         self.remove_from_rtree_with_limbs(dot.into());
 
-        let mut weight = *self.geometry.graph.node_weight(dot.node_index()).unwrap();
-        let old_weight = weight;
-
-        match weight {
-            GeometryWeight::FixedDot(ref mut fixed) => {
-                fixed.circle.pos = to;
-            }
-            GeometryWeight::LooseDot(ref mut loose) => {
-                loose.circle.pos = to;
-            }
-            _ => unreachable!(),
-        }
-
-        *self
-            .geometry
-            .graph
-            .node_weight_mut(dot.node_index())
-            .unwrap() = weight;
+        let old_pos = self.geometry.dot_weight(dot).pos();
+        self.geometry.move_dot(dot, to);
 
         if let Some(infringement) = self.detect_infringement_except(dot.into(), infringables) {
             // Restore original state.
-            *self
-                .geometry
-                .graph
-                .node_weight_mut(dot.node_index())
-                .unwrap() = old_weight;
+            self.geometry.move_dot(dot, old_pos);
 
             self.insert_into_rtree_with_limbs(dot.into());
             return Err(infringement);

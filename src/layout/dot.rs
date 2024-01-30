@@ -1,6 +1,8 @@
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 
+use petgraph::stable_graph::NodeIndex;
+
 use crate::{
     graph::{GenericIndex, GetNodeIndex},
     layout::{
@@ -16,7 +18,7 @@ use crate::{
     math::Circle,
 };
 
-use petgraph::stable_graph::NodeIndex;
+use super::geometry::SetPos;
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -46,7 +48,7 @@ impl TryFrom<GeometryIndex> for DotIndex {
     }
 }
 
-#[enum_dispatch(GetPos, GetWidth)]
+#[enum_dispatch(GetPos, SetPos, GetWidth)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DotWeight {
     Fixed(FixedDotWeight),
@@ -91,6 +93,12 @@ impl GetPos for FixedDotWeight {
     }
 }
 
+impl SetPos for FixedDotWeight {
+    fn set_pos(&mut self, pos: Point) {
+        self.circle.pos = pos
+    }
+}
+
 impl GetWidth for FixedDotWeight {
     fn width(&self) -> f64 {
         self.circle.r * 2.0
@@ -109,6 +117,12 @@ impl DotWeightTrait<GeometryWeight> for LooseDotWeight {}
 impl GetPos for LooseDotWeight {
     fn pos(&self) -> Point {
         self.circle.pos
+    }
+}
+
+impl SetPos for LooseDotWeight {
+    fn set_pos(&mut self, pos: Point) {
+        self.circle.pos = pos
     }
 }
 

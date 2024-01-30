@@ -25,6 +25,11 @@ pub trait GetPos {
 }
 
 #[enum_dispatch]
+pub trait SetPos {
+    fn set_pos(&mut self, pos: Point);
+}
+
+#[enum_dispatch]
 pub trait GetWidth {
     fn width(&self) -> f64;
 }
@@ -41,7 +46,7 @@ pub enum GeometryLabel {
     Core,
 }
 
-pub trait DotWeightTrait<GW>: GetPos + GetWidth + Into<GW> + Copy {}
+pub trait DotWeightTrait<GW>: GetPos + SetPos + GetWidth + Into<GW> + Copy {}
 pub trait SegWeightTrait<GW>: GetWidth + Into<GW> + Copy {}
 pub trait BendWeightTrait<GW>: GetOffset + GetWidth + Into<GW> + Copy {}
 
@@ -56,7 +61,7 @@ pub struct Geometry<
     SI: GetNodeIndex + Into<GI> + Copy,
     BI: GetNodeIndex + Into<GI> + Copy,
 > {
-    pub graph: StableDiGraph<GW, GeometryLabel, usize>,
+    graph: StableDiGraph<GW, GeometryLabel, usize>,
     weight_marker: PhantomData<GW>,
     dot_weight_marker: PhantomData<DW>,
     seg_weight_marker: PhantomData<SW>,
@@ -138,6 +143,40 @@ impl<
             .update_edge(bend.node_index(), core.node_index(), GeometryLabel::Core);
 
         bend
+    }
+
+    pub fn remove(&mut self, node: GI) {
+        self.graph.remove_node(node.node_index());
+    }
+
+    pub fn move_dot(&mut self, dot: DI, to: Point) {
+        let mut weight = self.dot_weight(dot);
+        weight.set_pos(to);
+        *self.graph.node_weight_mut(dot.node_index()).unwrap() = weight.into()
+    }
+
+    pub fn flip_bend(&mut self, bend: BI) {
+        let (from, to) = self.bend_joints(bend);
+        let from_edge_weight = self
+            .graph
+            .remove_edge(
+                self.graph
+                    .find_edge(from.node_index(), bend.node_index())
+                    .unwrap(),
+            )
+            .unwrap();
+        let to_edge_weight = self
+            .graph
+            .remove_edge(
+                self.graph
+                    .find_edge(bend.node_index(), to.node_index())
+                    .unwrap(),
+            )
+            .unwrap();
+        self.graph
+            .update_edge(from.node_index(), bend.node_index(), to_edge_weight);
+        self.graph
+            .update_edge(bend.node_index(), to.node_index(), from_edge_weight);
     }
 
     pub fn reattach_bend(&mut self, bend: BI, maybe_new_inner: Option<BI>) {
