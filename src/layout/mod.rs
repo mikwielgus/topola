@@ -5,9 +5,9 @@ pub mod bend;
 pub mod connectivity;
 pub mod dot;
 pub mod geometry;
+mod layout;
 pub mod loose;
 pub mod primitive;
 pub mod seg;
 
-mod layout;
 pub use layout::*;

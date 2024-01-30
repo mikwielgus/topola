@@ -14,10 +14,10 @@ use crate::{
     layout::{
         bend::{FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
+        geometry::shape::ShapeTrait,
         graph::{GeometryIndex, MakePrimitive},
         primitive::{GetCore, MakeShape, Primitive},
     },
-    shape::ShapeTrait,
     triangulation::{GetVertexIndex, Triangulation},
 };
 

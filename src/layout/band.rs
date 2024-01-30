@@ -1,16 +1,14 @@
-use super::{
-    connectivity::{BandIndex, BandWeight, ConnectivityWeight, GetNet},
-    loose::{GetNextLoose, LooseIndex},
-};
 use crate::{
     graph::GetNodeIndex,
     layout::{
+        connectivity::{BandIndex, BandWeight, ConnectivityWeight, GetNet},
         dot::{DotIndex, FixedDotIndex},
+        geometry::shape::ShapeTrait,
         graph::{GeometryIndex, MakePrimitive},
+        loose::{GetNextLoose, LooseIndex},
         primitive::{GetJoints, GetOtherJoint, MakeShape},
         Layout,
     },
-    shape::ShapeTrait,
 };
 
 pub struct Band<'a> {

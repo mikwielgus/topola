@@ -11,6 +11,7 @@ use crate::layout::Layout;
 use crate::layout::{
     connectivity::BandIndex,
     dot::FixedDotIndex,
+    geometry::shape::ShapeTrait,
     graph::{GeometryIndex, MakePrimitive},
     primitive::MakeShape,
 };
@@ -18,7 +19,6 @@ use crate::layout::{
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
 
 use crate::rules::Rules;
-use crate::shape::ShapeTrait;
 use crate::tracer::{Trace, Tracer};
 
 #[derive(Error, Debug, Clone, Copy)]

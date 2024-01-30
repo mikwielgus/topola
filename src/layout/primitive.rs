@@ -11,13 +11,14 @@ use crate::layout::{
     bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
     connectivity::{BandIndex, ComponentIndex, GetNet},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    geometry::{GetOffset, GetWidth},
+    geometry::{
+        shape::{Shape, ShapeTrait},
+        GetOffset, GetWidth,
+    },
     graph::{GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex, MakePrimitive, Retag},
     loose::{Loose, LooseIndex},
     Layout,
 };
-
-use crate::shape::{Shape, ShapeTrait};
 
 #[enum_dispatch]
 pub trait GetLayout {

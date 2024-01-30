@@ -2,18 +2,18 @@ use enum_dispatch::enum_dispatch;
 use geo::Line;
 
 use crate::{
-    layout::Layout,
     layout::{
         bend::BendIndex,
         connectivity::BandIndex,
         dot::{DotIndex, FixedDotIndex, LooseDotIndex},
+        geometry::shape::{Shape, ShapeTrait},
         graph::{GetBandIndex, MakePrimitive},
         primitive::{GetCore, GetInnerOuter, GetOtherJoint, GetWeight, MakeShape},
+        Layout,
     },
     math::{self, Circle, NoTangents},
     rules::{Conditions, Rules},
     segbend::Segbend,
-    shape::{Shape, ShapeTrait},
 };
 
 #[enum_dispatch]

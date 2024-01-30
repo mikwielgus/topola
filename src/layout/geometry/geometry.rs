@@ -13,10 +13,10 @@ use crate::{
     layout::{
         bend::{BendWeight, FixedBendWeight, LooseBendWeight},
         dot::{DotWeight, FixedDotWeight, LooseDotWeight},
+        geometry::shape::{BendShape, DotShape, SegShape, Shape},
         graph::{GeometryWeight, Retag},
     },
     math::Circle,
-    shape::{BendShape, DotShape, SegShape, Shape},
 };
 
 #[enum_dispatch]

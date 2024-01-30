@@ -23,6 +23,7 @@ use crate::layout::geometry::{
 use crate::layout::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+    geometry::shape::{Shape, ShapeTrait},
     graph::{GeometryIndex, GeometryWeight, GetComponentIndex, MakePrimitive, Retag},
     primitive::{
         GenericPrimitive, GetConnectable, GetCore, GetInnerOuter, GetJoints, GetLimbs,
@@ -35,7 +36,6 @@ use crate::layout::{
 };
 use crate::math::NoTangents;
 use crate::segbend::Segbend;
-use crate::shape::{Shape, ShapeTrait};
 use crate::wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex};
 
 use super::bend::BendWeight;
