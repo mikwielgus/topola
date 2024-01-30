@@ -9,9 +9,11 @@ use petgraph::{
 };
 
 use crate::{
-    connectivity::{BandIndex, ComponentIndex},
     graph::{GenericIndex, GetNodeIndex},
-    layout::Layout,
+    layout::{
+        connectivity::{BandIndex, ComponentIndex},
+        Layout,
+    },
     math::Circle,
     primitive::Primitive,
     shape::{BendShape, DotShape, SegShape, Shape},

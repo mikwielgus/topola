@@ -2,9 +2,11 @@ use enum_dispatch::enum_dispatch;
 use geo::Point;
 
 use crate::{
-    connectivity::{BandIndex, ComponentIndex},
     graph::{GenericIndex, GetNodeIndex},
-    layout::Layout,
+    layout::{
+        connectivity::{BandIndex, ComponentIndex},
+        Layout,
+    },
     math::Circle,
     primitive::{GenericPrimitive, Primitive},
 };

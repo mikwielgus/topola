@@ -1,9 +1,11 @@
 use enum_dispatch::enum_dispatch;
 
 use crate::{
-    connectivity::{BandIndex, ComponentIndex},
     graph::{GenericIndex, GetNodeIndex},
-    layout::Layout,
+    layout::{
+        connectivity::{BandIndex, ComponentIndex},
+        Layout,
+    },
     primitive::{GenericPrimitive, Primitive},
 };
 

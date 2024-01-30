@@ -9,13 +9,10 @@ macro_rules! dbg_dot {
 }
 
 mod astar;
-mod band;
-mod connectivity;
 mod draw;
 mod graph;
 mod guide;
 mod layout;
-mod loose;
 mod math;
 mod mesh;
 mod primitive;
@@ -27,9 +24,9 @@ mod tracer;
 mod triangulation;
 mod wraparoundable;
 
-use connectivity::BandIndex;
 use draw::DrawException;
 use geo::point;
+use layout::connectivity::BandIndex;
 use layout::dot::FixedDotWeight;
 use layout::geometry::{GeometryIndex, MakePrimitive};
 use layout::seg::FixedSegWeight;

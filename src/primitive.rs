@@ -1,24 +1,25 @@
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
-use petgraph::Direction::{Incoming, Outgoing};
 
-use crate::connectivity::{BandIndex, ComponentIndex, GetNet};
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::dot::DotWeight;
 use crate::layout::seg::{
-    FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
-    SeqLooseSegIndex, SeqLooseSegWeight,
+    FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex,
+    SeqLooseSegWeight,
 };
-use crate::layout::Layout;
 use crate::layout::{
-    bend::{BendIndex, FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
+    bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     geometry::{
-        GeometryIndex, GeometryLabel, GeometryWeight, GetBandIndex, GetComponentIndex, GetOffset,
-        GetWidth, MakePrimitive, Retag,
+        GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex, GetOffset, GetWidth,
+        MakePrimitive, Retag,
     },
 };
-use crate::loose::{Loose, LooseIndex};
+use crate::layout::{
+    connectivity::{BandIndex, ComponentIndex, GetNet},
+    loose::{Loose, LooseIndex},
+    Layout,
+};
 
 use crate::shape::{Shape, ShapeTrait};
 

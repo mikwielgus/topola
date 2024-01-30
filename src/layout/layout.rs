@@ -3,16 +3,16 @@ use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
 use petgraph::visit::EdgeRef;
-use petgraph::Direction::Incoming;
 use rstar::primitives::GeomWithData;
 use rstar::{RTree, RTreeObject};
 use thiserror::Error;
 
-use crate::band::Band;
-use crate::connectivity::{
+use super::band::Band;
+use super::connectivity::{
     BandIndex, BandWeight, ComponentIndex, ComponentWeight, ConnectivityGraph, ConnectivityLabel,
     ConnectivityWeight, GetNet,
 };
+use super::loose::{GetNextLoose, Loose, LooseIndex};
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;
 use crate::layout::bend::BendIndex;
@@ -27,7 +27,6 @@ use crate::layout::{
     },
     seg::{FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex},
 };
-use crate::loose::{GetNextLoose, Loose, LooseIndex};
 use crate::math::NoTangents;
 use crate::primitive::{
     GenericPrimitive, GetConnectable, GetCore, GetInnerOuter, GetJoints, GetLimbs, GetOtherJoint,

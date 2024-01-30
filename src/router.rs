@@ -5,11 +5,11 @@ use spade::InsertionError;
 use thiserror::Error;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
-use crate::connectivity::BandIndex;
 use crate::draw::DrawException;
 use crate::guide::HeadTrait;
 use crate::layout::Layout;
 use crate::layout::{
+    connectivity::BandIndex,
     dot::FixedDotIndex,
     geometry::{GeometryIndex, MakePrimitive},
 };

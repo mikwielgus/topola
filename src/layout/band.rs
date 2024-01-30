@@ -1,12 +1,14 @@
-use crate::{
+use super::{
     connectivity::{BandIndex, BandWeight, ConnectivityWeight, GetNet},
+    loose::{GetNextLoose, LooseIndex},
+};
+use crate::{
     graph::GetNodeIndex,
     layout::Layout,
     layout::{
         dot::{DotIndex, FixedDotIndex},
         geometry::{GeometryIndex, MakePrimitive},
     },
-    loose::{GetNextLoose, LooseIndex},
     primitive::{GetJoints, GetOtherJoint, MakeShape},
     shape::ShapeTrait,
 };

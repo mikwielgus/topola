@@ -2,10 +2,10 @@ use enum_dispatch::enum_dispatch;
 use geo::Line;
 
 use crate::{
-    connectivity::BandIndex,
     layout::Layout,
     layout::{
         bend::BendIndex,
+        connectivity::BandIndex,
         dot::{DotIndex, FixedDotIndex, LooseDotIndex},
         geometry::{GetBandIndex, MakePrimitive},
     },
