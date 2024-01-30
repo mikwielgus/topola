@@ -2,8 +2,8 @@ use enum_dispatch::enum_dispatch;
 
 use crate::{
     connectivity::{BandIndex, ComponentIndex},
-    graph::GenericIndex,
-    layout::{GetNodeIndex, Layout},
+    graph::{GenericIndex, GetNodeIndex},
+    layout::Layout,
     primitive::{GenericPrimitive, Primitive},
 };
 

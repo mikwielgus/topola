@@ -17,7 +17,7 @@ use crate::{
     shape::{BendShape, DotShape, SegShape, Shape},
 };
 
-use super::{
+use super::super::{
     bend::{FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
     dot::{FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     seg::{
@@ -107,18 +107,6 @@ macro_rules! impl_loose_weight {
     };
 }
 
-#[enum_dispatch(GetWidth, Retag<GeometryIndex>)]
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum GeometryWeight {
-    FixedDot(FixedDotWeight),
-    LooseDot(LooseDotWeight),
-    FixedSeg(FixedSegWeight),
-    LoneLooseSeg(LoneLooseSegWeight),
-    SeqLooseSeg(SeqLooseSegWeight),
-    FixedBend(FixedBendWeight),
-    LooseBend(LooseBendWeight),
-}
-
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GeometryIndex {
@@ -129,6 +117,18 @@ pub enum GeometryIndex {
     SeqLooseSeg(SeqLooseSegIndex),
     FixedBend(FixedBendIndex),
     LooseBend(LooseBendIndex),
+}
+
+#[enum_dispatch(GetWidth, Retag<GeometryIndex>)]
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum GeometryWeight {
+    FixedDot(FixedDotWeight),
+    LooseDot(LooseDotWeight),
+    FixedSeg(FixedSegWeight),
+    LoneLooseSeg(LoneLooseSegWeight),
+    SeqLooseSeg(SeqLooseSegWeight),
+    FixedBend(FixedBendWeight),
+    LooseBend(LooseBendWeight),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]

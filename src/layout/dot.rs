@@ -3,8 +3,8 @@ use geo::Point;
 
 use crate::{
     connectivity::{BandIndex, ComponentIndex},
-    graph::GenericIndex,
-    layout::{GetNodeIndex, Layout},
+    graph::{GenericIndex, GetNodeIndex},
+    layout::Layout,
     math::Circle,
     primitive::{GenericPrimitive, Primitive},
 };

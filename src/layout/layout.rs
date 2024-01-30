@@ -1,9 +1,3 @@
-#[macro_use]
-pub mod geometry;
-pub mod bend;
-pub mod dot;
-pub mod seg;
-
 use contracts::{debug_ensures, debug_invariant};
 use enum_dispatch::enum_dispatch;
 use geo::Point;
@@ -43,8 +37,8 @@ use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
 use crate::wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex};
 
-use self::bend::BendWeight;
-use self::seg::SegWeight;
+use super::bend::BendWeight;
+use super::seg::SegWeight;
 
 pub type RTreeWrapper = GeomWithData<Shape, GeometryIndex>;
 
