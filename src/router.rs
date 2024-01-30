@@ -11,12 +11,12 @@ use crate::layout::Layout;
 use crate::layout::{
     connectivity::BandIndex,
     dot::FixedDotIndex,
-    geometry::{GeometryIndex, MakePrimitive},
+    graph::{GeometryIndex, MakePrimitive},
+    primitive::MakeShape,
 };
 
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
 
-use crate::primitive::MakeShape;
 use crate::rules::Rules;
 use crate::shape::ShapeTrait;
 use crate::tracer::{Trace, Tracer};

@@ -3,14 +3,14 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     graph::GetNodeIndex,
-    layout::Layout,
     layout::{
         bend::{BendIndex, FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
-        geometry::{GeometryIndex, MakePrimitive},
-    },
-    primitive::{
-        FixedBend, FixedDot, GetFirstRail, GetInnerOuter, GetLayout, LooseBend, Primitive,
+        graph::{GeometryIndex, MakePrimitive},
+        primitive::{
+            FixedBend, FixedDot, GetFirstRail, GetInnerOuter, GetLayout, LooseBend, Primitive,
+        },
+        Layout,
     },
 };
 

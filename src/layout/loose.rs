@@ -7,10 +7,10 @@ use crate::{
     layout::{
         bend::LooseBendIndex,
         dot::{DotIndex, LooseDotIndex},
-        geometry::{GeometryIndex, MakePrimitive},
+        graph::{GeometryIndex, MakePrimitive},
+        primitive::{GetJoints, LoneLooseSeg, LooseBend, LooseDot, Primitive, SeqLooseSeg},
         seg::{LoneLooseSegIndex, SeqLooseSegIndex},
     },
-    primitive::{GetJoints, LoneLooseSeg, LooseBend, LooseDot, Primitive, SeqLooseSeg},
 };
 
 #[enum_dispatch]

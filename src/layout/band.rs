@@ -4,12 +4,12 @@ use super::{
 };
 use crate::{
     graph::GetNodeIndex,
-    layout::Layout,
     layout::{
         dot::{DotIndex, FixedDotIndex},
-        geometry::{GeometryIndex, MakePrimitive},
+        graph::{GeometryIndex, MakePrimitive},
+        primitive::{GetJoints, GetOtherJoint, MakeShape},
+        Layout,
     },
-    primitive::{GetJoints, GetOtherJoint, MakeShape},
     shape::ShapeTrait,
 };
 

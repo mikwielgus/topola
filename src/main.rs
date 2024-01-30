@@ -12,10 +12,10 @@ mod astar;
 mod draw;
 mod graph;
 mod guide;
+#[macro_use]
 mod layout;
 mod math;
 mod mesh;
-mod primitive;
 mod router;
 mod rules;
 mod segbend;
@@ -28,12 +28,12 @@ use draw::DrawException;
 use geo::point;
 use layout::connectivity::BandIndex;
 use layout::dot::FixedDotWeight;
-use layout::geometry::{GeometryIndex, MakePrimitive};
+use layout::graph::{GeometryIndex, MakePrimitive};
+use layout::primitive::MakeShape;
 use layout::seg::FixedSegWeight;
 use layout::{Infringement, Layout, LayoutException};
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-use primitive::MakeShape;
 use router::RouterObserver;
 
 use sdl2::event::Event;

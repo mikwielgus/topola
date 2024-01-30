@@ -7,12 +7,12 @@ use crate::{
     layout::{
         bend::{BendIndex, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
-        geometry::{GetBandIndex, MakePrimitive},
+        graph::{GetBandIndex, MakePrimitive},
+        primitive::GetOtherJoint,
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
     },
     layout::{Infringement, Layout, LayoutException},
     math::{Circle, NoTangents},
-    primitive::GetOtherJoint,
     rules::{Conditions, Rules},
     wraparoundable::WraparoundableIndex,
 };

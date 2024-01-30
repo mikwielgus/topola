@@ -1,9 +1,10 @@
-use crate::{
-    layout::Layout,
-    layout::{
-        bend::LooseBendIndex, dot::LooseDotIndex, geometry::GeometryIndex, seg::SeqLooseSegIndex,
-    },
+use crate::layout::{
+    bend::LooseBendIndex,
+    dot::LooseDotIndex,
+    graph::GeometryIndex,
     primitive::{GetInterior, GetJoints, GetOtherJoint, LooseBend, LooseDot},
+    seg::SeqLooseSegIndex,
+    Layout,
 };
 
 #[derive(Debug, Clone, Copy)]

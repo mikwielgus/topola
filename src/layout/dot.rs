@@ -5,16 +5,17 @@ use crate::{
     graph::{GenericIndex, GetNodeIndex},
     layout::{
         connectivity::{BandIndex, ComponentIndex},
+        geometry::{DotWeightTrait, GetPos, GetWidth},
+        graph::{
+            GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex, GetComponentIndexMut,
+            MakePrimitive, Retag,
+        },
+        primitive::{GenericPrimitive, Primitive},
         Layout,
     },
     math::Circle,
-    primitive::{GenericPrimitive, Primitive},
 };
 
-use super::geometry::{
-    DotWeightTrait, GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex,
-    GetComponentIndexMut, GetPos, GetWidth, MakePrimitive, Retag,
-};
 use petgraph::stable_graph::NodeIndex;
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]

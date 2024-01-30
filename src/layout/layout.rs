@@ -17,21 +17,23 @@ use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::guide::Guide;
 use crate::layout::bend::BendIndex;
 use crate::layout::dot::DotWeight;
-use crate::layout::geometry::{BendWeightTrait, DotWeightTrait, Geometry, SegWeightTrait};
-use crate::layout::seg::{SegIndex, SeqLooseSegWeight};
+use crate::layout::geometry::{
+    BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, SegWeightTrait,
+};
 use crate::layout::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    geometry::{
-        GeometryIndex, GeometryLabel, GeometryWeight, GetComponentIndex, MakePrimitive, Retag,
+    graph::{GeometryIndex, GeometryWeight, GetComponentIndex, MakePrimitive, Retag},
+    primitive::{
+        GenericPrimitive, GetConnectable, GetCore, GetInnerOuter, GetJoints, GetLimbs,
+        GetOtherJoint, GetWeight, MakeShape,
     },
-    seg::{FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex},
+    seg::{
+        FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
+        SeqLooseSegIndex, SeqLooseSegWeight,
+    },
 };
 use crate::math::NoTangents;
-use crate::primitive::{
-    GenericPrimitive, GetConnectable, GetCore, GetInnerOuter, GetJoints, GetLimbs, GetOtherJoint,
-    GetWeight, MakeShape,
-};
 use crate::segbend::Segbend;
 use crate::shape::{Shape, ShapeTrait};
 use crate::wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex};

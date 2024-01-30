@@ -7,7 +7,6 @@ use petgraph::visit::{self, NodeIndexable};
 use petgraph::{stable_graph::NodeIndex, visit::EdgeRef};
 use spade::{HasPosition, InsertionError, Point2};
 
-use crate::primitive::{GetCore, Primitive};
 use crate::triangulation::TriangulationEdgeReference;
 use crate::{
     graph::GetNodeIndex,
@@ -15,9 +14,9 @@ use crate::{
     layout::{
         bend::{FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
-        geometry::{GeometryIndex, MakePrimitive},
+        graph::{GeometryIndex, MakePrimitive},
+        primitive::{GetCore, MakeShape, Primitive},
     },
-    primitive::MakeShape,
     shape::ShapeTrait,
     triangulation::{GetVertexIndex, Triangulation},
 };

@@ -9,14 +9,10 @@ use crate::layout::seg::{
 };
 use crate::layout::{
     bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
-    dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    geometry::{
-        GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex, GetOffset, GetWidth,
-        MakePrimitive, Retag,
-    },
-};
-use crate::layout::{
     connectivity::{BandIndex, ComponentIndex, GetNet},
+    dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+    geometry::{GetOffset, GetWidth},
+    graph::{GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex, MakePrimitive, Retag},
     loose::{Loose, LooseIndex},
     Layout,
 };
