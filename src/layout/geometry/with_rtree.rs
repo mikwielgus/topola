@@ -29,7 +29,7 @@ pub struct GeometryWithRtree<
     BI: GetNodeIndex + Into<GI> + Copy,
 > {
     geometry: Geometry<GW, DW, SW, BW, GI, DI, SI, BI>,
-    pub rtree: RTree<BboxedShapeAndIndex<GI>>,
+    rtree: RTree<BboxedShapeAndIndex<GI>>,
     weight_marker: PhantomData<GW>,
     dot_weight_marker: PhantomData<DW>,
     seg_weight_marker: PhantomData<SW>,
@@ -208,6 +208,10 @@ impl<
 
     pub fn geometry(&self) -> &Geometry<GW, DW, SW, BW, GI, DI, SI, BI> {
         &self.geometry
+    }
+
+    pub fn rtree(&self) -> &RTree<BboxedShapeAndIndex<GI>> {
+        &self.rtree
     }
 
     pub fn graph(&self) -> &StableDiGraph<GW, GeometryLabel, usize> {

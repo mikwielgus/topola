@@ -748,7 +748,7 @@ impl Layout {
 
     pub fn nodes(&self) -> impl Iterator<Item = GeometryIndex> + '_ {
         self.geometry_with_rtree
-            .rtree
+            .rtree()
             .iter()
             .map(|wrapper| wrapper.data)
     }
@@ -763,7 +763,7 @@ impl Layout {
 
     fn node_indices(&self) -> impl Iterator<Item = GeometryIndex> + '_ {
         self.geometry_with_rtree
-            .rtree
+            .rtree()
             .iter()
             .map(|wrapper| wrapper.data)
     }
@@ -813,7 +813,7 @@ impl Layout {
         let shape = node.primitive(self).shape();
 
         self.geometry_with_rtree
-            .rtree
+            .rtree()
             .locate_in_envelope_intersecting(&RTreeObject::envelope(&shape))
             .filter(|wrapper| {
                 let other_index = wrapper.data;
@@ -833,7 +833,7 @@ impl Layout {
         let shape = node.primitive(self).shape();
 
         self.geometry_with_rtree
-            .rtree
+            .rtree()
             .locate_in_envelope_intersecting(&RTreeObject::envelope(&shape))
             .filter(|wrapper| {
                 let other_index = wrapper.data;
