@@ -6,7 +6,7 @@ use thiserror::Error;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
 use crate::draw::DrawException;
-use crate::guide::HeadTrait;
+use crate::layout::guide::HeadTrait;
 use crate::layout::Layout;
 use crate::layout::{
     connectivity::BandIndex,

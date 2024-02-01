@@ -13,8 +13,9 @@ use crate::{
     },
     math::{self, Circle, NoTangents},
     rules::{Conditions, Rules},
-    segbend::Segbend,
 };
+
+use super::segbend::Segbend;
 
 #[enum_dispatch]
 pub trait HeadTrait {

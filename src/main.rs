@@ -11,14 +11,12 @@ macro_rules! dbg_dot {
 mod astar;
 mod draw;
 mod graph;
-mod guide;
 #[macro_use]
 mod layout;
 mod math;
 mod mesh;
 mod router;
 mod rules;
-mod segbend;
 mod tracer;
 mod triangulation;
 mod wraparoundable;

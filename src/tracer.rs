@@ -2,9 +2,12 @@ use contracts::debug_ensures;
 
 use crate::{
     draw::{Draw, DrawException},
-    guide::{BareHead, Head, SegbendHead},
-    layout::Layout,
-    layout::{bend::LooseBendIndex, dot::FixedDotIndex},
+    layout::{
+        bend::LooseBendIndex,
+        dot::FixedDotIndex,
+        guide::{BareHead, Head, SegbendHead},
+        Layout,
+    },
     mesh::{Mesh, VertexIndex},
     rules::Rules,
 };

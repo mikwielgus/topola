@@ -3,11 +3,11 @@ use geo::{EuclideanLength, Point};
 use thiserror::Error;
 
 use crate::{
-    guide::{Guide, Head, HeadTrait, SegbendHead},
     layout::{
         bend::{BendIndex, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
         graph::{GetBandIndex, MakePrimitive},
+        guide::{Guide, Head, HeadTrait, SegbendHead},
         primitive::GetOtherJoint,
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
     },

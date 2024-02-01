@@ -14,13 +14,14 @@ use super::connectivity::{
 };
 use super::geometry::with_rtree::GeometryWithRtree;
 use super::loose::{GetNextLoose, Loose, LooseIndex};
+use super::segbend::Segbend;
 use crate::graph::{GenericIndex, GetNodeIndex};
-use crate::guide::Guide;
 use crate::layout::bend::BendIndex;
 use crate::layout::dot::DotWeight;
 use crate::layout::geometry::{
     BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetPos, SegWeightTrait,
 };
+use crate::layout::guide::Guide;
 use crate::layout::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
@@ -36,7 +37,6 @@ use crate::layout::{
     },
 };
 use crate::math::NoTangents;
-use crate::segbend::Segbend;
 use crate::wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex};
 
 use super::bend::BendWeight;
