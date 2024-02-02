@@ -4,7 +4,10 @@ use geo::{point, Point};
 use petgraph::visit::{self, NodeIndexable};
 use spade::{handles::FixedVertexHandle, DelaunayTriangulation, HasPosition, InsertionError};
 
-use crate::{graph::GetNodeIndex, layout::Layout};
+use crate::{
+    graph::GetNodeIndex,
+    layout::{rules::RulesTrait, Layout},
+};
 
 pub trait GetVertexIndex<I> {
     fn vertex(&self) -> I;
@@ -20,7 +23,7 @@ pub struct Triangulation<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I
 impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
     Triangulation<I, W>
 {
-    pub fn new(layout: &Layout) -> Self {
+    pub fn new(layout: &Layout<impl RulesTrait>) -> Self {
         let mut this = Self {
             triangulation: <DelaunayTriangulation<W> as spade::Triangulation>::new(),
             vertex_to_handle: Vec::new(),

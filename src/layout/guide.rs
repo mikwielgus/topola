@@ -15,7 +15,7 @@ use crate::{
     rules::{Conditions, Rules},
 };
 
-use super::segbend::Segbend;
+use super::{rules::RulesTrait, segbend::Segbend};
 
 #[enum_dispatch]
 pub trait HeadTrait {
@@ -63,19 +63,14 @@ impl HeadTrait for SegbendHead {
     }
 }
 
-pub struct Guide<'a, 'b> {
-    layout: &'a Layout,
-    rules: &'a Rules,
+pub struct Guide<'a, 'b, R: RulesTrait> {
+    layout: &'a Layout<R>,
     conditions: &'b Conditions,
 }
 
-impl<'a, 'b> Guide<'a, 'b> {
-    pub fn new(layout: &'a Layout, rules: &'a Rules, conditions: &'b Conditions) -> Self {
-        Self {
-            layout,
-            rules,
-            conditions,
-        }
+impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
+    pub fn new(layout: &'a Layout<R>, conditions: &'b Conditions) -> Self {
+        Self { layout, conditions }
     }
 
     pub fn head_into_dot_segment(

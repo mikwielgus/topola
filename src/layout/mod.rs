@@ -9,6 +9,7 @@ pub mod guide;
 mod layout;
 pub mod loose;
 pub mod primitive;
+pub mod rules;
 pub mod seg;
 pub mod segbend;
 

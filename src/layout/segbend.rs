@@ -7,6 +7,8 @@ use crate::layout::{
     Layout,
 };
 
+use super::rules::RulesTrait;
+
 #[derive(Debug, Clone, Copy)]
 pub struct Segbend {
     pub seg: SeqLooseSegIndex,
@@ -15,7 +17,7 @@ pub struct Segbend {
 }
 
 impl Segbend {
-    pub fn from_dot(dot: LooseDotIndex, layout: &Layout) -> Self {
+    pub fn from_dot(dot: LooseDotIndex, layout: &Layout<impl RulesTrait>) -> Self {
         let bend = LooseDot::new(dot, layout).bend();
         let dot = LooseBend::new(bend, layout).other_joint(dot);
         let seg = LooseDot::new(dot, layout).seg().unwrap();

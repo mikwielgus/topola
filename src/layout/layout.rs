@@ -14,6 +14,7 @@ use super::connectivity::{
 };
 use super::geometry::with_rtree::GeometryWithRtree;
 use super::loose::{GetNextLoose, Loose, LooseIndex};
+use super::rules::RulesTrait;
 use super::segbend::Segbend;
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::bend::BendIndex;
@@ -28,8 +29,7 @@ use crate::layout::{
     geometry::shape::{Shape, ShapeTrait},
     graph::{GeometryIndex, GeometryWeight, GetComponentIndex, MakePrimitive},
     primitive::{
-        GenericPrimitive, GetConnectable, GetCore, GetInnerOuter, GetJoints, GetOtherJoint,
-        GetWeight, MakeShape,
+        GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetOtherJoint, GetWeight, MakeShape,
     },
     seg::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
@@ -69,8 +69,7 @@ pub struct Collision(pub Shape, pub GeometryIndex);
 pub struct AlreadyConnected(pub i64, pub GeometryIndex);
 
 #[derive(Debug)]
-pub struct Layout {
-    connectivity: ConnectivityGraph,
+pub struct Layout<R: RulesTrait> {
     geometry_with_rtree: GeometryWithRtree<
         GeometryWeight,
         DotWeight,
@@ -81,13 +80,16 @@ pub struct Layout {
         SegIndex,
         BendIndex,
     >,
+    connectivity: ConnectivityGraph,
+    rules: R,
 }
 
-impl Layout {
-    pub fn new() -> Self {
-        Layout {
-            connectivity: StableDiGraph::default(),
+impl<R: RulesTrait> Layout<R> {
+    pub fn new(rules: R) -> Self {
+        Self {
             geometry_with_rtree: GeometryWithRtree::new(),
+            connectivity: StableDiGraph::default(),
+            rules,
         }
     }
 
@@ -411,9 +413,8 @@ impl Layout {
             let cw = primitive.weight().cw;
             let ends = primitive.joints();
 
-            let rules = Default::default();
             let conditions = Default::default();
-            let guide = Guide::new(self, &rules, &conditions);
+            let guide = Guide::new(self, &conditions);
 
             let from_head = guide.rear_head(ends.1);
             let to_head = guide.rear_head(ends.0);
@@ -717,10 +718,6 @@ impl Layout {
         self.geometry_with_rtree.flip_bend(bend.into());
     }
 
-    /*pub fn bow(&self, bend: LooseBendIndex) -> Bow {
-        Bow::from_bend(bend, &self.graph)
-    }*/
-
     pub fn segbend(&self, dot: LooseDotIndex) -> Segbend {
         Segbend::from_dot(dot, self)
     }
@@ -769,7 +766,7 @@ impl Layout {
     }
 }
 
-impl Layout {
+impl<R: RulesTrait> Layout<R> {
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), Infringement> {
@@ -815,10 +812,7 @@ impl Layout {
         self.geometry_with_rtree
             .rtree()
             .locate_in_envelope_intersecting(&RTreeObject::envelope(&shape))
-            .filter(|wrapper| {
-                let other_index = wrapper.data;
-                !node.primitive(self).connectable(other_index)
-            })
+            .filter(|wrapper| !self.are_connectable(node, wrapper.data))
             .filter(|wrapper| !except.contains(&wrapper.data))
             .filter(|wrapper| shape.intersects(wrapper.geom()))
             .map(|wrapper| wrapper.data)
@@ -835,18 +829,24 @@ impl Layout {
         self.geometry_with_rtree
             .rtree()
             .locate_in_envelope_intersecting(&RTreeObject::envelope(&shape))
-            .filter(|wrapper| {
-                let other_index = wrapper.data;
-                !node.primitive(self).connectable(other_index)
-            })
+            .filter(|wrapper| !self.are_connectable(node, wrapper.data))
             .filter(|wrapper| shape.intersects(wrapper.geom()))
             .map(|wrapper| wrapper.data)
             .next()
             .and_then(|collidee| Some(Collision(shape, collidee)))
     }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    fn are_connectable(&self, node1: GeometryIndex, node2: GeometryIndex) -> bool {
+        let node1_net = node1.primitive(self).net();
+        let node2_net = node2.primitive(self).net();
+
+        (node1_net == node2_net) || node1_net == -1 || node2_net == -2
+    }
 }
 
-impl Layout {
+impl<R: RulesTrait> Layout<R> {
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn connectivity(&self) -> &ConnectivityGraph {
@@ -872,25 +872,31 @@ impl Layout {
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W> {
+    pub fn rules(&self) -> &R {
+        &self.rules
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W, R> {
         GenericPrimitive::new(index, self)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn wraparoundable(&self, index: WraparoundableIndex) -> Wraparoundable {
+    pub fn wraparoundable(&self, index: WraparoundableIndex) -> Wraparoundable<R> {
         Wraparoundable::new(index, self)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn loose(&self, index: LooseIndex) -> Loose {
+    pub fn loose(&self, index: LooseIndex) -> Loose<R> {
         Loose::new(index, self)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn band(&self, index: BandIndex) -> Band {
+    pub fn band(&self, index: BandIndex) -> Band<R> {
         Band::new(index, self)
     }
 }

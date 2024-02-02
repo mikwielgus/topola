@@ -14,6 +14,7 @@ use super::{
     bend::{FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
     dot::{FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     primitive::Primitive,
+    rules::RulesTrait,
     seg::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
         SeqLooseSegWeight,
@@ -40,7 +41,7 @@ pub trait GetBandIndex {
 
 #[enum_dispatch]
 pub trait MakePrimitive {
-    fn primitive<'a>(&self, layout: &'a Layout) -> Primitive<'a>;
+    fn primitive<'a, R: RulesTrait>(&self, layout: &'a Layout<R>) -> Primitive<'a, R>;
 }
 
 macro_rules! impl_weight {
@@ -54,7 +55,7 @@ macro_rules! impl_weight {
         pub type $index_struct = GenericIndex<$weight_struct>;
 
         impl MakePrimitive for $index_struct {
-            fn primitive<'a>(&self, layout: &'a Layout) -> Primitive<'a> {
+            fn primitive<'a, R: RulesTrait>(&self, layout: &'a Layout<R>) -> Primitive<'a, R> {
                 Primitive::$weight_variant(GenericPrimitive::new(*self, layout))
             }
         }

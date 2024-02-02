@@ -11,13 +11,15 @@ use crate::{
     },
 };
 
-pub struct Band<'a> {
+use super::rules::RulesTrait;
+
+pub struct Band<'a, R: RulesTrait> {
     pub index: BandIndex,
-    layout: &'a Layout,
+    layout: &'a Layout<R>,
 }
 
-impl<'a> Band<'a> {
-    pub fn new(index: BandIndex, layout: &'a Layout) -> Self {
+impl<'a, R: RulesTrait> Band<'a, R> {
+    pub fn new(index: BandIndex, layout: &'a Layout<R>) -> Self {
         Self { index, layout }
     }
 
@@ -85,7 +87,7 @@ impl<'a> Band<'a> {
     }
 }
 
-impl<'a> GetNet for Band<'a> {
+impl<'a, R: RulesTrait> GetNet for Band<'a, R> {
     fn net(&self) -> i64 {
         self.weight().net
     }

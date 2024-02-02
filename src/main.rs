@@ -28,11 +28,12 @@ use layout::dot::FixedDotWeight;
 use layout::geometry::shape::{Shape, ShapeTrait};
 use layout::graph::{GeometryIndex, MakePrimitive};
 use layout::primitive::MakeShape;
+use layout::rules::{Conditions, LayerNetclassConditions, RulesTrait};
 use layout::seg::FixedSegWeight;
 use layout::{Infringement, Layout, LayoutException};
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-use router::RouterObserver;
+use router::RouterObserverTrait;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -57,26 +58,42 @@ use tracer::{Trace, Tracer};
 use crate::math::Circle;
 use crate::router::Router;
 
+struct ConstantClearance {}
+
+impl RulesTrait for ConstantClearance {
+    fn clearance(conditions1: &Conditions, conditions2: &Conditions) -> f64 {
+        3.0
+    }
+
+    fn clearance_limit(
+        layer: String,
+        netclass: String,
+        conditions: &LayerNetclassConditions,
+    ) -> f64 {
+        3.0
+    }
+}
+
 // Clunky enum to work around borrow checker.
-enum RouterOrLayout<'a> {
-    Router(&'a mut Router),
-    Layout(&'a Layout),
+enum RouterOrLayout<'a, R: RulesTrait> {
+    Router(&'a mut Router<R>),
+    Layout(&'a Layout<R>),
 }
 
 struct EmptyRouterObserver;
 
-impl RouterObserver for EmptyRouterObserver {
-    fn on_rework(&mut self, _tracer: &Tracer, _trace: &Trace) {}
-    fn before_probe(&mut self, _tracer: &Tracer, _trace: &Trace, _edge: MeshEdgeReference) {}
+impl<R: RulesTrait> RouterObserverTrait<R> for EmptyRouterObserver {
+    fn on_rework(&mut self, _tracer: &Tracer<R>, _trace: &Trace) {}
+    fn before_probe(&mut self, _tracer: &Tracer<R>, _trace: &Trace, _edge: MeshEdgeReference) {}
     fn on_probe(
         &mut self,
-        _tracer: &Tracer,
+        _tracer: &Tracer<R>,
         _trace: &Trace,
         _edge: MeshEdgeReference,
         _result: Result<(), DrawException>,
     ) {
     }
-    fn on_estimate(&mut self, _tracer: &Tracer, _vertex: VertexIndex) {}
+    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: VertexIndex) {}
 }
 
 struct DebugRouterObserver<'a> {
@@ -102,8 +119,8 @@ impl<'a> DebugRouterObserver<'a> {
     }
 }
 
-impl<'a> RouterObserver for DebugRouterObserver<'a> {
-    fn on_rework(&mut self, tracer: &Tracer, trace: &Trace) {
+impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
+    fn on_rework(&mut self, tracer: &Tracer<R>, trace: &Trace) {
         render_times(
             self.event_pump,
             self.window,
@@ -119,7 +136,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
         );
     }
 
-    fn before_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference) {
+    fn before_probe(&mut self, tracer: &Tracer<R>, trace: &Trace, edge: MeshEdgeReference) {
         let mut path = trace.path.clone();
         path.push(edge.target());
         render_times(
@@ -139,7 +156,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
 
     fn on_probe(
         &mut self,
-        tracer: &Tracer,
+        tracer: &Tracer<R>,
         trace: &Trace,
         _edge: MeshEdgeReference,
         result: Result<(), DrawException>,
@@ -168,7 +185,7 @@ impl<'a> RouterObserver for DebugRouterObserver<'a> {
         );
     }
 
-    fn on_estimate(&mut self, _tracer: &Tracer, _vertex: VertexIndex) {}
+    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: VertexIndex) {}
 }
 
 fn main() -> Result<(), anyhow::Error> {
@@ -218,7 +235,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     let mut event_pump = sdl_context.event_pump().unwrap();
     let _i = 0;
-    let mut router = Router::new();
+    let mut router = Router::new(ConstantClearance {});
 
     let component1_1 = router.layout.add_component(1);
     let component1_2 = router.layout.add_component(1);
@@ -321,7 +338,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot2_1,
         FixedSegWeight {
             component: component2,
-            width: 16.0,
+            width: 3.0,
         },
     );
 
@@ -341,7 +358,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot2_2,
         FixedSegWeight {
             component: component2,
-            width: 16.0,
+            width: 3.0,
         },
     );
 
@@ -372,7 +389,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot4,
         FixedSegWeight {
             component: component2,
-            width: 16.0,
+            width: 3.0,
         },
     );
 
@@ -392,7 +409,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot5,
         FixedSegWeight {
             component: component2,
-            width: 16.0,
+            width: 3.0,
         },
     );
 
@@ -412,7 +429,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot1_2,
         FixedSegWeight {
             component: component2,
-            width: 16.0,
+            width: 3.0,
         },
     );
 
@@ -421,7 +438,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot2_2,
         FixedSegWeight {
             component: component2,
-            width: 16.0,
+            width: 3.0,
         },
     );
 
@@ -441,7 +458,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot6,
         FixedSegWeight {
             component: component2,
-            width: 16.0,
+            width: 3.0,
         },
     );
 
@@ -461,7 +478,7 @@ fn main() -> Result<(), anyhow::Error> {
         dot7,
         FixedSegWeight {
             net: 20,
-            width: 16.0,
+            width: 3.0,
         },
     );*/
 
@@ -613,7 +630,7 @@ fn render_times(
     window: &Window,
     renderer: &mut Renderer<GLDevice>,
     font_context: &CanvasFontContext,
-    mut router_or_layout: RouterOrLayout,
+    mut router_or_layout: RouterOrLayout<impl RulesTrait>,
     maybe_band: Option<BandIndex>,
     mut maybe_mesh: Option<Mesh>,
     path: &[VertexIndex],

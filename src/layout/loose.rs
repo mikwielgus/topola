@@ -13,6 +13,8 @@ use crate::{
     },
 };
 
+use super::rules::RulesTrait;
+
 #[enum_dispatch]
 pub trait GetNextLoose {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex>;
@@ -39,15 +41,15 @@ impl From<LooseIndex> for GeometryIndex {
 }
 
 #[enum_dispatch(GetNextLoose, GetLayout, GetNodeIndex)]
-pub enum Loose<'a> {
-    Dot(LooseDot<'a>),
-    LoneSeg(LoneLooseSeg<'a>),
-    SeqSeg(SeqLooseSeg<'a>),
-    Bend(LooseBend<'a>),
+pub enum Loose<'a, R: RulesTrait> {
+    Dot(LooseDot<'a, R>),
+    LoneSeg(LoneLooseSeg<'a, R>),
+    SeqSeg(SeqLooseSeg<'a, R>),
+    Bend(LooseBend<'a, R>),
 }
 
-impl<'a> Loose<'a> {
-    pub fn new(index: LooseIndex, layout: &'a Layout) -> Self {
+impl<'a, R: RulesTrait> Loose<'a, R> {
+    pub fn new(index: LooseIndex, layout: &'a Layout<R>) -> Self {
         match index {
             LooseIndex::Dot(dot) => layout.primitive(dot).into(),
             LooseIndex::LoneSeg(seg) => layout.primitive(seg).into(),
@@ -57,7 +59,7 @@ impl<'a> Loose<'a> {
     }
 }
 
-impl<'a> GetNextLoose for LooseDot<'a> {
+impl<'a, R: RulesTrait> GetNextLoose for LooseDot<'a, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let bend = self.bend();
         let Some(prev) = maybe_prev else {
@@ -72,13 +74,13 @@ impl<'a> GetNextLoose for LooseDot<'a> {
     }
 }
 
-impl<'a> GetNextLoose for LoneLooseSeg<'a> {
+impl<'a, R: RulesTrait> GetNextLoose for LoneLooseSeg<'a, R> {
     fn next_loose(&self, _maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         None
     }
 }
 
-impl<'a> GetNextLoose for SeqLooseSeg<'a> {
+impl<'a, R: RulesTrait> GetNextLoose for SeqLooseSeg<'a, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let ends = self.joints();
         let Some(prev) = maybe_prev else {
@@ -96,7 +98,7 @@ impl<'a> GetNextLoose for SeqLooseSeg<'a> {
     }
 }
 
-impl<'a> GetNextLoose for LooseBend<'a> {
+impl<'a, R: RulesTrait> GetNextLoose for LooseBend<'a, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let ends = self.joints();
         let Some(prev) = maybe_prev else {

@@ -11,7 +11,7 @@ use crate::{
         primitive::GetOtherJoint,
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
     },
-    layout::{Infringement, Layout, LayoutException},
+    layout::{rules::RulesTrait, Infringement, Layout, LayoutException},
     math::{Circle, NoTangents},
     rules::{Conditions, Rules},
     wraparoundable::WraparoundableIndex,
@@ -29,13 +29,13 @@ pub enum DrawException {
     CannotWrapAround(WraparoundableIndex, LayoutException, LayoutException),
 }
 
-pub struct Draw<'a> {
-    layout: &'a mut Layout,
+pub struct Draw<'a, R: RulesTrait> {
+    layout: &'a mut Layout<R>,
     rules: &'a Rules,
 }
 
-impl<'a> Draw<'a> {
-    pub fn new(layout: &'a mut Layout, rules: &'a Rules) -> Self {
+impl<'a, R: RulesTrait> Draw<'a, R> {
+    pub fn new(layout: &'a mut Layout<R>, rules: &'a Rules) -> Self {
         Self { layout, rules }
     }
 
@@ -95,6 +95,7 @@ impl<'a> Draw<'a> {
         head: Head,
         around: FixedDotIndex,
         width: f64,
+        offset: f64,
     ) -> Result<SegbendHead, DrawException> {
         let mut tangents = self.guide(&Default::default()).head_around_dot_segments(
             &head,
@@ -117,6 +118,7 @@ impl<'a> Draw<'a> {
                 tangent.start_point(),
                 tangent.end_point(),
                 dirs[i],
+                offset,
                 width,
             ) {
                 Ok(ok) => return Ok(ok),
@@ -138,6 +140,7 @@ impl<'a> Draw<'a> {
         head: Head,
         around: BendIndex,
         width: f64,
+        offset: f64,
     ) -> Result<SegbendHead, DrawException> {
         let mut tangents = self.guide(&Default::default()).head_around_bend_segments(
             &head,
@@ -160,6 +163,7 @@ impl<'a> Draw<'a> {
                 tangent.start_point(),
                 tangent.end_point(),
                 dirs[i],
+                offset,
                 width,
             ) {
                 Ok(ok) => return Ok(ok),
@@ -184,9 +188,10 @@ impl<'a> Draw<'a> {
         to: Point,
         cw: bool,
         width: f64,
+        offset: f64,
     ) -> Result<SegbendHead, LayoutException> {
         let head = self.extend_head(head, from)?;
-        self.segbend(head, around, to, cw, width)
+        self.segbend(head, around, to, cw, offset, width)
     }
 
     #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
@@ -208,6 +213,7 @@ impl<'a> Draw<'a> {
         to: Point,
         cw: bool,
         width: f64,
+        offset: f64,
     ) -> Result<SegbendHead, LayoutException> {
         let segbend = self.layout.insert_segbend(
             head.face(),
@@ -221,12 +227,12 @@ impl<'a> Draw<'a> {
             },
             SeqLooseSegWeight {
                 band: head.band(),
-                width: 3.0,
+                width,
             },
             LooseBendWeight {
                 band: head.band(),
-                width: 3.0,
-                offset: 3.0,
+                width,
+                offset,
                 cw,
             },
         )?;
@@ -250,7 +256,7 @@ impl<'a> Draw<'a> {
         Some(self.guide(&Default::default()).head(prev_dot, band))
     }
 
-    fn guide(&'a self, conditions: &'a Conditions) -> Guide {
-        Guide::new(self.layout, self.rules, conditions)
+    fn guide(&'a self, conditions: &'a Conditions) -> Guide<R> {
+        Guide::new(self.layout, conditions)
     }
 }

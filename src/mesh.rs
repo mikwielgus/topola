@@ -7,6 +7,7 @@ use petgraph::visit::{self, NodeIndexable};
 use petgraph::{stable_graph::NodeIndex, visit::EdgeRef};
 use spade::{HasPosition, InsertionError, Point2};
 
+use crate::layout::rules::RulesTrait;
 use crate::triangulation::TriangulationEdgeReference;
 use crate::{
     graph::GetNodeIndex,
@@ -82,7 +83,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn new(layout: &Layout) -> Self {
+    pub fn new(layout: &Layout<impl RulesTrait>) -> Self {
         let mut this = Self {
             triangulation: Triangulation::new(layout),
             vertex_to_triangulation_vertex: Vec::new(),
@@ -92,7 +93,7 @@ impl Mesh {
         this
     }
 
-    pub fn generate(&mut self, layout: &Layout) -> Result<(), InsertionError> {
+    pub fn generate(&mut self, layout: &Layout<impl RulesTrait>) -> Result<(), InsertionError> {
         for node in layout.nodes() {
             let center = node.primitive(layout).shape().center();
 

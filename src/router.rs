@@ -7,6 +7,7 @@ use thiserror::Error;
 use crate::astar::{astar, AstarStrategy, PathTracker};
 use crate::draw::DrawException;
 use crate::layout::guide::HeadTrait;
+use crate::layout::rules::RulesTrait;
 use crate::layout::Layout;
 use crate::layout::{
     connectivity::BandIndex,
@@ -39,33 +40,38 @@ pub enum RoutingErrorKind {
     AStar,
 }
 
-pub trait RouterObserver {
-    fn on_rework(&mut self, tracer: &Tracer, trace: &Trace);
-    fn before_probe(&mut self, tracer: &Tracer, trace: &Trace, edge: MeshEdgeReference);
+pub trait RouterObserverTrait<R: RulesTrait> {
+    fn on_rework(&mut self, tracer: &Tracer<R>, trace: &Trace);
+    fn before_probe(&mut self, tracer: &Tracer<R>, trace: &Trace, edge: MeshEdgeReference);
     fn on_probe(
         &mut self,
-        tracer: &Tracer,
+        tracer: &Tracer<R>,
         trace: &Trace,
         edge: MeshEdgeReference,
         result: Result<(), DrawException>,
     );
-    fn on_estimate(&mut self, tracer: &Tracer, vertex: VertexIndex);
+    fn on_estimate(&mut self, tracer: &Tracer<R>, vertex: VertexIndex);
 }
 
-pub struct Router {
-    pub layout: Layout,
+pub struct Router<R: RulesTrait> {
+    pub layout: Layout<R>,
     rules: Rules,
 }
 
-struct RouterAstarStrategy<'a, RO: RouterObserver> {
-    tracer: Tracer<'a>,
+struct RouterAstarStrategy<'a, RO: RouterObserverTrait<R>, R: RulesTrait> {
+    tracer: Tracer<'a, R>,
     trace: Trace,
     to: FixedDotIndex,
     observer: &'a mut RO,
 }
 
-impl<'a, RO: RouterObserver> RouterAstarStrategy<'a, RO> {
-    pub fn new(tracer: Tracer<'a>, trace: Trace, to: FixedDotIndex, observer: &'a mut RO) -> Self {
+impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> RouterAstarStrategy<'a, RO, R> {
+    pub fn new(
+        tracer: Tracer<'a, R>,
+        trace: Trace,
+        to: FixedDotIndex,
+        observer: &'a mut RO,
+    ) -> Self {
         Self {
             tracer,
             trace,
@@ -75,7 +81,9 @@ impl<'a, RO: RouterObserver> RouterAstarStrategy<'a, RO> {
     }
 }
 
-impl<'a, RO: RouterObserver> AstarStrategy<&Mesh, f64> for RouterAstarStrategy<'a, RO> {
+impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Mesh, f64>
+    for RouterAstarStrategy<'a, RO, R>
+{
     fn is_goal(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Mesh>) -> bool {
         let new_path = tracker.reconstruct_path_to(vertex);
 
@@ -120,10 +128,10 @@ impl<'a, RO: RouterObserver> AstarStrategy<&Mesh, f64> for RouterAstarStrategy<'
     }
 }
 
-impl Router {
-    pub fn new() -> Self {
+impl<R: RulesTrait> Router<R> {
+    pub fn new(rules: R) -> Self {
         Router {
-            layout: Layout::new(),
+            layout: Layout::new(rules),
             rules: Rules::new(),
         }
     }
@@ -132,7 +140,7 @@ impl Router {
         &mut self,
         from: FixedDotIndex,
         to: FixedDotIndex,
-        observer: &mut impl RouterObserver,
+        observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<BandIndex, RoutingError> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
@@ -166,7 +174,7 @@ impl Router {
         &mut self,
         band: BandIndex,
         to: Point,
-        observer: &mut impl RouterObserver,
+        observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<BandIndex, RoutingError> {
         let from_dot = self.layout.band(band).from();
         let to_dot = self.layout.band(band).to().unwrap();
@@ -175,7 +183,7 @@ impl Router {
         self.route_band(from_dot, to_dot, observer)
     }
 
-    pub fn tracer<'a>(&'a mut self, mesh: &'a Mesh) -> Tracer {
+    pub fn tracer<'a>(&'a mut self, mesh: &'a Mesh) -> Tracer<R> {
         Tracer::new(&mut self.layout, &self.rules, mesh)
     }
 }

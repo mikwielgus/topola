@@ -13,6 +13,7 @@ use crate::{
             MakePrimitive, Retag,
         },
         primitive::{GenericPrimitive, Primitive},
+        rules::RulesTrait,
         Layout,
     },
     math::Circle,
