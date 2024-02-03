@@ -16,7 +16,6 @@ mod layout;
 mod math;
 mod mesh;
 mod router;
-mod rules;
 mod tracer;
 mod triangulation;
 mod wraparoundable;
@@ -61,14 +60,15 @@ use crate::router::Router;
 struct ConstantClearance {}
 
 impl RulesTrait for ConstantClearance {
-    fn clearance(conditions1: &Conditions, conditions2: &Conditions) -> f64 {
-        3.0
+    fn clearance(&self, _conditions1: &Conditions, _conditions2: &Conditions) -> f64 {
+        10.0
     }
 
     fn clearance_limit(
-        layer: String,
-        netclass: String,
-        conditions: &LayerNetclassConditions,
+        &self,
+        _layer: String,
+        _netclass: String,
+        _conditions: &LayerNetclassConditions,
     ) -> f64 {
         3.0
     }
@@ -507,6 +507,7 @@ fn main() -> Result<(), anyhow::Error> {
     let _ = router.route_band(
         dot_start,
         dot_end,
+        3.0,
         //&mut EmptyRouterObserver,
         &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     )?;
@@ -539,6 +540,7 @@ fn main() -> Result<(), anyhow::Error> {
     let band2 = router.route_band(
         dot_start2,
         dot_end2,
+        3.0,
         //&mut EmptyRouterObserver,
         &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     )?;
@@ -560,6 +562,7 @@ fn main() -> Result<(), anyhow::Error> {
     let band3 = router.route_band(
         dot_start3,
         dot_end3,
+        3.0,
         //&mut EmptyRouterObserver,
         &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     )?;
@@ -667,6 +670,7 @@ fn render_times(
                         .reroute_band(
                             band,
                             point! {x: state.x() as f64, y: state.y() as f64},
+                            3.0,
                             &mut DebugRouterObserver::new(
                                 event_pump,
                                 window,

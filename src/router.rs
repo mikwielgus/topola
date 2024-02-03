@@ -19,7 +19,6 @@ use crate::layout::{
 
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
 
-use crate::rules::Rules;
 use crate::tracer::{Trace, Tracer};
 
 #[derive(Error, Debug, Clone, Copy)]
@@ -55,7 +54,6 @@ pub trait RouterObserverTrait<R: RulesTrait> {
 
 pub struct Router<R: RulesTrait> {
     pub layout: Layout<R>,
-    rules: Rules,
 }
 
 struct RouterAstarStrategy<'a, RO: RouterObserverTrait<R>, R: RulesTrait> {
@@ -132,7 +130,6 @@ impl<R: RulesTrait> Router<R> {
     pub fn new(rules: R) -> Self {
         Router {
             layout: Layout::new(rules),
-            rules: Rules::new(),
         }
     }
 
@@ -140,6 +137,7 @@ impl<R: RulesTrait> Router<R> {
         &mut self,
         from: FixedDotIndex,
         to: FixedDotIndex,
+        width: f64,
         observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<BandIndex, RoutingError> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
@@ -153,7 +151,7 @@ impl<R: RulesTrait> Router<R> {
         })?;
 
         let mut tracer = self.tracer(&mesh);
-        let trace = tracer.start(from, 3.0);
+        let trace = tracer.start(from, width);
         let band = trace.head.band();
 
         let (_cost, _path) = astar(
@@ -174,16 +172,17 @@ impl<R: RulesTrait> Router<R> {
         &mut self,
         band: BandIndex,
         to: Point,
+        width: f64,
         observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<BandIndex, RoutingError> {
         let from_dot = self.layout.band(band).from();
         let to_dot = self.layout.band(band).to().unwrap();
         self.layout.remove_band(band);
         self.layout.move_dot(to_dot.into(), to).unwrap(); // TODO: Remove `.unwrap()`.
-        self.route_band(from_dot, to_dot, observer)
+        self.route_band(from_dot, to_dot, width, observer)
     }
 
     pub fn tracer<'a>(&'a mut self, mesh: &'a Mesh) -> Tracer<R> {
-        Tracer::new(&mut self.layout, &self.rules, mesh)
+        Tracer::new(&mut self.layout, mesh)
     }
 }

@@ -11,9 +11,11 @@ use crate::{
         primitive::GetOtherJoint,
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
     },
-    layout::{rules::RulesTrait, Infringement, Layout, LayoutException},
+    layout::{
+        rules::{Conditions, RulesTrait},
+        Infringement, Layout, LayoutException,
+    },
     math::{Circle, NoTangents},
-    rules::{Conditions, Rules},
     wraparoundable::WraparoundableIndex,
 };
 
@@ -31,16 +33,17 @@ pub enum DrawException {
 
 pub struct Draw<'a, R: RulesTrait> {
     layout: &'a mut Layout<R>,
-    rules: &'a Rules,
 }
 
 impl<'a, R: RulesTrait> Draw<'a, R> {
-    pub fn new(layout: &'a mut Layout<R>, rules: &'a Rules) -> Self {
-        Self { layout, rules }
+    pub fn new(layout: &'a mut Layout<R>) -> Self {
+        Self { layout }
     }
 
     pub fn start(&mut self, from: LooseDotIndex) -> Head {
-        self.guide(&Default::default()).segbend_head(from).into()
+        self.guide(&Default::default(), &Default::default())
+            .segbend_head(from)
+            .into()
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
@@ -52,7 +55,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         width: f64,
     ) -> Result<(), DrawException> {
         let tangent = self
-            .guide(&Default::default())
+            .guide(&Default::default(), &Default::default())
             .head_into_dot_segment(&head, into, width)
             .map_err(Into::<DrawException>::into)?;
         let head = self
@@ -95,13 +98,13 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         head: Head,
         around: FixedDotIndex,
         width: f64,
-        offset: f64,
     ) -> Result<SegbendHead, DrawException> {
-        let mut tangents = self.guide(&Default::default()).head_around_dot_segments(
-            &head,
-            around.into(),
-            width,
-        )?;
+        let mut tangents = self
+            .guide(&Default::default(), &Default::default())
+            .head_around_dot_segments(&head, around.into(), width)?;
+        let offset = self
+            .guide(&Default::default(), &Default::default())
+            .head_around_dot_offset(&head, around.into(), width);
         let mut dirs = [true, false];
 
         if tangents.1.euclidean_length() < tangents.0.euclidean_length() {
@@ -118,8 +121,8 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
                 tangent.start_point(),
                 tangent.end_point(),
                 dirs[i],
-                offset,
                 width,
+                offset,
             ) {
                 Ok(ok) => return Ok(ok),
                 Err(err) => errs.push(err),
@@ -140,13 +143,13 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         head: Head,
         around: BendIndex,
         width: f64,
-        offset: f64,
     ) -> Result<SegbendHead, DrawException> {
-        let mut tangents = self.guide(&Default::default()).head_around_bend_segments(
-            &head,
-            around.into(),
-            width,
-        )?;
+        let mut tangents = self
+            .guide(&Default::default(), &Default::default())
+            .head_around_bend_segments(&head, around.into(), width)?;
+        let offset = self
+            .guide(&Default::default(), &Default::default())
+            .head_around_bend_offset(&head, around.into(), width);
         let mut dirs = [true, false];
 
         if tangents.1.euclidean_length() < tangents.0.euclidean_length() {
@@ -163,8 +166,8 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
                 tangent.start_point(),
                 tangent.end_point(),
                 dirs[i],
-                offset,
                 width,
+                offset,
             ) {
                 Ok(ok) => return Ok(ok),
                 Err(err) => errs.push(err),
@@ -191,7 +194,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         offset: f64,
     ) -> Result<SegbendHead, LayoutException> {
         let head = self.extend_head(head, from)?;
-        self.segbend(head, around, to, cw, offset, width)
+        self.segbend(head, around, to, cw, width, offset)
     }
 
     #[debug_ensures(self.layout.node_count() == old(self.layout.node_count()))]
@@ -253,10 +256,17 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         let band = head.band;
 
         self.layout.remove_segbend(&head.segbend, head.face);
-        Some(self.guide(&Default::default()).head(prev_dot, band))
+        Some(
+            self.guide(&Default::default(), &Default::default())
+                .head(prev_dot, band),
+        )
     }
 
-    fn guide(&'a self, conditions: &'a Conditions) -> Guide<R> {
-        Guide::new(self.layout, conditions)
+    fn guide(
+        &'a self,
+        ref_conditions: &'a Conditions,
+        guide_conditions: &'a Conditions,
+    ) -> Guide<R> {
+        Guide::new(self.layout, ref_conditions, guide_conditions)
     }
 }

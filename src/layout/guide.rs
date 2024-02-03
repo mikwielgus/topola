@@ -12,10 +12,12 @@ use crate::{
         Layout,
     },
     math::{self, Circle, NoTangents},
-    rules::{Conditions, Rules},
 };
 
-use super::{rules::RulesTrait, segbend::Segbend};
+use super::{
+    rules::{Conditions, RulesTrait},
+    segbend::Segbend,
+};
 
 #[enum_dispatch]
 pub trait HeadTrait {
@@ -65,12 +67,21 @@ impl HeadTrait for SegbendHead {
 
 pub struct Guide<'a, 'b, R: RulesTrait> {
     layout: &'a Layout<R>,
-    conditions: &'b Conditions,
+    ref_conditions: &'b Conditions,
+    guide_conditions: &'b Conditions,
 }
 
 impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
-    pub fn new(layout: &'a Layout<R>, conditions: &'b Conditions) -> Self {
-        Self { layout, conditions }
+    pub fn new(
+        layout: &'a Layout<R>,
+        ref_conditions: &'b Conditions,
+        guide_conditions: &'b Conditions,
+    ) -> Self {
+        Self {
+            layout,
+            ref_conditions,
+            guide_conditions,
+        }
     }
 
     pub fn head_into_dot_segment(
@@ -118,6 +129,12 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
         math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
     }
 
+    pub fn head_around_dot_offset(&self, head: &Head, around: DotIndex, width: f64) -> f64 {
+        self.layout
+            .rules()
+            .clearance(self.ref_conditions, self.guide_conditions)
+    }
+
     pub fn head_around_bend_segments(
         &self,
         head: &Head,
@@ -147,6 +164,12 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
         math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
     }
 
+    pub fn head_around_bend_offset(&self, head: &Head, around: BendIndex, width: f64) -> f64 {
+        self.layout
+            .rules()
+            .clearance(self.ref_conditions, self.guide_conditions)
+    }
+
     pub fn head_cw(&self, head: &Head) -> Option<bool> {
         if let Head::Segbend(head) = head {
             Some(self.layout.primitive(head.segbend.bend).weight().cw)
@@ -156,13 +179,6 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
     }
 
     fn head_circle(&self, head: &Head, width: f64) -> Circle {
-        let _conditions = Conditions {
-            lower_net: None,
-            higher_net: None,
-            layer: None,
-            zone: None,
-        };
-
         match *head {
             Head::Bare(head) => Circle {
                 pos: head.face().primitive(self.layout).shape().center(), // TODO.
@@ -189,7 +205,12 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
 
         Circle {
             pos: outer_circle.pos,
-            r: outer_circle.r + width,
+            r: outer_circle.r
+                + width / 2.0
+                + self
+                    .layout
+                    .rules()
+                    .clearance(self.ref_conditions, self.guide_conditions),
         }
     }
 
@@ -197,7 +218,12 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
         let shape = dot.primitive(self.layout).shape();
         Circle {
             pos: shape.center(),
-            r: shape.width() / 2.0 + width + 0.0,
+            r: shape.width() / 2.0
+                + width / 2.0
+                + self
+                    .layout
+                    .rules()
+                    .clearance(self.ref_conditions, self.guide_conditions),
         }
     }
 

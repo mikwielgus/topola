@@ -10,7 +10,6 @@ use crate::{
         Layout,
     },
     mesh::{Mesh, VertexIndex},
-    rules::Rules,
 };
 
 #[derive(Debug)]
@@ -21,17 +20,12 @@ pub struct Trace {
 
 pub struct Tracer<'a, R: RulesTrait> {
     pub layout: &'a mut Layout<R>,
-    pub rules: &'a Rules,
     pub mesh: &'a Mesh,
 }
 
 impl<'a, R: RulesTrait> Tracer<'a, R> {
-    pub fn new(layout: &'a mut Layout<R>, rules: &'a Rules, mesh: &'a Mesh) -> Self {
-        Tracer {
-            layout,
-            rules,
-            mesh,
-        }
+    pub fn new(layout: &'a mut Layout<R>, mesh: &'a Mesh) -> Self {
+        Tracer { layout, mesh }
     }
 
     pub fn start(&mut self, from: FixedDotIndex, width: f64) -> Trace {
@@ -129,9 +123,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         around: FixedDotIndex,
         width: f64,
     ) -> Result<SegbendHead, DrawException> {
-        let head = self
-            .draw()
-            .segbend_around_dot(head, around.into(), width, 3.0)?;
+        let head = self.draw().segbend_around_dot(head, around.into(), width)?;
         Ok(head)
     }
 
@@ -143,7 +135,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     ) -> Result<SegbendHead, DrawException> {
         let head = self
             .draw()
-            .segbend_around_bend(head, around.into(), width, 3.0)?;
+            .segbend_around_bend(head, around.into(), width)?;
 
         Ok(head)
     }
@@ -160,6 +152,6 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     }
 
     fn draw(&mut self) -> Draw<R> {
-        Draw::new(&mut self.layout, &self.rules)
+        Draw::new(&mut self.layout)
     }
 }

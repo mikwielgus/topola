@@ -413,8 +413,9 @@ impl<R: RulesTrait> Layout<R> {
             let cw = primitive.weight().cw;
             let ends = primitive.joints();
 
-            let conditions = Default::default();
-            let guide = Guide::new(self, &conditions);
+            let default1 = Default::default();
+            let default2 = Default::default();
+            let guide = Guide::new(self, &default1, &default2);
 
             let from_head = guide.rear_head(ends.1);
             let to_head = guide.rear_head(ends.0);
