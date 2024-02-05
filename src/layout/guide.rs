@@ -9,12 +9,14 @@ use crate::{
         geometry::shape::{Shape, ShapeTrait},
         graph::{GetBandIndex, MakePrimitive},
         primitive::{GetCore, GetInnerOuter, GetOtherJoint, GetWeight, MakeShape},
+        rules::GetConditions,
         Layout,
     },
     math::{self, Circle, NoTangents},
 };
 
 use super::{
+    graph::GeometryIndex,
     rules::{Conditions, RulesTrait},
     segbend::Segbend,
 };
@@ -65,23 +67,13 @@ impl HeadTrait for SegbendHead {
     }
 }
 
-pub struct Guide<'a, 'b, R: RulesTrait> {
+pub struct Guide<'a, R: RulesTrait> {
     layout: &'a Layout<R>,
-    ref_conditions: &'b Conditions,
-    guide_conditions: &'b Conditions,
 }
 
-impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
-    pub fn new(
-        layout: &'a Layout<R>,
-        ref_conditions: &'b Conditions,
-        guide_conditions: &'b Conditions,
-    ) -> Self {
-        Self {
-            layout,
-            ref_conditions,
-            guide_conditions,
-        }
+impl<'a, R: RulesTrait> Guide<'a, R> {
+    pub fn new(layout: &'a Layout<R>) -> Self {
+        Self { layout }
     }
 
     pub fn head_into_dot_segment(
@@ -107,7 +99,7 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
         width: f64,
     ) -> Result<(Line, Line), NoTangents> {
         let from_circle = self.head_circle(head, width);
-        let to_circle = self.dot_circle(around, width);
+        let to_circle = self.dot_circle(around, width, &self.conditions(head.face().into()));
 
         let from_cw = self.head_cw(head);
         let tangents: Vec<Line> =
@@ -123,16 +115,17 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
         width: f64,
     ) -> Result<Line, NoTangents> {
         let from_circle = self.head_circle(head, width);
-        let to_circle = self.dot_circle(around, width);
+        let to_circle = self.dot_circle(around, width, &self.conditions(head.face().into()));
 
         let from_cw = self.head_cw(head);
         math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
     }
 
     pub fn head_around_dot_offset(&self, head: &Head, around: DotIndex, width: f64) -> f64 {
-        self.layout
-            .rules()
-            .clearance(self.ref_conditions, self.guide_conditions)
+        self.layout.rules().clearance(
+            &self.conditions(around.into()),
+            &self.conditions(head.face().into()),
+        )
     }
 
     pub fn head_around_bend_segments(
@@ -142,7 +135,7 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
         width: f64,
     ) -> Result<(Line, Line), NoTangents> {
         let from_circle = self.head_circle(head, width);
-        let to_circle = self.bend_circle(around, width);
+        let to_circle = self.bend_circle(around, width, &self.conditions(head.face().into()));
 
         let from_cw = self.head_cw(head);
         let tangents: Vec<Line> =
@@ -158,16 +151,17 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
         width: f64,
     ) -> Result<Line, NoTangents> {
         let from_circle = self.head_circle(head, width);
-        let to_circle = self.bend_circle(around, width);
+        let to_circle = self.bend_circle(around, width, &self.conditions(head.face().into()));
 
         let from_cw = self.head_cw(head);
         math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
     }
 
     pub fn head_around_bend_offset(&self, head: &Head, around: BendIndex, width: f64) -> f64 {
-        self.layout
-            .rules()
-            .clearance(self.ref_conditions, self.guide_conditions)
+        self.layout.rules().clearance(
+            &self.conditions(head.face().into()),
+            &self.conditions(around.into()),
+        )
     }
 
     pub fn head_cw(&self, head: &Head) -> Option<bool> {
@@ -186,18 +180,19 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
             },
             Head::Segbend(head) => {
                 if let Some(inner) = self.layout.primitive(head.segbend.bend).inner() {
-                    self.bend_circle(inner.into(), width)
+                    self.bend_circle(inner.into(), width, &self.conditions(head.face().into()))
                 } else {
                     self.dot_circle(
                         self.layout.primitive(head.segbend.bend).core().into(),
                         width,
+                        &self.conditions(head.face().into()),
                     )
                 }
             }
         }
     }
 
-    fn bend_circle(&self, bend: BendIndex, width: f64) -> Circle {
+    fn bend_circle(&self, bend: BendIndex, width: f64, guide_conditions: &Conditions) -> Circle {
         let outer_circle = match bend.primitive(self.layout).shape() {
             Shape::Bend(shape) => shape.outer_circle(),
             _ => unreachable!(),
@@ -210,11 +205,11 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
                 + self
                     .layout
                     .rules()
-                    .clearance(self.ref_conditions, self.guide_conditions),
+                    .clearance(&self.conditions(bend.into()), guide_conditions),
         }
     }
 
-    fn dot_circle(&self, dot: DotIndex, width: f64) -> Circle {
+    fn dot_circle(&self, dot: DotIndex, width: f64, guide_conditions: &Conditions) -> Circle {
         let shape = dot.primitive(self.layout).shape();
         Circle {
             pos: shape.center(),
@@ -223,7 +218,7 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
                 + self
                     .layout
                     .rules()
-                    .clearance(self.ref_conditions, self.guide_conditions),
+                    .clearance(&self.conditions(dot.into()), guide_conditions),
         }
     }
 
@@ -253,5 +248,9 @@ impl<'a, 'b, R: RulesTrait> Guide<'a, 'b, R> {
         self.layout
             .primitive(head.segbend.seg)
             .other_joint(head.segbend.dot.into())
+    }
+
+    fn conditions(&self, node: GeometryIndex) -> Conditions {
+        node.primitive(self.layout).conditions()
     }
 }

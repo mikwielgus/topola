@@ -1,21 +1,25 @@
-#[derive(Debug, Default)]
-pub struct Conditions {
-    layer: Option<String>,
-    region: Option<String>,
-    netclass: Option<String>,
+use enum_dispatch::enum_dispatch;
+
+use crate::layout::primitive::Primitive;
+
+#[enum_dispatch]
+pub trait GetConditions {
+    fn conditions(&self) -> Conditions;
 }
 
 #[derive(Debug, Default)]
-pub struct LayerNetclassConditions {
-    region: Option<String>,
+pub struct Conditions {
+    pub netclass: Option<String>,
+    pub region: Option<String>,
+    pub layer: Option<String>,
 }
 
 pub trait RulesTrait {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64;
-    fn clearance_limit(
+    /*fn clearance_limit(
         &self,
         layer: String,
         netclass: String,
-        conditions: &LayerNetclassConditions,
-    ) -> f64;
+        conditions: &PrimitiveConditions,
+    ) -> f64;*/
 }

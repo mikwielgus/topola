@@ -27,7 +27,7 @@ use layout::dot::FixedDotWeight;
 use layout::geometry::shape::{Shape, ShapeTrait};
 use layout::graph::{GeometryIndex, MakePrimitive};
 use layout::primitive::MakeShape;
-use layout::rules::{Conditions, LayerNetclassConditions, RulesTrait};
+use layout::rules::{Conditions, RulesTrait};
 use layout::seg::FixedSegWeight;
 use layout::{Infringement, Layout, LayoutException};
 use mesh::{Mesh, MeshEdgeReference, VertexIndex};
@@ -51,27 +51,39 @@ use pathfinder_renderer::gpu::renderer::Renderer;
 use pathfinder_renderer::options::BuildOptions;
 use pathfinder_resources::embedded::EmbeddedResourceLoader;
 
+use std::collections::HashMap;
 use std::time::Duration;
 use tracer::{Trace, Tracer};
 
 use crate::math::Circle;
 use crate::router::Router;
 
-struct ConstantClearance {}
+struct SimpleRules {
+    netclass_clearances: HashMap<(String, String), f64>,
+}
 
-impl RulesTrait for ConstantClearance {
-    fn clearance(&self, _conditions1: &Conditions, _conditions2: &Conditions) -> f64 {
-        10.0
+impl RulesTrait for SimpleRules {
+    fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64 {
+        if let (Some(ref netclass1), Some(ref netclass2)) =
+            (conditions1.netclass.clone(), conditions2.netclass.clone())
+        {
+            *self
+                .netclass_clearances
+                .get(&(netclass1.to_string(), netclass2.to_string()))
+                .unwrap_or(&10.0)
+        } else {
+            5.0
+        }
     }
 
-    fn clearance_limit(
+    /*fn clearance_limit(
         &self,
         _layer: String,
         _netclass: String,
-        _conditions: &LayerNetclassConditions,
+        _conditions: &PrimitiveConditions,
     ) -> f64 {
         3.0
-    }
+    }*/
 }
 
 // Clunky enum to work around borrow checker.
@@ -235,7 +247,22 @@ fn main() -> Result<(), anyhow::Error> {
 
     let mut event_pump = sdl_context.event_pump().unwrap();
     let _i = 0;
-    let mut router = Router::new(ConstantClearance {});
+    let mut router = Router::new(SimpleRules {
+        netclass_clearances: HashMap::from([
+            (
+                (String::from("NETCLASS_A"), String::from("NETCLASS_A")),
+                5.0,
+            ),
+            (
+                (String::from("NETCLASS_A"), String::from("NETCLASS_B")),
+                10.0,
+            ),
+            (
+                (String::from("NETCLASS_B"), String::from("NETCLASS_A")),
+                10.0,
+            ),
+        ]),
+    });
 
     let component1_1 = router.layout.add_component(1);
     let component1_2 = router.layout.add_component(1);

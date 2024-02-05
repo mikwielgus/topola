@@ -11,10 +11,7 @@ use crate::{
         primitive::GetOtherJoint,
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
     },
-    layout::{
-        rules::{Conditions, RulesTrait},
-        Infringement, Layout, LayoutException,
-    },
+    layout::{rules::RulesTrait, Infringement, Layout, LayoutException},
     math::{Circle, NoTangents},
     wraparoundable::WraparoundableIndex,
 };
@@ -41,9 +38,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
     }
 
     pub fn start(&mut self, from: LooseDotIndex) -> Head {
-        self.guide(&Default::default(), &Default::default())
-            .segbend_head(from)
-            .into()
+        self.guide().segbend_head(from).into()
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.node_count() == old(self.layout.node_count() + 1))]
@@ -55,7 +50,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         width: f64,
     ) -> Result<(), DrawException> {
         let tangent = self
-            .guide(&Default::default(), &Default::default())
+            .guide()
             .head_into_dot_segment(&head, into, width)
             .map_err(Into::<DrawException>::into)?;
         let head = self
@@ -100,10 +95,10 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         width: f64,
     ) -> Result<SegbendHead, DrawException> {
         let mut tangents = self
-            .guide(&Default::default(), &Default::default())
+            .guide()
             .head_around_dot_segments(&head, around.into(), width)?;
         let offset = self
-            .guide(&Default::default(), &Default::default())
+            .guide()
             .head_around_dot_offset(&head, around.into(), width);
         let mut dirs = [true, false];
 
@@ -145,10 +140,10 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         width: f64,
     ) -> Result<SegbendHead, DrawException> {
         let mut tangents = self
-            .guide(&Default::default(), &Default::default())
+            .guide()
             .head_around_bend_segments(&head, around.into(), width)?;
         let offset = self
-            .guide(&Default::default(), &Default::default())
+            .guide()
             .head_around_bend_offset(&head, around.into(), width);
         let mut dirs = [true, false];
 
@@ -256,17 +251,10 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         let band = head.band;
 
         self.layout.remove_segbend(&head.segbend, head.face);
-        Some(
-            self.guide(&Default::default(), &Default::default())
-                .head(prev_dot, band),
-        )
+        Some(self.guide().head(prev_dot, band))
     }
 
-    fn guide(
-        &'a self,
-        ref_conditions: &'a Conditions,
-        guide_conditions: &'a Conditions,
-    ) -> Guide<R> {
-        Guide::new(self.layout, ref_conditions, guide_conditions)
+    fn guide(&self) -> Guide<R> {
+        Guide::new(self.layout)
     }
 }

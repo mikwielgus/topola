@@ -20,7 +20,7 @@ use crate::layout::{
     Layout,
 };
 
-use super::rules::RulesTrait;
+use super::rules::{Conditions, GetConditions, RulesTrait};
 
 #[enum_dispatch]
 pub trait GetLayout<'a, R: RulesTrait> {
@@ -166,7 +166,7 @@ macro_rules! impl_loose_primitive {
     };
 }
 
-#[enum_dispatch(GetNet, GetWidth, GetLayout, MakeShape, GetLimbs)]
+#[enum_dispatch(GetNet, GetWidth, GetLayout, MakeShape, GetLimbs, GetConditions)]
 pub enum Primitive<'a, R: RulesTrait> {
     FixedDot(FixedDot<'a, R>),
     LooseDot(LooseDot<'a, R>),
@@ -226,6 +226,16 @@ where
 {
     fn width(&self) -> f64 {
         self.weight().width()
+    }
+}
+
+impl<'a, W, R: RulesTrait> GetConditions for GenericPrimitive<'a, W, R> {
+    fn conditions(&self) -> Conditions {
+        Conditions {
+            netclass: Some("NETCLASS_A".to_string()),
+            region: Some("A".to_string()),
+            layer: Some("F.Cu".to_string()),
+        }
     }
 }
 

@@ -23,6 +23,7 @@ use crate::layout::geometry::{
     BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetPos, SegWeightTrait,
 };
 use crate::layout::guide::Guide;
+use crate::layout::rules::{Conditions, GetConditions};
 use crate::layout::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
@@ -409,18 +410,22 @@ impl<R: RulesTrait> Layout<R> {
         let mut maybe_rail = Some(around);
 
         while let Some(rail) = maybe_rail {
-            let primitive = self.primitive(rail);
-            let cw = primitive.weight().cw;
-            let ends = primitive.joints();
+            let rail_primitive = self.primitive(rail);
+            let cw = rail_primitive.weight().cw;
+            let ends = rail_primitive.joints();
 
-            let default1 = Default::default();
-            let default2 = Default::default();
-            let guide = Guide::new(self, &default1, &default2);
+            let inner_conditions = Conditions::from(if let Some(inner) = rail_primitive.inner() {
+                self.primitive(inner).conditions()
+            } else {
+                self.primitive(rail_primitive.core()).conditions()
+            });
+            let rail_conditions = Conditions::from(rail_primitive.conditions());
 
+            let guide = Guide::new(self);
             let from_head = guide.rear_head(ends.1);
             let to_head = guide.rear_head(ends.0);
 
-            if let Some(inner) = primitive.inner() {
+            if let Some(inner) = rail_primitive.inner() {
                 let from = guide
                     .head_around_bend_segment(&from_head.into(), inner.into(), !cw, 6.0)?
                     .end_point();
@@ -434,7 +439,7 @@ impl<R: RulesTrait> Layout<R> {
                 )?;
                 self.move_dot_infringably(ends.1.into(), to, &self.inner_bow_and_outer_bows(rail))?;
             } else {
-                let core = primitive.core();
+                let core = rail_primitive.core();
                 let from = guide
                     .head_around_dot_segment(&from_head.into(), core.into(), !cw, 6.0)?
                     .end_point();
