@@ -59,21 +59,15 @@ use crate::math::Circle;
 use crate::router::Router;
 
 struct SimpleRules {
-    netclass_clearances: HashMap<(String, String), f64>,
+    net_clearances: HashMap<(i64, i64), f64>,
 }
 
 impl RulesTrait for SimpleRules {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64 {
-        if let (Some(ref netclass1), Some(ref netclass2)) =
-            (conditions1.netclass.clone(), conditions2.netclass.clone())
-        {
-            *self
-                .netclass_clearances
-                .get(&(netclass1.to_string(), netclass2.to_string()))
-                .unwrap_or(&10.0)
-        } else {
-            5.0
-        }
+        *self
+            .net_clearances
+            .get(&(conditions1.net, conditions2.net))
+            .unwrap_or(&10.0)
     }
 
     /*fn clearance_limit(
@@ -248,19 +242,13 @@ fn main() -> Result<(), anyhow::Error> {
     let mut event_pump = sdl_context.event_pump().unwrap();
     let _i = 0;
     let mut router = Router::new(SimpleRules {
-        netclass_clearances: HashMap::from([
-            (
-                (String::from("NETCLASS_A"), String::from("NETCLASS_A")),
-                5.0,
-            ),
-            (
-                (String::from("NETCLASS_A"), String::from("NETCLASS_B")),
-                10.0,
-            ),
-            (
-                (String::from("NETCLASS_B"), String::from("NETCLASS_A")),
-                10.0,
-            ),
+        net_clearances: HashMap::from([
+            ((1, 2), 5.0),
+            ((2, 1), 5.0),
+            ((2, 3), 10.0),
+            ((3, 2), 10.0),
+            ((3, 4), 15.0),
+            ((4, 3), 15.0),
         ]),
     });
 

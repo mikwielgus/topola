@@ -229,10 +229,13 @@ where
     }
 }
 
-impl<'a, W, R: RulesTrait> GetConditions for GenericPrimitive<'a, W, R> {
+impl<'a, W, R: RulesTrait> GetConditions for GenericPrimitive<'a, W, R>
+where
+    GenericPrimitive<'a, W, R>: GetNet,
+{
     fn conditions(&self) -> Conditions {
         Conditions {
-            netclass: Some("NETCLASS_A".to_string()),
+            net: self.net(),
             region: Some("A".to_string()),
             layer: Some("F.Cu".to_string()),
         }

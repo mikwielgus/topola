@@ -9,7 +9,7 @@ pub trait GetConditions {
 
 #[derive(Debug, Default)]
 pub struct Conditions {
-    pub netclass: Option<String>,
+    pub net: i64,
     pub region: Option<String>,
     pub layer: Option<String>,
 }
