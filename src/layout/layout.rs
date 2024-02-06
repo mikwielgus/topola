@@ -254,6 +254,7 @@ impl<R: RulesTrait> Layout<R> {
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
+        cw: bool,
     ) -> Result<Segbend, LayoutException> {
         let maybe_wraparound = self.wraparoundable(around).wraparound();
         let mut infringables = self.this_and_wraparound_bow(around);
@@ -268,6 +269,7 @@ impl<R: RulesTrait> Layout<R> {
             dot_weight,
             seg_weight,
             bend_weight,
+            cw,
             &infringables,
         )?;
 
@@ -411,15 +413,7 @@ impl<R: RulesTrait> Layout<R> {
 
         while let Some(rail) = maybe_rail {
             let rail_primitive = self.primitive(rail);
-            let cw = rail_primitive.weight().cw;
             let ends = rail_primitive.joints();
-
-            let inner_conditions = Conditions::from(if let Some(inner) = rail_primitive.inner() {
-                self.primitive(inner).conditions()
-            } else {
-                self.primitive(rail_primitive.core()).conditions()
-            });
-            let rail_conditions = Conditions::from(rail_primitive.conditions());
 
             let guide = Guide::new(self);
             let from_head = guide.rear_head(ends.1);
@@ -427,10 +421,10 @@ impl<R: RulesTrait> Layout<R> {
 
             if let Some(inner) = rail_primitive.inner() {
                 let from = guide
-                    .head_around_bend_segment(&from_head.into(), inner.into(), !cw, 6.0)?
+                    .head_around_bend_segment(&from_head.into(), inner.into(), true, 6.0)?
                     .end_point();
                 let to = guide
-                    .head_around_bend_segment(&to_head.into(), inner.into(), cw, 6.0)?
+                    .head_around_bend_segment(&to_head.into(), inner.into(), false, 6.0)?
                     .end_point();
                 self.move_dot_infringably(
                     ends.0.into(),
@@ -441,10 +435,10 @@ impl<R: RulesTrait> Layout<R> {
             } else {
                 let core = rail_primitive.core();
                 let from = guide
-                    .head_around_dot_segment(&from_head.into(), core.into(), !cw, 6.0)?
+                    .head_around_dot_segment(&from_head.into(), core.into(), true, 6.0)?
                     .end_point();
                 let to = guide
-                    .head_around_dot_segment(&to_head.into(), core.into(), cw, 6.0)?
+                    .head_around_dot_segment(&to_head.into(), core.into(), false, 6.0)?
                     .end_point();
                 self.move_dot_infringably(
                     ends.0.into(),
@@ -471,6 +465,7 @@ impl<R: RulesTrait> Layout<R> {
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
+        cw: bool,
     ) -> Result<Segbend, LayoutException> {
         self.add_segbend_infringably(
             from,
@@ -478,6 +473,7 @@ impl<R: RulesTrait> Layout<R> {
             dot_weight,
             seg_weight,
             bend_weight,
+            cw,
             &self.this_and_wraparound_bow(around),
         )
     }
@@ -493,6 +489,7 @@ impl<R: RulesTrait> Layout<R> {
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
+        cw: bool,
         infringables: &[GeometryIndex],
     ) -> Result<Segbend, LayoutException> {
         let seg_to = self.add_dot_infringably(dot_weight, infringables)?;
@@ -503,17 +500,20 @@ impl<R: RulesTrait> Layout<R> {
                 err
             })?;
 
-        let bend_to = self
+        let to = self
             .add_dot_infringably(dot_weight, infringables)
             .map_err(|err| {
                 self.geometry_with_rtree.remove_seg(seg.into());
                 self.geometry_with_rtree.remove_dot(seg_to.into());
                 err
             })?;
+
+        let (bend_from, bend_to) = if cw { (to, seg_to) } else { (seg_to, to) };
+
         let bend = self
-            .add_loose_bend_infringably(seg_to, bend_to, around, bend_weight, infringables)
+            .add_loose_bend_infringably(bend_from, bend_to, around, bend_weight, infringables)
             .map_err(|err| {
-                self.geometry_with_rtree.remove_dot(bend_to.into());
+                self.geometry_with_rtree.remove_dot(to.into());
                 self.geometry_with_rtree.remove_seg(seg.into());
                 self.geometry_with_rtree.remove_dot(seg_to.into());
                 err

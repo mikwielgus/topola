@@ -17,6 +17,7 @@ use crate::{
 
 use super::{
     graph::GeometryIndex,
+    primitive::GetJoints,
     rules::{Conditions, RulesTrait},
     segbend::Segbend,
 };
@@ -166,7 +167,13 @@ impl<'a, R: RulesTrait> Guide<'a, R> {
 
     pub fn head_cw(&self, head: &Head) -> Option<bool> {
         if let Head::Segbend(head) = head {
-            Some(self.layout.primitive(head.segbend.bend).weight().cw)
+            let joints = self.layout.primitive(head.segbend.bend).joints();
+
+            if head.face() == joints.0.into() {
+                Some(false)
+            } else {
+                Some(true)
+            }
         } else {
             None
         }

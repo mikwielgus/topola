@@ -80,7 +80,6 @@ pub struct FixedBendWeight {
     pub component: ComponentIndex,
     pub width: f64,
     pub offset: f64,
-    pub cw: bool,
 }
 
 impl_fixed_weight!(FixedBendWeight, FixedBend, FixedBendIndex);
@@ -103,7 +102,6 @@ pub struct LooseBendWeight {
     pub band: BandIndex,
     pub width: f64,
     pub offset: f64,
-    pub cw: bool,
 }
 
 impl GetOffset for LooseBendWeight {

@@ -231,8 +231,8 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
                 band: head.band(),
                 width,
                 offset,
-                cw,
             },
+            cw,
         )?;
         Ok::<SegbendHead, LayoutException>(SegbendHead {
             face: self.layout.primitive(segbend.bend).other_joint(segbend.dot),
