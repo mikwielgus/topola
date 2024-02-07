@@ -523,8 +523,8 @@ fn main() -> Result<(), anyhow::Error> {
         dot_start,
         dot_end,
         3.0,
-        //&mut EmptyRouterObserver,
-        &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
+        &mut EmptyRouterObserver,
+        //&mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     )?;
 
     render_times(

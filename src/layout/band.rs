@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-use super::rules::RulesTrait;
+use super::{geometry::GetWidth, rules::RulesTrait};
 
 pub struct Band<'a, R: RulesTrait> {
     pub index: BandIndex,
@@ -90,5 +90,11 @@ impl<'a, R: RulesTrait> Band<'a, R> {
 impl<'a, R: RulesTrait> GetNet for Band<'a, R> {
     fn net(&self) -> i64 {
         self.weight().net
+    }
+}
+
+impl<'a, R: RulesTrait> GetWidth for Band<'a, R> {
+    fn width(&self) -> f64 {
+        self.weight().width
     }
 }

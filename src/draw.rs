@@ -6,12 +6,14 @@ use crate::{
     layout::{
         bend::{BendIndex, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
+        geometry::GetWidth,
         graph::{GetBandIndex, MakePrimitive},
         guide::{Guide, Head, HeadTrait, SegbendHead},
         primitive::GetOtherJoint,
+        rules::RulesTrait,
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
+        Infringement, Layout, LayoutException,
     },
-    layout::{rules::RulesTrait, Infringement, Layout, LayoutException},
     math::{Circle, NoTangents},
     wraparoundable::WraparoundableIndex,
 };
@@ -65,7 +67,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
                         into.into(),
                         LoneLooseSegWeight {
                             band: head.band(),
-                            width: 3.0,
+                            width: self.layout.band(head.band()).width(),
                         },
                     )
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
@@ -77,7 +79,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
                         dot,
                         SeqLooseSegWeight {
                             band: head.band(),
-                            width: 3.0,
+                            width: self.layout.band(head.band()).width(),
                         },
                     )
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;

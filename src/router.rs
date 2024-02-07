@@ -6,6 +6,7 @@ use thiserror::Error;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
 use crate::draw::DrawException;
+use crate::layout::geometry::GetWidth;
 use crate::layout::guide::HeadTrait;
 use crate::layout::rules::RulesTrait;
 use crate::layout::Layout;
@@ -84,13 +85,24 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Mesh, f64>
 {
     fn is_goal(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Mesh>) -> bool {
         let new_path = tracker.reconstruct_path_to(vertex);
+        let band = self.trace.head.band();
 
         self.tracer
-            .rework_path(&mut self.trace, &new_path, 5.0)
+            .rework_path(
+                &mut self.trace,
+                &new_path,
+                self.tracer.layout.band(band).width(),
+            )
             .unwrap();
         self.observer.on_rework(&self.tracer, &self.trace);
 
-        self.tracer.finish(&mut self.trace, self.to, 5.0).is_ok()
+        self.tracer
+            .finish(
+                &mut self.trace,
+                self.to,
+                self.tracer.layout.band(band).width(),
+            )
+            .is_ok()
     }
 
     fn edge_cost(&mut self, edge: MeshEdgeReference) -> Option<f64> {
@@ -99,9 +111,14 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Mesh, f64>
             return None;
         }
 
-        let before_probe_length = self.tracer.layout.band(self.trace.head.band()).length();
+        let band = self.trace.head.band();
+        let before_probe_length = self.tracer.layout.band(band).length();
 
-        let result = self.tracer.step(&mut self.trace, edge.target(), 5.0);
+        let result = self.tracer.step(
+            &mut self.trace,
+            edge.target(),
+            self.tracer.layout.band(band).width(),
+        );
         self.observer
             .on_probe(&self.tracer, &self.trace, edge, result);
 

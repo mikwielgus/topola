@@ -20,7 +20,7 @@ use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::bend::BendIndex;
 use crate::layout::dot::DotWeight;
 use crate::layout::geometry::{
-    BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetPos, SegWeightTrait,
+    BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetPos, GetWidth, SegWeightTrait,
 };
 use crate::layout::guide::Guide;
 use crate::layout::rules::{Conditions, GetConditions};
@@ -413,39 +413,67 @@ impl<R: RulesTrait> Layout<R> {
 
         while let Some(rail) = maybe_rail {
             let rail_primitive = self.primitive(rail);
-            let ends = rail_primitive.joints();
+            let joints = rail_primitive.joints();
 
             let guide = Guide::new(self);
-            let from_head = guide.rear_head(ends.1);
-            let to_head = guide.rear_head(ends.0);
+            let from_head = guide.rear_head(joints.1);
+            let to_head = guide.rear_head(joints.0);
 
             if let Some(inner) = rail_primitive.inner() {
                 let from = guide
-                    .head_around_bend_segment(&from_head.into(), inner.into(), true, 6.0)?
+                    .head_around_bend_segment(
+                        &from_head.into(),
+                        inner.into(),
+                        true,
+                        self.primitive(rail).width(),
+                    )?
                     .end_point();
                 let to = guide
-                    .head_around_bend_segment(&to_head.into(), inner.into(), false, 6.0)?
+                    .head_around_bend_segment(
+                        &to_head.into(),
+                        inner.into(),
+                        false,
+                        self.primitive(rail).width(),
+                    )?
                     .end_point();
                 self.move_dot_infringably(
-                    ends.0.into(),
+                    joints.0.into(),
                     from,
                     &self.inner_bow_and_outer_bows(rail),
                 )?;
-                self.move_dot_infringably(ends.1.into(), to, &self.inner_bow_and_outer_bows(rail))?;
+                self.move_dot_infringably(
+                    joints.1.into(),
+                    to,
+                    &self.inner_bow_and_outer_bows(rail),
+                )?;
             } else {
                 let core = rail_primitive.core();
                 let from = guide
-                    .head_around_dot_segment(&from_head.into(), core.into(), true, 6.0)?
+                    .head_around_dot_segment(
+                        &from_head.into(),
+                        core.into(),
+                        true,
+                        self.primitive(rail).width(),
+                    )?
                     .end_point();
                 let to = guide
-                    .head_around_dot_segment(&to_head.into(), core.into(), false, 6.0)?
+                    .head_around_dot_segment(
+                        &to_head.into(),
+                        core.into(),
+                        false,
+                        self.primitive(rail).width(),
+                    )?
                     .end_point();
                 self.move_dot_infringably(
-                    ends.0.into(),
+                    joints.0.into(),
                     from,
                     &self.inner_bow_and_outer_bows(rail),
                 )?;
-                self.move_dot_infringably(ends.1.into(), to, &self.inner_bow_and_outer_bows(rail))?;
+                self.move_dot_infringably(
+                    joints.1.into(),
+                    to,
+                    &self.inner_bow_and_outer_bows(rail),
+                )?;
             }
 
             maybe_rail = self.primitive(rail).outer();
