@@ -24,6 +24,7 @@ use crate::layout::geometry::{
     SegWeightTrait,
 };
 use crate::layout::guide::Guide;
+use crate::layout::primitive::GetLimbs;
 use crate::layout::rules::{Conditions, GetConditions};
 use crate::layout::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
@@ -851,6 +852,14 @@ impl<R: RulesTrait> Layout<R> {
     ) -> Result<(), Infringement> {
         let old_pos = self.geometry_with_rtree.geometry().dot_weight(dot).pos();
         self.geometry_with_rtree.move_dot(dot, to);
+
+        for limb in dot.primitive(self).limbs() {
+            if let Some(infringement) = self.detect_infringement_except(limb.into(), infringables) {
+                // Restore original state.
+                self.geometry_with_rtree.move_dot(dot, old_pos);
+                return Err(infringement);
+            }
+        }
 
         if let Some(infringement) = self.detect_infringement_except(dot.into(), infringables) {
             // Restore original state.

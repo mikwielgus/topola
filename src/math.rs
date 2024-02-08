@@ -191,14 +191,30 @@ pub fn intersect_circle_segment(circle: &Circle, segment: &Line) -> Vec<Point> {
     }
 
     if discriminant == 0.0 {
-        return [from + (to - from) * -b / (2.0 * a)].into();
+        let u = -b / (2.0 * a);
+
+        if u >= 0.0 && u <= 1.0 {
+            return [from + (to - from) * -b / (2.0 * a)].into();
+        } else {
+            return [].into();
+        }
     }
 
-    [
-        from + (to - from) * (-b + discriminant.sqrt()) / (2.0 * a),
-        from + (to - from) * (-b - discriminant.sqrt()) / (2.0 * a),
-    ]
-    .into()
+    let mut v = vec![];
+
+    let u1 = (-b + discriminant.sqrt()) / (2.0 * a);
+
+    if u1 >= 0.0 && u1 <= 1.0 {
+        v.push(from + (to - from) * u1);
+    }
+
+    let u2 = (-b - discriminant.sqrt()) / (2.0 * a);
+
+    if u2 >= 0.0 && u2 <= 1.0 {
+        v.push(from + (to - from) * u2);
+    }
+
+    v
 }
 
 pub fn between_vectors(p: Point, from: Point, to: Point) -> bool {
