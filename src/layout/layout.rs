@@ -20,7 +20,8 @@ use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::bend::BendIndex;
 use crate::layout::dot::DotWeight;
 use crate::layout::geometry::{
-    BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetPos, GetWidth, SegWeightTrait,
+    BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetOffset, GetPos, GetWidth,
+    SegWeightTrait,
 };
 use crate::layout::guide::Guide;
 use crate::layout::rules::{Conditions, GetConditions};
@@ -436,6 +437,12 @@ impl<R: RulesTrait> Layout<R> {
                         self.primitive(rail).width(),
                     )?
                     .end_point();
+                let offset = guide.head_around_bend_offset(
+                    &from_head.into(),
+                    inner.into(),
+                    self.primitive(rail).width(),
+                );
+
                 self.move_dot_infringably(
                     joints.0.into(),
                     from,
@@ -446,6 +453,14 @@ impl<R: RulesTrait> Layout<R> {
                     to,
                     &self.inner_bow_and_outer_bows(rail),
                 )?;
+
+                self.shift_bend_infringably(
+                    rail.into(),
+                    offset,
+                    &self.inner_bow_and_outer_bows(rail),
+                )?;
+
+                // Update offsets in case the rule conditions changed.
             } else {
                 let core = rail_primitive.core();
                 let from = guide
@@ -464,6 +479,12 @@ impl<R: RulesTrait> Layout<R> {
                         self.primitive(rail).width(),
                     )?
                     .end_point();
+                let offset = guide.head_around_dot_offset(
+                    &from_head.into(),
+                    core.into(),
+                    self.primitive(rail).width(),
+                );
+
                 self.move_dot_infringably(
                     joints.0.into(),
                     from,
@@ -472,6 +493,12 @@ impl<R: RulesTrait> Layout<R> {
                 self.move_dot_infringably(
                     joints.1.into(),
                     to,
+                    &self.inner_bow_and_outer_bows(rail),
+                )?;
+
+                self.shift_bend_infringably(
+                    rail.into(),
+                    offset,
                     &self.inner_bow_and_outer_bows(rail),
                 )?;
             }
@@ -828,6 +855,30 @@ impl<R: RulesTrait> Layout<R> {
         if let Some(infringement) = self.detect_infringement_except(dot.into(), infringables) {
             // Restore original state.
             self.geometry_with_rtree.move_dot(dot, old_pos);
+            return Err(infringement);
+        }
+
+        Ok(())
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    fn shift_bend_infringably(
+        &mut self,
+        bend: BendIndex,
+        offset: f64,
+        infringables: &[GeometryIndex],
+    ) -> Result<(), Infringement> {
+        let old_offset = self
+            .geometry_with_rtree
+            .geometry()
+            .bend_weight(bend)
+            .offset();
+        self.geometry_with_rtree.shift_bend(bend, offset);
+
+        if let Some(infringement) = self.detect_infringement_except(bend.into(), infringables) {
+            // Restore original state.
+            self.geometry_with_rtree.shift_bend(bend, old_offset);
             return Err(infringement);
         }
 

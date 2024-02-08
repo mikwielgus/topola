@@ -17,6 +17,8 @@ use crate::{
 
 use petgraph::stable_graph::NodeIndex;
 
+use super::geometry::SetOffset;
+
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BendIndex {
@@ -45,7 +47,7 @@ impl TryFrom<GeometryIndex> for BendIndex {
     }
 }
 
-#[enum_dispatch(GetOffset, GetWidth)]
+#[enum_dispatch(GetOffset, SetOffset, GetWidth)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BendWeight {
     Fixed(FixedBendWeight),
@@ -91,6 +93,12 @@ impl GetOffset for FixedBendWeight {
     }
 }
 
+impl SetOffset for FixedBendWeight {
+    fn set_offset(&mut self, offset: f64) {
+        self.offset = offset
+    }
+}
+
 impl GetWidth for FixedBendWeight {
     fn width(&self) -> f64 {
         self.width
@@ -107,6 +115,12 @@ pub struct LooseBendWeight {
 impl GetOffset for LooseBendWeight {
     fn offset(&self) -> f64 {
         self.offset
+    }
+}
+
+impl SetOffset for LooseBendWeight {
+    fn set_offset(&mut self, offset: f64) {
+        self.offset = offset
     }
 }
 

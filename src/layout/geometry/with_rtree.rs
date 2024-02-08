@@ -159,15 +159,49 @@ impl<
         }
     }
 
+    pub fn shift_bend(&mut self, bend: BI, offset: f64) {
+        let mut rail = bend;
+
+        while let Some(outer) = self.geometry.outer(rail) {
+            self.rtree.remove(&self.make_bend_bbox(outer));
+            rail = outer;
+        }
+
+        self.rtree.remove(&self.make_bend_bbox(bend));
+        self.geometry.shift_bend(bend, offset);
+        self.rtree.insert(self.make_bend_bbox(bend));
+
+        rail = bend;
+
+        while let Some(outer) = self.geometry.outer(rail) {
+            self.rtree.insert(self.make_bend_bbox(outer));
+            rail = outer;
+        }
+    }
+
     pub fn flip_bend(&mut self, bend: BI) {
         // Does not affect the bbox because it covers the whole guidecircle.
         self.geometry.flip_bend(bend);
     }
 
     pub fn reattach_bend(&mut self, bend: BI, maybe_new_inner: Option<BI>) {
+        let mut rail = bend;
+
+        while let Some(outer) = self.geometry.outer(rail) {
+            self.rtree.remove(&self.make_bend_bbox(outer));
+            rail = outer;
+        }
+
         self.rtree.remove(&self.make_bend_bbox(bend));
         self.geometry.reattach_bend(bend, maybe_new_inner);
         self.rtree.insert(self.make_bend_bbox(bend));
+
+        rail = bend;
+
+        while let Some(outer) = self.geometry.outer(rail) {
+            self.rtree.insert(self.make_bend_bbox(outer));
+            rail = outer;
+        }
     }
 }
 

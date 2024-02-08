@@ -39,6 +39,11 @@ pub trait GetOffset {
     fn offset(&self) -> f64;
 }
 
+#[enum_dispatch]
+pub trait SetOffset {
+    fn set_offset(&mut self, offset: f64);
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GeometryLabel {
     Connection,
@@ -48,7 +53,7 @@ pub enum GeometryLabel {
 
 pub trait DotWeightTrait<GW>: GetPos + SetPos + GetWidth + Into<GW> + Copy {}
 pub trait SegWeightTrait<GW>: GetWidth + Into<GW> + Copy {}
-pub trait BendWeightTrait<GW>: GetOffset + GetWidth + Into<GW> + Copy {}
+pub trait BendWeightTrait<GW>: GetOffset + SetOffset + GetWidth + Into<GW> + Copy {}
 
 #[derive(Debug)]
 pub struct Geometry<
@@ -152,7 +157,13 @@ impl<
     pub fn move_dot(&mut self, dot: DI, to: Point) {
         let mut weight = self.dot_weight(dot);
         weight.set_pos(to);
-        *self.graph.node_weight_mut(dot.node_index()).unwrap() = weight.into()
+        *self.graph.node_weight_mut(dot.node_index()).unwrap() = weight.into();
+    }
+
+    pub fn shift_bend(&mut self, bend: BI, offset: f64) {
+        let mut weight = self.bend_weight(bend);
+        weight.set_offset(offset);
+        *self.graph.node_weight_mut(bend.node_index()).unwrap() = weight.into();
     }
 
     pub fn flip_bend(&mut self, bend: BI) {

@@ -243,10 +243,10 @@ fn main() -> Result<(), anyhow::Error> {
     let _i = 0;
     let mut router = Router::new(SimpleRules {
         net_clearances: HashMap::from([
-            ((1, 2), 5.0),
-            ((2, 1), 5.0),
-            ((2, 3), 10.0),
-            ((3, 2), 10.0),
+            ((1, 2), 8.0),
+            ((2, 1), 8.0),
+            ((2, 3), 3.0),
+            ((3, 2), 3.0),
             ((3, 4), 15.0),
             ((4, 3), 15.0),
         ]),
