@@ -7,9 +7,10 @@ use crate::math::{self, Circle};
 #[enum_dispatch]
 pub trait ShapeTrait {
     fn priority(&self) -> u64;
+    fn inflate(&self, margin: f64) -> Shape;
     fn center(&self) -> Point;
     fn intersects(&self, other: &Shape) -> bool;
-    fn envelope(&self) -> AABB<[f64; 2]>;
+    fn envelope(&self, margin: f64) -> AABB<[f64; 2]>;
     fn width(&self) -> f64;
     fn length(&self) -> f64;
 }
@@ -31,6 +32,15 @@ pub struct DotShape {
 impl ShapeTrait for DotShape {
     fn priority(&self) -> u64 {
         3
+    }
+
+    fn inflate(&self, margin: f64) -> Shape {
+        Shape::Dot(DotShape {
+            c: Circle {
+                pos: self.c.pos,
+                r: self.c.r + margin,
+            },
+        })
     }
 
     fn center(&self) -> Point {
@@ -63,10 +73,16 @@ impl ShapeTrait for DotShape {
         }
     }
 
-    fn envelope(&self) -> AABB<[f64; 2]> {
+    fn envelope(&self, margin: f64) -> AABB<[f64; 2]> {
         AABB::from_corners(
-            [self.c.pos.x() - self.c.r, self.c.pos.y() - self.c.r],
-            [self.c.pos.x() + self.c.r, self.c.pos.y() + self.c.r],
+            [
+                self.c.pos.x() - self.c.r - margin,
+                self.c.pos.y() - self.c.r - margin,
+            ],
+            [
+                self.c.pos.x() + self.c.r + margin,
+                self.c.pos.y() + self.c.r + margin,
+            ],
         )
     }
 
@@ -108,6 +124,16 @@ impl ShapeTrait for SegShape {
         2
     }
 
+    fn inflate(&self, margin: f64) -> Shape {
+        let mag = (self.to - self.from).euclidean_distance(&point! {x: 0.0, y: 0.0});
+
+        Shape::Seg(SegShape {
+            from: self.from + (self.from - self.to) / mag * margin,
+            to: self.to + (self.to - self.from) / mag * margin,
+            width: self.width + 2.0 * margin,
+        })
+    }
+
     fn center(&self) -> Point {
         (self.from + self.to) / 2.0
     }
@@ -143,14 +169,20 @@ impl ShapeTrait for SegShape {
         }
     }
 
-    fn envelope(&self) -> AABB<[f64; 2]> {
+    fn envelope(&self, margin: f64) -> AABB<[f64; 2]> {
         let points: Vec<[f64; 2]> = self
             .polygon()
             .exterior()
             .points()
             .map(|p| [p.x(), p.y()])
             .collect();
-        AABB::<[f64; 2]>::from_points(points.iter())
+
+        let aabb = AABB::<[f64; 2]>::from_points(points.iter());
+
+        // Inflate.
+        let lower = [aabb.lower()[0] - margin, aabb.lower()[1] - margin];
+        let upper = [aabb.upper()[0] + margin, aabb.upper()[1] + margin];
+        AABB::<[f64; 2]>::from_corners(lower, upper)
     }
 
     fn width(&self) -> f64 {
@@ -203,6 +235,18 @@ impl ShapeTrait for BendShape {
         1
     }
 
+    fn inflate(&self, margin: f64) -> Shape {
+        Shape::Bend(BendShape {
+            from: self.from, // TODO: Is not inflated for now.
+            to: self.to,     // TODO: Is not inflated for now.
+            c: Circle {
+                pos: self.c.pos,
+                r: self.c.r - margin,
+            },
+            width: self.width + 2.0 * margin,
+        })
+    }
+
     fn center(&self) -> Point {
         let sum = (self.from - self.c.pos) + (self.to - self.c.pos);
         self.c.pos + (sum / sum.euclidean_distance(&point! {x: 0.0, y: 0.0})) * self.c.r
@@ -245,7 +289,7 @@ impl ShapeTrait for BendShape {
         }
     }
 
-    fn envelope(&self) -> AABB<[f64; 2]> {
+    fn envelope(&self, margin: f64) -> AABB<[f64; 2]> {
         let halfwidth = self.c.r + self.width;
         AABB::from_corners(
             [self.c.pos.x() - halfwidth, self.c.pos.y() - halfwidth],
@@ -258,6 +302,9 @@ impl ShapeTrait for BendShape {
     }
 
     fn length(&self) -> f64 {
+        // TODO: Not valid for inflated bends, as currently `from` and `to` of these don't lie on
+        // teir circles.
+
         // We obtain the angle from the law of cosines and multiply with radius to get the length.
         let d = self.to.euclidean_distance(&self.from);
 
@@ -272,6 +319,6 @@ impl ShapeTrait for BendShape {
 impl RTreeObject for Shape {
     type Envelope = AABB<[f64; 2]>;
     fn envelope(&self) -> Self::Envelope {
-        return ShapeTrait::envelope(self);
+        return ShapeTrait::envelope(self, 0.0);
     }
 }

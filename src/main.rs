@@ -70,14 +70,17 @@ impl RulesTrait for SimpleRules {
             .unwrap_or(&10.0)
     }
 
-    /*fn clearance_limit(
-        &self,
-        _layer: String,
-        _netclass: String,
-        _conditions: &PrimitiveConditions,
-    ) -> f64 {
-        3.0
-    }*/
+    fn clearance_net_limit(&self, net: i64) -> f64 {
+        let mut highest_clearance = 0.0;
+
+        for ((net1, net2), clearance) in self.net_clearances.iter() {
+            if *net1 == net || *net2 == net {
+                highest_clearance = *clearance;
+            }
+        }
+
+        highest_clearance
+    }
 }
 
 // Clunky enum to work around borrow checker.
@@ -805,7 +808,7 @@ fn render_shape(canvas: &mut CanvasRenderingContext2D, shape: &Shape, color: Col
             canvas.stroke_path(path);
         }
     }
-    let envelope = ShapeTrait::envelope(shape);
+    let envelope = ShapeTrait::envelope(shape, 0.0);
     // XXX: points represented as arrays can't be conveniently converted to vector types
     let topleft = vec2f(envelope.lower()[0] as f32, envelope.lower()[1] as f32);
     let bottomright = vec2f(envelope.upper()[0] as f32, envelope.upper()[1] as f32);

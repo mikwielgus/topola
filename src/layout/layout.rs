@@ -901,20 +901,33 @@ impl<R: RulesTrait> Layout<R> {
         node: GeometryIndex,
         except: &[GeometryIndex],
     ) -> Option<Infringement> {
-        let shape = node.primitive(self).shape();
+        let limiting_shape = node
+            .primitive(self)
+            .shape()
+            .inflate(self.rules.clearance_net_limit(node.primitive(self).net()));
+        let mut inflated_shape = limiting_shape; // Unused temporary value just for initialization.
+        let conditions = node.primitive(self).conditions();
 
         self.geometry_with_rtree
             .rtree()
-            .locate_in_envelope_intersecting(&RTreeObject::envelope(&shape))
+            .locate_in_envelope_intersecting(&RTreeObject::envelope(&limiting_shape))
             .filter(|wrapper| !self.are_connectable(node, wrapper.data))
             .filter(|wrapper| !except.contains(&wrapper.data))
-            .filter(|wrapper| shape.intersects(wrapper.geom()))
+            .filter(|wrapper| {
+                let infringee_conditions = wrapper.data.primitive(self).conditions();
+
+                inflated_shape = node
+                    .primitive(self)
+                    .shape()
+                    .inflate(self.rules.clearance(&conditions, &infringee_conditions));
+
+                inflated_shape.intersects(wrapper.geom())
+            })
             .map(|wrapper| wrapper.data)
             .next()
-            .and_then(|infringee| Some(Infringement(shape, infringee)))
+            .and_then(|infringee| Some(Infringement(inflated_shape, infringee)))
     }
 
-    // TODO: Collision and infringement are the same for now. Change this.
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     fn detect_collision(&self, node: GeometryIndex) -> Option<Collision> {
