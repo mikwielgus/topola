@@ -259,7 +259,7 @@ impl<R: RulesTrait> Layout<R> {
         cw: bool,
     ) -> Result<Segbend, LayoutException> {
         let maybe_wraparound = self.wraparoundable(around).wraparound();
-        let mut infringables = self.this_and_wraparound_bow(around);
+        let mut infringables = self.segbend_inner_and_outer_bibows(from, around);
 
         if let Some(wraparound) = maybe_wraparound {
             infringables.append(&mut self.outer_bows(wraparound));
@@ -333,6 +333,21 @@ impl<R: RulesTrait> Layout<R> {
             rail = outer;
         }
 
+        v
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    fn segbend_inner_and_outer_bibows(
+        &self,
+        from: DotIndex,
+        around: WraparoundableIndex,
+    ) -> Vec<GeometryIndex> {
+        let mut v = match from {
+            DotIndex::Fixed(..) => vec![],
+            DotIndex::Loose(dot) => self.inner_bow_and_outer_bow(self.primitive(dot).bend().into()),
+        };
+        v.append(&mut self.this_and_wraparound_bow(around));
         v
     }
 
@@ -530,7 +545,7 @@ impl<R: RulesTrait> Layout<R> {
             seg_weight,
             bend_weight,
             cw,
-            &self.this_and_wraparound_bow(around),
+            &self.segbend_inner_and_outer_bibows(from, around),
         )
     }
 
@@ -618,7 +633,12 @@ impl<R: RulesTrait> Layout<R> {
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
     ) -> Result<SeqLooseSegIndex, Infringement> {
-        let seg = self.add_seg_infringably(from, to.into(), weight, &[])?;
+        let seg = self.add_seg_infringably(
+            from,
+            to.into(),
+            weight,
+            &self.inner_bow_and_outer_bow(self.primitive(to).bend().into()),
+        )?;
 
         if let DotIndex::Fixed(dot) = from {
             self.connectivity.update_edge(
