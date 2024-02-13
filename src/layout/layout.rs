@@ -18,6 +18,7 @@ use super::rules::RulesTrait;
 use super::segbend::Segbend;
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::bend::BendIndex;
+use crate::layout::collect::Collect;
 use crate::layout::dot::DotWeight;
 use crate::layout::geometry::{
     BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetOffset, GetPos, GetWidth,
@@ -259,10 +260,10 @@ impl<R: RulesTrait> Layout<R> {
         cw: bool,
     ) -> Result<Segbend, LayoutException> {
         let maybe_wraparound = self.wraparoundable(around).wraparound();
-        let mut infringables = self.segbend_inner_and_outer_bibows(from, around);
+        let mut infringables = self.collect().segbend_inner_and_outer_bibows(from, around);
 
         if let Some(wraparound) = maybe_wraparound {
-            infringables.append(&mut self.outer_bows(wraparound));
+            infringables.append(&mut self.collect().outer_bows(wraparound));
         }
 
         let segbend = self.add_segbend_infringably(
@@ -291,124 +292,6 @@ impl<R: RulesTrait> Layout<R> {
         }
 
         Ok::<Segbend, LayoutException>(segbend)
-    }
-
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn inner_bow_and_outer_bow(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
-        let bend_primitive = self.primitive(bend);
-        let mut v = vec![];
-
-        if let Some(inner) = bend_primitive.inner() {
-            v.append(&mut self.bow(inner.into()));
-        } else {
-            let core = bend_primitive.core();
-            v.push(core.into());
-        }
-
-        if let Some(outer) = bend_primitive.outer() {
-            v.append(&mut self.bow(outer.into()));
-        }
-
-        v
-    }
-
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn inner_bow_and_outer_bows(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
-        let bend_primitive = self.primitive(bend);
-        let mut v = vec![];
-
-        if let Some(inner) = bend_primitive.inner() {
-            v.append(&mut self.bow(inner.into()));
-        } else {
-            let core = bend_primitive.core();
-            v.push(core.into());
-        }
-
-        let mut rail = bend;
-
-        while let Some(outer) = self.primitive(rail).outer() {
-            v.append(&mut self.bow(outer.into()));
-            rail = outer;
-        }
-
-        v
-    }
-
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn segbend_inner_and_outer_bibows(
-        &self,
-        from: DotIndex,
-        around: WraparoundableIndex,
-    ) -> Vec<GeometryIndex> {
-        let mut v = match from {
-            DotIndex::Fixed(..) => vec![],
-            DotIndex::Loose(dot) => self.inner_bow_and_outer_bow(self.primitive(dot).bend().into()),
-        };
-        v.append(&mut self.this_and_wraparound_bow(around));
-        v
-    }
-
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn this_and_wraparound_bow(&self, around: WraparoundableIndex) -> Vec<GeometryIndex> {
-        let mut v = match around {
-            WraparoundableIndex::FixedDot(..) => vec![around.into()],
-            WraparoundableIndex::FixedBend(..) => vec![around.into()],
-            WraparoundableIndex::LooseBend(bend) => self.bow(bend),
-        };
-        if let Some(wraparound) = self.wraparoundable(around).wraparound() {
-            v.append(&mut self.bow(wraparound));
-        }
-        v
-    }
-
-    // XXX: Move this to primitives?
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn bow(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
-        let mut bow: Vec<GeometryIndex> = vec![];
-        bow.push(bend.into());
-
-        let ends = self.primitive(bend).joints();
-        bow.push(ends.0.into());
-        bow.push(ends.1.into());
-
-        if let Some(seg0) = self.primitive(ends.0).seg() {
-            bow.push(seg0.into());
-        }
-
-        if let Some(seg1) = self.primitive(ends.1).seg() {
-            bow.push(seg1.into());
-        }
-
-        bow
-    }
-
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn outer_bows(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
-        let mut outer_bows = vec![];
-        let mut rail = bend;
-
-        while let Some(outer) = self.primitive(rail).outer() {
-            let primitive = self.primitive(outer);
-
-            outer_bows.push(outer.into());
-
-            let ends = primitive.joints();
-            outer_bows.push(ends.0.into());
-            outer_bows.push(ends.1.into());
-
-            outer_bows.push(self.primitive(ends.0).seg().unwrap().into());
-            outer_bows.push(self.primitive(ends.1).seg().unwrap().into());
-
-            rail = outer;
-        }
-
-        outer_bows
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
@@ -462,18 +345,18 @@ impl<R: RulesTrait> Layout<R> {
                 self.move_dot_infringably(
                     joints.0.into(),
                     from,
-                    &self.inner_bow_and_outer_bows(rail),
+                    &self.collect().inner_bow_and_outer_bows(rail),
                 )?;
                 self.move_dot_infringably(
                     joints.1.into(),
                     to,
-                    &self.inner_bow_and_outer_bows(rail),
+                    &self.collect().inner_bow_and_outer_bows(rail),
                 )?;
 
                 self.shift_bend_infringably(
                     rail.into(),
                     offset,
-                    &self.inner_bow_and_outer_bows(rail),
+                    &self.collect().inner_bow_and_outer_bows(rail),
                 )?;
 
                 // Update offsets in case the rule conditions changed.
@@ -504,18 +387,18 @@ impl<R: RulesTrait> Layout<R> {
                 self.move_dot_infringably(
                     joints.0.into(),
                     from,
-                    &self.inner_bow_and_outer_bows(rail),
+                    &self.collect().inner_bow_and_outer_bows(rail),
                 )?;
                 self.move_dot_infringably(
                     joints.1.into(),
                     to,
-                    &self.inner_bow_and_outer_bows(rail),
+                    &self.collect().inner_bow_and_outer_bows(rail),
                 )?;
 
                 self.shift_bend_infringably(
                     rail.into(),
                     offset,
-                    &self.inner_bow_and_outer_bows(rail),
+                    &self.collect().inner_bow_and_outer_bows(rail),
                 )?;
             }
 
@@ -545,7 +428,7 @@ impl<R: RulesTrait> Layout<R> {
             seg_weight,
             bend_weight,
             cw,
-            &self.segbend_inner_and_outer_bibows(from, around),
+            &self.collect().segbend_inner_and_outer_bibows(from, around),
         )
     }
 
@@ -637,7 +520,9 @@ impl<R: RulesTrait> Layout<R> {
             from,
             to.into(),
             weight,
-            &self.inner_bow_and_outer_bow(self.primitive(to).bend().into()),
+            &self
+                .collect()
+                .inner_bow_and_outer_bow(self.primitive(to).bend().into()),
         )?;
 
         if let DotIndex::Fixed(dot) = from {
@@ -857,7 +742,9 @@ impl<R: RulesTrait> Layout<R> {
             DotIndex::Loose(loose) => self.move_dot_infringably(
                 dot,
                 to,
-                &self.inner_bow_and_outer_bow(self.primitive(loose).bend()),
+                &self
+                    .collect()
+                    .inner_bow_and_outer_bow(self.primitive(loose).bend()),
             ),
         }
     }
@@ -1001,6 +888,18 @@ impl<R: RulesTrait> Layout<R> {
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn rules(&self) -> &R {
         &self.rules
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    pub fn guide(&self) -> Guide<R> {
+        Guide::new(self)
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    pub fn collect(&self) -> Collect<R> {
+        Collect::new(self)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]

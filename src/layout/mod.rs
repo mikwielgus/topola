@@ -2,6 +2,7 @@
 pub mod graph;
 pub mod band;
 pub mod bend;
+pub mod collect;
 pub mod connectivity;
 pub mod dot;
 pub mod geometry;
