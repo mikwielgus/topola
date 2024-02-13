@@ -114,11 +114,11 @@ impl<
     }
 
     pub fn remove_dot(&mut self, dot: DI) -> Result<(), ()> {
-        if self.geometry.connected_segs(dot).next().is_some() {
+        if self.geometry.joined_segs(dot).next().is_some() {
             return Err(());
         }
 
-        if self.geometry.connected_bends(dot).next().is_some() {
+        if self.geometry.joined_bends(dot).next().is_some() {
             return Err(());
         }
 
@@ -138,11 +138,11 @@ impl<
     }
 
     pub fn move_dot(&mut self, dot: DI, to: Point) {
-        for seg in self.geometry.connected_segs(dot) {
+        for seg in self.geometry.joined_segs(dot) {
             self.rtree.remove(&self.make_seg_bbox(seg));
         }
 
-        for bend in self.geometry.connected_bends(dot) {
+        for bend in self.geometry.joined_bends(dot) {
             self.rtree.remove(&self.make_bend_bbox(bend));
         }
 
@@ -150,11 +150,11 @@ impl<
         self.geometry.move_dot(dot, to);
         self.rtree.insert(self.make_dot_bbox(dot));
 
-        for bend in self.geometry.connected_bends(dot) {
+        for bend in self.geometry.joined_bends(dot) {
             self.rtree.insert(self.make_bend_bbox(bend));
         }
 
-        for seg in self.geometry.connected_segs(dot) {
+        for seg in self.geometry.joined_segs(dot) {
             self.rtree.insert(self.make_seg_bbox(seg));
         }
     }

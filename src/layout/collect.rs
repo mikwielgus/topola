@@ -19,27 +19,12 @@ impl<'a, R: RulesTrait> Collect<'a, R> {
         Self { layout }
     }
 
-    pub fn inner_bow_and_outer_bow(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
-        let bend_primitive = self.layout.primitive(bend);
+    pub fn bend_abutters_and_posteriors(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
+        // Bend's posteriors are the outer abutters and afterouter bows.
+        // Bend's afterouter bows are the bows of bend's afterouters.
+        // Bend's afterouters are the bends outer to the outer bend of said bend.
         let mut v = vec![];
-
-        if let Some(inner) = bend_primitive.inner() {
-            v.append(&mut self.bow(inner.into()));
-        } else {
-            let core = bend_primitive.core();
-            v.push(core.into());
-        }
-
-        if let Some(outer) = bend_primitive.outer() {
-            v.append(&mut self.bow(outer.into()));
-        }
-
-        v
-    }
-
-    pub fn inner_bow_and_outer_bows(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
         let bend_primitive = self.layout.primitive(bend);
-        let mut v = vec![];
 
         if let Some(inner) = bend_primitive.inner() {
             v.append(&mut self.bow(inner.into()));
@@ -58,16 +43,32 @@ impl<'a, R: RulesTrait> Collect<'a, R> {
         v
     }
 
-    pub fn segbend_inner_and_outer_bibows(
+    pub fn bend_abutters(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
+        let mut v = vec![];
+        let bend_primitive = self.layout.primitive(bend);
+
+        if let Some(inner) = bend_primitive.inner() {
+            v.append(&mut self.bow(inner.into()));
+        } else {
+            let core = bend_primitive.core();
+            v.push(core.into());
+        }
+
+        if let Some(outer) = bend_primitive.outer() {
+            v.append(&mut self.bow(outer.into()));
+        }
+
+        v
+    }
+
+    pub fn potential_segbend_abutters(
         &self,
         from: DotIndex,
         around: WraparoundableIndex,
     ) -> Vec<GeometryIndex> {
         let mut v = match from {
             DotIndex::Fixed(..) => vec![],
-            DotIndex::Loose(dot) => {
-                self.inner_bow_and_outer_bow(self.layout.primitive(dot).bend().into())
-            }
+            DotIndex::Loose(dot) => self.bend_abutters(self.layout.primitive(dot).bend().into()),
         };
         v.append(&mut self.this_and_wraparound_bow(around));
         v

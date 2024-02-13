@@ -46,7 +46,7 @@ pub trait SetOffset {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GeometryLabel {
-    Connection,
+    Joined,
     Outer,
     Core,
 }
@@ -114,13 +114,10 @@ impl<
     ) -> GenericIndex<W> {
         let seg = GenericIndex::<W>::new(self.graph.add_node(weight.into()));
 
-        self.graph.update_edge(
-            from.node_index(),
-            seg.node_index(),
-            GeometryLabel::Connection,
-        );
         self.graph
-            .update_edge(seg.node_index(), to.node_index(), GeometryLabel::Connection);
+            .update_edge(from.node_index(), seg.node_index(), GeometryLabel::Joined);
+        self.graph
+            .update_edge(seg.node_index(), to.node_index(), GeometryLabel::Joined);
 
         seg
     }
@@ -134,16 +131,10 @@ impl<
     ) -> GenericIndex<W> {
         let bend = GenericIndex::<W>::new(self.graph.add_node(weight.into()));
 
-        self.graph.update_edge(
-            from.node_index(),
-            bend.node_index(),
-            GeometryLabel::Connection,
-        );
-        self.graph.update_edge(
-            bend.node_index(),
-            to.node_index(),
-            GeometryLabel::Connection,
-        );
+        self.graph
+            .update_edge(from.node_index(), bend.node_index(), GeometryLabel::Joined);
+        self.graph
+            .update_edge(bend.node_index(), to.node_index(), GeometryLabel::Joined);
         self.graph
             .update_edge(bend.node_index(), core.node_index(), GeometryLabel::Core);
 
@@ -381,7 +372,7 @@ impl<
             .next()
     }
 
-    pub fn connecteds(&self, node: GI) -> impl Iterator<Item = GI> + '_ {
+    pub fn joineds(&self, node: GI) -> impl Iterator<Item = GI> + '_ {
         self.graph
             .neighbors_undirected(node.node_index())
             .filter(move |ni| {
@@ -394,7 +385,7 @@ impl<
                                 .0,
                         )
                         .unwrap(),
-                    GeometryLabel::Connection
+                    GeometryLabel::Joined
                 )
             })
             .map(|ni| {
@@ -406,7 +397,7 @@ impl<
     }
 
     pub fn seg_joints(&self, seg: SI) -> (DI, DI) {
-        let v: Vec<_> = self.connecteds(seg.into()).collect();
+        let v: Vec<_> = self.joineds(seg.into()).collect();
         (
             v[0].try_into().unwrap_or_else(|_| unreachable!()),
             v[1].try_into().unwrap_or_else(|_| unreachable!()),
@@ -414,21 +405,19 @@ impl<
     }
 
     pub fn bend_joints(&self, bend: BI) -> (DI, DI) {
-        let v: Vec<_> = self.connecteds(bend.into()).collect();
+        let v: Vec<_> = self.joineds(bend.into()).collect();
         (
             v[0].try_into().unwrap_or_else(|_| unreachable!()),
             v[1].try_into().unwrap_or_else(|_| unreachable!()),
         )
     }
 
-    pub fn connected_segs(&self, dot: DI) -> impl Iterator<Item = SI> + '_ {
-        self.connecteds(dot.into())
-            .filter_map(|ni| ni.try_into().ok())
+    pub fn joined_segs(&self, dot: DI) -> impl Iterator<Item = SI> + '_ {
+        self.joineds(dot.into()).filter_map(|ni| ni.try_into().ok())
     }
 
-    pub fn connected_bends(&self, dot: DI) -> impl Iterator<Item = BI> + '_ {
-        self.connecteds(dot.into())
-            .filter_map(|ni| ni.try_into().ok())
+    pub fn joined_bends(&self, dot: DI) -> impl Iterator<Item = BI> + '_ {
+        self.joineds(dot.into()).filter_map(|ni| ni.try_into().ok())
     }
 
     pub fn graph(&self) -> &StableDiGraph<GW, GeometryLabel, usize> {

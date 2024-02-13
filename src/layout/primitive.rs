@@ -249,7 +249,7 @@ impl<'a, R: RulesTrait> FixedDot<'a, R> {
     pub fn first_loose(&self, _band: BandIndex) -> Option<LooseIndex> {
         self.layout
             .geometry()
-            .connecteds(self.index.into())
+            .joineds(self.index.into())
             .into_iter()
             .find_map(|ni| {
                 let weight = self
@@ -279,14 +279,14 @@ impl<'a, R: RulesTrait> GetLimbs for FixedDot<'a, R> {
     fn segs(&self) -> Vec<SegIndex> {
         self.layout
             .geometry()
-            .connected_segs(self.index.into())
+            .joined_segs(self.index.into())
             .collect()
     }
 
     fn bends(&self) -> Vec<BendIndex> {
         self.layout
             .geometry()
-            .connected_bends(self.index.into())
+            .joined_bends(self.index.into())
             .collect()
     }
 }
@@ -300,7 +300,7 @@ impl<'a, R: RulesTrait> LooseDot<'a, R> {
     pub fn seg(&self) -> Option<SeqLooseSegIndex> {
         self.layout
             .geometry()
-            .connected_segs(self.index.into())
+            .joined_segs(self.index.into())
             .map(|ni| SeqLooseSegIndex::new(ni.node_index()))
             .next()
     }
@@ -308,7 +308,7 @@ impl<'a, R: RulesTrait> LooseDot<'a, R> {
     pub fn bend(&self) -> LooseBendIndex {
         self.layout
             .geometry()
-            .connected_bends(self.index.into())
+            .joined_bends(self.index.into())
             .map(|ni| LooseBendIndex::new(ni.node_index()))
             .next()
             .unwrap()
