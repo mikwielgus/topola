@@ -125,11 +125,9 @@ impl ShapeTrait for SegShape {
     }
 
     fn inflate(&self, margin: f64) -> Shape {
-        let mag = (self.to - self.from).euclidean_distance(&point! {x: 0.0, y: 0.0});
-
         Shape::Seg(SegShape {
-            from: self.from + (self.from - self.to) / mag * margin,
-            to: self.to + (self.to - self.from) / mag * margin,
+            from: self.from,
+            to: self.to,
             width: self.width + 2.0 * margin,
         })
     }
