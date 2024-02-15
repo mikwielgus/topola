@@ -260,11 +260,7 @@ impl<R: RulesTrait> Layout<R> {
         cw: bool,
     ) -> Result<Segbend, LayoutException> {
         let maybe_wraparound = self.wraparoundable(around).wraparound();
-        let mut infringables = self.collect().potential_segbend_abutters(from, around);
-
-        if let Some(wraparound) = maybe_wraparound {
-            infringables.append(&mut self.collect().outer_bows(wraparound));
-        }
+        let infringables = self.collect().wraparounded_bows(around);
 
         let segbend = self.add_segbend_infringably(
             from,
@@ -281,7 +277,7 @@ impl<R: RulesTrait> Layout<R> {
         }
 
         if let Some(outer) = self.primitive(segbend.bend).outer() {
-            self.update_this_and_outward_bows(outer)?;
+            self.update_this_and_outward_bows(outer);
         }
 
         // Segs must not cross.
@@ -346,18 +342,18 @@ impl<R: RulesTrait> Layout<R> {
                 self.move_dot_infringably(
                     joints.0.into(),
                     from,
-                    &self.collect().bend_abutters_and_posteriors(rail),
+                    &self.collect().bend_outer_bows(rail),
                 )?;
                 self.move_dot_infringably(
                     joints.1.into(),
                     to,
-                    &self.collect().bend_abutters_and_posteriors(rail),
+                    &self.collect().bend_outer_bows(rail),
                 )?;
 
                 self.shift_bend_infringably(
                     rail.into(),
                     offset,
-                    &self.collect().bend_abutters_and_posteriors(rail),
+                    &self.collect().bend_outer_bows(rail),
                 )?;
 
                 // Update offsets in case the rule conditions changed.
@@ -388,18 +384,18 @@ impl<R: RulesTrait> Layout<R> {
                 self.move_dot_infringably(
                     joints.0.into(),
                     from,
-                    &self.collect().bend_abutters_and_posteriors(rail),
+                    &self.collect().bend_outer_bows(rail),
                 )?;
                 self.move_dot_infringably(
                     joints.1.into(),
                     to,
-                    &self.collect().bend_abutters_and_posteriors(rail),
+                    &self.collect().bend_outer_bows(rail),
                 )?;
 
                 self.shift_bend_infringably(
                     rail.into(),
                     offset,
-                    &self.collect().bend_abutters_and_posteriors(rail),
+                    &self.collect().bend_outer_bows(rail),
                 )?;
             }
 
@@ -429,7 +425,7 @@ impl<R: RulesTrait> Layout<R> {
             seg_weight,
             bend_weight,
             cw,
-            &self.collect().potential_segbend_abutters(from, around),
+            &self.collect().wraparounded_bows(around),
         )
     }
 
@@ -733,11 +729,7 @@ impl<R: RulesTrait> Layout<R> {
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), Infringement> {
         match dot {
             DotIndex::Fixed(..) => self.move_dot_infringably(dot, to, &[]),
-            DotIndex::Loose(loose) => self.move_dot_infringably(
-                dot,
-                to,
-                &self.collect().bend_abutters(self.primitive(loose).bend()),
-            ),
+            DotIndex::Loose(..) => self.move_dot_infringably(dot, to, &[]),
         }
     }
 

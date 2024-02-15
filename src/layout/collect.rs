@@ -19,74 +19,7 @@ impl<'a, R: RulesTrait> Collect<'a, R> {
         Self { layout }
     }
 
-    pub fn bend_abutters_and_posteriors(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
-        // Bend's posteriors are the outer abutters and afterouter bows.
-        // Bend's afterouter bows are the bows of bend's afterouters.
-        // Bend's afterouters are the bends outer to the outer bend of said bend.
-        let mut v = vec![];
-        let bend_primitive = self.layout.primitive(bend);
-
-        if let Some(inner) = bend_primitive.inner() {
-            v.append(&mut self.bow(inner.into()));
-        } else {
-            let core = bend_primitive.core();
-            v.push(core.into());
-        }
-
-        let mut rail = bend;
-
-        while let Some(outer) = self.layout.primitive(rail).outer() {
-            v.append(&mut self.bow(outer.into()));
-            rail = outer;
-        }
-
-        v
-    }
-
-    pub fn bend_abutters(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
-        let mut v = vec![];
-        let bend_primitive = self.layout.primitive(bend);
-
-        if let Some(inner) = bend_primitive.inner() {
-            v.append(&mut self.bow(inner.into()));
-        } else {
-            let core = bend_primitive.core();
-            v.push(core.into());
-        }
-
-        if let Some(outer) = bend_primitive.outer() {
-            v.append(&mut self.bow(outer.into()));
-        }
-
-        v
-    }
-
-    pub fn potential_segbend_abutters(
-        &self,
-        from: DotIndex,
-        around: WraparoundableIndex,
-    ) -> Vec<GeometryIndex> {
-        let mut v = match from {
-            DotIndex::Fixed(..) => vec![],
-            DotIndex::Loose(dot) => self.bend_abutters(self.layout.primitive(dot).bend().into()),
-        };
-        v.append(&mut self.this_and_wraparound_bow(around));
-        v
-    }
-
-    pub fn this_and_wraparound_bow(&self, around: WraparoundableIndex) -> Vec<GeometryIndex> {
-        let mut v = match around {
-            WraparoundableIndex::FixedDot(..) => vec![around.into()],
-            WraparoundableIndex::FixedBend(..) => vec![around.into()],
-            WraparoundableIndex::LooseBend(bend) => self.bow(bend),
-        };
-        if let Some(wraparound) = self.layout.wraparoundable(around).wraparound() {
-            v.append(&mut self.bow(wraparound));
-        }
-        v
-    }
-
-    pub fn bow(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
+    pub fn bend_bow(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
         let mut v: Vec<GeometryIndex> = vec![];
         v.push(bend.into());
 
@@ -105,11 +38,23 @@ impl<'a, R: RulesTrait> Collect<'a, R> {
         v
     }
 
-    pub fn outer_bows(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
+    pub fn bend_outer_bows(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
         let mut v = vec![];
         let mut rail = bend;
 
         while let Some(outer) = self.layout.primitive(rail).outer() {
+            v.append(&mut self.bend_bow(outer.into()));
+            rail = outer;
+        }
+
+        v
+    }
+
+    pub fn wraparounded_bows(&self, around: WraparoundableIndex) -> Vec<GeometryIndex> {
+        let mut v = vec![];
+        let mut rail = around.into();
+
+        while let Some(outer) = self.layout.wraparoundable(rail).wraparound() {
             let primitive = self.layout.primitive(outer);
 
             v.push(outer.into());
@@ -121,7 +66,7 @@ impl<'a, R: RulesTrait> Collect<'a, R> {
             v.push(self.layout.primitive(ends.0).seg().unwrap().into());
             v.push(self.layout.primitive(ends.1).seg().unwrap().into());
 
-            rail = outer;
+            rail = outer.into();
         }
 
         v
