@@ -281,7 +281,7 @@ impl<R: RulesTrait> Layout<R> {
         }
 
         if let Some(outer) = self.primitive(segbend.bend).outer() {
-            self.update_this_and_outward_bows(outer);
+            self.update_this_and_outward_bows(outer)?;
         }
 
         // Segs must not cross.
@@ -309,6 +309,7 @@ impl<R: RulesTrait> Layout<R> {
         &mut self,
         around: LooseBendIndex,
     ) -> Result<(), LayoutException> {
+        // FIXME: Fail gracefully on infringement.
         let mut maybe_rail = Some(around);
 
         while let Some(rail) = maybe_rail {
@@ -516,14 +517,7 @@ impl<R: RulesTrait> Layout<R> {
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
     ) -> Result<SeqLooseSegIndex, Infringement> {
-        let seg = self.add_seg_infringably(
-            from,
-            to.into(),
-            weight,
-            &self
-                .collect()
-                .bend_abutters(self.primitive(to).bend().into()),
-        )?;
+        let seg = self.add_seg_infringably(from, to.into(), weight, &[])?;
 
         if let DotIndex::Fixed(dot) = from {
             self.connectivity.update_edge(
@@ -821,10 +815,11 @@ impl<R: RulesTrait> Layout<R> {
             .filter(|wrapper| {
                 let infringee_conditions = wrapper.data.primitive(self).conditions();
 
-                inflated_shape = node
-                    .primitive(self)
-                    .shape()
-                    .inflate(self.rules.clearance(&conditions, &infringee_conditions));
+                let epsilon = 1.0;
+                inflated_shape = node.primitive(self).shape().inflate(
+                    (self.rules.clearance(&conditions, &infringee_conditions) - epsilon)
+                        .clamp(0.0, f64::INFINITY),
+                );
 
                 inflated_shape.intersects(wrapper.geom())
             })
