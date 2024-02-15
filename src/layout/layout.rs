@@ -277,13 +277,17 @@ impl<R: RulesTrait> Layout<R> {
         }
 
         if let Some(outer) = self.primitive(segbend.bend).outer() {
-            self.update_this_and_outward_bows(outer);
+            self.update_this_and_outward_bows(outer).map_err(|err| {
+                let joint = self.primitive(segbend.bend).other_joint(segbend.dot);
+                self.remove_segbend(&segbend, joint.into());
+                err
+            })?;
         }
 
         // Segs must not cross.
         if let Some(collision) = self.detect_collision(segbend.seg.into()) {
-            let end = self.primitive(segbend.bend).other_joint(segbend.dot);
-            self.remove_segbend(&segbend, end.into());
+            let joint = self.primitive(segbend.bend).other_joint(segbend.dot);
+            self.remove_segbend(&segbend, joint.into());
             return Err(collision.into());
         }
 
