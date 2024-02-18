@@ -42,4 +42,4 @@ default-features = false
 features = ["bundled"]
 
 [patch.crates-io]
-contracts = { path = "vendor/contracts" }
+contracts = { path = "vendored/contracts" }
