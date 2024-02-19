@@ -9,11 +9,15 @@ name = "topola"
 
 [[bin]]
 name = "topola-gui"
-required-features = ["egui", "eframe"]
+required-features = ["gui"]
 
 [[bin]]
 name = "topola-sdl2-demo"
 required-features = ["sdl2"]
+
+[features]
+gui = ["dep:egui", "dep:eframe"]
+sdl2 = ["dep:sdl2"]
 
 [dependencies]
 gl = "0.14.0"
@@ -24,31 +28,14 @@ pathfinder_renderer = { git = "https://github.com/servo/pathfinder" }
 pathfinder_resources = { git = "https://github.com/servo/pathfinder" }
 thiserror = "1.0.56"
 anyhow = "1.0.79"
-
-[dependencies.geo]
-version = "0.25.1"
-
-[dependencies.rstar]
-version = "0.11.0"
-
-[dependencies.petgraph]
-version = "0.6.3"
-
-[dependencies.spade]
-version = "2.2.0"
-
-[dependencies.enum_dispatch]
-version = "0.3.12"
-
-[dependencies.itertools]
-version = "0.8.2"
-
-[dependencies.contracts]
-version = "0.6.3"
-
-[dependencies.log]
-optional = true
-version = "0.4"
+geo = "0.25.1"
+rstar = "0.11.0"
+petgraph = "0.6.3"
+spade = "2.2.0"
+enum_dispatch = "0.3.12"
+itertools = "0.8.2"
+contracts = "0.6.3"
+log = "0.4"
 
 [dependencies.serde]
 version = "1"
