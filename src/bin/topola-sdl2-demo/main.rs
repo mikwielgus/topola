@@ -7,19 +7,19 @@ macro_rules! dbg_dot {
     };
 }
 
-use crate::draw::DrawException;
-use crate::layout::connectivity::BandIndex;
-use crate::layout::dot::FixedDotWeight;
-use crate::layout::geometry::shape::{Shape, ShapeTrait};
-use crate::layout::graph::{GeometryIndex, MakePrimitive};
-use crate::layout::primitive::MakeShape;
-use crate::layout::rules::{Conditions, RulesTrait};
-use crate::layout::seg::FixedSegWeight;
-use crate::layout::{Infringement, Layout, LayoutException};
-use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
-use crate::router::RouterObserverTrait;
 use geo::point;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use topola::draw::DrawException;
+use topola::layout::connectivity::BandIndex;
+use topola::layout::dot::FixedDotWeight;
+use topola::layout::geometry::shape::{Shape, ShapeTrait};
+use topola::layout::graph::{GeometryIndex, MakePrimitive};
+use topola::layout::primitive::MakeShape;
+use topola::layout::rules::{Conditions, RulesTrait};
+use topola::layout::seg::FixedSegWeight;
+use topola::layout::{Infringement, Layout, LayoutException};
+use topola::mesh::{Mesh, MeshEdgeReference, VertexIndex};
+use topola::router::RouterObserverTrait;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -38,12 +38,12 @@ use pathfinder_renderer::gpu::renderer::Renderer;
 use pathfinder_renderer::options::BuildOptions;
 use pathfinder_resources::embedded::EmbeddedResourceLoader;
 
-use crate::tracer::{Trace, Tracer};
 use std::collections::HashMap;
 use std::time::Duration;
+use topola::tracer::{Trace, Tracer};
 
-use crate::math::Circle;
-use crate::router::Router;
+use topola::math::Circle;
+use topola::router::Router;
 
 struct SimpleRules {
     net_clearances: HashMap<(i64, i64), f64>,
@@ -184,7 +184,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
     fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: VertexIndex) {}
 }
 
-pub fn run() -> Result<(), anyhow::Error> {
+fn main() -> Result<(), anyhow::Error> {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
 

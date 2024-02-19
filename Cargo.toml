@@ -2,12 +2,18 @@
 name = "topola"
 version = "0.1.0"
 edition = "2021"
+default-run = "topola-gui"
 
-# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+[lib]
+name = "topola"
 
-[features]
-default = ["sdl2_demo"]
-sdl2_demo = ["dep:sdl2"]
+[[bin]]
+name = "topola-gui"
+required-features = ["egui", "eframe"]
+
+[[bin]]
+name = "topola-sdl2-demo"
+required-features = ["sdl2"]
 
 [dependencies]
 gl = "0.14.0"
@@ -40,11 +46,42 @@ version = "0.8.2"
 [dependencies.contracts]
 version = "0.6.3"
 
-[dependencies.sdl2]
-version = "0.35.2"
+[dependencies.log]
 optional = true
+version = "0.4"
+
+[dependencies.serde]
+version = "1"
+features = ["derive"]
+
+[dependencies.egui]
+optional = true
+version = "0.26.0"
+
+[dependencies.eframe]
+optional = true
+version = "0.26.0"
+default-features = false
+features = ["accesskit", "default_fonts", "glow", "persistence"]
+
+[dependencies.sdl2]
+optional = true
+version = "0.35.2"
 default-features = false
 features = ["bundled"]
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+env_logger = "0.10"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4"
+
+[profile.release]
+opt-level = 2 # fast and small wasm
+
+# Optimize all dependencies even in debug builds:
+[profile.dev.package."*"]
+opt-level = 2
 
 [patch.crates-io]
 contracts = { path = "vendored/contracts" }
