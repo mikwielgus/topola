@@ -2,21 +2,21 @@
 name = "topola"
 version = "0.1.0"
 edition = "2021"
-default-run = "topola-gui"
+default-run = "topola-egui"
 
 [lib]
 name = "topola"
 
 [[bin]]
-name = "topola-gui"
-required-features = ["gui"]
+name = "topola-egui"
+required-features = ["egui"]
 
 [[bin]]
 name = "topola-sdl2-demo"
 required-features = ["sdl2"]
 
 [features]
-gui = ["dep:egui", "dep:eframe"]
+egui = ["dep:egui", "dep:eframe"]
 sdl2 = ["dep:sdl2"]
 
 [dependencies]

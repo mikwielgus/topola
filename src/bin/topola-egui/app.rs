@@ -1,7 +1,7 @@
 /// Deserialize/Serialize is needed to persist app state between restarts.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
-pub struct TemplateApp {
+pub struct App {
     // Example stuff:
     label: String,
 
@@ -9,7 +9,7 @@ pub struct TemplateApp {
     value: f32,
 }
 
-impl Default for TemplateApp {
+impl Default for App {
     fn default() -> Self {
         Self {
             // Example stuff:
@@ -19,7 +19,7 @@ impl Default for TemplateApp {
     }
 }
 
-impl TemplateApp {
+impl App {
     /// Called once on start.
     pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
         // Load previous app state if one exists.
@@ -31,7 +31,7 @@ impl TemplateApp {
     }
 }
 
-impl eframe::App for TemplateApp {
+impl eframe::App for App {
     /// Called to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
         eframe::set_value(storage, eframe::APP_KEY, self);
@@ -55,6 +55,14 @@ impl eframe::App for TemplateApp {
             });
         });
 
-        egui::CentralPanel::default().show(ctx, |ui| {});
+        egui::CentralPanel::default().show(ctx, |ui| {
+            egui::Frame::canvas(ui.style()).show(ui, |ui| {
+                let (rect, response) =
+                    ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
+                let stroke = egui::Stroke::new(10.0, egui::Color32::from_white_alpha(255));
+                ui.painter()
+                    .line_segment([[10.0, 10.0].into(), [30.0, 30.0].into()], stroke);
+            })
+        });
     }
 }

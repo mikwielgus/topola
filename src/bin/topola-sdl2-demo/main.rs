@@ -1,5 +1,7 @@
 extern crate sdl2;
 
+mod painter;
+
 macro_rules! dbg_dot {
     ($graph:expr) => {
         use petgraph::dot::Dot;
@@ -8,6 +10,7 @@ macro_rules! dbg_dot {
 }
 
 use geo::point;
+use painter::Painter;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use topola::draw::DrawException;
 use topola::layout::connectivity::BandIndex;
@@ -665,6 +668,7 @@ fn render_times(
         let window_size = window.size();
         let mut canvas = Canvas::new(vec2f(window_size.0 as f32, window_size.1 as f32))
             .get_context_2d(font_context.clone());
+        let mut painter = Painter::new(&mut canvas);
 
         let layout = match router_or_layout {
             RouterOrLayout::Router(ref mut router) => {
@@ -701,17 +705,17 @@ fn render_times(
             };
 
             let shape = node.primitive(layout).shape();
-            render_shape(&mut canvas, &shape, color);
+            painter.paint_shape(&shape, color);
         }
 
         for ghost in ghosts {
-            render_shape(&mut canvas, &ghost, ColorU::new(75, 75, 150, 255));
+            painter.paint_shape(&ghost, ColorU::new(75, 75, 150, 255));
         }
 
         if let Some(ref mesh) = maybe_mesh {
             for edge in mesh.edge_references() {
-                let start_point = edge.source().primitive(layout).shape().center();
-                let end_point = edge.target().primitive(layout).shape().center();
+                let to = edge.source().primitive(layout).shape().center();
+                let from = edge.target().primitive(layout).shape().center();
 
                 let color = 'blk: {
                     if let (Some(source_pos), Some(target_pos)) = (
@@ -726,12 +730,7 @@ fn render_times(
                     ColorU::new(125, 125, 125, 255)
                 };
 
-                let mut path = Path2D::new();
-                path.move_to(vec2f(start_point.x() as f32, start_point.y() as f32));
-                path.line_to(vec2f(end_point.x() as f32, end_point.y() as f32));
-                canvas.set_stroke_style(color);
-                canvas.set_line_width(1.0);
-                canvas.stroke_path(path);
+                painter.paint_edge(from, to, color);
             }
         }
         //});
@@ -751,55 +750,4 @@ fn render_times(
 
         ::std::thread::sleep(Duration::new(0, 1_000_000_000u32 / 60));
     }
-}
-
-fn render_shape(canvas: &mut CanvasRenderingContext2D, shape: &Shape, color: ColorU) {
-    canvas.set_stroke_style(color);
-    canvas.set_fill_style(color);
-
-    match shape {
-        Shape::Dot(dot) => {
-            let mut path = Path2D::new();
-            path.ellipse(
-                vec2f(dot.c.pos.x() as f32, dot.c.pos.y() as f32),
-                dot.c.r as f32,
-                0.0,
-                0.0,
-                std::f32::consts::TAU,
-            );
-            canvas.fill_path(path, FillRule::Winding);
-        }
-        Shape::Seg(seg) => {
-            let mut path = Path2D::new();
-            path.move_to(vec2f(seg.from.x() as f32, seg.from.y() as f32));
-            path.line_to(vec2f(seg.to.x() as f32, seg.to.y() as f32));
-            canvas.set_line_width(seg.width as f32);
-            canvas.stroke_path(path);
-        }
-        Shape::Bend(bend) => {
-            let delta1 = bend.from - bend.c.pos;
-            let delta2 = bend.to - bend.c.pos;
-
-            let angle1 = delta1.y().atan2(delta1.x());
-            let angle2 = delta2.y().atan2(delta2.x());
-
-            let mut path = Path2D::new();
-            path.arc(
-                vec2f(bend.c.pos.x() as f32, bend.c.pos.y() as f32),
-                bend.circle().r as f32,
-                angle1 as f32,
-                angle2 as f32,
-                ArcDirection::CW,
-            );
-            canvas.set_line_width(bend.width as f32);
-            canvas.stroke_path(path);
-        }
-    }
-    let envelope = ShapeTrait::envelope(shape, 0.0);
-    // XXX: points represented as arrays can't be conveniently converted to vector types
-    let topleft = vec2f(envelope.lower()[0] as f32, envelope.lower()[1] as f32);
-    let bottomright = vec2f(envelope.upper()[0] as f32, envelope.upper()[1] as f32);
-    canvas.set_line_width(1.0);
-    canvas.set_stroke_style(ColorU::new(100, 100, 100, 255));
-    canvas.stroke_rect(RectF::new(topleft, bottomright - topleft));
 }
