@@ -48,6 +48,9 @@ use topola::tracer::{Trace, Tracer};
 use topola::math::Circle;
 use topola::router::Router;
 
+use topola::dsn::de::from_str;
+use topola::dsn::structure::Pcb;
+
 struct SimpleRules {
     net_clearances: HashMap<(i64, i64), f64>,
 }
@@ -245,379 +248,108 @@ fn main() -> Result<(), anyhow::Error> {
         ]),
     });
 
-    let component1_1 = router.layout.add_component(1);
-    let component1_2 = router.layout.add_component(1);
-    let component2 = router.layout.add_component(2);
-    let component3_1 = router.layout.add_component(3);
-    let component3_2 = router.layout.add_component(3);
-    let component4_1 = router.layout.add_component(4);
-    let component4_2 = router.layout.add_component(4);
+    let contents = std::fs::read_to_string("tests/data/test.dsn")?;
+    let pcb = from_str::<Pcb>(&contents)?;
+    //dbg!(&pcb);
 
-    let dot_start = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component1_1,
-            circle: Circle {
-                pos: (100.5, 400.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let dot_start2 = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component3_1,
-            circle: Circle {
-                pos: (100.5, 500.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let dot_start3 = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component4_1,
-            circle: Circle {
-                pos: (160.5, 430.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let dot_end = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component1_2,
-            circle: Circle {
-                pos: (470.5, 350.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let dot_end2 = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component3_2,
-            circle: Circle {
-                pos: (500.5, 150.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let dot_end3 = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component4_2,
-            circle: Circle {
-                pos: (350.5, 200.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let dot1_1 = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component2,
-            circle: Circle {
-                pos: (200.5, 200.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let dot2_1 = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component2,
-            circle: Circle {
-                pos: (200.5, 500.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let _ = router.layout.add_fixed_seg(
-        dot1_1,
-        dot2_1,
-        FixedSegWeight {
-            component: component2,
-            width: 3.0,
-        },
+    // this holds the mapping of net names to numerical IDs (here for now)
+    let net_ids: HashMap<String, usize> = HashMap::from_iter(
+        pcb.network.classes[0].nets
+            .iter()
+            .enumerate()
+            .map(|(id, net)| (net.clone(), id))
     );
 
-    let dot2_2 = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component2,
-            circle: Circle {
-                pos: (600.5, 500.5).into(),
-                r: 8.0,
-            },
+    // add vias to layout and save indices of dots in the order they appear in the file
+    let dot_indices: Vec<_> = pcb.wiring.vias
+        .iter()
+        .map(|via| {
+            let net_id = net_ids.get(&via.net.0).unwrap();
+            let component = router.layout.add_component(*net_id as i64);
+
+            // no way to resolve the name or layer support yet
+            // pick the first layer of the first object found
+            let circle = &pcb.library.padstacks[0].shapes[0].0;
+            let circle = Circle {
+                pos: (
+                    via.x as f64 / 100.0,
+                    -via.y as f64 / 100.0,
+                ).into(),
+                r: circle.radius as f64 / 100.0,
+            };
+
+            router.layout.add_fixed_dot(FixedDotWeight {
+                component,
+                circle,
+            }).unwrap()
         })
-        .unwrap();
+        .collect();
 
-    let _ = router.layout.add_fixed_seg(
-        dot2_1,
-        dot2_2,
-        FixedSegWeight {
-            component: component2,
-            width: 3.0,
-        },
-    );
+    for wire in pcb.wiring.wires.iter() {
+        let net_id = net_ids.get(&wire.net.0).unwrap();
+        let component = router.layout.add_component(*net_id as i64);
 
-    let dot3 = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component2,
+        // add the first coordinate in the wire path as a dot and save its index
+        let mut prev_index = router.layout.add_fixed_dot(FixedDotWeight {
+            component,
             circle: Circle {
-                pos: (400.5, 200.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
+                pos: (
+                    wire.path.coords[0].x as f64 / 100.0,
+                    -wire.path.coords[0].y as f64 / 100.0,
+                ).into(),
+                r: wire.path.width as f64 / 100.0,
+            }
+        }).unwrap();
 
-    let dot4 = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component2,
-            circle: Circle {
-                pos: (400.5, 400.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
+        // iterate through path coords starting from the second
+        for coord in wire.path.coords.iter().skip(1) {
+            let index = router.layout.add_fixed_dot(FixedDotWeight {
+                component,
+                circle: Circle {
+                    pos: (
+                        coord.x as f64 / 100.0,
+                        -coord.y as f64 / 100.0,
+                    ).into(),
+                    r: wire.path.width as f64 / 100.0,
+                }
+            }).unwrap();
 
-    let _ = router.layout.add_fixed_seg(
-        dot3,
-        dot4,
-        FixedSegWeight {
-            component: component2,
-            width: 3.0,
-        },
-    );
+            // add a seg between the current and previous coords
+            let _ = router.layout.add_fixed_seg(
+                prev_index,
+                index,
+                FixedSegWeight {
+                    component,
+                    width: wire.path.width as f64 / 100.0,
+                },
+            ).unwrap();
 
-    let dot5 = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component2,
-            circle: Circle {
-                pos: (530.5, 400.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let _ = router.layout.add_fixed_seg(
-        dot4,
-        dot5,
-        FixedSegWeight {
-            component: component2,
-            width: 3.0,
-        },
-    );
-
-    let dot1_2 = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component2,
-            circle: Circle {
-                pos: (600.5, 200.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let _ = router.layout.add_fixed_seg(
-        dot3,
-        dot1_2,
-        FixedSegWeight {
-            component: component2,
-            width: 3.0,
-        },
-    );
-
-    let _ = router.layout.add_fixed_seg(
-        dot1_2,
-        dot2_2,
-        FixedSegWeight {
-            component: component2,
-            width: 3.0,
-        },
-    );
-
-    let dot6 = router
-        .layout
-        .add_fixed_dot(FixedDotWeight {
-            component: component2,
-            circle: Circle {
-                pos: (530.5, 300.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let _ = router.layout.add_fixed_seg(
-        dot5,
-        dot6,
-        FixedSegWeight {
-            component: component2,
-            width: 3.0,
-        },
-    );
-
-    /*let dot7 = router
-        .layout
-        .add_dot(FixedDotWeight {
-            net: 2,
-            circle: Circle {
-                pos: (400.5, 440.5).into(),
-                r: 8.0,
-            },
-        })
-        .unwrap();
-
-    let _ = router.layout.add_seg(
-        dot4,
-        dot7,
-        FixedSegWeight {
-            net: 20,
-            width: 3.0,
-        },
-    );*/
-
-    /*render_times(
-        &mut event_pump,
-        &mut canvas,
-        RouterOrLayout::Layout(&router.layout),
-        None,
-        None,
-        None,
-        &[],
-        -1,
-    );
+            prev_index = index;
+        }
+    }
 
     render_times(
         &mut event_pump,
-        &mut canvas,
-        RouterOrLayout::Router(&mut router),
-        Some(dot_start),
-        Some(dot_end),
+        &window,
+        &mut renderer,
+        &font_context,
+        RouterOrLayout::Layout(&router.layout),
+        None,
         None,
         &[],
+        &[],
+        &[],
         -1,
-    );*/
+    );
 
+    // these are both on net 1 in the test file
     let _ = router.route_band(
-        dot_start,
-        dot_end,
-        3.0,
-        &mut EmptyRouterObserver,
-        //&mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
-    )?;
-
-    render_times(
-        &mut event_pump,
-        &window,
-        &mut renderer,
-        &font_context,
-        RouterOrLayout::Layout(&router.layout),
-        None,
-        None,
-        &[],
-        &[],
-        &[],
-        -1,
-    );
-
-    /*render_times(
-        &mut event_pump,
-        &mut canvas,
-        RouterOrLayout::Router(&mut router),
-        Some(dot_start2),
-        Some(dot_end),
-        None,
-        &[],
-        -1,
-    );*/
-
-    let band2 = router.route_band(
-        dot_start2,
-        dot_end2,
-        3.0,
-        &mut EmptyRouterObserver,
-        //&mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
-    )?;
-
-    render_times(
-        &mut event_pump,
-        &window,
-        &mut renderer,
-        &font_context,
-        RouterOrLayout::Layout(&router.layout),
-        None,
-        None,
-        &[],
-        &[],
-        &[],
-        -1,
-    );
-
-    let band3 = router.route_band(
-        dot_start3,
-        dot_end3,
+        dot_indices[1],
+        dot_indices[2],
         3.0,
         //&mut EmptyRouterObserver,
         &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     )?;
-
-    render_times(
-        &mut event_pump,
-        &window,
-        &mut renderer,
-        &font_context,
-        RouterOrLayout::Layout(&router.layout),
-        None,
-        None,
-        &[],
-        &[],
-        &[],
-        -1,
-    );
-
-    router.layout.remove_band(band3);
-
-    render_times(
-        &mut event_pump,
-        &window,
-        &mut renderer,
-        &font_context,
-        RouterOrLayout::Layout(&router.layout),
-        None,
-        None,
-        &[],
-        &[],
-        &[],
-        -1,
-    );
-
-    render_times(
-        &mut event_pump,
-        &window,
-        &mut renderer,
-        &font_context,
-        RouterOrLayout::Router(&mut router),
-        Some(band2),
-        None,
-        &[],
-        &[],
-        &[],
-        -1,
-    );
 
     render_times(
         &mut event_pump,

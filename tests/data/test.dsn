@@ -1,0 +1,77 @@
+(pcb test.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "7.0.9")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  60400 -50400  9600 -50400  9600 -14600  60400 -14600
+            60400 -50400)
+    )
+    (via "Via[0-1]_800:400_um")
+    (rule
+      (width 300)
+      (clearance 200.1)
+      (clearance 200.1 (type default_smd))
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+  )
+  (library
+    (padstack "Via[0-1]_800:400_um"
+      (shape (circle F.Cu 800))
+      (shape (circle B.Cu 800))
+      (attach off)
+    )
+  )
+  (network
+    (class kicad_default "" 1 2 3 5
+      (circuit
+        (use_via Via[0-1]_800:400_um)
+      )
+      (rule
+        (width 300)
+        (clearance 200.1)
+      )
+    )
+  )
+  (wiring
+    (wire (path F.Cu 300  20000 -50000  60000 -50000)(net 5)(type route))
+    (wire (path F.Cu 300  60000 -20000  40000 -20000  40000 -40000)(net 5)(type route))
+    (wire (path F.Cu 300  50000 -40000  50000 -30000)(net 5)(type route))
+    (wire (path F.Cu 300  60000 -50000  60000 -20000)(net 5)(type route))
+    (wire (path F.Cu 300  20000 -20000  20000 -50000)(net 5)(type route))
+    (wire (path F.Cu 300  40000 -40000  50000 -40000)(net 5)(type route))
+    (via "Via[0-1]_800:400_um"  47000 -35000 (net 2)(type route))
+    (via "Via[0-1]_800:400_um"  10000 -40000 (net 1)(type route))
+    (via "Via[0-1]_800:400_um"  50000 -15000 (net 1)(type route))
+    (via "Via[0-1]_800:400_um"  10000 -50000 (net 2)(type route))
+    (via "Via[0-1]_800:400_um"  13000 -47000 (net 3)(type route))
+    (via "Via[0-1]_800:400_um"  35000 -20000 (net 3)(type route))
+    (via "Via[0-1]_800:400_um"  20000 -50000 (net 5)(type route))
+    (via "Via[0-1]_800:400_um"  20000 -20000 (net 5)(type route))
+    (via "Via[0-1]_800:400_um"  40000 -20000 (net 5)(type route))
+    (via "Via[0-1]_800:400_um"  60000 -50000 (net 5)(type route))
+    (via "Via[0-1]_800:400_um"  50000 -30000 (net 5)(type route))
+    (via "Via[0-1]_800:400_um"  40000 -40000 (net 5)(type route))
+    (via "Via[0-1]_800:400_um"  60000 -20000 (net 5)(type route))
+    (via "Via[0-1]_800:400_um"  50000 -40000 (net 5)(type route))
+  )
+)
