@@ -1,3 +1,10 @@
+use topola::{
+    layout::geometry::shape::{BendShape, DotShape, SegShape, Shape},
+    math::Circle,
+};
+
+use crate::painter::Painter;
+
 /// Deserialize/Serialize is needed to persist app state between restarts.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
@@ -57,11 +64,43 @@ impl eframe::App for App {
 
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
-                let (rect, response) =
-                    ui.allocate_exact_size(egui::Vec2::splat(300.0), egui::Sense::drag());
-                let stroke = egui::Stroke::new(10.0, egui::Color32::from_white_alpha(255));
-                ui.painter()
-                    .line_segment([[10.0, 10.0].into(), [30.0, 30.0].into()], stroke);
+                ui.ctx().request_repaint();
+
+                let desired_size = ui.available_width() * egui::vec2(1.0, 0.5);
+                let (_id, viewport_rect) = ui.allocate_space(desired_size);
+
+                let transform = egui::emath::RectTransform::from_to(
+                    egui::Rect::from_x_y_ranges(0.0..=1000.0, 0.0..=500.0),
+                    viewport_rect,
+                );
+                let mut painter = Painter::new(ui, transform);
+
+                let dot_shape = Shape::Dot(DotShape {
+                    c: Circle {
+                        pos: [50.0, 100.0].into(),
+                        r: 10.0,
+                    },
+                });
+
+                let seg_shape = Shape::Seg(SegShape {
+                    from: [200.0, 25.0].into(),
+                    to: [300.0, 300.0].into(),
+                    width: 5.0,
+                });
+
+                let bend_shape = Shape::Bend(BendShape {
+                    from: [100.0, 100.0].into(),
+                    to: [160.0, 160.0].into(),
+                    c: Circle {
+                        pos: [130.0, 130.0].into(),
+                        r: 30.0,
+                    },
+                    width: 12.0,
+                });
+
+                painter.paint_shape(&dot_shape, egui::Color32::from_rgb(255, 0, 0));
+                painter.paint_shape(&seg_shape, egui::Color32::from_rgb(128, 128, 128));
+                painter.paint_shape(&bend_shape, egui::Color32::from_rgb(255, 255, 0));
             })
         });
     }
