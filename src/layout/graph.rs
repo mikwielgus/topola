@@ -5,7 +5,7 @@ use petgraph::stable_graph::NodeIndex;
 use crate::{
     graph::GetNodeIndex,
     layout::{
-        connectivity::{BandIndex, ComponentIndex},
+        connectivity::{BandIndex, ContinentIndex},
         Layout,
     },
 };
@@ -27,12 +27,12 @@ pub trait Retag<GeometryIndex> {
 }
 
 #[enum_dispatch]
-pub trait GetComponentIndex {
-    fn component(&self) -> ComponentIndex;
+pub trait GetContinentIndex {
+    fn continent(&self) -> ContinentIndex;
 }
 
-pub trait GetComponentIndexMut {
-    fn component_mut(&mut self) -> &mut ComponentIndex;
+pub trait GetContinentIndexMut {
+    fn continent_mut(&mut self) -> &mut ContinentIndex;
 }
 
 pub trait GetBandIndex {
@@ -66,15 +66,15 @@ macro_rules! impl_fixed_weight {
     ($weight_struct:ident, $weight_variant:ident, $index_struct:ident) => {
         impl_weight!($weight_struct, $weight_variant, $index_struct);
 
-        impl GetComponentIndex for $weight_struct {
-            fn component(&self) -> ComponentIndex {
-                self.component
+        impl GetContinentIndex for $weight_struct {
+            fn continent(&self) -> ContinentIndex {
+                self.continent
             }
         }
 
-        impl GetComponentIndexMut for $weight_struct {
-            fn component_mut(&mut self) -> &mut ComponentIndex {
-                &mut self.component
+        impl GetContinentIndexMut for $weight_struct {
+            fn continent_mut(&mut self) -> &mut ContinentIndex {
+                &mut self.continent
             }
         }
     };

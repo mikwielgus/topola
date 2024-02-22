@@ -13,22 +13,22 @@ pub type ConnectivityGraph = StableDiGraph<ConnectivityWeight, ConnectivityLabel
 #[enum_dispatch(GetNet)]
 #[derive(Debug, Clone, Copy)]
 pub enum ConnectivityWeight {
-    Component(ComponentWeight),
+    Continent(ContinentWeight),
     Band(BandWeight),
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct ComponentWeight {
+pub struct ContinentWeight {
     pub net: i64,
 }
 
-impl GetNet for ComponentWeight {
+impl GetNet for ContinentWeight {
     fn net(&self) -> i64 {
         self.net
     }
 }
 
-pub type ComponentIndex = GenericIndex<ComponentWeight>;
+pub type ContinentIndex = GenericIndex<ContinentWeight>;
 
 #[derive(Debug, Clone, Copy)]
 pub struct BandWeight {

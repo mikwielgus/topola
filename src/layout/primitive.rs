@@ -9,13 +9,13 @@ use crate::layout::seg::{
 };
 use crate::layout::{
     bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
-    connectivity::{BandIndex, ComponentIndex, GetNet},
+    connectivity::{BandIndex, ContinentIndex, GetNet},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     geometry::{
         shape::{Shape, ShapeTrait},
         GetOffset, GetWidth,
     },
-    graph::{GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex, Retag},
+    graph::{GeometryIndex, GeometryWeight, GetBandIndex, GetContinentIndex, Retag},
     loose::LooseIndex,
     Layout,
 };
@@ -132,9 +132,9 @@ macro_rules! impl_fixed_primitive {
     ($primitive_struct:ident, $weight_struct:ident) => {
         impl_primitive!($primitive_struct, $weight_struct);
 
-        impl<'a, R: RulesTrait> GetComponentIndex for $primitive_struct<'a, R> {
-            fn component(&self) -> ComponentIndex {
-                self.weight().component()
+        impl<'a, R: RulesTrait> GetContinentIndex for $primitive_struct<'a, R> {
+            fn continent(&self) -> ContinentIndex {
+                self.weight().continent()
             }
         }
 
@@ -142,7 +142,7 @@ macro_rules! impl_fixed_primitive {
             fn net(&self) -> i64 {
                 self.layout()
                     .connectivity()
-                    .node_weight(self.component().node_index())
+                    .node_weight(self.continent().node_index())
                     .unwrap()
                     .net()
             }

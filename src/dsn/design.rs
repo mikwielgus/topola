@@ -43,7 +43,7 @@ impl DsnDesign {
             .iter()
             .map(|via| {
                 let net_id = net_ids.get(&via.net.0).unwrap();
-                let component = layout.add_component(*net_id as i64);
+                let continent = layout.add_continent(*net_id as i64);
 
                 // no way to resolve the name or layer support yet
                 // pick the first layer of the first object found
@@ -54,19 +54,19 @@ impl DsnDesign {
                 };
 
                 layout
-                    .add_fixed_dot(FixedDotWeight { component, circle })
+                    .add_fixed_dot(FixedDotWeight { continent, circle })
                     .unwrap()
             })
             .collect();
 
         for wire in self.pcb.wiring.wires.iter() {
             let net_id = net_ids.get(&wire.net.0).unwrap();
-            let component = layout.add_component(*net_id as i64);
+            let continent = layout.add_continent(*net_id as i64);
 
             // add the first coordinate in the wire path as a dot and save its index
             let mut prev_index = layout
                 .add_fixed_dot(FixedDotWeight {
-                    component,
+                    continent,
                     circle: Circle {
                         pos: (
                             wire.path.coords[0].x as f64 / 100.0,
@@ -82,7 +82,7 @@ impl DsnDesign {
             for coord in wire.path.coords.iter().skip(1) {
                 let index = layout
                     .add_fixed_dot(FixedDotWeight {
-                        component,
+                        continent,
                         circle: Circle {
                             pos: (coord.x as f64 / 100.0, -coord.y as f64 / 100.0).into(),
                             r: wire.path.width as f64 / 100.0,
@@ -96,7 +96,7 @@ impl DsnDesign {
                         prev_index,
                         index,
                         FixedSegWeight {
-                            component,
+                            continent,
                             width: wire.path.width as f64 / 100.0,
                         },
                     )

@@ -6,10 +6,10 @@ use petgraph::stable_graph::NodeIndex;
 use crate::{
     graph::{GenericIndex, GetNodeIndex},
     layout::{
-        connectivity::{BandIndex, ComponentIndex},
+        connectivity::{BandIndex, ContinentIndex},
         geometry::{DotWeightTrait, GetPos, GetWidth},
         graph::{
-            GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex, GetComponentIndexMut,
+            GeometryIndex, GeometryWeight, GetBandIndex, GetContinentIndex, GetContinentIndexMut,
             MakePrimitive, Retag,
         },
         primitive::{GenericPrimitive, Primitive},
@@ -81,7 +81,7 @@ impl DotWeightTrait<GeometryWeight> for DotWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedDotWeight {
-    pub component: ComponentIndex,
+    pub continent: ContinentIndex,
     pub circle: Circle,
 }
 

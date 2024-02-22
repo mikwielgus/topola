@@ -8,8 +8,8 @@ use thiserror::Error;
 
 use super::band::Band;
 use super::connectivity::{
-    BandIndex, BandWeight, ComponentIndex, ComponentWeight, ConnectivityGraph, ConnectivityLabel,
-    ConnectivityWeight, GetNet,
+    BandIndex, BandWeight, ConnectivityGraph, ConnectivityLabel, ConnectivityWeight,
+    ContinentIndex, ContinentWeight, GetNet,
 };
 use super::geometry::with_rtree::GeometryWithRtree;
 use super::loose::{GetNextLoose, Loose, LooseIndex};
@@ -30,7 +30,7 @@ use crate::layout::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     geometry::shape::{Shape, ShapeTrait},
-    graph::{GeometryIndex, GeometryWeight, GetComponentIndex, MakePrimitive},
+    graph::{GeometryIndex, GeometryWeight, GetContinentIndex, MakePrimitive},
     primitive::{GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetOtherJoint, MakeShape},
     seg::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
@@ -179,10 +179,10 @@ impl<R: RulesTrait> Layout<R> {
     // TODO: This method shouldn't be public.
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn add_component(&mut self, net: i64) -> ComponentIndex {
-        ComponentIndex::new(
+    pub fn add_continent(&mut self, net: i64) -> ContinentIndex {
+        ContinentIndex::new(
             self.connectivity
-                .add_node(ConnectivityWeight::Component(ComponentWeight { net })),
+                .add_node(ConnectivityWeight::Continent(ContinentWeight { net })),
         )
     }
 
@@ -491,13 +491,13 @@ impl<R: RulesTrait> Layout<R> {
         let seg = self.add_seg_infringably(from.into(), to.into(), weight, &[])?;
 
         self.connectivity.update_edge(
-            self.primitive(from).component().node_index(),
+            self.primitive(from).continent().node_index(),
             weight.band.node_index(),
             ConnectivityLabel::Band,
         );
         self.connectivity.update_edge(
             weight.band.node_index(),
-            self.primitive(to).component().node_index(),
+            self.primitive(to).continent().node_index(),
             ConnectivityLabel::Band,
         );
 
@@ -518,7 +518,7 @@ impl<R: RulesTrait> Layout<R> {
 
         if let DotIndex::Fixed(dot) = from {
             self.connectivity.update_edge(
-                self.primitive(dot).component().node_index(),
+                self.primitive(dot).continent().node_index(),
                 weight.band.node_index(),
                 ConnectivityLabel::Band,
             );

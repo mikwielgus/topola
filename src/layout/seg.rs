@@ -3,10 +3,10 @@ use enum_dispatch::enum_dispatch;
 use crate::{
     graph::{GenericIndex, GetNodeIndex},
     layout::{
-        connectivity::{BandIndex, ComponentIndex},
+        connectivity::{BandIndex, ContinentIndex},
         geometry::{GetWidth, SegWeightTrait},
         graph::{
-            GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex, GetComponentIndexMut,
+            GeometryIndex, GeometryWeight, GetBandIndex, GetContinentIndex, GetContinentIndexMut,
             MakePrimitive, Retag,
         },
         primitive::{GenericPrimitive, Primitive},
@@ -83,7 +83,7 @@ impl SegWeightTrait<GeometryWeight> for SegWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedSegWeight {
-    pub component: ComponentIndex,
+    pub continent: ContinentIndex,
     pub width: f64,
 }
 
