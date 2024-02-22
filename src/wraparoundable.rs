@@ -7,9 +7,7 @@ use crate::{
         bend::{BendIndex, FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
         graph::{GeometryIndex, MakePrimitive},
-        primitive::{
-            FixedBend, FixedDot, GetFirstRail, GetInnerOuter, GetLayout, LooseBend, Primitive,
-        },
+        primitive::{FixedBend, FixedDot, GetFirstRail, GetInnerOuter, LooseBend, Primitive},
         rules::RulesTrait,
         Layout,
     },

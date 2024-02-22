@@ -2,9 +2,8 @@ use crate::wraparoundable::{GetWraparound, WraparoundableIndex};
 
 use super::{
     bend::LooseBendIndex,
-    dot::DotIndex,
     graph::GeometryIndex,
-    primitive::{GetCore, GetInnerOuter, GetJoints},
+    primitive::{GetInnerOuter, GetJoints},
     rules::RulesTrait,
     Layout,
 };

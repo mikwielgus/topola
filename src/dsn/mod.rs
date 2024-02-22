@@ -1,2 +1,4 @@
-pub mod de;
-pub mod structure;
+mod de;
+pub mod design;
+mod rules;
+mod structure;

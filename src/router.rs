@@ -144,10 +144,8 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Mesh, f64>
 }
 
 impl<R: RulesTrait> Router<R> {
-    pub fn new(rules: R) -> Self {
-        Router {
-            layout: Layout::new(rules),
-        }
+    pub fn new(layout: Layout<R>) -> Self {
+        Router { layout }
     }
 
     pub fn route_band(

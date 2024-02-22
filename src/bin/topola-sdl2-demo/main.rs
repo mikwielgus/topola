@@ -13,6 +13,7 @@ use geo::point;
 use painter::Painter;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use topola::draw::DrawException;
+use topola::dsn::design::DsnDesign;
 use topola::layout::connectivity::BandIndex;
 use topola::layout::dot::FixedDotWeight;
 use topola::layout::geometry::shape::{Shape, ShapeTrait};
@@ -47,9 +48,6 @@ use topola::tracer::{Trace, Tracer};
 
 use topola::math::Circle;
 use topola::router::Router;
-
-use topola::dsn::de::from_str;
-use topola::dsn::structure::Pcb;
 
 struct SimpleRules {
     net_clearances: HashMap<(i64, i64), f64>,
@@ -237,7 +235,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     let mut event_pump = sdl_context.event_pump().unwrap();
     let _i = 0;
-    let mut router = Router::new(SimpleRules {
+    /*let mut router = Router::new(Layout::new(SimpleRules {
         net_clearances: HashMap::from([
             ((1, 2), 8.0),
             ((2, 1), 8.0),
@@ -246,87 +244,11 @@ fn main() -> Result<(), anyhow::Error> {
             ((3, 4), 15.0),
             ((4, 3), 15.0),
         ]),
-    });
-
-    let contents = std::fs::read_to_string("tests/data/test.dsn")?;
-    let pcb = from_str::<Pcb>(&contents)?;
+    }));*/
+    let design = DsnDesign::load_from_file("tests/data/test.dsn")?;
+    let layout = design.make_layout();
+    let mut router = Router::new(layout);
     //dbg!(&pcb);
-
-    // this holds the mapping of net names to numerical IDs (here for now)
-    let net_ids: HashMap<String, usize> = HashMap::from_iter(
-        pcb.network.classes[0].nets
-            .iter()
-            .enumerate()
-            .map(|(id, net)| (net.clone(), id))
-    );
-
-    // add vias to layout and save indices of dots in the order they appear in the file
-    let dot_indices: Vec<_> = pcb.wiring.vias
-        .iter()
-        .map(|via| {
-            let net_id = net_ids.get(&via.net.0).unwrap();
-            let component = router.layout.add_component(*net_id as i64);
-
-            // no way to resolve the name or layer support yet
-            // pick the first layer of the first object found
-            let circle = &pcb.library.padstacks[0].shapes[0].0;
-            let circle = Circle {
-                pos: (
-                    via.x as f64 / 100.0,
-                    -via.y as f64 / 100.0,
-                ).into(),
-                r: circle.radius as f64 / 100.0,
-            };
-
-            router.layout.add_fixed_dot(FixedDotWeight {
-                component,
-                circle,
-            }).unwrap()
-        })
-        .collect();
-
-    for wire in pcb.wiring.wires.iter() {
-        let net_id = net_ids.get(&wire.net.0).unwrap();
-        let component = router.layout.add_component(*net_id as i64);
-
-        // add the first coordinate in the wire path as a dot and save its index
-        let mut prev_index = router.layout.add_fixed_dot(FixedDotWeight {
-            component,
-            circle: Circle {
-                pos: (
-                    wire.path.coords[0].x as f64 / 100.0,
-                    -wire.path.coords[0].y as f64 / 100.0,
-                ).into(),
-                r: wire.path.width as f64 / 100.0,
-            }
-        }).unwrap();
-
-        // iterate through path coords starting from the second
-        for coord in wire.path.coords.iter().skip(1) {
-            let index = router.layout.add_fixed_dot(FixedDotWeight {
-                component,
-                circle: Circle {
-                    pos: (
-                        coord.x as f64 / 100.0,
-                        -coord.y as f64 / 100.0,
-                    ).into(),
-                    r: wire.path.width as f64 / 100.0,
-                }
-            }).unwrap();
-
-            // add a seg between the current and previous coords
-            let _ = router.layout.add_fixed_seg(
-                prev_index,
-                index,
-                FixedSegWeight {
-                    component,
-                    width: wire.path.width as f64 / 100.0,
-                },
-            ).unwrap();
-
-            prev_index = index;
-        }
-    }
 
     render_times(
         &mut event_pump,
@@ -343,13 +265,13 @@ fn main() -> Result<(), anyhow::Error> {
     );
 
     // these are both on net 1 in the test file
-    let _ = router.route_band(
+    /*let _ = router.route_band(
         dot_indices[1],
         dot_indices[2],
         3.0,
         //&mut EmptyRouterObserver,
         &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
-    )?;
+    )?;*/
 
     render_times(
         &mut event_pump,

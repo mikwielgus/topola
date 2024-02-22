@@ -92,7 +92,7 @@ pub struct Placement;
 #[derive(Deserialize, Debug)]
 #[serde(rename = "library")]
 pub struct Library {
-    pub padstacks: Vec<Padstack>
+    pub padstacks: Vec<Padstack>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -192,7 +192,9 @@ impl From<FlatPath> for Path {
         Path {
             layer: flat.layer,
             width: flat.width,
-            coords: flat.coords.chunks(2)
+            coords: flat
+                .coords
+                .chunks(2)
                 .map(|pair| Point {
                     x: pair[0],
                     // it's possible to return an error instead of panicking if this From were TryFrom,
@@ -236,4 +238,3 @@ pub struct Clearance {
     pub value: f32,
     pub r#type: Option<Type>,
 }
-

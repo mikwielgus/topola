@@ -287,7 +287,7 @@ impl ShapeTrait for BendShape {
         }
     }
 
-    fn envelope(&self, margin: f64) -> AABB<[f64; 2]> {
+    fn envelope(&self, _margin: f64) -> AABB<[f64; 2]> {
         let halfwidth = self.c.r + self.width;
         AABB::from_corners(
             [self.c.pos.x() - halfwidth, self.c.pos.y() - halfwidth],

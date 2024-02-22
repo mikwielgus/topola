@@ -2,7 +2,6 @@ use contracts::debug_ensures;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
-use petgraph::visit::EdgeRef;
 
 use rstar::RTreeObject;
 use thiserror::Error;
@@ -26,15 +25,13 @@ use crate::layout::geometry::{
 };
 use crate::layout::guide::Guide;
 use crate::layout::primitive::GetLimbs;
-use crate::layout::rules::{Conditions, GetConditions};
+use crate::layout::rules::GetConditions;
 use crate::layout::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     geometry::shape::{Shape, ShapeTrait},
     graph::{GeometryIndex, GeometryWeight, GetComponentIndex, MakePrimitive},
-    primitive::{
-        GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetOtherJoint, GetWeight, MakeShape,
-    },
+    primitive::{GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetOtherJoint, MakeShape},
     seg::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
         SeqLooseSegIndex, SeqLooseSegWeight,

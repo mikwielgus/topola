@@ -15,8 +15,8 @@ use crate::layout::{
         shape::{Shape, ShapeTrait},
         GetOffset, GetWidth,
     },
-    graph::{GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex, MakePrimitive, Retag},
-    loose::{Loose, LooseIndex},
+    graph::{GeometryIndex, GeometryWeight, GetBandIndex, GetComponentIndex, Retag},
+    loose::LooseIndex,
     Layout,
 };
 

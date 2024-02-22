@@ -122,7 +122,7 @@ impl<'a, R: RulesTrait> Guide<'a, R> {
         math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
     }
 
-    pub fn head_around_dot_offset(&self, head: &Head, around: DotIndex, width: f64) -> f64 {
+    pub fn head_around_dot_offset(&self, head: &Head, around: DotIndex, _width: f64) -> f64 {
         self.layout.rules().clearance(
             &self.conditions(around.into()),
             &self.conditions(head.face().into()),
@@ -158,7 +158,7 @@ impl<'a, R: RulesTrait> Guide<'a, R> {
         math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
     }
 
-    pub fn head_around_bend_offset(&self, head: &Head, around: BendIndex, width: f64) -> f64 {
+    pub fn head_around_bend_offset(&self, head: &Head, around: BendIndex, _width: f64) -> f64 {
         self.layout.rules().clearance(
             &self.conditions(head.face().into()),
             &self.conditions(around.into()),
