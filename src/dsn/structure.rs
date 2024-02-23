@@ -171,7 +171,22 @@ pub struct Attach(pub bool);
 #[derive(Deserialize, Debug)]
 #[serde(rename = "network")]
 pub struct Network {
+    pub nets: Option<Vec<NetPinAssignments>>,
     pub classes: Vec<Class>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename = "net")]
+// dsn names this "net", but it's a structure unrelated to "net" in wiring or elsewhere
+pub struct NetPinAssignments {
+    pub net: String,
+    pub pins: Vec<Pins>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename = "pins")]
+pub struct Pins {
+    pub ids: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]

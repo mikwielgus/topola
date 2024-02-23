@@ -611,7 +611,12 @@ impl<'de, 'a> SeqAccess<'de> for StructFields<'a, 'de> {
         // TODO explain this part of empty option detection
         if let Some(lookahead) = self.de.next_name_lookahead() {
             if lookahead != self.fields[self.current_field] {
-                self.de.next_option_empty_hint = true;
+                if lookahead + "s" != self.fields[self.current_field] {
+                    self.de.next_option_empty_hint = true;
+                }
+                else {
+                    self.de.next_option_empty_hint = false;
+                }
             } else {
                 self.de.next_option_empty_hint = false;
             }
