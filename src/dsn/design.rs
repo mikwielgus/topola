@@ -10,6 +10,7 @@ use super::{
     structure::Pcb,
 };
 
+#[derive(Debug)]
 pub struct DsnDesign {
     pcb: Pcb,
 }
@@ -45,9 +46,13 @@ impl DsnDesign {
                 let net_id = net_ids.get(&via.net.0).unwrap();
                 let continent = layout.add_continent(*net_id as i64);
 
-                // no way to resolve the name or layer support yet
-                // pick the first layer of the first object found
-                let circle = &self.pcb.library.padstacks[0].shapes[0].0;
+                // find the padstack referenced by this via placement
+                let padstack = &self.pcb.library.padstacks.iter().find(|padstack| {
+                    padstack.name == via.name
+                }).unwrap();
+
+                // no layer support yet, pick the first one
+                let circle = &padstack.shapes[0].0;
                 let circle = Circle {
                     pos: (via.x as f64 / 100.0, -via.y as f64 / 100.0).into(),
                     r: circle.radius as f64 / 100.0,
