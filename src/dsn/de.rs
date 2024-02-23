@@ -613,8 +613,7 @@ impl<'de, 'a> SeqAccess<'de> for StructFields<'a, 'de> {
             if lookahead != self.fields[self.current_field] {
                 if lookahead + "s" != self.fields[self.current_field] {
                     self.de.next_option_empty_hint = true;
-                }
-                else {
+                } else {
                     self.de.next_option_empty_hint = false;
                 }
             } else {

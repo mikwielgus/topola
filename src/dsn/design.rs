@@ -47,9 +47,13 @@ impl DsnDesign {
                 let continent = layout.add_continent(*net_id as i64);
 
                 // find the padstack referenced by this via placement
-                let padstack = &self.pcb.library.padstacks.iter().find(|padstack| {
-                    padstack.name == via.name
-                }).unwrap();
+                let padstack = &self
+                    .pcb
+                    .library
+                    .padstacks
+                    .iter()
+                    .find(|padstack| padstack.name == via.name)
+                    .unwrap();
 
                 // no layer support yet, pick the first one
                 let circle = &padstack.shapes[0].0;
