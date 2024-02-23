@@ -246,9 +246,9 @@ fn main() -> Result<(), anyhow::Error> {
         ]),
     }));*/
     let design = DsnDesign::load_from_file("tests/data/test.dsn")?;
+    dbg!(&design);
     let layout = design.make_layout();
     let mut router = Router::new(layout);
-    //dbg!(&pcb);
 
     render_times(
         &mut event_pump,

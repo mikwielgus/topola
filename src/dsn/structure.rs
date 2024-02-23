@@ -87,12 +87,62 @@ pub struct Vias {
 
 #[derive(Deserialize, Debug)]
 #[serde(rename = "placement")]
-pub struct Placement;
+pub struct Placement {
+    pub components: Vec<Component>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename = "component")]
+pub struct Component {
+    pub name: String,
+    pub places: Vec<Place>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename = "place")]
+pub struct Place {
+    pub name: String,
+    pub x: f32,
+    pub y: f32,
+    pub side: String,
+    pub rotation: f32,
+    pub PN: Option<PN>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename = "PN")]
+pub struct PN {
+    pub name: String,
+}
 
 #[derive(Deserialize, Debug)]
 #[serde(rename = "library")]
 pub struct Library {
+    pub images: Vec<Image>,
     pub padstacks: Vec<Padstack>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename = "image")]
+pub struct Image {
+    pub name: String,
+    pub outlines: Vec<Outline>,
+    pub pins: Vec<Pin>,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename = "outline")]
+pub struct Outline {
+    pub path: Path,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename = "pin")]
+pub struct Pin {
+    pub name: String,
+    pub id: String,
+    pub x: f32,
+    pub y: f32,
 }
 
 #[derive(Deserialize, Debug)]
@@ -167,15 +217,15 @@ pub struct Type(pub String);
 #[derive(Deserialize, Debug)]
 #[serde(rename = "unit")]
 pub struct Point {
-    pub x: i32,
-    pub y: i32,
+    pub x: f32,
+    pub y: f32,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(from = "FlatPath")]
 pub struct Path {
     pub layer: String,
-    pub width: u32,
+    pub width: f32,
     pub coords: Vec<Point>,
 }
 
@@ -183,8 +233,8 @@ pub struct Path {
 #[serde(rename = "path")]
 struct FlatPath {
     pub layer: String,
-    pub width: u32,
-    pub coords: Vec<i32>,
+    pub width: f32,
+    pub coords: Vec<f32>,
 }
 
 impl From<FlatPath> for Path {
