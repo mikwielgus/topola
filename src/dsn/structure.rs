@@ -161,7 +161,7 @@ pub struct Shape(pub Circle);
 #[serde(rename = "circle")]
 pub struct Circle {
     pub layer: String,
-    pub radius: u32,
+    pub diameter: u32,
 }
 
 #[derive(Deserialize, Debug)]
