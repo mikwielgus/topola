@@ -48,6 +48,11 @@ impl TryFrom<GeometryIndex> for SegIndex {
     }
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SegGeodata {
+    pub width: f64,
+}
+
 #[enum_dispatch(GetWidth)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SegWeight {
@@ -84,7 +89,7 @@ impl SegWeightTrait<GeometryWeight> for SegWeight {}
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedSegWeight {
     pub continent: ContinentIndex,
-    pub width: f64,
+    pub geodata: SegGeodata,
 }
 
 impl_fixed_weight!(FixedSegWeight, FixedSeg, FixedSegIndex);
@@ -92,14 +97,14 @@ impl SegWeightTrait<GeometryWeight> for FixedSegWeight {}
 
 impl GetWidth for FixedSegWeight {
     fn width(&self) -> f64 {
-        self.width
+        self.geodata.width
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LoneLooseSegWeight {
     pub band: BandIndex,
-    pub width: f64,
+    pub geodata: SegGeodata,
 }
 
 impl_loose_weight!(LoneLooseSegWeight, LoneLooseSeg, LoneLooseSegIndex);
@@ -107,14 +112,14 @@ impl SegWeightTrait<GeometryWeight> for LoneLooseSegWeight {}
 
 impl GetWidth for LoneLooseSegWeight {
     fn width(&self) -> f64 {
-        self.width
+        self.geodata.width
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SeqLooseSegWeight {
     pub band: BandIndex,
-    pub width: f64,
+    pub geodata: SegGeodata,
 }
 
 impl_loose_weight!(SeqLooseSegWeight, SeqLooseSeg, SeqLooseSegIndex);
@@ -122,6 +127,6 @@ impl SegWeightTrait<GeometryWeight> for SeqLooseSegWeight {}
 
 impl GetWidth for SeqLooseSegWeight {
     fn width(&self) -> f64 {
-        self.width
+        self.geodata.width
     }
 }

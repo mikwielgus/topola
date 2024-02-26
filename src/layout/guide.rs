@@ -85,7 +85,7 @@ impl<'a, R: RulesTrait> Guide<'a, R> {
     ) -> Result<Line, NoTangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle = Circle {
-            pos: self.layout.primitive(into).weight().circle.pos,
+            pos: self.layout.primitive(into).weight().geodata.circle.pos,
             r: 0.0,
         };
 

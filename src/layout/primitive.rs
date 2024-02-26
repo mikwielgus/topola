@@ -474,7 +474,7 @@ impl<'a, R: RulesTrait> GetLimbs for LooseBend<'a, R> {}
 
 impl<'a, R: RulesTrait> GetOffset for LooseBend<'a, R> {
     fn offset(&self) -> f64 {
-        self.weight().offset
+        self.weight().offset()
     }
 }
 
