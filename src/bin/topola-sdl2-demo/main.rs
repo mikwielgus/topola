@@ -14,9 +14,9 @@ use painter::Painter;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use topola::draw::DrawException;
 use topola::dsn::design::DsnDesign;
+use topola::geometry::shape::{Shape, ShapeTrait};
 use topola::layout::connectivity::BandIndex;
 use topola::layout::dot::FixedDotWeight;
-use topola::layout::geometry::shape::{Shape, ShapeTrait};
 use topola::layout::graph::{GeometryIndex, MakePrimitive};
 use topola::layout::primitive::MakeShape;
 use topola::layout::rules::{Conditions, RulesTrait};
@@ -246,7 +246,7 @@ fn main() -> Result<(), anyhow::Error> {
         ]),
     }));*/
     let design = DsnDesign::load_from_file("tests/data/test.dsn")?;
-    dbg!(&design);
+    //dbg!(&design);
     let layout = design.make_layout();
     let mut router = Router::new(layout);
 

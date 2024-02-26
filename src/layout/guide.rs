@@ -2,11 +2,11 @@ use enum_dispatch::enum_dispatch;
 use geo::Line;
 
 use crate::{
+    geometry::shape::{Shape, ShapeTrait},
     layout::{
         bend::BendIndex,
         connectivity::BandIndex,
         dot::{DotIndex, FixedDotIndex, LooseDotIndex},
-        geometry::shape::{Shape, ShapeTrait},
         graph::{GetBandIndex, MakePrimitive},
         primitive::{GetCore, GetInnerOuter, GetOtherJoint, GetWeight, MakeShape},
         rules::GetConditions,

@@ -11,25 +11,25 @@ use super::connectivity::{
     BandIndex, BandWeight, ConnectivityGraph, ConnectivityLabel, ConnectivityWeight,
     ContinentIndex, ContinentWeight, GetNet,
 };
-use super::geometry::with_rtree::GeometryWithRtree;
 use super::loose::{GetNextLoose, Loose, LooseIndex};
 use super::rules::RulesTrait;
 use super::segbend::Segbend;
+use crate::geometry::{
+    shape::{Shape, ShapeTrait},
+    with_rtree::GeometryWithRtree,
+    BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetOffset, GetPos, GetWidth,
+    SegWeightTrait,
+};
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::bend::BendIndex;
 use crate::layout::collect::Collect;
 use crate::layout::dot::DotWeight;
-use crate::layout::geometry::{
-    BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetOffset, GetPos, GetWidth,
-    SegWeightTrait,
-};
 use crate::layout::guide::Guide;
 use crate::layout::primitive::GetLimbs;
 use crate::layout::rules::GetConditions;
 use crate::layout::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    geometry::shape::{Shape, ShapeTrait},
     graph::{GeometryIndex, GeometryWeight, GetContinentIndex, MakePrimitive},
     primitive::{GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetOtherJoint, MakeShape},
     seg::{

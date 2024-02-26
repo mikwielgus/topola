@@ -1,20 +1,21 @@
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
+use crate::geometry::{
+    shape::{Shape, ShapeTrait},
+    GetOffset, GetWidth,
+};
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::dot::DotWeight;
 use crate::layout::seg::{
     FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex,
     SeqLooseSegWeight,
 };
+
 use crate::layout::{
     bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
     connectivity::{BandIndex, ContinentIndex, GetNet},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    geometry::{
-        shape::{Shape, ShapeTrait},
-        GetOffset, GetWidth,
-    },
     graph::{GeometryIndex, GeometryWeight, GetBandIndex, GetContinentIndex, Retag},
     loose::LooseIndex,
     Layout,

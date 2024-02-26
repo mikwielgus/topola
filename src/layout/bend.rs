@@ -1,10 +1,10 @@
 use enum_dispatch::enum_dispatch;
 
 use crate::{
+    geometry::{BendWeightTrait, GetOffset, GetWidth, SetOffset},
     graph::{GenericIndex, GetNodeIndex},
     layout::{
         connectivity::{BandIndex, ContinentIndex},
-        geometry::{BendWeightTrait, GetOffset, GetWidth},
         graph::{
             GeometryIndex, GeometryWeight, GetBandIndex, GetContinentIndex, GetContinentIndexMut,
             MakePrimitive, Retag,
@@ -16,8 +16,6 @@ use crate::{
 };
 
 use petgraph::stable_graph::NodeIndex;
-
-use super::geometry::SetOffset;
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]

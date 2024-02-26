@@ -6,14 +6,13 @@ use thiserror::Error;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
 use crate::draw::DrawException;
-use crate::layout::geometry::GetWidth;
+use crate::geometry::{shape::ShapeTrait, GetWidth};
 use crate::layout::guide::HeadTrait;
 use crate::layout::rules::RulesTrait;
 use crate::layout::Layout;
 use crate::layout::{
     connectivity::BandIndex,
     dot::FixedDotIndex,
-    geometry::shape::ShapeTrait,
     graph::{GeometryIndex, MakePrimitive},
     primitive::MakeShape,
 };

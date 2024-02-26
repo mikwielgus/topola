@@ -5,7 +5,6 @@ pub mod bend;
 pub mod collect;
 pub mod connectivity;
 pub mod dot;
-pub mod geometry;
 pub mod guide;
 mod layout;
 pub mod loose;

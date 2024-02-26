@@ -3,10 +3,10 @@ use geo::{EuclideanLength, Point};
 use thiserror::Error;
 
 use crate::{
+    geometry::GetWidth,
     layout::{
         bend::{BendIndex, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
-        geometry::GetWidth,
         graph::{GetBandIndex, MakePrimitive},
         guide::{Guide, Head, HeadTrait, SegbendHead},
         primitive::GetOtherJoint,

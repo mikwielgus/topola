@@ -4,10 +4,10 @@ use geo::Point;
 use petgraph::stable_graph::NodeIndex;
 
 use crate::{
+    geometry::{DotWeightTrait, GetPos, GetWidth, SetPos},
     graph::{GenericIndex, GetNodeIndex},
     layout::{
         connectivity::{BandIndex, ContinentIndex},
-        geometry::{DotWeightTrait, GetPos, GetWidth},
         graph::{
             GeometryIndex, GeometryWeight, GetBandIndex, GetContinentIndex, GetContinentIndexMut,
             MakePrimitive, Retag,
@@ -18,8 +18,6 @@ use crate::{
     },
     math::Circle,
 };
-
-use super::geometry::SetPos;
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]

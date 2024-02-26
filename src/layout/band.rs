@@ -1,9 +1,9 @@
 use crate::{
+    geometry::{shape::ShapeTrait, GetWidth},
     graph::GetNodeIndex,
     layout::{
         connectivity::{BandIndex, BandWeight, ConnectivityWeight, GetNet},
         dot::{DotIndex, FixedDotIndex},
-        geometry::shape::ShapeTrait,
         graph::{GeometryIndex, MakePrimitive},
         loose::{GetNextLoose, LooseIndex},
         primitive::{GetJoints, GetOtherJoint, MakeShape},
@@ -11,7 +11,7 @@ use crate::{
     },
 };
 
-use super::{geometry::GetWidth, rules::RulesTrait};
+use super::rules::RulesTrait;
 
 pub struct Band<'a, R: RulesTrait> {
     pub index: BandIndex,

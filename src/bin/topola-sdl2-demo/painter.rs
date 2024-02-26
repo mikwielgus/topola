@@ -2,7 +2,7 @@ use geo::Point;
 use pathfinder_canvas::{
     vec2f, ArcDirection, Canvas, CanvasRenderingContext2D, ColorU, FillRule, Path2D, RectF,
 };
-use topola::layout::geometry::shape::{Shape, ShapeTrait};
+use topola::geometry::shape::{Shape, ShapeTrait};
 
 pub struct Painter<'a> {
     canvas: &'a mut CanvasRenderingContext2D,

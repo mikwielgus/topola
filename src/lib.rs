@@ -6,6 +6,7 @@ pub mod graph;
 #[macro_use]
 pub mod layout;
 pub mod dsn;
+pub mod geometry;
 pub mod math;
 pub mod mesh;
 pub mod router;

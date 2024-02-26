@@ -1,10 +1,10 @@
 use enum_dispatch::enum_dispatch;
 
 use crate::{
+    geometry::{GetWidth, SegWeightTrait},
     graph::{GenericIndex, GetNodeIndex},
     layout::{
         connectivity::{BandIndex, ContinentIndex},
-        geometry::{GetWidth, SegWeightTrait},
         graph::{
             GeometryIndex, GeometryWeight, GetBandIndex, GetContinentIndex, GetContinentIndexMut,
             MakePrimitive, Retag,
