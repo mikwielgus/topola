@@ -40,7 +40,26 @@ impl DsnDesign {
                 .map(|(id, net)| (net.clone(), id)),
         );
 
-        let continent100 = layout.add_continent(100); // TODO: remove this placeholder.
+        // mapping of pin id -> net id prepared for adding pins
+        let pin_nets = if let Some(nets) = self.pcb.network.nets.as_ref() {
+            HashMap::<String, usize>::from_iter(
+                nets.iter()
+                    .map(|net| {
+                        // resolve the id so we don't work with strings
+                        let net_id = net_ids.get(&net.name).unwrap();
+
+                        // take the list of pins
+                        // and for each pin id output (pin id, net id)
+                        net.pins.ids
+                            .iter()
+                            .map(|id| (id.clone(), *net_id))
+                    })
+                    // flatten the nested iters into a single stream of tuples
+                    .flatten()
+            )
+        } else {
+            HashMap::<String, usize>::new()
+        };
 
         // add pins from components
         //self.pcb.placement.components.iter().map(|component| {
@@ -55,16 +74,9 @@ impl DsnDesign {
                     .unwrap();
 
                 for pin in &image.pins {
-                    //let pin_name = format!("{}-{}", place.name, pin.id);
-                    /*let net = self
-                        .pcb
-                        .network
-                        .nets
-                        .unwrap()
-                        .find(|net| net.pins[0].ids.contains(&pin_name));
-                    let net_id = net_ids.get(&net).unwrap();
-                    let continent = layout.add_continent(*net_id as i64);*/
-                    //let continent = layout.add_continent(*net_id as i64);
+                    let pin_name = format!("{}-{}", place.name, pin.id);
+                    let net_id = pin_nets.get(&pin_name).unwrap();
+                    let continent = layout.add_continent(*net_id as i64);
 
                     let padstack = &self
                         .pcb
@@ -83,7 +95,7 @@ impl DsnDesign {
 
                     layout
                         .add_fixed_dot(FixedDotWeight {
-                            continent: continent100,
+                            continent: continent,
                             geodata: DotGeodata { circle },
                         })
                         .unwrap();

@@ -179,8 +179,8 @@ pub struct Network {
 #[serde(rename = "net")]
 // dsn names this "net", but it's a structure unrelated to "net" in wiring or elsewhere
 pub struct NetPinAssignments {
-    pub net: String,
-    pub pins: Vec<Pins>,
+    pub name: String,
+    pub pins: Pins,
 }
 
 #[derive(Deserialize, Debug)]
