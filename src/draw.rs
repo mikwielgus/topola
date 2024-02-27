@@ -5,13 +5,13 @@ use thiserror::Error;
 use crate::{
     geometry::GetWidth,
     layout::{
-        bend::{BendGeodata, BendIndex, LooseBendWeight},
-        dot::{DotGeodata, DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
+        bend::{BendIndex, LooseBendWeight},
+        dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
         graph::{GetBandIndex, MakePrimitive},
         guide::{Guide, Head, HeadTrait, SegbendHead},
         primitive::GetOtherJoint,
         rules::RulesTrait,
-        seg::{LoneLooseSegWeight, SegGeodata, SeqLooseSegWeight},
+        seg::{LoneLooseSegWeight, SeqLooseSegWeight},
         Infringement, Layout, LayoutException,
     },
     math::{Circle, NoTangents},
@@ -67,9 +67,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
                         into.into(),
                         LoneLooseSegWeight {
                             band: head.band(),
-                            geodata: SegGeodata {
-                                width: self.layout.band(head.band()).width(),
-                            },
+                            width: self.layout.band(head.band()).width(),
                         },
                     )
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
@@ -81,9 +79,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
                         dot,
                         SeqLooseSegWeight {
                             band: head.band(),
-                            geodata: SegGeodata {
-                                width: self.layout.band(head.band()).width(),
-                            },
+                            width: self.layout.band(head.band()).width(),
                         },
                     )
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
@@ -224,20 +220,19 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
             around,
             LooseDotWeight {
                 band: head.band(),
-                geodata: DotGeodata {
-                    circle: Circle {
-                        pos: to,
-                        r: width / 2.0,
-                    },
+                circle: Circle {
+                    pos: to,
+                    r: width / 2.0,
                 },
             },
             SeqLooseSegWeight {
                 band: head.band(),
-                geodata: SegGeodata { width },
+                width,
             },
             LooseBendWeight {
                 band: head.band(),
-                geodata: BendGeodata { width, offset },
+                width,
+                offset,
             },
             cw,
         )?;

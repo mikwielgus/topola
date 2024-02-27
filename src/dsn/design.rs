@@ -1,11 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
-    layout::{
-        dot::{DotGeodata, FixedDotWeight},
-        seg::{FixedSegWeight, SegGeodata},
-        Layout,
-    },
+    layout::{dot::FixedDotWeight, seg::FixedSegWeight, Layout},
     math::Circle,
 };
 
@@ -50,12 +46,10 @@ impl DsnDesign {
 
                         // take the list of pins
                         // and for each pin id output (pin id, net id)
-                        net.pins.ids
-                            .iter()
-                            .map(|id| (id.clone(), *net_id))
+                        net.pins.ids.iter().map(|id| (id.clone(), *net_id))
                     })
                     // flatten the nested iters into a single stream of tuples
-                    .flatten()
+                    .flatten(),
             )
         } else {
             HashMap::<String, usize>::new()
@@ -94,10 +88,7 @@ impl DsnDesign {
                     };
 
                     layout
-                        .add_fixed_dot(FixedDotWeight {
-                            continent: continent,
-                            geodata: DotGeodata { circle },
-                        })
+                        .add_fixed_dot(FixedDotWeight { continent, circle })
                         .unwrap();
                 }
             }
@@ -131,10 +122,7 @@ impl DsnDesign {
                 };
 
                 layout
-                    .add_fixed_dot(FixedDotWeight {
-                        continent,
-                        geodata: DotGeodata { circle },
-                    })
+                    .add_fixed_dot(FixedDotWeight { continent, circle })
                     .unwrap()
             })
             .collect();
@@ -147,15 +135,13 @@ impl DsnDesign {
             let mut prev_index = layout
                 .add_fixed_dot(FixedDotWeight {
                     continent,
-                    geodata: DotGeodata {
-                        circle: Circle {
-                            pos: (
-                                wire.path.coords[0].x as f64 / 100.0,
-                                -wire.path.coords[0].y as f64 / 100.0,
-                            )
-                                .into(),
-                            r: wire.path.width as f64 / 100.0,
-                        },
+                    circle: Circle {
+                        pos: (
+                            wire.path.coords[0].x as f64 / 100.0,
+                            -wire.path.coords[0].y as f64 / 100.0,
+                        )
+                            .into(),
+                        r: wire.path.width as f64 / 100.0,
                     },
                 })
                 .unwrap();
@@ -165,11 +151,9 @@ impl DsnDesign {
                 let index = layout
                     .add_fixed_dot(FixedDotWeight {
                         continent,
-                        geodata: DotGeodata {
-                            circle: Circle {
-                                pos: (coord.x as f64 / 100.0, -coord.y as f64 / 100.0).into(),
-                                r: wire.path.width as f64 / 100.0,
-                            },
+                        circle: Circle {
+                            pos: (coord.x as f64 / 100.0, -coord.y as f64 / 100.0).into(),
+                            r: wire.path.width as f64 / 100.0,
                         },
                     })
                     .unwrap();
@@ -181,9 +165,7 @@ impl DsnDesign {
                         index,
                         FixedSegWeight {
                             continent,
-                            geodata: SegGeodata {
-                                width: wire.path.width as f64 / 100.0,
-                            },
+                            width: wire.path.width as f64 / 100.0,
                         },
                     )
                     .unwrap();

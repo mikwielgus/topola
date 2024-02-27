@@ -47,11 +47,6 @@ impl TryFrom<GeometryIndex> for DotIndex {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct DotGeodata {
-    pub circle: Circle,
-}
-
 #[enum_dispatch(GetPos, SetPos, GetWidth)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DotWeight {
@@ -85,7 +80,7 @@ impl DotWeightTrait<GeometryWeight> for DotWeight {}
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedDotWeight {
     pub continent: ContinentIndex,
-    pub geodata: DotGeodata,
+    pub circle: Circle,
 }
 
 impl_fixed_weight!(FixedDotWeight, FixedDot, FixedDotIndex);
@@ -93,26 +88,26 @@ impl DotWeightTrait<GeometryWeight> for FixedDotWeight {}
 
 impl GetPos for FixedDotWeight {
     fn pos(&self) -> Point {
-        self.geodata.circle.pos
+        self.circle.pos
     }
 }
 
 impl SetPos for FixedDotWeight {
     fn set_pos(&mut self, pos: Point) {
-        self.geodata.circle.pos = pos
+        self.circle.pos = pos
     }
 }
 
 impl GetWidth for FixedDotWeight {
     fn width(&self) -> f64 {
-        self.geodata.circle.r * 2.0
+        self.circle.r * 2.0
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseDotWeight {
     pub band: BandIndex,
-    pub geodata: DotGeodata,
+    pub circle: Circle,
 }
 
 impl_loose_weight!(LooseDotWeight, LooseDot, LooseDotIndex);
@@ -120,18 +115,18 @@ impl DotWeightTrait<GeometryWeight> for LooseDotWeight {}
 
 impl GetPos for LooseDotWeight {
     fn pos(&self) -> Point {
-        self.geodata.circle.pos
+        self.circle.pos
     }
 }
 
 impl SetPos for LooseDotWeight {
     fn set_pos(&mut self, pos: Point) {
-        self.geodata.circle.pos = pos
+        self.circle.pos = pos
     }
 }
 
 impl GetWidth for LooseDotWeight {
     fn width(&self) -> f64 {
-        self.geodata.circle.r * 2.0
+        self.circle.r * 2.0
     }
 }

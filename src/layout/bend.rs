@@ -45,12 +45,6 @@ impl TryFrom<GeometryIndex> for BendIndex {
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct BendGeodata {
-    pub width: f64,
-    pub offset: f64,
-}
-
 #[enum_dispatch(GetOffset, SetOffset, GetWidth)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BendWeight {
@@ -84,7 +78,8 @@ impl BendWeightTrait<GeometryWeight> for BendWeight {}
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedBendWeight {
     pub continent: ContinentIndex,
-    pub geodata: BendGeodata,
+    pub width: f64,
+    pub offset: f64,
 }
 
 impl_fixed_weight!(FixedBendWeight, FixedBend, FixedBendIndex);
@@ -92,43 +87,44 @@ impl BendWeightTrait<GeometryWeight> for FixedBendWeight {}
 
 impl GetOffset for FixedBendWeight {
     fn offset(&self) -> f64 {
-        self.geodata.offset
+        self.offset
     }
 }
 
 impl SetOffset for FixedBendWeight {
     fn set_offset(&mut self, offset: f64) {
-        self.geodata.offset = offset
+        self.offset = offset
     }
 }
 
 impl GetWidth for FixedBendWeight {
     fn width(&self) -> f64 {
-        self.geodata.width
+        self.width
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseBendWeight {
     pub band: BandIndex,
-    pub geodata: BendGeodata,
+    pub width: f64,
+    pub offset: f64,
 }
 
 impl GetOffset for LooseBendWeight {
     fn offset(&self) -> f64 {
-        self.geodata.offset
+        self.offset
     }
 }
 
 impl SetOffset for LooseBendWeight {
     fn set_offset(&mut self, offset: f64) {
-        self.geodata.offset = offset
+        self.offset = offset
     }
 }
 
 impl GetWidth for LooseBendWeight {
     fn width(&self) -> f64 {
-        self.geodata.width
+        self.width
     }
 }
 
