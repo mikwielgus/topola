@@ -796,7 +796,7 @@ impl<R: RulesTrait> Layout<R> {
         let limiting_shape = node
             .primitive(self)
             .shape()
-            .inflate(self.rules.clearance_net_limit(node.primitive(self).net()));
+            .inflate(self.rules.largest_clearance(node.primitive(self).net()));
         let mut inflated_shape = limiting_shape; // Unused temporary value just for initialization.
         let conditions = node.primitive(self).conditions();
 

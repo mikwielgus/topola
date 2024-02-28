@@ -61,7 +61,7 @@ impl RulesTrait for SimpleRules {
             .unwrap_or(&10.0)
     }
 
-    fn clearance_net_limit(&self, net: i64) -> f64 {
+    fn largest_clearance(&self, net: i64) -> f64 {
         let mut highest_clearance = 0.0;
 
         for ((net1, net2), clearance) in self.net_clearances.iter() {

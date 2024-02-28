@@ -8,41 +8,38 @@ use crate::{
 use super::{
     de::{from_str, Error},
     structure::Pcb,
+    rules::Rules,
 };
 
 #[derive(Debug)]
 pub struct DsnDesign {
     pcb: Pcb,
+    rules: Rules,
 }
 
 impl DsnDesign {
     pub fn load_from_file(filename: &str) -> Result<Self, Error> {
         let contents = std::fs::read_to_string(filename).unwrap(); // TODO: remove unwrap.
+        let pcb = from_str::<Pcb>(&contents)?;
+
+        let rules = Rules::from_pcb(&pcb);
 
         Ok(Self {
-            pcb: from_str::<Pcb>(&contents)?,
+            pcb,
+            rules,
         })
     }
 
-    pub fn make_layout(&self) -> Layout<&Pcb> {
-        let mut layout = Layout::new(&self.pcb);
-
-        // this holds the mapping of net names to numerical IDs (here for now)
-        let net_ids: HashMap<String, usize> = HashMap::from_iter(
-            self.pcb.network.classes[0]
-                .nets
-                .iter()
-                .enumerate()
-                .map(|(id, net)| (net.clone(), id)),
-        );
+    pub fn make_layout(&self) -> Layout<&Rules> {
+        let mut layout = Layout::new(&self.rules);
 
         // mapping of pin id -> net id prepared for adding pins
         let pin_nets = if let Some(nets) = self.pcb.network.nets.as_ref() {
-            HashMap::<String, usize>::from_iter(
+            HashMap::<String, i64>::from_iter(
                 nets.iter()
                     .map(|net| {
                         // resolve the id so we don't work with strings
-                        let net_id = net_ids.get(&net.name).unwrap();
+                        let net_id = self.rules.net_ids.get(&net.name).unwrap();
 
                         // take the list of pins
                         // and for each pin id output (pin id, net id)
@@ -52,7 +49,7 @@ impl DsnDesign {
                     .flatten(),
             )
         } else {
-            HashMap::<String, usize>::new()
+            HashMap::<String, i64>::new()
         };
 
         // add pins from components
@@ -70,7 +67,7 @@ impl DsnDesign {
                 for pin in &image.pins {
                     let pin_name = format!("{}-{}", place.name, pin.id);
                     let net_id = pin_nets.get(&pin_name).unwrap();
-                    let continent = layout.add_continent(*net_id as i64);
+                    let continent = layout.add_continent(*net_id);
 
                     let padstack = &self
                         .pcb
@@ -102,8 +99,8 @@ impl DsnDesign {
             .vias
             .iter()
             .map(|via| {
-                let net_id = net_ids.get(&via.net.0).unwrap();
-                let continent = layout.add_continent(*net_id as i64);
+                let net_id = self.rules.net_ids.get(&via.net.0).unwrap();
+                let continent = layout.add_continent(*net_id);
 
                 // find the padstack referenced by this via placement
                 let padstack = &self
@@ -128,8 +125,8 @@ impl DsnDesign {
             .collect();
 
         for wire in self.pcb.wiring.wires.iter() {
-            let net_id = net_ids.get(&wire.net.0).unwrap();
-            let continent = layout.add_continent(*net_id as i64);
+            let net_id = self.rules.net_ids.get(&wire.net.0).unwrap();
+            let continent = layout.add_continent(*net_id);
 
             // add the first coordinate in the wire path as a dot and save its index
             let mut prev_index = layout

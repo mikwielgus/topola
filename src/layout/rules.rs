@@ -16,5 +16,5 @@ pub struct Conditions {
 
 pub trait RulesTrait {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64;
-    fn clearance_net_limit(&self, net: i64) -> f64;
+    fn largest_clearance(&self, net: i64) -> f64;
 }
