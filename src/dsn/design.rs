@@ -7,8 +7,8 @@ use crate::{
 
 use super::{
     de::{from_str, Error},
-    structure::Pcb,
     rules::Rules,
+    structure::Pcb,
 };
 
 #[derive(Debug)]
@@ -24,10 +24,7 @@ impl DsnDesign {
 
         let rules = Rules::from_pcb(&pcb);
 
-        Ok(Self {
-            pcb,
-            rules,
-        })
+        Ok(Self { pcb, rules })
     }
 
     pub fn make_layout(&self) -> Layout<&Rules> {
@@ -67,7 +64,6 @@ impl DsnDesign {
                 for pin in &image.pins {
                     let pin_name = format!("{}-{}", place.name, pin.id);
                     let net_id = pin_nets.get(&pin_name).unwrap();
-                    let continent = layout.add_continent(*net_id);
 
                     let padstack = &self
                         .pcb
@@ -85,7 +81,10 @@ impl DsnDesign {
                     };
 
                     layout
-                        .add_fixed_dot(FixedDotWeight { continent, circle })
+                        .add_fixed_dot(FixedDotWeight {
+                            net: *net_id as i64,
+                            circle,
+                        })
                         .unwrap();
                 }
             }
@@ -100,7 +99,6 @@ impl DsnDesign {
             .iter()
             .map(|via| {
                 let net_id = self.rules.net_ids.get(&via.net.0).unwrap();
-                let continent = layout.add_continent(*net_id);
 
                 // find the padstack referenced by this via placement
                 let padstack = &self
@@ -119,19 +117,21 @@ impl DsnDesign {
                 };
 
                 layout
-                    .add_fixed_dot(FixedDotWeight { continent, circle })
+                    .add_fixed_dot(FixedDotWeight {
+                        net: *net_id as i64,
+                        circle,
+                    })
                     .unwrap()
             })
             .collect();
 
         for wire in self.pcb.wiring.wires.iter() {
             let net_id = self.rules.net_ids.get(&wire.net.0).unwrap();
-            let continent = layout.add_continent(*net_id);
 
             // add the first coordinate in the wire path as a dot and save its index
             let mut prev_index = layout
                 .add_fixed_dot(FixedDotWeight {
-                    continent,
+                    net: *net_id as i64,
                     circle: Circle {
                         pos: (
                             wire.path.coords[0].x as f64 / 100.0,
@@ -147,7 +147,7 @@ impl DsnDesign {
             for coord in wire.path.coords.iter().skip(1) {
                 let index = layout
                     .add_fixed_dot(FixedDotWeight {
-                        continent,
+                        net: *net_id as i64,
                         circle: Circle {
                             pos: (coord.x as f64 / 100.0, -coord.y as f64 / 100.0).into(),
                             r: wire.path.width as f64 / 100.0,
@@ -161,7 +161,7 @@ impl DsnDesign {
                         prev_index,
                         index,
                         FixedSegWeight {
-                            continent,
+                            net: *net_id as i64,
                             width: wire.path.width as f64 / 100.0,
                         },
                     )

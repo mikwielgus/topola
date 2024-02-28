@@ -7,7 +7,7 @@ use crate::{
     layout::{
         bend::{BendIndex, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
-        graph::{GetBandIndex, MakePrimitive},
+        graph::{GetNet, MakePrimitive},
         guide::{Guide, Head, HeadTrait, SegbendHead},
         primitive::GetOtherJoint,
         rules::RulesTrait,
@@ -58,30 +58,17 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         let head = self
             .extend_head(head, tangent.start_point())
             .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
+        let net = head.face().primitive(self.layout).net();
 
         match head.face() {
             DotIndex::Fixed(dot) => {
                 self.layout
-                    .add_lone_loose_seg(
-                        dot,
-                        into.into(),
-                        LoneLooseSegWeight {
-                            band: head.band(),
-                            width: self.layout.band(head.band()).width(),
-                        },
-                    )
+                    .add_lone_loose_seg(dot, into.into(), LoneLooseSegWeight { net, width })
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
             DotIndex::Loose(dot) => {
                 self.layout
-                    .add_seq_loose_seg(
-                        into.into(),
-                        dot,
-                        SeqLooseSegWeight {
-                            band: head.band(),
-                            width: self.layout.band(head.band()).width(),
-                        },
-                    )
+                    .add_seq_loose_seg(into.into(), dot, SeqLooseSegWeight { net, width })
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
         }
@@ -215,31 +202,24 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         width: f64,
         offset: f64,
     ) -> Result<SegbendHead, LayoutException> {
+        let net = head.face().primitive(self.layout).net();
         let segbend = self.layout.insert_segbend(
             head.face(),
             around,
             LooseDotWeight {
-                band: head.band(),
+                net,
                 circle: Circle {
                     pos: to,
                     r: width / 2.0,
                 },
             },
-            SeqLooseSegWeight {
-                band: head.band(),
-                width,
-            },
-            LooseBendWeight {
-                band: head.band(),
-                width,
-                offset,
-            },
+            SeqLooseSegWeight { net, width },
+            LooseBendWeight { net, width, offset },
             cw,
         )?;
         Ok::<SegbendHead, LayoutException>(SegbendHead {
             face: self.layout.primitive(segbend.bend).other_joint(segbend.dot),
             segbend,
-            band: head.band(),
         })
     }
 
@@ -250,10 +230,9 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
             .layout
             .primitive(head.segbend.seg)
             .other_joint(head.segbend.dot.into());
-        let band = head.band;
 
         self.layout.remove_segbend(&head.segbend, head.face);
-        Some(self.guide().head(prev_dot, band))
+        Some(self.guide().head(prev_dot))
     }
 
     fn guide(&self) -> Guide<R> {

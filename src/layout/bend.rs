@@ -4,11 +4,7 @@ use crate::{
     geometry::{BendWeightTrait, GetOffset, GetWidth, SetOffset},
     graph::{GenericIndex, GetNodeIndex},
     layout::{
-        connectivity::{BandIndex, ContinentIndex},
-        graph::{
-            GeometryIndex, GeometryWeight, GetBandIndex, GetContinentIndex, GetContinentIndexMut,
-            MakePrimitive, Retag,
-        },
+        graph::{GeometryIndex, GeometryWeight, GetNet, MakePrimitive, Retag},
         primitive::{GenericPrimitive, Primitive},
         rules::RulesTrait,
         Layout,
@@ -77,7 +73,7 @@ impl BendWeightTrait<GeometryWeight> for BendWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedBendWeight {
-    pub continent: ContinentIndex,
+    pub net: i64,
     pub width: f64,
     pub offset: f64,
 }
@@ -105,7 +101,7 @@ impl GetWidth for FixedBendWeight {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseBendWeight {
-    pub band: BandIndex,
+    pub net: i64,
     pub width: f64,
     pub offset: f64,
 }

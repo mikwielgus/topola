@@ -3,11 +3,9 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
 use crate::{
+    board::connectivity::{BandIndex, ContinentIndex},
     graph::GetNodeIndex,
-    layout::{
-        connectivity::{BandIndex, ContinentIndex},
-        Layout,
-    },
+    layout::Layout,
 };
 
 use super::{
@@ -27,16 +25,8 @@ pub trait Retag<GeometryIndex> {
 }
 
 #[enum_dispatch]
-pub trait GetContinentIndex {
-    fn continent(&self) -> ContinentIndex;
-}
-
-pub trait GetContinentIndexMut {
-    fn continent_mut(&mut self) -> &mut ContinentIndex;
-}
-
-pub trait GetBandIndex {
-    fn band(&self) -> BandIndex;
+pub trait GetNet {
+    fn net(&self) -> i64;
 }
 
 #[enum_dispatch]
@@ -49,6 +39,12 @@ macro_rules! impl_weight {
         impl Retag<GeometryIndex> for $weight_struct {
             fn retag(&self, index: NodeIndex<usize>) -> GeometryIndex {
                 GeometryIndex::$weight_variant($index_struct::new(index))
+            }
+        }
+
+        impl<'a> GetNet for $weight_struct {
+            fn net(&self) -> i64 {
+                self.net
             }
         }
 
@@ -65,30 +61,12 @@ macro_rules! impl_weight {
 macro_rules! impl_fixed_weight {
     ($weight_struct:ident, $weight_variant:ident, $index_struct:ident) => {
         impl_weight!($weight_struct, $weight_variant, $index_struct);
-
-        impl GetContinentIndex for $weight_struct {
-            fn continent(&self) -> ContinentIndex {
-                self.continent
-            }
-        }
-
-        impl GetContinentIndexMut for $weight_struct {
-            fn continent_mut(&mut self) -> &mut ContinentIndex {
-                &mut self.continent
-            }
-        }
     };
 }
 
 macro_rules! impl_loose_weight {
     ($weight_struct:ident, $weight_variant:ident, $index_struct:ident) => {
         impl_weight!($weight_struct, $weight_variant, $index_struct);
-
-        impl GetBandIndex for $weight_struct {
-            fn band(&self) -> BandIndex {
-                self.band
-            }
-        }
     };
 }
 

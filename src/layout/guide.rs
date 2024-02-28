@@ -2,12 +2,12 @@ use enum_dispatch::enum_dispatch;
 use geo::Line;
 
 use crate::{
+    board::connectivity::BandIndex,
     geometry::shape::{Shape, ShapeTrait},
     layout::{
         bend::BendIndex,
-        connectivity::BandIndex,
         dot::{DotIndex, FixedDotIndex, LooseDotIndex},
-        graph::{GetBandIndex, MakePrimitive},
+        graph::MakePrimitive,
         primitive::{GetCore, GetInnerOuter, GetOtherJoint, GetWeight, MakeShape},
         rules::GetConditions,
         Layout,
@@ -25,7 +25,6 @@ use super::{
 #[enum_dispatch]
 pub trait HeadTrait {
     fn face(&self) -> DotIndex;
-    fn band(&self) -> BandIndex;
 }
 
 #[enum_dispatch(HeadTrait)]
@@ -38,16 +37,11 @@ pub enum Head {
 #[derive(Debug, Clone, Copy)]
 pub struct BareHead {
     pub dot: FixedDotIndex,
-    pub band: BandIndex,
 }
 
 impl HeadTrait for BareHead {
     fn face(&self) -> DotIndex {
         self.dot.into()
-    }
-
-    fn band(&self) -> BandIndex {
-        self.band
     }
 }
 
@@ -55,16 +49,11 @@ impl HeadTrait for BareHead {
 pub struct SegbendHead {
     pub face: LooseDotIndex,
     pub segbend: Segbend,
-    pub band: BandIndex,
 }
 
 impl HeadTrait for SegbendHead {
     fn face(&self) -> DotIndex {
         self.face.into()
-    }
-
-    fn band(&self) -> BandIndex {
-        self.band
     }
 }
 
@@ -233,20 +222,16 @@ impl<'a, R: RulesTrait> Guide<'a, R> {
         SegbendHead {
             face: dot,
             segbend: self.layout.segbend(dot),
-            band: self.layout.primitive(dot).weight().band(),
         }
     }
 
     pub fn rear_head(&self, dot: LooseDotIndex) -> Head {
-        self.head(
-            self.rear(self.segbend_head(dot)),
-            self.layout.primitive(dot).weight().band(),
-        )
+        self.head(self.rear(self.segbend_head(dot)))
     }
 
-    pub fn head(&self, dot: DotIndex, band: BandIndex) -> Head {
+    pub fn head(&self, dot: DotIndex) -> Head {
         match dot {
-            DotIndex::Fixed(fixed) => BareHead { dot: fixed, band }.into(),
+            DotIndex::Fixed(fixed) => BareHead { dot: fixed }.into(),
             DotIndex::Loose(loose) => self.segbend_head(loose).into(),
         }
     }

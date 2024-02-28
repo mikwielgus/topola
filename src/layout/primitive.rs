@@ -1,26 +1,26 @@
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
+use crate::board::connectivity::{BandIndex, ContinentIndex};
 use crate::geometry::{
     shape::{Shape, ShapeTrait},
     GetOffset, GetWidth,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
-use crate::layout::dot::DotWeight;
-use crate::layout::seg::{
-    FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex,
-    SeqLooseSegWeight,
-};
-
 use crate::layout::{
     bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
-    connectivity::{BandIndex, ContinentIndex, GetNet},
+    dot::DotWeight,
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    graph::{GeometryIndex, GeometryWeight, GetBandIndex, GetContinentIndex, Retag},
+    graph::{GeometryIndex, GeometryWeight, Retag},
     loose::LooseIndex,
+    seg::{
+        FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex,
+        SeqLooseSegWeight,
+    },
     Layout,
 };
 
+use super::graph::GetNet;
 use super::rules::{Conditions, GetConditions, RulesTrait};
 
 #[enum_dispatch]
@@ -126,44 +126,24 @@ macro_rules! impl_primitive {
                 }
             }
         }
+
+        impl<'a, R: RulesTrait> GetNet for $primitive_struct<'a, R> {
+            fn net(&self) -> i64 {
+                self.weight().net()
+            }
+        }
     };
 }
 
 macro_rules! impl_fixed_primitive {
     ($primitive_struct:ident, $weight_struct:ident) => {
         impl_primitive!($primitive_struct, $weight_struct);
-
-        impl<'a, R: RulesTrait> GetContinentIndex for $primitive_struct<'a, R> {
-            fn continent(&self) -> ContinentIndex {
-                self.weight().continent()
-            }
-        }
-
-        impl<'a, R: RulesTrait> GetNet for $primitive_struct<'a, R> {
-            fn net(&self) -> i64 {
-                self.layout()
-                    .connectivity()
-                    .node_weight(self.continent().node_index())
-                    .unwrap()
-                    .net()
-            }
-        }
     };
 }
 
 macro_rules! impl_loose_primitive {
     ($primitive_struct:ident, $weight_struct:ident) => {
         impl_primitive!($primitive_struct, $weight_struct);
-
-        impl<'a, R: RulesTrait> GetNet for $primitive_struct<'a, R> {
-            fn net(&self) -> i64 {
-                self.layout()
-                    .connectivity()
-                    .node_weight(self.weight().band().node_index())
-                    .unwrap()
-                    .net()
-            }
-        }
     };
 }
 

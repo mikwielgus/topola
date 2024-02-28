@@ -5,6 +5,7 @@ pub mod draw;
 pub mod graph;
 #[macro_use]
 pub mod layout;
+pub mod board;
 pub mod dsn;
 pub mod geometry;
 pub mod math;
