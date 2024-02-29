@@ -8,13 +8,12 @@ use crate::astar::{astar, AstarStrategy, PathTracker};
 use crate::board::connectivity::BandIndex;
 use crate::board::Board;
 use crate::draw::DrawException;
-use crate::geometry::{shape::ShapeTrait, GetWidth};
+use crate::geometry::shape::ShapeTrait;
 use crate::layout::{
     dot::FixedDotIndex,
     graph::{GeometryIndex, MakePrimitive},
     primitive::MakeShape,
     rules::RulesTrait,
-    Layout,
 };
 
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
@@ -120,10 +119,16 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Mesh, f64>
     fn estimate_cost(&mut self, vertex: VertexIndex) -> f64 {
         self.observer.on_estimate(&self.tracer, vertex);
         let start_point = GeometryIndex::from(vertex)
-            .primitive(&self.tracer.board.layout)
+            .primitive(self.tracer.board.layout())
             .shape()
             .center();
-        let end_point = self.tracer.board.layout.primitive(self.to).shape().center();
+        let end_point = self
+            .tracer
+            .board
+            .layout()
+            .primitive(self.to)
+            .shape()
+            .center();
         end_point.euclidean_distance(&start_point)
     }
 }
@@ -143,8 +148,8 @@ impl<R: RulesTrait> Router<R> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
         //self.mesh.triangulate(&self.layout)?;
-        let mut mesh = Mesh::new(&self.board.layout);
-        mesh.generate(&self.board.layout)
+        let mut mesh = Mesh::new(self.board.layout());
+        mesh.generate(self.board.layout())
             .map_err(|err| RoutingError {
                 from,
                 to,
@@ -179,7 +184,7 @@ impl<R: RulesTrait> Router<R> {
         let from_dot = self.board.band_from(band);
         let to_dot = self.board.band_to(band).unwrap();
         self.board.remove_band(band);
-        self.board.layout.move_dot(to_dot.into(), to).unwrap(); // TODO: Remove `.unwrap()`.
+        self.board.move_dot(to_dot.into(), to).unwrap(); // TODO: Remove `.unwrap()`.
         self.route_band(from_dot, to_dot, width, observer)
     }
 

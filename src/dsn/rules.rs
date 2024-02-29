@@ -43,7 +43,8 @@ impl Rules {
 
         let mut net_id_classes = HashMap::new();
         let class_rules = HashMap::from_iter(
-            pcb.network.classes
+            pcb.network
+                .classes
                 .iter()
                 .inspect(|class| {
                     for net in &class.nets {
@@ -51,7 +52,7 @@ impl Rules {
                         net_id_classes.insert(*net_id, class.name.clone());
                     }
                 })
-                .map(|class| (class.name.clone(), Rule::from_dsn(&class.rule)))
+                .map(|class| (class.name.clone(), Rule::from_dsn(&class.rule))),
         );
 
         Self {
@@ -64,7 +65,9 @@ impl Rules {
 
     pub fn get_rule(&self, net: i64) -> &Rule {
         if let Some(netclass) = self.net_id_classes.get(&net) {
-            self.class_rules.get(netclass).unwrap_or(&self.structure_rule)
+            self.class_rules
+                .get(netclass)
+                .unwrap_or(&self.structure_rule)
         } else {
             &self.structure_rule
         }

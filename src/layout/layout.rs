@@ -173,13 +173,6 @@ impl<R: RulesTrait> Layout<R> {
         self.add_dot_infringably(weight, &[])
     }
 
-    /*#[debug_ensures(ret.is_ok() -> self.graph.node_count() == old(self.graph.node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.graph.node_count() == old(self.graph.node_count()))]
-    #[debug_ensures(self.graph.edge_count() == old(self.graph.edge_count()))]
-    fn add_loose_dot(&mut self, weight: LooseDotWeight) -> Result<LooseDotIndex, ()> {
-        self.add_dot_infringably(weight, &[])
-    }*/
-
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     fn add_dot_infringably<W: DotWeightTrait<GeometryWeight>>(

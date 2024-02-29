@@ -158,6 +158,6 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     }
 
     fn draw(&mut self) -> Draw<R> {
-        Draw::new(&mut self.board.layout)
+        Draw::new(&mut self.board)
     }
 }

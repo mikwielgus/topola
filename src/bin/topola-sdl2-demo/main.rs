@@ -127,7 +127,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.window,
             self.renderer,
             self.font_context,
-            RouterOrLayout::Layout(&tracer.board.layout),
+            RouterOrLayout::Layout(tracer.board.layout()),
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
@@ -145,7 +145,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.window,
             self.renderer,
             self.font_context,
-            RouterOrLayout::Layout(&tracer.board.layout),
+            RouterOrLayout::Layout(tracer.board.layout()),
             None,
             Some(tracer.mesh.clone()),
             &path,
@@ -176,7 +176,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.window,
             self.renderer,
             self.font_context,
-            RouterOrLayout::Layout(&tracer.board.layout),
+            RouterOrLayout::Layout(tracer.board.layout()),
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
@@ -257,7 +257,7 @@ fn main() -> Result<(), anyhow::Error> {
         &window,
         &mut renderer,
         &font_context,
-        RouterOrLayout::Layout(&router.board.layout),
+        RouterOrLayout::Layout(router.board.layout()),
         None,
         None,
         &[],
@@ -280,7 +280,7 @@ fn main() -> Result<(), anyhow::Error> {
         &window,
         &mut renderer,
         &font_context,
-        RouterOrLayout::Layout(&router.board.layout),
+        RouterOrLayout::Layout(router.board.layout()),
         None,
         None,
         &[],
@@ -347,7 +347,7 @@ fn render_times(
                     maybe_mesh = None;
                 }
 
-                &router.board.layout
+                router.board.layout()
             }
             RouterOrLayout::Layout(layout) => layout,
         };
