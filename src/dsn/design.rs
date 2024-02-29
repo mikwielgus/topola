@@ -138,7 +138,7 @@ impl DsnDesign {
                             -wire.path.coords[0].y as f64 / 100.0,
                         )
                             .into(),
-                        r: wire.path.width as f64 / 100.0,
+                        r: wire.path.width as f64 / 200.0,
                     },
                 })
                 .unwrap();
@@ -150,7 +150,7 @@ impl DsnDesign {
                         net: *net_id as i64,
                         circle: Circle {
                             pos: (coord.x as f64 / 100.0, -coord.y as f64 / 100.0).into(),
-                            r: wire.path.width as f64 / 100.0,
+                            r: wire.path.width as f64 / 200.0,
                         },
                     })
                     .unwrap();

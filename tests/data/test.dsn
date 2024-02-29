@@ -1,9 +1,9 @@
-(pcb /home/mikolaj/proj/topola/tests/data/test.dsn
+(pcb test.dsn
   (parser
     (string_quote ")
     (space_in_quoted_tokens on)
     (host_cad "KiCad's Pcbnew")
-    (host_version "7.0.10")
+    (host_version "7.0.9")
   )
   (resolution um 10)
   (unit um)
@@ -21,12 +21,12 @@
       )
     )
     (boundary
-      (path pcb 0  60400 -50400  8209.67 -50400  8209.67 -16128  60400 -16128
-            60400 -50400)
+      (path pcb 0  61846 -50400  2162.05 -50400  2162.05 -14754.8  61846 -14754.8
+            61846 -50400)
     )
     (via "Via[0-1]_800:400_um")
     (rule
-      (width 300)
+      (width 600)
       (clearance 200.1)
       (clearance 200.1 (type default_smd))
       (clearance 50 (type smd_smd))
@@ -34,11 +34,11 @@
   )
   (placement
     (component Connector_Pin:Pin_D1.0mm_L10.0mm
-      (place REF11 53340.000000 -17653.000000 front 0.000000 (PN Pin_D1.0mm_L10.0mm))
       (place REF21 16510.000000 -46990.000000 front 0.000000 (PN Pin_D1.0mm_L10.0mm))
+      (place REF11 53340.000000 -17653.000000 front 0.000000 (PN Pin_D1.0mm_L10.0mm))
       (place REF31 12700.000000 -40640.000000 front 0.000000 (PN Pin_D1.0mm_L10.0mm))
-      (place REF12 10668.000000 -32258.000000 front 0.000000 (PN Pin_D1.0mm_L10.0mm))
       (place REF22 45720.000000 -35560.000000 front 0.000000 (PN Pin_D1.0mm_L10.0mm))
+      (place REF12 10668.000000 -32258.000000 front 0.000000 (PN Pin_D1.0mm_L10.0mm))
       (place REF32 35560.000000 -24130.000000 front 0.000000 (PN Pin_D1.0mm_L10.0mm))
     )
   )
@@ -105,25 +105,34 @@
         (use_via Via[0-1]_800:400_um)
       )
       (rule
-        (width 300)
+        (width 600)
         (clearance 200.1)
+      )
+    )
+    (class test unconnected
+      (circuit
+        (use_via Via[0-1]_800:400_um)
+      )
+      (rule
+        (width 300)
+        (clearance 500.1)
       )
     )
   )
   (wiring
-    (wire (path F.Cu 300  20000 -50000  60000 -50000)(net 3)(type route))
-    (wire (path F.Cu 300  60000 -20000  40000 -20000  40000 -40000)(net 3)(type route))
-    (wire (path F.Cu 300  50000 -40000  50000 -30000)(net 3)(type route))
-    (wire (path F.Cu 300  60000 -50000  60000 -20000)(net 3)(type route))
-    (wire (path F.Cu 300  20000 -20000  20000 -50000)(net 3)(type route))
-    (wire (path F.Cu 300  40000 -40000  50000 -40000)(net 3)(type route))
-    (via "Via[0-1]_800:400_um"  20000 -50000 (net 3)(type route))
-    (via "Via[0-1]_800:400_um"  20000 -20000 (net 3)(type route))
-    (via "Via[0-1]_800:400_um"  40000 -20000 (net 3)(type route))
-    (via "Via[0-1]_800:400_um"  60000 -50000 (net 3)(type route))
-    (via "Via[0-1]_800:400_um"  50000 -30000 (net 3)(type route))
-    (via "Via[0-1]_800:400_um"  40000 -40000 (net 3)(type route))
-    (via "Via[0-1]_800:400_um"  60000 -20000 (net 3)(type route))
-    (via "Via[0-1]_800:400_um"  50000 -40000 (net 3)(type route))
+    (wire (path F.Cu 600  20000 -50000  60000 -50000)(net unconnected)(type route))
+    (wire (path F.Cu 600  60000 -20000  40000 -20000  40000 -40000)(net unconnected)(type route))
+    (wire (path F.Cu 600  50000 -40000  50000 -30000)(net unconnected)(type route))
+    (wire (path F.Cu 600  60000 -50000  60000 -20000)(net unconnected)(type route))
+    (wire (path F.Cu 600  20000 -20000  20000 -50000)(net unconnected)(type route))
+    (wire (path F.Cu 600  40000 -40000  50000 -40000)(net unconnected)(type route))
+    (via "Via[0-1]_800:400_um"  20000 -50000 (net unconnected)(type route))
+    (via "Via[0-1]_800:400_um"  60000 -50000 (net unconnected)(type route))
+    (via "Via[0-1]_800:400_um"  50000 -40000 (net unconnected)(type route))
+    (via "Via[0-1]_800:400_um"  40000 -20000 (net unconnected)(type route))
+    (via "Via[0-1]_800:400_um"  20000 -20000 (net unconnected)(type route))
+    (via "Via[0-1]_800:400_um"  40000 -40000 (net unconnected)(type route))
+    (via "Via[0-1]_800:400_um"  60000 -20000 (net unconnected)(type route))
+    (via "Via[0-1]_800:400_um"  50000 -30000 (net unconnected)(type route))
   )
 )

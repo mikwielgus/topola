@@ -33,10 +33,11 @@ pub struct Rules {
 
 impl Rules {
     pub fn from_pcb(pcb: &Pcb) -> Self {
+        // keeping this as a separate iter pass because it might be moved into a different struct later?
         let net_ids = HashMap::from_iter(
-            pcb.network.classes[0]
-                .nets
+            pcb.network.classes
                 .iter()
+                .flat_map(|class| &class.nets)
                 .enumerate()
                 .map(|(id, net)| (net.clone(), id as i64)),
         );
