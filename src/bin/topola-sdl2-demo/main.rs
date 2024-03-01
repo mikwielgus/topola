@@ -246,7 +246,7 @@ fn main() -> Result<(), anyhow::Error> {
             ((4, 3), 15.0),
         ]),
     }));*/
-    let design = DsnDesign::load_from_file("tests/data/test.dsn")?;
+    let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
     //dbg!(&design);
     let layout = design.make_layout();
     let board = Board::new(layout);
