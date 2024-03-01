@@ -608,7 +608,8 @@ impl<'de, 'a> SeqAccess<'de> for StructFields<'a, 'de> {
             }
         }
 
-        // TODO explain this part of empty option detection
+        // check if the next field is "named"
+        // (saved as `(fieldname value)`)
         if let Some(lookahead) = self.de.next_name_lookahead() {
             if lookahead != self.fields[self.current_field] {
                 if lookahead + "s" != self.fields[self.current_field] {
@@ -620,7 +621,9 @@ impl<'de, 'a> SeqAccess<'de> for StructFields<'a, 'de> {
                 self.de.next_option_empty_hint = false;
             }
         } else {
-            self.de.next_option_empty_hint = false;
+            // optional fields must be "named"
+            // if we see something else assume empty option
+            self.de.next_option_empty_hint = true;
         }
 
         self.current_field += 1;

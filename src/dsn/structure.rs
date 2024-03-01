@@ -1,4 +1,4 @@
-use serde::Deserialize;
+use serde::{Deserialize, Deserializer, de::Error};
 
 #[derive(Deserialize, Debug)]
 #[serde(rename = "pcb")]
@@ -55,6 +55,7 @@ pub struct Unit(pub String);
 pub struct Structure {
     pub layers: Vec<Layer>,
     pub boundary: Boundary,
+    pub plane: Option<Plane>,
     pub vias: Vias,
     pub rule: Rule,
 }
@@ -78,6 +79,13 @@ pub struct Index(pub u32);
 #[derive(Deserialize, Debug)]
 #[serde(rename = "boundary")]
 pub struct Boundary(pub Path);
+
+#[derive(Deserialize, Debug)]
+#[serde(rename = "plane")]
+pub struct Plane {
+    net: String,
+    shape: Polygon,
+}
 
 #[derive(Deserialize, Debug)]
 #[serde(rename = "via")]
@@ -140,9 +148,16 @@ pub struct Outline {
 #[serde(rename = "pin")]
 pub struct Pin {
     pub name: String,
+    pub rotate: Option<Rotate>,
     pub id: String,
     pub x: f32,
     pub y: f32,
+}
+
+#[derive(Deserialize, Debug)]
+#[serde(rename = "rotate")]
+pub struct Rotate {
+    pub angle: f32,
 }
 
 #[derive(Deserialize, Debug)]
@@ -229,47 +244,44 @@ pub struct Wire {
 #[serde(rename = "type")]
 pub struct Type(pub String);
 
-#[derive(Deserialize, Debug)]
-#[serde(rename = "unit")]
+#[derive(Debug)]
 pub struct Point {
     pub x: f32,
     pub y: f32,
 }
 
+fn de_points<'de, D>(deserializer: D) -> Result<Vec<Point>, D::Error>
+    where D: Deserializer<'de>
+{
+    Vec::<f32>::deserialize(deserializer)?
+        .chunks(2)
+        .map(|pair| {
+            let x = pair[0];
+            let y = *pair.get(1).ok_or(
+                Error::custom("expected paired x y coordinates, list ended at x")
+            )?;
+
+            Ok(Point { x, y })
+        })
+        .collect::<Result<Vec<Point>, D::Error>>()
+}
+
 #[derive(Deserialize, Debug)]
-#[serde(from = "FlatPath")]
-pub struct Path {
+#[serde(rename = "polygon")]
+pub struct Polygon {
     pub layer: String,
     pub width: f32,
+    #[serde(deserialize_with = "de_points")]
     pub coords: Vec<Point>,
 }
 
 #[derive(Deserialize, Debug)]
 #[serde(rename = "path")]
-struct FlatPath {
+pub struct Path {
     pub layer: String,
     pub width: f32,
-    pub coords: Vec<f32>,
-}
-
-impl From<FlatPath> for Path {
-    fn from(flat: FlatPath) -> Path {
-        Path {
-            layer: flat.layer,
-            width: flat.width,
-            coords: flat
-                .coords
-                .chunks(2)
-                .map(|pair| Point {
-                    x: pair[0],
-                    // it's possible to return an error instead of panicking if this From were TryFrom,
-                    // but I don't think serde will let us grab and inspect it elsewhere
-                    // so annotating this with line/column information later might be difficult?
-                    y: *pair.get(1).expect("unpaired coordinate in path"),
-                })
-                .collect(),
-        }
-    }
+    #[serde(deserialize_with = "de_points")]
+    pub coords: Vec<Point>,
 }
 
 #[derive(Deserialize, Debug)]
