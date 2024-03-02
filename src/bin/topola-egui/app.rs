@@ -19,8 +19,9 @@ pub struct App {
     // Example stuff:
     label: String,
 
-    //#[serde(skip)] // Don't serialize this field.
-    //text_channel: (Sender<String>, Receiver<String>),
+    #[serde(skip)] // Don't serialize this field.
+    file_handle_channel: (Sender<rfd::FileHandle>, Receiver<rfd::FileHandle>),
+
     #[serde(skip)]
     design: Option<DsnDesign>,
 }
@@ -30,7 +31,7 @@ impl Default for App {
         Self {
             // Example stuff:
             label: "Hello World!".to_owned(),
-            //text_channel: channel(),
+            file_handle_channel: channel(),
             design: None,
         }
     }
@@ -59,32 +60,38 @@ impl eframe::App for App {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
+                    if let Ok(file_handle) = self.file_handle_channel.1.try_recv() {
+                        dbg!(file_handle);
+                        // TODO: actually load the file from the handle.
+                    }
+
                     if ui.button("Open").clicked() {
                         // `Context` is cheap to clone as it's wrapped in an `Arc`.
                         let ctx = ui.ctx().clone();
-                        // NOTE: This requires Zenity to be installed on your system.
+                        // NOTE: On Linux, this requires Zenity to be installed on your system.
+                        let sender = self.file_handle_channel.0.clone();
+                        let task = rfd::AsyncFileDialog::new().pick_file();
 
-                        // Doing this synchronously may not work on WASM. I haven't tested this
-                        // yet, so I'm leaving a commented-out asynchronous version further below.
-                        let maybe_path = rfd::FileDialog::new().pick_file();
+                        execute(async move {
+                            let maybe_file_handle = task.await;
 
-                        if let Some(path) = maybe_path {
-                            self.design = DsnDesign::load_from_file(path.to_str().unwrap()).ok();
-                        }
-
-                        //let task = rfd::AsyncFileDialog::new().pick_file();
-                        /*execute(async move {
-                            let file = task.await;
-                            if let Some(file) = file {
+                            if let Some(file_handle) = maybe_file_handle {
+                                let _ = sender.send(file_handle);
+                                ctx.request_repaint();
+                            }
+                            /*if let Some(file) = file {
                                 let text = file.read().await;
                                 let _ = sender.send(String::from_utf8_lossy(&text).to_string());
                                 ctx.request_repaint();
-                            }
-                        });*/
+                            }*/
+                        });
                     }
 
-                    if ui.button("Quit").clicked() {
-                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    // "Quit" button wouldn't work on a Web page.
+                    if !cfg!(target_arch = "wasm32") {
+                        if ui.button("Quit").clicked() {
+                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                        }
                     }
                 });
                 ui.add_space(16.0);

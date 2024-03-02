@@ -33,9 +33,9 @@ fn main() {
     wasm_bindgen_futures::spawn_local(async {
         eframe::WebRunner::new()
             .start(
-                "the_canvas_id",
+                "topola-egui",
                 web_options,
-                Box::new(|cc| Box::new(TemplateApp::new(cc))),
+                Box::new(|cc| Box::new(App::new(cc))),
             )
             .await
             .expect("failed to start eframe");
