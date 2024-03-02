@@ -1,5 +1,12 @@
+use futures::executor;
+use std::{
+    future::Future,
+    sync::mpsc::{channel, Receiver, Sender},
+};
+
 use topola::{
-    layout::geometry::shape::{BendShape, DotShape, SegShape, Shape},
+    dsn::design::DsnDesign,
+    geometry::shape::{BendShape, DotShape, SegShape, Shape},
     math::Circle,
 };
 
@@ -12,8 +19,10 @@ pub struct App {
     // Example stuff:
     label: String,
 
-    #[serde(skip)] // Don't serialize this field.
-    value: f32,
+    //#[serde(skip)] // Don't serialize this field.
+    //text_channel: (Sender<String>, Receiver<String>),
+    #[serde(skip)]
+    design: Option<DsnDesign>,
 }
 
 impl Default for App {
@@ -21,7 +30,8 @@ impl Default for App {
         Self {
             // Example stuff:
             label: "Hello World!".to_owned(),
-            value: 2.7,
+            //text_channel: channel(),
+            design: None,
         }
     }
 }
@@ -48,15 +58,36 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
-                let is_web = cfg!(target_arch = "wasm32");
-                if !is_web {
-                    ui.menu_button("File", |ui| {
-                        if ui.button("Quit").clicked() {
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                ui.menu_button("File", |ui| {
+                    if ui.button("Open").clicked() {
+                        // `Context` is cheap to clone as it's wrapped in an `Arc`.
+                        let ctx = ui.ctx().clone();
+                        // NOTE: This requires Zenity to be installed on your system.
+
+                        // Doing this synchronously may not work on WASM. I haven't tested this
+                        // yet, so I'm leaving a commented-out asynchronous version further below.
+                        let maybe_path = rfd::FileDialog::new().pick_file();
+
+                        if let Some(path) = maybe_path {
+                            self.design = DsnDesign::load_from_file(path.to_str().unwrap()).ok();
                         }
-                    });
-                    ui.add_space(16.0);
-                }
+
+                        //let task = rfd::AsyncFileDialog::new().pick_file();
+                        /*execute(async move {
+                            let file = task.await;
+                            if let Some(file) = file {
+                                let text = file.read().await;
+                                let _ = sender.send(String::from_utf8_lossy(&text).to_string());
+                                ctx.request_repaint();
+                            }
+                        });*/
+                    }
+
+                    if ui.button("Quit").clicked() {
+                        ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                    }
+                });
+                ui.add_space(16.0);
 
                 egui::widgets::global_dark_light_mode_buttons(ui);
             });
@@ -104,4 +135,14 @@ impl eframe::App for App {
             })
         });
     }
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
+    std::thread::spawn(move || futures::executor::block_on(f));
+}
+
+#[cfg(target_arch = "wasm32")]
+fn execute<F: Future<Output = ()> + 'static>(f: F) {
+    wasm_bindgen_futures::spawn_local(f);
 }

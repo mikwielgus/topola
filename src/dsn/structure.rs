@@ -1,4 +1,4 @@
-use serde::{Deserialize, Deserializer, de::Error};
+use serde::{de::Error, Deserialize, Deserializer};
 
 #[derive(Deserialize, Debug)]
 #[serde(rename = "pcb")]
@@ -251,15 +251,16 @@ pub struct Point {
 }
 
 fn de_points<'de, D>(deserializer: D) -> Result<Vec<Point>, D::Error>
-    where D: Deserializer<'de>
+where
+    D: Deserializer<'de>,
 {
     Vec::<f32>::deserialize(deserializer)?
         .chunks(2)
         .map(|pair| {
             let x = pair[0];
-            let y = *pair.get(1).ok_or(
-                Error::custom("expected paired x y coordinates, list ended at x")
-            )?;
+            let y = *pair.get(1).ok_or(Error::custom(
+                "expected paired x y coordinates, list ended at x",
+            ))?;
 
             Ok(Point { x, y })
         })

@@ -1,6 +1,6 @@
 use egui::{emath::RectTransform, epaint, Color32, Pos2, Ui};
 use geo::Point;
-use topola::layout::geometry::shape::Shape;
+use topola::geometry::shape::Shape;
 
 pub struct Painter<'a> {
     ui: &'a mut egui::Ui,
