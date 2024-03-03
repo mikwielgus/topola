@@ -16,11 +16,10 @@ name = "topola-sdl2-demo"
 required-features = ["sdl2"]
 
 [features]
-egui = ["dep:eframe", "dep:egui"]
+egui = ["dep:eframe", "dep:egui", "dep:rfd", "dep:futures"]
 sdl2 = ["dep:sdl2"]
 
 [dependencies]
-rfd = "0.14.0"
 gl = "0.14.0"
 pathfinder_canvas = { git = "https://github.com/servo/pathfinder" }
 pathfinder_geometry = { git = "https://github.com/servo/pathfinder" }
@@ -35,7 +34,6 @@ petgraph = "0.6.3"
 spade = "2.2.0"
 enum_dispatch = "0.3.12"
 itertools = "0.8.2"
-futures = "0.3.30"
 contracts = "0.6.3"
 log = "0.4"
 
@@ -52,6 +50,14 @@ features = ["accesskit", "default_fonts", "glow", "persistence"]
 [dependencies.egui]
 optional = true
 version = "0.26.0"
+
+[dependencies.rfd]
+optional = true
+version = "0.14.0"
+
+[dependencies.futures]
+optional = true
+version = "0.3.30"
 
 [dependencies.sdl2]
 optional = true
