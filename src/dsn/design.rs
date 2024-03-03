@@ -1,4 +1,7 @@
-use std::collections::HashMap;
+use std::{collections::HashMap, fmt};
+
+use serde::Deserialize;
+use thiserror::Error;
 
 use crate::{
     layout::{dot::FixedDotWeight, seg::FixedSegWeight, Layout},
@@ -6,10 +9,19 @@ use crate::{
 };
 
 use super::{
-    de::{from_str, Error},
+    de::{Deserializer, DsnContext, DsnDeError},
     rules::Rules,
     structure::Pcb,
 };
+
+#[derive(Error, Debug)]
+pub struct DsnError(DsnContext, DsnDeError);
+
+impl fmt::Display for DsnError {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "{0}: {1}", self.0, self.1)
+    }
+}
 
 #[derive(Debug)]
 pub struct DsnDesign {
@@ -18,9 +30,12 @@ pub struct DsnDesign {
 }
 
 impl DsnDesign {
-    pub fn load_from_file(filename: &str) -> Result<Self, Error> {
+    pub fn load_from_file(filename: &str) -> Result<Self, DsnError> {
         let contents = std::fs::read_to_string(filename).unwrap(); // TODO: remove unwrap.
-        let pcb = from_str::<Pcb>(&contents)?;
+                                                                   //let pcb = from_str::<Pcb>(&contents).map_err(|err| DsnError())?;
+        let mut deserializer = Deserializer::from_str(&contents);
+        let pcb = Pcb::deserialize(&mut deserializer)
+            .map_err(|err| DsnError(deserializer.context, err))?;
 
         let rules = Rules::from_pcb(&pcb);
 

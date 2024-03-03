@@ -1,11 +1,13 @@
+use std::fmt;
+
 use serde::de::{self, DeserializeSeed, SeqAccess, Visitor};
 use serde::Deserialize;
 use thiserror::Error;
 
-type Result<T> = std::result::Result<T, Error>;
+type Result<T> = std::result::Result<T, DsnDeError>;
 
 #[derive(Error, Debug)]
-pub enum Error {
+pub enum DsnDeError {
     #[error("{0}")]
     Message(String),
     #[error("unexpected EOF")]
@@ -22,20 +24,31 @@ pub enum Error {
     ExpectedOpeningParen,
     #[error("expected closing parenthesis")]
     ExpectedClosingParen,
-    #[error("wrong struct, expected {0}")]
-    ExpectedStruct(&'static str),
+    #[error("wrong keyword: expected {0}, got {1}")]
+    WrongKeyword(&'static str, String),
 }
 
-impl de::Error for Error {
+impl de::Error for DsnDeError {
     fn custom<T: std::fmt::Display>(msg: T) -> Self {
-        Error::Message(msg.to_string())
+        DsnDeError::Message(msg.to_string())
     }
 }
 
-struct Deserializer<'de> {
-    input: &'de str,
+#[derive(Debug)]
+pub struct DsnContext {
     line: usize,
     column: usize,
+}
+
+impl fmt::Display for DsnContext {
+    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
+        write!(f, "line {0}, column {1}", self.line, self.column)
+    }
+}
+
+pub struct Deserializer<'de> {
+    input: &'de str,
+    pub context: DsnContext,
 
     string_quote: Option<char>,
     space_in_quoted_tokens: bool,
@@ -52,11 +65,10 @@ enum ReconfigIncoming {
 }
 
 impl<'de> Deserializer<'de> {
-    fn from_str(input: &'de str) -> Self {
+    pub fn from_str(input: &'de str) -> Self {
         Self {
             input,
-            line: 0,
-            column: 0,
+            context: DsnContext { line: 0, column: 0 },
 
             string_quote: None,
             space_in_quoted_tokens: false,
@@ -80,17 +92,17 @@ impl<'de> Deserializer<'de> {
     }
 
     fn peek(&mut self) -> Result<char> {
-        self.input.chars().next().ok_or(Error::Eof)
+        self.input.chars().next().ok_or(DsnDeError::Eof)
     }
 
     fn next(&mut self) -> Result<char> {
         let chr = self.peek()?;
         self.input = &self.input[1..];
         if chr == '\n' {
-            self.line += 1;
-            self.column = 0;
+            self.context.line += 1;
+            self.context.column = 0;
         } else {
-            self.column += 1;
+            self.context.column += 1;
         }
         Ok(chr)
     }
@@ -111,9 +123,9 @@ impl<'de> Deserializer<'de> {
             Ok(string) => match string.as_str() {
                 "on" => Ok(true),
                 "off" => Ok(false),
-                _ => Err(Error::ExpectedBool),
+                _ => Err(DsnDeError::ExpectedBool),
             },
-            Err(_) => Err(Error::ExpectedBool),
+            Err(_) => Err(DsnDeError::ExpectedBool),
         }
     }
 
@@ -140,8 +152,7 @@ impl<'de> Deserializer<'de> {
                 if string.len() > 0 {
                     return Ok(string);
                 } else {
-                    //dbg!(self.line, self.column);
-                    return Err(Error::ExpectedUnquoted);
+                    return Err(DsnDeError::ExpectedUnquoted);
                 }
             }
         }
@@ -160,7 +171,7 @@ impl<'de> Deserializer<'de> {
             // but there's no reason we shouldn't try to parse the file anyway, no ambiguity arises
             // maybe this should log a warning and proceed?
             if self.space_in_quoted_tokens != true && chr == ' ' {
-                return Err(Error::SpaceInQuoted);
+                return Err(DsnDeError::SpaceInQuoted);
             }
 
             if Some(chr) == self.string_quote {
@@ -173,7 +184,7 @@ impl<'de> Deserializer<'de> {
     }
 }
 
-pub fn from_str<'a, T>(input: &'a str) -> Result<T>
+/*pub fn from_str<'a, T>(input: &'a str) -> Result<T>
 where
     T: Deserialize<'a>,
 {
@@ -184,10 +195,10 @@ where
         dbg!(deserializer.input);
     }*/
     Ok(t)
-}
+}*/
 
 impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
-    type Error = Error;
+    type Error = DsnDeError;
 
     fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value>
     where
@@ -359,17 +370,19 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         if self.next()? != '(' {
-            return Err(Error::ExpectedOpeningParen);
+            return Err(DsnDeError::ExpectedOpeningParen);
         }
         self.skip_ws();
 
-        if &self.parse_identifier()? != name {
-            return Err(Error::ExpectedStruct(name));
+        let parsed_keyword = self.parse_identifier()?;
+
+        if parsed_keyword != name {
+            return Err(DsnDeError::WrongKeyword(name, parsed_keyword));
         }
         self.skip_ws();
 
         if self.next()? != ')' {
-            return Err(Error::ExpectedClosingParen);
+            return Err(DsnDeError::ExpectedClosingParen);
         }
         self.skip_ws();
 
@@ -383,12 +396,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         if self.next()? != '(' {
-            return Err(Error::ExpectedOpeningParen);
+            return Err(DsnDeError::ExpectedOpeningParen);
         }
         self.skip_ws();
 
-        if &self.parse_identifier()? != name {
-            return Err(Error::ExpectedStruct(name));
+        let parsed_keyword = self.parse_identifier()?;
+
+        if parsed_keyword != name {
+            return Err(DsnDeError::WrongKeyword(name, parsed_keyword));
         }
         self.skip_ws();
 
@@ -404,7 +419,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         let value = visitor.visit_seq(NewtypeStructFields::new(self))?;
 
         if self.next()? != ')' {
-            return Err(Error::ExpectedClosingParen);
+            return Err(DsnDeError::ExpectedClosingParen);
         }
         self.skip_ws();
 
@@ -457,19 +472,21 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         if self.next()? != '(' {
-            return Err(Error::ExpectedOpeningParen);
+            return Err(DsnDeError::ExpectedOpeningParen);
         }
         self.skip_ws();
 
-        if &self.parse_identifier()? != name {
-            return Err(Error::ExpectedStruct(name));
+        let parsed_keyword = self.parse_identifier()?;
+
+        if parsed_keyword != name {
+            return Err(DsnDeError::WrongKeyword(name, parsed_keyword));
         }
         self.skip_ws();
 
         let value = visitor.visit_seq(StructFields::new(self, fields))?;
 
         if self.next()? != ')' {
-            return Err(Error::ExpectedClosingParen);
+            return Err(DsnDeError::ExpectedClosingParen);
         }
         self.skip_ws();
 
@@ -517,7 +534,7 @@ impl<'a, 'de> NewtypeStructFields<'a, 'de> {
 }
 
 impl<'de, 'a> SeqAccess<'de> for NewtypeStructFields<'a, 'de> {
-    type Error = Error;
+    type Error = DsnDeError;
 
     fn next_element_seed<S>(&mut self, seed: S) -> Result<Option<S::Value>>
     where
@@ -542,7 +559,7 @@ impl<'a, 'de> ArrayIndices<'a, 'de> {
 }
 
 impl<'de, 'a> SeqAccess<'de> for ArrayIndices<'a, 'de> {
-    type Error = Error;
+    type Error = DsnDeError;
 
     fn next_element_seed<S>(&mut self, seed: S) -> Result<Option<S::Value>>
     where
@@ -584,7 +601,7 @@ impl<'a, 'de> StructFields<'a, 'de> {
 }
 
 impl<'de, 'a> SeqAccess<'de> for StructFields<'a, 'de> {
-    type Error = Error;
+    type Error = DsnDeError;
 
     fn next_element_seed<S>(&mut self, seed: S) -> Result<Option<S::Value>>
     where
