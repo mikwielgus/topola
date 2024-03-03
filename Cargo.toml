@@ -17,15 +17,9 @@ required-features = ["sdl2"]
 
 [features]
 egui = ["dep:eframe", "dep:egui", "dep:rfd", "dep:futures"]
-sdl2 = ["dep:sdl2"]
+sdl2 = ["dep:sdl2", "dep:gl", "dep:pathfinder_canvas", "dep:pathfinder_geometry", "dep:pathfinder_gl", "dep:pathfinder_renderer", "dep:pathfinder_resources"]
 
 [dependencies]
-gl = "0.14.0"
-pathfinder_canvas = { git = "https://github.com/servo/pathfinder" }
-pathfinder_geometry = { git = "https://github.com/servo/pathfinder" }
-pathfinder_gl = { git = "https://github.com/servo/pathfinder" }
-pathfinder_renderer = { git = "https://github.com/servo/pathfinder" }
-pathfinder_resources = { git = "https://github.com/servo/pathfinder" }
 thiserror = "1.0.56"
 anyhow = "1.0.79"
 geo = "0.25.1"
@@ -64,6 +58,30 @@ optional = true
 version = "0.35.2"
 default-features = false
 features = ["bundled"]
+
+[dependencies.gl]
+optional = true
+version = "0.14.0"
+
+[dependencies.pathfinder_canvas]
+optional = true
+git = "https://github.com/servo/pathfinder"
+
+[dependencies.pathfinder_geometry]
+optional = true
+git = "https://github.com/servo/pathfinder"
+
+[dependencies.pathfinder_gl]
+optional = true
+git = "https://github.com/servo/pathfinder"
+
+[dependencies.pathfinder_renderer]
+optional = true
+git = "https://github.com/servo/pathfinder"
+
+[dependencies.pathfinder_resources]
+optional = true
+git = "https://github.com/servo/pathfinder"
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 env_logger = "0.10"
