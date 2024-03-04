@@ -55,7 +55,7 @@ pub struct Unit(pub String);
 pub struct Structure {
     pub layers: Vec<Layer>,
     pub boundary: Boundary,
-    pub plane: Option<Plane>,
+    pub plane: Vec<Plane>,
     pub vias: Vias,
     pub rule: Rule,
 }
