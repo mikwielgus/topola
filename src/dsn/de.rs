@@ -68,7 +68,7 @@ impl<'de> Deserializer<'de> {
     pub fn from_str(input: &'de str) -> Self {
         Self {
             input,
-            context: DsnContext { line: 0, column: 0 },
+            context: DsnContext { line: 1, column: 0 },
 
             string_quote: None,
             space_in_quoted_tokens: false,
