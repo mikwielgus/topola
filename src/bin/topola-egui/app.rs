@@ -111,8 +111,24 @@ impl eframe::App for App {
                 let desired_size = ui.available_width() * egui::vec2(1.0, 0.5);
                 let (_id, viewport_rect) = ui.allocate_space(desired_size);
 
-                self.from_rect = self.from_rect.translate(ctx.input(|i| -i.raw_scroll_delta));
+                let old_transform =
+                    egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
+                let latest_pos = old_transform
+                    .inverse()
+                    .transform_pos(ctx.input(|i| i.pointer.latest_pos().unwrap_or_default()));
+
+                let old_scale = old_transform.scale().x;
                 self.from_rect = self.from_rect / ctx.input(|i| i.zoom_delta());
+
+                let new_scale = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect)
+                    .scale()
+                    .x;
+
+                self.from_rect = self.from_rect.translate(
+                    ctx.input(|i| latest_pos.to_vec2() * (new_scale - old_scale) / new_scale),
+                );
+
+                self.from_rect = self.from_rect.translate(ctx.input(|i| -i.raw_scroll_delta));
 
                 let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
                 let mut painter = Painter::new(ui, transform);
