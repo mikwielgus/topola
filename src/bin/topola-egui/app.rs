@@ -24,6 +24,9 @@ pub struct App {
 
     #[serde(skip)]
     design: Option<DsnDesign>,
+
+    #[serde(skip)]
+    zoom_factor: f32,
 }
 
 impl Default for App {
@@ -33,6 +36,7 @@ impl Default for App {
             label: "Hello World!".to_owned(),
             file_handle_channel: channel(),
             design: None,
+            zoom_factor: 1.0,
         }
     }
 }
@@ -107,8 +111,10 @@ impl eframe::App for App {
                 let desired_size = ui.available_width() * egui::vec2(1.0, 0.5);
                 let (_id, viewport_rect) = ui.allocate_space(desired_size);
 
+                self.zoom_factor = self.zoom_factor * ctx.input(|i| i.zoom_delta());
+
                 let transform = egui::emath::RectTransform::from_to(
-                    egui::Rect::from_x_y_ranges(0.0..=1000.0, 0.0..=500.0),
+                    egui::Rect::from_x_y_ranges(0.0..=1000.0, 0.0..=500.0) / self.zoom_factor,
                     viewport_rect,
                 );
                 let mut painter = Painter::new(ui, transform);
@@ -116,14 +122,14 @@ impl eframe::App for App {
                 let dot_shape = Shape::Dot(DotShape {
                     c: Circle {
                         pos: [50.0, 100.0].into(),
-                        r: 10.0,
+                        r: 10.0 * self.zoom_factor as f64,
                     },
                 });
 
                 let seg_shape = Shape::Seg(SegShape {
                     from: [200.0, 25.0].into(),
                     to: [300.0, 300.0].into(),
-                    width: 5.0,
+                    width: 5.0 * self.zoom_factor as f64,
                 });
 
                 let bend_shape = Shape::Bend(BendShape {
@@ -133,7 +139,7 @@ impl eframe::App for App {
                         pos: [130.0, 130.0].into(),
                         r: 30.0,
                     },
-                    width: 12.0,
+                    width: 12.0 * self.zoom_factor as f64,
                 });
 
                 painter.paint_shape(&dot_shape, egui::Color32::from_rgb(255, 0, 0));
@@ -141,6 +147,10 @@ impl eframe::App for App {
                 painter.paint_shape(&bend_shape, egui::Color32::from_rgb(255, 255, 0));
             })
         });
+
+        if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+        }
     }
 }
 
