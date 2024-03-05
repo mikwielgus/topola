@@ -17,7 +17,7 @@ impl<'a> Painter<'a> {
             Shape::Dot(dot) => epaint::Shape::circle_filled(
                 self.transform
                     .transform_pos([dot.c.pos.x() as f32, dot.c.pos.y() as f32].into()),
-                dot.c.r as f32,
+                dot.c.r as f32 * self.transform.scale().x,
                 color,
             ),
             Shape::Seg(seg) => epaint::Shape::line_segment(
@@ -27,7 +27,7 @@ impl<'a> Painter<'a> {
                     self.transform
                         .transform_pos([seg.to.x() as f32, seg.to.y() as f32].into()),
                 ],
-                egui::Stroke::new(seg.width as f32, color),
+                egui::Stroke::new(seg.width as f32 * self.transform.scale().x, color),
             ),
             Shape::Bend(bend) => {
                 let delta_from = bend.from - bend.c.pos;
@@ -45,7 +45,10 @@ impl<'a> Painter<'a> {
                     points.push(self.transform.transform_pos([x as f32, y as f32].into()));
                 }
 
-                epaint::Shape::line(points, egui::Stroke::new(bend.width as f32, color))
+                epaint::Shape::line(
+                    points,
+                    egui::Stroke::new(bend.width as f32 * self.transform.scale().x, color),
+                )
             }
         };
 
