@@ -89,10 +89,10 @@ impl DsnDesign {
                         Shape::Circle(circle) => {
                             let circle = Circle {
                                 pos: (
-                                    (place.x + pin.x) as f64 / 100.0,
-                                    -(place.y + pin.y) as f64 / 100.0
+                                    (place.x + pin.x) as f64,
+                                    -(place.y + pin.y) as f64
                                 ).into(),
-                                r: circle.diameter as f64 / 200.0,
+                                r: circle.diameter as f64 / 2.0,
                             };
 
                             layout
@@ -136,8 +136,8 @@ impl DsnDesign {
                     Shape::Polygon(_) => todo!(),
                 };
                 let circle = Circle {
-                    pos: (via.x as f64 / 100.0, -via.y as f64 / 100.0).into(),
-                    r: circle.diameter as f64 / 200.0,
+                    pos: (via.x as f64, -via.y as f64).into(),
+                    r: circle.diameter as f64 / 2.0,
                 };
 
                 layout
@@ -158,11 +158,11 @@ impl DsnDesign {
                     net: *net_id as i64,
                     circle: Circle {
                         pos: (
-                            wire.path.coord_vec[0].x as f64 / 100.0,
-                            -wire.path.coord_vec[0].y as f64 / 100.0,
+                            wire.path.coord_vec[0].x as f64,
+                            -wire.path.coord_vec[0].y as f64,
                         )
                             .into(),
-                        r: wire.path.width as f64 / 200.0,
+                        r: wire.path.width as f64 / 2.0,
                     },
                 })
                 .unwrap();
@@ -173,8 +173,8 @@ impl DsnDesign {
                     .add_fixed_dot(FixedDotWeight {
                         net: *net_id as i64,
                         circle: Circle {
-                            pos: (coord.x as f64 / 100.0, -coord.y as f64 / 100.0).into(),
-                            r: wire.path.width as f64 / 200.0,
+                            pos: (coord.x as f64, -coord.y as f64).into(),
+                            r: wire.path.width as f64 / 2.0,
                         },
                     })
                     .unwrap();
@@ -186,7 +186,7 @@ impl DsnDesign {
                         index,
                         FixedSegWeight {
                             net: *net_id as i64,
-                            width: wire.path.width as f64 / 100.0,
+                            width: wire.path.width as f64,
                         },
                     )
                     .unwrap();

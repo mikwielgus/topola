@@ -258,7 +258,7 @@ fn main() -> Result<(), anyhow::Error> {
     let board = Board::new(layout);
     let mut router = Router::new(board);
 
-    let mut view = View { pan: vec2f(-400.0, -300.0), zoom: 0.5 };
+    let mut view = View { pan: vec2f(-80000.0, -60000.0), zoom: 0.005 };
 
     render_times(
         &mut event_pump,
