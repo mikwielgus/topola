@@ -85,23 +85,24 @@ impl DsnDesign {
                         .unwrap();
 
                     // no layer support yet, pick the first one
-                    let circle = match &padstack.shape_vec[0] {
-                        Shape::Circle(circle) => circle,
-                        Shape::Rect(_) => todo!(),
-                        Shape::Path(_) => todo!(),
-                        Shape::Polygon(_) => todo!(),
-                    };
-                    let circle = Circle {
-                        pos: (place.x as f64 / 100.0, -place.y as f64 / 100.0).into(),
-                        r: circle.diameter as f64 / 200.0,
-                    };
+                    match &padstack.shape_vec[0] {
+                        Shape::Circle(circle) => {
+                            let circle = Circle {
+                                pos: (place.x as f64 / 100.0, -place.y as f64 / 100.0).into(),
+                                r: circle.diameter as f64 / 200.0,
+                            };
 
-                    layout
-                        .add_fixed_dot(FixedDotWeight {
-                            net: *net_id as i64,
-                            circle,
-                        })
-                        .unwrap();
+                            layout
+                                .add_fixed_dot(FixedDotWeight {
+                                    net: *net_id as i64,
+                                    circle,
+                                })
+                                .unwrap();
+                        }
+                        Shape::Rect(_) => (),
+                        Shape::Path(_) => (),
+                        Shape::Polygon(_) => (),
+                    };
                 }
             }
         }
