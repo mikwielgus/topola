@@ -251,8 +251,8 @@ fn main() -> Result<(), anyhow::Error> {
         ]),
     }));*/
 
-    //let design = DsnDesign::load_from_file("tests/data/prerouted_lm317_breakout/prerouted_lm317_breakout.dsn")?;
-    let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
+    let design = DsnDesign::load_from_file("tests/data/prerouted_lm317_breakout/prerouted_lm317_breakout.dsn")?;
+    //let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
     //dbg!(&design);
     let layout = design.make_layout();
     let board = Board::new(layout);
