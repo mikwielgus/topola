@@ -31,10 +31,8 @@ use sdl2::keyboard::Keycode;
 use sdl2::video::{GLProfile, Window};
 use sdl2::EventPump;
 
-use pathfinder_canvas::{ArcDirection, CanvasRenderingContext2D, ColorU, FillRule};
-use pathfinder_canvas::{Canvas, CanvasFontContext, Path2D};
-use pathfinder_geometry::rect::RectF;
-use pathfinder_geometry::vector::{vec2f, vec2i};
+use pathfinder_canvas::{Canvas, CanvasFontContext, ColorU};
+use pathfinder_geometry::vector::{vec2f, vec2i, Vector2F};
 use pathfinder_gl::{GLDevice, GLVersion};
 use pathfinder_renderer::concurrent::rayon::RayonExecutor;
 use pathfinder_renderer::concurrent::scene_proxy::SceneProxy;
@@ -102,6 +100,7 @@ struct DebugRouterObserver<'a> {
     window: &'a Window,
     renderer: &'a mut Renderer<GLDevice>,
     font_context: &'a CanvasFontContext,
+    view: &'a mut View,
 }
 
 impl<'a> DebugRouterObserver<'a> {
@@ -110,12 +109,14 @@ impl<'a> DebugRouterObserver<'a> {
         window: &'a Window,
         renderer: &'a mut Renderer<GLDevice>,
         font_context: &'a CanvasFontContext,
+        view: &'a mut View,
     ) -> Self {
         Self {
             event_pump,
             window,
             renderer,
             font_context,
+            view,
         }
     }
 }
@@ -127,6 +128,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.window,
             self.renderer,
             self.font_context,
+            self.view,
             RouterOrLayout::Layout(tracer.board.layout()),
             None,
             Some(tracer.mesh.clone()),
@@ -145,6 +147,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.window,
             self.renderer,
             self.font_context,
+            self.view,
             RouterOrLayout::Layout(tracer.board.layout()),
             None,
             Some(tracer.mesh.clone()),
@@ -176,6 +179,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.window,
             self.renderer,
             self.font_context,
+            self.view,
             RouterOrLayout::Layout(tracer.board.layout()),
             None,
             Some(tracer.mesh.clone()),
@@ -254,11 +258,14 @@ fn main() -> Result<(), anyhow::Error> {
     let board = Board::new(layout);
     let mut router = Router::new(board);
 
+    let mut view = View { pan: vec2f(-400.0, -300.0), zoom: 0.5 };
+
     render_times(
         &mut event_pump,
         &window,
         &mut renderer,
         &font_context,
+        &mut view,
         RouterOrLayout::Layout(router.board.layout()),
         None,
         None,
@@ -282,6 +289,7 @@ fn main() -> Result<(), anyhow::Error> {
         &window,
         &mut renderer,
         &font_context,
+        &mut view,
         RouterOrLayout::Layout(router.board.layout()),
         None,
         None,
@@ -294,11 +302,17 @@ fn main() -> Result<(), anyhow::Error> {
     Ok(())
 }
 
+struct View {
+    pan: Vector2F,
+    zoom: f32,
+}
+
 fn render_times(
     event_pump: &mut EventPump,
     window: &Window,
     renderer: &mut Renderer<GLDevice>,
     font_context: &CanvasFontContext,
+    view: &mut View,
     mut router_or_layout: RouterOrLayout<impl RulesTrait>,
     maybe_band: Option<BandIndex>,
     mut maybe_mesh: Option<Mesh>,
@@ -317,6 +331,14 @@ fn render_times(
                     keycode: Some(Keycode::Escape),
                     ..
                 } => break 'running,
+                Event::MouseWheel { y, .. } => {
+                    view.zoom *= f32::powf(1.4, y as f32);
+                },
+                Event::MouseMotion { xrel, yrel, mousestate, .. } => {
+                    if mousestate.left() {
+                        view.pan += vec2f(xrel as f32, yrel as f32) / view.zoom;
+                    }
+                },
                 _ => {}
             }
         }
@@ -326,6 +348,12 @@ fn render_times(
         let window_size = window.size();
         let mut canvas = Canvas::new(vec2f(window_size.0 as f32, window_size.1 as f32))
             .get_context_2d(font_context.clone());
+
+        let center = vec2f(400.0, 300.0);
+        canvas.translate(center);
+        canvas.scale(vec2f(view.zoom, view.zoom));
+        canvas.translate(-center + view.pan);
+
         let mut painter = Painter::new(&mut canvas);
 
         let layout = match router_or_layout {
@@ -343,6 +371,7 @@ fn render_times(
                                 window,
                                 renderer,
                                 font_context,
+                                view,
                             ),
                         )
                         .ok();
