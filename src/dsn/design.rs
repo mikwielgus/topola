@@ -1,6 +1,5 @@
-use std::{collections::HashMap, fmt};
+use std::collections::HashMap;
 
-use serde::Deserialize;
 use thiserror::Error;
 
 use crate::{
@@ -9,18 +8,17 @@ use crate::{
 };
 
 use super::{
-    de::{Deserializer, DsnContext, DsnDeError},
+    de,
     rules::Rules,
     structure::{DsnFile, Pcb, Shape},
 };
 
 #[derive(Error, Debug)]
-pub struct DsnError(DsnContext, DsnDeError);
-
-impl fmt::Display for DsnError {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(f, "{0}: {1}", self.0, self.1)
-    }
+pub enum LoadingError {
+    #[error(transparent)]
+    Io(#[from] std::io::Error),
+    #[error(transparent)]
+    Syntax(#[from] de::SyntaxError),
 }
 
 #[derive(Debug)]
@@ -30,12 +28,11 @@ pub struct DsnDesign {
 }
 
 impl DsnDesign {
-    pub fn load_from_file(filename: &str) -> Result<Self, DsnError> {
-        let contents = std::fs::read_to_string(filename).unwrap(); // TODO: remove unwrap.
-                                                                   //let pcb = from_str::<Pcb>(&contents).map_err(|err| DsnError())?;
-        let mut deserializer = Deserializer::from_str(&contents);
-        let pcb = DsnFile::deserialize(&mut deserializer)
-            .map_err(|err| DsnError(deserializer.context, err))?.pcb;
+    pub fn load_from_file(filename: &str) -> Result<Self, LoadingError> {
+        let contents = std::fs::read_to_string(filename)?;
+        let pcb = de::from_str::<DsnFile>(&contents)
+            .map_err(|err| LoadingError::Syntax(err))?
+            .pcb;
 
         let rules = Rules::from_pcb(&pcb);
 

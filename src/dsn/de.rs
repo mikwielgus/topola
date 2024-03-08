@@ -4,12 +4,12 @@ use serde::de::{self, DeserializeSeed, SeqAccess, EnumAccess, VariantAccess, Vis
 use serde::Deserialize;
 use thiserror::Error;
 
-type Result<T> = std::result::Result<T, DsnDeError>;
+type Result<T> = std::result::Result<T, DeError>;
 
 #[derive(Error, Debug)]
-pub enum DsnDeError {
+pub enum DeError {
     #[error("{0}")]
-    Message(String),
+    Custom(String),
     #[error("unexpected EOF")]
     Eof,
     #[error("expected boolean value")]
@@ -30,19 +30,23 @@ pub enum DsnDeError {
     WrongKeyword(&'static str, String),
 }
 
-impl de::Error for DsnDeError {
+impl de::Error for DeError {
     fn custom<T: std::fmt::Display>(msg: T) -> Self {
-        DsnDeError::Message(msg.to_string())
+        DeError::Custom(msg.to_string())
     }
 }
 
+#[derive(Error, Debug)]
+#[error("syntax error at {0}: {1}")]
+pub struct SyntaxError(pub Context, pub DeError);
+
 #[derive(Debug)]
-pub struct DsnContext {
+pub struct Context {
     line: usize,
     column: usize,
 }
 
-impl fmt::Display for DsnContext {
+impl fmt::Display for Context {
     fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
         write!(f, "line {0}, column {1}", self.line, self.column)
     }
@@ -50,7 +54,7 @@ impl fmt::Display for DsnContext {
 
 pub struct Deserializer<'de> {
     input: &'de str,
-    pub context: DsnContext,
+    context: Context,
 
     string_quote: Option<char>,
     space_in_quoted_tokens: bool,
@@ -67,10 +71,10 @@ enum ReconfigIncoming {
 }
 
 impl<'de> Deserializer<'de> {
-    pub fn from_str(input: &'de str) -> Self {
+    fn from_str(input: &'de str) -> Self {
         Self {
             input,
-            context: DsnContext { line: 1, column: 0 },
+            context: Context { line: 1, column: 0 },
 
             string_quote: None,
             space_in_quoted_tokens: false,
@@ -94,7 +98,7 @@ impl<'de> Deserializer<'de> {
     }
 
     fn peek(&mut self) -> Result<char> {
-        self.input.chars().next().ok_or(DsnDeError::Eof)
+        self.input.chars().next().ok_or(DeError::Eof)
     }
 
     fn next(&mut self) -> Result<char> {
@@ -125,9 +129,9 @@ impl<'de> Deserializer<'de> {
             Ok(string) => match string.as_str() {
                 "on" => Ok(true),
                 "off" => Ok(false),
-                _ => Err(DsnDeError::ExpectedBool),
+                _ => Err(DeError::ExpectedBool),
             },
-            Err(_) => Err(DsnDeError::ExpectedBool),
+            Err(_) => Err(DeError::ExpectedBool),
         }
     }
 
@@ -156,7 +160,7 @@ impl<'de> Deserializer<'de> {
                 if string.len() > 0 {
                     return Ok(string);
                 } else {
-                    return Err(DsnDeError::ExpectedUnquoted);
+                    return Err(DeError::ExpectedUnquoted);
                 }
             }
         }
@@ -175,7 +179,7 @@ impl<'de> Deserializer<'de> {
             // but there's no reason we shouldn't try to parse the file anyway, no ambiguity arises
             // maybe this should log a warning and proceed?
             if self.space_in_quoted_tokens != true && chr == ' ' {
-                return Err(DsnDeError::SpaceInQuoted);
+                return Err(DeError::SpaceInQuoted);
             }
 
             if Some(chr) == self.string_quote {
@@ -188,21 +192,18 @@ impl<'de> Deserializer<'de> {
     }
 }
 
-pub fn from_str<'a, T>(input: &'a str) -> Result<T>
+pub fn from_str<'a, T>(input: &'a str) -> std::result::Result<T, SyntaxError>
 where
     T: Deserialize<'a>,
 {
     let mut deserializer = Deserializer::from_str(input);
-    let t = T::deserialize(&mut deserializer)?;
-    /*if !deserializer.input.is_empty() {
-        println!("remaining input");
-        dbg!(deserializer.input);
-    }*/
-    Ok(t)
+    let value = T::deserialize(&mut deserializer);
+    deserializer.skip_ws();
+    value.map_err(|err| SyntaxError(deserializer.context, err))
 }
 
 impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
-    type Error = DsnDeError;
+    type Error = DeError;
 
     fn deserialize_any<V>(self, _visitor: V) -> Result<V::Value>
     where
@@ -442,14 +443,14 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     {
         self.skip_ws();
         if self.next()? != '(' {
-            return Err(DsnDeError::ExpectedOpeningParen("an enum variant"));
+            return Err(DeError::ExpectedOpeningParen("an enum variant"));
         }
 
         let value = visitor.visit_enum(Enum::new(self))?;
 
         self.skip_ws();
         if self.next()? != ')' {
-            return Err(DsnDeError::ExpectedClosingParen(name));
+            return Err(DeError::ExpectedClosingParen(name));
         }
 
         Ok(value)
@@ -460,7 +461,7 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         self.skip_ws();
-        visitor.visit_string(self.parse_string().map_err(|err| DsnDeError::ExpectedKeyword)?)
+        visitor.visit_string(self.parse_string().map_err(|err| DeError::ExpectedKeyword)?)
     }
 
     fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value>
@@ -482,7 +483,7 @@ impl<'a, 'de> Enum<'a, 'de> {
 }
 
 impl<'de, 'a> EnumAccess<'de> for Enum<'a, 'de> {
-    type Error = DsnDeError;
+    type Error = DeError;
     type Variant = Self;
 
     fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant)>
@@ -494,7 +495,7 @@ impl<'de, 'a> EnumAccess<'de> for Enum<'a, 'de> {
 }
 
 impl<'de, 'a> VariantAccess<'de> for Enum<'a, 'de> {
-    type Error = DsnDeError;
+    type Error = DeError;
 
     fn unit_variant(self) -> Result<()> {
         todo!();
@@ -538,7 +539,7 @@ impl<'a, 'de> ArrayIndices<'a, 'de> {
 }
 
 impl<'de, 'a> SeqAccess<'de> for ArrayIndices<'a, 'de> {
-    type Error = DsnDeError;
+    type Error = DeError;
 
     fn next_element_seed<S>(&mut self, seed: S) -> Result<Option<S::Value>>
     where
@@ -554,7 +555,7 @@ impl<'de, 'a> SeqAccess<'de> for ArrayIndices<'a, 'de> {
             seed.deserialize(&mut *self.de).map(Some)
         } else {
             let lookahead = self.de.keyword_lookahead().ok_or(
-                DsnDeError::ExpectedOpeningParen(self.elem_type)
+                DeError::ExpectedOpeningParen(self.elem_type)
             )?;
             if lookahead == self.elem_type {
                 // cannot fail, consuming the lookahead
@@ -565,7 +566,7 @@ impl<'de, 'a> SeqAccess<'de> for ArrayIndices<'a, 'de> {
 
                 self.de.skip_ws();
                 if self.de.next()? != ')' {
-                    Err(DsnDeError::ExpectedClosingParen(self.elem_type))
+                    Err(DeError::ExpectedClosingParen(self.elem_type))
                 } else {
                     Ok(Some(value))
                 }
@@ -593,7 +594,7 @@ impl<'a, 'de> StructFields<'a, 'de> {
 }
 
 impl<'de, 'a> SeqAccess<'de> for StructFields<'a, 'de> {
-    type Error = DsnDeError;
+    type Error = DeError;
 
     fn next_element_seed<S>(&mut self, seed: S) -> Result<Option<S::Value>>
     where
@@ -631,12 +632,12 @@ impl<'de, 'a> SeqAccess<'de> for StructFields<'a, 'de> {
 
                     self.de.skip_ws();
                     if self.de.next()? != ')' {
-                        Err(DsnDeError::ExpectedClosingParen(field_name))
+                        Err(DeError::ExpectedClosingParen(field_name))
                     } else {
                         Ok(Some(value))
                     }
                 } else {
-                    Err(DsnDeError::WrongKeyword(field_name, parsed_keyword))
+                    Err(DeError::WrongKeyword(field_name, parsed_keyword))
                 }
             }
         };
