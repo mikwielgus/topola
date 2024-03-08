@@ -88,7 +88,10 @@ impl DsnDesign {
                     match &padstack.shape_vec[0] {
                         Shape::Circle(circle) => {
                             let circle = Circle {
-                                pos: (place.x as f64 / 100.0, -place.y as f64 / 100.0).into(),
+                                pos: (
+                                    (place.x + pin.x) as f64 / 100.0,
+                                    -(place.y + pin.y) as f64 / 100.0
+                                ).into(),
                                 r: circle.diameter as f64 / 200.0,
                             };
 
