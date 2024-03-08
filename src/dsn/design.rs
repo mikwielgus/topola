@@ -11,7 +11,7 @@ use crate::{
 use super::{
     de::{Deserializer, DsnContext, DsnDeError},
     rules::Rules,
-    structure::Pcb,
+    structure::{DsnFile, Pcb, Shape},
 };
 
 #[derive(Error, Debug)]
@@ -34,8 +34,8 @@ impl DsnDesign {
         let contents = std::fs::read_to_string(filename).unwrap(); // TODO: remove unwrap.
                                                                    //let pcb = from_str::<Pcb>(&contents).map_err(|err| DsnError())?;
         let mut deserializer = Deserializer::from_str(&contents);
-        let pcb = Pcb::deserialize(&mut deserializer)
-            .map_err(|err| DsnError(deserializer.context, err))?;
+        let pcb = DsnFile::deserialize(&mut deserializer)
+            .map_err(|err| DsnError(deserializer.context, err))?.pcb;
 
         let rules = Rules::from_pcb(&pcb);
 
@@ -46,50 +46,51 @@ impl DsnDesign {
         let mut layout = Layout::new(&self.rules);
 
         // mapping of pin id -> net id prepared for adding pins
-        let pin_nets = if let Some(nets) = self.pcb.network.nets.as_ref() {
-            HashMap::<String, i64>::from_iter(
-                nets.iter()
-                    .map(|net| {
-                        // resolve the id so we don't work with strings
-                        let net_id = self.rules.net_ids.get(&net.name).unwrap();
+        let pin_nets = HashMap::<String, i64>::from_iter(
+            self.pcb.network.net_vec
+                .iter()
+                .map(|net| {
+                    // resolve the id so we don't work with strings
+                    let net_id = self.rules.net_ids.get(&net.name).unwrap();
 
-                        // take the list of pins
-                        // and for each pin id output (pin id, net id)
-                        net.pins.ids.iter().map(|id| (id.clone(), *net_id))
-                    })
-                    // flatten the nested iters into a single stream of tuples
-                    .flatten(),
-            )
-        } else {
-            HashMap::<String, i64>::new()
-        };
+                    // take the list of pins
+                    // and for each pin id output (pin id, net id)
+                    net.pins.names.iter().map(|id| (id.clone(), *net_id))
+                })
+                // flatten the nested iters into a single stream of tuples
+                .flatten(),
+        );
 
         // add pins from components
-        //self.pcb.placement.components.iter().map(|component| {
-        for component in &self.pcb.placement.components {
-            for place in &component.places {
+        for component in &self.pcb.placement.component_vec {
+            for place in &component.place_vec {
                 let image = self
                     .pcb
                     .library
-                    .images
+                    .image_vec
                     .iter()
                     .find(|image| image.name == component.name)
                     .unwrap();
 
-                for pin in &image.pins {
+                for pin in &image.pin_vec {
                     let pin_name = format!("{}-{}", place.name, pin.id);
                     let net_id = pin_nets.get(&pin_name).unwrap();
 
                     let padstack = &self
                         .pcb
                         .library
-                        .padstacks
+                        .padstack_vec
                         .iter()
                         .find(|padstack| padstack.name == pin.name)
                         .unwrap();
 
                     // no layer support yet, pick the first one
-                    let circle = &padstack.shapes[0].0;
+                    let circle = match &padstack.shape_vec[0] {
+                        Shape::Circle(circle) => circle,
+                        Shape::Rect(_) => todo!(),
+                        Shape::Path(_) => todo!(),
+                        Shape::Polygon(_) => todo!(),
+                    };
                     let circle = Circle {
                         pos: (place.x as f64 / 100.0, -place.y as f64 / 100.0).into(),
                         r: circle.diameter as f64 / 200.0,
@@ -104,28 +105,32 @@ impl DsnDesign {
                 }
             }
         }
-        //})
 
         // add vias to layout and save indices of dots in the order they appear in the file
         let _dot_indices: Vec<_> = self
             .pcb
             .wiring
-            .vias
+            .via_vec
             .iter()
             .map(|via| {
-                let net_id = self.rules.net_ids.get(&via.net.0).unwrap();
+                let net_id = self.rules.net_ids.get(&via.net).unwrap();
 
                 // find the padstack referenced by this via placement
                 let padstack = &self
                     .pcb
                     .library
-                    .padstacks
+                    .padstack_vec
                     .iter()
                     .find(|padstack| padstack.name == via.name)
                     .unwrap();
 
                 // no layer support yet, pick the first one
-                let circle = &padstack.shapes[0].0;
+                let circle = match &padstack.shape_vec[0] {
+                    Shape::Circle(circle) => circle,
+                    Shape::Rect(_) => todo!(),
+                    Shape::Path(_) => todo!(),
+                    Shape::Polygon(_) => todo!(),
+                };
                 let circle = Circle {
                     pos: (via.x as f64 / 100.0, -via.y as f64 / 100.0).into(),
                     r: circle.diameter as f64 / 200.0,
@@ -140,8 +145,8 @@ impl DsnDesign {
             })
             .collect();
 
-        for wire in self.pcb.wiring.wires.iter() {
-            let net_id = self.rules.net_ids.get(&wire.net.0).unwrap();
+        for wire in self.pcb.wiring.wire_vec.iter() {
+            let net_id = self.rules.net_ids.get(&wire.net).unwrap();
 
             // add the first coordinate in the wire path as a dot and save its index
             let mut prev_index = layout
@@ -149,8 +154,8 @@ impl DsnDesign {
                     net: *net_id as i64,
                     circle: Circle {
                         pos: (
-                            wire.path.coords[0].x as f64 / 100.0,
-                            -wire.path.coords[0].y as f64 / 100.0,
+                            wire.path.coord_vec[0].x as f64 / 100.0,
+                            -wire.path.coord_vec[0].y as f64 / 100.0,
                         )
                             .into(),
                         r: wire.path.width as f64 / 200.0,
@@ -159,7 +164,7 @@ impl DsnDesign {
                 .unwrap();
 
             // iterate through path coords starting from the second
-            for coord in wire.path.coords.iter().skip(1) {
+            for coord in wire.path.coord_vec.iter().skip(1) {
                 let index = layout
                     .add_fixed_dot(FixedDotWeight {
                         net: *net_id as i64,

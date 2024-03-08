@@ -13,8 +13,8 @@ pub struct Rule {
 impl Rule {
     fn from_dsn(rule: &super::structure::Rule) -> Self {
         Self {
-            width: rule.width.0 as f64 / 100.0,
-            clearance: rule.clearances[0].value as f64 / 100.0, // picks the generic clearance only for now
+            width: rule.width as f64 / 100.0,
+            clearance: rule.clearance_vec[0].value as f64 / 100.0, // picks the generic clearance only for now
         }
     }
 }
@@ -36,9 +36,9 @@ impl Rules {
         // keeping this as a separate iter pass because it might be moved into a different struct later?
         let net_ids = HashMap::from_iter(
             pcb.network
-                .classes
+                .class_vec
                 .iter()
-                .flat_map(|class| &class.nets)
+                .flat_map(|class| &class.net_vec)
                 .enumerate()
                 .map(|(id, net)| (net.clone(), id as i64)),
         );
@@ -46,10 +46,10 @@ impl Rules {
         let mut net_id_classes = HashMap::new();
         let class_rules = HashMap::from_iter(
             pcb.network
-                .classes
+                .class_vec
                 .iter()
                 .inspect(|class| {
-                    for net in &class.nets {
+                    for net in &class.net_vec {
                         let net_id = net_ids.get(net).unwrap();
                         net_id_classes.insert(*net_id, class.name.clone());
                     }

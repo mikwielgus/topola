@@ -1,12 +1,16 @@
 use serde::{de::Error, Deserialize, Deserializer};
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "pcb")]
+pub struct DsnFile {
+    pub pcb: Pcb,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct Pcb {
     pub name: String,
     pub parser: Parser,
     pub resolution: Resolution,
-    pub unit: Option<Unit>,
+    pub unit: String,
     pub structure: Structure,
     pub placement: Placement,
     pub library: Library,
@@ -15,183 +19,141 @@ pub struct Pcb {
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "parser")]
 pub struct Parser {
-    pub string_quote: Option<StringQuote>,
-    pub space_in_quoted_tokens: SpaceAllowed,
-    pub host_cad: Option<HostCad>,
-    pub host_version: Option<HostVersion>,
+    pub string_quote: Option<char>,
+    pub space_in_quoted_tokens: Option<bool>,
+    pub host_cad: Option<String>,
+    pub host_version: Option<String>,
 }
 
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-#[serde(rename = "string_quote")]
-pub struct StringQuote(pub char);
-
-#[derive(Deserialize, Debug, Clone, Copy, PartialEq)]
-#[serde(rename = "space_in_quoted_tokens")]
-pub struct SpaceAllowed(pub bool);
-
 #[derive(Deserialize, Debug)]
-#[serde(rename = "host_cad")]
-pub struct HostCad(pub String);
-
-#[derive(Deserialize, Debug)]
-#[serde(rename = "host_version")]
-pub struct HostVersion(pub String);
-
-#[derive(Deserialize, Debug)]
-#[serde(rename = "resolution")]
 pub struct Resolution {
     pub unit: String,
     pub value: u32,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "unit")]
-pub struct Unit(pub String);
-
-#[derive(Deserialize, Debug)]
-#[serde(rename = "structure")]
 pub struct Structure {
-    pub layers: Vec<Layer>,
+    pub layer_vec: Vec<Layer>,
     pub boundary: Boundary,
-    pub plane: Vec<Plane>,
-    pub vias: Vias,
+    pub plane_vec: Vec<Plane>,
+    pub via: ViaNames,
     pub rule: Rule,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "layer")]
 pub struct Layer {
     pub name: String,
-    pub r#type: Type,
+    pub r#type: String,
     pub property: Property,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "property")]
-pub struct Property(Index);
+pub struct Property {
+    pub index: usize,
+}
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "index")]
-pub struct Index(pub u32);
+pub struct Boundary {
+    pub path: Path,
+}
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "boundary")]
-pub struct Boundary(pub Path);
-
-#[derive(Deserialize, Debug)]
-#[serde(rename = "plane")]
 pub struct Plane {
-    net: String,
-    shape: Polygon,
+    pub net: String,
+    pub polygon: Polygon,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "via")]
-pub struct Vias {
-    vias: Vec<String>,
+pub struct ViaNames {
+    pub name_vec: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "placement")]
 pub struct Placement {
-    pub components: Vec<Component>,
+    pub component_vec: Vec<Component>,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "component")]
 pub struct Component {
     pub name: String,
-    pub places: Vec<Place>,
+    pub place_vec: Vec<Place>,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "place")]
 pub struct Place {
     pub name: String,
     pub x: f32,
     pub y: f32,
     pub side: String,
     pub rotation: f32,
-    pub PN: Option<PN>,
+    pub PN: Option<String>,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "PN")]
-pub struct PN {
-    pub name: String,
-}
-
-#[derive(Deserialize, Debug)]
-#[serde(rename = "library")]
 pub struct Library {
-    pub images: Vec<Image>,
-    pub padstacks: Vec<Padstack>,
+    pub image_vec: Vec<Image>,
+    pub padstack_vec: Vec<Padstack>,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "image")]
 pub struct Image {
     pub name: String,
-    pub outlines: Vec<Outline>,
-    pub pins: Vec<Pin>,
+    pub outline_vec: Vec<Outline>,
+    pub pin_vec: Vec<Pin>,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "outline")]
 pub struct Outline {
     pub path: Path,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "pin")]
 pub struct Pin {
     pub name: String,
-    pub rotate: Option<Rotate>,
+    pub rotate: Option<f32>,
     pub id: String,
     pub x: f32,
     pub y: f32,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "rotate")]
 pub struct Rotate {
     pub angle: f32,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "padstack")]
 pub struct Padstack {
     pub name: String,
-    pub shapes: Vec<Shape>,
-    pub attach: Attach,
+    pub shape_vec: Vec<Shape>,
+    pub attach: bool,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "shape")]
-pub struct Shape(pub Circle);
+pub enum Shape {
+    #[serde(rename = "circle")]
+    Circle(Circle),
+    #[serde(rename = "rect")]
+    Rect(Rect),
+    #[serde(rename = "path")]
+    Path(Path),
+    #[serde(rename = "polygon")]
+    Polygon(Polygon),
+}
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "circle")]
 pub struct Circle {
     pub layer: String,
     pub diameter: u32,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "attach")]
-pub struct Attach(pub bool);
-
-#[derive(Deserialize, Debug)]
-#[serde(rename = "network")]
 pub struct Network {
-    pub nets: Option<Vec<NetPinAssignments>>,
-    pub classes: Vec<Class>,
+    pub net_vec: Vec<NetPinAssignments>,
+    pub class_vec: Vec<Class>,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "net")]
 // dsn names this "net", but it's a structure unrelated to "net" in wiring or elsewhere
 pub struct NetPinAssignments {
     pub name: String,
@@ -199,57 +161,53 @@ pub struct NetPinAssignments {
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "pins")]
 pub struct Pins {
-    pub ids: Vec<String>,
+    pub names: Vec<String>,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "class")]
 pub struct Class {
     pub name: String,
-    pub nets: Vec<String>,
+    pub net_vec: Vec<String>,
     pub circuit: Circuit,
     pub rule: Rule,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "circuit")]
-pub struct Circuit(pub UseVia);
+pub struct Circuit {
+    pub use_via: UseVia,
+}
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "use_via")]
 pub struct UseVia {
     pub name: String,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "wiring")]
 pub struct Wiring {
-    pub wires: Vec<Wire>,
-    pub vias: Vec<Via>,
+    pub wire_vec: Vec<Wire>,
+    pub via_vec: Vec<Via>,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "wire")]
 pub struct Wire {
     pub path: Path,
-    pub net: Net,
-    pub r#type: Type,
+    pub net: String,
+    pub r#type: String,
 }
 
 // structs that appear in multiple places
 
-#[derive(Deserialize, Debug)]
-#[serde(rename = "type")]
-pub struct Type(pub String);
-
+// This type isn't deserialized as is. Instead, Vec<Point> is converted from
+// what's effectively Vec<f32> (with even length) in the file.
+// Use #[serde(deserialize_with = "de_points")].
 #[derive(Debug)]
 pub struct Point {
     pub x: f32,
     pub y: f32,
 }
 
+// Used to deserialize Vec<Point>.
 fn de_points<'de, D>(deserializer: D) -> Result<Vec<Point>, D::Error>
 where
     D: Deserializer<'de>,
@@ -257,7 +215,10 @@ where
     Vec::<f32>::deserialize(deserializer)?
         .chunks(2)
         .map(|pair| {
+            // 0th index is guaranteed to exist by `.chunks()`
+            // (it ends iteration instead of emitting an empty Vec)
             let x = pair[0];
+            // but if the file is malformed we may get an odd number of floats
             let y = *pair.get(1).ok_or(Error::custom(
                 "expected paired x y coordinates, list ended at x",
             ))?;
@@ -268,51 +229,47 @@ where
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "polygon")]
 pub struct Polygon {
     pub layer: String,
     pub width: f32,
     #[serde(deserialize_with = "de_points")]
-    pub coords: Vec<Point>,
+    pub coord_vec: Vec<Point>,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "path")]
 pub struct Path {
     pub layer: String,
     pub width: f32,
     #[serde(deserialize_with = "de_points")]
-    pub coords: Vec<Point>,
+    pub coord_vec: Vec<Point>,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "via")]
+pub struct Rect {
+    pub layer: String,
+    pub x1: f32,
+    pub y1: f32,
+    pub x2: f32,
+    pub y2: f32,
+}
+
+#[derive(Deserialize, Debug)]
 pub struct Via {
     pub name: String,
     pub x: i32,
     pub y: i32,
-    pub net: Net,
-    pub r#type: Type,
+    pub net: String,
+    pub r#type: String,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "rule")]
 pub struct Rule {
-    pub width: Width,
-    pub clearances: Vec<Clearance>,
+    pub width: f32,
+    pub clearance_vec: Vec<Clearance>,
 }
 
 #[derive(Deserialize, Debug)]
-#[serde(rename = "net")]
-pub struct Net(pub String);
-
-#[derive(Deserialize, Debug)]
-#[serde(rename = "width")]
-pub struct Width(pub f32);
-
-#[derive(Deserialize, Debug)]
-#[serde(rename = "clearance")]
 pub struct Clearance {
     pub value: f32,
-    pub r#type: Option<Type>,
+    pub r#type: Option<String>,
 }

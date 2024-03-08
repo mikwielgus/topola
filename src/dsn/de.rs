@@ -1,6 +1,6 @@
 use std::fmt;
 
-use serde::de::{self, DeserializeSeed, SeqAccess, Visitor};
+use serde::de::{self, DeserializeSeed, SeqAccess, EnumAccess, VariantAccess, Visitor};
 use serde::Deserialize;
 use thiserror::Error;
 
@@ -20,10 +20,12 @@ pub enum DsnDeError {
     SpaceInQuoted,
     #[error("expected unquoted string")]
     ExpectedUnquoted,
-    #[error("expected opening parenthesis")]
-    ExpectedOpeningParen,
-    #[error("expected closing parenthesis")]
-    ExpectedClosingParen,
+    #[error("expected opening parenthesis for {0}")]
+    ExpectedOpeningParen(&'static str),
+    #[error("expected closing parenthesis for {0}")]
+    ExpectedClosingParen(&'static str),
+    #[error("expected a keyword")]
+    ExpectedKeyword,
     #[error("wrong keyword: expected {0}, got {1}")]
     WrongKeyword(&'static str, String),
 }
@@ -54,8 +56,8 @@ pub struct Deserializer<'de> {
     space_in_quoted_tokens: bool,
     reconfig_incoming: Option<ReconfigIncoming>,
 
+    vec_type: Option<&'static str>,
     next_option_empty_hint: bool,
-    last_deserialized_type: Option<&'static str>,
 }
 
 #[derive(PartialEq, Debug, Copy, Clone)]
@@ -74,20 +76,20 @@ impl<'de> Deserializer<'de> {
             space_in_quoted_tokens: false,
             reconfig_incoming: None,
 
+            vec_type: None,
             next_option_empty_hint: false,
-            last_deserialized_type: None,
         }
     }
 
-    fn next_name_lookahead(&self) -> Option<String> {
+    fn keyword_lookahead(&self) -> Option<String> {
         let mut iter = self.input.chars();
-        if iter.next() != Some('(') {
-            None
-        } else {
-            Some(
-                iter.take_while(|c| c != &' ' && c != &'\r' && c != &'\n')
-                    .collect::<String>(),
+        if let Some('(') = iter.next() {
+            Some(iter
+                .take_while(|c| c != &' ' && c != &'\r' && c != &'\n')
+                .collect::<String>()
             )
+        } else {
+            None
         }
     }
 
@@ -97,7 +99,7 @@ impl<'de> Deserializer<'de> {
 
     fn next(&mut self) -> Result<char> {
         let chr = self.peek()?;
-        self.input = &self.input[1..];
+        self.input = &self.input[chr.len_utf8()..];
         if chr == '\n' {
             self.context.line += 1;
             self.context.column = 0;
@@ -115,11 +117,11 @@ impl<'de> Deserializer<'de> {
                 self.next().unwrap();
             }
         }
-        return;
     }
 
     fn parse_bool(&mut self) -> Result<bool> {
-        match &self.parse_identifier() {
+        self.skip_ws();
+        match &self.parse_unquoted() {
             Ok(string) => match string.as_str() {
                 "on" => Ok(true),
                 "off" => Ok(false),
@@ -129,11 +131,13 @@ impl<'de> Deserializer<'de> {
         }
     }
 
-    fn parse_identifier(&mut self) -> Result<String> {
+    fn parse_keyword(&mut self) -> Result<String> {
+        self.skip_ws();
         self.parse_unquoted()
     }
 
     fn parse_string(&mut self) -> Result<String> {
+        self.skip_ws();
         let chr = self.peek()?;
         if self.string_quote == Some(chr) {
             self.parse_quoted()
@@ -184,7 +188,7 @@ impl<'de> Deserializer<'de> {
     }
 }
 
-/*pub fn from_str<'a, T>(input: &'a str) -> Result<T>
+pub fn from_str<'a, T>(input: &'a str) -> Result<T>
 where
     T: Deserialize<'a>,
 {
@@ -195,7 +199,7 @@ where
         dbg!(deserializer.input);
     }*/
     Ok(t)
-}*/
+}
 
 impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     type Error = DsnDeError;
@@ -211,17 +215,17 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        let value = self.parse_bool()?;
         self.skip_ws();
+        let value = self.parse_bool()?;
 
-        // if the struct deserializer set a variable saying the incoming value should reconfigure a specific variable in the parser
-        // we do so and clear the flag
+        // If the struct deserializer set a variable saying the incoming value
+        // should reconfigure a specific variable in the parser we do so and
+        // clear the flag.
         if self.reconfig_incoming == Some(ReconfigIncoming::SpaceAllowed) {
             self.space_in_quoted_tokens = value;
             self.reconfig_incoming = None;
         }
 
-        self.last_deserialized_type = Some("");
         visitor.visit_bool(value)
     }
 
@@ -241,10 +245,9 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        let value = self.parse_unquoted()?;
         self.skip_ws();
+        let value = self.parse_unquoted()?;
 
-        self.last_deserialized_type = Some("");
         visitor.visit_i32(value.parse().unwrap())
     }
     fn deserialize_i64<V>(self, _visitor: V) -> Result<V::Value>
@@ -269,26 +272,27 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        let value = self.parse_unquoted()?;
         self.skip_ws();
+        let value = self.parse_unquoted()?;
 
-        self.last_deserialized_type = Some("");
         visitor.visit_u32(value.parse().unwrap())
     }
-    fn deserialize_u64<V>(self, _visitor: V) -> Result<V::Value>
+    fn deserialize_u64<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        self.skip_ws();
+        let value = self.parse_unquoted()?;
+
+        visitor.visit_u64(value.parse().unwrap())
     }
     fn deserialize_f32<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        let value = self.parse_unquoted()?;
         self.skip_ws();
+        let value = self.parse_unquoted()?;
 
-        self.last_deserialized_type = Some("");
         visitor.visit_f32(value.parse().unwrap())
     }
     fn deserialize_f64<V>(self, _visitor: V) -> Result<V::Value>
@@ -301,17 +305,17 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        let chr = self.next()?;
         self.skip_ws();
+        let chr = self.next()?;
 
-        // if the struct deserializer set a variable saying the incoming value should reconfigure a specific variable in the parser
-        // we do so and clear the flag
+        // If the struct deserializer set a variable saying the incoming value
+        // should reconfigure a specific variable in the parser we do so and
+        // clear the flag.
         if self.reconfig_incoming == Some(ReconfigIncoming::StringQuote) {
             self.string_quote = Some(chr);
             self.reconfig_incoming = None;
         }
 
-        self.last_deserialized_type = Some("");
         visitor.visit_char(chr)
     }
 
@@ -326,11 +330,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        let string = self.parse_string()?;
         self.skip_ws();
+        let value = self.parse_string()?;
 
-        self.last_deserialized_type = Some("");
-        visitor.visit_string(string)
+        visitor.visit_string(value)
     }
 
     fn deserialize_bytes<V>(self, _visitor: V) -> Result<V::Value>
@@ -365,75 +368,29 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         todo!();
     }
 
-    fn deserialize_unit_struct<V>(self, name: &'static str, visitor: V) -> Result<V::Value>
+    fn deserialize_unit_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        if self.next()? != '(' {
-            return Err(DsnDeError::ExpectedOpeningParen);
-        }
-        self.skip_ws();
-
-        let parsed_keyword = self.parse_identifier()?;
-
-        if parsed_keyword != name {
-            return Err(DsnDeError::WrongKeyword(name, parsed_keyword));
-        }
-        self.skip_ws();
-
-        if self.next()? != ')' {
-            return Err(DsnDeError::ExpectedClosingParen);
-        }
-        self.skip_ws();
-
-        self.last_deserialized_type = Some(name);
-
-        visitor.visit_unit()
+        todo!();
     }
 
-    fn deserialize_newtype_struct<V>(self, name: &'static str, visitor: V) -> Result<V::Value>
+    fn deserialize_newtype_struct<V>(self, _name: &'static str, _visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        if self.next()? != '(' {
-            return Err(DsnDeError::ExpectedOpeningParen);
-        }
-        self.skip_ws();
-
-        let parsed_keyword = self.parse_identifier()?;
-
-        if parsed_keyword != name {
-            return Err(DsnDeError::WrongKeyword(name, parsed_keyword));
-        }
-        self.skip_ws();
-
-        // if what we're deserializing is a directive to update parser configuration
-        // set a variable so the deserializer for the following value can update the relevant config
-        // (the variable is reset to None by the bool/char deserializer when it updates the config)
-        self.reconfig_incoming = match name {
-            "string_quote" => Some(ReconfigIncoming::StringQuote),
-            "space_in_quoted_tokens" => Some(ReconfigIncoming::SpaceAllowed),
-            _ => None,
-        };
-
-        let value = visitor.visit_seq(NewtypeStructFields::new(self))?;
-
-        if self.next()? != ')' {
-            return Err(DsnDeError::ExpectedClosingParen);
-        }
-        self.skip_ws();
-
-        self.last_deserialized_type = Some(name);
-
-        Ok(value)
+        todo!();
     }
 
     fn deserialize_seq<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        self.last_deserialized_type = None;
-        visitor.visit_seq(ArrayIndices::new(self))
+        let elem_type = self.vec_type.expect(
+            "fields of type Vec<_> need to have names suffixed with _vec"
+        );
+
+        visitor.visit_seq(ArrayIndices::new(self, elem_type))
     }
 
     fn deserialize_tuple<V>(self, _len: usize, _visitor: V) -> Result<V::Value>
@@ -464,55 +421,46 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
 
     fn deserialize_struct<V>(
         self,
-        name: &'static str,
+        _name: &'static str,
         fields: &'static [&'static str],
         visitor: V,
     ) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        if self.next()? != '(' {
-            return Err(DsnDeError::ExpectedOpeningParen);
-        }
-        self.skip_ws();
-
-        let parsed_keyword = self.parse_identifier()?;
-
-        if parsed_keyword != name {
-            return Err(DsnDeError::WrongKeyword(name, parsed_keyword));
-        }
-        self.skip_ws();
-
-        let value = visitor.visit_seq(StructFields::new(self, fields))?;
-
-        if self.next()? != ')' {
-            return Err(DsnDeError::ExpectedClosingParen);
-        }
-        self.skip_ws();
-
-        // a hint for the array deserializer
-        self.last_deserialized_type = Some(name);
-
-        Ok(value)
+        visitor.visit_seq(StructFields::new(self, fields))
     }
 
     fn deserialize_enum<V>(
         self,
-        _name: &'static str,
+        name: &'static str,
         _variants: &'static [&'static str],
-        _visitor: V,
+        visitor: V,
     ) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        todo!();
+        self.skip_ws();
+        if self.next()? != '(' {
+            return Err(DsnDeError::ExpectedOpeningParen("an enum variant"));
+        }
+
+        let value = visitor.visit_enum(Enum::new(self))?;
+
+        self.skip_ws();
+        if self.next()? != ')' {
+            return Err(DsnDeError::ExpectedClosingParen(name));
+        }
+
+        Ok(value)
     }
 
     fn deserialize_identifier<V>(self, visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
-        visitor.visit_string(self.parse_string()?)
+        self.skip_ws();
+        visitor.visit_string(self.parse_string().map_err(|err| DsnDeError::ExpectedKeyword)?)
     }
 
     fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value>
@@ -523,38 +471,69 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     }
 }
 
-struct NewtypeStructFields<'a, 'de: 'a> {
+struct Enum<'a, 'de: 'a> {
     de: &'a mut Deserializer<'de>,
 }
 
-impl<'a, 'de> NewtypeStructFields<'a, 'de> {
+impl<'a, 'de> Enum<'a, 'de> {
     fn new(de: &'a mut Deserializer<'de>) -> Self {
-        Self { de }
+        Enum { de }
     }
 }
 
-impl<'de, 'a> SeqAccess<'de> for NewtypeStructFields<'a, 'de> {
+impl<'de, 'a> EnumAccess<'de> for Enum<'a, 'de> {
+    type Error = DsnDeError;
+    type Variant = Self;
+
+    fn variant_seed<V>(self, seed: V) -> Result<(V::Value, Self::Variant)>
+    where
+        V: DeserializeSeed<'de>,
+    {
+        seed.deserialize(&mut *self.de).map(|value| (value, self))
+    }
+}
+
+impl<'de, 'a> VariantAccess<'de> for Enum<'a, 'de> {
     type Error = DsnDeError;
 
-    fn next_element_seed<S>(&mut self, seed: S) -> Result<Option<S::Value>>
-    where
-        S: DeserializeSeed<'de>,
-    {
-        if self.de.peek()? == ')' {
-            return Ok(None);
-        }
+    fn unit_variant(self) -> Result<()> {
+        todo!();
+    }
 
-        seed.deserialize(&mut *self.de).map(Some)
+    fn newtype_variant_seed<T>(self, seed: T) -> Result<T::Value>
+    where
+        T: DeserializeSeed<'de>,
+    {
+        seed.deserialize(self.de)
+    }
+
+    fn tuple_variant<V>(self, _len: usize, _visitor: V) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        todo!();
+    }
+
+    fn struct_variant<V>(
+        self,
+        _fields: &'static [&'static str],
+        _visitor: V,
+    ) -> Result<V::Value>
+    where
+        V: Visitor<'de>,
+    {
+        todo!();
     }
 }
 
 struct ArrayIndices<'a, 'de: 'a> {
     de: &'a mut Deserializer<'de>,
+    elem_type: &'static str,
 }
 
 impl<'a, 'de> ArrayIndices<'a, 'de> {
-    fn new(de: &'a mut Deserializer<'de>) -> Self {
-        Self { de }
+    fn new(de: &'a mut Deserializer<'de>, elem_type: &'static str) -> Self {
+        Self { de, elem_type }
     }
 }
 
@@ -565,22 +544,35 @@ impl<'de, 'a> SeqAccess<'de> for ArrayIndices<'a, 'de> {
     where
         S: DeserializeSeed<'de>,
     {
+        self.de.skip_ws();
         if self.de.peek()? == ')' {
             return Ok(None);
         }
 
-        if let Some(prev) = self.de.last_deserialized_type {
-            if let Some(lookahead) = self.de.next_name_lookahead() {
-                if prev != lookahead {
-                    // the next struct is of different type from the array contents
-                    // that means the array implicitly ended
-                    // and we're looking at a field following the array instead
-                    return Ok(None);
+        if self.de.peek()? != '(' {
+            // anonymous field
+            seed.deserialize(&mut *self.de).map(Some)
+        } else {
+            let lookahead = self.de.keyword_lookahead().ok_or(
+                DsnDeError::ExpectedOpeningParen(self.elem_type)
+            )?;
+            if lookahead == self.elem_type {
+                // cannot fail, consuming the lookahead
+                self.de.next().unwrap();
+                self.de.parse_keyword().unwrap();
+
+                let value = seed.deserialize(&mut *self.de)?;
+
+                self.de.skip_ws();
+                if self.de.next()? != ')' {
+                    Err(DsnDeError::ExpectedClosingParen(self.elem_type))
+                } else {
+                    Ok(Some(value))
                 }
+            } else {
+                Ok(None)
             }
         }
-
-        seed.deserialize(&mut *self.de).map(Some)
     }
 }
 
@@ -607,43 +599,49 @@ impl<'de, 'a> SeqAccess<'de> for StructFields<'a, 'de> {
     where
         S: DeserializeSeed<'de>,
     {
-        if self.de.peek()? == ')' {
-            if self.current_field < self.fields.len() {
-                // We're short a field (or multiple),
-                // but the trailing field(s) might be optional and implicitly absent.
-                // In that case we prepare a hint for deserialize_option to emit None:
-                self.de.next_option_empty_hint = true;
-                // and we tell serde to deserialize a field that may or may not be there:
-                self.current_field += 1;
-                return seed.deserialize(&mut *self.de).map(Some);
-                // If it was a non-optional that was missing for real,
-                // then even though our bet here was wrong (and we just lied to serde)
-                // the deserializer we handed off to will see the same closing paren
-                // (that we reacted to just now) and still return a sensible error.
-            } else {
-                return Ok(None);
-            }
-        }
+        let field_name = self.fields[self.current_field];
 
-        // check if the next field is "named"
-        // (saved as `(fieldname value)`)
-        if let Some(lookahead) = self.de.next_name_lookahead() {
-            if lookahead != self.fields[self.current_field] {
-                if lookahead + "s" != self.fields[self.current_field] {
-                    self.de.next_option_empty_hint = true;
-                } else {
-                    self.de.next_option_empty_hint = false;
-                }
-            } else {
-                self.de.next_option_empty_hint = false;
-            }
+        self.de.skip_ws();
+
+        let ret = if field_name.ends_with("_vec") {
+            self.de.vec_type = field_name.strip_suffix("_vec");
+            let value = seed.deserialize(&mut *self.de).map(Some);
+            self.de.vec_type = None;
+
+            value
         } else {
-            // optional fields must be "named"
-            // if we see something else assume empty option
-            self.de.next_option_empty_hint = true;
-        }
+            if self.de.peek()? != '(' {
+                // anonymous field, cannot be optional
+                self.de.next_option_empty_hint = true;
+                let value = seed.deserialize(&mut *self.de).map(Some);
+                self.de.next_option_empty_hint = false;
+                value
+            } else {
+                self.de.next()?; // consume the '('
+
+                let parsed_keyword = self.de.parse_keyword()?;
+                if parsed_keyword == field_name {
+                    if field_name == "string_quote" {
+                        self.de.reconfig_incoming = Some(ReconfigIncoming::StringQuote);
+                    } else if field_name == "space_in_quoted_tokens" {
+                        self.de.reconfig_incoming = Some(ReconfigIncoming::SpaceAllowed);
+                    }
+
+                    let value = seed.deserialize(&mut *self.de)?;
+
+                    self.de.skip_ws();
+                    if self.de.next()? != ')' {
+                        Err(DsnDeError::ExpectedClosingParen(field_name))
+                    } else {
+                        Ok(Some(value))
+                    }
+                } else {
+                    Err(DsnDeError::WrongKeyword(field_name, parsed_keyword))
+                }
+            }
+        };
 
         self.current_field += 1;
-        seed.deserialize(&mut *self.de).map(Some)
+        ret
     }
 }
