@@ -13,7 +13,7 @@ impl<'a> Painter<'a> {
         Self { canvas }
     }
 
-    pub fn paint_shape(&mut self, shape: &Shape, color: ColorU) {
+    pub fn paint_shape(&mut self, shape: &Shape, color: ColorU, zoom: f32) {
         self.canvas.set_stroke_style(color);
         self.canvas.set_fill_style(color);
 
@@ -60,19 +60,19 @@ impl<'a> Painter<'a> {
         // XXX: points represented as arrays can't be conveniently converted to vector types
         let topleft = vec2f(envelope.lower()[0] as f32, envelope.lower()[1] as f32);
         let bottomright = vec2f(envelope.upper()[0] as f32, envelope.upper()[1] as f32);
-        self.canvas.set_line_width(1.0);
+        self.canvas.set_line_width(2.0/zoom);
         self.canvas
             .set_stroke_style(ColorU::new(100, 100, 100, 255));
         self.canvas
             .stroke_rect(RectF::new(topleft, bottomright - topleft));
     }
 
-    pub fn paint_edge(&mut self, from: Point, to: Point, color: ColorU) {
+    pub fn paint_edge(&mut self, from: Point, to: Point, color: ColorU, zoom: f32) {
         let mut path = Path2D::new();
         path.move_to(vec2f(from.x() as f32, from.y() as f32));
         path.line_to(vec2f(to.x() as f32, to.y() as f32));
         self.canvas.set_stroke_style(color);
-        self.canvas.set_line_width(1.0);
+        self.canvas.set_line_width(2.0/zoom);
         self.canvas.stroke_path(path);
     }
 }

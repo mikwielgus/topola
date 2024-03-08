@@ -392,11 +392,11 @@ fn render_times(
             };
 
             let shape = node.primitive(layout).shape();
-            painter.paint_shape(&shape, color);
+            painter.paint_shape(&shape, color, view.zoom);
         }
 
         for ghost in ghosts {
-            painter.paint_shape(&ghost, ColorU::new(75, 75, 150, 255));
+            painter.paint_shape(&ghost, ColorU::new(75, 75, 150, 255), view.zoom);
         }
 
         if let Some(ref mesh) = maybe_mesh {
@@ -417,7 +417,7 @@ fn render_times(
                     ColorU::new(125, 125, 125, 255)
                 };
 
-                painter.paint_edge(from, to, color);
+                painter.paint_edge(from, to, color, view.zoom);
             }
         }
         //});
