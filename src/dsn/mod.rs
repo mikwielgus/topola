@@ -1,4 +1,4 @@
 mod de;
 pub mod design;
-mod rules;
+pub mod rules;
 mod structure;

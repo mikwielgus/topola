@@ -29,6 +29,10 @@ pub struct DsnDesign {
 impl DsnDesign {
     pub fn load_from_file(filename: &str) -> Result<Self, LoadingError> {
         let contents = std::fs::read_to_string(filename)?;
+        Self::load_from_string(contents)
+    }
+
+    pub fn load_from_string(contents: String) -> Result<Self, LoadingError> {
         let pcb = de::from_str::<DsnFile>(&contents)
             .map_err(|err| LoadingError::Syntax(err))?
             .pcb;

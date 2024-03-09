@@ -251,14 +251,19 @@ fn main() -> Result<(), anyhow::Error> {
         ]),
     }));*/
 
-    let design = DsnDesign::load_from_file("tests/data/prerouted_lm317_breakout/prerouted_lm317_breakout.dsn")?;
+    let design = DsnDesign::load_from_file(
+        "tests/data/prerouted_lm317_breakout/prerouted_lm317_breakout.dsn",
+    )?;
     //let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
     //dbg!(&design);
     let layout = design.make_layout();
     let board = Board::new(layout);
     let mut router = Router::new(board);
 
-    let mut view = View { pan: vec2f(-80000.0, -60000.0), zoom: 0.005 };
+    let mut view = View {
+        pan: vec2f(-80000.0, -60000.0),
+        zoom: 0.005,
+    };
 
     render_times(
         &mut event_pump,
@@ -333,12 +338,17 @@ fn render_times(
                 } => break 'running,
                 Event::MouseWheel { y, .. } => {
                     view.zoom *= f32::powf(1.4, y as f32);
-                },
-                Event::MouseMotion { xrel, yrel, mousestate, .. } => {
+                }
+                Event::MouseMotion {
+                    xrel,
+                    yrel,
+                    mousestate,
+                    ..
+                } => {
                     if mousestate.left() {
                         view.pan += vec2f(xrel as f32, yrel as f32) / view.zoom;
                     }
-                },
+                }
                 _ => {}
             }
         }

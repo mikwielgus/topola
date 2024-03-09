@@ -5,8 +5,9 @@ use std::{
 };
 
 use topola::{
-    dsn::design::DsnDesign,
+    dsn::{design::DsnDesign, rules::DsnRules},
     geometry::shape::{BendShape, DotShape, SegShape, Shape},
+    layout::{graph::MakePrimitive, primitive::MakeShape, Layout},
     math::Circle,
 };
 
@@ -20,10 +21,10 @@ pub struct App {
     label: String,
 
     #[serde(skip)] // Don't serialize this field.
-    file_handle_channel: (Sender<rfd::FileHandle>, Receiver<rfd::FileHandle>),
+    text_channel: (Sender<String>, Receiver<String>),
 
     #[serde(skip)]
-    design: Option<DsnDesign>,
+    layout: Option<Layout<DsnRules>>,
 
     #[serde(skip)]
     from_rect: egui::emath::Rect,
@@ -34,9 +35,9 @@ impl Default for App {
         Self {
             // Example stuff:
             label: "Hello World!".to_owned(),
-            file_handle_channel: channel(),
-            design: None,
-            from_rect: egui::Rect::from_x_y_ranges(0.0..=1000.0, 0.0..=500.0),
+            text_channel: channel(),
+            layout: None,
+            from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
         }
     }
 }
@@ -61,33 +62,35 @@ impl eframe::App for App {
 
     /// Called each time the UI has to be repainted.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        if cfg!(target_arch = "wasm32") {
+            if let Ok(file_contents) = self.text_channel.1.try_recv() {
+                let design = DsnDesign::load_from_string(file_contents).unwrap();
+                self.layout = Some(design.make_layout());
+            }
+        } else {
+            if let Ok(path) = self.text_channel.1.try_recv() {
+                let design = DsnDesign::load_from_file(&path).unwrap();
+                self.layout = Some(design.make_layout());
+            }
+        }
+
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
                 ui.menu_button("File", |ui| {
-                    if let Ok(file_handle) = self.file_handle_channel.1.try_recv() {
-                        dbg!(file_handle);
-                        // TODO: actually load the file from the handle.
-                    }
-
                     if ui.button("Open").clicked() {
                         // `Context` is cheap to clone as it's wrapped in an `Arc`.
                         let ctx = ui.ctx().clone();
                         // NOTE: On Linux, this requires Zenity to be installed on your system.
-                        let sender = self.file_handle_channel.0.clone();
+                        let sender = self.text_channel.0.clone();
                         let task = rfd::AsyncFileDialog::new().pick_file();
 
                         execute(async move {
                             let maybe_file_handle = task.await;
 
                             if let Some(file_handle) = maybe_file_handle {
-                                let _ = sender.send(file_handle);
+                                let _ = sender.send(channel_text(file_handle).await);
                                 ctx.request_repaint();
                             }
-                            /*if let Some(file) = file {
-                                let text = file.read().await;
-                                let _ = sender.send(String::from_utf8_lossy(&text).to_string());
-                                ctx.request_repaint();
-                            }*/
                         });
                     }
 
@@ -128,7 +131,9 @@ impl eframe::App for App {
                     ctx.input(|i| latest_pos.to_vec2() * (new_scale - old_scale) / new_scale),
                 );
 
-                self.from_rect = self.from_rect.translate(ctx.input(|i| -i.raw_scroll_delta));
+                self.from_rect = self
+                    .from_rect
+                    .translate(ctx.input(|i| -i.raw_scroll_delta / new_scale));
 
                 let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
                 let mut painter = Painter::new(ui, transform);
@@ -156,9 +161,12 @@ impl eframe::App for App {
                     width: 12.0,
                 });
 
-                painter.paint_shape(&dot_shape, egui::Color32::from_rgb(255, 0, 0));
-                painter.paint_shape(&seg_shape, egui::Color32::from_rgb(128, 128, 128));
-                painter.paint_shape(&bend_shape, egui::Color32::from_rgb(255, 255, 0));
+                if let Some(layout) = &self.layout {
+                    for node in layout.nodes() {
+                        let shape = node.primitive(layout).shape();
+                        painter.paint_shape(&shape, egui::Color32::from_rgb(255, 0, 0));
+                    }
+                }
             })
         });
 
@@ -176,4 +184,16 @@ fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
 #[cfg(target_arch = "wasm32")]
 fn execute<F: Future<Output = ()> + 'static>(f: F) {
     wasm_bindgen_futures::spawn_local(f);
+}
+
+#[cfg(not(target_arch = "wasm32"))]
+async fn channel_text(file_handle: rfd::FileHandle) -> String {
+    file_handle.path().to_str().unwrap().to_string()
+}
+
+#[cfg(target_arch = "wasm32")]
+async fn channel_text(file_handle: rfd::FileHandle) -> String {
+    std::str::from_utf8(&file_handle.read().await)
+        .unwrap()
+        .to_string()
 }
