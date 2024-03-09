@@ -1,6 +1,6 @@
 use std::fmt;
 
-use serde::de::{self, DeserializeSeed, SeqAccess, EnumAccess, VariantAccess, Visitor};
+use serde::de::{self, DeserializeSeed, EnumAccess, SeqAccess, VariantAccess, Visitor};
 use serde::Deserialize;
 use thiserror::Error;
 
@@ -88,9 +88,9 @@ impl<'de> Deserializer<'de> {
     fn keyword_lookahead(&self) -> Option<String> {
         let mut iter = self.input.chars();
         if let Some('(') = iter.next() {
-            Some(iter
-                .take_while(|c| c != &' ' && c != &'\r' && c != &'\n')
-                .collect::<String>()
+            Some(
+                iter.take_while(|c| c != &' ' && c != &'\r' && c != &'\n')
+                    .collect::<String>(),
             )
         } else {
             None
@@ -387,9 +387,9 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
     where
         V: Visitor<'de>,
     {
-        let elem_type = self.vec_type.expect(
-            "fields of type Vec<_> need to have names suffixed with _vec"
-        );
+        let elem_type = self
+            .vec_type
+            .expect("fields of type Vec<_> need to have names suffixed with _vec");
 
         visitor.visit_seq(ArrayIndices::new(self, elem_type))
     }
@@ -461,7 +461,10 @@ impl<'de, 'a> de::Deserializer<'de> for &'a mut Deserializer<'de> {
         V: Visitor<'de>,
     {
         self.skip_ws();
-        visitor.visit_string(self.parse_string().map_err(|err| DeError::ExpectedKeyword)?)
+        visitor.visit_string(
+            self.parse_string()
+                .map_err(|err| DeError::ExpectedKeyword)?,
+        )
     }
 
     fn deserialize_ignored_any<V>(self, _visitor: V) -> Result<V::Value>
@@ -515,11 +518,7 @@ impl<'de, 'a> VariantAccess<'de> for Enum<'a, 'de> {
         todo!();
     }
 
-    fn struct_variant<V>(
-        self,
-        _fields: &'static [&'static str],
-        _visitor: V,
-    ) -> Result<V::Value>
+    fn struct_variant<V>(self, _fields: &'static [&'static str], _visitor: V) -> Result<V::Value>
     where
         V: Visitor<'de>,
     {
@@ -554,9 +553,10 @@ impl<'de, 'a> SeqAccess<'de> for ArrayIndices<'a, 'de> {
             // anonymous field
             seed.deserialize(&mut *self.de).map(Some)
         } else {
-            let lookahead = self.de.keyword_lookahead().ok_or(
-                DeError::ExpectedOpeningParen(self.elem_type)
-            )?;
+            let lookahead = self
+                .de
+                .keyword_lookahead()
+                .ok_or(DeError::ExpectedOpeningParen(self.elem_type))?;
             if lookahead == self.elem_type {
                 // cannot fail, consuming the lookahead
                 self.de.next().unwrap();

@@ -5,12 +5,12 @@ use crate::layout::rules::{Conditions, RulesTrait};
 use super::structure::Pcb;
 
 #[derive(Debug)]
-pub struct Rule {
+pub struct DsnRule {
     pub width: f64,
     pub clearance: f64,
 }
 
-impl Rule {
+impl DsnRule {
     fn from_dsn(rule: &super::structure::Rule) -> Self {
         Self {
             width: rule.width as f64 / 100.0,
@@ -20,10 +20,10 @@ impl Rule {
 }
 
 #[derive(Debug)]
-pub struct Rules {
-    structure_rule: Rule,
+pub struct DsnRules {
+    structure_rule: DsnRule,
     // net class name -> rule
-    class_rules: HashMap<String, Rule>,
+    class_rules: HashMap<String, DsnRule>,
 
     // net names -> net IDs for Layout
     pub net_ids: HashMap<String, i64>,
@@ -31,7 +31,7 @@ pub struct Rules {
     net_id_classes: HashMap<i64, String>,
 }
 
-impl Rules {
+impl DsnRules {
     pub fn from_pcb(pcb: &Pcb) -> Self {
         // keeping this as a separate iter pass because it might be moved into a different struct later?
         let net_ids = HashMap::from_iter(
@@ -54,18 +54,18 @@ impl Rules {
                         net_id_classes.insert(*net_id, class.name.clone());
                     }
                 })
-                .map(|class| (class.name.clone(), Rule::from_dsn(&class.rule))),
+                .map(|class| (class.name.clone(), DsnRule::from_dsn(&class.rule))),
         );
 
         Self {
-            structure_rule: Rule::from_dsn(&pcb.structure.rule),
+            structure_rule: DsnRule::from_dsn(&pcb.structure.rule),
             class_rules,
             net_ids,
             net_id_classes,
         }
     }
 
-    pub fn get_rule(&self, net: i64) -> &Rule {
+    pub fn get_rule(&self, net: i64) -> &DsnRule {
         if let Some(netclass) = self.net_id_classes.get(&net) {
             self.class_rules
                 .get(netclass)
@@ -76,7 +76,7 @@ impl Rules {
     }
 }
 
-impl<'a> RulesTrait for &'a Rules {
+impl RulesTrait for DsnRules {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64 {
         let clr1 = self.get_rule(conditions1.net).clearance;
         let clr2 = self.get_rule(conditions2.net).clearance;
