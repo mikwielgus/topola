@@ -25,6 +25,11 @@ pub trait Retag<GeometryIndex> {
 }
 
 #[enum_dispatch]
+pub trait GetLayer {
+    fn layer(&self) -> u64;
+}
+
+#[enum_dispatch]
 pub trait GetNet {
     fn net(&self) -> i64;
 }
@@ -39,6 +44,12 @@ macro_rules! impl_weight {
         impl Retag<GeometryIndex> for $weight_struct {
             fn retag(&self, index: NodeIndex<usize>) -> GeometryIndex {
                 GeometryIndex::$weight_variant($index_struct::new(index))
+            }
+        }
+
+        impl<'a> GetLayer for $weight_struct {
+            fn layer(&self) -> u64 {
+                self.layer
             }
         }
 

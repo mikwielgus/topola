@@ -85,75 +85,73 @@ impl DsnDesign {
                         .find(|padstack| padstack.name == pin.name)
                         .unwrap();
 
-                    // no layer support yet, pick the first one
-                    match &padstack.shape_vec[0] {
-                        Shape::Circle(circle) => {
-                            let circle = Circle {
-                                pos: ((place.x + pin.x) as f64, -(place.y + pin.y) as f64).into(),
-                                r: circle.diameter as f64 / 2.0,
-                            };
+                    for (layer, shape) in padstack.shape_vec.iter().enumerate() {
+                        match shape {
+                            Shape::Circle(circle) => {
+                                let circle = Circle {
+                                    pos: ((place.x + pin.x) as f64, -(place.y + pin.y) as f64)
+                                        .into(),
+                                    r: circle.diameter as f64 / 2.0,
+                                };
 
-                            layout
-                                .add_fixed_dot(FixedDotWeight {
-                                    net: *net_id as i64,
-                                    circle,
-                                })
-                                .unwrap();
-                        }
-                        Shape::Rect(_) => (),
-                        Shape::Path(_) => (),
-                        Shape::Polygon(_) => (),
-                    };
+                                layout
+                                    .add_fixed_dot(FixedDotWeight {
+                                        circle,
+                                        layer: layer as u64,
+                                        net: *net_id as i64,
+                                    })
+                                    .unwrap();
+                            }
+                            Shape::Rect(_) => (),
+                            Shape::Path(_) => (),
+                            Shape::Polygon(_) => (),
+                        };
+                    }
                 }
             }
         }
 
-        // add vias to layout and save indices of dots in the order they appear in the file
-        let _dot_indices: Vec<_> = self
-            .pcb
-            .wiring
-            .via_vec
-            .iter()
-            .map(|via| {
-                let net_id = layout.rules().net_ids.get(&via.net).unwrap();
+        for via in &self.pcb.wiring.via_vec {
+            let net_id = *layout.rules().net_ids.get(&via.net).unwrap();
 
-                // find the padstack referenced by this via placement
-                let padstack = &self
-                    .pcb
-                    .library
-                    .padstack_vec
-                    .iter()
-                    .find(|padstack| padstack.name == via.name)
-                    .unwrap();
+            // find the padstack referenced by this via placement
+            let padstack = &self
+                .pcb
+                .library
+                .padstack_vec
+                .iter()
+                .find(|padstack| padstack.name == via.name)
+                .unwrap();
 
-                // no layer support yet, pick the first one
-                let circle = match &padstack.shape_vec[0] {
+            // no layer support yet, pick the first one
+            for shape in &padstack.shape_vec {
+                let circle = match shape {
                     Shape::Circle(circle) => circle,
                     Shape::Rect(_) => todo!(),
                     Shape::Path(_) => todo!(),
                     Shape::Polygon(_) => todo!(),
                 };
+                let layer_id = *layout.rules().layer_ids.get(&circle.layer).unwrap();
                 let circle = Circle {
                     pos: (via.x as f64, -via.y as f64).into(),
                     r: circle.diameter as f64 / 2.0,
                 };
 
-                layout
-                    .add_fixed_dot(FixedDotWeight {
-                        net: *net_id as i64,
-                        circle,
-                    })
-                    .unwrap()
-            })
-            .collect();
+                layout.add_fixed_dot(FixedDotWeight {
+                    circle,
+                    layer: layer_id as u64,
+                    net: net_id as i64,
+                });
+            }
+        }
 
         for wire in self.pcb.wiring.wire_vec.iter() {
+            let layer_id = *layout.rules().layer_ids.get(&wire.path.layer).unwrap();
             let net_id = *layout.rules().net_ids.get(&wire.net).unwrap();
 
             // add the first coordinate in the wire path as a dot and save its index
             let mut prev_index = layout
                 .add_fixed_dot(FixedDotWeight {
-                    net: net_id as i64,
                     circle: Circle {
                         pos: (
                             wire.path.coord_vec[0].x as f64,
@@ -162,6 +160,8 @@ impl DsnDesign {
                             .into(),
                         r: wire.path.width as f64 / 2.0,
                     },
+                    layer: layer_id as u64,
+                    net: net_id as i64,
                 })
                 .unwrap();
 
@@ -169,11 +169,12 @@ impl DsnDesign {
             for coord in wire.path.coord_vec.iter().skip(1) {
                 let index = layout
                     .add_fixed_dot(FixedDotWeight {
-                        net: net_id as i64,
                         circle: Circle {
                             pos: (coord.x as f64, -coord.y as f64).into(),
                             r: wire.path.width as f64 / 2.0,
                         },
+                        layer: layer_id as u64,
+                        net: net_id as i64,
                     })
                     .unwrap();
 
@@ -183,8 +184,9 @@ impl DsnDesign {
                         prev_index,
                         index,
                         FixedSegWeight {
-                            net: net_id as i64,
                             width: wire.path.width as f64,
+                            layer: layer_id as u64,
+                            net: net_id as i64,
                         },
                     )
                     .unwrap();

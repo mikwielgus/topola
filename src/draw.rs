@@ -7,7 +7,7 @@ use crate::{
     layout::{
         bend::{BendIndex, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
-        graph::{GetNet, MakePrimitive},
+        graph::{GetLayer, GetNet, MakePrimitive},
         guide::{Guide, Head, HeadTrait, SegbendHead},
         primitive::GetOtherJoint,
         rules::RulesTrait,
@@ -58,17 +58,18 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         let head = self
             .extend_head(head, tangent.start_point())
             .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
+        let layer = head.face().primitive(self.board.layout()).layer();
         let net = head.face().primitive(self.board.layout()).net();
 
         match head.face() {
             DotIndex::Fixed(dot) => {
                 self.board
-                    .add_lone_loose_seg(dot, into.into(), LoneLooseSegWeight { net, width })
+                    .add_lone_loose_seg(dot, into.into(), LoneLooseSegWeight { width, layer, net })
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
             DotIndex::Loose(dot) => {
                 self.board
-                    .add_seq_loose_seg(into.into(), dot, SeqLooseSegWeight { net, width })
+                    .add_seq_loose_seg(into.into(), dot, SeqLooseSegWeight { width, layer, net })
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
         }
@@ -202,19 +203,26 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         width: f64,
         offset: f64,
     ) -> Result<SegbendHead, LayoutException> {
+        let layer = head.face().primitive(self.board.layout()).layer();
         let net = head.face().primitive(self.board.layout()).net();
         let segbend = self.board.insert_segbend(
             head.face(),
             around,
             LooseDotWeight {
-                net,
                 circle: Circle {
                     pos: to,
                     r: width / 2.0,
                 },
+                layer,
+                net,
             },
-            SeqLooseSegWeight { net, width },
-            LooseBendWeight { net, width, offset },
+            SeqLooseSegWeight { width, layer, net },
+            LooseBendWeight {
+                width,
+                offset,
+                layer,
+                net,
+            },
             cw,
         )?;
         Ok::<SegbendHead, LayoutException>(SegbendHead {

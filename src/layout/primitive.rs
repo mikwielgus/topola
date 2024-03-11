@@ -9,19 +9,16 @@ use crate::geometry::{
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::{
     bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
-    dot::DotWeight,
-    dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    graph::{GeometryIndex, GeometryWeight, Retag},
+    dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+    graph::{GeometryIndex, GeometryWeight, GetLayer, GetNet, Retag},
     loose::LooseIndex,
+    rules::{Conditions, GetConditions, RulesTrait},
     seg::{
         FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex,
         SeqLooseSegWeight,
     },
     Layout,
 };
-
-use super::graph::GetNet;
-use super::rules::{Conditions, GetConditions, RulesTrait};
 
 #[enum_dispatch]
 pub trait GetLayout<'a, R: RulesTrait> {
@@ -127,6 +124,12 @@ macro_rules! impl_primitive {
             }
         }
 
+        impl<'a, R: RulesTrait> GetLayer for $primitive_struct<'a, R> {
+            fn layer(&self) -> u64 {
+                self.weight().layer()
+            }
+        }
+
         impl<'a, R: RulesTrait> GetNet for $primitive_struct<'a, R> {
             fn net(&self) -> i64 {
                 self.weight().net()
@@ -147,7 +150,15 @@ macro_rules! impl_loose_primitive {
     };
 }
 
-#[enum_dispatch(GetNet, GetWidth, GetLayout, MakeShape, GetLimbs, GetConditions)]
+#[enum_dispatch(
+    GetLayer,
+    GetNet,
+    GetWidth,
+    GetLayout,
+    MakeShape,
+    GetLimbs,
+    GetConditions
+)]
 pub enum Primitive<'a, R: RulesTrait> {
     FixedDot(FixedDot<'a, R>),
     LooseDot(LooseDot<'a, R>),

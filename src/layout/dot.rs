@@ -7,7 +7,7 @@ use crate::{
     geometry::{DotWeightTrait, GetPos, GetWidth, SetPos},
     graph::{GenericIndex, GetNodeIndex},
     layout::{
-        graph::{GeometryIndex, GeometryWeight, GetNet, MakePrimitive, Retag},
+        graph::{GeometryIndex, GeometryWeight, GetLayer, GetNet, MakePrimitive, Retag},
         primitive::{GenericPrimitive, Primitive},
         rules::RulesTrait,
         Layout,
@@ -75,8 +75,9 @@ impl DotWeightTrait<GeometryWeight> for DotWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedDotWeight {
-    pub net: i64,
     pub circle: Circle,
+    pub layer: u64,
+    pub net: i64,
 }
 
 impl_fixed_weight!(FixedDotWeight, FixedDot, FixedDotIndex);
@@ -102,8 +103,9 @@ impl GetWidth for FixedDotWeight {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseDotWeight {
-    pub net: i64,
     pub circle: Circle,
+    pub layer: u64,
+    pub net: i64,
 }
 
 impl_loose_weight!(LooseDotWeight, LooseDot, LooseDotIndex);

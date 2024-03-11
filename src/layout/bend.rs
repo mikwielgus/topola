@@ -4,7 +4,7 @@ use crate::{
     geometry::{BendWeightTrait, GetOffset, GetWidth, SetOffset},
     graph::{GenericIndex, GetNodeIndex},
     layout::{
-        graph::{GeometryIndex, GeometryWeight, GetNet, MakePrimitive, Retag},
+        graph::{GeometryIndex, GeometryWeight, GetLayer, GetNet, MakePrimitive, Retag},
         primitive::{GenericPrimitive, Primitive},
         rules::RulesTrait,
         Layout,
@@ -73,9 +73,10 @@ impl BendWeightTrait<GeometryWeight> for BendWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedBendWeight {
-    pub net: i64,
     pub width: f64,
     pub offset: f64,
+    pub layer: u64,
+    pub net: i64,
 }
 
 impl_fixed_weight!(FixedBendWeight, FixedBend, FixedBendIndex);
@@ -101,9 +102,10 @@ impl GetWidth for FixedBendWeight {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseBendWeight {
-    pub net: i64,
     pub width: f64,
     pub offset: f64,
+    pub layer: u64,
+    pub net: i64,
 }
 
 impl GetOffset for LooseBendWeight {

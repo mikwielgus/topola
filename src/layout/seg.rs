@@ -4,7 +4,7 @@ use crate::{
     geometry::{GetWidth, SegWeightTrait},
     graph::{GenericIndex, GetNodeIndex},
     layout::{
-        graph::{GeometryIndex, GeometryWeight, GetNet, MakePrimitive, Retag},
+        graph::{GeometryIndex, GeometryWeight, GetLayer, GetNet, MakePrimitive, Retag},
         primitive::{GenericPrimitive, Primitive},
         rules::RulesTrait,
         Layout,
@@ -79,8 +79,9 @@ impl SegWeightTrait<GeometryWeight> for SegWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedSegWeight {
-    pub net: i64,
     pub width: f64,
+    pub layer: u64,
+    pub net: i64,
 }
 
 impl_fixed_weight!(FixedSegWeight, FixedSeg, FixedSegIndex);
@@ -94,8 +95,9 @@ impl GetWidth for FixedSegWeight {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LoneLooseSegWeight {
-    pub net: i64,
     pub width: f64,
+    pub layer: u64,
+    pub net: i64,
 }
 
 impl_loose_weight!(LoneLooseSegWeight, LoneLooseSeg, LoneLooseSegIndex);
@@ -109,8 +111,9 @@ impl GetWidth for LoneLooseSegWeight {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SeqLooseSegWeight {
-    pub net: i64,
     pub width: f64,
+    pub layer: u64,
+    pub net: i64,
 }
 
 impl_loose_weight!(SeqLooseSegWeight, SeqLooseSeg, SeqLooseSegIndex);

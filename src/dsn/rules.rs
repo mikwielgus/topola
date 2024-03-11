@@ -25,6 +25,8 @@ pub struct DsnRules {
     // net class name -> rule
     class_rules: HashMap<String, DsnRule>,
 
+    // layer names -> layer IDs for Layout
+    pub layer_ids: HashMap<String, u64>,
     // net names -> net IDs for Layout
     pub net_ids: HashMap<String, i64>,
     // net ID -> net class
@@ -33,6 +35,13 @@ pub struct DsnRules {
 
 impl DsnRules {
     pub fn from_pcb(pcb: &Pcb) -> Self {
+        let layer_ids = HashMap::from_iter(
+            pcb.structure
+                .layer_vec
+                .iter()
+                .map(|layer| (layer.name.clone(), layer.property.index as u64)),
+        );
+
         // keeping this as a separate iter pass because it might be moved into a different struct later?
         let net_ids = HashMap::from_iter(
             pcb.network
@@ -60,6 +69,7 @@ impl DsnRules {
         Self {
             structure_rule: DsnRule::from_dsn(&pcb.structure.rule),
             class_rules,
+            layer_ids,
             net_ids,
             net_id_classes,
         }
