@@ -14,7 +14,15 @@ pub trait ShapeTrait {
     fn width(&self) -> f64;
     fn length(&self) -> f64;
 
-    fn flat_envelope_3d(&self, margin: f64, layer_count: u64) -> AABB<[f64; 3]> {
+    fn envelope_3d(&self, margin: f64, layer: u64) -> AABB<[f64; 3]> {
+        let envelope = self.envelope(margin);
+        AABB::from_corners(
+            [envelope.lower()[0], envelope.lower()[1], layer as f64],
+            [envelope.upper()[0], envelope.upper()[1], layer as f64],
+        )
+    }
+
+    fn full_height_envelope_3d(&self, margin: f64, layer_count: u64) -> AABB<[f64; 3]> {
         let envelope = self.envelope(margin);
         AABB::from_corners(
             [envelope.lower()[0], envelope.lower()[1], 0.0],

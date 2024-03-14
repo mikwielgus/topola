@@ -5,6 +5,7 @@ use geo::Point;
 use rstar::RTreeObject;
 use thiserror::Error;
 
+use super::graph::GetLayer;
 use super::loose::{GetNextLoose, Loose, LooseIndex};
 use super::rules::RulesTrait;
 use super::segbend::Segbend;
@@ -175,7 +176,7 @@ impl<R: RulesTrait> Layout<R> {
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    fn add_dot_infringably<W: DotWeightTrait<GeometryWeight>>(
+    fn add_dot_infringably<W: DotWeightTrait<GeometryWeight> + GetLayer>(
         &mut self,
         weight: W,
         infringables: &[GeometryIndex],
@@ -469,7 +470,7 @@ impl<R: RulesTrait> Layout<R> {
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_seg_infringably<W: SegWeightTrait<GeometryWeight>>(
+    fn add_seg_infringably<W: SegWeightTrait<GeometryWeight> + GetLayer>(
         &mut self,
         from: DotIndex,
         to: DotIndex,
@@ -527,7 +528,7 @@ impl<R: RulesTrait> Layout<R> {
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 3))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_core_bend_infringably<W: BendWeightTrait<GeometryWeight>>(
+    fn add_core_bend_infringably<W: BendWeightTrait<GeometryWeight> + GetLayer>(
         &mut self,
         from: DotIndex,
         to: DotIndex,
@@ -723,7 +724,7 @@ impl<R: RulesTrait> Layout<R> {
 
         self.geometry_with_rtree
             .rtree()
-            .locate_in_envelope_intersecting(&limiting_shape.flat_envelope_3d(0.0, 2))
+            .locate_in_envelope_intersecting(&limiting_shape.full_height_envelope_3d(0.0, 2))
             .filter(|wrapper| !self.are_connectable(node, wrapper.data))
             .filter(|wrapper| !except.contains(&wrapper.data))
             .filter(|wrapper| {
@@ -749,7 +750,7 @@ impl<R: RulesTrait> Layout<R> {
 
         self.geometry_with_rtree
             .rtree()
-            .locate_in_envelope_intersecting(&shape.flat_envelope_3d(0.0, 2))
+            .locate_in_envelope_intersecting(&shape.full_height_envelope_3d(0.0, 2))
             .filter(|wrapper| !self.are_connectable(node, wrapper.data))
             .filter(|wrapper| shape.intersects(&wrapper.data.primitive(self).shape()))
             .map(|wrapper| wrapper.data)

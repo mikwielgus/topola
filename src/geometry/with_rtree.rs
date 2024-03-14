@@ -21,9 +21,9 @@ pub struct Bbox {
 }
 
 impl Bbox {
-    pub fn new(shape: &Shape) -> Bbox {
+    pub fn new(shape: &Shape, layer: u64) -> Bbox {
         Self {
-            aabb: shape.flat_envelope_3d(0.0, 2),
+            aabb: shape.envelope_3d(0.0, layer),
         }
     }
 }
@@ -90,7 +90,7 @@ impl<
         }
     }
 
-    pub fn add_dot<W: DotWeightTrait<GW>>(&mut self, weight: W) -> GenericIndex<W>
+    pub fn add_dot<W: DotWeightTrait<GW> + GetLayer>(&mut self, weight: W) -> GenericIndex<W>
     where
         GenericIndex<W>: Into<GI>,
     {
@@ -100,13 +100,19 @@ impl<
                 &self
                     .geometry
                     .dot_shape(dot.into().try_into().unwrap_or_else(|_| unreachable!())),
+                weight.layer(),
             ),
             dot.into(),
         ));
         dot
     }
 
-    pub fn add_seg<W: SegWeightTrait<GW>>(&mut self, from: DI, to: DI, weight: W) -> GenericIndex<W>
+    pub fn add_seg<W: SegWeightTrait<GW> + GetLayer>(
+        &mut self,
+        from: DI,
+        to: DI,
+        weight: W,
+    ) -> GenericIndex<W>
     where
         GenericIndex<W>: Into<GI>,
     {
@@ -116,13 +122,14 @@ impl<
                 &self
                     .geometry
                     .seg_shape(seg.into().try_into().unwrap_or_else(|_| unreachable!())),
+                weight.layer(),
             ),
             seg.into(),
         ));
         seg
     }
 
-    pub fn add_bend<W: BendWeightTrait<GW>>(
+    pub fn add_bend<W: BendWeightTrait<GW> + GetLayer>(
         &mut self,
         from: DI,
         to: DI,
@@ -138,6 +145,7 @@ impl<
                 &self
                     .geometry
                     .bend_shape(bend.into().try_into().unwrap_or_else(|_| unreachable!())),
+                weight.layer(),
             ),
             bend.into(),
         ));
@@ -248,15 +256,24 @@ impl<
     > GeometryWithRtree<GW, DW, SW, BW, GI, DI, SI, BI>
 {
     fn make_dot_bbox(&self, dot: DI) -> BboxedIndex<GI> {
-        BboxedIndex::new(Bbox::new(&self.geometry.dot_shape(dot)), dot.into())
+        BboxedIndex::new(
+            Bbox::new(&self.geometry.dot_shape(dot), self.layer(dot.into())),
+            dot.into(),
+        )
     }
 
     fn make_seg_bbox(&self, seg: SI) -> BboxedIndex<GI> {
-        BboxedIndex::new(Bbox::new(&self.geometry.seg_shape(seg)), seg.into())
+        BboxedIndex::new(
+            Bbox::new(&self.geometry.seg_shape(seg), self.layer(seg.into())),
+            seg.into(),
+        )
     }
 
     fn make_bend_bbox(&self, bend: BI) -> BboxedIndex<GI> {
-        BboxedIndex::new(Bbox::new(&self.geometry.bend_shape(bend)), bend.into())
+        BboxedIndex::new(
+            Bbox::new(&self.geometry.bend_shape(bend), self.layer(bend.into())),
+            bend.into(),
+        )
     }
 
     fn shape(&self, index: GI) -> Shape {
@@ -266,6 +283,18 @@ impl<
             self.geometry.seg_shape(seg)
         } else if let Ok(bend) = <GI as TryInto<BI>>::try_into(index) {
             self.geometry.bend_shape(bend)
+        } else {
+            unreachable!();
+        }
+    }
+
+    fn layer(&self, index: GI) -> u64 {
+        if let Ok(dot) = <GI as TryInto<DI>>::try_into(index) {
+            self.geometry.dot_weight(dot).layer()
+        } else if let Ok(seg) = <GI as TryInto<SI>>::try_into(index) {
+            self.geometry.seg_weight(seg).layer()
+        } else if let Ok(bend) = <GI as TryInto<BI>>::try_into(index) {
+            self.geometry.bend_weight(bend).layer()
         } else {
             unreachable!();
         }
@@ -287,10 +316,11 @@ impl<
         !self.rtree.iter().any(|wrapper| {
             let node = wrapper.data;
             let shape = self.shape(node);
-            let wrapper = BboxedIndex::new(Bbox::new(&shape), node);
+            let layer = self.layer(node);
+            let wrapper = BboxedIndex::new(Bbox::new(&shape, layer), node);
             !self
                 .rtree
-                .locate_in_envelope(&shape.flat_envelope_3d(0.0, 2))
+                .locate_in_envelope(&shape.envelope_3d(0.0, layer))
                 .any(|w| *w == wrapper)
         })
     }
