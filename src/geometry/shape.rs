@@ -13,6 +13,18 @@ pub trait ShapeTrait {
     fn envelope(&self, margin: f64) -> AABB<[f64; 2]>;
     fn width(&self) -> f64;
     fn length(&self) -> f64;
+
+    fn flat_envelope_3d(&self, margin: f64, layer_count: u64) -> AABB<[f64; 3]> {
+        let envelope = self.envelope(margin);
+        AABB::from_corners(
+            [envelope.lower()[0], envelope.lower()[1], 0.0],
+            [
+                envelope.upper()[0],
+                envelope.upper()[1],
+                (layer_count - 1) as f64,
+            ],
+        )
+    }
 }
 
 #[enum_dispatch(ShapeTrait)]

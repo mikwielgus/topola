@@ -82,7 +82,7 @@ pub struct Layout<R: RulesTrait> {
 impl<R: RulesTrait> Layout<R> {
     pub fn new(rules: R) -> Self {
         Self {
-            geometry_with_rtree: GeometryWithRtree::new(),
+            geometry_with_rtree: GeometryWithRtree::new(2),
             rules,
         }
     }

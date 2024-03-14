@@ -7,7 +7,7 @@ use rstar::{primitives::GeomWithData, RTree, RTreeObject};
 
 use crate::{
     graph::{GenericIndex, GetNodeIndex},
-    layout::graph::Retag,
+    layout::graph::{GetLayer, Retag},
 };
 
 use super::{
@@ -19,10 +19,10 @@ type BboxedShapeAndIndex<GI> = GeomWithData<Shape, GI>;
 
 #[derive(Debug)]
 pub struct GeometryWithRtree<
-    GW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<GI> + Copy,
-    DW: DotWeightTrait<GW> + Copy,
-    SW: SegWeightTrait<GW> + Copy,
-    BW: BendWeightTrait<GW> + Copy,
+    GW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<GI> + Copy,
+    DW: DotWeightTrait<GW> + GetLayer + Copy,
+    SW: SegWeightTrait<GW> + GetLayer + Copy,
+    BW: BendWeightTrait<GW> + GetLayer + Copy,
     GI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
     DI: GetNodeIndex + Into<GI> + Copy,
     SI: GetNodeIndex + Into<GI> + Copy,
@@ -30,6 +30,7 @@ pub struct GeometryWithRtree<
 > {
     geometry: Geometry<GW, DW, SW, BW, GI, DI, SI, BI>,
     rtree: RTree<BboxedShapeAndIndex<GI>>,
+    layer_count: u64,
     weight_marker: PhantomData<GW>,
     dot_weight_marker: PhantomData<DW>,
     seg_weight_marker: PhantomData<SW>,
@@ -43,20 +44,21 @@ pub struct GeometryWithRtree<
 #[debug_invariant(self.test_envelopes())]
 #[debug_invariant(self.geometry.graph().node_count() == self.rtree.size())]
 impl<
-        GW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<GI> + Copy,
-        DW: DotWeightTrait<GW> + Copy,
-        SW: SegWeightTrait<GW> + Copy,
-        BW: BendWeightTrait<GW> + Copy,
+        GW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<GI> + Copy,
+        DW: DotWeightTrait<GW> + GetLayer + Copy,
+        SW: SegWeightTrait<GW> + GetLayer + Copy,
+        BW: BendWeightTrait<GW> + GetLayer + Copy,
         GI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetNodeIndex + Into<GI> + Copy,
         SI: GetNodeIndex + Into<GI> + Copy,
         BI: GetNodeIndex + Into<GI> + Copy,
     > GeometryWithRtree<GW, DW, SW, BW, GI, DI, SI, BI>
 {
-    pub fn new() -> Self {
+    pub fn new(layer_count: u64) -> Self {
         Self {
             geometry: Geometry::<GW, DW, SW, BW, GI, DI, SI, BI>::new(),
             rtree: RTree::new(),
+            layer_count,
             weight_marker: PhantomData,
             dot_weight_marker: PhantomData,
             seg_weight_marker: PhantomData,
@@ -206,10 +208,10 @@ impl<
 }
 
 impl<
-        GW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<GI> + Copy,
-        DW: DotWeightTrait<GW> + Copy,
-        SW: SegWeightTrait<GW> + Copy,
-        BW: BendWeightTrait<GW> + Copy,
+        GW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<GI> + Copy,
+        DW: DotWeightTrait<GW> + GetLayer + Copy,
+        SW: SegWeightTrait<GW> + GetLayer + Copy,
+        BW: BendWeightTrait<GW> + GetLayer + Copy,
         GI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetNodeIndex + Into<GI> + Copy,
         SI: GetNodeIndex + Into<GI> + Copy,
