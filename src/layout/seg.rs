@@ -44,7 +44,7 @@ impl TryFrom<GeometryIndex> for SegIndex {
     }
 }
 
-#[enum_dispatch(GetWidth)]
+#[enum_dispatch(GetWidth, GetLayer)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SegWeight {
     Fixed(FixedSegWeight),

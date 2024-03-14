@@ -93,7 +93,7 @@ pub enum GeometryIndex {
     LooseBend(LooseBendIndex),
 }
 
-#[enum_dispatch(GetWidth, Retag<GeometryIndex>)]
+#[enum_dispatch(GetWidth, GetLayer, Retag<GeometryIndex>)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GeometryWeight {
     FixedDot(FixedDotWeight),

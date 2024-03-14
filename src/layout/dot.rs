@@ -43,7 +43,7 @@ impl TryFrom<GeometryIndex> for DotIndex {
     }
 }
 
-#[enum_dispatch(GetPos, SetPos, GetWidth)]
+#[enum_dispatch(GetPos, SetPos, GetWidth, GetLayer)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DotWeight {
     Fixed(FixedDotWeight),

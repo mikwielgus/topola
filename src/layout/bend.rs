@@ -41,7 +41,7 @@ impl TryFrom<GeometryIndex> for BendIndex {
     }
 }
 
-#[enum_dispatch(GetOffset, SetOffset, GetWidth)]
+#[enum_dispatch(GetOffset, SetOffset, GetWidth, GetLayer)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum BendWeight {
     Fixed(FixedBendWeight),
