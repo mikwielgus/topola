@@ -735,7 +735,7 @@ impl<R: RulesTrait> Layout<R> {
                         .clamp(0.0, f64::INFINITY),
                 );
 
-                inflated_shape.intersects(wrapper.geom())
+                inflated_shape.intersects(&wrapper.data.primitive(self).shape())
             })
             .map(|wrapper| wrapper.data)
             .next()
@@ -751,7 +751,7 @@ impl<R: RulesTrait> Layout<R> {
             .rtree()
             .locate_in_envelope_intersecting(&RTreeObject::envelope(&shape))
             .filter(|wrapper| !self.are_connectable(node, wrapper.data))
-            .filter(|wrapper| shape.intersects(wrapper.geom()))
+            .filter(|wrapper| shape.intersects(&wrapper.data.primitive(self).shape()))
             .map(|wrapper| wrapper.data)
             .next()
             .and_then(|collidee| Some(Collision(shape, collidee)))
