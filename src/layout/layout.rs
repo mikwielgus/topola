@@ -2,7 +2,7 @@ use contracts::debug_ensures;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 
-use rstar::RTreeObject;
+use rstar::{RTreeObject, AABB};
 use thiserror::Error;
 
 use super::graph::GetLayer;
@@ -630,19 +630,18 @@ impl<R: RulesTrait> Layout<R> {
             .map(|wrapper| wrapper.data)
     }
 
-    pub fn shapes(&self) -> impl Iterator<Item = Shape> + '_ {
-        self.nodes().map(|node| node.primitive(self).shape())
+    pub fn layer_nodes(&self, layer: u64) -> impl Iterator<Item = GeometryIndex> + '_ {
+        self.geometry_with_rtree
+            .rtree()
+            .locate_in_envelope_intersecting(&AABB::from_corners(
+                [-f64::INFINITY, -f64::INFINITY, layer as f64],
+                [f64::INFINITY, f64::INFINITY, layer as f64],
+            ))
+            .map(|wrapper| wrapper.data)
     }
 
     pub fn node_count(&self) -> usize {
         self.geometry_with_rtree.graph().node_count()
-    }
-
-    fn node_indices(&self) -> impl Iterator<Item = GeometryIndex> + '_ {
-        self.geometry_with_rtree
-            .rtree()
-            .iter()
-            .map(|wrapper| wrapper.data)
     }
 }
 

@@ -138,33 +138,15 @@ impl eframe::App for App {
                 let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
                 let mut painter = Painter::new(ui, transform);
 
-                let dot_shape = Shape::Dot(DotShape {
-                    c: Circle {
-                        pos: [50.0, 100.0].into(),
-                        r: 10.0,
-                    },
-                });
-
-                let seg_shape = Shape::Seg(SegShape {
-                    from: [200.0, 25.0].into(),
-                    to: [300.0, 300.0].into(),
-                    width: 5.0,
-                });
-
-                let bend_shape = Shape::Bend(BendShape {
-                    from: [100.0, 100.0].into(),
-                    to: [160.0, 160.0].into(),
-                    c: Circle {
-                        pos: [130.0, 130.0].into(),
-                        r: 30.0,
-                    },
-                    width: 12.0,
-                });
-
                 if let Some(layout) = &self.layout {
-                    for node in layout.nodes() {
+                    for node in layout.layer_nodes(1) {
                         let shape = node.primitive(layout).shape();
-                        painter.paint_shape(&shape, egui::Color32::from_rgb(255, 0, 0));
+                        painter.paint_shape(&shape, egui::Color32::from_rgb(52, 52, 200));
+                    }
+
+                    for node in layout.layer_nodes(0) {
+                        let shape = node.primitive(layout).shape();
+                        painter.paint_shape(&shape, egui::Color32::from_rgb(200, 52, 52));
                     }
                 }
             })

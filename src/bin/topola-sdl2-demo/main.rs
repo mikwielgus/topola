@@ -394,7 +394,18 @@ fn render_times(
         };
 
         //let result = panic::catch_unwind(|| {
-        for node in layout.nodes() {
+        for node in layout.layer_nodes(1) {
+            let color = if highlighteds.contains(&node) {
+                ColorU::new(100, 100, 255, 255)
+            } else {
+                ColorU::new(52, 52, 200, 255)
+            };
+
+            let shape = node.primitive(layout).shape();
+            painter.paint_shape(&shape, color, view.zoom);
+        }
+
+        for node in layout.layer_nodes(0) {
             let color = if highlighteds.contains(&node) {
                 ColorU::new(255, 100, 100, 255)
             } else {
