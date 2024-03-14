@@ -3,7 +3,7 @@ use std::marker::PhantomData;
 use contracts::debug_invariant;
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
-use rstar::{primitives::GeomWithData, RTree, RTreeObject};
+use rstar::{primitives::GeomWithData, RTree, RTreeObject, AABB};
 
 use crate::{
     graph::{GenericIndex, GetNodeIndex},
@@ -11,11 +11,31 @@ use crate::{
 };
 
 use super::{
-    shape::Shape, BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetWidth,
-    SegWeightTrait,
+    shape::{Shape, ShapeTrait},
+    BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetWidth, SegWeightTrait,
 };
 
-type BboxedShapeAndIndex<GI> = GeomWithData<Shape, GI>;
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct Bbox {
+    aabb: AABB<[f64; 3]>,
+}
+
+impl Bbox {
+    pub fn new(shape: &Shape) -> Bbox {
+        Self {
+            aabb: shape.flat_envelope_3d(0.0, 2),
+        }
+    }
+}
+
+impl RTreeObject for Bbox {
+    type Envelope = AABB<[f64; 3]>;
+    fn envelope(&self) -> Self::Envelope {
+        self.aabb
+    }
+}
+
+type BboxedIndex<GI> = GeomWithData<Bbox, GI>;
 
 #[derive(Debug)]
 pub struct GeometryWithRtree<
@@ -29,7 +49,7 @@ pub struct GeometryWithRtree<
     BI: GetNodeIndex + Into<GI> + Copy,
 > {
     geometry: Geometry<GW, DW, SW, BW, GI, DI, SI, BI>,
-    rtree: RTree<BboxedShapeAndIndex<GI>>,
+    rtree: RTree<BboxedIndex<GI>>,
     layer_count: u64,
     weight_marker: PhantomData<GW>,
     dot_weight_marker: PhantomData<DW>,
@@ -75,9 +95,12 @@ impl<
         GenericIndex<W>: Into<GI>,
     {
         let dot = self.geometry.add_dot(weight);
-        self.rtree.insert(BboxedShapeAndIndex::new(
-            self.geometry
-                .dot_shape(dot.into().try_into().unwrap_or_else(|_| unreachable!())),
+        self.rtree.insert(BboxedIndex::new(
+            Bbox::new(
+                &self
+                    .geometry
+                    .dot_shape(dot.into().try_into().unwrap_or_else(|_| unreachable!())),
+            ),
             dot.into(),
         ));
         dot
@@ -88,9 +111,12 @@ impl<
         GenericIndex<W>: Into<GI>,
     {
         let seg = self.geometry.add_seg(from, to, weight);
-        self.rtree.insert(BboxedShapeAndIndex::new(
-            self.geometry
-                .seg_shape(seg.into().try_into().unwrap_or_else(|_| unreachable!())),
+        self.rtree.insert(BboxedIndex::new(
+            Bbox::new(
+                &self
+                    .geometry
+                    .seg_shape(seg.into().try_into().unwrap_or_else(|_| unreachable!())),
+            ),
             seg.into(),
         ));
         seg
@@ -107,9 +133,12 @@ impl<
         GenericIndex<W>: Into<GI>,
     {
         let bend = self.geometry.add_bend(from, to, core, weight);
-        self.rtree.insert(BboxedShapeAndIndex::new(
-            self.geometry
-                .bend_shape(bend.into().try_into().unwrap_or_else(|_| unreachable!())),
+        self.rtree.insert(BboxedIndex::new(
+            Bbox::new(
+                &self
+                    .geometry
+                    .bend_shape(bend.into().try_into().unwrap_or_else(|_| unreachable!())),
+            ),
             bend.into(),
         ));
         bend
@@ -218,16 +247,16 @@ impl<
         BI: GetNodeIndex + Into<GI> + Copy,
     > GeometryWithRtree<GW, DW, SW, BW, GI, DI, SI, BI>
 {
-    fn make_dot_bbox(&self, dot: DI) -> BboxedShapeAndIndex<GI> {
-        BboxedShapeAndIndex::new(self.geometry.dot_shape(dot), dot.into())
+    fn make_dot_bbox(&self, dot: DI) -> BboxedIndex<GI> {
+        BboxedIndex::new(Bbox::new(&self.geometry.dot_shape(dot)), dot.into())
     }
 
-    fn make_seg_bbox(&self, seg: SI) -> BboxedShapeAndIndex<GI> {
-        BboxedShapeAndIndex::new(self.geometry.seg_shape(seg), seg.into())
+    fn make_seg_bbox(&self, seg: SI) -> BboxedIndex<GI> {
+        BboxedIndex::new(Bbox::new(&self.geometry.seg_shape(seg)), seg.into())
     }
 
-    fn make_bend_bbox(&self, bend: BI) -> BboxedShapeAndIndex<GI> {
-        BboxedShapeAndIndex::new(self.geometry.bend_shape(bend), bend.into())
+    fn make_bend_bbox(&self, bend: BI) -> BboxedIndex<GI> {
+        BboxedIndex::new(Bbox::new(&self.geometry.bend_shape(bend)), bend.into())
     }
 
     fn shape(&self, index: GI) -> Shape {
@@ -246,7 +275,7 @@ impl<
         &self.geometry
     }
 
-    pub fn rtree(&self) -> &RTree<BboxedShapeAndIndex<GI>> {
+    pub fn rtree(&self) -> &RTree<BboxedIndex<GI>> {
         &self.rtree
     }
 
@@ -258,10 +287,10 @@ impl<
         !self.rtree.iter().any(|wrapper| {
             let node = wrapper.data;
             let shape = self.shape(node);
-            let wrapper = BboxedShapeAndIndex::new(shape, node);
+            let wrapper = BboxedIndex::new(Bbox::new(&shape), node);
             !self
                 .rtree
-                .locate_in_envelope(&RTreeObject::envelope(&shape))
+                .locate_in_envelope(&shape.flat_envelope_3d(0.0, 2))
                 .any(|w| *w == wrapper)
         })
     }

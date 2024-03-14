@@ -723,7 +723,7 @@ impl<R: RulesTrait> Layout<R> {
 
         self.geometry_with_rtree
             .rtree()
-            .locate_in_envelope_intersecting(&RTreeObject::envelope(&limiting_shape))
+            .locate_in_envelope_intersecting(&limiting_shape.flat_envelope_3d(0.0, 2))
             .filter(|wrapper| !self.are_connectable(node, wrapper.data))
             .filter(|wrapper| !except.contains(&wrapper.data))
             .filter(|wrapper| {
@@ -749,7 +749,7 @@ impl<R: RulesTrait> Layout<R> {
 
         self.geometry_with_rtree
             .rtree()
-            .locate_in_envelope_intersecting(&RTreeObject::envelope(&shape))
+            .locate_in_envelope_intersecting(&shape.flat_envelope_3d(0.0, 2))
             .filter(|wrapper| !self.are_connectable(node, wrapper.data))
             .filter(|wrapper| shape.intersects(&wrapper.data.primitive(self).shape()))
             .map(|wrapper| wrapper.data)

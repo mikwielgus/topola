@@ -329,6 +329,6 @@ impl ShapeTrait for BendShape {
 impl RTreeObject for Shape {
     type Envelope = AABB<[f64; 2]>;
     fn envelope(&self) -> Self::Envelope {
-        return ShapeTrait::envelope(self, 0.0);
+        ShapeTrait::envelope(self, 0.0)
     }
 }
