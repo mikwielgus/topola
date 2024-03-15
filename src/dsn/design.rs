@@ -87,22 +87,23 @@ impl DsnDesign {
 
                     for (layer, shape) in padstack.shape_vec.iter().enumerate() {
                         match shape {
-                            Shape::Circle(circle) => {
-                                let circle = Circle {
-                                    pos: ((place.x + pin.x) as f64, -(place.y + pin.y) as f64)
-                                        .into(),
-                                    r: circle.diameter as f64 / 2.0,
-                                };
-
-                                layout
-                                    .add_fixed_dot(FixedDotWeight {
-                                        circle,
-                                        layer: layer as u64,
-                                        net: *net_id as i64,
-                                    })
-                                    .unwrap();
-                            }
-                            Shape::Rect(_) => (),
+                            Shape::Circle(circle) => Self::add_circle(
+                                &mut layout,
+                                (place.x + pin.x) as f64,
+                                -(place.y + pin.y) as f64,
+                                circle.diameter as f64 / 2.0,
+                                layer as u64,
+                                *net_id as i64,
+                            ),
+                            Shape::Rect(rect) => Self::add_rect(
+                                &mut layout,
+                                (place.x + rect.x1) as f64,
+                                -(place.y + rect.y1) as f64,
+                                (place.x + rect.x2) as f64,
+                                -(place.y + rect.y2) as f64,
+                                layer as u64,
+                                *net_id as i64,
+                            ),
                             Shape::Path(_) => (),
                             Shape::Polygon(_) => (),
                         };
@@ -123,25 +124,24 @@ impl DsnDesign {
                 .find(|padstack| padstack.name == via.name)
                 .unwrap();
 
-            // no layer support yet, pick the first one
             for shape in &padstack.shape_vec {
-                let circle = match shape {
-                    Shape::Circle(circle) => circle,
+                match shape {
+                    Shape::Circle(circle) => {
+                        let layer = *layout.rules().layer_ids.get(&circle.layer).unwrap();
+
+                        Self::add_circle(
+                            &mut layout,
+                            via.x as f64,
+                            -via.y as f64,
+                            circle.diameter as f64 / 2.0,
+                            layer as u64,
+                            net_id as i64,
+                        )
+                    }
                     Shape::Rect(_) => todo!(),
                     Shape::Path(_) => todo!(),
                     Shape::Polygon(_) => todo!(),
                 };
-                let layer_id = *layout.rules().layer_ids.get(&circle.layer).unwrap();
-                let circle = Circle {
-                    pos: (via.x as f64, -via.y as f64).into(),
-                    r: circle.diameter as f64 / 2.0,
-                };
-
-                layout.add_fixed_dot(FixedDotWeight {
-                    circle,
-                    layer: layer_id as u64,
-                    net: net_id as i64,
-                });
             }
         }
 
@@ -196,5 +196,105 @@ impl DsnDesign {
         }
 
         layout
+    }
+
+    fn add_circle(layout: &mut Layout<DsnRules>, x: f64, y: f64, r: f64, layer: u64, net: i64) {
+        let circle = Circle {
+            pos: (x, y).into(),
+            r,
+        };
+
+        layout
+            .add_fixed_dot(FixedDotWeight { circle, layer, net })
+            .unwrap();
+    }
+
+    fn add_rect(
+        layout: &mut Layout<DsnRules>,
+        x1: f64,
+        y1: f64,
+        x2: f64,
+        y2: f64,
+        layer: u64,
+        net: i64,
+    ) {
+        // Corners.
+        let dot_1_1 = layout
+            .add_fixed_dot(FixedDotWeight {
+                circle: Circle {
+                    pos: (x1, y1).into(),
+                    r: 0.5,
+                },
+                layer,
+                net,
+            })
+            .unwrap();
+        let dot_2_1 = layout
+            .add_fixed_dot(FixedDotWeight {
+                circle: Circle {
+                    pos: (x2, y1).into(),
+                    r: 0.5,
+                },
+                layer,
+                net,
+            })
+            .unwrap();
+        let dot_2_2 = layout
+            .add_fixed_dot(FixedDotWeight {
+                circle: Circle {
+                    pos: (x2, y2).into(),
+                    r: 0.5,
+                },
+                layer,
+                net,
+            })
+            .unwrap();
+        let dot_1_2 = layout
+            .add_fixed_dot(FixedDotWeight {
+                circle: Circle {
+                    pos: (x1, y2).into(),
+                    r: 0.5,
+                },
+                layer,
+                net,
+            })
+            .unwrap();
+        // Sides.
+        layout.add_fixed_seg(
+            dot_1_1,
+            dot_2_1,
+            FixedSegWeight {
+                width: 1.0,
+                layer,
+                net,
+            },
+        );
+        layout.add_fixed_seg(
+            dot_2_1,
+            dot_2_2,
+            FixedSegWeight {
+                width: 1.0,
+                layer,
+                net,
+            },
+        );
+        layout.add_fixed_seg(
+            dot_2_2,
+            dot_1_2,
+            FixedSegWeight {
+                width: 1.0,
+                layer,
+                net,
+            },
+        );
+        layout.add_fixed_seg(
+            dot_1_2,
+            dot_1_1,
+            FixedSegWeight {
+                width: 1.0,
+                layer,
+                net,
+            },
+        );
     }
 }
