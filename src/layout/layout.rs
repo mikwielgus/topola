@@ -171,7 +171,7 @@ impl<R: RulesTrait> Layout<R> {
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, Infringement> {
-        self.add_dot_infringably(weight, &[])
+        self.add_dot_infringably(weight, None)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
@@ -179,7 +179,7 @@ impl<R: RulesTrait> Layout<R> {
     fn add_dot_infringably<W: DotWeightTrait<GeometryWeight> + GetLayer>(
         &mut self,
         weight: W,
-        infringables: &[GeometryIndex],
+        infringables: Option<&[GeometryIndex]>,
     ) -> Result<GenericIndex<W>, Infringement>
     where
         GenericIndex<W>: Into<GeometryIndex> + Copy,
@@ -200,7 +200,7 @@ impl<R: RulesTrait> Layout<R> {
         to: FixedDotIndex,
         weight: FixedSegWeight,
     ) -> Result<FixedSegIndex, Infringement> {
-        self.add_seg_infringably(from.into(), to.into(), weight, &[])
+        self.add_seg_infringably(from.into(), to.into(), weight, None)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 4))]
@@ -226,7 +226,7 @@ impl<R: RulesTrait> Layout<R> {
             seg_weight,
             bend_weight,
             cw,
-            &infringables,
+            Some(&infringables),
         )?;
 
         if let Some(wraparound) = maybe_wraparound {
@@ -303,18 +303,18 @@ impl<R: RulesTrait> Layout<R> {
                 self.move_dot_infringably(
                     joints.0.into(),
                     from,
-                    &self.collect().bend_outer_bows(rail),
+                    Some(&self.collect().bend_outer_bows(rail)),
                 )?;
                 self.move_dot_infringably(
                     joints.1.into(),
                     to,
-                    &self.collect().bend_outer_bows(rail),
+                    Some(&self.collect().bend_outer_bows(rail)),
                 )?;
 
                 self.shift_bend_infringably(
                     rail.into(),
                     offset,
-                    &self.collect().bend_outer_bows(rail),
+                    Some(&self.collect().bend_outer_bows(rail)),
                 )?;
 
                 // Update offsets in case the rule conditions changed.
@@ -345,18 +345,18 @@ impl<R: RulesTrait> Layout<R> {
                 self.move_dot_infringably(
                     joints.0.into(),
                     from,
-                    &self.collect().bend_outer_bows(rail),
+                    Some(&self.collect().bend_outer_bows(rail)),
                 )?;
                 self.move_dot_infringably(
                     joints.1.into(),
                     to,
-                    &self.collect().bend_outer_bows(rail),
+                    Some(&self.collect().bend_outer_bows(rail)),
                 )?;
 
                 self.shift_bend_infringably(
                     rail.into(),
                     offset,
-                    &self.collect().bend_outer_bows(rail),
+                    Some(&self.collect().bend_outer_bows(rail)),
                 )?;
             }
 
@@ -386,7 +386,7 @@ impl<R: RulesTrait> Layout<R> {
             seg_weight,
             bend_weight,
             cw,
-            &self.collect().wraparounded_bows(around),
+            Some(&self.collect().wraparounded_bows(around)),
         )
     }
 
@@ -402,7 +402,7 @@ impl<R: RulesTrait> Layout<R> {
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         cw: bool,
-        infringables: &[GeometryIndex],
+        infringables: Option<&[GeometryIndex]>,
     ) -> Result<Segbend, LayoutException> {
         let seg_to = self.add_dot_infringably(dot_weight, infringables)?;
         let seg = self
@@ -448,7 +448,7 @@ impl<R: RulesTrait> Layout<R> {
         to: FixedDotIndex,
         weight: LoneLooseSegWeight,
     ) -> Result<LoneLooseSegIndex, Infringement> {
-        let seg = self.add_seg_infringably(from.into(), to.into(), weight, &[])?;
+        let seg = self.add_seg_infringably(from.into(), to.into(), weight, Some(&[]))?;
         Ok(seg)
     }
 
@@ -462,7 +462,7 @@ impl<R: RulesTrait> Layout<R> {
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
     ) -> Result<SeqLooseSegIndex, Infringement> {
-        let seg = self.add_seg_infringably(from, to.into(), weight, &[])?;
+        let seg = self.add_seg_infringably(from, to.into(), weight, Some(&[]))?;
         Ok(seg)
     }
 
@@ -475,7 +475,7 @@ impl<R: RulesTrait> Layout<R> {
         from: DotIndex,
         to: DotIndex,
         weight: W,
-        infringables: &[GeometryIndex],
+        infringables: Option<&[GeometryIndex]>,
     ) -> Result<GenericIndex<W>, Infringement>
     where
         GenericIndex<W>: Into<GeometryIndex> + Copy,
@@ -497,7 +497,7 @@ impl<R: RulesTrait> Layout<R> {
         to: LooseDotIndex,
         around: WraparoundableIndex,
         weight: LooseBendWeight,
-        infringables: &[GeometryIndex],
+        infringables: Option<&[GeometryIndex]>,
     ) -> Result<LooseBendIndex, LayoutException> {
         // It makes no sense to wrap something around or under one of its connectables.
         //
@@ -534,7 +534,7 @@ impl<R: RulesTrait> Layout<R> {
         to: DotIndex,
         core: FixedDotIndex,
         weight: W,
-        infringables: &[GeometryIndex],
+        infringables: Option<&[GeometryIndex]>,
     ) -> Result<GenericIndex<W>, Infringement>
     where
         GenericIndex<W>: Into<GeometryIndex> + Copy,
@@ -557,7 +557,7 @@ impl<R: RulesTrait> Layout<R> {
         to: LooseDotIndex,
         inner: BendIndex,
         weight: LooseBendWeight,
-        infringables: &[GeometryIndex],
+        infringables: Option<&[GeometryIndex]>,
     ) -> Result<GenericIndex<LooseBendWeight>, Infringement> {
         let core = *self
             .geometry_with_rtree
@@ -608,9 +608,9 @@ impl<R: RulesTrait> Layout<R> {
     fn fail_and_remove_if_infringes_except(
         &mut self,
         node: GeometryIndex,
-        except: &[GeometryIndex],
+        maybe_except: Option<&[GeometryIndex]>,
     ) -> Result<(), Infringement> {
-        if let Some(infringement) = self.detect_infringement_except(node, except) {
+        if let Some(infringement) = self.detect_infringement_except(node, maybe_except) {
             if let Ok(dot) = node.try_into() {
                 self.geometry_with_rtree.remove_dot(dot);
             } else if let Ok(seg) = node.try_into() {
@@ -650,8 +650,8 @@ impl<R: RulesTrait> Layout<R> {
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), Infringement> {
         match dot {
-            DotIndex::Fixed(..) => self.move_dot_infringably(dot, to, &[]),
-            DotIndex::Loose(..) => self.move_dot_infringably(dot, to, &[]),
+            DotIndex::Fixed(..) => self.move_dot_infringably(dot, to, Some(&[])),
+            DotIndex::Loose(..) => self.move_dot_infringably(dot, to, Some(&[])),
         }
     }
 
@@ -661,7 +661,7 @@ impl<R: RulesTrait> Layout<R> {
         &mut self,
         dot: DotIndex,
         to: Point,
-        infringables: &[GeometryIndex],
+        infringables: Option<&[GeometryIndex]>,
     ) -> Result<(), Infringement> {
         let old_pos = self.geometry_with_rtree.geometry().dot_weight(dot).pos();
         self.geometry_with_rtree.move_dot(dot, to);
@@ -689,7 +689,7 @@ impl<R: RulesTrait> Layout<R> {
         &mut self,
         bend: BendIndex,
         offset: f64,
-        infringables: &[GeometryIndex],
+        infringables: Option<&[GeometryIndex]>,
     ) -> Result<(), Infringement> {
         let old_offset = self
             .geometry_with_rtree
@@ -712,7 +712,7 @@ impl<R: RulesTrait> Layout<R> {
     fn detect_infringement_except(
         &self,
         node: GeometryIndex,
-        except: &[GeometryIndex],
+        maybe_except: Option<&[GeometryIndex]>,
     ) -> Option<Infringement> {
         let limiting_shape = node
             .primitive(self)
@@ -724,8 +724,8 @@ impl<R: RulesTrait> Layout<R> {
         self.geometry_with_rtree
             .rtree()
             .locate_in_envelope_intersecting(&limiting_shape.full_height_envelope_3d(0.0, 2))
+            .filter(|wrapper| maybe_except.is_some_and(|except| !except.contains(&wrapper.data)))
             .filter(|wrapper| !self.are_connectable(node, wrapper.data))
-            .filter(|wrapper| !except.contains(&wrapper.data))
             .filter(|wrapper| {
                 let infringee_conditions = wrapper.data.primitive(self).conditions();
 
