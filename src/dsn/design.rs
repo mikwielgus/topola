@@ -10,7 +10,7 @@ use crate::{
 use super::{
     de,
     rules::DsnRules,
-    structure::{DsnFile, Pcb, Shape},
+    structure::{self, DsnFile, Pcb, Shape},
 };
 
 #[derive(Error, Debug)]
@@ -97,14 +97,22 @@ impl DsnDesign {
                             ),
                             Shape::Rect(rect) => Self::add_rect(
                                 &mut layout,
-                                (place.x + rect.x1) as f64,
-                                -(place.y + rect.y1) as f64,
-                                (place.x + rect.x2) as f64,
-                                -(place.y + rect.y2) as f64,
+                                (place.x - pin.x + rect.x1) as f64,
+                                -(place.y - pin.y + rect.y1) as f64,
+                                (place.x - pin.x + rect.x2) as f64,
+                                -(place.y - pin.y + rect.y2) as f64,
                                 layer as u64,
                                 *net_id as i64,
                             ),
-                            Shape::Path(_) => (),
+                            Shape::Path(path) => Self::add_path(
+                                &mut layout,
+                                (place.x - pin.x) as f64,
+                                -(place.y - pin.y) as f64,
+                                &path.coord_vec,
+                                path.width as f64,
+                                layer as u64,
+                                *net_id as i64,
+                            ),
                             Shape::Polygon(_) => (),
                         };
                     }
@@ -138,8 +146,30 @@ impl DsnDesign {
                             net_id as i64,
                         )
                     }
-                    Shape::Rect(_) => todo!(),
-                    Shape::Path(_) => todo!(),
+                    Shape::Rect(rect) => {
+                        let layer = *layout.rules().layer_ids.get(&rect.layer).unwrap();
+                        Self::add_rect(
+                            &mut layout,
+                            rect.x1 as f64,
+                            rect.y1 as f64,
+                            rect.x2 as f64,
+                            rect.y2 as f64,
+                            layer as u64,
+                            net_id as i64,
+                        )
+                    }
+                    Shape::Path(path) => {
+                        let layer = *layout.rules().layer_ids.get(&path.layer).unwrap();
+                        Self::add_path(
+                            &mut layout,
+                            0.0,
+                            0.0,
+                            &path.coord_vec,
+                            path.width as f64,
+                            layer as u64,
+                            net_id as i64,
+                        )
+                    }
                     Shape::Polygon(_) => todo!(),
                 };
             }
@@ -149,50 +179,15 @@ impl DsnDesign {
             let layer_id = *layout.rules().layer_ids.get(&wire.path.layer).unwrap();
             let net_id = *layout.rules().net_ids.get(&wire.net).unwrap();
 
-            // add the first coordinate in the wire path as a dot and save its index
-            let mut prev_index = layout
-                .add_fixed_dot(FixedDotWeight {
-                    circle: Circle {
-                        pos: (
-                            wire.path.coord_vec[0].x as f64,
-                            -wire.path.coord_vec[0].y as f64,
-                        )
-                            .into(),
-                        r: wire.path.width as f64 / 2.0,
-                    },
-                    layer: layer_id as u64,
-                    net: net_id as i64,
-                })
-                .unwrap();
-
-            // iterate through path coords starting from the second
-            for coord in wire.path.coord_vec.iter().skip(1) {
-                let index = layout
-                    .add_fixed_dot(FixedDotWeight {
-                        circle: Circle {
-                            pos: (coord.x as f64, -coord.y as f64).into(),
-                            r: wire.path.width as f64 / 2.0,
-                        },
-                        layer: layer_id as u64,
-                        net: net_id as i64,
-                    })
-                    .unwrap();
-
-                // add a seg between the current and previous coords
-                let _ = layout
-                    .add_fixed_seg(
-                        prev_index,
-                        index,
-                        FixedSegWeight {
-                            width: wire.path.width as f64,
-                            layer: layer_id as u64,
-                            net: net_id as i64,
-                        },
-                    )
-                    .unwrap();
-
-                prev_index = index;
-            }
+            Self::add_path(
+                &mut layout,
+                0.0,
+                0.0,
+                &wire.path.coord_vec,
+                wire.path.width as f64,
+                layer_id as u64,
+                net_id as i64,
+            );
         }
 
         layout
@@ -260,41 +255,92 @@ impl DsnDesign {
             })
             .unwrap();
         // Sides.
-        layout.add_fixed_seg(
-            dot_1_1,
-            dot_2_1,
-            FixedSegWeight {
-                width: 1.0,
+        layout
+            .add_fixed_seg(
+                dot_1_1,
+                dot_2_1,
+                FixedSegWeight {
+                    width: 1.0,
+                    layer,
+                    net,
+                },
+            )
+            .unwrap();
+        layout
+            .add_fixed_seg(
+                dot_2_1,
+                dot_2_2,
+                FixedSegWeight {
+                    width: 1.0,
+                    layer,
+                    net,
+                },
+            )
+            .unwrap();
+        layout
+            .add_fixed_seg(
+                dot_2_2,
+                dot_1_2,
+                FixedSegWeight {
+                    width: 1.0,
+                    layer,
+                    net,
+                },
+            )
+            .unwrap();
+        layout
+            .add_fixed_seg(
+                dot_1_2,
+                dot_1_1,
+                FixedSegWeight {
+                    width: 1.0,
+                    layer,
+                    net,
+                },
+            )
+            .unwrap();
+    }
+
+    fn add_path(
+        layout: &mut Layout<DsnRules>,
+        offset_x: f64,
+        offset_y: f64,
+        coords: &Vec<structure::Point>,
+        width: f64,
+        layer: u64,
+        net: i64,
+    ) {
+        // add the first coordinate in the wire path as a dot and save its index
+        let mut prev_index = layout
+            .add_fixed_dot(FixedDotWeight {
+                circle: Circle {
+                    pos: (offset_x + coords[0].x as f64, offset_y - coords[0].y as f64).into(),
+                    r: width / 2.0,
+                },
                 layer,
                 net,
-            },
-        );
-        layout.add_fixed_seg(
-            dot_2_1,
-            dot_2_2,
-            FixedSegWeight {
-                width: 1.0,
-                layer,
-                net,
-            },
-        );
-        layout.add_fixed_seg(
-            dot_2_2,
-            dot_1_2,
-            FixedSegWeight {
-                width: 1.0,
-                layer,
-                net,
-            },
-        );
-        layout.add_fixed_seg(
-            dot_1_2,
-            dot_1_1,
-            FixedSegWeight {
-                width: 1.0,
-                layer,
-                net,
-            },
-        );
+            })
+            .unwrap();
+
+        // iterate through path coords starting from the second
+        for coord in coords.iter().skip(1) {
+            let index = layout
+                .add_fixed_dot(FixedDotWeight {
+                    circle: Circle {
+                        pos: (offset_x + coord.x as f64, offset_y - coord.y as f64).into(),
+                        r: width / 2.0,
+                    },
+                    layer,
+                    net,
+                })
+                .unwrap();
+
+            // add a seg between the current and previous coords
+            let _ = layout
+                .add_fixed_seg(prev_index, index, FixedSegWeight { width, layer, net })
+                .unwrap();
+
+            prev_index = index;
+        }
     }
 }
