@@ -113,7 +113,15 @@ impl DsnDesign {
                                 layer as u64,
                                 *net_id as i64,
                             ),
-                            Shape::Polygon(_) => (),
+                            Shape::Polygon(polygon) => Self::add_path(
+                                &mut layout,
+                                (place.x - pin.x) as f64,
+                                -(place.y - pin.y) as f64,
+                                &polygon.coord_vec,
+                                polygon.width as f64,
+                                layer as u64,
+                                *net_id as i64,
+                            ),
                         };
                     }
                 }
@@ -170,7 +178,18 @@ impl DsnDesign {
                             net_id as i64,
                         )
                     }
-                    Shape::Polygon(_) => todo!(),
+                    Shape::Polygon(polygon) => {
+                        let layer = *layout.rules().layer_ids.get(&polygon.layer).unwrap();
+                        Self::add_path(
+                            &mut layout,
+                            0.0,
+                            0.0,
+                            &polygon.coord_vec,
+                            polygon.width as f64,
+                            layer as u64,
+                            net_id as i64,
+                        )
+                    }
                 };
             }
         }
