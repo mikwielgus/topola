@@ -10,7 +10,7 @@ use crate::{
 use super::{
     de,
     rules::DsnRules,
-    structure::{self, DsnFile, Pcb, Shape},
+    structure::{self, DsnFile, Layer, Pcb, Shape},
 };
 
 #[derive(Error, Debug)]
@@ -85,43 +85,75 @@ impl DsnDesign {
                         .find(|padstack| padstack.name == pin.name)
                         .unwrap();
 
-                    for (layer, shape) in padstack.shape_vec.iter().enumerate() {
+                    for shape in padstack.shape_vec.iter() {
                         match shape {
-                            Shape::Circle(circle) => Self::add_circle(
-                                &mut layout,
-                                (place.x + pin.x) as f64,
-                                -(place.y + pin.y) as f64,
-                                circle.diameter as f64 / 2.0,
-                                layer as u64,
-                                *net_id as i64,
-                            ),
-                            Shape::Rect(rect) => Self::add_rect(
-                                &mut layout,
-                                (place.x - pin.x + rect.x1) as f64,
-                                -(place.y - pin.y + rect.y1) as f64,
-                                (place.x - pin.x + rect.x2) as f64,
-                                -(place.y - pin.y + rect.y2) as f64,
-                                layer as u64,
-                                *net_id as i64,
-                            ),
-                            Shape::Path(path) => Self::add_path(
-                                &mut layout,
-                                (place.x - pin.x) as f64,
-                                -(place.y - pin.y) as f64,
-                                &path.coord_vec,
-                                path.width as f64,
-                                layer as u64,
-                                *net_id as i64,
-                            ),
-                            Shape::Polygon(polygon) => Self::add_path(
-                                &mut layout,
-                                (place.x - pin.x) as f64,
-                                -(place.y - pin.y) as f64,
-                                &polygon.coord_vec,
-                                polygon.width as f64,
-                                layer as u64,
-                                *net_id as i64,
-                            ),
+                            Shape::Circle(circle) => {
+                                let layer = Self::layer(
+                                    &mut layout,
+                                    &self.pcb.structure.layer_vec,
+                                    &circle.layer,
+                                    place.side == "front",
+                                );
+                                Self::add_circle(
+                                    &mut layout,
+                                    (place.x + pin.x) as f64,
+                                    -(place.y + pin.y) as f64,
+                                    circle.diameter as f64 / 2.0,
+                                    layer as u64,
+                                    *net_id as i64,
+                                )
+                            }
+                            Shape::Rect(rect) => {
+                                let layer = Self::layer(
+                                    &mut layout,
+                                    &self.pcb.structure.layer_vec,
+                                    &rect.layer,
+                                    place.side == "front",
+                                );
+                                Self::add_rect(
+                                    &mut layout,
+                                    (place.x - pin.x + rect.x1) as f64,
+                                    -(place.y - pin.y + rect.y1) as f64,
+                                    (place.x - pin.x + rect.x2) as f64,
+                                    -(place.y - pin.y + rect.y2) as f64,
+                                    layer as u64,
+                                    *net_id as i64,
+                                )
+                            }
+                            Shape::Path(path) => {
+                                let layer = Self::layer(
+                                    &mut layout,
+                                    &self.pcb.structure.layer_vec,
+                                    &path.layer,
+                                    place.side == "front",
+                                );
+                                Self::add_path(
+                                    &mut layout,
+                                    (place.x - pin.x) as f64,
+                                    -(place.y - pin.y) as f64,
+                                    &path.coord_vec,
+                                    path.width as f64,
+                                    layer as u64,
+                                    *net_id as i64,
+                                )
+                            }
+                            Shape::Polygon(polygon) => {
+                                let layer = Self::layer(
+                                    &mut layout,
+                                    &self.pcb.structure.layer_vec,
+                                    &polygon.layer,
+                                    place.side == "front",
+                                );
+                                Self::add_path(
+                                    &mut layout,
+                                    (place.x - pin.x) as f64,
+                                    -(place.y - pin.y) as f64,
+                                    &polygon.coord_vec,
+                                    polygon.width as f64,
+                                    layer as u64,
+                                    *net_id as i64,
+                                )
+                            }
                         };
                     }
                 }
@@ -143,8 +175,12 @@ impl DsnDesign {
             for shape in &padstack.shape_vec {
                 match shape {
                     Shape::Circle(circle) => {
-                        let layer = *layout.rules().layer_ids.get(&circle.layer).unwrap();
-
+                        let layer = Self::layer(
+                            &mut layout,
+                            &self.pcb.structure.layer_vec,
+                            &circle.layer,
+                            true,
+                        );
                         Self::add_circle(
                             &mut layout,
                             via.x as f64,
@@ -155,7 +191,12 @@ impl DsnDesign {
                         )
                     }
                     Shape::Rect(rect) => {
-                        let layer = *layout.rules().layer_ids.get(&rect.layer).unwrap();
+                        let layer = Self::layer(
+                            &mut layout,
+                            &self.pcb.structure.layer_vec,
+                            &rect.layer,
+                            true,
+                        );
                         Self::add_rect(
                             &mut layout,
                             rect.x1 as f64,
@@ -167,7 +208,12 @@ impl DsnDesign {
                         )
                     }
                     Shape::Path(path) => {
-                        let layer = *layout.rules().layer_ids.get(&path.layer).unwrap();
+                        let layer = Self::layer(
+                            &mut layout,
+                            &self.pcb.structure.layer_vec,
+                            &path.layer,
+                            true,
+                        );
                         Self::add_path(
                             &mut layout,
                             0.0,
@@ -179,7 +225,12 @@ impl DsnDesign {
                         )
                     }
                     Shape::Polygon(polygon) => {
-                        let layer = *layout.rules().layer_ids.get(&polygon.layer).unwrap();
+                        let layer = Self::layer(
+                            &mut layout,
+                            &self.pcb.structure.layer_vec,
+                            &polygon.layer,
+                            true,
+                        );
                         Self::add_path(
                             &mut layout,
                             0.0,
@@ -210,6 +261,21 @@ impl DsnDesign {
         }
 
         layout
+    }
+
+    fn layer(
+        layout: &Layout<DsnRules>,
+        layer_vec: &Vec<Layer>,
+        layer_name: &str,
+        front: bool,
+    ) -> usize {
+        let image_layer = *layout.rules().layer_ids.get(layer_name).unwrap();
+
+        if front {
+            image_layer as usize
+        } else {
+            layer_vec.len() - image_layer as usize - 1
+        }
     }
 
     fn add_circle(layout: &mut Layout<DsnRules>, x: f64, y: f64, r: f64, layer: u64, net: i64) {
