@@ -16,16 +16,16 @@ impl<'a> Painter<'a> {
         let epaint_shape = match shape {
             Shape::Dot(dot) => epaint::Shape::circle_filled(
                 self.transform
-                    .transform_pos([dot.c.pos.x() as f32, dot.c.pos.y() as f32].into()),
+                    .transform_pos([dot.c.pos.x() as f32, -dot.c.pos.y() as f32].into()),
                 dot.c.r as f32 * self.transform.scale().x,
                 color,
             ),
             Shape::Seg(seg) => epaint::Shape::line_segment(
                 [
                     self.transform
-                        .transform_pos([seg.from.x() as f32, seg.from.y() as f32].into()),
+                        .transform_pos([seg.from.x() as f32, -seg.from.y() as f32].into()),
                     self.transform
-                        .transform_pos([seg.to.x() as f32, seg.to.y() as f32].into()),
+                        .transform_pos([seg.to.x() as f32, -seg.to.y() as f32].into()),
                 ],
                 egui::Stroke::new(seg.width as f32 * self.transform.scale().x, color),
             ),
@@ -42,7 +42,7 @@ impl<'a> Painter<'a> {
                 for i in 0..100 {
                     let x = bend.c.pos.x() + bend.c.r * (angle_from + i as f64 * angle_step).cos();
                     let y = bend.c.pos.y() + bend.c.r * (angle_from + i as f64 * angle_step).sin();
-                    points.push(self.transform.transform_pos([x as f32, y as f32].into()));
+                    points.push(self.transform.transform_pos([x as f32, -y as f32].into()));
                 }
 
                 epaint::Shape::line(

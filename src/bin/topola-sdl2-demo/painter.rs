@@ -21,7 +21,7 @@ impl<'a> Painter<'a> {
             Shape::Dot(dot) => {
                 let mut path = Path2D::new();
                 path.ellipse(
-                    vec2f(dot.c.pos.x() as f32, dot.c.pos.y() as f32),
+                    vec2f(dot.c.pos.x() as f32, -dot.c.pos.y() as f32),
                     dot.c.r as f32,
                     0.0,
                     0.0,
@@ -31,8 +31,8 @@ impl<'a> Painter<'a> {
             }
             Shape::Seg(seg) => {
                 let mut path = Path2D::new();
-                path.move_to(vec2f(seg.from.x() as f32, seg.from.y() as f32));
-                path.line_to(vec2f(seg.to.x() as f32, seg.to.y() as f32));
+                path.move_to(vec2f(seg.from.x() as f32, -seg.from.y() as f32));
+                path.line_to(vec2f(seg.to.x() as f32, -seg.to.y() as f32));
                 self.canvas.set_line_width(seg.width as f32);
                 self.canvas.stroke_path(path);
             }
@@ -45,7 +45,7 @@ impl<'a> Painter<'a> {
 
                 let mut path = Path2D::new();
                 path.arc(
-                    vec2f(bend.c.pos.x() as f32, bend.c.pos.y() as f32),
+                    vec2f(bend.c.pos.x() as f32, -bend.c.pos.y() as f32),
                     bend.circle().r as f32,
                     angle1 as f32,
                     angle2 as f32,
@@ -58,8 +58,8 @@ impl<'a> Painter<'a> {
 
         let envelope = ShapeTrait::envelope(shape, 0.0);
         // XXX: points represented as arrays can't be conveniently converted to vector types
-        let topleft = vec2f(envelope.lower()[0] as f32, envelope.lower()[1] as f32);
-        let bottomright = vec2f(envelope.upper()[0] as f32, envelope.upper()[1] as f32);
+        let topleft = vec2f(envelope.lower()[0] as f32, -envelope.lower()[1] as f32);
+        let bottomright = vec2f(envelope.upper()[0] as f32, -envelope.upper()[1] as f32);
         self.canvas.set_line_width(2.0 / zoom);
         self.canvas
             .set_stroke_style(ColorU::new(100, 100, 100, 255));
