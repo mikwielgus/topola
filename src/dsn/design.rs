@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use geo::{point, Point, Rotate, Translate};
 use thiserror::Error;
 
 use crate::{
@@ -96,8 +97,10 @@ impl DsnDesign {
                                 );
                                 Self::add_circle(
                                     &mut layout,
-                                    (place.x + pin.x) as f64,
-                                    (place.y + pin.y) as f64,
+                                    (place.x as f64, place.y as f64).into(),
+                                    place.rotation as f64,
+                                    (pin.x as f64, pin.y as f64).into(),
+                                    pin.rotate.unwrap_or(0.0) as f64,
                                     circle.diameter as f64 / 2.0,
                                     layer as u64,
                                     *net_id as i64,
@@ -112,10 +115,14 @@ impl DsnDesign {
                                 );
                                 Self::add_rect(
                                     &mut layout,
-                                    (place.x - pin.x + rect.x1) as f64,
-                                    (place.y - pin.y + rect.y1) as f64,
-                                    (place.x - pin.x + rect.x2) as f64,
-                                    (place.y - pin.y + rect.y2) as f64,
+                                    (place.x as f64, place.y as f64).into(),
+                                    place.rotation as f64,
+                                    (pin.x as f64, pin.y as f64).into(),
+                                    pin.rotate.unwrap_or(0.0) as f64,
+                                    rect.x1 as f64,
+                                    rect.y1 as f64,
+                                    rect.x2 as f64,
+                                    rect.y2 as f64,
                                     layer as u64,
                                     *net_id as i64,
                                 )
@@ -129,8 +136,10 @@ impl DsnDesign {
                                 );
                                 Self::add_path(
                                     &mut layout,
-                                    (place.x - pin.x) as f64,
-                                    (place.y - pin.y) as f64,
+                                    (place.x as f64, place.y as f64).into(),
+                                    place.rotation as f64,
+                                    (pin.x as f64, pin.y as f64).into(),
+                                    pin.rotate.unwrap_or(0.0) as f64,
                                     &path.coord_vec,
                                     path.width as f64,
                                     layer as u64,
@@ -146,8 +155,10 @@ impl DsnDesign {
                                 );
                                 Self::add_path(
                                     &mut layout,
-                                    (place.x - pin.x) as f64,
-                                    (place.y - pin.y) as f64,
+                                    (place.x as f64, place.y as f64).into(),
+                                    place.rotation as f64,
+                                    (pin.x as f64, pin.y as f64).into(),
+                                    pin.rotate.unwrap_or(0.0) as f64,
                                     &polygon.coord_vec,
                                     polygon.width as f64,
                                     layer as u64,
@@ -183,8 +194,10 @@ impl DsnDesign {
                         );
                         Self::add_circle(
                             &mut layout,
-                            via.x as f64,
-                            via.y as f64,
+                            (0.0, 0.0).into(),
+                            0.0,
+                            (0.0, 0.0).into(),
+                            0.0,
                             circle.diameter as f64 / 2.0,
                             layer as u64,
                             net_id as i64,
@@ -199,6 +212,10 @@ impl DsnDesign {
                         );
                         Self::add_rect(
                             &mut layout,
+                            (0.0, 0.0).into(),
+                            0.0,
+                            (0.0, 0.0).into(),
+                            0.0,
                             rect.x1 as f64,
                             rect.y1 as f64,
                             rect.x2 as f64,
@@ -216,7 +233,9 @@ impl DsnDesign {
                         );
                         Self::add_path(
                             &mut layout,
+                            (0.0, 0.0).into(),
                             0.0,
+                            (0.0, 0.0).into(),
                             0.0,
                             &path.coord_vec,
                             path.width as f64,
@@ -233,7 +252,9 @@ impl DsnDesign {
                         );
                         Self::add_path(
                             &mut layout,
+                            (0.0, 0.0).into(),
                             0.0,
+                            (0.0, 0.0).into(),
                             0.0,
                             &polygon.coord_vec,
                             polygon.width as f64,
@@ -251,7 +272,9 @@ impl DsnDesign {
 
             Self::add_path(
                 &mut layout,
+                (0.0, 0.0).into(),
                 0.0,
+                (0.0, 0.0).into(),
                 0.0,
                 &wire.path.coord_vec,
                 wire.path.width as f64,
@@ -278,9 +301,18 @@ impl DsnDesign {
         }
     }
 
-    fn add_circle(layout: &mut Layout<DsnRules>, x: f64, y: f64, r: f64, layer: u64, net: i64) {
+    fn add_circle(
+        layout: &mut Layout<DsnRules>,
+        place_pos: Point,
+        place_rot: f64,
+        pin_pos: Point,
+        pin_rot: f64,
+        r: f64,
+        layer: u64,
+        net: i64,
+    ) {
         let circle = Circle {
-            pos: (x, y).into(),
+            pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, 0.0, 0.0),
             r,
         };
 
@@ -291,6 +323,10 @@ impl DsnDesign {
 
     fn add_rect(
         layout: &mut Layout<DsnRules>,
+        place_pos: Point,
+        place_rot: f64,
+        pin_pos: Point,
+        pin_rot: f64,
         x1: f64,
         y1: f64,
         x2: f64,
@@ -302,7 +338,7 @@ impl DsnDesign {
         let dot_1_1 = layout
             .add_fixed_dot(FixedDotWeight {
                 circle: Circle {
-                    pos: (x1, y1).into(),
+                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y1),
                     r: 0.5,
                 },
                 layer,
@@ -312,7 +348,7 @@ impl DsnDesign {
         let dot_2_1 = layout
             .add_fixed_dot(FixedDotWeight {
                 circle: Circle {
-                    pos: (x2, y1).into(),
+                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y1),
                     r: 0.5,
                 },
                 layer,
@@ -322,7 +358,7 @@ impl DsnDesign {
         let dot_2_2 = layout
             .add_fixed_dot(FixedDotWeight {
                 circle: Circle {
-                    pos: (x2, y2).into(),
+                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y2),
                     r: 0.5,
                 },
                 layer,
@@ -332,7 +368,7 @@ impl DsnDesign {
         let dot_1_2 = layout
             .add_fixed_dot(FixedDotWeight {
                 circle: Circle {
-                    pos: (x1, y2).into(),
+                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y2),
                     r: 0.5,
                 },
                 layer,
@@ -388,8 +424,10 @@ impl DsnDesign {
 
     fn add_path(
         layout: &mut Layout<DsnRules>,
-        offset_x: f64,
-        offset_y: f64,
+        place_pos: Point,
+        place_rot: f64,
+        pin_pos: Point,
+        pin_rot: f64,
         coords: &Vec<structure::Point>,
         width: f64,
         layer: u64,
@@ -399,7 +437,14 @@ impl DsnDesign {
         let mut prev_index = layout
             .add_fixed_dot(FixedDotWeight {
                 circle: Circle {
-                    pos: (offset_x + coords[0].x as f64, offset_y + coords[0].y as f64).into(),
+                    pos: Self::pos(
+                        place_pos,
+                        place_rot,
+                        pin_pos,
+                        pin_rot,
+                        coords[0].x as f64,
+                        coords[0].y as f64,
+                    ),
                     r: width / 2.0,
                 },
                 layer,
@@ -412,7 +457,15 @@ impl DsnDesign {
             let index = layout
                 .add_fixed_dot(FixedDotWeight {
                     circle: Circle {
-                        pos: (offset_x + coord.x as f64, offset_y + coord.y as f64).into(),
+                        pos: Self::pos(
+                            place_pos,
+                            place_rot,
+                            pin_pos,
+                            pin_rot,
+                            coord.x as f64,
+                            coord.y as f64,
+                        )
+                        .into(),
                         r: width / 2.0,
                     },
                     layer,
@@ -427,5 +480,17 @@ impl DsnDesign {
 
             prev_index = index;
         }
+    }
+
+    fn pos(
+        place_pos: Point,
+        place_rot: f64,
+        pin_pos: Point,
+        pin_rot: f64,
+        x: f64,
+        y: f64,
+    ) -> Point {
+        let pos = (point! {x: x, y: y} + pin_pos).rotate_around_point(pin_rot, pin_pos);
+        (pos + place_pos).rotate_around_point(place_rot, place_pos)
     }
 }
