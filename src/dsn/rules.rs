@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use crate::layout::rules::{Conditions, RulesTrait};
+use crate::drawing::rules::{Conditions, RulesTrait};
 
 use super::structure::Pcb;
 

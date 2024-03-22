@@ -7,18 +7,18 @@ use petgraph::visit::{self, NodeIndexable};
 use petgraph::{stable_graph::NodeIndex, visit::EdgeRef};
 use spade::{HasPosition, InsertionError, Point2};
 
-use crate::layout::rules::RulesTrait;
+use crate::drawing::rules::RulesTrait;
 use crate::triangulation::TriangulationEdgeReference;
 use crate::{
-    geometry::shape::ShapeTrait,
-    graph::GetNodeIndex,
-    layout::{
+    drawing::{
         bend::{FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
         graph::{GeometryIndex, MakePrimitive},
         primitive::{GetCore, MakeShape, Primitive},
-        Layout,
+        Drawing,
     },
+    geometry::shape::ShapeTrait,
+    graph::GetNodeIndex,
     triangulation::{GetVertexIndex, Triangulation},
 };
 
@@ -83,7 +83,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn new(layout: &Layout<impl RulesTrait>) -> Self {
+    pub fn new(layout: &Drawing<impl RulesTrait>) -> Self {
         let mut this = Self {
             triangulation: Triangulation::new(layout),
             vertex_to_triangulation_vertex: Vec::new(),
@@ -93,9 +93,9 @@ impl Mesh {
         this
     }
 
-    pub fn generate(&mut self, layout: &Layout<impl RulesTrait>) -> Result<(), InsertionError> {
-        for node in layout.nodes() {
-            let center = node.primitive(layout).shape().center();
+    pub fn generate(&mut self, drawing: &Drawing<impl RulesTrait>) -> Result<(), InsertionError> {
+        for node in drawing.nodes() {
+            let center = node.primitive(drawing).shape().center();
 
             match node {
                 GeometryIndex::FixedDot(dot) => {
@@ -116,16 +116,16 @@ impl Mesh {
             }
         }
 
-        for node in layout.nodes() {
+        for node in drawing.nodes() {
             // Add rails as vertices. This is how the mesh differs from the triangulation.
             match node {
                 GeometryIndex::LooseBend(bend) => {
                     self.triangulation
-                        .weight_mut(layout.primitive(bend).core().into())
+                        .weight_mut(drawing.primitive(bend).core().into())
                         .rails
                         .push(bend.into());
                     self.vertex_to_triangulation_vertex[bend.node_index().index()] =
-                        Some(layout.primitive(bend).core().into());
+                        Some(drawing.primitive(bend).core().into());
                 }
                 _ => (),
             }

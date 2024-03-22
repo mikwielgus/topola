@@ -2,8 +2,8 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::{
+    drawing::{dot::FixedDotIndex, graph::GetNet, primitive::Primitive, rules::RulesTrait},
     graph::GenericIndex,
-    layout::{dot::FixedDotIndex, graph::GetNet, primitive::Primitive, rules::RulesTrait},
 };
 
 pub type ConnectivityGraph = StableDiGraph<ConnectivityWeight, ConnectivityLabel, usize>;

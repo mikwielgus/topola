@@ -5,9 +5,9 @@ use std::{
 };
 
 use topola::{
+    drawing::{graph::MakePrimitive, primitive::MakeShape, Drawing},
     dsn::{design::DsnDesign, rules::DsnRules},
     geometry::shape::{BendShape, DotShape, SegShape, Shape},
-    layout::{graph::MakePrimitive, primitive::MakeShape, Layout},
     math::Circle,
 };
 
@@ -24,7 +24,7 @@ pub struct App {
     text_channel: (Sender<String>, Receiver<String>),
 
     #[serde(skip)]
-    layout: Option<Layout<DsnRules>>,
+    drawing: Option<Drawing<DsnRules>>,
 
     #[serde(skip)]
     from_rect: egui::emath::Rect,
@@ -36,7 +36,7 @@ impl Default for App {
             // Example stuff:
             label: "Hello World!".to_owned(),
             text_channel: channel(),
-            layout: None,
+            drawing: None,
             from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
         }
     }
@@ -65,12 +65,12 @@ impl eframe::App for App {
         if cfg!(target_arch = "wasm32") {
             if let Ok(file_contents) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_string(file_contents).unwrap();
-                self.layout = Some(design.make_layout());
+                self.drawing = Some(design.make_drawing());
             }
         } else {
             if let Ok(path) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_file(&path).unwrap();
-                self.layout = Some(design.make_layout());
+                self.drawing = Some(design.make_drawing());
             }
         }
 
@@ -138,7 +138,7 @@ impl eframe::App for App {
                 let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
                 let mut painter = Painter::new(ui, transform);
 
-                if let Some(layout) = &self.layout {
+                if let Some(layout) = &self.drawing {
                     for node in layout.layer_nodes(1) {
                         let shape = node.primitive(layout).shape();
                         painter.paint_shape(&shape, egui::Color32::from_rgb(52, 52, 200));

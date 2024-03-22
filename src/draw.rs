@@ -3,8 +3,7 @@ use geo::{EuclideanLength, Point};
 use thiserror::Error;
 
 use crate::{
-    board::Board,
-    layout::{
+    drawing::{
         bend::{BendIndex, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
         graph::{GetLayer, GetNet, MakePrimitive},
@@ -14,6 +13,7 @@ use crate::{
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
         Infringement, LayoutException,
     },
+    layout::Layout,
     math::{Circle, NoTangents},
     wraparoundable::WraparoundableIndex,
 };
@@ -31,20 +31,20 @@ pub enum DrawException {
 }
 
 pub struct Draw<'a, R: RulesTrait> {
-    board: &'a mut Board<R>,
+    layout: &'a mut Layout<R>,
 }
 
 impl<'a, R: RulesTrait> Draw<'a, R> {
-    pub fn new(board: &'a mut Board<R>) -> Self {
-        Self { board }
+    pub fn new(layout: &'a mut Layout<R>) -> Self {
+        Self { layout }
     }
 
     pub fn start(&mut self, from: LooseDotIndex) -> Head {
         self.guide().segbend_head(from).into()
     }
 
-    #[debug_ensures(ret.is_ok() -> self.board.layout().node_count() == old(self.board.layout().node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.board.layout().node_count() == old(self.board.layout().node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.layout.layout().node_count() == old(self.layout.layout().node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.layout.layout().node_count() == old(self.layout.layout().node_count()))]
     pub fn finish_in_dot(
         &mut self,
         head: Head,
@@ -58,17 +58,17 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         let head = self
             .extend_head(head, tangent.start_point())
             .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
-        let layer = head.face().primitive(self.board.layout()).layer();
-        let net = head.face().primitive(self.board.layout()).net();
+        let layer = head.face().primitive(self.layout.layout()).layer();
+        let net = head.face().primitive(self.layout.layout()).net();
 
         match head.face() {
             DotIndex::Fixed(dot) => {
-                self.board
+                self.layout
                     .add_lone_loose_seg(dot, into.into(), LoneLooseSegWeight { width, layer, net })
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
             DotIndex::Loose(dot) => {
-                self.board
+                self.layout
                     .add_seq_loose_seg(into.into(), dot, SeqLooseSegWeight { width, layer, net })
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
             }
@@ -76,8 +76,8 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         Ok::<(), DrawException>(())
     }
 
-    #[debug_ensures(ret.is_ok() -> self.board.layout().node_count() == old(self.board.layout().node_count() + 4))]
-    #[debug_ensures(ret.is_err() -> self.board.layout().node_count() == old(self.board.layout().node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.layout.layout().node_count() == old(self.layout.layout().node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.layout.layout().node_count() == old(self.layout.layout().node_count()))]
     pub fn segbend_around_dot(
         &mut self,
         head: Head,
@@ -121,8 +121,8 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         ))
     }
 
-    #[debug_ensures(ret.is_ok() -> self.board.layout().node_count() == old(self.board.layout().node_count() + 4))]
-    #[debug_ensures(ret.is_err() -> self.board.layout().node_count() == old(self.board.layout().node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.layout.layout().node_count() == old(self.layout.layout().node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.layout.layout().node_count() == old(self.layout.layout().node_count()))]
     pub fn segbend_around_bend(
         &mut self,
         head: Head,
@@ -166,8 +166,8 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         ))
     }
 
-    #[debug_ensures(ret.is_ok() -> self.board.layout().node_count() == old(self.board.layout().node_count() + 4))]
-    #[debug_ensures(ret.is_err() -> self.board.layout().node_count() == old(self.board.layout().node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.layout.layout().node_count() == old(self.layout.layout().node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.layout.layout().node_count() == old(self.layout.layout().node_count()))]
     fn segbend_around(
         &mut self,
         head: Head,
@@ -182,18 +182,18 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         self.segbend(head, around, to, cw, width, offset)
     }
 
-    #[debug_ensures(self.board.layout().node_count() == old(self.board.layout().node_count()))]
+    #[debug_ensures(self.layout.layout().node_count() == old(self.layout.layout().node_count()))]
     fn extend_head(&mut self, head: Head, to: Point) -> Result<Head, Infringement> {
         if let Head::Segbend(head) = head {
-            self.board.move_dot(head.face.into(), to)?;
+            self.layout.move_dot(head.face.into(), to)?;
             Ok(Head::Segbend(head))
         } else {
             Ok(head)
         }
     }
 
-    #[debug_ensures(ret.is_ok() -> self.board.layout().node_count() == old(self.board.layout().node_count() + 4))]
-    #[debug_ensures(ret.is_err() -> self.board.layout().node_count() == old(self.board.layout().node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.layout.layout().node_count() == old(self.layout.layout().node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.layout.layout().node_count() == old(self.layout.layout().node_count()))]
     fn segbend(
         &mut self,
         head: Head,
@@ -203,9 +203,9 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         width: f64,
         offset: f64,
     ) -> Result<SegbendHead, LayoutException> {
-        let layer = head.face().primitive(self.board.layout()).layer();
-        let net = head.face().primitive(self.board.layout()).net();
-        let segbend = self.board.insert_segbend(
+        let layer = head.face().primitive(self.layout.layout()).layer();
+        let net = head.face().primitive(self.layout.layout()).net();
+        let segbend = self.layout.insert_segbend(
             head.face(),
             around,
             LooseDotWeight {
@@ -227,7 +227,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         )?;
         Ok::<SegbendHead, LayoutException>(SegbendHead {
             face: self
-                .board
+                .layout
                 .layout()
                 .primitive(segbend.bend)
                 .other_joint(segbend.dot),
@@ -235,20 +235,20 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         })
     }
 
-    #[debug_ensures(ret.is_some() -> self.board.layout().node_count() == old(self.board.layout().node_count() - 4))]
-    #[debug_ensures(ret.is_none() -> self.board.layout().node_count() == old(self.board.layout().node_count()))]
+    #[debug_ensures(ret.is_some() -> self.layout.layout().node_count() == old(self.layout.layout().node_count() - 4))]
+    #[debug_ensures(ret.is_none() -> self.layout.layout().node_count() == old(self.layout.layout().node_count()))]
     pub fn undo_segbend(&mut self, head: SegbendHead) -> Option<Head> {
         let prev_dot = self
-            .board
+            .layout
             .layout()
             .primitive(head.segbend.seg)
             .other_joint(head.segbend.dot.into());
 
-        self.board.remove_segbend(&head.segbend, head.face);
+        self.layout.remove_segbend(&head.segbend, head.face);
         Some(self.guide().head(prev_dot))
     }
 
     fn guide(&self) -> Guide<R> {
-        Guide::new(self.board.layout())
+        Guide::new(self.layout.layout())
     }
 }

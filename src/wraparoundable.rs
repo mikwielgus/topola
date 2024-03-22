@@ -2,15 +2,15 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
 use crate::{
-    graph::GetNodeIndex,
-    layout::{
+    drawing::{
         bend::{BendIndex, FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
         graph::{GeometryIndex, MakePrimitive},
         primitive::{FixedBend, FixedDot, GetFirstRail, GetInnerOuter, LooseBend, Primitive},
         rules::RulesTrait,
-        Layout,
+        Drawing,
     },
+    graph::GetNodeIndex,
 };
 
 #[enum_dispatch]
@@ -53,11 +53,11 @@ pub enum Wraparoundable<'a, R: RulesTrait> {
 }
 
 impl<'a, R: RulesTrait> Wraparoundable<'a, R> {
-    pub fn new(index: WraparoundableIndex, layout: &'a Layout<R>) -> Self {
+    pub fn new(index: WraparoundableIndex, drawing: &'a Drawing<R>) -> Self {
         match index {
-            WraparoundableIndex::FixedDot(dot) => layout.primitive(dot).into(),
-            WraparoundableIndex::FixedBend(bend) => layout.primitive(bend).into(),
-            WraparoundableIndex::LooseBend(bend) => layout.primitive(bend).into(),
+            WraparoundableIndex::FixedDot(dot) => drawing.primitive(dot).into(),
+            WraparoundableIndex::FixedBend(bend) => drawing.primitive(bend).into(),
+            WraparoundableIndex::LooseBend(bend) => drawing.primitive(bend).into(),
         }
     }
 }

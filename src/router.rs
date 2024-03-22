@@ -5,16 +5,16 @@ use spade::InsertionError;
 use thiserror::Error;
 
 use crate::astar::{astar, AstarStrategy, PathTracker};
-use crate::board::connectivity::BandIndex;
-use crate::board::Board;
 use crate::draw::DrawException;
-use crate::geometry::shape::ShapeTrait;
-use crate::layout::{
+use crate::drawing::{
     dot::FixedDotIndex,
     graph::{GeometryIndex, MakePrimitive},
     primitive::MakeShape,
     rules::RulesTrait,
 };
+use crate::geometry::shape::ShapeTrait;
+use crate::layout::connectivity::BandIndex;
+use crate::layout::Layout;
 
 use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
 
@@ -52,7 +52,7 @@ pub trait RouterObserverTrait<R: RulesTrait> {
 }
 
 pub struct Router<R: RulesTrait> {
-    pub board: Board<R>,
+    pub layout: Layout<R>,
 }
 
 struct RouterAstarStrategy<'a, RO: RouterObserverTrait<R>, R: RulesTrait> {
@@ -99,14 +99,14 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Mesh, f64>
             return None;
         }
 
-        let before_probe_length = self.tracer.board.band_length(self.trace.band);
+        let before_probe_length = self.tracer.layout.band_length(self.trace.band);
 
         let width = self.trace.width;
         let result = self.tracer.step(&mut self.trace, edge.target(), width);
         self.observer
             .on_probe(&self.tracer, &self.trace, edge, result);
 
-        let probe_length = self.tracer.board.band_length(self.trace.band);
+        let probe_length = self.tracer.layout.band_length(self.trace.band);
 
         if result.is_ok() {
             self.tracer.undo_step(&mut self.trace);
@@ -119,12 +119,12 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Mesh, f64>
     fn estimate_cost(&mut self, vertex: VertexIndex) -> f64 {
         self.observer.on_estimate(&self.tracer, vertex);
         let start_point = GeometryIndex::from(vertex)
-            .primitive(self.tracer.board.layout())
+            .primitive(self.tracer.layout.layout())
             .shape()
             .center();
         let end_point = self
             .tracer
-            .board
+            .layout
             .layout()
             .primitive(self.to)
             .shape()
@@ -134,8 +134,8 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Mesh, f64>
 }
 
 impl<R: RulesTrait> Router<R> {
-    pub fn new(board: Board<R>) -> Self {
-        Router { board }
+    pub fn new(layout: Layout<R>) -> Self {
+        Router { layout }
     }
 
     pub fn route_band(
@@ -148,8 +148,8 @@ impl<R: RulesTrait> Router<R> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
         //self.mesh.triangulate(&self.layout)?;
-        let mut mesh = Mesh::new(self.board.layout());
-        mesh.generate(self.board.layout())
+        let mut mesh = Mesh::new(self.layout.layout());
+        mesh.generate(self.layout.layout())
             .map_err(|err| RoutingError {
                 from,
                 to,
@@ -181,14 +181,14 @@ impl<R: RulesTrait> Router<R> {
         width: f64,
         observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<BandIndex, RoutingError> {
-        let from_dot = self.board.band_from(band);
-        let to_dot = self.board.band_to(band).unwrap();
-        self.board.remove_band(band);
-        self.board.move_dot(to_dot.into(), to).unwrap(); // TODO: Remove `.unwrap()`.
+        let from_dot = self.layout.band_from(band);
+        let to_dot = self.layout.band_to(band).unwrap();
+        self.layout.remove_band(band);
+        self.layout.move_dot(to_dot.into(), to).unwrap(); // TODO: Remove `.unwrap()`.
         self.route_band(from_dot, to_dot, width, observer)
     }
 
     pub fn tracer<'a>(&'a mut self, mesh: &'a Mesh) -> Tracer<R> {
-        Tracer::new(&mut self.board, mesh)
+        Tracer::new(&mut self.layout, mesh)
     }
 }

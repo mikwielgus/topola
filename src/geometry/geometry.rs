@@ -9,9 +9,7 @@ use petgraph::{
 };
 
 use crate::{
-    geometry::shape::{BendShape, DotShape, SegShape, Shape},
-    graph::{GenericIndex, GetNodeIndex},
-    layout::{
+    drawing::{
         bend::{BendWeight, FixedBendWeight, LooseBendWeight},
         dot::{DotWeight, FixedDotWeight, LooseDotWeight},
         graph::{GeometryWeight, Retag},
@@ -19,6 +17,8 @@ use crate::{
         rules::RulesTrait,
         seg::{FixedSegWeight, LoneLooseSegWeight, SegWeight, SeqLooseSegWeight},
     },
+    geometry::shape::{BendShape, DotShape, SegShape, Shape},
+    graph::{GenericIndex, GetNodeIndex},
     math::Circle,
 };
 

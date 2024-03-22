@@ -5,32 +5,32 @@ use super::{
     graph::GeometryIndex,
     primitive::{GetInnerOuter, GetJoints},
     rules::RulesTrait,
-    Layout,
+    Drawing,
 };
 
 #[derive(Debug)]
 pub struct Collect<'a, R: RulesTrait> {
-    layout: &'a Layout<R>,
+    drawing: &'a Drawing<R>,
 }
 
 impl<'a, R: RulesTrait> Collect<'a, R> {
-    pub fn new(layout: &'a Layout<R>) -> Self {
-        Self { layout }
+    pub fn new(drawing: &'a Drawing<R>) -> Self {
+        Self { drawing }
     }
 
     pub fn bend_bow(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
         let mut v: Vec<GeometryIndex> = vec![];
         v.push(bend.into());
 
-        let ends = self.layout.primitive(bend).joints();
+        let ends = self.drawing.primitive(bend).joints();
         v.push(ends.0.into());
         v.push(ends.1.into());
 
-        if let Some(seg0) = self.layout.primitive(ends.0).seg() {
+        if let Some(seg0) = self.drawing.primitive(ends.0).seg() {
             v.push(seg0.into());
         }
 
-        if let Some(seg1) = self.layout.primitive(ends.1).seg() {
+        if let Some(seg1) = self.drawing.primitive(ends.1).seg() {
             v.push(seg1.into());
         }
 
@@ -41,7 +41,7 @@ impl<'a, R: RulesTrait> Collect<'a, R> {
         let mut v = vec![];
         let mut rail = bend;
 
-        while let Some(outer) = self.layout.primitive(rail).outer() {
+        while let Some(outer) = self.drawing.primitive(rail).outer() {
             v.append(&mut self.bend_bow(outer.into()));
             rail = outer;
         }
@@ -53,8 +53,8 @@ impl<'a, R: RulesTrait> Collect<'a, R> {
         let mut v = vec![];
         let mut rail = around.into();
 
-        while let Some(outer) = self.layout.wraparoundable(rail).wraparound() {
-            let primitive = self.layout.primitive(outer);
+        while let Some(outer) = self.drawing.wraparoundable(rail).wraparound() {
+            let primitive = self.drawing.primitive(outer);
 
             v.push(outer.into());
 
@@ -62,8 +62,8 @@ impl<'a, R: RulesTrait> Collect<'a, R> {
             v.push(ends.0.into());
             v.push(ends.1.into());
 
-            v.push(self.layout.primitive(ends.0).seg().unwrap().into());
-            v.push(self.layout.primitive(ends.1).seg().unwrap().into());
+            v.push(self.drawing.primitive(ends.0).seg().unwrap().into());
+            v.push(self.drawing.primitive(ends.1).seg().unwrap().into());
 
             rail = outer.into();
         }

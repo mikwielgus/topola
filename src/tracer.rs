@@ -1,15 +1,15 @@
 use contracts::debug_ensures;
 
 use crate::{
-    board::{connectivity::BandIndex, Board},
     draw::{Draw, DrawException},
-    layout::{
+    drawing::{
         bend::LooseBendIndex,
         dot::FixedDotIndex,
         graph::{GetNet, MakePrimitive},
         guide::{BareHead, Head, HeadTrait, SegbendHead},
         rules::RulesTrait,
     },
+    layout::{connectivity::BandIndex, Layout},
     mesh::{Mesh, VertexIndex},
 };
 
@@ -22,17 +22,17 @@ pub struct Trace {
 }
 
 pub struct Tracer<'a, R: RulesTrait> {
-    pub board: &'a mut Board<R>,
+    pub layout: &'a mut Layout<R>,
     pub mesh: &'a Mesh,
 }
 
 impl<'a, R: RulesTrait> Tracer<'a, R> {
-    pub fn new(board: &'a mut Board<R>, mesh: &'a Mesh) -> Self {
-        Tracer { board, mesh }
+    pub fn new(layout: &'a mut Layout<R>, mesh: &'a Mesh) -> Self {
+        Tracer { layout, mesh }
     }
 
     pub fn start(&mut self, from: FixedDotIndex, width: f64) -> Trace {
-        let band = self.board.start_band(from);
+        let band = self.layout.start_band(from);
         Trace {
             path: vec![from.into()],
             head: BareHead { dot: from }.into(),
@@ -48,7 +48,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         width: f64,
     ) -> Result<(), DrawException> {
         self.draw().finish_in_dot(trace.head, into, width)?;
-        Ok(self.board.finish_band(trace.band, into))
+        Ok(self.layout.finish_band(trace.band, into))
     }
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == path.len())]
@@ -158,6 +158,6 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     }
 
     fn draw(&mut self) -> Draw<R> {
-        Draw::new(&mut self.board)
+        Draw::new(&mut self.layout)
     }
 }

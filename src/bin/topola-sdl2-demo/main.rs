@@ -12,17 +12,17 @@ macro_rules! dbg_dot {
 use geo::point;
 use painter::Painter;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-use topola::board::connectivity::BandIndex;
-use topola::board::Board;
 use topola::draw::DrawException;
+use topola::drawing::dot::FixedDotWeight;
+use topola::drawing::graph::{GeometryIndex, MakePrimitive};
+use topola::drawing::primitive::MakeShape;
+use topola::drawing::rules::{Conditions, RulesTrait};
+use topola::drawing::seg::FixedSegWeight;
+use topola::drawing::{Drawing, Infringement, LayoutException};
 use topola::dsn::design::DsnDesign;
 use topola::geometry::shape::{Shape, ShapeTrait};
-use topola::layout::dot::FixedDotWeight;
-use topola::layout::graph::{GeometryIndex, MakePrimitive};
-use topola::layout::primitive::MakeShape;
-use topola::layout::rules::{Conditions, RulesTrait};
-use topola::layout::seg::FixedSegWeight;
-use topola::layout::{Infringement, Layout, LayoutException};
+use topola::layout::connectivity::BandIndex;
+use topola::layout::Layout;
 use topola::mesh::{Mesh, MeshEdgeReference, VertexIndex};
 use topola::router::RouterObserverTrait;
 
@@ -76,7 +76,7 @@ impl RulesTrait for SimpleRules {
 // Clunky enum to work around borrow checker.
 enum RouterOrLayout<'a, R: RulesTrait> {
     Router(&'a mut Router<R>),
-    Layout(&'a Layout<R>),
+    Layout(&'a Drawing<R>),
 }
 
 struct EmptyRouterObserver;
@@ -129,7 +129,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrLayout::Layout(tracer.board.layout()),
+            RouterOrLayout::Layout(tracer.layout.layout()),
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
@@ -148,7 +148,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrLayout::Layout(tracer.board.layout()),
+            RouterOrLayout::Layout(tracer.layout.layout()),
             None,
             Some(tracer.mesh.clone()),
             &path,
@@ -180,7 +180,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrLayout::Layout(tracer.board.layout()),
+            RouterOrLayout::Layout(tracer.layout.layout()),
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
@@ -256,9 +256,9 @@ fn main() -> Result<(), anyhow::Error> {
     )?;
     //let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
     //dbg!(&design);
-    let layout = design.make_layout();
-    let board = Board::new(layout);
-    let mut router = Router::new(board);
+    let drawing = design.make_drawing();
+    let layout = Layout::new(drawing);
+    let mut router = Router::new(layout);
 
     let mut view = View {
         pan: vec2f(-80000.0, -60000.0),
@@ -271,7 +271,7 @@ fn main() -> Result<(), anyhow::Error> {
         &mut renderer,
         &font_context,
         &mut view,
-        RouterOrLayout::Layout(router.board.layout()),
+        RouterOrLayout::Layout(router.layout.layout()),
         None,
         None,
         &[],
@@ -295,7 +295,7 @@ fn main() -> Result<(), anyhow::Error> {
         &mut renderer,
         &font_context,
         &mut view,
-        RouterOrLayout::Layout(router.board.layout()),
+        RouterOrLayout::Layout(router.layout.layout()),
         None,
         None,
         &[],
@@ -388,7 +388,7 @@ fn render_times(
                     maybe_mesh = None;
                 }
 
-                router.board.layout()
+                router.layout.layout()
             }
             RouterOrLayout::Layout(layout) => layout,
         };

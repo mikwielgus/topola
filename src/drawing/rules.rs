@@ -1,6 +1,6 @@
 use enum_dispatch::enum_dispatch;
 
-use crate::layout::primitive::Primitive;
+use crate::drawing::primitive::Primitive;
 
 #[enum_dispatch]
 pub trait GetConditions {

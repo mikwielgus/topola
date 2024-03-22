@@ -1,10 +1,10 @@
-use crate::layout::{
+use crate::drawing::{
     bend::LooseBendIndex,
     dot::LooseDotIndex,
     graph::GeometryIndex,
     primitive::{GetInterior, GetJoints, GetOtherJoint, LooseBend, LooseDot},
     seg::SeqLooseSegIndex,
-    Layout,
+    Drawing,
 };
 
 use super::rules::RulesTrait;
@@ -17,10 +17,10 @@ pub struct Segbend {
 }
 
 impl Segbend {
-    pub fn from_dot(dot: LooseDotIndex, layout: &Layout<impl RulesTrait>) -> Self {
-        let bend = LooseDot::new(dot, layout).bend();
-        let dot = LooseBend::new(bend, layout).other_joint(dot);
-        let seg = LooseDot::new(dot, layout).seg().unwrap();
+    pub fn from_dot(dot: LooseDotIndex, drawing: &Drawing<impl RulesTrait>) -> Self {
+        let bend = LooseDot::new(dot, drawing).bend();
+        let dot = LooseBend::new(bend, drawing).other_joint(dot);
+        let seg = LooseDot::new(dot, drawing).seg().unwrap();
         Self { bend, dot, seg }
     }
 }

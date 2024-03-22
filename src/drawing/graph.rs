@@ -2,11 +2,7 @@ use enum_dispatch::enum_dispatch;
 
 use petgraph::stable_graph::NodeIndex;
 
-use crate::{
-    board::connectivity::{BandIndex, ContinentIndex},
-    graph::GetNodeIndex,
-    layout::Layout,
-};
+use crate::{drawing::Drawing, graph::GetNodeIndex};
 
 use super::{
     bend::{FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
@@ -36,7 +32,7 @@ pub trait GetNet {
 
 #[enum_dispatch]
 pub trait MakePrimitive {
-    fn primitive<'a, R: RulesTrait>(&self, layout: &'a Layout<R>) -> Primitive<'a, R>;
+    fn primitive<'a, R: RulesTrait>(&self, drawing: &'a Drawing<R>) -> Primitive<'a, R>;
 }
 
 macro_rules! impl_weight {
@@ -62,8 +58,8 @@ macro_rules! impl_weight {
         pub type $index_struct = GenericIndex<$weight_struct>;
 
         impl MakePrimitive for $index_struct {
-            fn primitive<'a, R: RulesTrait>(&self, layout: &'a Layout<R>) -> Primitive<'a, R> {
-                Primitive::$weight_variant(GenericPrimitive::new(*self, layout))
+            fn primitive<'a, R: RulesTrait>(&self, drawing: &'a Drawing<R>) -> Primitive<'a, R> {
+                Primitive::$weight_variant(GenericPrimitive::new(*self, drawing))
             }
         }
     };

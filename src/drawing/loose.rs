@@ -2,15 +2,15 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
 use crate::{
-    graph::GetNodeIndex,
-    layout::Layout,
-    layout::{
+    drawing::Drawing,
+    drawing::{
         bend::LooseBendIndex,
         dot::{DotIndex, LooseDotIndex},
         graph::{GeometryIndex, MakePrimitive},
         primitive::{GetJoints, LoneLooseSeg, LooseBend, LooseDot, Primitive, SeqLooseSeg},
         seg::{LoneLooseSegIndex, SeqLooseSegIndex},
     },
+    graph::GetNodeIndex,
 };
 
 use super::rules::RulesTrait;
@@ -49,12 +49,12 @@ pub enum Loose<'a, R: RulesTrait> {
 }
 
 impl<'a, R: RulesTrait> Loose<'a, R> {
-    pub fn new(index: LooseIndex, layout: &'a Layout<R>) -> Self {
+    pub fn new(index: LooseIndex, drawing: &'a Drawing<R>) -> Self {
         match index {
-            LooseIndex::Dot(dot) => layout.primitive(dot).into(),
-            LooseIndex::LoneSeg(seg) => layout.primitive(seg).into(),
-            LooseIndex::SeqSeg(seg) => layout.primitive(seg).into(),
-            LooseIndex::Bend(bend) => layout.primitive(bend).into(),
+            LooseIndex::Dot(dot) => drawing.primitive(dot).into(),
+            LooseIndex::LoneSeg(seg) => drawing.primitive(seg).into(),
+            LooseIndex::SeqSeg(seg) => drawing.primitive(seg).into(),
+            LooseIndex::Bend(bend) => drawing.primitive(bend).into(),
         }
     }
 }

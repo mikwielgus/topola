@@ -6,8 +6,8 @@ use petgraph::stable_graph::StableDiGraph;
 use rstar::{primitives::GeomWithData, RTree, RTreeObject, AABB};
 
 use crate::{
+    drawing::graph::{GetLayer, Retag},
     graph::{GenericIndex, GetNodeIndex},
-    layout::graph::{GetLayer, Retag},
 };
 
 use super::{

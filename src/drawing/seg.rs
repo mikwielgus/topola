@@ -1,14 +1,14 @@
 use enum_dispatch::enum_dispatch;
 
 use crate::{
-    geometry::{GetWidth, SegWeightTrait},
-    graph::{GenericIndex, GetNodeIndex},
-    layout::{
+    drawing::{
         graph::{GeometryIndex, GeometryWeight, GetLayer, GetNet, MakePrimitive, Retag},
         primitive::{GenericPrimitive, Primitive},
         rules::RulesTrait,
-        Layout,
+        Drawing,
     },
+    geometry::{GetWidth, SegWeightTrait},
+    graph::{GenericIndex, GetNodeIndex},
 };
 
 use petgraph::stable_graph::NodeIndex;

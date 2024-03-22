@@ -4,7 +4,7 @@ use geo::{point, Point, Rotate, Translate};
 use thiserror::Error;
 
 use crate::{
-    layout::{dot::FixedDotWeight, seg::FixedSegWeight, Layout},
+    drawing::{dot::FixedDotWeight, seg::FixedSegWeight, Drawing},
     math::Circle,
 };
 
@@ -41,9 +41,9 @@ impl DsnDesign {
         Ok(Self { pcb })
     }
 
-    pub fn make_layout(&self) -> Layout<DsnRules> {
+    pub fn make_drawing(&self) -> Drawing<DsnRules> {
         let rules = DsnRules::from_pcb(&self.pcb);
-        let mut layout = Layout::new(rules);
+        let mut layout = Drawing::new(rules);
 
         // mapping of pin id -> net id prepared for adding pins
         let pin_nets = HashMap::<String, i64>::from_iter(
@@ -287,12 +287,12 @@ impl DsnDesign {
     }
 
     fn layer(
-        layout: &Layout<DsnRules>,
+        drawing: &Drawing<DsnRules>,
         layer_vec: &Vec<Layer>,
         layer_name: &str,
         front: bool,
     ) -> usize {
-        let image_layer = *layout.rules().layer_ids.get(layer_name).unwrap();
+        let image_layer = *drawing.rules().layer_ids.get(layer_name).unwrap();
 
         if front {
             image_layer as usize
@@ -302,7 +302,7 @@ impl DsnDesign {
     }
 
     fn add_circle(
-        layout: &mut Layout<DsnRules>,
+        drawing: &mut Drawing<DsnRules>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -316,13 +316,13 @@ impl DsnDesign {
             r,
         };
 
-        layout
+        drawing
             .add_fixed_dot(FixedDotWeight { circle, layer, net })
             .unwrap();
     }
 
     fn add_rect(
-        layout: &mut Layout<DsnRules>,
+        drawing: &mut Drawing<DsnRules>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -335,7 +335,7 @@ impl DsnDesign {
         net: i64,
     ) {
         // Corners.
-        let dot_1_1 = layout
+        let dot_1_1 = drawing
             .add_fixed_dot(FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y1),
@@ -345,7 +345,7 @@ impl DsnDesign {
                 net,
             })
             .unwrap();
-        let dot_2_1 = layout
+        let dot_2_1 = drawing
             .add_fixed_dot(FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y1),
@@ -355,7 +355,7 @@ impl DsnDesign {
                 net,
             })
             .unwrap();
-        let dot_2_2 = layout
+        let dot_2_2 = drawing
             .add_fixed_dot(FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y2),
@@ -365,7 +365,7 @@ impl DsnDesign {
                 net,
             })
             .unwrap();
-        let dot_1_2 = layout
+        let dot_1_2 = drawing
             .add_fixed_dot(FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y2),
@@ -376,7 +376,7 @@ impl DsnDesign {
             })
             .unwrap();
         // Sides.
-        layout
+        drawing
             .add_fixed_seg(
                 dot_1_1,
                 dot_2_1,
@@ -387,7 +387,7 @@ impl DsnDesign {
                 },
             )
             .unwrap();
-        layout
+        drawing
             .add_fixed_seg(
                 dot_2_1,
                 dot_2_2,
@@ -398,7 +398,7 @@ impl DsnDesign {
                 },
             )
             .unwrap();
-        layout
+        drawing
             .add_fixed_seg(
                 dot_2_2,
                 dot_1_2,
@@ -409,7 +409,7 @@ impl DsnDesign {
                 },
             )
             .unwrap();
-        layout
+        drawing
             .add_fixed_seg(
                 dot_1_2,
                 dot_1_1,
@@ -423,7 +423,7 @@ impl DsnDesign {
     }
 
     fn add_path(
-        layout: &mut Layout<DsnRules>,
+        drawing: &mut Drawing<DsnRules>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -434,7 +434,7 @@ impl DsnDesign {
         net: i64,
     ) {
         // add the first coordinate in the wire path as a dot and save its index
-        let mut prev_index = layout
+        let mut prev_index = drawing
             .add_fixed_dot(FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(
@@ -454,7 +454,7 @@ impl DsnDesign {
 
         // iterate through path coords starting from the second
         for coord in coords.iter().skip(1) {
-            let index = layout
+            let index = drawing
                 .add_fixed_dot(FixedDotWeight {
                     circle: Circle {
                         pos: Self::pos(
@@ -474,7 +474,7 @@ impl DsnDesign {
                 .unwrap();
 
             // add a seg between the current and previous coords
-            let _ = layout
+            let _ = drawing
                 .add_fixed_seg(prev_index, index, FixedSegWeight { width, layer, net })
                 .unwrap();
 
