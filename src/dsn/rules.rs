@@ -28,9 +28,9 @@ pub struct DsnRules {
     // layer names -> layer IDs for Layout
     pub layer_ids: HashMap<String, u64>,
     // net names -> net IDs for Layout
-    pub net_ids: HashMap<String, i64>,
+    pub net_ids: HashMap<String, usize>,
     // net ID -> net class
-    net_id_classes: HashMap<i64, String>,
+    net_id_classes: HashMap<usize, String>,
 }
 
 impl DsnRules {
@@ -49,7 +49,7 @@ impl DsnRules {
                 .iter()
                 .flat_map(|class| &class.net_vec)
                 .enumerate()
-                .map(|(id, net)| (net.clone(), id as i64)),
+                .map(|(id, net)| (net.clone(), id)),
         );
 
         let mut net_id_classes = HashMap::new();
@@ -75,7 +75,7 @@ impl DsnRules {
         }
     }
 
-    pub fn get_rule(&self, net: i64) -> &DsnRule {
+    pub fn get_rule(&self, net: usize) -> &DsnRule {
         if let Some(netclass) = self.net_id_classes.get(&net) {
             self.class_rules
                 .get(netclass)
@@ -88,8 +88,12 @@ impl DsnRules {
 
 impl RulesTrait for DsnRules {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64 {
-        let clr1 = self.get_rule(conditions1.net).clearance;
-        let clr2 = self.get_rule(conditions2.net).clearance;
+        let (Some(net1), Some(net2)) = (conditions1.maybe_net, conditions2.maybe_net) else {
+            return 0.0;
+        };
+
+        let clr1 = self.get_rule(net1).clearance;
+        let clr2 = self.get_rule(net2).clearance;
 
         if clr1 > clr2 {
             clr1
@@ -98,7 +102,7 @@ impl RulesTrait for DsnRules {
         }
     }
 
-    fn largest_clearance(&self, _net: i64) -> f64 {
+    fn largest_clearance(&self, maybe_net: Option<usize>) -> f64 {
         let mut largest: f64 = 0.0;
 
         for (class, rule) in &self.class_rules {

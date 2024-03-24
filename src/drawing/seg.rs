@@ -2,7 +2,7 @@ use enum_dispatch::enum_dispatch;
 
 use crate::{
     drawing::{
-        graph::{GeometryIndex, GeometryWeight, GetLayer, GetNet, MakePrimitive, Retag},
+        graph::{GeometryIndex, GeometryWeight, GetLayer, GetMaybeNet, MakePrimitive, Retag},
         primitive::{GenericPrimitive, Primitive},
         rules::RulesTrait,
         Drawing,
@@ -81,7 +81,7 @@ impl SegWeightTrait<GeometryWeight> for SegWeight {}
 pub struct FixedSegWeight {
     pub width: f64,
     pub layer: u64,
-    pub net: i64,
+    pub maybe_net: Option<usize>,
 }
 
 impl_fixed_weight!(FixedSegWeight, FixedSeg, FixedSegIndex);
@@ -97,7 +97,7 @@ impl GetWidth for FixedSegWeight {
 pub struct LoneLooseSegWeight {
     pub width: f64,
     pub layer: u64,
-    pub net: i64,
+    pub maybe_net: Option<usize>,
 }
 
 impl_loose_weight!(LoneLooseSegWeight, LoneLooseSeg, LoneLooseSegIndex);
@@ -113,7 +113,7 @@ impl GetWidth for LoneLooseSegWeight {
 pub struct SeqLooseSegWeight {
     pub width: f64,
     pub layer: u64,
-    pub net: i64,
+    pub maybe_net: Option<usize>,
 }
 
 impl_loose_weight!(SeqLooseSegWeight, SeqLooseSeg, SeqLooseSegIndex);

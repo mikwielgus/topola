@@ -56,7 +56,7 @@ impl RulesTrait for SimpleRules {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64 {
         *self
             .net_clearances
-            .get(&(conditions1.net, conditions2.net))
+            .get(&(conditions1.maybe_net, conditions2.maybe_net))
             .unwrap_or(&10.0)
     }
 

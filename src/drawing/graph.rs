@@ -26,8 +26,8 @@ pub trait GetLayer {
 }
 
 #[enum_dispatch]
-pub trait GetNet {
-    fn net(&self) -> i64;
+pub trait GetMaybeNet {
+    fn maybe_net(&self) -> Option<usize>;
 }
 
 #[enum_dispatch]
@@ -49,9 +49,9 @@ macro_rules! impl_weight {
             }
         }
 
-        impl<'a> GetNet for $weight_struct {
-            fn net(&self) -> i64 {
-                self.net
+        impl<'a> GetMaybeNet for $weight_struct {
+            fn maybe_net(&self) -> Option<usize> {
+                self.maybe_net
             }
         }
 

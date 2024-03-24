@@ -46,7 +46,7 @@ impl DsnDesign {
         let mut layout = Drawing::new(rules);
 
         // mapping of pin id -> net id prepared for adding pins
-        let pin_nets = HashMap::<String, i64>::from_iter(
+        let pin_nets = HashMap::<String, usize>::from_iter(
             self.pcb
                 .network
                 .net_vec
@@ -103,7 +103,7 @@ impl DsnDesign {
                                     pin.rotate.unwrap_or(0.0) as f64,
                                     circle.diameter as f64 / 2.0,
                                     layer as u64,
-                                    *net_id as i64,
+                                    *net_id,
                                 )
                             }
                             Shape::Rect(rect) => {
@@ -124,7 +124,7 @@ impl DsnDesign {
                                     rect.x2 as f64,
                                     rect.y2 as f64,
                                     layer as u64,
-                                    *net_id as i64,
+                                    *net_id,
                                 )
                             }
                             Shape::Path(path) => {
@@ -143,7 +143,7 @@ impl DsnDesign {
                                     &path.coord_vec,
                                     path.width as f64,
                                     layer as u64,
-                                    *net_id as i64,
+                                    *net_id,
                                 )
                             }
                             Shape::Polygon(polygon) => {
@@ -162,7 +162,7 @@ impl DsnDesign {
                                     &polygon.coord_vec,
                                     polygon.width as f64,
                                     layer as u64,
-                                    *net_id as i64,
+                                    *net_id,
                                 )
                             }
                         };
@@ -200,7 +200,7 @@ impl DsnDesign {
                             0.0,
                             circle.diameter as f64 / 2.0,
                             layer as u64,
-                            net_id as i64,
+                            net_id,
                         )
                     }
                     Shape::Rect(rect) => {
@@ -221,7 +221,7 @@ impl DsnDesign {
                             rect.x2 as f64,
                             rect.y2 as f64,
                             layer as u64,
-                            net_id as i64,
+                            net_id,
                         )
                     }
                     Shape::Path(path) => {
@@ -240,7 +240,7 @@ impl DsnDesign {
                             &path.coord_vec,
                             path.width as f64,
                             layer as u64,
-                            net_id as i64,
+                            net_id,
                         )
                     }
                     Shape::Polygon(polygon) => {
@@ -259,7 +259,7 @@ impl DsnDesign {
                             &polygon.coord_vec,
                             polygon.width as f64,
                             layer as u64,
-                            net_id as i64,
+                            net_id,
                         )
                     }
                 };
@@ -279,7 +279,7 @@ impl DsnDesign {
                 &wire.path.coord_vec,
                 wire.path.width as f64,
                 layer_id as u64,
-                net_id as i64,
+                net_id,
             );
         }
 
@@ -309,7 +309,7 @@ impl DsnDesign {
         pin_rot: f64,
         r: f64,
         layer: u64,
-        net: i64,
+        net: usize,
     ) {
         let circle = Circle {
             pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, 0.0, 0.0),
@@ -317,7 +317,11 @@ impl DsnDesign {
         };
 
         drawing
-            .add_fixed_dot(FixedDotWeight { circle, layer, net })
+            .add_fixed_dot(FixedDotWeight {
+                circle,
+                layer,
+                maybe_net: Some(net),
+            })
             .unwrap();
     }
 
@@ -332,7 +336,7 @@ impl DsnDesign {
         x2: f64,
         y2: f64,
         layer: u64,
-        net: i64,
+        net: usize,
     ) {
         // Corners.
         let dot_1_1 = drawing
@@ -342,7 +346,7 @@ impl DsnDesign {
                     r: 0.5,
                 },
                 layer,
-                net,
+                maybe_net: Some(net),
             })
             .unwrap();
         let dot_2_1 = drawing
@@ -352,7 +356,7 @@ impl DsnDesign {
                     r: 0.5,
                 },
                 layer,
-                net,
+                maybe_net: Some(net),
             })
             .unwrap();
         let dot_2_2 = drawing
@@ -362,7 +366,7 @@ impl DsnDesign {
                     r: 0.5,
                 },
                 layer,
-                net,
+                maybe_net: Some(net),
             })
             .unwrap();
         let dot_1_2 = drawing
@@ -372,7 +376,7 @@ impl DsnDesign {
                     r: 0.5,
                 },
                 layer,
-                net,
+                maybe_net: Some(net),
             })
             .unwrap();
         // Sides.
@@ -383,7 +387,7 @@ impl DsnDesign {
                 FixedSegWeight {
                     width: 1.0,
                     layer,
-                    net,
+                    maybe_net: Some(net),
                 },
             )
             .unwrap();
@@ -394,7 +398,7 @@ impl DsnDesign {
                 FixedSegWeight {
                     width: 1.0,
                     layer,
-                    net,
+                    maybe_net: Some(net),
                 },
             )
             .unwrap();
@@ -405,7 +409,7 @@ impl DsnDesign {
                 FixedSegWeight {
                     width: 1.0,
                     layer,
-                    net,
+                    maybe_net: Some(net),
                 },
             )
             .unwrap();
@@ -416,7 +420,7 @@ impl DsnDesign {
                 FixedSegWeight {
                     width: 1.0,
                     layer,
-                    net,
+                    maybe_net: Some(net),
                 },
             )
             .unwrap();
@@ -431,7 +435,7 @@ impl DsnDesign {
         coords: &Vec<structure::Point>,
         width: f64,
         layer: u64,
-        net: i64,
+        net: usize,
     ) {
         // add the first coordinate in the wire path as a dot and save its index
         let mut prev_index = drawing
@@ -448,7 +452,7 @@ impl DsnDesign {
                     r: width / 2.0,
                 },
                 layer,
-                net,
+                maybe_net: Some(net),
             })
             .unwrap();
 
@@ -469,13 +473,21 @@ impl DsnDesign {
                         r: width / 2.0,
                     },
                     layer,
-                    net,
+                    maybe_net: Some(net),
                 })
                 .unwrap();
 
             // add a seg between the current and previous coords
             let _ = drawing
-                .add_fixed_seg(prev_index, index, FixedSegWeight { width, layer, net })
+                .add_fixed_seg(
+                    prev_index,
+                    index,
+                    FixedSegWeight {
+                        width,
+                        layer,
+                        maybe_net: Some(net),
+                    },
+                )
                 .unwrap();
 
             prev_index = index;

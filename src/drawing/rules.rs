@@ -9,12 +9,12 @@ pub trait GetConditions {
 
 #[derive(Debug, Default)]
 pub struct Conditions {
-    pub net: i64,
-    pub region: Option<String>,
-    pub layer: Option<String>,
+    pub maybe_net: Option<usize>,
+    pub maybe_region: Option<String>,
+    pub maybe_layer: Option<String>,
 }
 
 pub trait RulesTrait {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64;
-    fn largest_clearance(&self, net: i64) -> f64;
+    fn largest_clearance(&self, net: Option<usize>) -> f64;
 }

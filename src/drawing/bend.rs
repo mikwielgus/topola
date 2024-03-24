@@ -2,7 +2,7 @@ use enum_dispatch::enum_dispatch;
 
 use crate::{
     drawing::{
-        graph::{GeometryIndex, GeometryWeight, GetLayer, GetNet, MakePrimitive, Retag},
+        graph::{GeometryIndex, GeometryWeight, GetLayer, GetMaybeNet, MakePrimitive, Retag},
         primitive::{GenericPrimitive, Primitive},
         rules::RulesTrait,
         Drawing,
@@ -76,7 +76,7 @@ pub struct FixedBendWeight {
     pub width: f64,
     pub offset: f64,
     pub layer: u64,
-    pub net: i64,
+    pub maybe_net: Option<usize>,
 }
 
 impl_fixed_weight!(FixedBendWeight, FixedBend, FixedBendIndex);
@@ -105,7 +105,7 @@ pub struct LooseBendWeight {
     pub width: f64,
     pub offset: f64,
     pub layer: u64,
-    pub net: i64,
+    pub maybe_net: Option<usize>,
 }
 
 impl GetOffset for LooseBendWeight {

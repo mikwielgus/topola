@@ -5,7 +5,7 @@ use crate::{
     drawing::{
         bend::LooseBendIndex,
         dot::FixedDotIndex,
-        graph::{GetNet, MakePrimitive},
+        graph::{GetMaybeNet, MakePrimitive},
         guide::{BareHead, Head, HeadTrait, SegbendHead},
         rules::RulesTrait,
     },

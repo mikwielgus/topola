@@ -12,7 +12,7 @@ use super::segbend::Segbend;
 use crate::drawing::bend::BendIndex;
 use crate::drawing::collect::Collect;
 use crate::drawing::dot::DotWeight;
-use crate::drawing::graph::GetNet;
+use crate::drawing::graph::GetMaybeNet;
 use crate::drawing::guide::Guide;
 use crate::drawing::primitive::GetLimbs;
 use crate::drawing::rules::GetConditions;
@@ -63,7 +63,7 @@ pub struct Collision(pub Shape, pub GeometryIndex);
 
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{1:?} is already connected to net {0}")]
-pub struct AlreadyConnected(pub i64, pub GeometryIndex);
+pub struct AlreadyConnected(pub usize, pub GeometryIndex);
 
 #[derive(Debug)]
 pub struct Drawing<R: RulesTrait> {
@@ -501,13 +501,19 @@ impl<R: RulesTrait> Drawing<R> {
     ) -> Result<LooseBendIndex, LayoutException> {
         // It makes no sense to wrap something around or under one of its connectables.
         //
-        if weight.net == around.primitive(self).net() {
-            return Err(AlreadyConnected(weight.net, around.into()).into());
-        }
-        //
-        if let Some(wraparound) = self.wraparoundable(around).wraparound() {
-            if weight.net == wraparound.primitive(self).net() {
-                return Err(AlreadyConnected(weight.net, wraparound.into()).into());
+        if let Some(net) = weight.maybe_net {
+            if let Some(around_net) = around.primitive(self).maybe_net() {
+                if net == around_net {
+                    return Err(AlreadyConnected(net, around.into()).into());
+                }
+            }
+            //
+            if let Some(wraparound) = self.wraparoundable(around).wraparound() {
+                if let Some(wraparound_net) = wraparound.primitive(self).maybe_net() {
+                    if net == wraparound_net {
+                        return Err(AlreadyConnected(net, wraparound.into()).into());
+                    }
+                }
             }
         }
 
@@ -714,10 +720,12 @@ impl<R: RulesTrait> Drawing<R> {
         node: GeometryIndex,
         maybe_except: Option<&[GeometryIndex]>,
     ) -> Option<Infringement> {
-        let limiting_shape = node
-            .primitive(self)
-            .shape()
-            .inflate(self.rules.largest_clearance(node.primitive(self).net()));
+        let limiting_shape = node.primitive(self).shape().inflate(
+            node.primitive(self)
+                .maybe_net()
+                .and_then(|net| Some(self.rules.largest_clearance(Some(net))))
+                .unwrap_or(0.0),
+        );
         let mut inflated_shape = limiting_shape; // Unused temporary value just for initialization.
         let conditions = node.primitive(self).conditions();
 
@@ -760,10 +768,14 @@ impl<R: RulesTrait> Drawing<R> {
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     fn are_connectable(&self, node1: GeometryIndex, node2: GeometryIndex) -> bool {
-        let node1_net = node1.primitive(self).net();
-        let node2_net = node2.primitive(self).net();
-
-        (node1_net == node2_net) || node1_net == -1 || node2_net == -2
+        if let (Some(node1_net_id), Some(node2_net_id)) = (
+            node1.primitive(self).maybe_net(),
+            node2.primitive(self).maybe_net(),
+        ) {
+            node1_net_id == node2_net_id
+        } else {
+            true
+        }
     }
 }
 

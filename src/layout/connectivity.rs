@@ -2,7 +2,7 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::StableDiGraph;
 
 use crate::{
-    drawing::{dot::FixedDotIndex, graph::GetNet, primitive::Primitive, rules::RulesTrait},
+    drawing::{dot::FixedDotIndex, graph::GetMaybeNet, primitive::Primitive, rules::RulesTrait},
     graph::GenericIndex,
 };
 
@@ -16,12 +16,12 @@ pub enum ConnectivityWeight {
 
 #[derive(Debug, Clone, Copy)]
 pub struct ContinentWeight {
-    pub net: i64,
+    pub maybe_net: Option<usize>,
 }
 
-impl GetNet for ContinentWeight {
-    fn net(&self) -> i64 {
-        self.net
+impl GetMaybeNet for ContinentWeight {
+    fn maybe_net(&self) -> Option<usize> {
+        self.maybe_net
     }
 }
 

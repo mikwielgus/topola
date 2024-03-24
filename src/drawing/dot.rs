@@ -5,7 +5,7 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     drawing::{
-        graph::{GeometryIndex, GeometryWeight, GetLayer, GetNet, MakePrimitive, Retag},
+        graph::{GeometryIndex, GeometryWeight, GetLayer, GetMaybeNet, MakePrimitive, Retag},
         primitive::{GenericPrimitive, Primitive},
         rules::RulesTrait,
         Drawing,
@@ -77,7 +77,7 @@ impl DotWeightTrait<GeometryWeight> for DotWeight {}
 pub struct FixedDotWeight {
     pub circle: Circle,
     pub layer: u64,
-    pub net: i64,
+    pub maybe_net: Option<usize>,
 }
 
 impl_fixed_weight!(FixedDotWeight, FixedDot, FixedDotIndex);
@@ -105,7 +105,7 @@ impl GetWidth for FixedDotWeight {
 pub struct LooseDotWeight {
     pub circle: Circle,
     pub layer: u64,
-    pub net: i64,
+    pub maybe_net: Option<usize>,
 }
 
 impl_loose_weight!(LooseDotWeight, LooseDot, LooseDotIndex);

@@ -4,7 +4,7 @@ use petgraph::stable_graph::NodeIndex;
 use crate::drawing::{
     bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    graph::{GeometryIndex, GeometryWeight, GetLayer, GetNet, Retag},
+    graph::{GeometryIndex, GeometryWeight, GetLayer, GetMaybeNet, Retag},
     loose::LooseIndex,
     rules::{Conditions, GetConditions, RulesTrait},
     seg::{
@@ -130,9 +130,9 @@ macro_rules! impl_primitive {
             }
         }
 
-        impl<'a, R: RulesTrait> GetNet for $primitive_struct<'a, R> {
-            fn net(&self) -> i64 {
-                self.weight().net()
+        impl<'a, R: RulesTrait> GetMaybeNet for $primitive_struct<'a, R> {
+            fn maybe_net(&self) -> Option<usize> {
+                self.weight().maybe_net()
             }
         }
     };
@@ -152,7 +152,7 @@ macro_rules! impl_loose_primitive {
 
 #[enum_dispatch(
     GetLayer,
-    GetNet,
+    GetMaybeNet,
     GetWidth,
     GetLayout,
     MakeShape,
@@ -223,13 +223,13 @@ where
 
 impl<'a, W, R: RulesTrait> GetConditions for GenericPrimitive<'a, W, R>
 where
-    GenericPrimitive<'a, W, R>: GetNet,
+    GenericPrimitive<'a, W, R>: GetMaybeNet,
 {
     fn conditions(&self) -> Conditions {
         Conditions {
-            net: self.net(),
-            region: Some("A".to_string()),
-            layer: Some("F.Cu".to_string()),
+            maybe_net: self.maybe_net(),
+            maybe_region: Some("A".to_string()),
+            maybe_layer: Some("F.Cu".to_string()),
         }
     }
 }
