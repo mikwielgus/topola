@@ -1,24 +1,27 @@
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
-use crate::drawing::{
-    bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
-    dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    graph::{GeometryIndex, GeometryWeight, GetLayer, GetMaybeNet, Retag},
-    loose::LooseIndex,
-    rules::{Conditions, GetConditions, RulesTrait},
-    seg::{
-        FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex,
-        SeqLooseSegWeight,
-    },
-    Drawing,
-};
 use crate::geometry::{
     shape::{Shape, ShapeTrait},
     GetOffset, GetWidth,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::connectivity::{BandIndex, ContinentIndex};
+use crate::{
+    drawing::{
+        bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
+        dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+        graph::{GeometryIndex, GeometryWeight, GetLayer, GetMaybeNet, Retag},
+        loose::LooseIndex,
+        rules::{Conditions, GetConditions, RulesTrait},
+        seg::{
+            FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex,
+            SeqLooseSegWeight,
+        },
+        Drawing,
+    },
+    geometry::CompoundWeight,
+};
 
 #[enum_dispatch]
 pub trait GetDrawing<'a, R: RulesTrait> {
@@ -181,12 +184,17 @@ impl<'a, W, R: RulesTrait> GenericPrimitive<'a, W, R> {
     }
 
     fn tagged_weight(&self) -> GeometryWeight {
-        *self
+        if let CompoundWeight::Primitive(weight) = *self
             .drawing
             .geometry()
             .graph()
             .node_weight(self.index.node_index())
             .unwrap()
+        {
+            weight
+        } else {
+            unreachable!()
+        }
     }
 
     fn primitive<WW>(&self, index: GenericIndex<WW>) -> GenericPrimitive<WW, R> {
@@ -250,9 +258,15 @@ impl<'a, R: RulesTrait> FixedDot<'a, R> {
                     .graph()
                     .node_weight(ni.node_index())
                     .unwrap();
-                if matches!(weight, GeometryWeight::LoneLooseSeg(..)) {
+                if matches!(
+                    weight,
+                    CompoundWeight::Primitive(GeometryWeight::LoneLooseSeg(..))
+                ) {
                     Some(LoneLooseSegIndex::new(ni.node_index()).into())
-                } else if matches!(weight, GeometryWeight::SeqLooseSeg(..)) {
+                } else if matches!(
+                    weight,
+                    CompoundWeight::Primitive(GeometryWeight::SeqLooseSeg(..))
+                ) {
                     Some(SeqLooseSegIndex::new(ni.node_index()).into())
                 } else {
                     None

@@ -7,12 +7,12 @@ use rstar::{primitives::GeomWithData, RTree, RTreeObject, AABB};
 
 use crate::{
     drawing::graph::{GetLayer, Retag},
+    geometry::{
+        shape::{Shape, ShapeTrait},
+        BendWeightTrait, CompoundWeight, DotWeightTrait, Geometry, GeometryLabel, GetWidth,
+        SegWeightTrait,
+    },
     graph::{GenericIndex, GetNodeIndex},
-};
-
-use super::{
-    shape::{Shape, ShapeTrait},
-    BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetWidth, SegWeightTrait,
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -39,23 +39,25 @@ type BboxedIndex<GI> = GeomWithData<Bbox, GI>;
 
 #[derive(Debug)]
 pub struct GeometryWithRtree<
-    GW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<GI> + Copy,
-    DW: DotWeightTrait<GW> + GetLayer + Copy,
-    SW: SegWeightTrait<GW> + GetLayer + Copy,
-    BW: BendWeightTrait<GW> + GetLayer + Copy,
-    GI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
-    DI: GetNodeIndex + Into<GI> + Copy,
-    SI: GetNodeIndex + Into<GI> + Copy,
-    BI: GetNodeIndex + Into<GI> + Copy,
+    PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
+    DW: DotWeightTrait<PW> + GetLayer,
+    SW: SegWeightTrait<PW> + GetLayer,
+    BW: BendWeightTrait<PW> + GetLayer,
+    GW: Copy,
+    PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
+    DI: GetNodeIndex + Into<PI> + Copy,
+    SI: GetNodeIndex + Into<PI> + Copy,
+    BI: GetNodeIndex + Into<PI> + Copy,
+    GI: GetNodeIndex + Copy,
 > {
-    geometry: Geometry<GW, DW, SW, BW, GI, DI, SI, BI>,
-    rtree: RTree<BboxedIndex<GI>>,
+    geometry: Geometry<PW, DW, SW, BW, GW, PI, DI, SI, BI, GI>,
+    rtree: RTree<BboxedIndex<PI>>,
     layer_count: u64,
-    weight_marker: PhantomData<GW>,
+    weight_marker: PhantomData<PW>,
     dot_weight_marker: PhantomData<DW>,
     seg_weight_marker: PhantomData<SW>,
     bend_weight_marker: PhantomData<BW>,
-    index_marker: PhantomData<GI>,
+    index_marker: PhantomData<PI>,
     dot_index_marker: PhantomData<DI>,
     seg_index_marker: PhantomData<SI>,
     bend_index_marker: PhantomData<BI>,
@@ -64,19 +66,21 @@ pub struct GeometryWithRtree<
 #[debug_invariant(self.test_envelopes())]
 #[debug_invariant(self.geometry.graph().node_count() == self.rtree.size())]
 impl<
-        GW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<GI> + Copy,
-        DW: DotWeightTrait<GW> + GetLayer + Copy,
-        SW: SegWeightTrait<GW> + GetLayer + Copy,
-        BW: BendWeightTrait<GW> + GetLayer + Copy,
-        GI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
-        DI: GetNodeIndex + Into<GI> + Copy,
-        SI: GetNodeIndex + Into<GI> + Copy,
-        BI: GetNodeIndex + Into<GI> + Copy,
-    > GeometryWithRtree<GW, DW, SW, BW, GI, DI, SI, BI>
+        PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
+        DW: DotWeightTrait<PW> + GetLayer,
+        SW: SegWeightTrait<PW> + GetLayer,
+        BW: BendWeightTrait<PW> + GetLayer,
+        GW: Copy,
+        PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
+        DI: GetNodeIndex + Into<PI> + Copy,
+        SI: GetNodeIndex + Into<PI> + Copy,
+        BI: GetNodeIndex + Into<PI> + Copy,
+        GI: GetNodeIndex + Copy,
+    > GeometryWithRtree<PW, DW, SW, BW, GW, PI, DI, SI, BI, GI>
 {
     pub fn new(layer_count: u64) -> Self {
         Self {
-            geometry: Geometry::<GW, DW, SW, BW, GI, DI, SI, BI>::new(),
+            geometry: Geometry::<PW, DW, SW, BW, GW, PI, DI, SI, BI, GI>::new(),
             rtree: RTree::new(),
             layer_count,
             weight_marker: PhantomData,
@@ -90,9 +94,9 @@ impl<
         }
     }
 
-    pub fn add_dot<W: DotWeightTrait<GW> + GetLayer>(&mut self, weight: W) -> GenericIndex<W>
+    pub fn add_dot<W: DotWeightTrait<PW> + GetLayer>(&mut self, weight: W) -> GenericIndex<W>
     where
-        GenericIndex<W>: Into<GI>,
+        GenericIndex<W>: Into<PI>,
     {
         let dot = self.geometry.add_dot(weight);
         self.rtree.insert(BboxedIndex::new(
@@ -107,14 +111,14 @@ impl<
         dot
     }
 
-    pub fn add_seg<W: SegWeightTrait<GW> + GetLayer>(
+    pub fn add_seg<W: SegWeightTrait<PW> + GetLayer>(
         &mut self,
         from: DI,
         to: DI,
         weight: W,
     ) -> GenericIndex<W>
     where
-        GenericIndex<W>: Into<GI>,
+        GenericIndex<W>: Into<PI>,
     {
         let seg = self.geometry.add_seg(from, to, weight);
         self.rtree.insert(BboxedIndex::new(
@@ -129,7 +133,7 @@ impl<
         seg
     }
 
-    pub fn add_bend<W: BendWeightTrait<GW> + GetLayer>(
+    pub fn add_bend<W: BendWeightTrait<PW> + GetLayer>(
         &mut self,
         from: DI,
         to: DI,
@@ -137,7 +141,7 @@ impl<
         weight: W,
     ) -> GenericIndex<W>
     where
-        GenericIndex<W>: Into<GI>,
+        GenericIndex<W>: Into<PI>,
     {
         let bend = self.geometry.add_bend(from, to, core, weight);
         self.rtree.insert(BboxedIndex::new(
@@ -245,70 +249,72 @@ impl<
 }
 
 impl<
-        GW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<GI> + Copy,
-        DW: DotWeightTrait<GW> + GetLayer + Copy,
-        SW: SegWeightTrait<GW> + GetLayer + Copy,
-        BW: BendWeightTrait<GW> + GetLayer + Copy,
-        GI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
-        DI: GetNodeIndex + Into<GI> + Copy,
-        SI: GetNodeIndex + Into<GI> + Copy,
-        BI: GetNodeIndex + Into<GI> + Copy,
-    > GeometryWithRtree<GW, DW, SW, BW, GI, DI, SI, BI>
+        PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
+        DW: DotWeightTrait<PW> + GetLayer,
+        SW: SegWeightTrait<PW> + GetLayer,
+        BW: BendWeightTrait<PW> + GetLayer,
+        GW: Copy,
+        PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
+        DI: GetNodeIndex + Into<PI> + Copy,
+        SI: GetNodeIndex + Into<PI> + Copy,
+        BI: GetNodeIndex + Into<PI> + Copy,
+        GI: GetNodeIndex + Copy,
+    > GeometryWithRtree<PW, DW, SW, BW, GW, PI, DI, SI, BI, GI>
 {
-    fn make_dot_bbox(&self, dot: DI) -> BboxedIndex<GI> {
+    fn make_dot_bbox(&self, dot: DI) -> BboxedIndex<PI> {
         BboxedIndex::new(
             Bbox::new(&self.geometry.dot_shape(dot), self.layer(dot.into())),
             dot.into(),
         )
     }
 
-    fn make_seg_bbox(&self, seg: SI) -> BboxedIndex<GI> {
+    fn make_seg_bbox(&self, seg: SI) -> BboxedIndex<PI> {
         BboxedIndex::new(
             Bbox::new(&self.geometry.seg_shape(seg), self.layer(seg.into())),
             seg.into(),
         )
     }
 
-    fn make_bend_bbox(&self, bend: BI) -> BboxedIndex<GI> {
+    fn make_bend_bbox(&self, bend: BI) -> BboxedIndex<PI> {
         BboxedIndex::new(
             Bbox::new(&self.geometry.bend_shape(bend), self.layer(bend.into())),
             bend.into(),
         )
     }
 
-    fn shape(&self, index: GI) -> Shape {
-        if let Ok(dot) = <GI as TryInto<DI>>::try_into(index) {
+    fn shape(&self, index: PI) -> Shape {
+        if let Ok(dot) = <PI as TryInto<DI>>::try_into(index) {
             self.geometry.dot_shape(dot)
-        } else if let Ok(seg) = <GI as TryInto<SI>>::try_into(index) {
+        } else if let Ok(seg) = <PI as TryInto<SI>>::try_into(index) {
             self.geometry.seg_shape(seg)
-        } else if let Ok(bend) = <GI as TryInto<BI>>::try_into(index) {
+        } else if let Ok(bend) = <PI as TryInto<BI>>::try_into(index) {
             self.geometry.bend_shape(bend)
         } else {
             unreachable!();
         }
     }
 
-    fn layer(&self, index: GI) -> u64 {
-        if let Ok(dot) = <GI as TryInto<DI>>::try_into(index) {
+    fn layer(&self, index: PI) -> u64 {
+        if let Ok(dot) = <PI as TryInto<DI>>::try_into(index) {
             self.geometry.dot_weight(dot).layer()
-        } else if let Ok(seg) = <GI as TryInto<SI>>::try_into(index) {
+        } else if let Ok(seg) = <PI as TryInto<SI>>::try_into(index) {
             self.geometry.seg_weight(seg).layer()
-        } else if let Ok(bend) = <GI as TryInto<BI>>::try_into(index) {
+        } else if let Ok(bend) = <PI as TryInto<BI>>::try_into(index) {
             self.geometry.bend_weight(bend).layer()
         } else {
             unreachable!();
         }
     }
 
-    pub fn geometry(&self) -> &Geometry<GW, DW, SW, BW, GI, DI, SI, BI> {
+    pub fn geometry(&self) -> &Geometry<PW, DW, SW, BW, GW, PI, DI, SI, BI, GI> {
         &self.geometry
     }
 
-    pub fn rtree(&self) -> &RTree<BboxedIndex<GI>> {
+    pub fn rtree(&self) -> &RTree<BboxedIndex<PI>> {
         &self.rtree
     }
 
-    pub fn graph(&self) -> &StableDiGraph<GW, GeometryLabel, usize> {
+    pub fn graph(&self) -> &StableDiGraph<CompoundWeight<PW, GW>, GeometryLabel, usize> {
         self.geometry.graph()
     }
 
