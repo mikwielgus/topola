@@ -2,7 +2,7 @@ use crate::wraparoundable::{GetWraparound, WraparoundableIndex};
 
 use super::{
     bend::LooseBendIndex,
-    graph::GeometryIndex,
+    graph::PrimitiveIndex,
     primitive::{GetInnerOuter, GetJoints},
     rules::RulesTrait,
     Drawing,
@@ -18,8 +18,8 @@ impl<'a, R: RulesTrait> Collect<'a, R> {
         Self { drawing }
     }
 
-    pub fn bend_bow(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
-        let mut v: Vec<GeometryIndex> = vec![];
+    pub fn bend_bow(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex> {
+        let mut v: Vec<PrimitiveIndex> = vec![];
         v.push(bend.into());
 
         let ends = self.drawing.primitive(bend).joints();
@@ -37,7 +37,7 @@ impl<'a, R: RulesTrait> Collect<'a, R> {
         v
     }
 
-    pub fn bend_outer_bows(&self, bend: LooseBendIndex) -> Vec<GeometryIndex> {
+    pub fn bend_outer_bows(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex> {
         let mut v = vec![];
         let mut rail = bend;
 
@@ -49,7 +49,7 @@ impl<'a, R: RulesTrait> Collect<'a, R> {
         v
     }
 
-    pub fn wraparounded_bows(&self, around: WraparoundableIndex) -> Vec<GeometryIndex> {
+    pub fn wraparounded_bows(&self, around: WraparoundableIndex) -> Vec<PrimitiveIndex> {
         let mut v = vec![];
         let mut rail = around.into();
 

@@ -4,7 +4,7 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     drawing::{
-        graph::{GeometryIndex, GeometryWeight, GetLayer, GetMaybeNet, MakePrimitive, Retag},
+        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight, Retag},
         primitive::{GenericPrimitive, Primitive},
         rules::RulesTrait,
         Drawing,

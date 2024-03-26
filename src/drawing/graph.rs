@@ -16,8 +16,8 @@ use super::{
 };
 
 #[enum_dispatch]
-pub trait Retag<GeometryIndex> {
-    fn retag(&self, index: NodeIndex<usize>) -> GeometryIndex;
+pub trait Retag<PrimitiveIndex> {
+    fn retag(&self, index: NodeIndex<usize>) -> PrimitiveIndex;
 }
 
 #[enum_dispatch]
@@ -37,9 +37,9 @@ pub trait MakePrimitive {
 
 macro_rules! impl_weight {
     ($weight_struct:ident, $weight_variant:ident, $index_struct:ident) => {
-        impl Retag<GeometryIndex> for $weight_struct {
-            fn retag(&self, index: NodeIndex<usize>) -> GeometryIndex {
-                GeometryIndex::$weight_variant($index_struct::new(index))
+        impl Retag<PrimitiveIndex> for $weight_struct {
+            fn retag(&self, index: NodeIndex<usize>) -> PrimitiveIndex {
+                PrimitiveIndex::$weight_variant($index_struct::new(index))
             }
         }
 
@@ -79,7 +79,7 @@ macro_rules! impl_loose_weight {
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum GeometryIndex {
+pub enum PrimitiveIndex {
     FixedDot(FixedDotIndex),
     LooseDot(LooseDotIndex),
     FixedSeg(FixedSegIndex),
@@ -89,9 +89,9 @@ pub enum GeometryIndex {
     LooseBend(LooseBendIndex),
 }
 
-#[enum_dispatch(GetWidth, GetLayer, Retag<GeometryIndex>)]
+#[enum_dispatch(GetWidth, GetLayer, Retag<PrimitiveIndex>)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum GeometryWeight {
+pub enum PrimitiveWeight {
     FixedDot(FixedDotWeight),
     LooseDot(LooseDotWeight),
     FixedSeg(FixedSegWeight),

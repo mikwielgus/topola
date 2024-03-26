@@ -9,7 +9,7 @@ use crate::{
     drawing::graph::{GetLayer, Retag},
     geometry::{
         shape::{Shape, ShapeTrait},
-        BendWeightTrait, CompoundWeight, DotWeightTrait, Geometry, GeometryLabel, GetWidth,
+        BendWeightTrait, Compound, DotWeightTrait, Geometry, GeometryLabel, GetWidth,
         SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
@@ -21,10 +21,8 @@ pub struct Bbox {
 }
 
 impl Bbox {
-    pub fn new(shape: &Shape, layer: u64) -> Bbox {
-        Self {
-            aabb: shape.envelope_3d(0.0, layer),
-        }
+    pub fn new(aabb: AABB<[f64; 3]>) -> Bbox {
+        Self { aabb }
     }
 }
 
@@ -35,7 +33,7 @@ impl RTreeObject for Bbox {
     }
 }
 
-type BboxedIndex<GI> = GeomWithData<Bbox, GI>;
+type BboxedIndex<I> = GeomWithData<Bbox, I>;
 
 #[derive(Debug)]
 pub struct GeometryWithRtree<
@@ -48,10 +46,9 @@ pub struct GeometryWithRtree<
     DI: GetNodeIndex + Into<PI> + Copy,
     SI: GetNodeIndex + Into<PI> + Copy,
     BI: GetNodeIndex + Into<PI> + Copy,
-    GI: GetNodeIndex + Copy,
 > {
-    geometry: Geometry<PW, DW, SW, BW, GW, PI, DI, SI, BI, GI>,
-    rtree: RTree<BboxedIndex<PI>>,
+    geometry: Geometry<PW, DW, SW, BW, GW, PI, DI, SI, BI>,
+    rtree: RTree<BboxedIndex<Compound<PI, GenericIndex<GW>>>>,
     layer_count: u64,
     weight_marker: PhantomData<PW>,
     dot_weight_marker: PhantomData<DW>,
@@ -75,12 +72,11 @@ impl<
         DI: GetNodeIndex + Into<PI> + Copy,
         SI: GetNodeIndex + Into<PI> + Copy,
         BI: GetNodeIndex + Into<PI> + Copy,
-        GI: GetNodeIndex + Copy,
-    > GeometryWithRtree<PW, DW, SW, BW, GW, PI, DI, SI, BI, GI>
+    > GeometryWithRtree<PW, DW, SW, BW, GW, PI, DI, SI, BI>
 {
     pub fn new(layer_count: u64) -> Self {
         Self {
-            geometry: Geometry::<PW, DW, SW, BW, GW, PI, DI, SI, BI, GI>::new(),
+            geometry: Geometry::<PW, DW, SW, BW, GW, PI, DI, SI, BI>::new(),
             rtree: RTree::new(),
             layer_count,
             weight_marker: PhantomData,
@@ -101,12 +97,11 @@ impl<
         let dot = self.geometry.add_dot(weight);
         self.rtree.insert(BboxedIndex::new(
             Bbox::new(
-                &self
-                    .geometry
-                    .dot_shape(dot.into().try_into().unwrap_or_else(|_| unreachable!())),
-                weight.layer(),
+                self.geometry
+                    .dot_shape(dot.into().try_into().unwrap_or_else(|_| unreachable!()))
+                    .envelope_3d(0.0, weight.layer()),
             ),
-            dot.into(),
+            Compound::Primitive(dot.into()),
         ));
         dot
     }
@@ -123,12 +118,11 @@ impl<
         let seg = self.geometry.add_seg(from, to, weight);
         self.rtree.insert(BboxedIndex::new(
             Bbox::new(
-                &self
-                    .geometry
-                    .seg_shape(seg.into().try_into().unwrap_or_else(|_| unreachable!())),
-                weight.layer(),
+                self.geometry
+                    .seg_shape(seg.into().try_into().unwrap_or_else(|_| unreachable!()))
+                    .envelope_3d(0.0, weight.layer()),
             ),
-            seg.into(),
+            Compound::Primitive(seg.into()),
         ));
         seg
     }
@@ -146,14 +140,30 @@ impl<
         let bend = self.geometry.add_bend(from, to, core, weight);
         self.rtree.insert(BboxedIndex::new(
             Bbox::new(
-                &self
-                    .geometry
-                    .bend_shape(bend.into().try_into().unwrap_or_else(|_| unreachable!())),
-                weight.layer(),
+                self.geometry
+                    .bend_shape(bend.into().try_into().unwrap_or_else(|_| unreachable!()))
+                    .envelope_3d(0.0, weight.layer()),
             ),
-            bend.into(),
+            Compound::Primitive(bend.into()),
         ));
         bend
+    }
+
+    pub fn add_grouping(&mut self, weight: GW) -> GenericIndex<GW> {
+        let grouping = self.geometry.add_grouping(weight);
+        self.rtree.insert(BboxedIndex::new(
+            Bbox::new(AABB::<[f64; 3]>::from_point([0.0, 0.0, -1.0].into())),
+            Compound::Grouping(grouping),
+        ));
+        grouping
+    }
+
+    pub fn assign_to_grouping<W>(
+        &mut self,
+        primitive: GenericIndex<W>,
+        grouping: GenericIndex<GW>,
+    ) {
+        self.geometry.assign_to_grouping(primitive, grouping)
     }
 
     pub fn remove_dot(&mut self, dot: DI) -> Result<(), ()> {
@@ -166,18 +176,23 @@ impl<
         }
 
         self.rtree.remove(&self.make_dot_bbox(dot));
-        self.geometry.remove(dot.into());
+        self.geometry.remove_primitive(dot.into());
         Ok(())
     }
 
     pub fn remove_seg(&mut self, seg: SI) {
         self.rtree.remove(&self.make_seg_bbox(seg));
-        self.geometry.remove(seg.into());
+        self.geometry.remove_primitive(seg.into());
     }
 
     pub fn remove_bend(&mut self, bend: BI) {
         self.rtree.remove(&self.make_bend_bbox(bend));
-        self.geometry.remove(bend.into());
+        self.geometry.remove_primitive(bend.into());
+    }
+
+    pub fn remove_grouping(&mut self, grouping: GenericIndex<GW>) {
+        self.rtree.remove(&self.make_grouping_bbox(grouping));
+        self.geometry.remove_grouping(grouping);
     }
 
     pub fn move_dot(&mut self, dot: DI, to: Point) {
@@ -258,27 +273,48 @@ impl<
         DI: GetNodeIndex + Into<PI> + Copy,
         SI: GetNodeIndex + Into<PI> + Copy,
         BI: GetNodeIndex + Into<PI> + Copy,
-        GI: GetNodeIndex + Copy,
-    > GeometryWithRtree<PW, DW, SW, BW, GW, PI, DI, SI, BI, GI>
+    > GeometryWithRtree<PW, DW, SW, BW, GW, PI, DI, SI, BI>
 {
-    fn make_dot_bbox(&self, dot: DI) -> BboxedIndex<PI> {
+    fn make_dot_bbox(&self, dot: DI) -> BboxedIndex<Compound<PI, GenericIndex<GW>>> {
         BboxedIndex::new(
-            Bbox::new(&self.geometry.dot_shape(dot), self.layer(dot.into())),
-            dot.into(),
+            Bbox::new(
+                self.geometry
+                    .dot_shape(dot)
+                    .envelope_3d(0.0, self.layer(dot.into())),
+            ),
+            Compound::Primitive(dot.into()),
         )
     }
 
-    fn make_seg_bbox(&self, seg: SI) -> BboxedIndex<PI> {
+    fn make_seg_bbox(&self, seg: SI) -> BboxedIndex<Compound<PI, GenericIndex<GW>>> {
         BboxedIndex::new(
-            Bbox::new(&self.geometry.seg_shape(seg), self.layer(seg.into())),
-            seg.into(),
+            Bbox::new(
+                self.geometry
+                    .seg_shape(seg)
+                    .envelope_3d(0.0, self.layer(seg.into())),
+            ),
+            Compound::Primitive(seg.into()),
         )
     }
 
-    fn make_bend_bbox(&self, bend: BI) -> BboxedIndex<PI> {
+    fn make_bend_bbox(&self, bend: BI) -> BboxedIndex<Compound<PI, GenericIndex<GW>>> {
         BboxedIndex::new(
-            Bbox::new(&self.geometry.bend_shape(bend), self.layer(bend.into())),
-            bend.into(),
+            Bbox::new(
+                self.geometry
+                    .bend_shape(bend)
+                    .envelope_3d(0.0, self.layer(bend.into())),
+            ),
+            Compound::Primitive(bend.into()),
+        )
+    }
+
+    fn make_grouping_bbox(
+        &self,
+        grouping: GenericIndex<GW>,
+    ) -> BboxedIndex<Compound<PI, GenericIndex<GW>>> {
+        BboxedIndex::new(
+            Bbox::new(AABB::<[f64; 3]>::from_point([0.0, 0.0, -1.0].into())),
+            Compound::Grouping(grouping),
         )
     }
 
@@ -306,24 +342,30 @@ impl<
         }
     }
 
-    pub fn geometry(&self) -> &Geometry<PW, DW, SW, BW, GW, PI, DI, SI, BI, GI> {
+    pub fn geometry(&self) -> &Geometry<PW, DW, SW, BW, GW, PI, DI, SI, BI> {
         &self.geometry
     }
 
-    pub fn rtree(&self) -> &RTree<BboxedIndex<PI>> {
+    pub fn rtree(&self) -> &RTree<BboxedIndex<Compound<PI, GenericIndex<GW>>>> {
         &self.rtree
     }
 
-    pub fn graph(&self) -> &StableDiGraph<CompoundWeight<PW, GW>, GeometryLabel, usize> {
+    pub fn graph(&self) -> &StableDiGraph<Compound<PW, GW>, GeometryLabel, usize> {
         self.geometry.graph()
     }
 
     fn test_envelopes(&self) -> bool {
         !self.rtree.iter().any(|wrapper| {
-            let node = wrapper.data;
-            let shape = self.shape(node);
-            let layer = self.layer(node);
-            let wrapper = BboxedIndex::new(Bbox::new(&shape, layer), node);
+            // TODO: Test envelopes of groupings too.
+            let Compound::Primitive(primitive_node) = wrapper.data else {
+                return false;
+            };
+            let shape = self.shape(primitive_node);
+            let layer = self.layer(primitive_node);
+            let wrapper = BboxedIndex::new(
+                Bbox::new(shape.envelope_3d(0.0, layer)),
+                Compound::Primitive(primitive_node),
+            );
             !self
                 .rtree
                 .locate_in_envelope(&shape.envelope_3d(0.0, layer))

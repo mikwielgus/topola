@@ -15,7 +15,7 @@ use crate::{
 };
 
 use super::{
-    graph::GeometryIndex,
+    graph::PrimitiveIndex,
     primitive::GetJoints,
     rules::{Conditions, RulesTrait},
     segbend::Segbend,
@@ -241,7 +241,7 @@ impl<'a, R: RulesTrait> Guide<'a, R> {
             .other_joint(head.segbend.dot.into())
     }
 
-    fn conditions(&self, node: GeometryIndex) -> Conditions {
+    fn conditions(&self, node: PrimitiveIndex) -> Conditions {
         node.primitive(self.drawing).conditions()
     }
 }

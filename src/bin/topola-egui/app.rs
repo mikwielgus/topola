@@ -139,12 +139,12 @@ impl eframe::App for App {
                 let mut painter = Painter::new(ui, transform);
 
                 if let Some(layout) = &self.drawing {
-                    for node in layout.layer_nodes(1) {
+                    for node in layout.layer_primitive_nodes(1) {
                         let shape = node.primitive(layout).shape();
                         painter.paint_shape(&shape, egui::Color32::from_rgb(52, 52, 200));
                     }
 
-                    for node in layout.layer_nodes(0) {
+                    for node in layout.layer_primitive_nodes(0) {
                         let shape = node.primitive(layout).shape();
                         painter.paint_shape(&shape, egui::Color32::from_rgb(200, 52, 52));
                     }

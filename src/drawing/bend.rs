@@ -2,7 +2,7 @@ use enum_dispatch::enum_dispatch;
 
 use crate::{
     drawing::{
-        graph::{GeometryIndex, GeometryWeight, GetLayer, GetMaybeNet, MakePrimitive, Retag},
+        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight, Retag},
         primitive::{GenericPrimitive, Primitive},
         rules::RulesTrait,
         Drawing,
@@ -20,22 +20,22 @@ pub enum BendIndex {
     Loose(LooseBendIndex),
 }
 
-impl From<BendIndex> for GeometryIndex {
+impl From<BendIndex> for PrimitiveIndex {
     fn from(bend: BendIndex) -> Self {
         match bend {
-            BendIndex::Fixed(bend) => GeometryIndex::FixedBend(bend),
-            BendIndex::Loose(bend) => GeometryIndex::LooseBend(bend),
+            BendIndex::Fixed(bend) => PrimitiveIndex::FixedBend(bend),
+            BendIndex::Loose(bend) => PrimitiveIndex::LooseBend(bend),
         }
     }
 }
 
-impl TryFrom<GeometryIndex> for BendIndex {
+impl TryFrom<PrimitiveIndex> for BendIndex {
     type Error = (); // TODO.
 
-    fn try_from(index: GeometryIndex) -> Result<BendIndex, ()> {
+    fn try_from(index: PrimitiveIndex) -> Result<BendIndex, ()> {
         match index {
-            GeometryIndex::FixedBend(index) => Ok(BendIndex::Fixed(index)),
-            GeometryIndex::LooseBend(index) => Ok(BendIndex::Loose(index)),
+            PrimitiveIndex::FixedBend(index) => Ok(BendIndex::Fixed(index)),
+            PrimitiveIndex::LooseBend(index) => Ok(BendIndex::Loose(index)),
             _ => Err(()),
         }
     }
@@ -48,28 +48,28 @@ pub enum BendWeight {
     Loose(LooseBendWeight),
 }
 
-impl From<BendWeight> for GeometryWeight {
+impl From<BendWeight> for PrimitiveWeight {
     fn from(bend: BendWeight) -> Self {
         match bend {
-            BendWeight::Fixed(weight) => GeometryWeight::FixedBend(weight),
-            BendWeight::Loose(weight) => GeometryWeight::LooseBend(weight),
+            BendWeight::Fixed(weight) => PrimitiveWeight::FixedBend(weight),
+            BendWeight::Loose(weight) => PrimitiveWeight::LooseBend(weight),
         }
     }
 }
 
-impl TryFrom<GeometryWeight> for BendWeight {
+impl TryFrom<PrimitiveWeight> for BendWeight {
     type Error = (); // TODO.
 
-    fn try_from(weight: GeometryWeight) -> Result<BendWeight, ()> {
+    fn try_from(weight: PrimitiveWeight) -> Result<BendWeight, ()> {
         match weight {
-            GeometryWeight::FixedBend(weight) => Ok(BendWeight::Fixed(weight)),
-            GeometryWeight::LooseBend(weight) => Ok(BendWeight::Loose(weight)),
+            PrimitiveWeight::FixedBend(weight) => Ok(BendWeight::Fixed(weight)),
+            PrimitiveWeight::LooseBend(weight) => Ok(BendWeight::Loose(weight)),
             _ => Err(()),
         }
     }
 }
 
-impl BendWeightTrait<GeometryWeight> for BendWeight {}
+impl BendWeightTrait<PrimitiveWeight> for BendWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedBendWeight {
@@ -80,7 +80,7 @@ pub struct FixedBendWeight {
 }
 
 impl_fixed_weight!(FixedBendWeight, FixedBend, FixedBendIndex);
-impl BendWeightTrait<GeometryWeight> for FixedBendWeight {}
+impl BendWeightTrait<PrimitiveWeight> for FixedBendWeight {}
 
 impl GetOffset for FixedBendWeight {
     fn offset(&self) -> f64 {
@@ -127,4 +127,4 @@ impl GetWidth for LooseBendWeight {
 }
 
 impl_loose_weight!(LooseBendWeight, LooseBend, LooseBendIndex);
-impl BendWeightTrait<GeometryWeight> for LooseBendWeight {}
+impl BendWeightTrait<PrimitiveWeight> for LooseBendWeight {}

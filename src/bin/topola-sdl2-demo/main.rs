@@ -14,7 +14,7 @@ use painter::Painter;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use topola::draw::DrawException;
 use topola::drawing::dot::FixedDotWeight;
-use topola::drawing::graph::{GeometryIndex, MakePrimitive};
+use topola::drawing::graph::{MakePrimitive, PrimitiveIndex};
 use topola::drawing::primitive::MakeShape;
 use topola::drawing::rules::{Conditions, RulesTrait};
 use topola::drawing::seg::FixedSegWeight;
@@ -323,7 +323,7 @@ fn render_times(
     mut maybe_mesh: Option<Mesh>,
     path: &[VertexIndex],
     ghosts: &[Shape],
-    highlighteds: &[GeometryIndex],
+    highlighteds: &[PrimitiveIndex],
     times: i64,
 ) {
     let mut i = 0;
@@ -394,7 +394,7 @@ fn render_times(
         };
 
         //let result = panic::catch_unwind(|| {
-        for node in layout.layer_nodes(1) {
+        for node in layout.layer_primitive_nodes(1) {
             let color = if highlighteds.contains(&node) {
                 ColorU::new(100, 100, 255, 255)
             } else {
@@ -405,7 +405,7 @@ fn render_times(
             painter.paint_shape(&shape, color, view.zoom);
         }
 
-        for node in layout.layer_nodes(0) {
+        for node in layout.layer_primitive_nodes(0) {
             let color = if highlighteds.contains(&node) {
                 ColorU::new(255, 100, 100, 255)
             } else {

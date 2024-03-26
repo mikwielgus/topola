@@ -5,7 +5,7 @@ use crate::{
     drawing::{
         bend::{BendIndex, FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
-        graph::{GeometryIndex, MakePrimitive},
+        graph::{MakePrimitive, PrimitiveIndex},
         primitive::{FixedBend, FixedDot, GetFirstRail, GetInnerOuter, LooseBend, Primitive},
         rules::RulesTrait,
         Drawing,
@@ -26,12 +26,12 @@ pub enum WraparoundableIndex {
     LooseBend(LooseBendIndex),
 }
 
-impl From<WraparoundableIndex> for GeometryIndex {
+impl From<WraparoundableIndex> for PrimitiveIndex {
     fn from(wraparoundable: WraparoundableIndex) -> Self {
         match wraparoundable {
-            WraparoundableIndex::FixedDot(dot) => GeometryIndex::FixedDot(dot),
-            WraparoundableIndex::FixedBend(bend) => GeometryIndex::FixedBend(bend),
-            WraparoundableIndex::LooseBend(bend) => GeometryIndex::LooseBend(bend),
+            WraparoundableIndex::FixedDot(dot) => PrimitiveIndex::FixedDot(dot),
+            WraparoundableIndex::FixedBend(bend) => PrimitiveIndex::FixedBend(bend),
+            WraparoundableIndex::LooseBend(bend) => PrimitiveIndex::LooseBend(bend),
         }
     }
 }

@@ -2,7 +2,7 @@ use enum_dispatch::enum_dispatch;
 
 use crate::{
     drawing::{
-        graph::{GeometryIndex, GeometryWeight, GetLayer, GetMaybeNet, MakePrimitive, Retag},
+        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight, Retag},
         primitive::{GenericPrimitive, Primitive},
         rules::RulesTrait,
         Drawing,
@@ -21,24 +21,24 @@ pub enum SegIndex {
     SeqLoose(SeqLooseSegIndex),
 }
 
-impl From<SegIndex> for GeometryIndex {
+impl From<SegIndex> for PrimitiveIndex {
     fn from(seg: SegIndex) -> Self {
         match seg {
-            SegIndex::Fixed(seg) => GeometryIndex::FixedSeg(seg),
-            SegIndex::LoneLoose(seg) => GeometryIndex::LoneLooseSeg(seg),
-            SegIndex::SeqLoose(seg) => GeometryIndex::SeqLooseSeg(seg),
+            SegIndex::Fixed(seg) => PrimitiveIndex::FixedSeg(seg),
+            SegIndex::LoneLoose(seg) => PrimitiveIndex::LoneLooseSeg(seg),
+            SegIndex::SeqLoose(seg) => PrimitiveIndex::SeqLooseSeg(seg),
         }
     }
 }
 
-impl TryFrom<GeometryIndex> for SegIndex {
+impl TryFrom<PrimitiveIndex> for SegIndex {
     type Error = (); // TODO.
 
-    fn try_from(index: GeometryIndex) -> Result<SegIndex, ()> {
+    fn try_from(index: PrimitiveIndex) -> Result<SegIndex, ()> {
         match index {
-            GeometryIndex::FixedSeg(index) => Ok(SegIndex::Fixed(index)),
-            GeometryIndex::LoneLooseSeg(index) => Ok(SegIndex::LoneLoose(index)),
-            GeometryIndex::SeqLooseSeg(index) => Ok(SegIndex::SeqLoose(index)),
+            PrimitiveIndex::FixedSeg(index) => Ok(SegIndex::Fixed(index)),
+            PrimitiveIndex::LoneLooseSeg(index) => Ok(SegIndex::LoneLoose(index)),
+            PrimitiveIndex::SeqLooseSeg(index) => Ok(SegIndex::SeqLoose(index)),
             _ => Err(()),
         }
     }
@@ -52,30 +52,30 @@ pub enum SegWeight {
     SeqLoose(SeqLooseSegWeight),
 }
 
-impl From<SegWeight> for GeometryWeight {
+impl From<SegWeight> for PrimitiveWeight {
     fn from(seg: SegWeight) -> Self {
         match seg {
-            SegWeight::Fixed(weight) => GeometryWeight::FixedSeg(weight),
-            SegWeight::LoneLoose(weight) => GeometryWeight::LoneLooseSeg(weight),
-            SegWeight::SeqLoose(weight) => GeometryWeight::SeqLooseSeg(weight),
+            SegWeight::Fixed(weight) => PrimitiveWeight::FixedSeg(weight),
+            SegWeight::LoneLoose(weight) => PrimitiveWeight::LoneLooseSeg(weight),
+            SegWeight::SeqLoose(weight) => PrimitiveWeight::SeqLooseSeg(weight),
         }
     }
 }
 
-impl TryFrom<GeometryWeight> for SegWeight {
+impl TryFrom<PrimitiveWeight> for SegWeight {
     type Error = (); // TODO.
 
-    fn try_from(weight: GeometryWeight) -> Result<SegWeight, ()> {
+    fn try_from(weight: PrimitiveWeight) -> Result<SegWeight, ()> {
         match weight {
-            GeometryWeight::FixedSeg(weight) => Ok(SegWeight::Fixed(weight)),
-            GeometryWeight::LoneLooseSeg(weight) => Ok(SegWeight::LoneLoose(weight)),
-            GeometryWeight::SeqLooseSeg(weight) => Ok(SegWeight::SeqLoose(weight)),
+            PrimitiveWeight::FixedSeg(weight) => Ok(SegWeight::Fixed(weight)),
+            PrimitiveWeight::LoneLooseSeg(weight) => Ok(SegWeight::LoneLoose(weight)),
+            PrimitiveWeight::SeqLooseSeg(weight) => Ok(SegWeight::SeqLoose(weight)),
             _ => Err(()),
         }
     }
 }
 
-impl SegWeightTrait<GeometryWeight> for SegWeight {}
+impl SegWeightTrait<PrimitiveWeight> for SegWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedSegWeight {
@@ -85,7 +85,7 @@ pub struct FixedSegWeight {
 }
 
 impl_fixed_weight!(FixedSegWeight, FixedSeg, FixedSegIndex);
-impl SegWeightTrait<GeometryWeight> for FixedSegWeight {}
+impl SegWeightTrait<PrimitiveWeight> for FixedSegWeight {}
 
 impl GetWidth for FixedSegWeight {
     fn width(&self) -> f64 {
@@ -101,7 +101,7 @@ pub struct LoneLooseSegWeight {
 }
 
 impl_loose_weight!(LoneLooseSegWeight, LoneLooseSeg, LoneLooseSegIndex);
-impl SegWeightTrait<GeometryWeight> for LoneLooseSegWeight {}
+impl SegWeightTrait<PrimitiveWeight> for LoneLooseSegWeight {}
 
 impl GetWidth for LoneLooseSegWeight {
     fn width(&self) -> f64 {
@@ -117,7 +117,7 @@ pub struct SeqLooseSegWeight {
 }
 
 impl_loose_weight!(SeqLooseSegWeight, SeqLooseSeg, SeqLooseSegIndex);
-impl SegWeightTrait<GeometryWeight> for SeqLooseSegWeight {}
+impl SegWeightTrait<PrimitiveWeight> for SeqLooseSegWeight {}
 
 impl GetWidth for SeqLooseSegWeight {
     fn width(&self) -> f64 {

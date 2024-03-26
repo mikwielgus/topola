@@ -8,7 +8,7 @@ use crate::astar::{astar, AstarStrategy, PathTracker};
 use crate::draw::DrawException;
 use crate::drawing::{
     dot::FixedDotIndex,
-    graph::{GeometryIndex, MakePrimitive},
+    graph::{MakePrimitive, PrimitiveIndex},
     primitive::MakeShape,
     rules::RulesTrait,
 };
@@ -118,7 +118,7 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Mesh, f64>
 
     fn estimate_cost(&mut self, vertex: VertexIndex) -> f64 {
         self.observer.on_estimate(&self.tracer, vertex);
-        let start_point = GeometryIndex::from(vertex)
+        let start_point = PrimitiveIndex::from(vertex)
             .primitive(self.tracer.layout.layout())
             .shape()
             .center();

@@ -19,7 +19,7 @@ use crate::drawing::rules::GetConditions;
 use crate::drawing::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    graph::{GeometryIndex, GeometryWeight, MakePrimitive},
+    graph::{MakePrimitive, PrimitiveIndex, PrimitiveWeight},
     grouping::{GroupingIndex, GroupingWeight},
     primitive::{GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetOtherJoint, MakeShape},
     seg::{
@@ -27,6 +27,7 @@ use crate::drawing::{
         SeqLooseSegIndex, SeqLooseSegWeight,
     },
 };
+use crate::geometry::Compound;
 use crate::geometry::{
     shape::{Shape, ShapeTrait},
     with_rtree::GeometryWithRtree,
@@ -56,29 +57,28 @@ pub enum LayoutException {
 // TODO add real error messages + these should eventually use Display
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{0:?} infringes on {1:?}")]
-pub struct Infringement(pub Shape, pub GeometryIndex);
+pub struct Infringement(pub Shape, pub PrimitiveIndex);
 
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{0:?} collides with {1:?}")]
-pub struct Collision(pub Shape, pub GeometryIndex);
+pub struct Collision(pub Shape, pub PrimitiveIndex);
 
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{1:?} is already connected to net {0}")]
-pub struct AlreadyConnected(pub usize, pub GeometryIndex);
+pub struct AlreadyConnected(pub usize, pub PrimitiveIndex);
 
 #[derive(Debug)]
 pub struct Drawing<R: RulesTrait> {
     geometry_with_rtree: GeometryWithRtree<
-        GeometryWeight,
+        PrimitiveWeight,
         DotWeight,
         SegWeight,
         BendWeight,
         GroupingWeight,
-        GeometryIndex,
+        PrimitiveIndex,
         DotIndex,
         SegIndex,
         BendIndex,
-        GroupingIndex,
     >,
     rules: R,
 }
@@ -179,13 +179,13 @@ impl<R: RulesTrait> Drawing<R> {
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    fn add_dot_infringably<W: DotWeightTrait<GeometryWeight> + GetLayer>(
+    fn add_dot_infringably<W: DotWeightTrait<PrimitiveWeight> + GetLayer>(
         &mut self,
         weight: W,
-        infringables: Option<&[GeometryIndex]>,
+        infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<GenericIndex<W>, Infringement>
     where
-        GenericIndex<W>: Into<GeometryIndex> + Copy,
+        GenericIndex<W>: Into<PrimitiveIndex> + Copy,
     {
         let dot = self.geometry_with_rtree.add_dot(weight);
         self.fail_and_remove_if_infringes_except(dot.into(), infringables)?;
@@ -405,7 +405,7 @@ impl<R: RulesTrait> Drawing<R> {
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         cw: bool,
-        infringables: Option<&[GeometryIndex]>,
+        infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<Segbend, LayoutException> {
         let seg_to = self.add_dot_infringably(dot_weight, infringables)?;
         let seg = self
@@ -473,15 +473,15 @@ impl<R: RulesTrait> Drawing<R> {
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_seg_infringably<W: SegWeightTrait<GeometryWeight> + GetLayer>(
+    fn add_seg_infringably<W: SegWeightTrait<PrimitiveWeight> + GetLayer>(
         &mut self,
         from: DotIndex,
         to: DotIndex,
         weight: W,
-        infringables: Option<&[GeometryIndex]>,
+        infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<GenericIndex<W>, Infringement>
     where
-        GenericIndex<W>: Into<GeometryIndex> + Copy,
+        GenericIndex<W>: Into<PrimitiveIndex> + Copy,
     {
         let seg = self.geometry_with_rtree.add_seg(from, to, weight);
         self.fail_and_remove_if_infringes_except(seg.into(), infringables)?;
@@ -500,7 +500,7 @@ impl<R: RulesTrait> Drawing<R> {
         to: LooseDotIndex,
         around: WraparoundableIndex,
         weight: LooseBendWeight,
-        infringables: Option<&[GeometryIndex]>,
+        infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<LooseBendIndex, LayoutException> {
         // It makes no sense to wrap something around or under one of its connectables.
         //
@@ -537,16 +537,16 @@ impl<R: RulesTrait> Drawing<R> {
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 3))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_core_bend_infringably<W: BendWeightTrait<GeometryWeight> + GetLayer>(
+    fn add_core_bend_infringably<W: BendWeightTrait<PrimitiveWeight> + GetLayer>(
         &mut self,
         from: DotIndex,
         to: DotIndex,
         core: FixedDotIndex,
         weight: W,
-        infringables: Option<&[GeometryIndex]>,
+        infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<GenericIndex<W>, Infringement>
     where
-        GenericIndex<W>: Into<GeometryIndex> + Copy,
+        GenericIndex<W>: Into<PrimitiveIndex> + Copy,
     {
         let bend = self
             .geometry_with_rtree
@@ -566,7 +566,7 @@ impl<R: RulesTrait> Drawing<R> {
         to: LooseDotIndex,
         inner: BendIndex,
         weight: LooseBendWeight,
-        infringables: Option<&[GeometryIndex]>,
+        infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<GenericIndex<LooseBendWeight>, Infringement> {
         let core = *self
             .geometry_with_rtree
@@ -616,8 +616,8 @@ impl<R: RulesTrait> Drawing<R> {
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() - 1))]
     fn fail_and_remove_if_infringes_except(
         &mut self,
-        node: GeometryIndex,
-        maybe_except: Option<&[GeometryIndex]>,
+        node: PrimitiveIndex,
+        maybe_except: Option<&[PrimitiveIndex]>,
     ) -> Result<(), Infringement> {
         if let Some(infringement) = self.detect_infringement_except(node, maybe_except) {
             if let Ok(dot) = node.try_into() {
@@ -632,21 +632,33 @@ impl<R: RulesTrait> Drawing<R> {
         Ok(())
     }
 
-    pub fn nodes(&self) -> impl Iterator<Item = GeometryIndex> + '_ {
+    pub fn primitive_nodes(&self) -> impl Iterator<Item = PrimitiveIndex> + '_ {
         self.geometry_with_rtree
             .rtree()
             .iter()
-            .map(|wrapper| wrapper.data)
+            .filter_map(|wrapper| {
+                if let Compound::Primitive(primitive_node) = wrapper.data {
+                    Some(primitive_node)
+                } else {
+                    None
+                }
+            })
     }
 
-    pub fn layer_nodes(&self, layer: u64) -> impl Iterator<Item = GeometryIndex> + '_ {
+    pub fn layer_primitive_nodes(&self, layer: u64) -> impl Iterator<Item = PrimitiveIndex> + '_ {
         self.geometry_with_rtree
             .rtree()
             .locate_in_envelope_intersecting(&AABB::from_corners(
                 [-f64::INFINITY, -f64::INFINITY, layer as f64],
                 [f64::INFINITY, f64::INFINITY, layer as f64],
             ))
-            .map(|wrapper| wrapper.data)
+            .filter_map(|wrapper| {
+                if let Compound::Primitive(primitive_node) = wrapper.data {
+                    Some(primitive_node)
+                } else {
+                    None
+                }
+            })
     }
 
     pub fn node_count(&self) -> usize {
@@ -670,7 +682,7 @@ impl<R: RulesTrait> Drawing<R> {
         &mut self,
         dot: DotIndex,
         to: Point,
-        infringables: Option<&[GeometryIndex]>,
+        infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<(), Infringement> {
         let old_pos = self.geometry_with_rtree.geometry().dot_weight(dot).pos();
         self.geometry_with_rtree.move_dot(dot, to);
@@ -698,7 +710,7 @@ impl<R: RulesTrait> Drawing<R> {
         &mut self,
         bend: BendIndex,
         offset: f64,
-        infringables: Option<&[GeometryIndex]>,
+        infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<(), Infringement> {
         let old_offset = self
             .geometry_with_rtree
@@ -720,8 +732,8 @@ impl<R: RulesTrait> Drawing<R> {
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     fn detect_infringement_except(
         &self,
-        node: GeometryIndex,
-        maybe_except: Option<&[GeometryIndex]>,
+        node: PrimitiveIndex,
+        maybe_except: Option<&[PrimitiveIndex]>,
     ) -> Option<Infringement> {
         let limiting_shape = node.primitive(self).shape().inflate(
             node.primitive(self)
@@ -735,10 +747,19 @@ impl<R: RulesTrait> Drawing<R> {
         self.geometry_with_rtree
             .rtree()
             .locate_in_envelope_intersecting(&limiting_shape.full_height_envelope_3d(0.0, 2))
-            .filter(|wrapper| maybe_except.is_some_and(|except| !except.contains(&wrapper.data)))
-            .filter(|wrapper| !self.are_connectable(node, wrapper.data))
-            .filter(|wrapper| {
-                let infringee_conditions = wrapper.data.primitive(self).conditions();
+            .filter_map(|wrapper| {
+                if let Compound::Primitive(primitive_node) = wrapper.data {
+                    Some(primitive_node)
+                } else {
+                    None
+                }
+            })
+            .filter(|primitive_node| {
+                maybe_except.is_some_and(|except| !except.contains(&primitive_node))
+            })
+            .filter(|primitive_node| !self.are_connectable(node, *primitive_node))
+            .filter(|primitive_node| {
+                let infringee_conditions = primitive_node.primitive(self).conditions();
 
                 let epsilon = 1.0;
                 inflated_shape = node.primitive(self).shape().inflate(
@@ -746,31 +767,38 @@ impl<R: RulesTrait> Drawing<R> {
                         .clamp(0.0, f64::INFINITY),
                 );
 
-                inflated_shape.intersects(&wrapper.data.primitive(self).shape())
+                inflated_shape.intersects(&primitive_node.primitive(self).shape())
             })
-            .map(|wrapper| wrapper.data)
+            .map(|primitive_node| primitive_node)
             .next()
             .and_then(|infringee| Some(Infringement(inflated_shape, infringee)))
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn detect_collision(&self, node: GeometryIndex) -> Option<Collision> {
+    fn detect_collision(&self, node: PrimitiveIndex) -> Option<Collision> {
         let shape = node.primitive(self).shape();
 
         self.geometry_with_rtree
             .rtree()
             .locate_in_envelope_intersecting(&shape.full_height_envelope_3d(0.0, 2))
-            .filter(|wrapper| !self.are_connectable(node, wrapper.data))
-            .filter(|wrapper| shape.intersects(&wrapper.data.primitive(self).shape()))
-            .map(|wrapper| wrapper.data)
+            .filter_map(|wrapper| {
+                if let Compound::Primitive(primitive_node) = wrapper.data {
+                    Some(primitive_node)
+                } else {
+                    None
+                }
+            })
+            .filter(|primitive_node| !self.are_connectable(node, *primitive_node))
+            .filter(|primitive_node| shape.intersects(&primitive_node.primitive(self).shape()))
+            .map(|primitive_node| primitive_node)
             .next()
             .and_then(|collidee| Some(Collision(shape, collidee)))
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn are_connectable(&self, node1: GeometryIndex, node2: GeometryIndex) -> bool {
+    fn are_connectable(&self, node1: PrimitiveIndex, node2: PrimitiveIndex) -> bool {
         if let (Some(node1_net_id), Some(node2_net_id)) = (
             node1.primitive(self).maybe_net(),
             node2.primitive(self).maybe_net(),
@@ -788,16 +816,15 @@ impl<R: RulesTrait> Drawing<R> {
     pub fn geometry(
         &self,
     ) -> &Geometry<
-        GeometryWeight,
+        PrimitiveWeight,
         DotWeight,
         SegWeight,
         BendWeight,
         GroupingWeight,
-        GeometryIndex,
+        PrimitiveIndex,
         DotIndex,
         SegIndex,
         BendIndex,
-        GroupingIndex,
     > {
         self.geometry_with_rtree.geometry()
     }

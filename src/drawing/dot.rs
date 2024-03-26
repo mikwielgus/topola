@@ -5,7 +5,7 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     drawing::{
-        graph::{GeometryIndex, GeometryWeight, GetLayer, GetMaybeNet, MakePrimitive, Retag},
+        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight, Retag},
         primitive::{GenericPrimitive, Primitive},
         rules::RulesTrait,
         Drawing,
@@ -22,22 +22,22 @@ pub enum DotIndex {
     Loose(LooseDotIndex),
 }
 
-impl From<DotIndex> for GeometryIndex {
+impl From<DotIndex> for PrimitiveIndex {
     fn from(dot: DotIndex) -> Self {
         match dot {
-            DotIndex::Fixed(index) => GeometryIndex::FixedDot(index),
-            DotIndex::Loose(index) => GeometryIndex::LooseDot(index),
+            DotIndex::Fixed(index) => PrimitiveIndex::FixedDot(index),
+            DotIndex::Loose(index) => PrimitiveIndex::LooseDot(index),
         }
     }
 }
 
-impl TryFrom<GeometryIndex> for DotIndex {
+impl TryFrom<PrimitiveIndex> for DotIndex {
     type Error = (); // TODO.
 
-    fn try_from(index: GeometryIndex) -> Result<DotIndex, ()> {
+    fn try_from(index: PrimitiveIndex) -> Result<DotIndex, ()> {
         match index {
-            GeometryIndex::FixedDot(index) => Ok(DotIndex::Fixed(index)),
-            GeometryIndex::LooseDot(index) => Ok(DotIndex::Loose(index)),
+            PrimitiveIndex::FixedDot(index) => Ok(DotIndex::Fixed(index)),
+            PrimitiveIndex::LooseDot(index) => Ok(DotIndex::Loose(index)),
             _ => Err(()),
         }
     }
@@ -50,28 +50,28 @@ pub enum DotWeight {
     Loose(LooseDotWeight),
 }
 
-impl From<DotWeight> for GeometryWeight {
+impl From<DotWeight> for PrimitiveWeight {
     fn from(dot: DotWeight) -> Self {
         match dot {
-            DotWeight::Fixed(weight) => GeometryWeight::FixedDot(weight),
-            DotWeight::Loose(weight) => GeometryWeight::LooseDot(weight),
+            DotWeight::Fixed(weight) => PrimitiveWeight::FixedDot(weight),
+            DotWeight::Loose(weight) => PrimitiveWeight::LooseDot(weight),
         }
     }
 }
 
-impl TryFrom<GeometryWeight> for DotWeight {
+impl TryFrom<PrimitiveWeight> for DotWeight {
     type Error = (); // TODO.
 
-    fn try_from(weight: GeometryWeight) -> Result<DotWeight, ()> {
+    fn try_from(weight: PrimitiveWeight) -> Result<DotWeight, ()> {
         match weight {
-            GeometryWeight::FixedDot(weight) => Ok(DotWeight::Fixed(weight)),
-            GeometryWeight::LooseDot(weight) => Ok(DotWeight::Loose(weight)),
+            PrimitiveWeight::FixedDot(weight) => Ok(DotWeight::Fixed(weight)),
+            PrimitiveWeight::LooseDot(weight) => Ok(DotWeight::Loose(weight)),
             _ => Err(()),
         }
     }
 }
 
-impl DotWeightTrait<GeometryWeight> for DotWeight {}
+impl DotWeightTrait<PrimitiveWeight> for DotWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedDotWeight {
@@ -81,7 +81,7 @@ pub struct FixedDotWeight {
 }
 
 impl_fixed_weight!(FixedDotWeight, FixedDot, FixedDotIndex);
-impl DotWeightTrait<GeometryWeight> for FixedDotWeight {}
+impl DotWeightTrait<PrimitiveWeight> for FixedDotWeight {}
 
 impl GetPos for FixedDotWeight {
     fn pos(&self) -> Point {
@@ -109,7 +109,7 @@ pub struct LooseDotWeight {
 }
 
 impl_loose_weight!(LooseDotWeight, LooseDot, LooseDotIndex);
-impl DotWeightTrait<GeometryWeight> for LooseDotWeight {}
+impl DotWeightTrait<PrimitiveWeight> for LooseDotWeight {}
 
 impl GetPos for LooseDotWeight {
     fn pos(&self) -> Point {

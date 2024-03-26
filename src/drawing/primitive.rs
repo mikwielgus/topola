@@ -11,7 +11,7 @@ use crate::{
     drawing::{
         bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-        graph::{GeometryIndex, GeometryWeight, GetLayer, GetMaybeNet, Retag},
+        graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight, Retag},
         loose::LooseIndex,
         rules::{Conditions, GetConditions, RulesTrait},
         seg::{
@@ -20,7 +20,7 @@ use crate::{
         },
         Drawing,
     },
-    geometry::CompoundWeight,
+    geometry::Compound,
 };
 
 #[enum_dispatch]
@@ -40,10 +40,10 @@ pub trait MakeShape {
 
 #[enum_dispatch]
 pub trait GetLimbs {
-    fn limbs(&self) -> Vec<GeometryIndex> {
+    fn limbs(&self) -> Vec<PrimitiveIndex> {
         let mut v = vec![];
-        v.extend(self.segs().into_iter().map(Into::<GeometryIndex>::into));
-        v.extend(self.bends().into_iter().map(Into::<GeometryIndex>::into));
+        v.extend(self.segs().into_iter().map(Into::<PrimitiveIndex>::into));
+        v.extend(self.bends().into_iter().map(Into::<PrimitiveIndex>::into));
         v
     }
 
@@ -119,7 +119,7 @@ macro_rules! impl_primitive {
     ($primitive_struct:ident, $weight_struct:ident) => {
         impl<'a, R: RulesTrait> GetWeight<$weight_struct> for $primitive_struct<'a, R> {
             fn weight(&self) -> $weight_struct {
-                if let GeometryWeight::$primitive_struct(weight) = self.tagged_weight() {
+                if let PrimitiveWeight::$primitive_struct(weight) = self.tagged_weight() {
                     weight
                 } else {
                     unreachable!()
@@ -183,8 +183,8 @@ impl<'a, W, R: RulesTrait> GenericPrimitive<'a, W, R> {
         Self { index, drawing }
     }
 
-    fn tagged_weight(&self) -> GeometryWeight {
-        if let CompoundWeight::Primitive(weight) = *self
+    fn tagged_weight(&self) -> PrimitiveWeight {
+        if let Compound::Primitive(weight) = *self
             .drawing
             .geometry()
             .graph()
@@ -202,8 +202,8 @@ impl<'a, W, R: RulesTrait> GenericPrimitive<'a, W, R> {
     }
 }
 
-impl<'a, W, R: RulesTrait> GetInterior<GeometryIndex> for GenericPrimitive<'a, W, R> {
-    fn interior(&self) -> Vec<GeometryIndex> {
+impl<'a, W, R: RulesTrait> GetInterior<PrimitiveIndex> for GenericPrimitive<'a, W, R> {
+    fn interior(&self) -> Vec<PrimitiveIndex> {
         vec![self.tagged_weight().retag(self.index.node_index())]
     }
 }
@@ -260,12 +260,12 @@ impl<'a, R: RulesTrait> FixedDot<'a, R> {
                     .unwrap();
                 if matches!(
                     weight,
-                    CompoundWeight::Primitive(GeometryWeight::LoneLooseSeg(..))
+                    Compound::Primitive(PrimitiveWeight::LoneLooseSeg(..))
                 ) {
                     Some(LoneLooseSegIndex::new(ni.node_index()).into())
                 } else if matches!(
                     weight,
-                    CompoundWeight::Primitive(GeometryWeight::SeqLooseSeg(..))
+                    Compound::Primitive(PrimitiveWeight::SeqLooseSeg(..))
                 ) {
                     Some(SeqLooseSegIndex::new(ni.node_index()).into())
                 } else {

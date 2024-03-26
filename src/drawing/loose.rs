@@ -6,7 +6,7 @@ use crate::{
     drawing::{
         bend::LooseBendIndex,
         dot::{DotIndex, LooseDotIndex},
-        graph::{GeometryIndex, MakePrimitive},
+        graph::{MakePrimitive, PrimitiveIndex},
         primitive::{GetJoints, LoneLooseSeg, LooseBend, LooseDot, Primitive, SeqLooseSeg},
         seg::{LoneLooseSegIndex, SeqLooseSegIndex},
     },
@@ -29,13 +29,13 @@ pub enum LooseIndex {
     Bend(LooseBendIndex),
 }
 
-impl From<LooseIndex> for GeometryIndex {
+impl From<LooseIndex> for PrimitiveIndex {
     fn from(loose: LooseIndex) -> Self {
         match loose {
-            LooseIndex::Dot(dot) => GeometryIndex::LooseDot(dot),
-            LooseIndex::LoneSeg(seg) => GeometryIndex::LoneLooseSeg(seg),
-            LooseIndex::SeqSeg(seg) => GeometryIndex::SeqLooseSeg(seg),
-            LooseIndex::Bend(bend) => GeometryIndex::LooseBend(bend),
+            LooseIndex::Dot(dot) => PrimitiveIndex::LooseDot(dot),
+            LooseIndex::LoneSeg(seg) => PrimitiveIndex::LoneLooseSeg(seg),
+            LooseIndex::SeqSeg(seg) => PrimitiveIndex::SeqLooseSeg(seg),
+            LooseIndex::Bend(bend) => PrimitiveIndex::LooseBend(bend),
         }
     }
 }
