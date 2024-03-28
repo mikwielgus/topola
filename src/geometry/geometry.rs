@@ -56,9 +56,9 @@ pub enum GeometryLabel {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Compound<PW, XW> {
+pub enum Node<PW, GW> {
     Primitive(PW),
-    Grouping(XW),
+    Grouping(GW),
 }
 
 pub trait DotWeightTrait<GW>: GetPos + SetPos + GetWidth + Into<GW> + Copy {}
@@ -77,7 +77,7 @@ pub struct Geometry<
     SI: GetNodeIndex + Into<PI> + Copy,
     BI: GetNodeIndex + Into<PI> + Copy,
 > {
-    graph: StableDiGraph<Compound<PW, GW>, GeometryLabel, usize>,
+    graph: StableDiGraph<Node<PW, GW>, GeometryLabel, usize>,
     weight_marker: PhantomData<PW>,
     dot_weight_marker: PhantomData<DW>,
     seg_weight_marker: PhantomData<SW>,
@@ -117,7 +117,7 @@ impl<
     }
 
     pub fn add_dot<W: DotWeightTrait<PW>>(&mut self, weight: W) -> GenericIndex<W> {
-        GenericIndex::<W>::new(self.graph.add_node(Compound::Primitive(weight.into())))
+        GenericIndex::<W>::new(self.graph.add_node(Node::Primitive(weight.into())))
     }
 
     pub fn add_seg<W: SegWeightTrait<PW>>(
@@ -126,7 +126,7 @@ impl<
         to: DI,
         weight: W,
     ) -> GenericIndex<W> {
-        let seg = GenericIndex::<W>::new(self.graph.add_node(Compound::Primitive(weight.into())));
+        let seg = GenericIndex::<W>::new(self.graph.add_node(Node::Primitive(weight.into())));
 
         self.graph
             .update_edge(from.node_index(), seg.node_index(), GeometryLabel::Joined);
@@ -143,7 +143,7 @@ impl<
         core: DI,
         weight: W,
     ) -> GenericIndex<W> {
-        let bend = GenericIndex::<W>::new(self.graph.add_node(Compound::Primitive(weight.into())));
+        let bend = GenericIndex::<W>::new(self.graph.add_node(Node::Primitive(weight.into())));
 
         self.graph
             .update_edge(from.node_index(), bend.node_index(), GeometryLabel::Joined);
@@ -156,7 +156,7 @@ impl<
     }
 
     pub fn add_grouping(&mut self, weight: GW) -> GenericIndex<GW> {
-        GenericIndex::<GW>::new(self.graph.add_node(Compound::Grouping(weight)))
+        GenericIndex::<GW>::new(self.graph.add_node(Node::Grouping(weight)))
     }
 
     pub fn assign_to_grouping<W>(
@@ -182,14 +182,13 @@ impl<
     pub fn move_dot(&mut self, dot: DI, to: Point) {
         let mut weight = self.dot_weight(dot);
         weight.set_pos(to);
-        *self.graph.node_weight_mut(dot.node_index()).unwrap() = Compound::Primitive(weight.into());
+        *self.graph.node_weight_mut(dot.node_index()).unwrap() = Node::Primitive(weight.into());
     }
 
     pub fn shift_bend(&mut self, bend: BI, offset: f64) {
         let mut weight = self.bend_weight(bend);
         weight.set_offset(offset);
-        *self.graph.node_weight_mut(bend.node_index()).unwrap() =
-            Compound::Primitive(weight.into());
+        *self.graph.node_weight_mut(bend.node_index()).unwrap() = Node::Primitive(weight.into());
     }
 
     pub fn flip_bend(&mut self, bend: BI) {
@@ -285,7 +284,7 @@ impl<
     }
 
     fn primitive_weight(&self, index: NodeIndex<usize>) -> PW {
-        if let Compound::Primitive(weight) = *self.graph.node_weight(index).unwrap() {
+        if let Node::Primitive(weight) = *self.graph.node_weight(index).unwrap() {
             weight
         } else {
             unreachable!()
@@ -308,6 +307,14 @@ impl<
         self.primitive_weight(bend.node_index())
             .try_into()
             .unwrap_or_else(|_| unreachable!())
+    }
+
+    fn grouping_weight(&self, grouping: GenericIndex<GW>) -> GW {
+        if let Node::Grouping(weight) = *self.graph.node_weight(grouping.node_index()).unwrap() {
+            weight
+        } else {
+            unreachable!()
+        }
     }
 
     fn core_weight(&self, bend: BI) -> DW {
@@ -393,7 +400,7 @@ impl<
 
     pub fn outer(&self, bend: BI) -> Option<BI> {
         self.graph
-            .neighbors_directed(bend.node_index(), Outgoing)
+            .neighbors(bend.node_index())
             .filter(|ni| {
                 matches!(
                     self.graph
@@ -459,7 +466,26 @@ impl<
         self.joineds(dot.into()).filter_map(|ni| ni.try_into().ok())
     }
 
-    pub fn graph(&self) -> &StableDiGraph<Compound<PW, GW>, GeometryLabel, usize> {
+    pub fn members(&self, grouping: GenericIndex<GW>) -> impl Iterator<Item = PI> + '_ {
+        self.graph
+            .neighbors(grouping.node_index())
+            .filter(move |ni| {
+                matches!(
+                    self.graph
+                        .edge_weight(self.graph.find_edge(grouping.node_index(), *ni).unwrap())
+                        .unwrap(),
+                    GeometryLabel::Grouping
+                )
+            })
+            .map(|ni| {
+                self.primitive_weight(ni)
+                    .retag(ni)
+                    .try_into()
+                    .unwrap_or_else(|_| unreachable!())
+            })
+    }
+
+    pub fn graph(&self) -> &StableDiGraph<Node<PW, GW>, GeometryLabel, usize> {
         &self.graph
     }
 }

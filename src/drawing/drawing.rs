@@ -27,7 +27,7 @@ use crate::drawing::{
         SeqLooseSegIndex, SeqLooseSegWeight,
     },
 };
-use crate::geometry::Compound;
+use crate::geometry::Node;
 use crate::geometry::{
     shape::{Shape, ShapeTrait},
     with_rtree::GeometryWithRtree,
@@ -637,7 +637,7 @@ impl<R: RulesTrait> Drawing<R> {
             .rtree()
             .iter()
             .filter_map(|wrapper| {
-                if let Compound::Primitive(primitive_node) = wrapper.data {
+                if let Node::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
                     None
@@ -653,7 +653,7 @@ impl<R: RulesTrait> Drawing<R> {
                 [f64::INFINITY, f64::INFINITY, layer as f64],
             ))
             .filter_map(|wrapper| {
-                if let Compound::Primitive(primitive_node) = wrapper.data {
+                if let Node::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
                     None
@@ -748,7 +748,7 @@ impl<R: RulesTrait> Drawing<R> {
             .rtree()
             .locate_in_envelope_intersecting(&limiting_shape.full_height_envelope_3d(0.0, 2))
             .filter_map(|wrapper| {
-                if let Compound::Primitive(primitive_node) = wrapper.data {
+                if let Node::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
                     None
@@ -783,7 +783,7 @@ impl<R: RulesTrait> Drawing<R> {
             .rtree()
             .locate_in_envelope_intersecting(&shape.full_height_envelope_3d(0.0, 2))
             .filter_map(|wrapper| {
-                if let Compound::Primitive(primitive_node) = wrapper.data {
+                if let Node::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
                     None

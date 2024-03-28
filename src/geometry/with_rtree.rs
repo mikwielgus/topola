@@ -3,21 +3,20 @@ use std::marker::PhantomData;
 use contracts::debug_invariant;
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
-use rstar::{primitives::GeomWithData, RTree, RTreeObject, AABB};
+use rstar::{primitives::GeomWithData, Envelope, RTree, RTreeObject, AABB};
 
 use crate::{
     drawing::graph::{GetLayer, Retag},
     geometry::{
         shape::{Shape, ShapeTrait},
-        BendWeightTrait, Compound, DotWeightTrait, Geometry, GeometryLabel, GetWidth,
-        SegWeightTrait,
+        BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetWidth, Node, SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Bbox {
-    aabb: AABB<[f64; 3]>,
+    pub aabb: AABB<[f64; 3]>,
 }
 
 impl Bbox {
@@ -48,7 +47,7 @@ pub struct GeometryWithRtree<
     BI: GetNodeIndex + Into<PI> + Copy,
 > {
     geometry: Geometry<PW, DW, SW, BW, GW, PI, DI, SI, BI>,
-    rtree: RTree<BboxedIndex<Compound<PI, GenericIndex<GW>>>>,
+    rtree: RTree<BboxedIndex<Node<PI, GenericIndex<GW>>>>,
     layer_count: u64,
     weight_marker: PhantomData<PW>,
     dot_weight_marker: PhantomData<DW>,
@@ -101,7 +100,7 @@ impl<
                     .dot_shape(dot.into().try_into().unwrap_or_else(|_| unreachable!()))
                     .envelope_3d(0.0, weight.layer()),
             ),
-            Compound::Primitive(dot.into()),
+            Node::Primitive(dot.into()),
         ));
         dot
     }
@@ -122,7 +121,7 @@ impl<
                     .seg_shape(seg.into().try_into().unwrap_or_else(|_| unreachable!()))
                     .envelope_3d(0.0, weight.layer()),
             ),
-            Compound::Primitive(seg.into()),
+            Node::Primitive(seg.into()),
         ));
         seg
     }
@@ -144,17 +143,14 @@ impl<
                     .bend_shape(bend.into().try_into().unwrap_or_else(|_| unreachable!()))
                     .envelope_3d(0.0, weight.layer()),
             ),
-            Compound::Primitive(bend.into()),
+            Node::Primitive(bend.into()),
         ));
         bend
     }
 
     pub fn add_grouping(&mut self, weight: GW) -> GenericIndex<GW> {
         let grouping = self.geometry.add_grouping(weight);
-        self.rtree.insert(BboxedIndex::new(
-            Bbox::new(AABB::<[f64; 3]>::from_point([0.0, 0.0, -1.0].into())),
-            Compound::Grouping(grouping),
-        ));
+        self.rtree.insert(self.make_grouping_bbox(grouping));
         grouping
     }
 
@@ -163,7 +159,9 @@ impl<
         primitive: GenericIndex<W>,
         grouping: GenericIndex<GW>,
     ) {
-        self.geometry.assign_to_grouping(primitive, grouping)
+        self.rtree.remove(&self.make_grouping_bbox(grouping));
+        self.geometry.assign_to_grouping(primitive, grouping);
+        self.rtree.insert(self.make_grouping_bbox(grouping));
     }
 
     pub fn remove_dot(&mut self, dot: DI) -> Result<(), ()> {
@@ -275,67 +273,82 @@ impl<
         BI: GetNodeIndex + Into<PI> + Copy,
     > GeometryWithRtree<PW, DW, SW, BW, GW, PI, DI, SI, BI>
 {
-    fn make_dot_bbox(&self, dot: DI) -> BboxedIndex<Compound<PI, GenericIndex<GW>>> {
+    fn make_bbox(&self, primitive: PI) -> BboxedIndex<Node<PI, GenericIndex<GW>>> {
+        if let Ok(dot) = <PI as TryInto<DI>>::try_into(primitive) {
+            self.make_dot_bbox(dot)
+        } else if let Ok(seg) = <PI as TryInto<SI>>::try_into(primitive) {
+            self.make_seg_bbox(seg)
+        } else if let Ok(bend) = <PI as TryInto<BI>>::try_into(primitive) {
+            self.make_bend_bbox(bend)
+        } else {
+            unreachable!();
+        }
+    }
+
+    fn make_dot_bbox(&self, dot: DI) -> BboxedIndex<Node<PI, GenericIndex<GW>>> {
         BboxedIndex::new(
             Bbox::new(
                 self.geometry
                     .dot_shape(dot)
                     .envelope_3d(0.0, self.layer(dot.into())),
             ),
-            Compound::Primitive(dot.into()),
+            Node::Primitive(dot.into()),
         )
     }
 
-    fn make_seg_bbox(&self, seg: SI) -> BboxedIndex<Compound<PI, GenericIndex<GW>>> {
+    fn make_seg_bbox(&self, seg: SI) -> BboxedIndex<Node<PI, GenericIndex<GW>>> {
         BboxedIndex::new(
             Bbox::new(
                 self.geometry
                     .seg_shape(seg)
                     .envelope_3d(0.0, self.layer(seg.into())),
             ),
-            Compound::Primitive(seg.into()),
+            Node::Primitive(seg.into()),
         )
     }
 
-    fn make_bend_bbox(&self, bend: BI) -> BboxedIndex<Compound<PI, GenericIndex<GW>>> {
+    fn make_bend_bbox(&self, bend: BI) -> BboxedIndex<Node<PI, GenericIndex<GW>>> {
         BboxedIndex::new(
             Bbox::new(
                 self.geometry
                     .bend_shape(bend)
                     .envelope_3d(0.0, self.layer(bend.into())),
             ),
-            Compound::Primitive(bend.into()),
+            Node::Primitive(bend.into()),
         )
     }
 
     fn make_grouping_bbox(
         &self,
         grouping: GenericIndex<GW>,
-    ) -> BboxedIndex<Compound<PI, GenericIndex<GW>>> {
-        BboxedIndex::new(
-            Bbox::new(AABB::<[f64; 3]>::from_point([0.0, 0.0, -1.0].into())),
-            Compound::Grouping(grouping),
-        )
+    ) -> BboxedIndex<Node<PI, GenericIndex<GW>>> {
+        let mut aabb = AABB::<[f64; 3]>::new_empty();
+
+        for member in self.geometry.members(grouping) {
+            aabb.merge(&self.make_bbox(member).geom().aabb);
+        }
+
+        BboxedIndex::new(Bbox::new(aabb), Node::Grouping(grouping))
     }
 
-    fn shape(&self, index: PI) -> Shape {
-        if let Ok(dot) = <PI as TryInto<DI>>::try_into(index) {
+    fn shape(&self, primitive: PI) -> Shape {
+        if let Ok(dot) = <PI as TryInto<DI>>::try_into(primitive) {
             self.geometry.dot_shape(dot)
-        } else if let Ok(seg) = <PI as TryInto<SI>>::try_into(index) {
+        } else if let Ok(seg) = <PI as TryInto<SI>>::try_into(primitive) {
             self.geometry.seg_shape(seg)
-        } else if let Ok(bend) = <PI as TryInto<BI>>::try_into(index) {
+        } else if let Ok(bend) = <PI as TryInto<BI>>::try_into(primitive) {
             self.geometry.bend_shape(bend)
         } else {
             unreachable!();
         }
     }
 
-    fn layer(&self, index: PI) -> u64 {
-        if let Ok(dot) = <PI as TryInto<DI>>::try_into(index) {
+    fn layer(&self, primitive: PI) -> u64 {
+        if let Ok(dot) = <PI as TryInto<DI>>::try_into(primitive) {
             self.geometry.dot_weight(dot).layer()
-        } else if let Ok(seg) = <PI as TryInto<SI>>::try_into(index) {
+        } else if let Ok(seg) = <PI as TryInto<SI>>::try_into(primitive) {
             self.geometry.seg_weight(seg).layer()
-        } else if let Ok(bend) = <PI as TryInto<BI>>::try_into(index) {
+        } else if let Ok(bend) = <PI as TryInto<BI>>::try_into(primitive) {
             self.geometry.bend_weight(bend).layer()
         } else {
             unreachable!();
@@ -346,25 +359,25 @@ impl<
         &self.geometry
     }
 
-    pub fn rtree(&self) -> &RTree<BboxedIndex<Compound<PI, GenericIndex<GW>>>> {
+    pub fn rtree(&self) -> &RTree<BboxedIndex<Node<PI, GenericIndex<GW>>>> {
         &self.rtree
     }
 
-    pub fn graph(&self) -> &StableDiGraph<Compound<PW, GW>, GeometryLabel, usize> {
+    pub fn graph(&self) -> &StableDiGraph<Node<PW, GW>, GeometryLabel, usize> {
         self.geometry.graph()
     }
 
     fn test_envelopes(&self) -> bool {
         !self.rtree.iter().any(|wrapper| {
             // TODO: Test envelopes of groupings too.
-            let Compound::Primitive(primitive_node) = wrapper.data else {
+            let Node::Primitive(primitive_node) = wrapper.data else {
                 return false;
             };
             let shape = self.shape(primitive_node);
             let layer = self.layer(primitive_node);
             let wrapper = BboxedIndex::new(
                 Bbox::new(shape.envelope_3d(0.0, layer)),
-                Compound::Primitive(primitive_node),
+                Node::Primitive(primitive_node),
             );
             !self
                 .rtree
