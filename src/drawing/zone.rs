@@ -14,54 +14,54 @@ use crate::{
 
 #[enum_dispatch(GetNodeIndex)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum GroupingIndex {
-    Solid(SolidGroupingIndex),
-    Pour(PourGroupingIndex),
+pub enum ZoneIndex {
+    Solid(SolidZoneIndex),
+    Pour(PourZoneIndex),
 }
 
 #[enum_dispatch(GetLayer)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum GroupingWeight {
-    Solid(SolidGroupingWeight),
-    Pour(PourGroupingWeight),
+pub enum ZoneWeight {
+    Solid(SolidZoneWeight),
+    Pour(PourZoneWeight),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct SolidGroupingWeight {
+pub struct SolidZoneWeight {
     pub layer: u64,
     pub maybe_net: Option<usize>,
 }
 
-impl<'a> GetLayer for SolidGroupingWeight {
+impl<'a> GetLayer for SolidZoneWeight {
     fn layer(&self) -> u64 {
         self.layer
     }
 }
 
-impl<'a> GetMaybeNet for SolidGroupingWeight {
+impl<'a> GetMaybeNet for SolidZoneWeight {
     fn maybe_net(&self) -> Option<usize> {
         self.maybe_net
     }
 }
 
-pub type SolidGroupingIndex = GenericIndex<SolidGroupingWeight>;
+pub type SolidZoneIndex = GenericIndex<SolidZoneWeight>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PourGroupingWeight {
+pub struct PourZoneWeight {
     pub layer: u64,
     pub maybe_net: Option<usize>,
 }
 
-impl<'a> GetLayer for PourGroupingWeight {
+impl<'a> GetLayer for PourZoneWeight {
     fn layer(&self) -> u64 {
         self.layer
     }
 }
 
-impl<'a> GetMaybeNet for PourGroupingWeight {
+impl<'a> GetMaybeNet for PourZoneWeight {
     fn maybe_net(&self) -> Option<usize> {
         self.maybe_net
     }
 }
 
-pub type PourGroupingIndex = GenericIndex<PourGroupingWeight>;
+pub type PourZoneIndex = GenericIndex<PourZoneWeight>;

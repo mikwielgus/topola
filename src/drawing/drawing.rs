@@ -20,12 +20,12 @@ use crate::drawing::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     graph::{MakePrimitive, PrimitiveIndex, PrimitiveWeight},
-    grouping::{GroupingIndex, GroupingWeight},
     primitive::{GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetOtherJoint, MakeShape},
     seg::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
         SeqLooseSegIndex, SeqLooseSegWeight,
     },
+    zone::{ZoneIndex, ZoneWeight},
 };
 use crate::geometry::Node;
 use crate::geometry::{
@@ -74,7 +74,7 @@ pub struct Drawing<R: RulesTrait> {
         DotWeight,
         SegWeight,
         BendWeight,
-        GroupingWeight,
+        ZoneWeight,
         PrimitiveIndex,
         DotIndex,
         SegIndex,
@@ -820,7 +820,7 @@ impl<R: RulesTrait> Drawing<R> {
         DotWeight,
         SegWeight,
         BendWeight,
-        GroupingWeight,
+        ZoneWeight,
         PrimitiveIndex,
         DotIndex,
         SegIndex,
