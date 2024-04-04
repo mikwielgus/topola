@@ -324,7 +324,7 @@ impl<
     ) -> BboxedIndex<Node<PI, GenericIndex<GW>>> {
         let mut aabb = AABB::<[f64; 3]>::new_empty();
 
-        for member in self.geometry.members(grouping) {
+        for member in self.geometry.grouping_members(grouping) {
             aabb.merge(&self.make_bbox(member).geom().aabb);
         }
 

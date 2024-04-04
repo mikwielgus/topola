@@ -309,7 +309,7 @@ impl<
             .unwrap_or_else(|_| unreachable!())
     }
 
-    fn grouping_weight(&self, grouping: GenericIndex<GW>) -> GW {
+    pub fn grouping_weight(&self, grouping: GenericIndex<GW>) -> GW {
         if let Node::Grouping(weight) = *self.graph.node_weight(grouping.node_index()).unwrap() {
             weight
         } else {
@@ -466,7 +466,7 @@ impl<
         self.joineds(dot.into()).filter_map(|ni| ni.try_into().ok())
     }
 
-    pub fn members(&self, grouping: GenericIndex<GW>) -> impl Iterator<Item = PI> + '_ {
+    pub fn grouping_members(&self, grouping: GenericIndex<GW>) -> impl Iterator<Item = PI> + '_ {
         self.graph
             .neighbors(grouping.node_index())
             .filter(move |ni| {

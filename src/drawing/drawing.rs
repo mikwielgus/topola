@@ -25,7 +25,7 @@ use crate::drawing::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
         SeqLooseSegIndex, SeqLooseSegWeight,
     },
-    zone::{ZoneIndex, ZoneWeight},
+    zone::{PourZoneIndex, SolidZoneIndex, ZoneIndex, ZoneWeight},
 };
 use crate::geometry::Node;
 use crate::geometry::{
@@ -659,6 +659,54 @@ impl<R: RulesTrait> Drawing<R> {
                     None
                 }
             })
+    }
+
+    pub fn zones(&self) -> impl Iterator<Item = ZoneIndex> + '_ {
+        self.geometry_with_rtree
+            .rtree()
+            .iter()
+            .filter_map(|wrapper| {
+                if let Node::Grouping(zone) = wrapper.data {
+                    Some(match self.geometry().grouping_weight(zone) {
+                        ZoneWeight::Solid(..) => {
+                            ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
+                        }
+                        ZoneWeight::Pour(..) => {
+                            ZoneIndex::Pour(PourZoneIndex::new(zone.node_index()))
+                        }
+                    })
+                } else {
+                    None
+                }
+            })
+    }
+
+    pub fn layer_zones(&self, layer: u64) -> impl Iterator<Item = ZoneIndex> + '_ {
+        self.geometry_with_rtree
+            .rtree()
+            .locate_in_envelope_intersecting(&AABB::from_corners(
+                [-f64::INFINITY, -f64::INFINITY, layer as f64],
+                [f64::INFINITY, f64::INFINITY, layer as f64],
+            ))
+            .filter_map(|wrapper| {
+                if let Node::Grouping(zone) = wrapper.data {
+                    Some(match self.geometry().grouping_weight(zone) {
+                        ZoneWeight::Solid(..) => {
+                            ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
+                        }
+                        ZoneWeight::Pour(..) => {
+                            ZoneIndex::Pour(PourZoneIndex::new(zone.node_index()))
+                        }
+                    })
+                } else {
+                    None
+                }
+            })
+    }
+
+    pub fn zone_members(&self, zone: ZoneIndex) -> impl Iterator<Item = PrimitiveIndex> + '_ {
+        self.geometry()
+            .grouping_members(GenericIndex::new(zone.node_index()))
     }
 
     pub fn node_count(&self) -> usize {
