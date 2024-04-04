@@ -1,4 +1,4 @@
-use geo::Point;
+use geo::{CoordsIter, Point, Polygon};
 use pathfinder_canvas::{
     vec2f, ArcDirection, Canvas, CanvasRenderingContext2D, ColorU, FillRule, Path2D, RectF,
 };
@@ -65,6 +65,22 @@ impl<'a> Painter<'a> {
             .set_stroke_style(ColorU::new(100, 100, 100, 255));
         self.canvas
             .stroke_rect(RectF::new(topleft, bottomright - topleft));
+    }
+
+    pub fn paint_polygon(&mut self, polygon: &Polygon, color: ColorU, zoom: f32) {
+        let mut path = Path2D::new();
+        let mut it = polygon.exterior_coords_iter();
+
+        if let Some(initial_vertex) = it.next() {
+            path.move_to(vec2f(initial_vertex.x as f32, initial_vertex.y as f32));
+        }
+
+        for vertex in it {
+            path.line_to(vec2f(vertex.x as f32, vertex.y as f32));
+        }
+
+        self.canvas.set_line_width(0.0);
+        self.canvas.fill_path(path, FillRule::Winding);
     }
 
     pub fn paint_edge(&mut self, from: Point, to: Point, color: ColorU, zoom: f32) {

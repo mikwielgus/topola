@@ -18,6 +18,7 @@ use topola::drawing::graph::{MakePrimitive, PrimitiveIndex};
 use topola::drawing::primitive::MakeShape;
 use topola::drawing::rules::{Conditions, RulesTrait};
 use topola::drawing::seg::FixedSegWeight;
+use topola::drawing::zone::MakePolygon;
 use topola::drawing::{Drawing, Infringement, LayoutException};
 use topola::dsn::design::DsnDesign;
 use topola::geometry::shape::{Shape, ShapeTrait};
@@ -49,23 +50,26 @@ use topola::math::Circle;
 use topola::router::Router;
 
 struct SimpleRules {
-    net_clearances: HashMap<(i64, i64), f64>,
+    net_clearances: HashMap<(usize, usize), f64>,
 }
 
 impl RulesTrait for SimpleRules {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64 {
-        *self
-            .net_clearances
-            .get(&(conditions1.maybe_net, conditions2.maybe_net))
-            .unwrap_or(&10.0)
+        if let (Some(net1), Some(net2)) = (conditions1.maybe_net, conditions2.maybe_net) {
+            *self.net_clearances.get(&(net1, net2)).unwrap_or(&10.0)
+        } else {
+            10.0
+        }
     }
 
-    fn largest_clearance(&self, net: i64) -> f64 {
+    fn largest_clearance(&self, maybe_net: Option<usize>) -> f64 {
         let mut highest_clearance = 0.0;
 
-        for ((net1, net2), clearance) in self.net_clearances.iter() {
-            if *net1 == net || *net2 == net {
-                highest_clearance = *clearance;
+        if let Some(net) = maybe_net {
+            for ((net1, net2), clearance) in self.net_clearances.iter() {
+                if *net1 == net || *net2 == net {
+                    highest_clearance = *clearance;
+                }
             }
         }
 
@@ -74,7 +78,7 @@ impl RulesTrait for SimpleRules {
 }
 
 // Clunky enum to work around borrow checker.
-enum RouterOrLayout<'a, R: RulesTrait> {
+enum RouterOrDrawing<'a, R: RulesTrait> {
     Router(&'a mut Router<R>),
     Layout(&'a Drawing<R>),
 }
@@ -129,7 +133,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrLayout::Layout(tracer.layout.layout()),
+            RouterOrDrawing::Layout(tracer.layout.drawing()),
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
@@ -148,7 +152,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrLayout::Layout(tracer.layout.layout()),
+            RouterOrDrawing::Layout(tracer.layout.drawing()),
             None,
             Some(tracer.mesh.clone()),
             &path,
@@ -180,7 +184,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrLayout::Layout(tracer.layout.layout()),
+            RouterOrDrawing::Layout(tracer.layout.drawing()),
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
@@ -271,7 +275,7 @@ fn main() -> Result<(), anyhow::Error> {
         &mut renderer,
         &font_context,
         &mut view,
-        RouterOrLayout::Layout(router.layout.layout()),
+        RouterOrDrawing::Layout(router.layout.drawing()),
         None,
         None,
         &[],
@@ -295,7 +299,7 @@ fn main() -> Result<(), anyhow::Error> {
         &mut renderer,
         &font_context,
         &mut view,
-        RouterOrLayout::Layout(router.layout.layout()),
+        RouterOrDrawing::Layout(router.layout.drawing()),
         None,
         None,
         &[],
@@ -318,7 +322,7 @@ fn render_times(
     renderer: &mut Renderer<GLDevice>,
     font_context: &CanvasFontContext,
     view: &mut View,
-    mut router_or_layout: RouterOrLayout<impl RulesTrait>,
+    mut router_or_layout: RouterOrDrawing<impl RulesTrait>,
     maybe_band: Option<BandIndex>,
     mut maybe_mesh: Option<Mesh>,
     path: &[VertexIndex],
@@ -366,8 +370,8 @@ fn render_times(
 
         let mut painter = Painter::new(&mut canvas);
 
-        let layout = match router_or_layout {
-            RouterOrLayout::Router(ref mut router) => {
+        let drawing = match router_or_layout {
+            RouterOrDrawing::Router(ref mut router) => {
                 let state = event_pump.mouse_state();
 
                 if let Some(band) = maybe_band {
@@ -388,32 +392,48 @@ fn render_times(
                     maybe_mesh = None;
                 }
 
-                router.layout.layout()
+                router.layout.drawing()
             }
-            RouterOrLayout::Layout(layout) => layout,
+            RouterOrDrawing::Layout(layout) => layout,
         };
 
         //let result = panic::catch_unwind(|| {
-        for node in layout.layer_primitive_nodes(1) {
+        for node in drawing.layer_primitive_nodes(1) {
             let color = if highlighteds.contains(&node) {
                 ColorU::new(100, 100, 255, 255)
             } else {
                 ColorU::new(52, 52, 200, 255)
             };
 
-            let shape = node.primitive(layout).shape();
+            let shape = node.primitive(drawing).shape();
             painter.paint_shape(&shape, color, view.zoom);
         }
 
-        for node in layout.layer_primitive_nodes(0) {
+        for zone in drawing.layer_zones(1) {
+            painter.paint_polygon(
+                &zone.polygon(&drawing),
+                ColorU::new(52, 52, 200, 255),
+                view.zoom,
+            );
+        }
+
+        for node in drawing.layer_primitive_nodes(0) {
             let color = if highlighteds.contains(&node) {
                 ColorU::new(255, 100, 100, 255)
             } else {
                 ColorU::new(200, 52, 52, 255)
             };
 
-            let shape = node.primitive(layout).shape();
+            let shape = node.primitive(drawing).shape();
             painter.paint_shape(&shape, color, view.zoom);
+        }
+
+        for zone in drawing.layer_zones(0) {
+            painter.paint_polygon(
+                &zone.polygon(&drawing),
+                ColorU::new(200, 52, 52, 255),
+                view.zoom,
+            );
         }
 
         for ghost in ghosts {
@@ -422,8 +442,8 @@ fn render_times(
 
         if let Some(ref mesh) = maybe_mesh {
             for edge in mesh.edge_references() {
-                let to = edge.source().primitive(layout).shape().center();
-                let from = edge.target().primitive(layout).shape().center();
+                let to = edge.source().primitive(drawing).shape().center();
+                let from = edge.target().primitive(drawing).shape().center();
 
                 let color = 'blk: {
                     if let (Some(source_pos), Some(target_pos)) = (
