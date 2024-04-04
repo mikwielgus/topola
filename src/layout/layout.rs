@@ -107,7 +107,7 @@ impl<R: RulesTrait> Layout<R> {
         0.0
     }
 
-    pub fn layout(&self) -> &Drawing<R> {
+    pub fn drawing(&self) -> &Drawing<R> {
         &self.drawing
     }
 

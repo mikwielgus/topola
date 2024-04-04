@@ -119,13 +119,13 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Mesh, f64>
     fn estimate_cost(&mut self, vertex: VertexIndex) -> f64 {
         self.observer.on_estimate(&self.tracer, vertex);
         let start_point = PrimitiveIndex::from(vertex)
-            .primitive(self.tracer.layout.layout())
+            .primitive(self.tracer.layout.drawing())
             .shape()
             .center();
         let end_point = self
             .tracer
             .layout
-            .layout()
+            .drawing()
             .primitive(self.to)
             .shape()
             .center();
@@ -148,8 +148,8 @@ impl<R: RulesTrait> Router<R> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
         //self.mesh.triangulate(&self.layout)?;
-        let mut mesh = Mesh::new(self.layout.layout());
-        mesh.generate(self.layout.layout())
+        let mut mesh = Mesh::new(self.layout.drawing());
+        mesh.generate(self.layout.drawing())
             .map_err(|err| RoutingError {
                 from,
                 to,
