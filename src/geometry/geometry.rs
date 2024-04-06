@@ -468,11 +468,11 @@ impl<
 
     pub fn grouping_members(&self, grouping: GenericIndex<GW>) -> impl Iterator<Item = PI> + '_ {
         self.graph
-            .neighbors(grouping.node_index())
+            .neighbors_directed(grouping.node_index(), Incoming)
             .filter(move |ni| {
                 matches!(
                     self.graph
-                        .edge_weight(self.graph.find_edge(grouping.node_index(), *ni).unwrap())
+                        .edge_weight(self.graph.find_edge(*ni, grouping.node_index()).unwrap())
                         .unwrap(),
                     GeometryLabel::Grouping
                 )
