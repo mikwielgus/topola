@@ -72,13 +72,17 @@ impl<'a> Painter<'a> {
         let mut it = polygon.exterior_coords_iter();
 
         if let Some(initial_vertex) = it.next() {
-            path.move_to(vec2f(initial_vertex.x as f32, initial_vertex.y as f32));
+            path.move_to(vec2f(initial_vertex.x as f32, -initial_vertex.y as f32));
         }
 
         for vertex in it {
-            path.line_to(vec2f(vertex.x as f32, vertex.y as f32));
+            path.line_to(vec2f(vertex.x as f32, -vertex.y as f32));
         }
 
+        path.close_path();
+
+        self.canvas.set_stroke_style(color);
+        self.canvas.set_fill_style(color);
         self.canvas.set_line_width(0.0);
         self.canvas.fill_path(path, FillRule::Winding);
     }
