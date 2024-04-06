@@ -4,14 +4,18 @@ use geo::{point, Point, Rotate, Translate};
 use thiserror::Error;
 
 use crate::{
-    drawing::{dot::FixedDotWeight, seg::FixedSegWeight, Drawing},
+    drawing::{
+        dot::FixedDotWeight,
+        seg::FixedSegWeight,
+        zone::{SolidZoneWeight, ZoneIndex},
+        Drawing,
+    },
+    dsn::{
+        de,
+        rules::DsnRules,
+        structure::{self, DsnFile, Layer, Pcb, Shape},
+    },
     math::Circle,
-};
-
-use super::{
-    de,
-    rules::DsnRules,
-    structure::{self, DsnFile, Layer, Pcb, Shape},
 };
 
 #[derive(Error, Debug)]
@@ -153,7 +157,7 @@ impl DsnDesign {
                                     &polygon.layer,
                                     place.side == "front",
                                 );
-                                Self::add_path(
+                                Self::add_polygon(
                                     &mut layout,
                                     (place.x as f64, place.y as f64).into(),
                                     place.rotation as f64,
@@ -250,7 +254,7 @@ impl DsnDesign {
                             &polygon.layer,
                             true,
                         );
-                        Self::add_path(
+                        Self::add_polygon(
                             &mut layout,
                             (0.0, 0.0).into(),
                             0.0,
@@ -338,50 +342,68 @@ impl DsnDesign {
         layer: u64,
         net: usize,
     ) {
+        let zone = drawing.add_solid_zone(SolidZoneWeight {
+            layer,
+            maybe_net: Some(net),
+        });
+
         // Corners.
         let dot_1_1 = drawing
-            .add_fixed_dot(FixedDotWeight {
-                circle: Circle {
-                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y1),
-                    r: 0.5,
+            .add_zone_fixed_dot(
+                FixedDotWeight {
+                    circle: Circle {
+                        pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y1),
+                        r: 0.5,
+                    },
+                    layer,
+                    maybe_net: Some(net),
                 },
-                layer,
-                maybe_net: Some(net),
-            })
+                zone.into(),
+            )
             .unwrap();
+
         let dot_2_1 = drawing
-            .add_fixed_dot(FixedDotWeight {
-                circle: Circle {
-                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y1),
-                    r: 0.5,
+            .add_zone_fixed_dot(
+                FixedDotWeight {
+                    circle: Circle {
+                        pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y1),
+                        r: 0.5,
+                    },
+                    layer,
+                    maybe_net: Some(net),
                 },
-                layer,
-                maybe_net: Some(net),
-            })
+                zone.into(),
+            )
             .unwrap();
         let dot_2_2 = drawing
-            .add_fixed_dot(FixedDotWeight {
-                circle: Circle {
-                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y2),
-                    r: 0.5,
+            .add_zone_fixed_dot(
+                FixedDotWeight {
+                    circle: Circle {
+                        pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y2),
+                        r: 0.5,
+                    },
+                    layer,
+                    maybe_net: Some(net),
                 },
-                layer,
-                maybe_net: Some(net),
-            })
+                zone.into(),
+            )
             .unwrap();
         let dot_1_2 = drawing
-            .add_fixed_dot(FixedDotWeight {
-                circle: Circle {
-                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y2),
-                    r: 0.5,
+            .add_zone_fixed_dot(
+                FixedDotWeight {
+                    circle: Circle {
+                        pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y2),
+                        r: 0.5,
+                    },
+                    layer,
+                    maybe_net: Some(net),
                 },
-                layer,
-                maybe_net: Some(net),
-            })
+                zone.into(),
+            )
             .unwrap();
         // Sides.
         drawing
-            .add_fixed_seg(
+            .add_zone_fixed_seg(
                 dot_1_1,
                 dot_2_1,
                 FixedSegWeight {
@@ -389,10 +411,11 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
+                zone.into(),
             )
             .unwrap();
         drawing
-            .add_fixed_seg(
+            .add_zone_fixed_seg(
                 dot_2_1,
                 dot_2_2,
                 FixedSegWeight {
@@ -400,10 +423,11 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
+                zone.into(),
             )
             .unwrap();
         drawing
-            .add_fixed_seg(
+            .add_zone_fixed_seg(
                 dot_2_2,
                 dot_1_2,
                 FixedSegWeight {
@@ -411,10 +435,11 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
+                zone.into(),
             )
             .unwrap();
         drawing
-            .add_fixed_seg(
+            .add_zone_fixed_seg(
                 dot_1_2,
                 dot_1_1,
                 FixedSegWeight {
@@ -422,6 +447,7 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
+                zone.into(),
             )
             .unwrap();
     }
@@ -487,6 +513,86 @@ impl DsnDesign {
                         layer,
                         maybe_net: Some(net),
                     },
+                )
+                .unwrap();
+
+            prev_index = index;
+        }
+    }
+
+    fn add_polygon(
+        drawing: &mut Drawing<DsnRules>,
+        place_pos: Point,
+        place_rot: f64,
+        pin_pos: Point,
+        pin_rot: f64,
+        coords: &Vec<structure::Point>,
+        width: f64,
+        layer: u64,
+        net: usize,
+    ) {
+        let zone = drawing.add_solid_zone(SolidZoneWeight {
+            layer,
+            maybe_net: Some(net),
+        });
+
+        // add the first coordinate in the wire path as a dot and save its index
+        let mut prev_index = drawing
+            .add_zone_fixed_dot(
+                FixedDotWeight {
+                    circle: Circle {
+                        pos: Self::pos(
+                            place_pos,
+                            place_rot,
+                            pin_pos,
+                            pin_rot,
+                            coords[0].x as f64,
+                            coords[0].y as f64,
+                        ),
+                        r: width / 2.0,
+                    },
+                    layer,
+                    maybe_net: Some(net),
+                },
+                zone.into(),
+            )
+            .unwrap();
+
+        // iterate through path coords starting from the second
+        for coord in coords.iter().skip(1) {
+            let index = drawing
+                .add_zone_fixed_dot(
+                    FixedDotWeight {
+                        circle: Circle {
+                            pos: Self::pos(
+                                place_pos,
+                                place_rot,
+                                pin_pos,
+                                pin_rot,
+                                coord.x as f64,
+                                coord.y as f64,
+                            )
+                            .into(),
+                            r: width / 2.0,
+                        },
+                        layer,
+                        maybe_net: Some(net),
+                    },
+                    zone.into(),
+                )
+                .unwrap();
+
+            // add a seg between the current and previous coords
+            let _ = drawing
+                .add_zone_fixed_seg(
+                    prev_index,
+                    index,
+                    FixedSegWeight {
+                        width,
+                        layer,
+                        maybe_net: Some(net),
+                    },
+                    zone.into(),
                 )
                 .unwrap();
 
