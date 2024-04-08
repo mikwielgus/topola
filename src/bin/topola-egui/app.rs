@@ -5,7 +5,7 @@ use std::{
 };
 
 use topola::{
-    drawing::{graph::MakePrimitive, primitive::MakeShape, Drawing},
+    drawing::{graph::MakePrimitive, primitive::MakeShape, zone::MakePolygon, Drawing},
     dsn::{design::DsnDesign, rules::DsnRules},
     geometry::shape::{BendShape, DotShape, SegShape, Shape},
     math::Circle,
@@ -138,15 +138,29 @@ impl eframe::App for App {
                 let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
                 let mut painter = Painter::new(ui, transform);
 
-                if let Some(layout) = &self.drawing {
-                    for node in layout.layer_primitive_nodes(1) {
-                        let shape = node.primitive(layout).shape();
+                if let Some(drawing) = &self.drawing {
+                    for node in drawing.layer_primitive_nodes(1) {
+                        let shape = node.primitive(drawing).shape();
                         painter.paint_shape(&shape, egui::Color32::from_rgb(52, 52, 200));
                     }
 
-                    for node in layout.layer_primitive_nodes(0) {
-                        let shape = node.primitive(layout).shape();
+                    for zone in drawing.layer_zones(1) {
+                        painter.paint_polygon(
+                            &zone.polygon(&drawing),
+                            egui::Color32::from_rgb(52, 52, 200),
+                        )
+                    }
+
+                    for node in drawing.layer_primitive_nodes(0) {
+                        let shape = node.primitive(drawing).shape();
                         painter.paint_shape(&shape, egui::Color32::from_rgb(200, 52, 52));
+                    }
+
+                    for zone in drawing.layer_zones(0) {
+                        painter.paint_polygon(
+                            &zone.polygon(&drawing),
+                            egui::Color32::from_rgb(200, 52, 52),
+                        )
                     }
                 }
             })

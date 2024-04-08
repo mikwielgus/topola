@@ -1,9 +1,9 @@
-use egui::{emath::RectTransform, epaint, Color32, Pos2, Ui};
-use geo::Point;
+use egui::{emath::RectTransform, epaint, Color32, Pos2, Stroke, Ui};
+use geo::{CoordsIter, Point, Polygon};
 use topola::geometry::shape::Shape;
 
 pub struct Painter<'a> {
-    ui: &'a mut egui::Ui,
+    ui: &'a mut Ui,
     transform: RectTransform,
 }
 
@@ -27,7 +27,7 @@ impl<'a> Painter<'a> {
                     self.transform
                         .transform_pos([seg.to.x() as f32, -seg.to.y() as f32].into()),
                 ],
-                egui::Stroke::new(seg.width as f32 * self.transform.scale().x, color),
+                Stroke::new(seg.width as f32 * self.transform.scale().x, color),
             ),
             Shape::Bend(bend) => {
                 let delta_from = bend.from - bend.c.pos;
@@ -47,12 +47,26 @@ impl<'a> Painter<'a> {
 
                 epaint::Shape::line(
                     points,
-                    egui::Stroke::new(bend.width as f32 * self.transform.scale().x, color),
+                    Stroke::new(bend.width as f32 * self.transform.scale().x, color),
                 )
             }
         };
 
         self.ui.painter().add(epaint_shape);
+    }
+
+    pub fn paint_polygon(&mut self, polygon: &Polygon, color: Color32) {
+        self.ui.painter().add(epaint::Shape::convex_polygon(
+            polygon
+                .exterior_coords_iter()
+                .map(|coords| {
+                    self.transform
+                        .transform_pos([coords.x as f32, -coords.y as f32].into())
+                })
+                .collect(),
+            color,
+            Stroke::default(),
+        ));
     }
 
     pub fn paint_edge(&mut self, from: Point, to: Point, color: Color32) {
