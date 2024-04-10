@@ -8,6 +8,7 @@ use rstar::{primitives::GeomWithData, Envelope, RTree, RTreeObject, AABB};
 use crate::{
     drawing::graph::{GetLayer, Retag},
     geometry::{
+        grouping::GroupingManagerTrait,
         primitive::{PrimitiveShape, PrimitiveShapeTrait},
         BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetWidth, Node, SegWeightTrait,
     },
@@ -146,12 +147,6 @@ impl<
             Node::Primitive(bend.into()),
         ));
         bend
-    }
-
-    pub fn add_grouping(&mut self, weight: GW) -> GenericIndex<GW> {
-        let grouping = self.geometry.add_grouping(weight);
-        self.rtree.insert(self.make_grouping_bbox(grouping));
-        grouping
     }
 
     pub fn assign_to_grouping<W>(
@@ -384,5 +379,34 @@ impl<
                 .locate_in_envelope(&shape.envelope_3d(0.0, layer))
                 .any(|w| *w == wrapper)
         })
+    }
+}
+
+impl<
+        PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
+        DW: DotWeightTrait<PW> + GetLayer,
+        SW: SegWeightTrait<PW> + GetLayer,
+        BW: BendWeightTrait<PW> + GetLayer,
+        GW: Copy,
+        PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
+        DI: GetNodeIndex + Into<PI> + Copy,
+        SI: GetNodeIndex + Into<PI> + Copy,
+        BI: GetNodeIndex + Into<PI> + Copy,
+    > GroupingManagerTrait<GW, GenericIndex<GW>>
+    for GeometryWithRtree<PW, DW, SW, BW, GW, PI, DI, SI, BI>
+{
+    fn add_grouping(&mut self, weight: GW) -> GenericIndex<GW> {
+        let grouping = self.geometry.add_grouping(weight);
+        self.rtree.insert(self.make_grouping_bbox(grouping));
+        grouping
+    }
+
+    fn remove_grouping(&mut self, grouping: GenericIndex<GW>) {
+        self.rtree.remove(&self.make_grouping_bbox(grouping));
+        self.geometry.remove_grouping(grouping);
+    }
+
+    fn assign_to_grouping<W>(&mut self, primitive: GenericIndex<W>, grouping: GenericIndex<GW>) {
+        self.geometry.assign_to_grouping(primitive, grouping);
     }
 }

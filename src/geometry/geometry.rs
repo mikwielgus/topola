@@ -17,7 +17,10 @@ use crate::{
         rules::RulesTrait,
         seg::{FixedSegWeight, LoneLooseSegWeight, SegWeight, SeqLooseSegWeight},
     },
-    geometry::primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
+    geometry::{
+        grouping::GroupingManagerTrait,
+        primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
+    },
     graph::{GenericIndex, GetNodeIndex},
     math::Circle,
 };
@@ -155,28 +158,8 @@ impl<
         bend
     }
 
-    pub fn add_grouping(&mut self, weight: GW) -> GenericIndex<GW> {
-        GenericIndex::<GW>::new(self.graph.add_node(Node::Grouping(weight)))
-    }
-
-    pub fn assign_to_grouping<W>(
-        &mut self,
-        primitive: GenericIndex<W>,
-        grouping: GenericIndex<GW>,
-    ) {
-        self.graph.update_edge(
-            primitive.node_index(),
-            grouping.node_index(),
-            GeometryLabel::Grouping,
-        );
-    }
-
     pub fn remove_primitive(&mut self, primitive: PI) {
         self.graph.remove_node(primitive.node_index());
-    }
-
-    pub fn remove_grouping(&mut self, grouping: GenericIndex<GW>) {
-        self.graph.remove_node(grouping.node_index());
     }
 
     pub fn move_dot(&mut self, dot: DI, to: Point) {
@@ -487,5 +470,34 @@ impl<
 
     pub fn graph(&self) -> &StableDiGraph<Node<PW, GW>, GeometryLabel, usize> {
         &self.graph
+    }
+}
+
+impl<
+        PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
+        DW: DotWeightTrait<PW>,
+        SW: SegWeightTrait<PW>,
+        BW: BendWeightTrait<PW>,
+        GW: Copy,
+        PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
+        DI: GetNodeIndex + Into<PI> + Copy,
+        SI: GetNodeIndex + Into<PI> + Copy,
+        BI: GetNodeIndex + Into<PI> + Copy,
+    > GroupingManagerTrait<GW, GenericIndex<GW>> for Geometry<PW, DW, SW, BW, GW, PI, DI, SI, BI>
+{
+    fn add_grouping(&mut self, weight: GW) -> GenericIndex<GW> {
+        GenericIndex::<GW>::new(self.graph.add_node(Node::Grouping(weight)))
+    }
+
+    fn remove_grouping(&mut self, grouping: GenericIndex<GW>) {
+        self.graph.remove_node(grouping.node_index());
+    }
+
+    fn assign_to_grouping<W>(&mut self, primitive: GenericIndex<W>, grouping: GenericIndex<GW>) {
+        self.graph.update_edge(
+            primitive.node_index(),
+            grouping.node_index(),
+            GeometryLabel::Grouping,
+        );
     }
 }

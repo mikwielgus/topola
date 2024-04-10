@@ -28,6 +28,7 @@ use crate::drawing::{
     },
     zone::{PourZoneIndex, SolidZoneIndex, ZoneIndex, ZoneWeight},
 };
+use crate::geometry::grouping::GroupingManagerTrait;
 use crate::geometry::Node;
 use crate::geometry::{
     primitive::{PrimitiveShape, PrimitiveShapeTrait},
