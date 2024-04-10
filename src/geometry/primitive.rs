@@ -1,8 +1,11 @@
 use enum_dispatch::enum_dispatch;
-use geo::{point, polygon, EuclideanDistance, Intersects, Point, Polygon, Rotate};
+use geo::{point, polygon, Contains, EuclideanDistance, Intersects, Point, Polygon, Rotate};
 use rstar::{RTreeObject, AABB};
 
-use crate::math::{self, Circle};
+use crate::{
+    geometry::shape::ShapeTrait,
+    math::{self, Circle},
+};
 
 #[enum_dispatch]
 pub trait PrimitiveShapeTrait {
@@ -35,7 +38,7 @@ pub trait PrimitiveShapeTrait {
     }
 }
 
-#[enum_dispatch(PrimitiveShapeTrait)]
+#[enum_dispatch(ShapeTrait, PrimitiveShapeTrait)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PrimitiveShape {
     // Intentionally in different order to reorder `self.intersects(...)` properly.
@@ -47,6 +50,12 @@ pub enum PrimitiveShape {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DotShape {
     pub c: Circle,
+}
+
+impl ShapeTrait for DotShape {
+    fn contains_point(&self, p: Point) -> bool {
+        p.euclidean_distance(&self.c.pos) <= self.c.r
+    }
 }
 
 impl PrimitiveShapeTrait for DotShape {
@@ -140,6 +149,12 @@ impl SegShape {
         let p4 = self.to - normal * (self.width / 2.);
 
         polygon![p1.0, p2.0, p3.0, p4.0]
+    }
+}
+
+impl ShapeTrait for SegShape {
+    fn contains_point(&self, p: Point) -> bool {
+        self.polygon().contains(&p)
     }
 }
 
@@ -249,6 +264,13 @@ impl BendShape {
             self.from - self.c.pos,
             self.to - self.c.pos,
         )
+    }
+}
+
+impl ShapeTrait for BendShape {
+    fn contains_point(&self, p: Point) -> bool {
+        let d = p.euclidean_distance(&self.c.pos);
+        self.between_ends(p) && d >= self.inner_circle().r && d <= self.outer_circle().r
     }
 }
 
