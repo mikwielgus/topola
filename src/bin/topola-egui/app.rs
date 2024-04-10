@@ -7,7 +7,7 @@ use std::{
 use topola::{
     drawing::{graph::MakePrimitive, primitive::MakeShape, zone::MakePolygon, Drawing},
     dsn::{design::DsnDesign, rules::DsnRules},
-    geometry::shape::{BendShape, DotShape, SegShape, Shape},
+    geometry::primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
     math::Circle,
 };
 

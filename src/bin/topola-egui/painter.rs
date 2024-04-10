@@ -1,6 +1,6 @@
 use egui::{emath::RectTransform, epaint, Color32, Pos2, Stroke, Ui};
 use geo::{CoordsIter, Point, Polygon};
-use topola::geometry::shape::Shape;
+use topola::geometry::primitive::PrimitiveShape;
 
 pub struct Painter<'a> {
     ui: &'a mut Ui,
@@ -12,15 +12,15 @@ impl<'a> Painter<'a> {
         Self { ui, transform }
     }
 
-    pub fn paint_shape(&mut self, shape: &Shape, color: Color32) {
+    pub fn paint_shape(&mut self, shape: &PrimitiveShape, color: Color32) {
         let epaint_shape = match shape {
-            Shape::Dot(dot) => epaint::Shape::circle_filled(
+            PrimitiveShape::Dot(dot) => epaint::Shape::circle_filled(
                 self.transform
                     .transform_pos([dot.c.pos.x() as f32, -dot.c.pos.y() as f32].into()),
                 dot.c.r as f32 * self.transform.scale().x,
                 color,
             ),
-            Shape::Seg(seg) => epaint::Shape::line_segment(
+            PrimitiveShape::Seg(seg) => epaint::Shape::line_segment(
                 [
                     self.transform
                         .transform_pos([seg.from.x() as f32, -seg.from.y() as f32].into()),
@@ -29,7 +29,7 @@ impl<'a> Painter<'a> {
                 ],
                 Stroke::new(seg.width as f32 * self.transform.scale().x, color),
             ),
-            Shape::Bend(bend) => {
+            PrimitiveShape::Bend(bend) => {
                 let delta_from = bend.from - bend.c.pos;
                 let delta_to = bend.to - bend.c.pos;
 

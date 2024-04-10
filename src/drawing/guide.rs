@@ -10,7 +10,7 @@ use crate::{
         rules::GetConditions,
         Drawing,
     },
-    geometry::shape::{Shape, ShapeTrait},
+    geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait},
     math::{self, Circle, NoTangents},
 };
 
@@ -189,7 +189,7 @@ impl<'a, R: RulesTrait> Guide<'a, R> {
 
     fn bend_circle(&self, bend: BendIndex, width: f64, guide_conditions: &Conditions) -> Circle {
         let outer_circle = match bend.primitive(self.drawing).shape() {
-            Shape::Bend(shape) => shape.outer_circle(),
+            PrimitiveShape::Bend(shape) => shape.outer_circle(),
             _ => unreachable!(),
         };
 

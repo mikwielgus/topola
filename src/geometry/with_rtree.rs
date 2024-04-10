@@ -8,7 +8,7 @@ use rstar::{primitives::GeomWithData, Envelope, RTree, RTreeObject, AABB};
 use crate::{
     drawing::graph::{GetLayer, Retag},
     geometry::{
-        shape::{Shape, ShapeTrait},
+        primitive::{PrimitiveShape, PrimitiveShapeTrait},
         BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetWidth, Node, SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
@@ -331,7 +331,7 @@ impl<
         BboxedIndex::new(Bbox::new(aabb), Node::Grouping(grouping))
     }
 
-    fn shape(&self, primitive: PI) -> Shape {
+    fn shape(&self, primitive: PI) -> PrimitiveShape {
         if let Ok(dot) = <PI as TryInto<DI>>::try_into(primitive) {
             self.geometry.dot_shape(dot)
         } else if let Ok(seg) = <PI as TryInto<SI>>::try_into(primitive) {

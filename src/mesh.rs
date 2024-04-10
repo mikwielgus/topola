@@ -17,7 +17,7 @@ use crate::{
         primitive::{GetCore, MakeShape, Primitive},
         Drawing,
     },
-    geometry::shape::ShapeTrait,
+    geometry::primitive::PrimitiveShapeTrait,
     graph::GetNodeIndex,
     triangulation::{GetVertexIndex, Triangulation},
 };

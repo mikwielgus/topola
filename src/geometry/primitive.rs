@@ -5,11 +5,11 @@ use rstar::{RTreeObject, AABB};
 use crate::math::{self, Circle};
 
 #[enum_dispatch]
-pub trait ShapeTrait {
+pub trait PrimitiveShapeTrait {
     fn priority(&self) -> u64;
-    fn inflate(&self, margin: f64) -> Shape;
+    fn inflate(&self, margin: f64) -> PrimitiveShape;
     fn center(&self) -> Point;
-    fn intersects(&self, other: &Shape) -> bool;
+    fn intersects(&self, other: &PrimitiveShape) -> bool;
     fn envelope(&self, margin: f64) -> AABB<[f64; 2]>;
     fn width(&self) -> f64;
     fn length(&self) -> f64;
@@ -35,9 +35,9 @@ pub trait ShapeTrait {
     }
 }
 
-#[enum_dispatch(ShapeTrait)]
+#[enum_dispatch(PrimitiveShapeTrait)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum Shape {
+pub enum PrimitiveShape {
     // Intentionally in different order to reorder `self.intersects(...)` properly.
     Dot(DotShape),
     Seg(SegShape),
@@ -49,13 +49,13 @@ pub struct DotShape {
     pub c: Circle,
 }
 
-impl ShapeTrait for DotShape {
+impl PrimitiveShapeTrait for DotShape {
     fn priority(&self) -> u64 {
         3
     }
 
-    fn inflate(&self, margin: f64) -> Shape {
-        Shape::Dot(DotShape {
+    fn inflate(&self, margin: f64) -> PrimitiveShape {
+        PrimitiveShape::Dot(DotShape {
             c: Circle {
                 pos: self.c.pos,
                 r: self.c.r + margin,
@@ -67,15 +67,19 @@ impl ShapeTrait for DotShape {
         self.c.pos
     }
 
-    fn intersects(&self, other: &Shape) -> bool {
+    fn intersects(&self, other: &PrimitiveShape) -> bool {
         if self.priority() < other.priority() {
-            return other.intersects(&Shape::from(*self));
+            return other.intersects(&PrimitiveShape::from(*self));
         }
 
         match other {
-            Shape::Dot(other) => self.c.pos.euclidean_distance(&other.c.pos) < self.c.r + other.c.r,
-            Shape::Seg(other) => self.c.pos.euclidean_distance(&other.polygon()) < self.c.r,
-            Shape::Bend(other) => {
+            PrimitiveShape::Dot(other) => {
+                self.c.pos.euclidean_distance(&other.c.pos) < self.c.r + other.c.r
+            }
+            PrimitiveShape::Seg(other) => {
+                self.c.pos.euclidean_distance(&other.polygon()) < self.c.r
+            }
+            PrimitiveShape::Bend(other) => {
                 for point in math::intersect_circles(&self.c, &other.inner_circle()) {
                     if other.between_ends(point) {
                         return true;
@@ -139,13 +143,13 @@ impl SegShape {
     }
 }
 
-impl ShapeTrait for SegShape {
+impl PrimitiveShapeTrait for SegShape {
     fn priority(&self) -> u64 {
         2
     }
 
-    fn inflate(&self, margin: f64) -> Shape {
-        Shape::Seg(SegShape {
+    fn inflate(&self, margin: f64) -> PrimitiveShape {
+        PrimitiveShape::Seg(SegShape {
             from: self.from,
             to: self.to,
             width: self.width + 2.0 * margin,
@@ -156,15 +160,15 @@ impl ShapeTrait for SegShape {
         (self.from + self.to) / 2.0
     }
 
-    fn intersects(&self, other: &Shape) -> bool {
+    fn intersects(&self, other: &PrimitiveShape) -> bool {
         if self.priority() < other.priority() {
-            return other.intersects(&Shape::from(*self));
+            return other.intersects(&PrimitiveShape::from(*self));
         }
 
         match other {
-            Shape::Dot(..) => unreachable!(),
-            Shape::Seg(other) => self.polygon().intersects(&other.polygon()),
-            Shape::Bend(other) => {
+            PrimitiveShape::Dot(..) => unreachable!(),
+            PrimitiveShape::Seg(other) => self.polygon().intersects(&other.polygon()),
+            PrimitiveShape::Bend(other) => {
                 for segment in self.polygon().exterior().lines() {
                     let inner_circle = other.inner_circle();
                     let outer_circle = other.outer_circle();
@@ -248,13 +252,13 @@ impl BendShape {
     }
 }
 
-impl ShapeTrait for BendShape {
+impl PrimitiveShapeTrait for BendShape {
     fn priority(&self) -> u64 {
         1
     }
 
-    fn inflate(&self, margin: f64) -> Shape {
-        Shape::Bend(BendShape {
+    fn inflate(&self, margin: f64) -> PrimitiveShape {
+        PrimitiveShape::Bend(BendShape {
             from: self.from, // TODO: Is not inflated for now.
             to: self.to,     // TODO: Is not inflated for now.
             c: Circle {
@@ -270,14 +274,14 @@ impl ShapeTrait for BendShape {
         self.c.pos + (sum / sum.euclidean_distance(&point! {x: 0.0, y: 0.0})) * self.c.r
     }
 
-    fn intersects(&self, other: &Shape) -> bool {
+    fn intersects(&self, other: &PrimitiveShape) -> bool {
         if self.priority() < other.priority() {
-            return other.intersects(&Shape::from(*self));
+            return other.intersects(&PrimitiveShape::from(*self));
         }
 
         match other {
-            Shape::Dot(..) | Shape::Seg(..) => unreachable!(),
-            Shape::Bend(other) => {
+            PrimitiveShape::Dot(..) | PrimitiveShape::Seg(..) => unreachable!(),
+            PrimitiveShape::Bend(other) => {
                 for point in math::intersect_circles(&self.inner_circle(), &other.inner_circle()) {
                     if self.between_ends(point) && other.between_ends(point) {
                         return true;
@@ -334,9 +338,9 @@ impl ShapeTrait for BendShape {
     }
 }
 
-impl RTreeObject for Shape {
+impl RTreeObject for PrimitiveShape {
     type Envelope = AABB<[f64; 2]>;
     fn envelope(&self) -> Self::Envelope {
-        ShapeTrait::envelope(self, 0.0)
+        PrimitiveShapeTrait::envelope(self, 0.0)
     }
 }

@@ -12,7 +12,7 @@ use crate::drawing::{
     primitive::MakeShape,
     rules::RulesTrait,
 };
-use crate::geometry::shape::ShapeTrait;
+use crate::geometry::primitive::PrimitiveShapeTrait;
 use crate::layout::connectivity::BandIndex;
 use crate::layout::Layout;
 

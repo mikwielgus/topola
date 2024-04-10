@@ -2,7 +2,7 @@ use geo::{CoordsIter, Point, Polygon};
 use pathfinder_canvas::{
     vec2f, ArcDirection, Canvas, CanvasRenderingContext2D, ColorU, FillRule, Path2D, RectF,
 };
-use topola::geometry::shape::{Shape, ShapeTrait};
+use topola::geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait};
 
 pub struct Painter<'a> {
     canvas: &'a mut CanvasRenderingContext2D,
@@ -13,12 +13,12 @@ impl<'a> Painter<'a> {
         Self { canvas }
     }
 
-    pub fn paint_shape(&mut self, shape: &Shape, color: ColorU, zoom: f32) {
+    pub fn paint_shape(&mut self, shape: &PrimitiveShape, color: ColorU, zoom: f32) {
         self.canvas.set_stroke_style(color);
         self.canvas.set_fill_style(color);
 
         match shape {
-            Shape::Dot(dot) => {
+            PrimitiveShape::Dot(dot) => {
                 let mut path = Path2D::new();
                 path.ellipse(
                     vec2f(dot.c.pos.x() as f32, -dot.c.pos.y() as f32),
@@ -29,14 +29,14 @@ impl<'a> Painter<'a> {
                 );
                 self.canvas.fill_path(path, FillRule::Winding);
             }
-            Shape::Seg(seg) => {
+            PrimitiveShape::Seg(seg) => {
                 let mut path = Path2D::new();
                 path.move_to(vec2f(seg.from.x() as f32, -seg.from.y() as f32));
                 path.line_to(vec2f(seg.to.x() as f32, -seg.to.y() as f32));
                 self.canvas.set_line_width(seg.width as f32);
                 self.canvas.stroke_path(path);
             }
-            Shape::Bend(bend) => {
+            PrimitiveShape::Bend(bend) => {
                 let delta1 = bend.from - bend.c.pos;
                 let delta2 = bend.to - bend.c.pos;
 
@@ -56,7 +56,7 @@ impl<'a> Painter<'a> {
             }
         }
 
-        let envelope = ShapeTrait::envelope(shape, 0.0);
+        let envelope = PrimitiveShapeTrait::envelope(shape, 0.0);
         // XXX: points represented as arrays can't be conveniently converted to vector types
         let topleft = vec2f(envelope.lower()[0] as f32, -envelope.lower()[1] as f32);
         let bottomright = vec2f(envelope.upper()[0] as f32, -envelope.upper()[1] as f32);

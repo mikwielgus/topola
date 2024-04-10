@@ -17,7 +17,7 @@ use crate::{
         rules::RulesTrait,
         seg::{FixedSegWeight, LoneLooseSegWeight, SegWeight, SeqLooseSegWeight},
     },
-    geometry::shape::{BendShape, DotShape, SegShape, Shape},
+    geometry::primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
     graph::{GenericIndex, GetNodeIndex},
     math::Circle,
 };
@@ -234,9 +234,9 @@ impl<
         }
     }
 
-    pub fn dot_shape(&self, dot: DI) -> Shape {
+    pub fn dot_shape(&self, dot: DI) -> PrimitiveShape {
         let weight = self.dot_weight(dot);
-        Shape::Dot(DotShape {
+        PrimitiveShape::Dot(DotShape {
             c: Circle {
                 pos: weight.pos(),
                 r: weight.width() / 2.0,
@@ -244,19 +244,19 @@ impl<
         })
     }
 
-    pub fn seg_shape(&self, seg: SI) -> Shape {
+    pub fn seg_shape(&self, seg: SI) -> PrimitiveShape {
         let (from, to) = self.seg_joints(seg);
-        Shape::Seg(SegShape {
+        PrimitiveShape::Seg(SegShape {
             from: self.dot_weight(from).pos(),
             to: self.dot_weight(to).pos(),
             width: self.primitive_weight(seg.node_index()).width(),
         })
     }
 
-    pub fn bend_shape(&self, bend: BI) -> Shape {
+    pub fn bend_shape(&self, bend: BI) -> PrimitiveShape {
         let (from, to) = self.bend_joints(bend);
         let core_weight = self.core_weight(bend);
-        Shape::Bend(BendShape {
+        PrimitiveShape::Bend(BendShape {
             from: self.dot_weight(from).pos(),
             to: self.dot_weight(to).pos(),
             c: Circle {

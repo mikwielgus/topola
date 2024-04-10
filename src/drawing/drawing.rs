@@ -30,7 +30,7 @@ use crate::drawing::{
 };
 use crate::geometry::Node;
 use crate::geometry::{
-    shape::{Shape, ShapeTrait},
+    primitive::{PrimitiveShape, PrimitiveShapeTrait},
     with_rtree::GeometryWithRtree,
     BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetOffset, GetPos, GetWidth,
     SegWeightTrait,
@@ -58,11 +58,11 @@ pub enum LayoutException {
 // TODO add real error messages + these should eventually use Display
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{0:?} infringes on {1:?}")]
-pub struct Infringement(pub Shape, pub PrimitiveIndex);
+pub struct Infringement(pub PrimitiveShape, pub PrimitiveIndex);
 
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{0:?} collides with {1:?}")]
-pub struct Collision(pub Shape, pub PrimitiveIndex);
+pub struct Collision(pub PrimitiveShape, pub PrimitiveIndex);
 
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{1:?} is already connected to net {0}")]

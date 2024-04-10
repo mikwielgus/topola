@@ -2,7 +2,7 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
 use crate::geometry::{
-    shape::{Shape, ShapeTrait},
+    primitive::{PrimitiveShape, PrimitiveShapeTrait},
     GetOffset, GetWidth,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
@@ -35,7 +35,7 @@ pub trait GetWeight<W> {
 
 #[enum_dispatch]
 pub trait MakeShape {
-    fn shape(&self) -> Shape;
+    fn shape(&self) -> PrimitiveShape;
 }
 
 #[enum_dispatch]
@@ -270,7 +270,7 @@ impl<'a, R: RulesTrait> FixedDot<'a, R> {
 }
 
 impl<'a, R: RulesTrait> MakeShape for FixedDot<'a, R> {
-    fn shape(&self) -> Shape {
+    fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().dot_shape(self.index.into())
     }
 }
@@ -316,7 +316,7 @@ impl<'a, R: RulesTrait> LooseDot<'a, R> {
 }
 
 impl<'a, R: RulesTrait> MakeShape for LooseDot<'a, R> {
-    fn shape(&self) -> Shape {
+    fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().dot_shape(self.index.into())
     }
 }
@@ -339,7 +339,7 @@ pub type FixedSeg<'a, R> = GenericPrimitive<'a, FixedSegWeight, R>;
 impl_fixed_primitive!(FixedSeg, FixedSegWeight);
 
 impl<'a, R: RulesTrait> MakeShape for FixedSeg<'a, R> {
-    fn shape(&self) -> Shape {
+    fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().seg_shape(self.index.into())
     }
 }
@@ -362,7 +362,7 @@ pub type LoneLooseSeg<'a, R> = GenericPrimitive<'a, LoneLooseSegWeight, R>;
 impl_loose_primitive!(LoneLooseSeg, LoneLooseSegWeight);
 
 impl<'a, R: RulesTrait> MakeShape for LoneLooseSeg<'a, R> {
-    fn shape(&self) -> Shape {
+    fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().seg_shape(self.index.into())
     }
 }
@@ -385,7 +385,7 @@ pub type SeqLooseSeg<'a, R> = GenericPrimitive<'a, SeqLooseSegWeight, R>;
 impl_loose_primitive!(SeqLooseSeg, SeqLooseSegWeight);
 
 impl<'a, R: RulesTrait> MakeShape for SeqLooseSeg<'a, R> {
-    fn shape(&self) -> Shape {
+    fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().seg_shape(self.index.into())
     }
 }
@@ -426,7 +426,7 @@ impl<'a, R: RulesTrait> GetBendIndex for FixedBend<'a, R> {
 }
 
 impl<'a, R: RulesTrait> MakeShape for FixedBend<'a, R> {
-    fn shape(&self) -> Shape {
+    fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().bend_shape(self.index.into())
     }
 }
@@ -464,7 +464,7 @@ impl<'a, R: RulesTrait> From<LooseBend<'a, R>> for BendIndex {
 }
 
 impl<'a, R: RulesTrait> MakeShape for LooseBend<'a, R> {
-    fn shape(&self) -> Shape {
+    fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().bend_shape(self.index.into())
     }
 }

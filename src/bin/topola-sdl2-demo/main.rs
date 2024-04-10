@@ -21,7 +21,7 @@ use topola::drawing::seg::FixedSegWeight;
 use topola::drawing::zone::MakePolygon;
 use topola::drawing::{Drawing, Infringement, LayoutException};
 use topola::dsn::design::DsnDesign;
-use topola::geometry::shape::{Shape, ShapeTrait};
+use topola::geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait};
 use topola::layout::connectivity::BandIndex;
 use topola::layout::Layout;
 use topola::mesh::{Mesh, MeshEdgeReference, VertexIndex};
@@ -326,7 +326,7 @@ fn render_times(
     maybe_band: Option<BandIndex>,
     mut maybe_mesh: Option<Mesh>,
     path: &[VertexIndex],
-    ghosts: &[Shape],
+    ghosts: &[PrimitiveShape],
     highlighteds: &[PrimitiveIndex],
     times: i64,
 ) {
