@@ -33,7 +33,7 @@ impl RTreeObject for Bbox {
     }
 }
 
-type BboxedIndex<I> = GeomWithData<Bbox, I>;
+pub type BboxedIndex<I> = GeomWithData<Bbox, I>;
 
 #[derive(Debug)]
 pub struct GeometryWithRtree<
@@ -354,6 +354,7 @@ impl<
         &self.geometry
     }
 
+    // XXX: The type appears wrong? I don't think it should contain GW?
     pub fn rtree(&self) -> &RTree<BboxedIndex<Node<PI, GenericIndex<GW>>>> {
         &self.rtree
     }

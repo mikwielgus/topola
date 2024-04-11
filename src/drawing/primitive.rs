@@ -25,7 +25,7 @@ use crate::{
 
 #[enum_dispatch]
 pub trait GetDrawing<'a, R: RulesTrait> {
-    fn drawing(&self) -> &Drawing<R>;
+    fn drawing(&self) -> &Drawing<impl Copy, R>;
 }
 
 #[enum_dispatch]
@@ -117,7 +117,9 @@ pub trait GetInnerOuter<'a, R: RulesTrait>: GetDrawing<'a, R> + GetBendIndex {
 
 macro_rules! impl_primitive {
     ($primitive_struct:ident, $weight_struct:ident) => {
-        impl<'a, R: RulesTrait> GetWeight<$weight_struct> for $primitive_struct<'a, R> {
+        impl<'a, GW: Copy, R: RulesTrait> GetWeight<$weight_struct>
+            for $primitive_struct<'a, GW, R>
+        {
             fn weight(&self) -> $weight_struct {
                 if let PrimitiveWeight::$primitive_struct(weight) = self.tagged_weight() {
                     weight
@@ -127,13 +129,13 @@ macro_rules! impl_primitive {
             }
         }
 
-        impl<'a, R: RulesTrait> GetLayer for $primitive_struct<'a, R> {
+        impl<'a, GW: Copy, R: RulesTrait> GetLayer for $primitive_struct<'a, GW, R> {
             fn layer(&self) -> u64 {
                 self.weight().layer()
             }
         }
 
-        impl<'a, R: RulesTrait> GetMaybeNet for $primitive_struct<'a, R> {
+        impl<'a, GW: Copy, R: RulesTrait> GetMaybeNet for $primitive_struct<'a, GW, R> {
             fn maybe_net(&self) -> Option<usize> {
                 self.weight().maybe_net()
             }
@@ -157,29 +159,29 @@ macro_rules! impl_loose_primitive {
     GetLayer,
     GetMaybeNet,
     GetWidth,
-    GetLayout,
+    GetDrawing,
     MakeShape,
     GetLimbs,
     GetConditions
 )]
-pub enum Primitive<'a, R: RulesTrait> {
-    FixedDot(FixedDot<'a, R>),
-    LooseDot(LooseDot<'a, R>),
-    FixedSeg(FixedSeg<'a, R>),
-    LoneLooseSeg(LoneLooseSeg<'a, R>),
-    SeqLooseSeg(SeqLooseSeg<'a, R>),
-    FixedBend(FixedBend<'a, R>),
-    LooseBend(LooseBend<'a, R>),
+pub enum Primitive<'a, GW: Copy, R: RulesTrait> {
+    FixedDot(FixedDot<'a, GW, R>),
+    LooseDot(LooseDot<'a, GW, R>),
+    FixedSeg(FixedSeg<'a, GW, R>),
+    LoneLooseSeg(LoneLooseSeg<'a, GW, R>),
+    SeqLooseSeg(SeqLooseSeg<'a, GW, R>),
+    FixedBend(FixedBend<'a, GW, R>),
+    LooseBend(LooseBend<'a, GW, R>),
 }
 
 #[derive(Debug)]
-pub struct GenericPrimitive<'a, W, R: RulesTrait> {
+pub struct GenericPrimitive<'a, W, GW: Copy, R: RulesTrait> {
     pub index: GenericIndex<W>,
-    drawing: &'a Drawing<R>,
+    drawing: &'a Drawing<GW, R>,
 }
 
-impl<'a, W, R: RulesTrait> GenericPrimitive<'a, W, R> {
-    pub fn new(index: GenericIndex<W>, drawing: &'a Drawing<R>) -> Self {
+impl<'a, W, GW: Copy, R: RulesTrait> GenericPrimitive<'a, W, GW, R> {
+    pub fn new(index: GenericIndex<W>, drawing: &'a Drawing<GW, R>) -> Self {
         Self { index, drawing }
     }
 
@@ -197,41 +199,43 @@ impl<'a, W, R: RulesTrait> GenericPrimitive<'a, W, R> {
         }
     }
 
-    fn primitive<WW>(&self, index: GenericIndex<WW>) -> GenericPrimitive<WW, R> {
+    fn primitive<WW>(&self, index: GenericIndex<WW>) -> GenericPrimitive<WW, GW, R> {
         GenericPrimitive::new(index, &self.drawing)
     }
 }
 
-impl<'a, W, R: RulesTrait> GetInterior<PrimitiveIndex> for GenericPrimitive<'a, W, R> {
+impl<'a, W, GW: Copy, R: RulesTrait> GetInterior<PrimitiveIndex>
+    for GenericPrimitive<'a, W, GW, R>
+{
     fn interior(&self) -> Vec<PrimitiveIndex> {
         vec![self.tagged_weight().retag(self.index.node_index())]
     }
 }
 
-impl<'a, W, R: RulesTrait> GetDrawing<'a, R> for GenericPrimitive<'a, W, R> {
-    fn drawing(&self) -> &Drawing<R> {
+impl<'a, W, GW: Copy, R: RulesTrait> GetDrawing<'a, R> for GenericPrimitive<'a, W, GW, R> {
+    fn drawing(&self) -> &Drawing<impl Copy, R> {
         self.drawing
     }
 }
 
-impl<'a, W, R: RulesTrait> GetNodeIndex for GenericPrimitive<'a, W, R> {
+impl<'a, W, GW: Copy, R: RulesTrait> GetNodeIndex for GenericPrimitive<'a, W, GW, R> {
     fn node_index(&self) -> NodeIndex<usize> {
         self.index.node_index()
     }
 }
 
-impl<'a, W: GetWidth, R: RulesTrait> GetWidth for GenericPrimitive<'a, W, R>
+impl<'a, W: GetWidth, GW: Copy, R: RulesTrait> GetWidth for GenericPrimitive<'a, W, GW, R>
 where
-    GenericPrimitive<'a, W, R>: GetWeight<W>,
+    GenericPrimitive<'a, W, GW, R>: GetWeight<W>,
 {
     fn width(&self) -> f64 {
         self.weight().width()
     }
 }
 
-impl<'a, W, R: RulesTrait> GetConditions for GenericPrimitive<'a, W, R>
+impl<'a, W, GW: Copy, R: RulesTrait> GetConditions for GenericPrimitive<'a, W, GW, R>
 where
-    GenericPrimitive<'a, W, R>: GetMaybeNet,
+    GenericPrimitive<'a, W, GW, R>: GetMaybeNet,
 {
     fn conditions(&self) -> Conditions {
         Conditions {
@@ -242,10 +246,10 @@ where
     }
 }
 
-pub type FixedDot<'a, R> = GenericPrimitive<'a, FixedDotWeight, R>;
+pub type FixedDot<'a, GW, R> = GenericPrimitive<'a, FixedDotWeight, GW, R>;
 impl_fixed_primitive!(FixedDot, FixedDotWeight);
 
-impl<'a, R: RulesTrait> FixedDot<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> FixedDot<'a, GW, R> {
     pub fn first_loose(&self, _band: BandIndex) -> Option<LooseIndex> {
         self.drawing
             .geometry()
@@ -269,13 +273,13 @@ impl<'a, R: RulesTrait> FixedDot<'a, R> {
     }
 }
 
-impl<'a, R: RulesTrait> MakeShape for FixedDot<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> MakeShape for FixedDot<'a, GW, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().dot_shape(self.index.into())
     }
 }
 
-impl<'a, R: RulesTrait> GetLimbs for FixedDot<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetLimbs for FixedDot<'a, GW, R> {
     fn segs(&self) -> Vec<SegIndex> {
         self.drawing
             .geometry()
@@ -291,12 +295,12 @@ impl<'a, R: RulesTrait> GetLimbs for FixedDot<'a, R> {
     }
 }
 
-impl<'a, R: RulesTrait> GetFirstRail<'a, R> for FixedDot<'a, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetFirstRail<'a, R> for FixedDot<'a, GW, R> {}
 
-pub type LooseDot<'a, R> = GenericPrimitive<'a, LooseDotWeight, R>;
+pub type LooseDot<'a, GW, R> = GenericPrimitive<'a, LooseDotWeight, GW, R>;
 impl_loose_primitive!(LooseDot, LooseDotWeight);
 
-impl<'a, R: RulesTrait> LooseDot<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> LooseDot<'a, GW, R> {
     pub fn seg(&self) -> Option<SeqLooseSegIndex> {
         self.drawing
             .geometry()
@@ -315,13 +319,13 @@ impl<'a, R: RulesTrait> LooseDot<'a, R> {
     }
 }
 
-impl<'a, R: RulesTrait> MakeShape for LooseDot<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> MakeShape for LooseDot<'a, GW, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().dot_shape(self.index.into())
     }
 }
 
-impl<'a, R: RulesTrait> GetLimbs for LooseDot<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetLimbs for LooseDot<'a, GW, R> {
     fn segs(&self) -> Vec<SegIndex> {
         if let Some(seg) = self.seg() {
             vec![seg.into()]
@@ -335,18 +339,18 @@ impl<'a, R: RulesTrait> GetLimbs for LooseDot<'a, R> {
     }
 }
 
-pub type FixedSeg<'a, R> = GenericPrimitive<'a, FixedSegWeight, R>;
+pub type FixedSeg<'a, GW, R> = GenericPrimitive<'a, FixedSegWeight, GW, R>;
 impl_fixed_primitive!(FixedSeg, FixedSegWeight);
 
-impl<'a, R: RulesTrait> MakeShape for FixedSeg<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> MakeShape for FixedSeg<'a, GW, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().seg_shape(self.index.into())
     }
 }
 
-impl<'a, R: RulesTrait> GetLimbs for FixedSeg<'a, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetLimbs for FixedSeg<'a, GW, R> {}
 
-impl<'a, R: RulesTrait> GetJoints<FixedDotIndex, FixedDotIndex> for FixedSeg<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetJoints<FixedDotIndex, FixedDotIndex> for FixedSeg<'a, GW, R> {
     fn joints(&self) -> (FixedDotIndex, FixedDotIndex) {
         let (from, to) = self.drawing.geometry().seg_joints(self.index.into());
         (
@@ -356,20 +360,25 @@ impl<'a, R: RulesTrait> GetJoints<FixedDotIndex, FixedDotIndex> for FixedSeg<'a,
     }
 }
 
-impl<'a, R: RulesTrait> GetOtherJoint<FixedDotIndex, FixedDotIndex> for FixedSeg<'a, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetOtherJoint<FixedDotIndex, FixedDotIndex>
+    for FixedSeg<'a, GW, R>
+{
+}
 
-pub type LoneLooseSeg<'a, R> = GenericPrimitive<'a, LoneLooseSegWeight, R>;
+pub type LoneLooseSeg<'a, GW, R> = GenericPrimitive<'a, LoneLooseSegWeight, GW, R>;
 impl_loose_primitive!(LoneLooseSeg, LoneLooseSegWeight);
 
-impl<'a, R: RulesTrait> MakeShape for LoneLooseSeg<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> MakeShape for LoneLooseSeg<'a, GW, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().seg_shape(self.index.into())
     }
 }
 
-impl<'a, R: RulesTrait> GetLimbs for LoneLooseSeg<'a, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetLimbs for LoneLooseSeg<'a, GW, R> {}
 
-impl<'a, R: RulesTrait> GetJoints<FixedDotIndex, FixedDotIndex> for LoneLooseSeg<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetJoints<FixedDotIndex, FixedDotIndex>
+    for LoneLooseSeg<'a, GW, R>
+{
     fn joints(&self) -> (FixedDotIndex, FixedDotIndex) {
         let (from, to) = self.drawing.geometry().seg_joints(self.index.into());
         (
@@ -379,20 +388,23 @@ impl<'a, R: RulesTrait> GetJoints<FixedDotIndex, FixedDotIndex> for LoneLooseSeg
     }
 }
 
-impl<'a, R: RulesTrait> GetOtherJoint<FixedDotIndex, FixedDotIndex> for LoneLooseSeg<'a, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetOtherJoint<FixedDotIndex, FixedDotIndex>
+    for LoneLooseSeg<'a, GW, R>
+{
+}
 
-pub type SeqLooseSeg<'a, R> = GenericPrimitive<'a, SeqLooseSegWeight, R>;
+pub type SeqLooseSeg<'a, GW, R> = GenericPrimitive<'a, SeqLooseSegWeight, GW, R>;
 impl_loose_primitive!(SeqLooseSeg, SeqLooseSegWeight);
 
-impl<'a, R: RulesTrait> MakeShape for SeqLooseSeg<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> MakeShape for SeqLooseSeg<'a, GW, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().seg_shape(self.index.into())
     }
 }
 
-impl<'a, R: RulesTrait> GetLimbs for SeqLooseSeg<'a, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetLimbs for SeqLooseSeg<'a, GW, R> {}
 
-impl<'a, R: RulesTrait> GetJoints<DotIndex, LooseDotIndex> for SeqLooseSeg<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetJoints<DotIndex, LooseDotIndex> for SeqLooseSeg<'a, GW, R> {
     fn joints(&self) -> (DotIndex, LooseDotIndex) {
         let joints = self.drawing.geometry().seg_joints(self.index.into());
         if let DotWeight::Fixed(..) = self.drawing.geometry().dot_weight(joints.0) {
@@ -414,26 +426,29 @@ impl<'a, R: RulesTrait> GetJoints<DotIndex, LooseDotIndex> for SeqLooseSeg<'a, R
     }
 }
 
-impl<'a, R: RulesTrait> GetOtherJoint<DotIndex, LooseDotIndex> for SeqLooseSeg<'a, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetOtherJoint<DotIndex, LooseDotIndex>
+    for SeqLooseSeg<'a, GW, R>
+{
+}
 
-pub type FixedBend<'a, R> = GenericPrimitive<'a, FixedBendWeight, R>;
+pub type FixedBend<'a, GW, R> = GenericPrimitive<'a, FixedBendWeight, GW, R>;
 impl_fixed_primitive!(FixedBend, FixedBendWeight);
 
-impl<'a, R: RulesTrait> GetBendIndex for FixedBend<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetBendIndex for FixedBend<'a, GW, R> {
     fn bend_index(&self) -> BendIndex {
         self.index.into()
     }
 }
 
-impl<'a, R: RulesTrait> MakeShape for FixedBend<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> MakeShape for FixedBend<'a, GW, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().bend_shape(self.index.into())
     }
 }
 
-impl<'a, R: RulesTrait> GetLimbs for FixedBend<'a, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetLimbs for FixedBend<'a, GW, R> {}
 
-impl<'a, R: RulesTrait> GetJoints<FixedDotIndex, FixedDotIndex> for FixedBend<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetJoints<FixedDotIndex, FixedDotIndex> for FixedBend<'a, GW, R> {
     fn joints(&self) -> (FixedDotIndex, FixedDotIndex) {
         let (from, to) = self.drawing.geometry().bend_joints(self.index.into());
         (
@@ -443,41 +458,44 @@ impl<'a, R: RulesTrait> GetJoints<FixedDotIndex, FixedDotIndex> for FixedBend<'a
     }
 }
 
-impl<'a, R: RulesTrait> GetOtherJoint<FixedDotIndex, FixedDotIndex> for FixedBend<'a, R> {}
-impl<'a, R: RulesTrait> GetFirstRail<'a, R> for FixedBend<'a, R> {}
-impl<'a, R: RulesTrait> GetCore<'a, R> for FixedBend<'a, R> {} // TODO: Fixed bends don't have cores actually.
-                                                               //impl<'a, R: QueryRules> GetInnerOuter for FixedBend<'a, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetOtherJoint<FixedDotIndex, FixedDotIndex>
+    for FixedBend<'a, GW, R>
+{
+}
+impl<'a, GW: Copy, R: RulesTrait> GetFirstRail<'a, R> for FixedBend<'a, GW, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetCore<'a, R> for FixedBend<'a, GW, R> {} // TODO: Fixed bends don't have cores actually.
+                                                                             //impl<'a, R: QueryRules> GetInnerOuter for FixedBend<'a, GW, R> {}
 
-pub type LooseBend<'a, R> = GenericPrimitive<'a, LooseBendWeight, R>;
+pub type LooseBend<'a, GW, R> = GenericPrimitive<'a, LooseBendWeight, GW, R>;
 impl_loose_primitive!(LooseBend, LooseBendWeight);
 
-impl<'a, R: RulesTrait> GetBendIndex for LooseBend<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetBendIndex for LooseBend<'a, GW, R> {
     fn bend_index(&self) -> BendIndex {
         self.index.into()
     }
 }
 
-impl<'a, R: RulesTrait> From<LooseBend<'a, R>> for BendIndex {
-    fn from(bend: LooseBend<'a, R>) -> BendIndex {
+impl<'a, GW: Copy, R: RulesTrait> From<LooseBend<'a, GW, R>> for BendIndex {
+    fn from(bend: LooseBend<'a, GW, R>) -> BendIndex {
         bend.index.into()
     }
 }
 
-impl<'a, R: RulesTrait> MakeShape for LooseBend<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> MakeShape for LooseBend<'a, GW, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().bend_shape(self.index.into())
     }
 }
 
-impl<'a, R: RulesTrait> GetLimbs for LooseBend<'a, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetLimbs for LooseBend<'a, GW, R> {}
 
-impl<'a, R: RulesTrait> GetOffset for LooseBend<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetOffset for LooseBend<'a, GW, R> {
     fn offset(&self) -> f64 {
         self.weight().offset
     }
 }
 
-impl<'a, R: RulesTrait> GetJoints<LooseDotIndex, LooseDotIndex> for LooseBend<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetJoints<LooseDotIndex, LooseDotIndex> for LooseBend<'a, GW, R> {
     fn joints(&self) -> (LooseDotIndex, LooseDotIndex) {
         let (from, to) = self.drawing.geometry().bend_joints(self.index.into());
         (
@@ -487,6 +505,9 @@ impl<'a, R: RulesTrait> GetJoints<LooseDotIndex, LooseDotIndex> for LooseBend<'a
     }
 }
 
-impl<'a, R: RulesTrait> GetOtherJoint<LooseDotIndex, LooseDotIndex> for LooseBend<'a, R> {}
-impl<'a, R: RulesTrait> GetCore<'a, R> for LooseBend<'a, R> {}
-impl<'a, R: RulesTrait> GetInnerOuter<'a, R> for LooseBend<'a, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetOtherJoint<LooseDotIndex, LooseDotIndex>
+    for LooseBend<'a, GW, R>
+{
+}
+impl<'a, GW: Copy, R: RulesTrait> GetCore<'a, R> for LooseBend<'a, GW, R> {}
+impl<'a, GW: Copy, R: RulesTrait> GetInnerOuter<'a, R> for LooseBend<'a, GW, R> {}

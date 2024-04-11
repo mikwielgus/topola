@@ -268,7 +268,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         Some(self.guide().head(prev_dot))
     }
 
-    fn guide(&self) -> Guide<R> {
+    fn guide(&self) -> Guide<impl Copy, R> {
         Guide::new(self.layout.drawing())
     }
 }

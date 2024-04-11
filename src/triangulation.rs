@@ -23,14 +23,14 @@ pub struct Triangulation<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I
 impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
     Triangulation<I, W>
 {
-    pub fn new(layout: &Drawing<impl RulesTrait>) -> Self {
+    pub fn new(drawing: &Drawing<impl Copy, impl RulesTrait>) -> Self {
         let mut this = Self {
             triangulation: <DelaunayTriangulation<W> as spade::Triangulation>::new(),
             vertex_to_handle: Vec::new(),
             index_marker: PhantomData,
         };
         this.vertex_to_handle
-            .resize(layout.geometry().graph().node_bound(), None);
+            .resize(drawing.geometry().graph().node_bound(), None);
         this
     }
 

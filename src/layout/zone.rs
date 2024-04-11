@@ -17,7 +17,7 @@ use crate::{
 
 #[enum_dispatch]
 pub trait MakePolygon {
-    fn polygon<R: RulesTrait>(&self, drawing: &Drawing<R>) -> Polygon;
+    fn polygon<R: RulesTrait>(&self, drawing: &Drawing<impl Copy, R>) -> Polygon;
 }
 
 #[enum_dispatch(GetNodeIndex, MakePolygon)]
@@ -55,12 +55,12 @@ impl<'a> GetMaybeNet for SolidZoneWeight {
 pub type SolidZoneIndex = GenericIndex<SolidZoneWeight>;
 
 impl MakePolygon for SolidZoneIndex {
-    fn polygon<R: RulesTrait>(&self, drawing: &Drawing<R>) -> Polygon {
+    fn polygon<R: RulesTrait>(&self, drawing: &Drawing<impl Copy, R>) -> Polygon {
         Polygon::new(
             LineString::from(
                 drawing
                     .geometry()
-                    .grouping_members(GenericIndex::<ZoneWeight>::new(self.node_index()))
+                    .grouping_members(GenericIndex::new(self.node_index()))
                     .filter_map(|primitive_node| {
                         if let Ok(dot) = DotIndex::try_from(primitive_node) {
                             Some(drawing.geometry().dot_weight(dot).pos())
@@ -96,12 +96,12 @@ impl<'a> GetMaybeNet for PourZoneWeight {
 pub type PourZoneIndex = GenericIndex<PourZoneWeight>;
 
 impl MakePolygon for PourZoneIndex {
-    fn polygon<R: RulesTrait>(&self, drawing: &Drawing<R>) -> Polygon {
+    fn polygon<R: RulesTrait>(&self, drawing: &Drawing<impl Copy, R>) -> Polygon {
         Polygon::new(
             LineString::from(
                 drawing
                     .geometry()
-                    .grouping_members(GenericIndex::<ZoneWeight>::new(self.node_index()))
+                    .grouping_members(GenericIndex::new(self.node_index()))
                     .filter_map(|primitive_node| {
                         if let Ok(dot) = DotIndex::try_from(primitive_node) {
                             Some(drawing.geometry().dot_weight(dot).pos())

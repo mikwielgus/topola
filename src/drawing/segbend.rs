@@ -17,7 +17,7 @@ pub struct Segbend {
 }
 
 impl Segbend {
-    pub fn from_dot(dot: LooseDotIndex, drawing: &Drawing<impl RulesTrait>) -> Self {
+    pub fn from_dot(dot: LooseDotIndex, drawing: &Drawing<impl Copy, impl RulesTrait>) -> Self {
         let bend = LooseDot::new(dot, drawing).bend();
         let dot = LooseBend::new(bend, drawing).other_joint(dot);
         let seg = LooseDot::new(dot, drawing).seg().unwrap();

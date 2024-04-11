@@ -83,7 +83,7 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn new(layout: &Drawing<impl RulesTrait>) -> Self {
+    pub fn new(layout: &Drawing<impl Copy, impl RulesTrait>) -> Self {
         let mut this = Self {
             triangulation: Triangulation::new(layout),
             vertex_to_triangulation_vertex: Vec::new(),
@@ -93,7 +93,10 @@ impl Mesh {
         this
     }
 
-    pub fn generate(&mut self, drawing: &Drawing<impl RulesTrait>) -> Result<(), InsertionError> {
+    pub fn generate(
+        &mut self,
+        drawing: &Drawing<impl Copy, impl RulesTrait>,
+    ) -> Result<(), InsertionError> {
         for node in drawing.primitive_nodes() {
             let center = node.primitive(drawing).shape().center();
 

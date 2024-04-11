@@ -10,6 +10,5 @@ pub mod primitive;
 pub mod rules;
 pub mod seg;
 pub mod segbend;
-pub mod zone;
 
 pub use drawing::*;

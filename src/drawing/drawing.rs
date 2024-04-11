@@ -2,14 +2,13 @@ use contracts::debug_ensures;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 
-use rstar::{RTreeObject, AABB};
+use rstar::{RTree, RTreeObject, AABB};
 use thiserror::Error;
 
 use super::graph::GetLayer;
 use super::loose::{GetNextLoose, Loose, LooseIndex};
 use super::rules::RulesTrait;
 use super::segbend::Segbend;
-use super::zone::SolidZoneWeight;
 use crate::drawing::bend::BendIndex;
 use crate::drawing::collect::Collect;
 use crate::drawing::dot::DotWeight;
@@ -26,9 +25,9 @@ use crate::drawing::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
         SeqLooseSegIndex, SeqLooseSegWeight,
     },
-    zone::{PourZoneIndex, SolidZoneIndex, ZoneIndex, ZoneWeight},
 };
 use crate::geometry::grouping::GroupingManagerTrait;
+use crate::geometry::with_rtree::BboxedIndex;
 use crate::geometry::Node;
 use crate::geometry::{
     primitive::{PrimitiveShape, PrimitiveShapeTrait},
@@ -37,6 +36,7 @@ use crate::geometry::{
     SegWeightTrait,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
+use crate::layout::zone::{ZoneIndex, ZoneWeight};
 use crate::math::NoTangents;
 use crate::wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex};
 
@@ -70,13 +70,13 @@ pub struct Collision(pub PrimitiveShape, pub PrimitiveIndex);
 pub struct AlreadyConnected(pub usize, pub PrimitiveIndex);
 
 #[derive(Debug)]
-pub struct Drawing<R: RulesTrait> {
+pub struct Drawing<GW: Copy, R: RulesTrait> {
     geometry_with_rtree: GeometryWithRtree<
         PrimitiveWeight,
         DotWeight,
         SegWeight,
         BendWeight,
-        ZoneWeight,
+        GW,
         PrimitiveIndex,
         DotIndex,
         SegIndex,
@@ -85,7 +85,7 @@ pub struct Drawing<R: RulesTrait> {
     rules: R,
 }
 
-impl<R: RulesTrait> Drawing<R> {
+impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
     pub fn new(rules: R) -> Self {
         Self {
             geometry_with_rtree: GeometryWithRtree::new(2),
@@ -153,19 +153,7 @@ impl<R: RulesTrait> Drawing<R> {
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, Infringement> {
-        self.add_dot_infringably(weight, None, None)
-    }
-
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn add_zone_fixed_dot(
-        &mut self,
-        weight: FixedDotWeight,
-        zone: ZoneIndex,
-    ) -> Result<FixedDotIndex, Infringement> {
-        self.add_dot_infringably(weight, Some(zone), None)
+        self.add_dot_infringably(weight, None)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
@@ -173,7 +161,6 @@ impl<R: RulesTrait> Drawing<R> {
     fn add_dot_infringably<W: DotWeightTrait<PrimitiveWeight> + GetLayer>(
         &mut self,
         weight: W,
-        maybe_zone: Option<ZoneIndex>,
         infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<GenericIndex<W>, Infringement>
     where
@@ -181,11 +168,6 @@ impl<R: RulesTrait> Drawing<R> {
     {
         let dot = self.geometry_with_rtree.add_dot(weight);
         self.fail_and_remove_if_infringes_except(dot.into(), infringables)?;
-
-        if let Some(zone) = maybe_zone {
-            self.geometry_with_rtree
-                .assign_to_grouping(dot, GenericIndex::new(zone.node_index()));
-        }
 
         Ok(dot)
     }
@@ -200,21 +182,7 @@ impl<R: RulesTrait> Drawing<R> {
         to: FixedDotIndex,
         weight: FixedSegWeight,
     ) -> Result<FixedSegIndex, Infringement> {
-        self.add_seg_infringably(from.into(), to.into(), weight, None, None)
-    }
-
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 3))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn add_zone_fixed_seg(
-        &mut self,
-        from: FixedDotIndex,
-        to: FixedDotIndex,
-        weight: FixedSegWeight,
-        zone: ZoneIndex,
-    ) -> Result<FixedSegIndex, Infringement> {
-        self.add_seg_infringably(from.into(), to.into(), weight, Some(zone), None)
+        self.add_seg_infringably(from.into(), to.into(), weight, None)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 4))]
@@ -418,16 +386,16 @@ impl<R: RulesTrait> Drawing<R> {
         cw: bool,
         infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<Segbend, LayoutException> {
-        let seg_to = self.add_dot_infringably(dot_weight, None, infringables)?;
+        let seg_to = self.add_dot_infringably(dot_weight, infringables)?;
         let seg = self
-            .add_seg_infringably(from, seg_to.into(), seg_weight, None, infringables)
+            .add_seg_infringably(from, seg_to.into(), seg_weight, infringables)
             .map_err(|err| {
                 self.geometry_with_rtree.remove_dot(seg_to.into());
                 err
             })?;
 
         let to = self
-            .add_dot_infringably(dot_weight, None, infringables)
+            .add_dot_infringably(dot_weight, infringables)
             .map_err(|err| {
                 self.geometry_with_rtree.remove_seg(seg.into());
                 self.geometry_with_rtree.remove_dot(seg_to.into());
@@ -485,7 +453,7 @@ impl<R: RulesTrait> Drawing<R> {
         to: FixedDotIndex,
         weight: LoneLooseSegWeight,
     ) -> Result<LoneLooseSegIndex, Infringement> {
-        let seg = self.add_seg_infringably(from.into(), to.into(), weight, None, Some(&[]))?;
+        let seg = self.add_seg_infringably(from.into(), to.into(), weight, Some(&[]))?;
         Ok(seg)
     }
 
@@ -499,7 +467,7 @@ impl<R: RulesTrait> Drawing<R> {
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
     ) -> Result<SeqLooseSegIndex, Infringement> {
-        let seg = self.add_seg_infringably(from, to.into(), weight, None, Some(&[]))?;
+        let seg = self.add_seg_infringably(from, to.into(), weight, Some(&[]))?;
         Ok(seg)
     }
 
@@ -512,7 +480,6 @@ impl<R: RulesTrait> Drawing<R> {
         from: DotIndex,
         to: DotIndex,
         weight: W,
-        maybe_zone: Option<ZoneIndex>,
         infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<GenericIndex<W>, Infringement>
     where
@@ -520,11 +487,6 @@ impl<R: RulesTrait> Drawing<R> {
     {
         let seg = self.geometry_with_rtree.add_seg(from, to, weight);
         self.fail_and_remove_if_infringes_except(seg.into(), infringables)?;
-
-        if let Some(zone) = maybe_zone {
-            self.geometry_with_rtree
-                .assign_to_grouping(seg, GenericIndex::new(zone.node_index()));
-        }
 
         Ok(seg)
     }
@@ -647,14 +609,6 @@ impl<R: RulesTrait> Drawing<R> {
         self.geometry_with_rtree.flip_bend(bend.into());
     }
 
-    pub fn add_solid_zone(&mut self, weight: SolidZoneWeight) -> SolidZoneIndex {
-        GenericIndex::new(
-            self.geometry_with_rtree
-                .add_grouping(weight.into())
-                .node_index(),
-        )
-    }
-
     pub fn segbend(&self, dot: LooseDotIndex) -> Segbend {
         Segbend::from_dot(dot, self)
     }
@@ -709,60 +663,12 @@ impl<R: RulesTrait> Drawing<R> {
             })
     }
 
-    pub fn zones(&self) -> impl Iterator<Item = ZoneIndex> + '_ {
-        self.geometry_with_rtree
-            .rtree()
-            .iter()
-            .filter_map(|wrapper| {
-                if let Node::Grouping(zone) = wrapper.data {
-                    Some(match self.geometry().grouping_weight(zone) {
-                        ZoneWeight::Solid(..) => {
-                            ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
-                        }
-                        ZoneWeight::Pour(..) => {
-                            ZoneIndex::Pour(PourZoneIndex::new(zone.node_index()))
-                        }
-                    })
-                } else {
-                    None
-                }
-            })
-    }
-
-    pub fn layer_zones(&self, layer: u64) -> impl Iterator<Item = ZoneIndex> + '_ {
-        self.geometry_with_rtree
-            .rtree()
-            .locate_in_envelope_intersecting(&AABB::from_corners(
-                [-f64::INFINITY, -f64::INFINITY, layer as f64],
-                [f64::INFINITY, f64::INFINITY, layer as f64],
-            ))
-            .filter_map(|wrapper| {
-                if let Node::Grouping(zone) = wrapper.data {
-                    Some(match self.geometry().grouping_weight(zone) {
-                        ZoneWeight::Solid(..) => {
-                            ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
-                        }
-                        ZoneWeight::Pour(..) => {
-                            ZoneIndex::Pour(PourZoneIndex::new(zone.node_index()))
-                        }
-                    })
-                } else {
-                    None
-                }
-            })
-    }
-
-    pub fn zone_members(&self, zone: ZoneIndex) -> impl Iterator<Item = PrimitiveIndex> + '_ {
-        self.geometry()
-            .grouping_members(GenericIndex::new(zone.node_index()))
-    }
-
     pub fn node_count(&self) -> usize {
         self.geometry_with_rtree.graph().node_count()
     }
 }
 
-impl<R: RulesTrait> Drawing<R> {
+impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), Infringement> {
@@ -906,7 +812,7 @@ impl<R: RulesTrait> Drawing<R> {
     }
 }
 
-impl<R: RulesTrait> Drawing<R> {
+impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn geometry(
@@ -916,7 +822,7 @@ impl<R: RulesTrait> Drawing<R> {
         DotWeight,
         SegWeight,
         BendWeight,
-        ZoneWeight,
+        GW,
         PrimitiveIndex,
         DotIndex,
         SegIndex,
@@ -927,37 +833,58 @@ impl<R: RulesTrait> Drawing<R> {
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    pub fn rtree(&self) -> &RTree<BboxedIndex<Node<PrimitiveIndex, GenericIndex<GW>>>> {
+        self.geometry_with_rtree.rtree()
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn rules(&self) -> &R {
         &self.rules
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn guide(&self) -> Guide<R> {
+    pub fn guide(&self) -> Guide<GW, R> {
         Guide::new(self)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn collect(&self) -> Collect<R> {
+    pub fn collect(&self) -> Collect<GW, R> {
         Collect::new(self)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W, R> {
+    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W, GW, R> {
         GenericPrimitive::new(index, self)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn wraparoundable(&self, index: WraparoundableIndex) -> Wraparoundable<R> {
+    pub fn wraparoundable(&self, index: WraparoundableIndex) -> Wraparoundable<GW, R> {
         Wraparoundable::new(index, self)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn loose(&self, index: LooseIndex) -> Loose<R> {
+    pub fn loose(&self, index: LooseIndex) -> Loose<GW, R> {
         Loose::new(index, self)
+    }
+}
+
+impl<GW: Copy, R: RulesTrait> GroupingManagerTrait<GW, GenericIndex<GW>> for Drawing<GW, R> {
+    fn add_grouping(&mut self, weight: GW) -> GenericIndex<GW> {
+        self.geometry_with_rtree.add_grouping(weight)
+    }
+
+    fn remove_grouping(&mut self, grouping: GenericIndex<GW>) {
+        self.geometry_with_rtree.remove_grouping(grouping);
+    }
+
+    fn assign_to_grouping<W>(&mut self, primitive: GenericIndex<W>, grouping: GenericIndex<GW>) {
+        self.geometry_with_rtree
+            .assign_to_grouping(primitive, grouping);
     }
 }

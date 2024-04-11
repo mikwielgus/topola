@@ -19,7 +19,7 @@ use topola::drawing::primitive::MakeShape;
 use topola::drawing::rules::{Conditions, RulesTrait};
 use topola::drawing::seg::FixedSegWeight;
 use topola::drawing::zone::MakePolygon;
-use topola::drawing::{Drawing, Infringement, LayoutException};
+use topola::drawing::{Infringement, Layout, LayoutException};
 use topola::dsn::design::DsnDesign;
 use topola::geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait};
 use topola::layout::connectivity::BandIndex;
@@ -80,7 +80,7 @@ impl RulesTrait for SimpleRules {
 // Clunky enum to work around borrow checker.
 enum RouterOrDrawing<'a, R: RulesTrait> {
     Router(&'a mut Router<R>),
-    Layout(&'a Drawing<R>),
+    Layout(&'a Layout<R>),
 }
 
 struct EmptyRouterObserver;
@@ -260,7 +260,7 @@ fn main() -> Result<(), anyhow::Error> {
     )?;
     //let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
     //dbg!(&design);
-    let drawing = design.make_drawing();
+    let drawing = design.make_layout();
     let layout = Layout::new(drawing);
     let mut router = Router::new(layout);
 

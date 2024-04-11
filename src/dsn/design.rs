@@ -4,16 +4,17 @@ use geo::{point, Point, Rotate, Translate};
 use thiserror::Error;
 
 use crate::{
-    drawing::{
-        dot::FixedDotWeight,
-        seg::FixedSegWeight,
-        zone::{SolidZoneWeight, ZoneIndex},
-        Drawing,
-    },
+    drawing::{dot::FixedDotWeight, seg::FixedSegWeight, Drawing},
     dsn::{
         de,
         rules::DsnRules,
         structure::{self, DsnFile, Layer, Pcb, Shape},
+    },
+    geometry::grouping::GroupingManagerTrait,
+    graph::{GenericIndex, GetNodeIndex},
+    layout::{
+        zone::{SolidZoneWeight, ZoneIndex},
+        Layout,
     },
     math::Circle,
 };
@@ -45,9 +46,9 @@ impl DsnDesign {
         Ok(Self { pcb })
     }
 
-    pub fn make_drawing(&self) -> Drawing<DsnRules> {
+    pub fn make_layout(&self) -> Layout<DsnRules> {
         let rules = DsnRules::from_pcb(&self.pcb);
-        let mut layout = Drawing::new(rules);
+        let mut layout = Layout::new(Drawing::new(rules));
 
         // mapping of pin id -> net id prepared for adding pins
         let pin_nets = HashMap::<String, usize>::from_iter(
@@ -57,7 +58,7 @@ impl DsnDesign {
                 .iter()
                 .map(|net| {
                     // resolve the id so we don't work with strings
-                    let net_id = layout.rules().net_ids.get(&net.name).unwrap();
+                    let net_id = layout.drawing().rules().net_ids.get(&net.name).unwrap();
 
                     // take the list of pins
                     // and for each pin id output (pin id, net id)
@@ -176,7 +177,7 @@ impl DsnDesign {
         }
 
         for via in &self.pcb.wiring.via_vec {
-            let net_id = *layout.rules().net_ids.get(&via.net).unwrap();
+            let net_id = *layout.drawing().rules().net_ids.get(&via.net).unwrap();
 
             // find the padstack referenced by this via placement
             let padstack = &self
@@ -271,8 +272,13 @@ impl DsnDesign {
         }
 
         for wire in self.pcb.wiring.wire_vec.iter() {
-            let layer_id = *layout.rules().layer_ids.get(&wire.path.layer).unwrap();
-            let net_id = *layout.rules().net_ids.get(&wire.net).unwrap();
+            let layer_id = *layout
+                .drawing()
+                .rules()
+                .layer_ids
+                .get(&wire.path.layer)
+                .unwrap();
+            let net_id = *layout.drawing().rules().net_ids.get(&wire.net).unwrap();
 
             Self::add_path(
                 &mut layout,
@@ -291,12 +297,12 @@ impl DsnDesign {
     }
 
     fn layer(
-        drawing: &Drawing<DsnRules>,
+        layout: &Layout<DsnRules>,
         layer_vec: &Vec<Layer>,
         layer_name: &str,
         front: bool,
     ) -> usize {
-        let image_layer = *drawing.rules().layer_ids.get(layer_name).unwrap();
+        let image_layer = *layout.drawing().rules().layer_ids.get(layer_name).unwrap();
 
         if front {
             image_layer as usize
@@ -306,7 +312,7 @@ impl DsnDesign {
     }
 
     fn add_circle(
-        drawing: &mut Drawing<DsnRules>,
+        layout: &mut Layout<DsnRules>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -320,7 +326,7 @@ impl DsnDesign {
             r,
         };
 
-        drawing
+        layout
             .add_fixed_dot(FixedDotWeight {
                 circle,
                 layer,
@@ -330,7 +336,7 @@ impl DsnDesign {
     }
 
     fn add_rect(
-        drawing: &mut Drawing<DsnRules>,
+        layout: &mut Layout<DsnRules>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -342,13 +348,16 @@ impl DsnDesign {
         layer: u64,
         net: usize,
     ) {
-        let zone = drawing.add_solid_zone(SolidZoneWeight {
-            layer,
-            maybe_net: Some(net),
-        });
+        let zone = layout.add_grouping(
+            SolidZoneWeight {
+                layer,
+                maybe_net: Some(net),
+            }
+            .into(),
+        );
 
         // Corners.
-        let dot_1_1 = drawing
+        let dot_1_1 = layout
             .add_zone_fixed_dot(
                 FixedDotWeight {
                     circle: Circle {
@@ -358,11 +367,10 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                zone.into(),
+                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
             )
             .unwrap();
-
-        let dot_2_1 = drawing
+        let dot_2_1 = layout
             .add_zone_fixed_dot(
                 FixedDotWeight {
                     circle: Circle {
@@ -372,10 +380,10 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                zone.into(),
+                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
             )
             .unwrap();
-        let dot_2_2 = drawing
+        let dot_2_2 = layout
             .add_zone_fixed_dot(
                 FixedDotWeight {
                     circle: Circle {
@@ -385,10 +393,10 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                zone.into(),
+                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
             )
             .unwrap();
-        let dot_1_2 = drawing
+        let dot_1_2 = layout
             .add_zone_fixed_dot(
                 FixedDotWeight {
                     circle: Circle {
@@ -398,11 +406,11 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                zone.into(),
+                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
             )
             .unwrap();
         // Sides.
-        drawing
+        layout
             .add_zone_fixed_seg(
                 dot_1_1,
                 dot_2_1,
@@ -411,10 +419,10 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                zone.into(),
+                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
             )
             .unwrap();
-        drawing
+        layout
             .add_zone_fixed_seg(
                 dot_2_1,
                 dot_2_2,
@@ -423,10 +431,10 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                zone.into(),
+                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
             )
             .unwrap();
-        drawing
+        layout
             .add_zone_fixed_seg(
                 dot_2_2,
                 dot_1_2,
@@ -435,10 +443,10 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                zone.into(),
+                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
             )
             .unwrap();
-        drawing
+        layout
             .add_zone_fixed_seg(
                 dot_1_2,
                 dot_1_1,
@@ -447,13 +455,13 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                zone.into(),
+                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
             )
             .unwrap();
     }
 
     fn add_path(
-        drawing: &mut Drawing<DsnRules>,
+        layout: &mut Layout<DsnRules>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -464,7 +472,7 @@ impl DsnDesign {
         net: usize,
     ) {
         // add the first coordinate in the wire path as a dot and save its index
-        let mut prev_index = drawing
+        let mut prev_index = layout
             .add_fixed_dot(FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(
@@ -484,7 +492,7 @@ impl DsnDesign {
 
         // iterate through path coords starting from the second
         for coord in coords.iter().skip(1) {
-            let index = drawing
+            let index = layout
                 .add_fixed_dot(FixedDotWeight {
                     circle: Circle {
                         pos: Self::pos(
@@ -504,7 +512,7 @@ impl DsnDesign {
                 .unwrap();
 
             // add a seg between the current and previous coords
-            let _ = drawing
+            let _ = layout
                 .add_fixed_seg(
                     prev_index,
                     index,
@@ -521,7 +529,7 @@ impl DsnDesign {
     }
 
     fn add_polygon(
-        drawing: &mut Drawing<DsnRules>,
+        layout: &mut Layout<DsnRules>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -531,13 +539,16 @@ impl DsnDesign {
         layer: u64,
         net: usize,
     ) {
-        let zone = drawing.add_solid_zone(SolidZoneWeight {
-            layer,
-            maybe_net: Some(net),
-        });
+        let zone = layout.add_grouping(
+            SolidZoneWeight {
+                layer,
+                maybe_net: Some(net),
+            }
+            .into(),
+        );
 
         // add the first coordinate in the wire path as a dot and save its index
-        let mut prev_index = drawing
+        let mut prev_index = layout
             .add_zone_fixed_dot(
                 FixedDotWeight {
                     circle: Circle {
@@ -554,13 +565,15 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                zone.into(),
+                // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
+                //GenericIndex::new(zone.node_index()).into(),
+                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
             )
             .unwrap();
 
         // iterate through path coords starting from the second
         for coord in coords.iter().skip(1) {
-            let index = drawing
+            let index = layout
                 .add_zone_fixed_dot(
                     FixedDotWeight {
                         circle: Circle {
@@ -578,12 +591,13 @@ impl DsnDesign {
                         layer,
                         maybe_net: Some(net),
                     },
-                    zone.into(),
+                    // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
+                    ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
                 )
                 .unwrap();
 
             // add a seg between the current and previous coords
-            let _ = drawing
+            let _ = layout
                 .add_zone_fixed_seg(
                     prev_index,
                     index,
@@ -592,7 +606,8 @@ impl DsnDesign {
                         layer,
                         maybe_net: Some(net),
                     },
-                    zone.into(),
+                    // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
+                    ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
                 )
                 .unwrap();
 

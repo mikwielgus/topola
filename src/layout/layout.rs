@@ -1,30 +1,41 @@
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
+use rstar::AABB;
 
 use crate::{
     drawing::{
         bend::LooseBendWeight,
-        dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
+        dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+        graph::{PrimitiveIndex, Retag},
         rules::RulesTrait,
-        seg::{LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex, SeqLooseSegWeight},
+        seg::{
+            FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
+            SeqLooseSegWeight,
+        },
         segbend::Segbend,
         Drawing, Infringement, LayoutException,
     },
-    graph::GetNodeIndex,
+    geometry::{
+        grouping::GroupingManagerTrait, BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel,
+        GetWidth, Node, SegWeightTrait,
+    },
+    graph::{GenericIndex, GetNodeIndex},
+    layout::{
+        connectivity::{
+            BandIndex, BandWeight, ConnectivityLabel, ConnectivityWeight, ContinentIndex,
+        },
+        zone::{PourZoneIndex, SolidZoneIndex, ZoneIndex, ZoneWeight},
+    },
     wraparoundable::WraparoundableIndex,
 };
 
-use super::connectivity::{
-    BandIndex, BandWeight, ConnectivityLabel, ConnectivityWeight, ContinentIndex,
-};
-
 pub struct Layout<R: RulesTrait> {
-    drawing: Drawing<R>, // Shouldn't be public, but is for now because `Draw` needs it.
+    drawing: Drawing<ZoneWeight, R>, // Shouldn't be public, but is for now because `Draw` needs it.
     connectivity: StableDiGraph<ConnectivityWeight, ConnectivityLabel, usize>,
 }
 
 impl<R: RulesTrait> Layout<R> {
-    pub fn new(drawing: Drawing<R>) -> Self {
+    pub fn new(drawing: Drawing<ZoneWeight, R>) -> Self {
         Self {
             drawing,
             connectivity: StableDiGraph::default(),
@@ -72,6 +83,51 @@ impl<R: RulesTrait> Layout<R> {
             .insert_segbend(from, around, dot_weight, seg_weight, bend_weight, cw)
     }
 
+    pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, Infringement> {
+        self.drawing.add_fixed_dot(weight)
+    }
+
+    pub fn add_zone_fixed_dot(
+        &mut self,
+        weight: FixedDotWeight,
+        zone: ZoneIndex,
+    ) -> Result<FixedDotIndex, Infringement> {
+        let maybe_dot = self.drawing.add_fixed_dot(weight);
+
+        if let Ok(dot) = maybe_dot {
+            self.drawing
+                .assign_to_grouping(dot, GenericIndex::new(zone.node_index()));
+        }
+
+        maybe_dot
+    }
+
+    pub fn add_fixed_seg(
+        &mut self,
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+        weight: FixedSegWeight,
+    ) -> Result<FixedSegIndex, Infringement> {
+        self.drawing.add_fixed_seg(from, to, weight)
+    }
+
+    pub fn add_zone_fixed_seg(
+        &mut self,
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+        weight: FixedSegWeight,
+        zone: ZoneIndex,
+    ) -> Result<FixedSegIndex, Infringement> {
+        let maybe_seg = self.add_fixed_seg(from, to, weight);
+
+        if let Ok(seg) = maybe_seg {
+            self.drawing
+                .assign_to_grouping(seg, GenericIndex::new(zone.node_index()));
+        }
+
+        maybe_seg
+    }
+
     pub fn add_lone_loose_seg(
         &mut self,
         from: FixedDotIndex,
@@ -107,12 +163,74 @@ impl<R: RulesTrait> Layout<R> {
         0.0
     }
 
-    pub fn drawing(&self) -> &Drawing<R> {
-        &self.drawing
-    }
-
     pub fn continent(&self, dot: FixedDotIndex) -> ContinentIndex {
         // TODO.
         ContinentIndex::new(0.into())
+    }
+
+    pub fn zones(&self) -> impl Iterator<Item = ZoneIndex> + '_ {
+        self.drawing.rtree().iter().filter_map(|wrapper| {
+            if let Node::Grouping(zone) = wrapper.data {
+                Some(match self.drawing.geometry().grouping_weight(zone) {
+                    ZoneWeight::Solid(..) => {
+                        ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
+                    }
+                    ZoneWeight::Pour(..) => ZoneIndex::Pour(PourZoneIndex::new(zone.node_index())),
+                })
+            } else {
+                None
+            }
+        })
+    }
+
+    pub fn layer_zones(&self, layer: u64) -> impl Iterator<Item = ZoneIndex> + '_ {
+        self.drawing
+            .rtree()
+            .locate_in_envelope_intersecting(&AABB::from_corners(
+                [-f64::INFINITY, -f64::INFINITY, layer as f64],
+                [f64::INFINITY, f64::INFINITY, layer as f64],
+            ))
+            .filter_map(|wrapper| {
+                if let Node::Grouping(zone) = wrapper.data {
+                    Some(match self.drawing.geometry().grouping_weight(zone) {
+                        ZoneWeight::Solid(..) => {
+                            ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
+                        }
+                        ZoneWeight::Pour(..) => {
+                            ZoneIndex::Pour(PourZoneIndex::new(zone.node_index()))
+                        }
+                    })
+                } else {
+                    None
+                }
+            })
+    }
+
+    pub fn zone_members(&self, zone: ZoneIndex) -> impl Iterator<Item = PrimitiveIndex> + '_ {
+        self.drawing
+            .geometry()
+            .grouping_members(GenericIndex::new(zone.node_index()))
+    }
+
+    pub fn drawing(&self) -> &Drawing<impl Copy, R> {
+        &self.drawing
+    }
+}
+
+impl<R: RulesTrait> GroupingManagerTrait<ZoneWeight, GenericIndex<ZoneWeight>> for Layout<R> {
+    fn add_grouping(&mut self, weight: ZoneWeight) -> GenericIndex<ZoneWeight> {
+        self.drawing.add_grouping(weight)
+    }
+
+    fn remove_grouping(&mut self, grouping: GenericIndex<ZoneWeight>) {
+        self.drawing.remove_grouping(grouping);
+    }
+
+    fn assign_to_grouping<W>(
+        &mut self,
+        primitive: GenericIndex<W>,
+        grouping: GenericIndex<ZoneWeight>,
+    ) {
+        self.drawing.assign_to_grouping(primitive, grouping);
     }
 }

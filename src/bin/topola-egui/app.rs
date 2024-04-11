@@ -5,9 +5,10 @@ use std::{
 };
 
 use topola::{
-    drawing::{graph::MakePrimitive, primitive::MakeShape, zone::MakePolygon, Drawing},
+    drawing::{graph::MakePrimitive, primitive::MakeShape, Drawing},
     dsn::{design::DsnDesign, rules::DsnRules},
     geometry::primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
+    layout::{zone::MakePolygon, Layout},
     math::Circle,
 };
 
@@ -24,7 +25,7 @@ pub struct App {
     text_channel: (Sender<String>, Receiver<String>),
 
     #[serde(skip)]
-    drawing: Option<Drawing<DsnRules>>,
+    layout: Option<Layout<DsnRules>>,
 
     #[serde(skip)]
     from_rect: egui::emath::Rect,
@@ -36,7 +37,7 @@ impl Default for App {
             // Example stuff:
             label: "Hello World!".to_owned(),
             text_channel: channel(),
-            drawing: None,
+            layout: None,
             from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
         }
     }
@@ -65,12 +66,12 @@ impl eframe::App for App {
         if cfg!(target_arch = "wasm32") {
             if let Ok(file_contents) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_string(file_contents).unwrap();
-                self.drawing = Some(design.make_drawing());
+                self.layout = Some(design.make_layout());
             }
         } else {
             if let Ok(path) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_file(&path).unwrap();
-                self.drawing = Some(design.make_drawing());
+                self.layout = Some(design.make_layout());
             }
         }
 
@@ -138,27 +139,27 @@ impl eframe::App for App {
                 let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
                 let mut painter = Painter::new(ui, transform);
 
-                if let Some(drawing) = &self.drawing {
-                    for node in drawing.layer_primitive_nodes(1) {
-                        let shape = node.primitive(drawing).shape();
+                if let Some(layout) = &self.layout {
+                    for node in layout.drawing().layer_primitive_nodes(1) {
+                        let shape = node.primitive(layout.drawing()).shape();
                         painter.paint_shape(&shape, egui::Color32::from_rgb(52, 52, 200));
                     }
 
-                    for zone in drawing.layer_zones(1) {
+                    for zone in layout.layer_zones(1) {
                         painter.paint_polygon(
-                            &zone.polygon(&drawing),
+                            &zone.polygon(&layout.drawing()),
                             egui::Color32::from_rgb(52, 52, 200),
                         )
                     }
 
-                    for node in drawing.layer_primitive_nodes(0) {
-                        let shape = node.primitive(drawing).shape();
+                    for node in layout.drawing().layer_primitive_nodes(0) {
+                        let shape = node.primitive(layout.drawing()).shape();
                         painter.paint_shape(&shape, egui::Color32::from_rgb(200, 52, 52));
                     }
 
-                    for zone in drawing.layer_zones(0) {
+                    for zone in layout.layer_zones(0) {
                         painter.paint_polygon(
-                            &zone.polygon(&drawing),
+                            &zone.polygon(&layout.drawing()),
                             egui::Color32::from_rgb(200, 52, 52),
                         )
                     }

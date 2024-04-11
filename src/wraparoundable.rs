@@ -45,15 +45,15 @@ impl From<BendIndex> for WraparoundableIndex {
     }
 }
 
-#[enum_dispatch(GetWraparound, GetLayout, GetNodeIndex)]
-pub enum Wraparoundable<'a, R: RulesTrait> {
-    FixedDot(FixedDot<'a, R>),
-    FixedBend(FixedBend<'a, R>),
-    LooseBend(LooseBend<'a, R>),
+#[enum_dispatch(GetWraparound, GetDrawing, GetNodeIndex)]
+pub enum Wraparoundable<'a, GW: Copy, R: RulesTrait> {
+    FixedDot(FixedDot<'a, GW, R>),
+    FixedBend(FixedBend<'a, GW, R>),
+    LooseBend(LooseBend<'a, GW, R>),
 }
 
-impl<'a, R: RulesTrait> Wraparoundable<'a, R> {
-    pub fn new(index: WraparoundableIndex, drawing: &'a Drawing<R>) -> Self {
+impl<'a, GW: Copy, R: RulesTrait> Wraparoundable<'a, GW, R> {
+    pub fn new(index: WraparoundableIndex, drawing: &'a Drawing<GW, R>) -> Self {
         match index {
             WraparoundableIndex::FixedDot(dot) => drawing.primitive(dot).into(),
             WraparoundableIndex::FixedBend(bend) => drawing.primitive(bend).into(),
@@ -62,19 +62,19 @@ impl<'a, R: RulesTrait> Wraparoundable<'a, R> {
     }
 }
 
-impl<'a, R: RulesTrait> GetWraparound for FixedDot<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetWraparound for FixedDot<'a, GW, R> {
     fn wraparound(&self) -> Option<LooseBendIndex> {
         self.first_rail()
     }
 }
 
-impl<'a, R: RulesTrait> GetWraparound for LooseBend<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetWraparound for LooseBend<'a, GW, R> {
     fn wraparound(&self) -> Option<LooseBendIndex> {
         self.outer()
     }
 }
 
-impl<'a, R: RulesTrait> GetWraparound for FixedBend<'a, R> {
+impl<'a, GW: Copy, R: RulesTrait> GetWraparound for FixedBend<'a, GW, R> {
     fn wraparound(&self) -> Option<LooseBendIndex> {
         self.first_rail()
     }
