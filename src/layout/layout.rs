@@ -233,4 +233,11 @@ impl<R: RulesTrait> GroupingManagerTrait<ZoneWeight, GenericIndex<ZoneWeight>> f
     ) {
         self.drawing.assign_to_grouping(primitive, grouping);
     }
+
+    fn groupings<W>(
+        &self,
+        node: GenericIndex<W>,
+    ) -> impl Iterator<Item = GenericIndex<ZoneWeight>> {
+        self.drawing.groupings(node)
+    }
 }

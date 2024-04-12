@@ -500,4 +500,18 @@ impl<
             GeometryLabel::Grouping,
         );
     }
+
+    fn groupings<W>(&self, node: GenericIndex<W>) -> impl Iterator<Item = GenericIndex<GW>> {
+        self.graph
+            .neighbors(node.node_index())
+            .filter(move |ni| {
+                matches!(
+                    self.graph
+                        .edge_weight(self.graph.find_edge(node.node_index(), *ni).unwrap())
+                        .unwrap(),
+                    GeometryLabel::Grouping
+                )
+            })
+            .map(|ni| GenericIndex::new(ni))
+    }
 }

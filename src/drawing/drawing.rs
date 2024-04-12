@@ -887,4 +887,8 @@ impl<GW: Copy, R: RulesTrait> GroupingManagerTrait<GW, GenericIndex<GW>> for Dra
         self.geometry_with_rtree
             .assign_to_grouping(primitive, grouping);
     }
+
+    fn groupings<W>(&self, node: GenericIndex<W>) -> impl Iterator<Item = GenericIndex<GW>> {
+        self.geometry_with_rtree.groupings(node)
+    }
 }

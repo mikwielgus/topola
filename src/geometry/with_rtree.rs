@@ -410,4 +410,8 @@ impl<
     fn assign_to_grouping<W>(&mut self, primitive: GenericIndex<W>, grouping: GenericIndex<GW>) {
         self.geometry.assign_to_grouping(primitive, grouping);
     }
+
+    fn groupings<W>(&self, node: GenericIndex<W>) -> impl Iterator<Item = GenericIndex<GW>> {
+        self.geometry.groupings(node)
+    }
 }
