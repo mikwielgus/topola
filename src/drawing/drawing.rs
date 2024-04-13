@@ -26,9 +26,9 @@ use crate::drawing::{
         SeqLooseSegIndex, SeqLooseSegWeight,
     },
 };
-use crate::geometry::grouping::GroupingManagerTrait;
+use crate::geometry::compound::CompoundManagerTrait;
 use crate::geometry::with_rtree::BboxedIndex;
-use crate::geometry::Node;
+use crate::geometry::NodeWeight;
 use crate::geometry::{
     primitive::{PrimitiveShape, PrimitiveShapeTrait},
     with_rtree::GeometryWithRtree,
@@ -70,13 +70,13 @@ pub struct Collision(pub PrimitiveShape, pub PrimitiveIndex);
 pub struct AlreadyConnected(pub usize, pub PrimitiveIndex);
 
 #[derive(Debug)]
-pub struct Drawing<GW: Copy, R: RulesTrait> {
+pub struct Drawing<CW: Copy, R: RulesTrait> {
     geometry_with_rtree: GeometryWithRtree<
         PrimitiveWeight,
         DotWeight,
         SegWeight,
         BendWeight,
-        GW,
+        CW,
         PrimitiveIndex,
         DotIndex,
         SegIndex,
@@ -85,7 +85,7 @@ pub struct Drawing<GW: Copy, R: RulesTrait> {
     rules: R,
 }
 
-impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
+impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     pub fn new(rules: R) -> Self {
         Self {
             geometry_with_rtree: GeometryWithRtree::new(2),
@@ -639,7 +639,7 @@ impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
             .rtree()
             .iter()
             .filter_map(|wrapper| {
-                if let Node::Primitive(primitive_node) = wrapper.data {
+                if let NodeWeight::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
                     None
@@ -655,7 +655,7 @@ impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
                 [f64::INFINITY, f64::INFINITY, layer as f64],
             ))
             .filter_map(|wrapper| {
-                if let Node::Primitive(primitive_node) = wrapper.data {
+                if let NodeWeight::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
                     None
@@ -668,7 +668,7 @@ impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
     }
 }
 
-impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
+impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), Infringement> {
@@ -750,7 +750,7 @@ impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
             .rtree()
             .locate_in_envelope_intersecting(&limiting_shape.full_height_envelope_3d(0.0, 2))
             .filter_map(|wrapper| {
-                if let Node::Primitive(primitive_node) = wrapper.data {
+                if let NodeWeight::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
                     None
@@ -785,7 +785,7 @@ impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
             .rtree()
             .locate_in_envelope_intersecting(&shape.full_height_envelope_3d(0.0, 2))
             .filter_map(|wrapper| {
-                if let Node::Primitive(primitive_node) = wrapper.data {
+                if let NodeWeight::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
                     None
@@ -812,7 +812,7 @@ impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
     }
 }
 
-impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
+impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn geometry(
@@ -822,7 +822,7 @@ impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
         DotWeight,
         SegWeight,
         BendWeight,
-        GW,
+        CW,
         PrimitiveIndex,
         DotIndex,
         SegIndex,
@@ -833,7 +833,7 @@ impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn rtree(&self) -> &RTree<BboxedIndex<Node<PrimitiveIndex, GenericIndex<GW>>>> {
+    pub fn rtree(&self) -> &RTree<BboxedIndex<NodeWeight<PrimitiveIndex, GenericIndex<CW>>>> {
         self.geometry_with_rtree.rtree()
     }
 
@@ -845,50 +845,50 @@ impl<GW: Copy, R: RulesTrait> Drawing<GW, R> {
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn guide(&self) -> Guide<GW, R> {
+    pub fn guide(&self) -> Guide<CW, R> {
         Guide::new(self)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn collect(&self) -> Collect<GW, R> {
+    pub fn collect(&self) -> Collect<CW, R> {
         Collect::new(self)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W, GW, R> {
+    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W, CW, R> {
         GenericPrimitive::new(index, self)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn wraparoundable(&self, index: WraparoundableIndex) -> Wraparoundable<GW, R> {
+    pub fn wraparoundable(&self, index: WraparoundableIndex) -> Wraparoundable<CW, R> {
         Wraparoundable::new(index, self)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn loose(&self, index: LooseIndex) -> Loose<GW, R> {
+    pub fn loose(&self, index: LooseIndex) -> Loose<CW, R> {
         Loose::new(index, self)
     }
 }
 
-impl<GW: Copy, R: RulesTrait> GroupingManagerTrait<GW, GenericIndex<GW>> for Drawing<GW, R> {
-    fn add_grouping(&mut self, weight: GW) -> GenericIndex<GW> {
-        self.geometry_with_rtree.add_grouping(weight)
+impl<CW: Copy, R: RulesTrait> CompoundManagerTrait<CW, GenericIndex<CW>> for Drawing<CW, R> {
+    fn add_compound(&mut self, weight: CW) -> GenericIndex<CW> {
+        self.geometry_with_rtree.add_compound(weight)
     }
 
-    fn remove_grouping(&mut self, grouping: GenericIndex<GW>) {
-        self.geometry_with_rtree.remove_grouping(grouping);
+    fn remove_compound(&mut self, compound: GenericIndex<CW>) {
+        self.geometry_with_rtree.remove_compound(compound);
     }
 
-    fn assign_to_grouping<W>(&mut self, primitive: GenericIndex<W>, grouping: GenericIndex<GW>) {
+    fn add_to_compound<W>(&mut self, primitive: GenericIndex<W>, compound: GenericIndex<CW>) {
         self.geometry_with_rtree
-            .assign_to_grouping(primitive, grouping);
+            .add_to_compound(primitive, compound);
     }
 
-    fn groupings<W>(&self, node: GenericIndex<W>) -> impl Iterator<Item = GenericIndex<GW>> {
-        self.geometry_with_rtree.groupings(node)
+    fn compounds<W>(&self, node: GenericIndex<W>) -> impl Iterator<Item = GenericIndex<CW>> {
+        self.geometry_with_rtree.compounds(node)
     }
 }

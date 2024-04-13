@@ -60,7 +60,7 @@ impl MakePolygon for SolidZoneIndex {
             LineString::from(
                 drawing
                     .geometry()
-                    .grouping_members(GenericIndex::new(self.node_index()))
+                    .compound_members(GenericIndex::new(self.node_index()))
                     .filter_map(|primitive_node| {
                         if let Ok(dot) = DotIndex::try_from(primitive_node) {
                             Some(drawing.geometry().dot_weight(dot).pos())
@@ -101,7 +101,7 @@ impl MakePolygon for PourZoneIndex {
             LineString::from(
                 drawing
                     .geometry()
-                    .grouping_members(GenericIndex::new(self.node_index()))
+                    .compound_members(GenericIndex::new(self.node_index()))
                     .filter_map(|primitive_node| {
                         if let Ok(dot) = DotIndex::try_from(primitive_node) {
                             Some(drawing.geometry().dot_weight(dot).pos())

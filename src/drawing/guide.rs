@@ -56,12 +56,12 @@ impl HeadTrait for SegbendHead {
     }
 }
 
-pub struct Guide<'a, GW: Copy, R: RulesTrait> {
-    drawing: &'a Drawing<GW, R>,
+pub struct Guide<'a, CW: Copy, R: RulesTrait> {
+    drawing: &'a Drawing<CW, R>,
 }
 
-impl<'a, GW: Copy, R: RulesTrait> Guide<'a, GW, R> {
-    pub fn new(drawing: &'a Drawing<GW, R>) -> Self {
+impl<'a, CW: Copy, R: RulesTrait> Guide<'a, CW, R> {
+    pub fn new(drawing: &'a Drawing<CW, R>) -> Self {
         Self { drawing }
     }
 

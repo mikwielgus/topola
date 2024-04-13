@@ -16,8 +16,8 @@ use crate::{
         Drawing, Infringement, LayoutException,
     },
     geometry::{
-        grouping::GroupingManagerTrait, BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel,
-        GetWidth, Node, SegWeightTrait,
+        compound::CompoundManagerTrait, BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel,
+        GetWidth, NodeWeight, SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
     layout::{
@@ -96,7 +96,7 @@ impl<R: RulesTrait> Layout<R> {
 
         if let Ok(dot) = maybe_dot {
             self.drawing
-                .assign_to_grouping(dot, GenericIndex::new(zone.node_index()));
+                .add_to_compound(dot, GenericIndex::new(zone.node_index()));
         }
 
         maybe_dot
@@ -122,7 +122,7 @@ impl<R: RulesTrait> Layout<R> {
 
         if let Ok(seg) = maybe_seg {
             self.drawing
-                .assign_to_grouping(seg, GenericIndex::new(zone.node_index()));
+                .add_to_compound(seg, GenericIndex::new(zone.node_index()));
         }
 
         maybe_seg
@@ -170,8 +170,8 @@ impl<R: RulesTrait> Layout<R> {
 
     pub fn zones(&self) -> impl Iterator<Item = ZoneIndex> + '_ {
         self.drawing.rtree().iter().filter_map(|wrapper| {
-            if let Node::Grouping(zone) = wrapper.data {
-                Some(match self.drawing.geometry().grouping_weight(zone) {
+            if let NodeWeight::Compound(zone) = wrapper.data {
+                Some(match self.drawing.geometry().compound_weight(zone) {
                     ZoneWeight::Solid(..) => {
                         ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
                     }
@@ -191,8 +191,8 @@ impl<R: RulesTrait> Layout<R> {
                 [f64::INFINITY, f64::INFINITY, layer as f64],
             ))
             .filter_map(|wrapper| {
-                if let Node::Grouping(zone) = wrapper.data {
-                    Some(match self.drawing.geometry().grouping_weight(zone) {
+                if let NodeWeight::Compound(zone) = wrapper.data {
+                    Some(match self.drawing.geometry().compound_weight(zone) {
                         ZoneWeight::Solid(..) => {
                             ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
                         }
@@ -209,7 +209,7 @@ impl<R: RulesTrait> Layout<R> {
     pub fn zone_members(&self, zone: ZoneIndex) -> impl Iterator<Item = PrimitiveIndex> + '_ {
         self.drawing
             .geometry()
-            .grouping_members(GenericIndex::new(zone.node_index()))
+            .compound_members(GenericIndex::new(zone.node_index()))
     }
 
     pub fn drawing(&self) -> &Drawing<impl Copy, R> {
@@ -217,27 +217,27 @@ impl<R: RulesTrait> Layout<R> {
     }
 }
 
-impl<R: RulesTrait> GroupingManagerTrait<ZoneWeight, GenericIndex<ZoneWeight>> for Layout<R> {
-    fn add_grouping(&mut self, weight: ZoneWeight) -> GenericIndex<ZoneWeight> {
-        self.drawing.add_grouping(weight)
+impl<R: RulesTrait> CompoundManagerTrait<ZoneWeight, GenericIndex<ZoneWeight>> for Layout<R> {
+    fn add_compound(&mut self, weight: ZoneWeight) -> GenericIndex<ZoneWeight> {
+        self.drawing.add_compound(weight)
     }
 
-    fn remove_grouping(&mut self, grouping: GenericIndex<ZoneWeight>) {
-        self.drawing.remove_grouping(grouping);
+    fn remove_compound(&mut self, compound: GenericIndex<ZoneWeight>) {
+        self.drawing.remove_compound(compound);
     }
 
-    fn assign_to_grouping<W>(
+    fn add_to_compound<W>(
         &mut self,
         primitive: GenericIndex<W>,
-        grouping: GenericIndex<ZoneWeight>,
+        compound: GenericIndex<ZoneWeight>,
     ) {
-        self.drawing.assign_to_grouping(primitive, grouping);
+        self.drawing.add_to_compound(primitive, compound);
     }
 
-    fn groupings<W>(
+    fn compounds<W>(
         &self,
         node: GenericIndex<W>,
     ) -> impl Iterator<Item = GenericIndex<ZoneWeight>> {
-        self.drawing.groupings(node)
+        self.drawing.compounds(node)
     }
 }

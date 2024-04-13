@@ -32,10 +32,10 @@ pub trait GetMaybeNet {
 
 #[enum_dispatch]
 pub trait MakePrimitive {
-    fn primitive<'a, GW: Copy, R: RulesTrait>(
+    fn primitive<'a, CW: Copy, R: RulesTrait>(
         &self,
-        drawing: &'a Drawing<GW, R>,
-    ) -> Primitive<'a, GW, R>;
+        drawing: &'a Drawing<CW, R>,
+    ) -> Primitive<'a, CW, R>;
 }
 
 macro_rules! impl_weight {
@@ -61,10 +61,10 @@ macro_rules! impl_weight {
         pub type $index_struct = GenericIndex<$weight_struct>;
 
         impl MakePrimitive for $index_struct {
-            fn primitive<'a, GW: Copy, R: RulesTrait>(
+            fn primitive<'a, CW: Copy, R: RulesTrait>(
                 &self,
-                drawing: &'a Drawing<GW, R>,
-            ) -> Primitive<'a, GW, R> {
+                drawing: &'a Drawing<CW, R>,
+            ) -> Primitive<'a, CW, R> {
                 Primitive::$weight_variant(GenericPrimitive::new(*self, drawing))
             }
         }

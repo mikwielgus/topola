@@ -9,12 +9,12 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct Collect<'a, GW: Copy, R: RulesTrait> {
-    drawing: &'a Drawing<GW, R>,
+pub struct Collect<'a, CW: Copy, R: RulesTrait> {
+    drawing: &'a Drawing<CW, R>,
 }
 
-impl<'a, GW: Copy, R: RulesTrait> Collect<'a, GW, R> {
-    pub fn new(drawing: &'a Drawing<GW, R>) -> Self {
+impl<'a, CW: Copy, R: RulesTrait> Collect<'a, CW, R> {
+    pub fn new(drawing: &'a Drawing<CW, R>) -> Self {
         Self { drawing }
     }
 

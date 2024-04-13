@@ -10,7 +10,7 @@ use crate::{
         rules::DsnRules,
         structure::{self, DsnFile, Layer, Pcb, Shape},
     },
-    geometry::grouping::GroupingManagerTrait,
+    geometry::compound::CompoundManagerTrait,
     graph::{GenericIndex, GetNodeIndex},
     layout::{
         zone::{SolidZoneWeight, ZoneIndex},
@@ -348,7 +348,7 @@ impl DsnDesign {
         layer: u64,
         net: usize,
     ) {
-        let zone = layout.add_grouping(
+        let zone = layout.add_compound(
             SolidZoneWeight {
                 layer,
                 maybe_net: Some(net),
@@ -539,7 +539,7 @@ impl DsnDesign {
         layer: u64,
         net: usize,
     ) {
-        let zone = layout.add_grouping(
+        let zone = layout.add_compound(
             SolidZoneWeight {
                 layer,
                 maybe_net: Some(net),

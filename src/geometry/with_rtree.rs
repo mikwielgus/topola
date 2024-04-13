@@ -8,9 +8,10 @@ use rstar::{primitives::GeomWithData, Envelope, RTree, RTreeObject, AABB};
 use crate::{
     drawing::graph::{GetLayer, Retag},
     geometry::{
-        grouping::GroupingManagerTrait,
+        compound::CompoundManagerTrait,
         primitive::{PrimitiveShape, PrimitiveShapeTrait},
-        BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetWidth, Node, SegWeightTrait,
+        BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetWidth, NodeWeight,
+        SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
 };
@@ -41,14 +42,14 @@ pub struct GeometryWithRtree<
     DW: DotWeightTrait<PW> + GetLayer,
     SW: SegWeightTrait<PW> + GetLayer,
     BW: BendWeightTrait<PW> + GetLayer,
-    GW: Copy,
+    CW: Copy,
     PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
     DI: GetNodeIndex + Into<PI> + Copy,
     SI: GetNodeIndex + Into<PI> + Copy,
     BI: GetNodeIndex + Into<PI> + Copy,
 > {
-    geometry: Geometry<PW, DW, SW, BW, GW, PI, DI, SI, BI>,
-    rtree: RTree<BboxedIndex<Node<PI, GenericIndex<GW>>>>,
+    geometry: Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+    rtree: RTree<BboxedIndex<NodeWeight<PI, GenericIndex<CW>>>>,
     layer_count: u64,
     weight_marker: PhantomData<PW>,
     dot_weight_marker: PhantomData<DW>,
@@ -67,16 +68,16 @@ impl<
         DW: DotWeightTrait<PW> + GetLayer,
         SW: SegWeightTrait<PW> + GetLayer,
         BW: BendWeightTrait<PW> + GetLayer,
-        GW: Copy,
+        CW: Copy,
         PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetNodeIndex + Into<PI> + Copy,
         SI: GetNodeIndex + Into<PI> + Copy,
         BI: GetNodeIndex + Into<PI> + Copy,
-    > GeometryWithRtree<PW, DW, SW, BW, GW, PI, DI, SI, BI>
+    > GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
     pub fn new(layer_count: u64) -> Self {
         Self {
-            geometry: Geometry::<PW, DW, SW, BW, GW, PI, DI, SI, BI>::new(),
+            geometry: Geometry::<PW, DW, SW, BW, CW, PI, DI, SI, BI>::new(),
             rtree: RTree::new(),
             layer_count,
             weight_marker: PhantomData,
@@ -101,7 +102,7 @@ impl<
                     .dot_shape(dot.into().try_into().unwrap_or_else(|_| unreachable!()))
                     .envelope_3d(0.0, weight.layer()),
             ),
-            Node::Primitive(dot.into()),
+            NodeWeight::Primitive(dot.into()),
         ));
         dot
     }
@@ -122,7 +123,7 @@ impl<
                     .seg_shape(seg.into().try_into().unwrap_or_else(|_| unreachable!()))
                     .envelope_3d(0.0, weight.layer()),
             ),
-            Node::Primitive(seg.into()),
+            NodeWeight::Primitive(seg.into()),
         ));
         seg
     }
@@ -144,19 +145,15 @@ impl<
                     .bend_shape(bend.into().try_into().unwrap_or_else(|_| unreachable!()))
                     .envelope_3d(0.0, weight.layer()),
             ),
-            Node::Primitive(bend.into()),
+            NodeWeight::Primitive(bend.into()),
         ));
         bend
     }
 
-    pub fn assign_to_grouping<W>(
-        &mut self,
-        primitive: GenericIndex<W>,
-        grouping: GenericIndex<GW>,
-    ) {
-        self.rtree.remove(&self.make_grouping_bbox(grouping));
-        self.geometry.assign_to_grouping(primitive, grouping);
-        self.rtree.insert(self.make_grouping_bbox(grouping));
+    pub fn add_to_compound<W>(&mut self, primitive: GenericIndex<W>, compound: GenericIndex<CW>) {
+        self.rtree.remove(&self.make_compound_bbox(compound));
+        self.geometry.add_to_compound(primitive, compound);
+        self.rtree.insert(self.make_compound_bbox(compound));
     }
 
     pub fn remove_dot(&mut self, dot: DI) -> Result<(), ()> {
@@ -183,9 +180,9 @@ impl<
         self.geometry.remove_primitive(bend.into());
     }
 
-    pub fn remove_grouping(&mut self, grouping: GenericIndex<GW>) {
-        self.rtree.remove(&self.make_grouping_bbox(grouping));
-        self.geometry.remove_grouping(grouping);
+    pub fn remove_compound(&mut self, compound: GenericIndex<CW>) {
+        self.rtree.remove(&self.make_compound_bbox(compound));
+        self.geometry.remove_compound(compound);
     }
 
     pub fn move_dot(&mut self, dot: DI, to: Point) {
@@ -261,14 +258,14 @@ impl<
         DW: DotWeightTrait<PW> + GetLayer,
         SW: SegWeightTrait<PW> + GetLayer,
         BW: BendWeightTrait<PW> + GetLayer,
-        GW: Copy,
+        CW: Copy,
         PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetNodeIndex + Into<PI> + Copy,
         SI: GetNodeIndex + Into<PI> + Copy,
         BI: GetNodeIndex + Into<PI> + Copy,
-    > GeometryWithRtree<PW, DW, SW, BW, GW, PI, DI, SI, BI>
+    > GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
-    fn make_bbox(&self, primitive: PI) -> BboxedIndex<Node<PI, GenericIndex<GW>>> {
+    fn make_bbox(&self, primitive: PI) -> BboxedIndex<NodeWeight<PI, GenericIndex<CW>>> {
         if let Ok(dot) = <PI as TryInto<DI>>::try_into(primitive) {
             self.make_dot_bbox(dot)
         } else if let Ok(seg) = <PI as TryInto<SI>>::try_into(primitive) {
@@ -280,50 +277,50 @@ impl<
         }
     }
 
-    fn make_dot_bbox(&self, dot: DI) -> BboxedIndex<Node<PI, GenericIndex<GW>>> {
+    fn make_dot_bbox(&self, dot: DI) -> BboxedIndex<NodeWeight<PI, GenericIndex<CW>>> {
         BboxedIndex::new(
             Bbox::new(
                 self.geometry
                     .dot_shape(dot)
                     .envelope_3d(0.0, self.layer(dot.into())),
             ),
-            Node::Primitive(dot.into()),
+            NodeWeight::Primitive(dot.into()),
         )
     }
 
-    fn make_seg_bbox(&self, seg: SI) -> BboxedIndex<Node<PI, GenericIndex<GW>>> {
+    fn make_seg_bbox(&self, seg: SI) -> BboxedIndex<NodeWeight<PI, GenericIndex<CW>>> {
         BboxedIndex::new(
             Bbox::new(
                 self.geometry
                     .seg_shape(seg)
                     .envelope_3d(0.0, self.layer(seg.into())),
             ),
-            Node::Primitive(seg.into()),
+            NodeWeight::Primitive(seg.into()),
         )
     }
 
-    fn make_bend_bbox(&self, bend: BI) -> BboxedIndex<Node<PI, GenericIndex<GW>>> {
+    fn make_bend_bbox(&self, bend: BI) -> BboxedIndex<NodeWeight<PI, GenericIndex<CW>>> {
         BboxedIndex::new(
             Bbox::new(
                 self.geometry
                     .bend_shape(bend)
                     .envelope_3d(0.0, self.layer(bend.into())),
             ),
-            Node::Primitive(bend.into()),
+            NodeWeight::Primitive(bend.into()),
         )
     }
 
-    fn make_grouping_bbox(
+    fn make_compound_bbox(
         &self,
-        grouping: GenericIndex<GW>,
-    ) -> BboxedIndex<Node<PI, GenericIndex<GW>>> {
+        compound: GenericIndex<CW>,
+    ) -> BboxedIndex<NodeWeight<PI, GenericIndex<CW>>> {
         let mut aabb = AABB::<[f64; 3]>::new_empty();
 
-        for member in self.geometry.grouping_members(grouping) {
+        for member in self.geometry.compound_members(compound) {
             aabb.merge(&self.make_bbox(member).geom().aabb);
         }
 
-        BboxedIndex::new(Bbox::new(aabb), Node::Grouping(grouping))
+        BboxedIndex::new(Bbox::new(aabb), NodeWeight::Compound(compound))
     }
 
     fn shape(&self, primitive: PI) -> PrimitiveShape {
@@ -350,30 +347,30 @@ impl<
         }
     }
 
-    pub fn geometry(&self) -> &Geometry<PW, DW, SW, BW, GW, PI, DI, SI, BI> {
+    pub fn geometry(&self) -> &Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
         &self.geometry
     }
 
-    // XXX: The type appears wrong? I don't think it should contain GW?
-    pub fn rtree(&self) -> &RTree<BboxedIndex<Node<PI, GenericIndex<GW>>>> {
+    // XXX: The type appears wrong? I don't think it should contain CW?
+    pub fn rtree(&self) -> &RTree<BboxedIndex<NodeWeight<PI, GenericIndex<CW>>>> {
         &self.rtree
     }
 
-    pub fn graph(&self) -> &StableDiGraph<Node<PW, GW>, GeometryLabel, usize> {
+    pub fn graph(&self) -> &StableDiGraph<NodeWeight<PW, CW>, GeometryLabel, usize> {
         self.geometry.graph()
     }
 
     fn test_envelopes(&self) -> bool {
         !self.rtree.iter().any(|wrapper| {
-            // TODO: Test envelopes of groupings too.
-            let Node::Primitive(primitive_node) = wrapper.data else {
+            // TODO: Test envelopes of compounds too.
+            let NodeWeight::Primitive(primitive_node) = wrapper.data else {
                 return false;
             };
             let shape = self.shape(primitive_node);
             let layer = self.layer(primitive_node);
             let wrapper = BboxedIndex::new(
                 Bbox::new(shape.envelope_3d(0.0, layer)),
-                Node::Primitive(primitive_node),
+                NodeWeight::Primitive(primitive_node),
             );
             !self
                 .rtree
@@ -388,30 +385,30 @@ impl<
         DW: DotWeightTrait<PW> + GetLayer,
         SW: SegWeightTrait<PW> + GetLayer,
         BW: BendWeightTrait<PW> + GetLayer,
-        GW: Copy,
+        CW: Copy,
         PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetNodeIndex + Into<PI> + Copy,
         SI: GetNodeIndex + Into<PI> + Copy,
         BI: GetNodeIndex + Into<PI> + Copy,
-    > GroupingManagerTrait<GW, GenericIndex<GW>>
-    for GeometryWithRtree<PW, DW, SW, BW, GW, PI, DI, SI, BI>
+    > CompoundManagerTrait<CW, GenericIndex<CW>>
+    for GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
-    fn add_grouping(&mut self, weight: GW) -> GenericIndex<GW> {
-        let grouping = self.geometry.add_grouping(weight);
-        self.rtree.insert(self.make_grouping_bbox(grouping));
-        grouping
+    fn add_compound(&mut self, weight: CW) -> GenericIndex<CW> {
+        let compound = self.geometry.add_compound(weight);
+        self.rtree.insert(self.make_compound_bbox(compound));
+        compound
     }
 
-    fn remove_grouping(&mut self, grouping: GenericIndex<GW>) {
-        self.rtree.remove(&self.make_grouping_bbox(grouping));
-        self.geometry.remove_grouping(grouping);
+    fn remove_compound(&mut self, compound: GenericIndex<CW>) {
+        self.rtree.remove(&self.make_compound_bbox(compound));
+        self.geometry.remove_compound(compound);
     }
 
-    fn assign_to_grouping<W>(&mut self, primitive: GenericIndex<W>, grouping: GenericIndex<GW>) {
-        self.geometry.assign_to_grouping(primitive, grouping);
+    fn add_to_compound<W>(&mut self, primitive: GenericIndex<W>, compound: GenericIndex<CW>) {
+        self.geometry.add_to_compound(primitive, compound);
     }
 
-    fn groupings<W>(&self, node: GenericIndex<W>) -> impl Iterator<Item = GenericIndex<GW>> {
-        self.geometry.groupings(node)
+    fn compounds<W>(&self, node: GenericIndex<W>) -> impl Iterator<Item = GenericIndex<CW>> {
+        self.geometry.compounds(node)
     }
 }
