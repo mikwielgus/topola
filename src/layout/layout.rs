@@ -13,6 +13,7 @@ use crate::{
             SeqLooseSegWeight,
         },
         segbend::Segbend,
+        wraparoundable::WraparoundableIndex,
         Drawing, Infringement, LayoutException,
     },
     geometry::{
@@ -26,7 +27,6 @@ use crate::{
         },
         zone::{PourZoneIndex, SolidZoneIndex, ZoneIndex, ZoneWeight},
     },
-    wraparoundable::WraparoundableIndex,
 };
 
 pub struct Layout<R: RulesTrait> {

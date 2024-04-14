@@ -1,16 +1,17 @@
 use contracts::debug_ensures;
 
 use crate::{
-    draw::{Draw, DrawException},
     drawing::{
         bend::LooseBendIndex,
         dot::FixedDotIndex,
-        graph::{GetMaybeNet, MakePrimitive},
-        guide::{BareHead, Head, HeadTrait, SegbendHead},
+        guide::{BareHead, Head, SegbendHead},
         rules::RulesTrait,
     },
     layout::{connectivity::BandIndex, Layout},
-    mesh::{Mesh, VertexIndex},
+    router::{
+        draw::{Draw, DrawException},
+        mesh::{Mesh, VertexIndex},
+    },
 };
 
 #[derive(Debug)]

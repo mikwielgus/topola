@@ -4,8 +4,6 @@ use petgraph::visit::EdgeRef;
 use spade::InsertionError;
 use thiserror::Error;
 
-use crate::astar::{astar, AstarStrategy, PathTracker};
-use crate::draw::DrawException;
 use crate::drawing::{
     dot::FixedDotIndex,
     graph::{MakePrimitive, PrimitiveIndex},
@@ -16,9 +14,12 @@ use crate::geometry::primitive::PrimitiveShapeTrait;
 use crate::layout::connectivity::BandIndex;
 use crate::layout::Layout;
 
-use crate::mesh::{Mesh, MeshEdgeReference, VertexIndex};
-
-use crate::tracer::{Trace, Tracer};
+use crate::router::{
+    astar::{astar, AstarStrategy, PathTracker},
+    draw::DrawException,
+    mesh::{Mesh, MeshEdgeReference, VertexIndex},
+    tracer::{Trace, Tracer},
+};
 
 #[derive(Error, Debug, Clone, Copy)]
 #[error("failed to route from {from:?} to {to:?}")] // this should eventually use Display

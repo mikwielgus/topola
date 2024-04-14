@@ -11,11 +11,11 @@ use crate::{
         primitive::GetOtherJoint,
         rules::RulesTrait,
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
+        wraparoundable::WraparoundableIndex,
         Infringement, LayoutException,
     },
     layout::Layout,
     math::{Circle, NoTangents},
-    wraparoundable::WraparoundableIndex,
 };
 
 #[derive(Error, Debug, Clone, Copy)]

@@ -16,6 +16,7 @@ use crate::drawing::graph::GetMaybeNet;
 use crate::drawing::guide::Guide;
 use crate::drawing::primitive::GetLimbs;
 use crate::drawing::rules::GetConditions;
+use crate::drawing::wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex};
 use crate::drawing::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
@@ -38,7 +39,6 @@ use crate::geometry::{
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::layout::zone::{ZoneIndex, ZoneWeight};
 use crate::math::NoTangents;
-use crate::wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex};
 
 use super::bend::BendWeight;
 use super::seg::SegWeight;

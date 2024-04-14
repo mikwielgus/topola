@@ -1,10 +1,9 @@
-use crate::wraparoundable::{GetWraparound, WraparoundableIndex};
-
-use super::{
+use crate::drawing::{
     bend::LooseBendIndex,
     graph::PrimitiveIndex,
     primitive::{GetInnerOuter, GetJoints},
     rules::RulesTrait,
+    wraparoundable::{GetWraparound, WraparoundableIndex},
     Drawing,
 };
 

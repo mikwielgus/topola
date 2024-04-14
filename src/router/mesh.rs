@@ -8,7 +8,6 @@ use petgraph::{stable_graph::NodeIndex, visit::EdgeRef};
 use spade::{HasPosition, InsertionError, Point2};
 
 use crate::drawing::rules::RulesTrait;
-use crate::triangulation::TriangulationEdgeReference;
 use crate::{
     drawing::{
         bend::{FixedBendIndex, LooseBendIndex},
@@ -19,7 +18,7 @@ use crate::{
     },
     geometry::primitive::PrimitiveShapeTrait,
     graph::GetNodeIndex,
-    triangulation::{GetVertexIndex, Triangulation},
+    router::triangulation::{GetVertexIndex, Triangulation, TriangulationEdgeReference},
 };
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]

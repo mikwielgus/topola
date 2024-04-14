@@ -10,5 +10,6 @@ pub mod primitive;
 pub mod rules;
 pub mod seg;
 pub mod segbend;
+pub mod wraparoundable;
 
 pub use drawing::*;
