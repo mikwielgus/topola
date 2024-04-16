@@ -29,7 +29,7 @@ use crate::drawing::{
 };
 use crate::geometry::compound::CompoundManagerTrait;
 use crate::geometry::with_rtree::BboxedIndex;
-use crate::geometry::NodeWeight;
+use crate::geometry::Node;
 use crate::geometry::{
     primitive::{PrimitiveShape, PrimitiveShapeTrait},
     with_rtree::GeometryWithRtree,
@@ -639,7 +639,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
             .rtree()
             .iter()
             .filter_map(|wrapper| {
-                if let NodeWeight::Primitive(primitive_node) = wrapper.data {
+                if let Node::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
                     None
@@ -655,7 +655,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
                 [f64::INFINITY, f64::INFINITY, layer as f64],
             ))
             .filter_map(|wrapper| {
-                if let NodeWeight::Primitive(primitive_node) = wrapper.data {
+                if let Node::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
                     None
@@ -750,7 +750,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
             .rtree()
             .locate_in_envelope_intersecting(&limiting_shape.full_height_envelope_3d(0.0, 2))
             .filter_map(|wrapper| {
-                if let NodeWeight::Primitive(primitive_node) = wrapper.data {
+                if let Node::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
                     None
@@ -785,7 +785,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
             .rtree()
             .locate_in_envelope_intersecting(&shape.full_height_envelope_3d(0.0, 2))
             .filter_map(|wrapper| {
-                if let NodeWeight::Primitive(primitive_node) = wrapper.data {
+                if let Node::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
                     None
@@ -833,7 +833,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn rtree(&self) -> &RTree<BboxedIndex<NodeWeight<PrimitiveIndex, GenericIndex<CW>>>> {
+    pub fn rtree(&self) -> &RTree<BboxedIndex<Node<PrimitiveIndex, GenericIndex<CW>>>> {
         self.geometry_with_rtree.rtree()
     }
 

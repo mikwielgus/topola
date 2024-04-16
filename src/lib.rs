@@ -7,4 +7,5 @@ pub mod dsn;
 pub mod geometry;
 pub mod layout;
 pub mod math;
+pub mod overlay;
 pub mod router;

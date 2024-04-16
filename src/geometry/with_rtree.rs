@@ -10,8 +10,7 @@ use crate::{
     geometry::{
         compound::CompoundManagerTrait,
         primitive::{PrimitiveShape, PrimitiveShapeTrait},
-        BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetWidth, NodeWeight,
-        SegWeightTrait,
+        BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetWidth, Node, SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
 };
@@ -49,7 +48,7 @@ pub struct GeometryWithRtree<
     BI: GetNodeIndex + Into<PI> + Copy,
 > {
     geometry: Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
-    rtree: RTree<BboxedIndex<NodeWeight<PI, GenericIndex<CW>>>>,
+    rtree: RTree<BboxedIndex<Node<PI, GenericIndex<CW>>>>,
     layer_count: u64,
     weight_marker: PhantomData<PW>,
     dot_weight_marker: PhantomData<DW>,
@@ -102,7 +101,7 @@ impl<
                     .dot_shape(dot.into().try_into().unwrap_or_else(|_| unreachable!()))
                     .envelope_3d(0.0, weight.layer()),
             ),
-            NodeWeight::Primitive(dot.into()),
+            Node::Primitive(dot.into()),
         ));
         dot
     }
@@ -123,7 +122,7 @@ impl<
                     .seg_shape(seg.into().try_into().unwrap_or_else(|_| unreachable!()))
                     .envelope_3d(0.0, weight.layer()),
             ),
-            NodeWeight::Primitive(seg.into()),
+            Node::Primitive(seg.into()),
         ));
         seg
     }
@@ -145,7 +144,7 @@ impl<
                     .bend_shape(bend.into().try_into().unwrap_or_else(|_| unreachable!()))
                     .envelope_3d(0.0, weight.layer()),
             ),
-            NodeWeight::Primitive(bend.into()),
+            Node::Primitive(bend.into()),
         ));
         bend
     }
@@ -265,7 +264,7 @@ impl<
         BI: GetNodeIndex + Into<PI> + Copy,
     > GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
-    fn make_bbox(&self, primitive: PI) -> BboxedIndex<NodeWeight<PI, GenericIndex<CW>>> {
+    fn make_bbox(&self, primitive: PI) -> BboxedIndex<Node<PI, GenericIndex<CW>>> {
         if let Ok(dot) = <PI as TryInto<DI>>::try_into(primitive) {
             self.make_dot_bbox(dot)
         } else if let Ok(seg) = <PI as TryInto<SI>>::try_into(primitive) {
@@ -277,50 +276,50 @@ impl<
         }
     }
 
-    fn make_dot_bbox(&self, dot: DI) -> BboxedIndex<NodeWeight<PI, GenericIndex<CW>>> {
+    fn make_dot_bbox(&self, dot: DI) -> BboxedIndex<Node<PI, GenericIndex<CW>>> {
         BboxedIndex::new(
             Bbox::new(
                 self.geometry
                     .dot_shape(dot)
                     .envelope_3d(0.0, self.layer(dot.into())),
             ),
-            NodeWeight::Primitive(dot.into()),
+            Node::Primitive(dot.into()),
         )
     }
 
-    fn make_seg_bbox(&self, seg: SI) -> BboxedIndex<NodeWeight<PI, GenericIndex<CW>>> {
+    fn make_seg_bbox(&self, seg: SI) -> BboxedIndex<Node<PI, GenericIndex<CW>>> {
         BboxedIndex::new(
             Bbox::new(
                 self.geometry
                     .seg_shape(seg)
                     .envelope_3d(0.0, self.layer(seg.into())),
             ),
-            NodeWeight::Primitive(seg.into()),
+            Node::Primitive(seg.into()),
         )
     }
 
-    fn make_bend_bbox(&self, bend: BI) -> BboxedIndex<NodeWeight<PI, GenericIndex<CW>>> {
+    fn make_bend_bbox(&self, bend: BI) -> BboxedIndex<Node<PI, GenericIndex<CW>>> {
         BboxedIndex::new(
             Bbox::new(
                 self.geometry
                     .bend_shape(bend)
                     .envelope_3d(0.0, self.layer(bend.into())),
             ),
-            NodeWeight::Primitive(bend.into()),
+            Node::Primitive(bend.into()),
         )
     }
 
     fn make_compound_bbox(
         &self,
         compound: GenericIndex<CW>,
-    ) -> BboxedIndex<NodeWeight<PI, GenericIndex<CW>>> {
+    ) -> BboxedIndex<Node<PI, GenericIndex<CW>>> {
         let mut aabb = AABB::<[f64; 3]>::new_empty();
 
         for member in self.geometry.compound_members(compound) {
             aabb.merge(&self.make_bbox(member).geom().aabb);
         }
 
-        BboxedIndex::new(Bbox::new(aabb), NodeWeight::Compound(compound))
+        BboxedIndex::new(Bbox::new(aabb), Node::Compound(compound))
     }
 
     fn shape(&self, primitive: PI) -> PrimitiveShape {
@@ -352,25 +351,25 @@ impl<
     }
 
     // XXX: The type appears wrong? I don't think it should contain CW?
-    pub fn rtree(&self) -> &RTree<BboxedIndex<NodeWeight<PI, GenericIndex<CW>>>> {
+    pub fn rtree(&self) -> &RTree<BboxedIndex<Node<PI, GenericIndex<CW>>>> {
         &self.rtree
     }
 
-    pub fn graph(&self) -> &StableDiGraph<NodeWeight<PW, CW>, GeometryLabel, usize> {
+    pub fn graph(&self) -> &StableDiGraph<Node<PW, CW>, GeometryLabel, usize> {
         self.geometry.graph()
     }
 
     fn test_envelopes(&self) -> bool {
         !self.rtree.iter().any(|wrapper| {
             // TODO: Test envelopes of compounds too.
-            let NodeWeight::Primitive(primitive_node) = wrapper.data else {
+            let Node::Primitive(primitive_node) = wrapper.data else {
                 return false;
             };
             let shape = self.shape(primitive_node);
             let layer = self.layer(primitive_node);
             let wrapper = BboxedIndex::new(
                 Bbox::new(shape.envelope_3d(0.0, layer)),
-                NodeWeight::Primitive(primitive_node),
+                Node::Primitive(primitive_node),
             );
             !self
                 .rtree

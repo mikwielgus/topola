@@ -78,7 +78,7 @@ impl RulesTrait for SimpleRules {
 }
 
 // Clunky enum to work around borrow checker.
-enum RouterOrDrawing<'a, R: RulesTrait> {
+enum RouterOrLayout<'a, R: RulesTrait> {
     Router(&'a mut Router<R>),
     Layout(&'a Layout<R>),
 }
@@ -133,7 +133,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrDrawing::Layout(tracer.layout.drawing()),
+            RouterOrLayout::Layout(tracer.layout.drawing()),
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
@@ -152,7 +152,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrDrawing::Layout(tracer.layout.drawing()),
+            RouterOrLayout::Layout(tracer.layout.drawing()),
             None,
             Some(tracer.mesh.clone()),
             &path,
@@ -184,7 +184,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrDrawing::Layout(tracer.layout.drawing()),
+            RouterOrLayout::Layout(tracer.layout.drawing()),
             None,
             Some(tracer.mesh.clone()),
             &trace.path,
@@ -275,7 +275,7 @@ fn main() -> Result<(), anyhow::Error> {
         &mut renderer,
         &font_context,
         &mut view,
-        RouterOrDrawing::Layout(router.layout.drawing()),
+        RouterOrLayout::Layout(router.layout.drawing()),
         None,
         None,
         &[],
@@ -299,7 +299,7 @@ fn main() -> Result<(), anyhow::Error> {
         &mut renderer,
         &font_context,
         &mut view,
-        RouterOrDrawing::Layout(router.layout.drawing()),
+        RouterOrLayout::Layout(router.layout.drawing()),
         None,
         None,
         &[],
@@ -322,7 +322,7 @@ fn render_times(
     renderer: &mut Renderer<GLDevice>,
     font_context: &CanvasFontContext,
     view: &mut View,
-    mut router_or_layout: RouterOrDrawing<impl RulesTrait>,
+    mut router_or_layout: RouterOrLayout<impl RulesTrait>,
     maybe_band: Option<BandIndex>,
     mut maybe_mesh: Option<Mesh>,
     path: &[VertexIndex],
@@ -371,7 +371,7 @@ fn render_times(
         let mut painter = Painter::new(&mut canvas);
 
         let drawing = match router_or_layout {
-            RouterOrDrawing::Router(ref mut router) => {
+            RouterOrLayout::Router(ref mut router) => {
                 let state = event_pump.mouse_state();
 
                 if let Some(band) = maybe_band {
@@ -394,7 +394,7 @@ fn render_times(
 
                 router.layout.drawing()
             }
-            RouterOrDrawing::Layout(layout) => layout,
+            RouterOrLayout::Layout(layout) => layout,
         };
 
         //let result = panic::catch_unwind(|| {

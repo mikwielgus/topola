@@ -84,7 +84,7 @@ macro_rules! impl_loose_weight {
 }
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
 pub enum PrimitiveIndex {
     FixedDot(FixedDotIndex),
     LooseDot(LooseDotIndex),

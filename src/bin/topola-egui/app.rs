@@ -1,4 +1,5 @@
 use futures::executor;
+use geo::point;
 use std::{
     future::Future,
     sync::mpsc::{channel, Receiver, Sender},
@@ -7,9 +8,13 @@ use std::{
 use topola::{
     drawing::{graph::MakePrimitive, primitive::MakeShape, Drawing},
     dsn::{design::DsnDesign, rules::DsnRules},
-    geometry::primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
+    geometry::{
+        primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
+        Node,
+    },
     layout::{zone::MakePolygon, Layout},
     math::Circle,
+    overlay::Overlay,
 };
 
 use crate::painter::Painter;
@@ -18,10 +23,10 @@ use crate::painter::Painter;
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
 pub struct App {
-    // Example stuff:
-    label: String,
+    #[serde(skip)]
+    overlay: Overlay,
 
-    #[serde(skip)] // Don't serialize this field.
+    #[serde(skip)]
     text_channel: (Sender<String>, Receiver<String>),
 
     #[serde(skip)]
@@ -34,8 +39,7 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            // Example stuff:
-            label: "Hello World!".to_owned(),
+            overlay: Overlay::new(),
             text_channel: channel(),
             layout: None,
             from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
@@ -140,9 +144,22 @@ impl eframe::App for App {
                 let mut painter = Painter::new(ui, transform);
 
                 if let Some(layout) = &self.layout {
+                    if ctx.input(|i| i.pointer.any_click()) {
+                        self.overlay.click(
+                            layout,
+                            point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
+                        );
+                    }
+
                     for node in layout.drawing().layer_primitive_nodes(1) {
                         let shape = node.primitive(layout.drawing()).shape();
-                        painter.paint_shape(&shape, egui::Color32::from_rgb(52, 52, 200));
+
+                        let color = if self.overlay.selection().contains(&Node::Primitive(node)) {
+                            egui::Color32::from_rgb(100, 100, 255)
+                        } else {
+                            egui::Color32::from_rgb(52, 52, 200)
+                        };
+                        painter.paint_shape(&shape, color);
                     }
 
                     for zone in layout.layer_zones(1) {
@@ -154,7 +171,13 @@ impl eframe::App for App {
 
                     for node in layout.drawing().layer_primitive_nodes(0) {
                         let shape = node.primitive(layout.drawing()).shape();
-                        painter.paint_shape(&shape, egui::Color32::from_rgb(200, 52, 52));
+
+                        let color = if self.overlay.selection().contains(&Node::Primitive(node)) {
+                            egui::Color32::from_rgb(255, 100, 100)
+                        } else {
+                            egui::Color32::from_rgb(200, 52, 52)
+                        };
+                        painter.paint_shape(&shape, color);
                     }
 
                     for zone in layout.layer_zones(0) {

@@ -18,7 +18,7 @@ use crate::{
     },
     geometry::{
         compound::CompoundManagerTrait, BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel,
-        GetWidth, NodeWeight, SegWeightTrait,
+        GetWidth, Node, SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
     layout::{
@@ -170,7 +170,7 @@ impl<R: RulesTrait> Layout<R> {
 
     pub fn zones(&self) -> impl Iterator<Item = ZoneIndex> + '_ {
         self.drawing.rtree().iter().filter_map(|wrapper| {
-            if let NodeWeight::Compound(zone) = wrapper.data {
+            if let Node::Compound(zone) = wrapper.data {
                 Some(match self.drawing.geometry().compound_weight(zone) {
                     ZoneWeight::Solid(..) => {
                         ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
@@ -191,7 +191,7 @@ impl<R: RulesTrait> Layout<R> {
                 [f64::INFINITY, f64::INFINITY, layer as f64],
             ))
             .filter_map(|wrapper| {
-                if let NodeWeight::Compound(zone) = wrapper.data {
+                if let Node::Compound(zone) = wrapper.data {
                     Some(match self.drawing.geometry().compound_weight(zone) {
                         ZoneWeight::Solid(..) => {
                             ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
@@ -212,7 +212,7 @@ impl<R: RulesTrait> Layout<R> {
             .compound_members(GenericIndex::new(zone.node_index()))
     }
 
-    pub fn drawing(&self) -> &Drawing<impl Copy, R> {
+    pub fn drawing(&self) -> &Drawing<ZoneWeight, R> {
         &self.drawing
     }
 }
