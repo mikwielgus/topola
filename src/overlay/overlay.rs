@@ -4,8 +4,12 @@ use geo::Point;
 use rstar::AABB;
 
 use crate::{
-    drawing::{graph::PrimitiveIndex, rules::RulesTrait},
-    geometry::Node,
+    drawing::{
+        graph::{MakePrimitive, PrimitiveIndex},
+        primitive::MakeShape,
+        rules::RulesTrait,
+    },
+    geometry::{shape::ShapeTrait, Node},
     graph::GenericIndex,
     layout::{zone::ZoneWeight, Layout},
 };
@@ -28,7 +32,18 @@ impl Overlay {
                 [at.x(), at.y(), f64::INFINITY],
             ),
         ) {
-            self.toggle_selection(geom.data);
+            match geom.data {
+                Node::Primitive(primitive) => {
+                    if primitive
+                        .primitive(layout.drawing())
+                        .shape()
+                        .contains_point(at)
+                    {
+                        self.toggle_selection(geom.data);
+                    }
+                }
+                Node::Compound(compound) => (), // TODO.
+            }
         }
     }
 
