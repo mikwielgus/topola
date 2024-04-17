@@ -6,7 +6,7 @@ use crate::{
     drawing::{
         bend::LooseBendWeight,
         dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-        graph::{PrimitiveIndex, Retag},
+        graph::{PrimitiveIndex, PrimitiveWeight, Retag},
         rules::RulesTrait,
         seg::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
@@ -17,8 +17,8 @@ use crate::{
         Drawing, Infringement, LayoutException,
     },
     geometry::{
-        compound::CompoundManagerTrait, BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel,
-        GetWidth, Node, SegWeightTrait,
+        compound::CompoundManagerTrait, BendWeightTrait, DotWeightTrait, GenericNode, Geometry,
+        GeometryLabel, GetWidth, SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
     layout::{
@@ -28,6 +28,8 @@ use crate::{
         zone::{PourZoneIndex, SolidZoneIndex, ZoneIndex, ZoneWeight},
     },
 };
+
+pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<ZoneWeight>>;
 
 pub struct Layout<R: RulesTrait> {
     drawing: Drawing<ZoneWeight, R>, // Shouldn't be public, but is for now because `Draw` needs it.
@@ -170,7 +172,7 @@ impl<R: RulesTrait> Layout<R> {
 
     pub fn zones(&self) -> impl Iterator<Item = ZoneIndex> + '_ {
         self.drawing.rtree().iter().filter_map(|wrapper| {
-            if let Node::Compound(zone) = wrapper.data {
+            if let NodeIndex::Compound(zone) = wrapper.data {
                 Some(match self.drawing.geometry().compound_weight(zone) {
                     ZoneWeight::Solid(..) => {
                         ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
@@ -191,7 +193,7 @@ impl<R: RulesTrait> Layout<R> {
                 [f64::INFINITY, f64::INFINITY, layer as f64],
             ))
             .filter_map(|wrapper| {
-                if let Node::Compound(zone) = wrapper.data {
+                if let NodeIndex::Compound(zone) = wrapper.data {
                     Some(match self.drawing.geometry().compound_weight(zone) {
                         ZoneWeight::Solid(..) => {
                             ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))

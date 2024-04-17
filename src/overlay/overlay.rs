@@ -9,13 +9,13 @@ use crate::{
         primitive::MakeShape,
         rules::RulesTrait,
     },
-    geometry::{shape::ShapeTrait, Node},
+    geometry::shape::ShapeTrait,
     graph::GenericIndex,
-    layout::{zone::ZoneWeight, Layout},
+    layout::{zone::ZoneWeight, Layout, NodeIndex},
 };
 
 pub struct Overlay {
-    selection: HashSet<Node<PrimitiveIndex, GenericIndex<ZoneWeight>>>,
+    selection: HashSet<NodeIndex>,
     active_layer: u64,
 }
 
@@ -38,10 +38,10 @@ impl Overlay {
             .collect();
 
         if let Some(geom) = geoms.iter().find(|&&geom| match geom.data {
-            Node::Primitive(primitive) => {
+            NodeIndex::Primitive(primitive) => {
                 primitive.primitive(layout.drawing()).layer() == self.active_layer
             }
-            Node::Compound(compound) => false,
+            NodeIndex::Compound(compound) => false,
         }) {
             if self.toggle_selection_if_contains_point(layout, geom.data, at) {
                 return;
@@ -58,11 +58,11 @@ impl Overlay {
     fn toggle_selection_if_contains_point<R: RulesTrait>(
         &mut self,
         layout: &Layout<R>,
-        node: Node<PrimitiveIndex, GenericIndex<ZoneWeight>>,
+        node: NodeIndex,
         p: Point,
     ) -> bool {
         match node {
-            Node::Primitive(primitive) => {
+            NodeIndex::Primitive(primitive) => {
                 if primitive
                     .primitive(layout.drawing())
                     .shape()
@@ -72,19 +72,19 @@ impl Overlay {
                     return true;
                 }
             }
-            Node::Compound(compound) => (), // TODO.
+            NodeIndex::Compound(compound) => (), // TODO.
         }
 
         false
     }
 
-    fn toggle_selection(&mut self, node: Node<PrimitiveIndex, GenericIndex<ZoneWeight>>) {
+    fn toggle_selection(&mut self, node: NodeIndex) {
         if !self.selection.insert(node) {
             self.selection.remove(&node);
         }
     }
 
-    pub fn selection(&self) -> &HashSet<Node<PrimitiveIndex, GenericIndex<ZoneWeight>>> {
+    pub fn selection(&self) -> &HashSet<NodeIndex> {
         &self.selection
     }
 }

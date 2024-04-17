@@ -59,7 +59,7 @@ pub enum GeometryLabel {
 }
 
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
-pub enum Node<P, C> {
+pub enum GenericNode<P, C> {
     Primitive(P),
     Compound(C),
 }
@@ -80,7 +80,7 @@ pub struct Geometry<
     SI: GetNodeIndex + Into<PI> + Copy,
     BI: GetNodeIndex + Into<PI> + Copy,
 > {
-    graph: StableDiGraph<Node<PW, CW>, GeometryLabel, usize>,
+    graph: StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize>,
     weight_marker: PhantomData<PW>,
     dot_weight_marker: PhantomData<DW>,
     seg_weight_marker: PhantomData<SW>,
@@ -120,7 +120,7 @@ impl<
     }
 
     pub fn add_dot<W: DotWeightTrait<PW>>(&mut self, weight: W) -> GenericIndex<W> {
-        GenericIndex::<W>::new(self.graph.add_node(Node::Primitive(weight.into())))
+        GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())))
     }
 
     pub fn add_seg<W: SegWeightTrait<PW>>(
@@ -129,7 +129,8 @@ impl<
         to: DI,
         weight: W,
     ) -> GenericIndex<W> {
-        let seg = GenericIndex::<W>::new(self.graph.add_node(Node::Primitive(weight.into())));
+        let seg =
+            GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())));
 
         self.graph
             .update_edge(from.node_index(), seg.node_index(), GeometryLabel::Joined);
@@ -146,7 +147,8 @@ impl<
         core: DI,
         weight: W,
     ) -> GenericIndex<W> {
-        let bend = GenericIndex::<W>::new(self.graph.add_node(Node::Primitive(weight.into())));
+        let bend =
+            GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())));
 
         self.graph
             .update_edge(from.node_index(), bend.node_index(), GeometryLabel::Joined);
@@ -165,13 +167,15 @@ impl<
     pub fn move_dot(&mut self, dot: DI, to: Point) {
         let mut weight = self.dot_weight(dot);
         weight.set_pos(to);
-        *self.graph.node_weight_mut(dot.node_index()).unwrap() = Node::Primitive(weight.into());
+        *self.graph.node_weight_mut(dot.node_index()).unwrap() =
+            GenericNode::Primitive(weight.into());
     }
 
     pub fn shift_bend(&mut self, bend: BI, offset: f64) {
         let mut weight = self.bend_weight(bend);
         weight.set_offset(offset);
-        *self.graph.node_weight_mut(bend.node_index()).unwrap() = Node::Primitive(weight.into());
+        *self.graph.node_weight_mut(bend.node_index()).unwrap() =
+            GenericNode::Primitive(weight.into());
     }
 
     pub fn flip_bend(&mut self, bend: BI) {
@@ -267,7 +271,7 @@ impl<
     }
 
     fn primitive_weight(&self, index: NodeIndex<usize>) -> PW {
-        if let Node::Primitive(weight) = *self.graph.node_weight(index).unwrap() {
+        if let GenericNode::Primitive(weight) = *self.graph.node_weight(index).unwrap() {
             weight
         } else {
             unreachable!()
@@ -293,7 +297,9 @@ impl<
     }
 
     pub fn compound_weight(&self, compound: GenericIndex<CW>) -> CW {
-        if let Node::Compound(weight) = *self.graph.node_weight(compound.node_index()).unwrap() {
+        if let GenericNode::Compound(weight) =
+            *self.graph.node_weight(compound.node_index()).unwrap()
+        {
             weight
         } else {
             unreachable!()
@@ -468,7 +474,7 @@ impl<
             })
     }
 
-    pub fn graph(&self) -> &StableDiGraph<Node<PW, CW>, GeometryLabel, usize> {
+    pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize> {
         &self.graph
     }
 }
@@ -486,7 +492,7 @@ impl<
     > CompoundManagerTrait<CW, GenericIndex<CW>> for Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
     fn add_compound(&mut self, weight: CW) -> GenericIndex<CW> {
-        GenericIndex::<CW>::new(self.graph.add_node(Node::Compound(weight)))
+        GenericIndex::<CW>::new(self.graph.add_node(GenericNode::Compound(weight)))
     }
 
     fn remove_compound(&mut self, compound: GenericIndex<CW>) {

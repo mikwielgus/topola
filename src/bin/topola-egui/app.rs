@@ -10,7 +10,7 @@ use topola::{
     dsn::{design::DsnDesign, rules::DsnRules},
     geometry::{
         primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
-        Node,
+        GenericNode,
     },
     layout::{zone::MakePolygon, Layout},
     math::Circle,
@@ -154,7 +154,11 @@ impl eframe::App for App {
                     for node in layout.drawing().layer_primitive_nodes(1) {
                         let shape = node.primitive(layout.drawing()).shape();
 
-                        let color = if self.overlay.selection().contains(&Node::Primitive(node)) {
+                        let color = if self
+                            .overlay
+                            .selection()
+                            .contains(&GenericNode::Primitive(node))
+                        {
                             egui::Color32::from_rgb(100, 100, 255)
                         } else {
                             egui::Color32::from_rgb(52, 52, 200)
@@ -172,7 +176,11 @@ impl eframe::App for App {
                     for node in layout.drawing().layer_primitive_nodes(0) {
                         let shape = node.primitive(layout.drawing()).shape();
 
-                        let color = if self.overlay.selection().contains(&Node::Primitive(node)) {
+                        let color = if self
+                            .overlay
+                            .selection()
+                            .contains(&GenericNode::Primitive(node))
+                        {
                             egui::Color32::from_rgb(255, 100, 100)
                         } else {
                             egui::Color32::from_rgb(200, 52, 52)

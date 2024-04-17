@@ -20,7 +20,7 @@ use crate::{
         },
         Drawing,
     },
-    geometry::Node,
+    geometry::GenericNode,
 };
 
 #[enum_dispatch]
@@ -186,7 +186,7 @@ impl<'a, W, CW: Copy, R: RulesTrait> GenericPrimitive<'a, W, CW, R> {
     }
 
     fn tagged_weight(&self) -> PrimitiveWeight {
-        if let Node::Primitive(weight) = *self
+        if let GenericNode::Primitive(weight) = *self
             .drawing
             .geometry()
             .graph()
@@ -262,9 +262,15 @@ impl<'a, CW: Copy, R: RulesTrait> FixedDot<'a, CW, R> {
                     .graph()
                     .node_weight(ni.node_index())
                     .unwrap();
-                if matches!(weight, Node::Primitive(PrimitiveWeight::LoneLooseSeg(..))) {
+                if matches!(
+                    weight,
+                    GenericNode::Primitive(PrimitiveWeight::LoneLooseSeg(..))
+                ) {
                     Some(LoneLooseSegIndex::new(ni.node_index()).into())
-                } else if matches!(weight, Node::Primitive(PrimitiveWeight::SeqLooseSeg(..))) {
+                } else if matches!(
+                    weight,
+                    GenericNode::Primitive(PrimitiveWeight::SeqLooseSeg(..))
+                ) {
                     Some(SeqLooseSegIndex::new(ni.node_index()).into())
                 } else {
                     None
