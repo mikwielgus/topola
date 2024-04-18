@@ -13,7 +13,7 @@ use crate::{
         bend::{FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
-        primitive::{GetCore, MakeShape, Primitive},
+        primitive::{GetCore, MakePrimitiveShape, Primitive},
         Drawing,
     },
     geometry::primitive::PrimitiveShapeTrait,

@@ -7,7 +7,7 @@ use thiserror::Error;
 use crate::drawing::{
     dot::FixedDotIndex,
     graph::{MakePrimitive, PrimitiveIndex},
-    primitive::MakeShape,
+    primitive::MakePrimitiveShape,
     rules::RulesTrait,
 };
 use crate::geometry::primitive::PrimitiveShapeTrait;

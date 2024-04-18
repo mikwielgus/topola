@@ -21,7 +21,9 @@ use crate::drawing::{
     bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
     dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     graph::{MakePrimitive, PrimitiveIndex, PrimitiveWeight},
-    primitive::{GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetOtherJoint, MakeShape},
+    primitive::{
+        GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetOtherJoint, MakePrimitiveShape,
+    },
     seg::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
         SeqLooseSegIndex, SeqLooseSegWeight,
@@ -37,7 +39,6 @@ use crate::geometry::{
     SegWeightTrait,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
-use crate::layout::zone::{ZoneIndex, ZoneWeight};
 use crate::math::NoTangents;
 
 use super::bend::BendWeight;

@@ -12,10 +12,7 @@ use crate::{
     },
     geometry::compound::CompoundManagerTrait,
     graph::{GenericIndex, GetNodeIndex},
-    layout::{
-        zone::{SolidZoneWeight, ZoneIndex},
-        Layout,
-    },
+    layout::{zone::SolidZoneWeight, Layout},
     math::Circle,
 };
 
@@ -367,7 +364,7 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
+                zone,
             )
             .unwrap();
         let dot_2_1 = layout
@@ -380,7 +377,7 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
+                zone,
             )
             .unwrap();
         let dot_2_2 = layout
@@ -393,7 +390,7 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
+                zone,
             )
             .unwrap();
         let dot_1_2 = layout
@@ -406,7 +403,7 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
+                zone,
             )
             .unwrap();
         // Sides.
@@ -419,7 +416,7 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
+                zone,
             )
             .unwrap();
         layout
@@ -431,7 +428,7 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
+                zone,
             )
             .unwrap();
         layout
@@ -443,7 +440,7 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
+                zone,
             )
             .unwrap();
         layout
@@ -455,7 +452,7 @@ impl DsnDesign {
                     layer,
                     maybe_net: Some(net),
                 },
-                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
+                zone,
             )
             .unwrap();
     }
@@ -567,7 +564,7 @@ impl DsnDesign {
                 },
                 // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
                 //GenericIndex::new(zone.node_index()).into(),
-                ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
+                zone,
             )
             .unwrap();
 
@@ -592,7 +589,7 @@ impl DsnDesign {
                         maybe_net: Some(net),
                     },
                     // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
-                    ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
+                    zone,
                 )
                 .unwrap();
 
@@ -607,7 +604,7 @@ impl DsnDesign {
                         maybe_net: Some(net),
                     },
                     // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
-                    ZoneIndex::Solid(GenericIndex::new(zone.node_index())),
+                    zone,
                 )
                 .unwrap();
 

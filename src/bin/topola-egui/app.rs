@@ -6,13 +6,14 @@ use std::{
 };
 
 use topola::{
-    drawing::{graph::MakePrimitive, primitive::MakeShape, Drawing},
+    drawing::{graph::MakePrimitive, primitive::MakePrimitiveShape, Drawing},
     dsn::{design::DsnDesign, rules::DsnRules},
     geometry::{
+        compound::CompoundManagerTrait,
         primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
         GenericNode,
     },
-    layout::{zone::MakePolygon, Layout},
+    layout::{zone::MakePolyShape, Layout},
     math::Circle,
     overlay::Overlay,
 };
@@ -168,7 +169,10 @@ impl eframe::App for App {
 
                     for zone in layout.layer_zones(1) {
                         painter.paint_polygon(
-                            &zone.polygon(&layout.drawing()),
+                            &layout
+                                .compound_weight(zone)
+                                .shape(&layout.drawing(), zone)
+                                .polygon,
                             egui::Color32::from_rgb(52, 52, 200),
                         )
                     }
@@ -190,7 +194,10 @@ impl eframe::App for App {
 
                     for zone in layout.layer_zones(0) {
                         painter.paint_polygon(
-                            &zone.polygon(&layout.drawing()),
+                            &layout
+                                .compound_weight(zone)
+                                .shape(&layout.drawing(), zone)
+                                .polygon,
                             egui::Color32::from_rgb(200, 52, 52),
                         )
                     }

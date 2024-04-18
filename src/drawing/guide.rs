@@ -6,7 +6,7 @@ use crate::{
         bend::BendIndex,
         dot::{DotIndex, FixedDotIndex, LooseDotIndex},
         graph::MakePrimitive,
-        primitive::{GetCore, GetInnerOuter, GetOtherJoint, GetWeight, MakeShape},
+        primitive::{GetCore, GetInnerOuter, GetOtherJoint, GetWeight, MakePrimitiveShape},
         rules::GetConditions,
         Drawing,
     },

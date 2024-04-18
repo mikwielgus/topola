@@ -6,12 +6,18 @@ use rstar::AABB;
 use crate::{
     drawing::{
         graph::{GetLayer, MakePrimitive, PrimitiveIndex},
-        primitive::MakeShape,
+        primitive::MakePrimitiveShape,
         rules::RulesTrait,
     },
-    geometry::shape::ShapeTrait,
+    geometry::{
+        compound::CompoundManagerTrait,
+        shape::{Shape, ShapeTrait},
+    },
     graph::GenericIndex,
-    layout::{zone::ZoneWeight, Layout, NodeIndex},
+    layout::{
+        zone::{MakePolyShape, ZoneWeight},
+        Layout, NodeIndex,
+    },
 };
 
 pub struct Overlay {
@@ -61,20 +67,18 @@ impl Overlay {
         node: NodeIndex,
         p: Point,
     ) -> bool {
-        match node {
-            NodeIndex::Primitive(primitive) => {
-                if primitive
-                    .primitive(layout.drawing())
-                    .shape()
-                    .contains_point(p)
-                {
-                    self.toggle_selection(node);
-                    return true;
-                }
-            }
-            NodeIndex::Compound(compound) => (), // TODO.
-        }
+        let shape: Shape = match node {
+            NodeIndex::Primitive(primitive) => primitive.primitive(layout.drawing()).shape().into(),
+            NodeIndex::Compound(compound) => layout
+                .compound_weight(compound)
+                .shape(layout.drawing(), compound)
+                .into(),
+        };
 
+        if shape.contains_point(p) {
+            self.toggle_selection(node);
+            return true;
+        }
         false
     }
 

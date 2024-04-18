@@ -15,7 +15,7 @@ use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use topola::draw::DrawException;
 use topola::drawing::dot::FixedDotWeight;
 use topola::drawing::graph::{MakePrimitive, PrimitiveIndex};
-use topola::drawing::primitive::MakeShape;
+use topola::drawing::primitive::MakePrimitiveShape;
 use topola::drawing::rules::{Conditions, RulesTrait};
 use topola::drawing::seg::FixedSegWeight;
 use topola::drawing::zone::MakePolygon;

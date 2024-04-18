@@ -11,23 +11,20 @@ use crate::{
         rules::RulesTrait,
         Drawing,
     },
-    geometry::GetPos,
+    geometry::{poly::PolyShape, GetPos},
     graph::{GenericIndex, GetNodeIndex},
 };
 
 #[enum_dispatch]
-pub trait MakePolygon {
-    fn polygon<R: RulesTrait>(&self, drawing: &Drawing<impl Copy, R>) -> Polygon;
+pub trait MakePolyShape {
+    fn shape<R: RulesTrait>(
+        &self,
+        drawing: &Drawing<ZoneWeight, R>,
+        index: GenericIndex<ZoneWeight>,
+    ) -> PolyShape;
 }
 
-#[enum_dispatch(GetNodeIndex, MakePolygon)]
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ZoneIndex {
-    Solid(SolidZoneIndex),
-    Pour(PourZoneIndex),
-}
-
-#[enum_dispatch(GetLayer)]
+#[enum_dispatch(GetLayer, MakePolyShape)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ZoneWeight {
     Solid(SolidZoneWeight),
@@ -52,28 +49,34 @@ impl<'a> GetMaybeNet for SolidZoneWeight {
     }
 }
 
-pub type SolidZoneIndex = GenericIndex<SolidZoneWeight>;
-
-impl MakePolygon for SolidZoneIndex {
-    fn polygon<R: RulesTrait>(&self, drawing: &Drawing<impl Copy, R>) -> Polygon {
-        Polygon::new(
-            LineString::from(
-                drawing
-                    .geometry()
-                    .compound_members(GenericIndex::new(self.node_index()))
-                    .filter_map(|primitive_node| {
-                        if let Ok(dot) = DotIndex::try_from(primitive_node) {
-                            Some(drawing.geometry().dot_weight(dot).pos())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<Point>>(),
+impl MakePolyShape for SolidZoneWeight {
+    fn shape<R: RulesTrait>(
+        &self,
+        drawing: &Drawing<ZoneWeight, R>,
+        index: GenericIndex<ZoneWeight>,
+    ) -> PolyShape {
+        PolyShape {
+            polygon: Polygon::new(
+                LineString::from(
+                    drawing
+                        .geometry()
+                        .compound_members(index)
+                        .filter_map(|primitive_node| {
+                            if let Ok(dot) = DotIndex::try_from(primitive_node) {
+                                Some(drawing.geometry().dot_weight(dot).pos())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<Point>>(),
+                ),
+                vec![],
             ),
-            vec![],
-        )
+        }
     }
 }
+
+pub type SolidZoneIndex = GenericIndex<SolidZoneWeight>;
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PourZoneWeight {
@@ -93,25 +96,31 @@ impl<'a> GetMaybeNet for PourZoneWeight {
     }
 }
 
-pub type PourZoneIndex = GenericIndex<PourZoneWeight>;
-
-impl MakePolygon for PourZoneIndex {
-    fn polygon<R: RulesTrait>(&self, drawing: &Drawing<impl Copy, R>) -> Polygon {
-        Polygon::new(
-            LineString::from(
-                drawing
-                    .geometry()
-                    .compound_members(GenericIndex::new(self.node_index()))
-                    .filter_map(|primitive_node| {
-                        if let Ok(dot) = DotIndex::try_from(primitive_node) {
-                            Some(drawing.geometry().dot_weight(dot).pos())
-                        } else {
-                            None
-                        }
-                    })
-                    .collect::<Vec<Point>>(),
+impl MakePolyShape for PourZoneWeight {
+    fn shape<R: RulesTrait>(
+        &self,
+        drawing: &Drawing<ZoneWeight, R>,
+        index: GenericIndex<ZoneWeight>,
+    ) -> PolyShape {
+        PolyShape {
+            polygon: Polygon::new(
+                LineString::from(
+                    drawing
+                        .geometry()
+                        .compound_members(index)
+                        .filter_map(|primitive_node| {
+                            if let Ok(dot) = DotIndex::try_from(primitive_node) {
+                                Some(drawing.geometry().dot_weight(dot).pos())
+                            } else {
+                                None
+                            }
+                        })
+                        .collect::<Vec<Point>>(),
+                ),
+                vec![],
             ),
-            vec![],
-        )
+        }
     }
 }
+
+pub type PourZoneIndex = GenericIndex<PourZoneWeight>;

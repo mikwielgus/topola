@@ -17,15 +17,15 @@ use crate::{
         Drawing, Infringement, LayoutException,
     },
     geometry::{
-        compound::CompoundManagerTrait, BendWeightTrait, DotWeightTrait, GenericNode, Geometry,
-        GeometryLabel, GetWidth, SegWeightTrait,
+        compound::CompoundManagerTrait, poly::PolyShape, BendWeightTrait, DotWeightTrait,
+        GenericNode, Geometry, GeometryLabel, GetWidth, SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
     layout::{
         connectivity::{
             BandIndex, BandWeight, ConnectivityLabel, ConnectivityWeight, ContinentIndex,
         },
-        zone::{PourZoneIndex, SolidZoneIndex, ZoneIndex, ZoneWeight},
+        zone::{PourZoneIndex, SolidZoneIndex, ZoneWeight},
     },
 };
 
@@ -92,13 +92,12 @@ impl<R: RulesTrait> Layout<R> {
     pub fn add_zone_fixed_dot(
         &mut self,
         weight: FixedDotWeight,
-        zone: ZoneIndex,
+        zone: GenericIndex<ZoneWeight>,
     ) -> Result<FixedDotIndex, Infringement> {
         let maybe_dot = self.drawing.add_fixed_dot(weight);
 
         if let Ok(dot) = maybe_dot {
-            self.drawing
-                .add_to_compound(dot, GenericIndex::new(zone.node_index()));
+            self.drawing.add_to_compound(dot, zone);
         }
 
         maybe_dot
@@ -118,13 +117,12 @@ impl<R: RulesTrait> Layout<R> {
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
-        zone: ZoneIndex,
+        zone: GenericIndex<ZoneWeight>,
     ) -> Result<FixedSegIndex, Infringement> {
         let maybe_seg = self.add_fixed_seg(from, to, weight);
 
         if let Ok(seg) = maybe_seg {
-            self.drawing
-                .add_to_compound(seg, GenericIndex::new(zone.node_index()));
+            self.drawing.add_to_compound(seg, zone);
         }
 
         maybe_seg
@@ -170,22 +168,17 @@ impl<R: RulesTrait> Layout<R> {
         ContinentIndex::new(0.into())
     }
 
-    pub fn zones(&self) -> impl Iterator<Item = ZoneIndex> + '_ {
+    pub fn zones(&self) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
         self.drawing.rtree().iter().filter_map(|wrapper| {
             if let NodeIndex::Compound(zone) = wrapper.data {
-                Some(match self.drawing.geometry().compound_weight(zone) {
-                    ZoneWeight::Solid(..) => {
-                        ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
-                    }
-                    ZoneWeight::Pour(..) => ZoneIndex::Pour(PourZoneIndex::new(zone.node_index())),
-                })
+                Some(zone)
             } else {
                 None
             }
         })
     }
 
-    pub fn layer_zones(&self, layer: u64) -> impl Iterator<Item = ZoneIndex> + '_ {
+    pub fn layer_zones(&self, layer: u64) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
         self.drawing
             .rtree()
             .locate_in_envelope_intersecting(&AABB::from_corners(
@@ -194,21 +187,17 @@ impl<R: RulesTrait> Layout<R> {
             ))
             .filter_map(|wrapper| {
                 if let NodeIndex::Compound(zone) = wrapper.data {
-                    Some(match self.drawing.geometry().compound_weight(zone) {
-                        ZoneWeight::Solid(..) => {
-                            ZoneIndex::Solid(SolidZoneIndex::new(zone.node_index()))
-                        }
-                        ZoneWeight::Pour(..) => {
-                            ZoneIndex::Pour(PourZoneIndex::new(zone.node_index()))
-                        }
-                    })
+                    Some(zone)
                 } else {
                     None
                 }
             })
     }
 
-    pub fn zone_members(&self, zone: ZoneIndex) -> impl Iterator<Item = PrimitiveIndex> + '_ {
+    pub fn zone_members(
+        &self,
+        zone: GenericIndex<ZoneWeight>,
+    ) -> impl Iterator<Item = PrimitiveIndex> + '_ {
         self.drawing
             .geometry()
             .compound_members(GenericIndex::new(zone.node_index()))
