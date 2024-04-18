@@ -152,13 +152,13 @@ impl eframe::App for App {
                         );
                     }
 
-                    for node in layout.drawing().layer_primitive_nodes(1) {
-                        let shape = node.primitive(layout.drawing()).shape();
+                    for primitive in layout.drawing().layer_primitive_nodes(1) {
+                        let shape = primitive.primitive(layout.drawing()).shape();
 
                         let color = if self
                             .overlay
                             .selection()
-                            .contains(&GenericNode::Primitive(node))
+                            .contains(&GenericNode::Primitive(primitive))
                         {
                             egui::Color32::from_rgb(100, 100, 255)
                         } else {
@@ -168,22 +168,31 @@ impl eframe::App for App {
                     }
 
                     for zone in layout.layer_zones(1) {
+                        let color = if self
+                            .overlay
+                            .selection()
+                            .contains(&GenericNode::Compound(zone))
+                        {
+                            egui::Color32::from_rgb(100, 100, 255)
+                        } else {
+                            egui::Color32::from_rgb(52, 52, 200)
+                        };
                         painter.paint_polygon(
                             &layout
                                 .compound_weight(zone)
                                 .shape(&layout.drawing(), zone)
                                 .polygon,
-                            egui::Color32::from_rgb(52, 52, 200),
+                            color,
                         )
                     }
 
-                    for node in layout.drawing().layer_primitive_nodes(0) {
-                        let shape = node.primitive(layout.drawing()).shape();
+                    for primitive in layout.drawing().layer_primitive_nodes(0) {
+                        let shape = primitive.primitive(layout.drawing()).shape();
 
                         let color = if self
                             .overlay
                             .selection()
-                            .contains(&GenericNode::Primitive(node))
+                            .contains(&GenericNode::Primitive(primitive))
                         {
                             egui::Color32::from_rgb(255, 100, 100)
                         } else {
@@ -193,12 +202,21 @@ impl eframe::App for App {
                     }
 
                     for zone in layout.layer_zones(0) {
+                        let color = if self
+                            .overlay
+                            .selection()
+                            .contains(&GenericNode::Compound(zone))
+                        {
+                            egui::Color32::from_rgb(255, 100, 100)
+                        } else {
+                            egui::Color32::from_rgb(200, 52, 52)
+                        };
                         painter.paint_polygon(
                             &layout
                                 .compound_weight(zone)
                                 .shape(&layout.drawing(), zone)
                                 .polygon,
-                            egui::Color32::from_rgb(200, 52, 52),
+                            color,
                         )
                     }
                 }
