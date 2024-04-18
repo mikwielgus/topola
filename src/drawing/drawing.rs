@@ -888,6 +888,10 @@ impl<CW: Copy, R: RulesTrait> CompoundManagerTrait<CW, GenericIndex<CW>> for Dra
             .add_to_compound(primitive, compound);
     }
 
+    fn compound_weight(&self, compound: GenericIndex<CW>) -> CW {
+        self.geometry_with_rtree.compound_weight(compound)
+    }
+
     fn compounds<W>(&self, node: GenericIndex<W>) -> impl Iterator<Item = GenericIndex<CW>> {
         self.geometry_with_rtree.compounds(node)
     }

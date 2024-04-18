@@ -83,6 +83,8 @@ macro_rules! impl_loose_weight {
     };
 }
 
+// TODO: This enum shouldn't exist: we shouldn't be carrying the tag around like this. Instead we
+// should be getting it from the graph when it's needed.
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
 pub enum PrimitiveIndex {

@@ -236,6 +236,10 @@ impl<R: RulesTrait> CompoundManagerTrait<ZoneWeight, GenericIndex<ZoneWeight>> f
         self.drawing.add_to_compound(primitive, compound);
     }
 
+    fn compound_weight(&self, compound: GenericIndex<ZoneWeight>) -> ZoneWeight {
+        self.drawing.compound_weight(compound)
+    }
+
     fn compounds<W>(
         &self,
         node: GenericIndex<W>,

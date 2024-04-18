@@ -408,6 +408,10 @@ impl<
         self.geometry.add_to_compound(primitive, compound);
     }
 
+    fn compound_weight(&self, compound: GenericIndex<CW>) -> CW {
+        self.geometry.compound_weight(compound)
+    }
+
     fn compounds<W>(&self, node: GenericIndex<W>) -> impl Iterator<Item = GenericIndex<CW>> {
         self.geometry.compounds(node)
     }

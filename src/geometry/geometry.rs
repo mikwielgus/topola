@@ -507,6 +507,16 @@ impl<
         );
     }
 
+    fn compound_weight(&self, compound: GenericIndex<CW>) -> CW {
+        if let GenericNode::Compound(weight) =
+            *self.graph.node_weight(compound.node_index()).unwrap()
+        {
+            weight
+        } else {
+            unreachable!()
+        }
+    }
+
     fn compounds<W>(&self, node: GenericIndex<W>) -> impl Iterator<Item = GenericIndex<CW>> {
         self.graph
             .neighbors(node.node_index())
