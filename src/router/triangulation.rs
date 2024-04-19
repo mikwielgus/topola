@@ -2,7 +2,10 @@ use std::marker::PhantomData;
 
 use geo::{point, Point};
 use petgraph::visit::{self, NodeIndexable};
-use spade::{handles::FixedVertexHandle, DelaunayTriangulation, HasPosition, InsertionError};
+use spade::{
+    handles::FixedVertexHandle, iterators::VertexIterator, DelaunayTriangulation, HasPosition,
+    InsertionError,
+};
 
 use crate::{
     drawing::{rules::RulesTrait, Drawing},
@@ -146,11 +149,8 @@ impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<
     }
 }
 
-impl<
-        'a,
-        I: Copy + PartialEq + GetNodeIndex + std::fmt::Debug,
-        W: GetVertexIndex<I> + HasPosition<Scalar = f64>,
-    > visit::IntoEdges for &'a Triangulation<I, W>
+impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
+    visit::IntoEdges for &'a Triangulation<I, W>
 {
     type Edges = Box<dyn Iterator<Item = TriangulationEdgeReference<I>> + 'a>;
 
@@ -163,5 +163,75 @@ impl<
                     to: self.vertex(edge.to().fix()),
                 }),
         )
+    }
+}
+
+impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
+    visit::IntoNodeIdentifiers for &'a Triangulation<I, W>
+{
+    type NodeIdentifiers = Box<dyn Iterator<Item = I> + 'a>;
+
+    fn node_identifiers(self) -> Self::NodeIdentifiers {
+        Box::new(
+            spade::Triangulation::fixed_vertices(&self.triangulation).map(|vertex| {
+                spade::Triangulation::s(&self.triangulation)
+                    .vertex_data(vertex)
+                    .vertex()
+            }),
+        )
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TriangulationVertexReference<I> {
+    index: I,
+}
+
+impl<I: Copy> visit::NodeRef for TriangulationVertexReference<I> {
+    type NodeId = I;
+    type Weight = ();
+
+    fn id(&self) -> Self::NodeId {
+        self.index
+    }
+
+    fn weight(&self) -> &Self::Weight {
+        &()
+    }
+}
+
+impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
+    visit::IntoNodeReferences for &'a Triangulation<I, W>
+{
+    type NodeRef = TriangulationVertexReference<I>;
+    type NodeReferences = Box<dyn Iterator<Item = TriangulationVertexReference<I>> + 'a>;
+    fn node_references(self) -> Self::NodeReferences {
+        Box::new(
+            spade::Triangulation::fixed_vertices(&self.triangulation).map(|vertex| {
+                TriangulationVertexReference {
+                    index: spade::Triangulation::s(&self.triangulation)
+                        .vertex_data(vertex)
+                        .vertex(),
+                }
+            }),
+        )
+    }
+}
+
+impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
+    visit::NodeIndexable for &'a Triangulation<I, W>
+{
+    fn node_bound(&self) -> usize {
+        spade::Triangulation::num_vertices(&self.triangulation)
+    }
+
+    fn to_index(&self, node: I) -> usize {
+        node.node_index().index()
+    }
+
+    fn from_index(&self, index: usize) -> I {
+        spade::Triangulation::s(&self.triangulation)
+            .vertex_data(self.vertex_to_handle[index].unwrap())
+            .vertex()
     }
 }

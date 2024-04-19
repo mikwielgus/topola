@@ -31,7 +31,7 @@ pub enum VertexIndex {
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
-pub enum TriangulationVertexIndex {
+enum TriangulationVertexIndex {
     FixedDot(FixedDotIndex),
     FixedBend(FixedBendIndex),
 }
@@ -82,13 +82,13 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn new(layout: &Drawing<impl Copy, impl RulesTrait>) -> Self {
+    pub fn new(drawing: &Drawing<impl Copy, impl RulesTrait>) -> Self {
         let mut this = Self {
-            triangulation: Triangulation::new(layout),
+            triangulation: Triangulation::new(drawing),
             vertex_to_triangulation_vertex: Vec::new(),
         };
         this.vertex_to_triangulation_vertex
-            .resize(layout.geometry().graph().node_bound(), None);
+            .resize(drawing.geometry().graph().node_bound(), None);
         this
     }
 
