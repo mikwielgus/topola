@@ -149,13 +149,12 @@ impl<R: RulesTrait> Router<R> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
         //self.mesh.triangulate(&self.layout)?;
-        let mut mesh = Mesh::new(self.layout.drawing());
-        mesh.generate(self.layout.drawing())
-            .map_err(|err| RoutingError {
-                from,
-                to,
-                source: err.into(),
-            })?;
+        let mut mesh = Mesh::new(&self.layout);
+        mesh.generate(&self.layout).map_err(|err| RoutingError {
+            from,
+            to,
+            source: err.into(),
+        })?;
 
         let mut tracer = self.tracer(&mesh);
         let trace = tracer.start(from, width);

@@ -7,17 +7,18 @@ use petgraph::visit::{self, NodeIndexable};
 use petgraph::{stable_graph::NodeIndex, visit::EdgeRef};
 use spade::{HasPosition, InsertionError, Point2};
 
-use crate::drawing::rules::RulesTrait;
 use crate::{
     drawing::{
         bend::{FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::{GetCore, MakePrimitiveShape, Primitive},
+        rules::RulesTrait,
         Drawing,
     },
     geometry::primitive::PrimitiveShapeTrait,
     graph::GetNodeIndex,
+    layout::Layout,
     router::triangulation::{GetVertexIndex, Triangulation, TriangulationEdgeReference},
 };
 
@@ -82,22 +83,19 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn new(drawing: &Drawing<impl Copy, impl RulesTrait>) -> Self {
+    pub fn new(layout: &Layout<impl RulesTrait>) -> Self {
         let mut this = Self {
-            triangulation: Triangulation::new(drawing),
+            triangulation: Triangulation::new(layout.drawing()),
             vertex_to_triangulation_vertex: Vec::new(),
         };
         this.vertex_to_triangulation_vertex
-            .resize(drawing.geometry().graph().node_bound(), None);
+            .resize(layout.drawing().geometry().graph().node_bound(), None);
         this
     }
 
-    pub fn generate(
-        &mut self,
-        drawing: &Drawing<impl Copy, impl RulesTrait>,
-    ) -> Result<(), InsertionError> {
-        for node in drawing.primitive_nodes() {
-            let center = node.primitive(drawing).shape().center();
+    pub fn generate(&mut self, layout: &Layout<impl RulesTrait>) -> Result<(), InsertionError> {
+        for node in layout.drawing().primitive_nodes() {
+            let center = node.primitive(layout.drawing()).shape().center();
 
             match node {
                 PrimitiveIndex::FixedDot(dot) => {
@@ -118,16 +116,16 @@ impl Mesh {
             }
         }
 
-        for node in drawing.primitive_nodes() {
+        for node in layout.drawing().primitive_nodes() {
             // Add rails as vertices. This is how the mesh differs from the triangulation.
             match node {
                 PrimitiveIndex::LooseBend(bend) => {
                     self.triangulation
-                        .weight_mut(drawing.primitive(bend).core().into())
+                        .weight_mut(layout.drawing().primitive(bend).core().into())
                         .rails
                         .push(bend.into());
                     self.vertex_to_triangulation_vertex[bend.node_index().index()] =
-                        Some(drawing.primitive(bend).core().into());
+                        Some(layout.drawing().primitive(bend).core().into());
                 }
                 _ => (),
             }

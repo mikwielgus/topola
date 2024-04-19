@@ -33,7 +33,7 @@ impl Overlay {
         }
     }
 
-    pub fn click<R: RulesTrait>(&mut self, layout: &Layout<R>, at: Point) {
+    pub fn click(&mut self, layout: &Layout<impl RulesTrait>, at: Point) {
         let geoms: Vec<_> = layout
             .drawing()
             .rtree()
@@ -61,9 +61,9 @@ impl Overlay {
         }
     }
 
-    fn toggle_selection_if_contains_point<R: RulesTrait>(
+    fn toggle_selection_if_contains_point(
         &mut self,
-        layout: &Layout<R>,
+        layout: &Layout<impl RulesTrait>,
         node: NodeIndex,
         p: Point,
     ) -> bool {
