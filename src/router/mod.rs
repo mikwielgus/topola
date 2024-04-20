@@ -1,6 +1,6 @@
 pub mod astar;
 pub mod draw;
-pub mod mesh;
+pub mod navmesh;
 mod router;
 pub mod tracer;
 pub mod triangulation;

@@ -10,7 +10,7 @@ use crate::{
     layout::{connectivity::BandIndex, Layout},
     router::{
         draw::{Draw, DrawException},
-        mesh::{Mesh, VertexIndex},
+        navmesh::{Navmesh, VertexIndex},
     },
 };
 
@@ -24,11 +24,11 @@ pub struct Trace {
 
 pub struct Tracer<'a, R: RulesTrait> {
     pub layout: &'a mut Layout<R>,
-    pub mesh: &'a Mesh,
+    pub mesh: &'a Navmesh,
 }
 
 impl<'a, R: RulesTrait> Tracer<'a, R> {
-    pub fn new(layout: &'a mut Layout<R>, mesh: &'a Mesh) -> Self {
+    pub fn new(layout: &'a mut Layout<R>, mesh: &'a Navmesh) -> Self {
         Tracer { layout, mesh }
     }
 

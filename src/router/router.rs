@@ -17,7 +17,7 @@ use crate::layout::Layout;
 use crate::router::{
     astar::{astar, AstarStrategy, PathTracker},
     draw::DrawException,
-    mesh::{Mesh, MeshEdgeReference, VertexIndex},
+    navmesh::{MeshEdgeReference, Navmesh, VertexIndex},
     tracer::{Trace, Tracer},
 };
 
@@ -79,10 +79,10 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> RouterAstarStrategy<'a, RO, 
     }
 }
 
-impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Mesh, f64>
+impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64>
     for RouterAstarStrategy<'a, RO, R>
 {
-    fn is_goal(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Mesh>) -> bool {
+    fn is_goal(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Navmesh>) -> bool {
         let new_path = tracker.reconstruct_path_to(vertex);
         let width = self.trace.width;
 
@@ -149,7 +149,7 @@ impl<R: RulesTrait> Router<R> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
         //self.mesh.triangulate(&self.layout)?;
-        let mesh = Mesh::new(&self.layout).map_err(|err| RoutingError {
+        let mesh = Navmesh::new(&self.layout).map_err(|err| RoutingError {
             from,
             to,
             source: err.into(),
@@ -187,7 +187,7 @@ impl<R: RulesTrait> Router<R> {
         self.route_band(from_dot, to_dot, width, observer)
     }
 
-    pub fn tracer<'a>(&'a mut self, mesh: &'a Mesh) -> Tracer<R> {
+    pub fn tracer<'a>(&'a mut self, mesh: &'a Navmesh) -> Tracer<R> {
         Tracer::new(&mut self.layout, mesh)
     }
 }

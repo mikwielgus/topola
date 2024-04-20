@@ -77,12 +77,12 @@ impl HasPosition for TriangulationWeight {
 }
 
 #[derive(Debug, Clone)]
-pub struct Mesh {
+pub struct Navmesh {
     triangulation: Triangulation<TriangulationVertexIndex, TriangulationWeight>,
     vertex_to_triangulation_vertex: Vec<Option<TriangulationVertexIndex>>,
 }
 
-impl Mesh {
+impl Navmesh {
     pub fn new(layout: &Layout<impl RulesTrait>) -> Result<Self, InsertionError> {
         let mut this = Self {
             triangulation: Triangulation::new(layout.drawing()),
@@ -114,7 +114,7 @@ impl Mesh {
         }
 
         for node in layout.drawing().primitive_nodes() {
-            // Add rails as vertices. This is how the mesh differs from the triangulation.
+            // Add rails as vertices. This is how the navmesh differs from the triangulation.
             match node {
                 PrimitiveIndex::LooseBend(bend) => {
                     this.triangulation
@@ -142,12 +142,12 @@ impl Mesh {
     }
 }
 
-impl visit::GraphBase for Mesh {
+impl visit::GraphBase for Navmesh {
     type NodeId = VertexIndex;
     type EdgeId = (VertexIndex, VertexIndex);
 }
 
-impl visit::Data for Mesh {
+impl visit::Data for Navmesh {
     type NodeWeight = ();
     type EdgeWeight = ();
 }
@@ -180,7 +180,7 @@ impl visit::EdgeRef for MeshEdgeReference {
     }
 }
 
-impl<'a> visit::IntoNeighbors for &'a Mesh {
+impl<'a> visit::IntoNeighbors for &'a Navmesh {
     type Neighbors = Box<dyn Iterator<Item = VertexIndex> + 'a>;
 
     fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
@@ -236,7 +236,7 @@ fn edge_with_near_edges(
         })
 }
 
-impl<'a> visit::IntoEdgeReferences for &'a Mesh {
+impl<'a> visit::IntoEdgeReferences for &'a Navmesh {
     type EdgeRef = MeshEdgeReference;
     type EdgeReferences = Box<dyn Iterator<Item = MeshEdgeReference> + 'a>;
 
@@ -276,7 +276,7 @@ fn vertex_edges(
         })
 }
 
-impl<'a> visit::IntoEdges for &'a Mesh {
+impl<'a> visit::IntoEdges for &'a Navmesh {
     type Edges = Box<dyn Iterator<Item = MeshEdgeReference> + 'a>;
 
     fn edges(self, vertex: Self::NodeId) -> Self::Edges {
