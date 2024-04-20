@@ -9,3 +9,4 @@ pub mod layout;
 pub mod math;
 pub mod overlay;
 pub mod router;
+pub mod triangulation;

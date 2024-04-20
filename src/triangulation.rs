@@ -1,16 +1,10 @@
 use std::marker::PhantomData;
 
 use geo::{point, Point};
-use petgraph::visit::{self, NodeIndexable};
-use spade::{
-    handles::FixedVertexHandle, iterators::VertexIterator, DelaunayTriangulation, HasPosition,
-    InsertionError,
-};
+use petgraph::visit;
+use spade::{handles::FixedVertexHandle, DelaunayTriangulation, HasPosition, InsertionError};
 
-use crate::{
-    drawing::{rules::RulesTrait, Drawing},
-    graph::GetNodeIndex,
-};
+use crate::graph::GetNodeIndex;
 
 pub trait GetVertexIndex<I> {
     fn vertex(&self) -> I;
@@ -26,14 +20,13 @@ pub struct Triangulation<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I
 impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
     Triangulation<I, W>
 {
-    pub fn new(drawing: &Drawing<impl Copy, impl RulesTrait>) -> Self {
+    pub fn new(node_bound: usize) -> Self {
         let mut this = Self {
             triangulation: <DelaunayTriangulation<W> as spade::Triangulation>::new(),
             vertex_to_handle: Vec::new(),
             index_marker: PhantomData,
         };
-        this.vertex_to_handle
-            .resize(drawing.geometry().graph().node_bound(), None);
+        this.vertex_to_handle.resize(node_bound, None);
         this
     }
 

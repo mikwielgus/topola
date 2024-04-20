@@ -19,7 +19,7 @@ use crate::{
     geometry::primitive::PrimitiveShapeTrait,
     graph::GetNodeIndex,
     layout::Layout,
-    router::triangulation::{GetVertexIndex, Triangulation, TriangulationEdgeReference},
+    triangulation::{GetVertexIndex, Triangulation, TriangulationEdgeReference},
 };
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
@@ -85,7 +85,7 @@ pub struct Navmesh {
 impl Navmesh {
     pub fn new(layout: &Layout<impl RulesTrait>) -> Result<Self, InsertionError> {
         let mut this = Self {
-            triangulation: Triangulation::new(layout.drawing()),
+            triangulation: Triangulation::new(layout.drawing().geometry().graph().node_bound()),
             vertex_to_triangulation_vertex: Vec::new(),
         };
         this.vertex_to_triangulation_vertex
