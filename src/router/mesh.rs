@@ -83,30 +83,27 @@ pub struct Mesh {
 }
 
 impl Mesh {
-    pub fn new(layout: &Layout<impl RulesTrait>) -> Self {
+    pub fn new(layout: &Layout<impl RulesTrait>) -> Result<Self, InsertionError> {
         let mut this = Self {
             triangulation: Triangulation::new(layout.drawing()),
             vertex_to_triangulation_vertex: Vec::new(),
         };
         this.vertex_to_triangulation_vertex
             .resize(layout.drawing().geometry().graph().node_bound(), None);
-        this
-    }
 
-    pub fn generate(&mut self, layout: &Layout<impl RulesTrait>) -> Result<(), InsertionError> {
         for node in layout.drawing().primitive_nodes() {
             let center = node.primitive(layout.drawing()).shape().center();
 
             match node {
                 PrimitiveIndex::FixedDot(dot) => {
-                    self.triangulation.add_vertex(TriangulationWeight {
+                    this.triangulation.add_vertex(TriangulationWeight {
                         vertex: dot.into(),
                         rails: vec![],
                         pos: center,
                     })?;
                 }
                 PrimitiveIndex::FixedBend(bend) => {
-                    self.triangulation.add_vertex(TriangulationWeight {
+                    this.triangulation.add_vertex(TriangulationWeight {
                         vertex: bend.into(),
                         rails: vec![],
                         pos: center,
@@ -120,18 +117,18 @@ impl Mesh {
             // Add rails as vertices. This is how the mesh differs from the triangulation.
             match node {
                 PrimitiveIndex::LooseBend(bend) => {
-                    self.triangulation
+                    this.triangulation
                         .weight_mut(layout.drawing().primitive(bend).core().into())
                         .rails
                         .push(bend.into());
-                    self.vertex_to_triangulation_vertex[bend.node_index().index()] =
+                    this.vertex_to_triangulation_vertex[bend.node_index().index()] =
                         Some(layout.drawing().primitive(bend).core().into());
                 }
                 _ => (),
             }
         }
 
-        Ok(())
+        Ok(this)
     }
 
     pub fn triangulation_vertex(&self, vertex: VertexIndex) -> TriangulationVertexIndex {
