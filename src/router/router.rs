@@ -17,7 +17,7 @@ use crate::layout::Layout;
 use crate::router::{
     astar::{astar, AstarStrategy, PathTracker},
     draw::DrawException,
-    navmesh::{MeshEdgeReference, Navmesh, VertexIndex},
+    navmesh::{Navmesh, NavmeshEdgeReference, VertexIndex},
     tracer::{Trace, Tracer},
 };
 
@@ -41,12 +41,12 @@ pub enum RoutingErrorKind {
 
 pub trait RouterObserverTrait<R: RulesTrait> {
     fn on_rework(&mut self, tracer: &Tracer<R>, trace: &Trace);
-    fn before_probe(&mut self, tracer: &Tracer<R>, trace: &Trace, edge: MeshEdgeReference);
+    fn before_probe(&mut self, tracer: &Tracer<R>, trace: &Trace, edge: NavmeshEdgeReference);
     fn on_probe(
         &mut self,
         tracer: &Tracer<R>,
         trace: &Trace,
-        edge: MeshEdgeReference,
+        edge: NavmeshEdgeReference,
         result: Result<(), DrawException>,
     );
     fn on_estimate(&mut self, tracer: &Tracer<R>, vertex: VertexIndex);
@@ -94,7 +94,7 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64>
         self.tracer.finish(&mut self.trace, self.to, width).is_ok()
     }
 
-    fn edge_cost(&mut self, edge: MeshEdgeReference) -> Option<f64> {
+    fn edge_cost(&mut self, edge: NavmeshEdgeReference) -> Option<f64> {
         self.observer.before_probe(&self.tracer, &self.trace, edge);
         if edge.target() == self.to.into() {
             return None;

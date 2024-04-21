@@ -7,7 +7,7 @@ use spade::{handles::FixedVertexHandle, DelaunayTriangulation, HasPosition, Inse
 use crate::graph::GetNodeIndex;
 
 pub trait GetVertexIndex<I> {
-    fn vertex(&self) -> I;
+    fn vertex_index(&self) -> I;
 }
 
 #[derive(Debug, Clone)]
@@ -31,7 +31,7 @@ impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scal
     }
 
     pub fn add_vertex(&mut self, weight: W) -> Result<(), InsertionError> {
-        let index = weight.vertex().node_index().index();
+        let index = weight.vertex_index().node_index().index();
         self.vertex_to_handle[index] = Some(spade::Triangulation::insert(
             &mut self.triangulation,
             weight,
@@ -60,7 +60,7 @@ impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scal
     fn vertex(&self, handle: FixedVertexHandle) -> I {
         spade::Triangulation::vertex(&self.triangulation, handle)
             .as_ref()
-            .vertex()
+            .vertex_index()
     }
 
     fn handle(&self, vertex: I) -> FixedVertexHandle {
@@ -78,7 +78,7 @@ impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scal
 impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
     visit::Data for Triangulation<I, W>
 {
-    type NodeWeight = ();
+    type NodeWeight = W;
     type EdgeWeight = ();
 }
 
@@ -169,53 +169,62 @@ impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<
             spade::Triangulation::fixed_vertices(&self.triangulation).map(|vertex| {
                 spade::Triangulation::s(&self.triangulation)
                     .vertex_data(vertex)
-                    .vertex()
+                    .vertex_index()
             }),
         )
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct TriangulationVertexReference<I> {
+/*#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TriangulationVertexReference<I: Copy, W> {
     index: I,
+    weight: &'a W,
 }
 
-impl<I: Copy> visit::NodeRef for TriangulationVertexReference<I> {
+impl<I: Copy> visit::NodeRef for TriangulationVertexReference<I, W> {
     type NodeId = I;
-    type Weight = ();
+    type Weight = W;
 
     fn id(&self) -> Self::NodeId {
         self.index
     }
 
     fn weight(&self) -> &Self::Weight {
-        &()
+        self.weight
     }
-}
+}*/
 
 impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
     visit::IntoNodeReferences for &'a Triangulation<I, W>
 {
-    type NodeRef = TriangulationVertexReference<I>;
-    type NodeReferences = Box<dyn Iterator<Item = TriangulationVertexReference<I>> + 'a>;
+    /*type NodeRef = TriangulationVertexReference<I, W>;
+    type NodeReferences = Box<dyn Iterator<Item = TriangulationVertexReference<I, W>> + 'a>;*/
+    type NodeRef = (I, &'a W);
+    type NodeReferences = Box<dyn Iterator<Item = (I, &'a W)> + 'a>;
+
     fn node_references(self) -> Self::NodeReferences {
         Box::new(
             spade::Triangulation::fixed_vertices(&self.triangulation).map(|vertex| {
-                TriangulationVertexReference {
-                    index: spade::Triangulation::s(&self.triangulation)
-                        .vertex_data(vertex)
-                        .vertex(),
-                }
+                let weight = spade::Triangulation::s(&self.triangulation).vertex_data(vertex);
+                /*TriangulationVertexReference {
+                    index: weight.vertex_index(),
+                    weight,
+                }*/
+                (weight.vertex_index(), weight)
             }),
         )
     }
 }
 
-impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
-    visit::NodeIndexable for &'a Triangulation<I, W>
+impl<
+        'a,
+        I: Copy + PartialEq + GetNodeIndex + std::fmt::Debug,
+        W: GetVertexIndex<I> + HasPosition<Scalar = f64>,
+    > visit::NodeIndexable for &'a Triangulation<I, W>
 {
     fn node_bound(&self) -> usize {
-        spade::Triangulation::num_vertices(&self.triangulation)
+        //spade::Triangulation::num_vertices(&self.triangulation)
+        self.vertex_to_handle.len()
     }
 
     fn to_index(&self, node: I) -> usize {
@@ -225,6 +234,6 @@ impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<
     fn from_index(&self, index: usize) -> I {
         spade::Triangulation::s(&self.triangulation)
             .vertex_data(self.vertex_to_handle[index].unwrap())
-            .vertex()
+            .vertex_index()
     }
 }

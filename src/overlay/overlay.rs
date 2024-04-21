@@ -2,10 +2,11 @@ use std::collections::HashSet;
 
 use geo::Point;
 use rstar::AABB;
+use spade::InsertionError;
 
 use crate::{
     drawing::{
-        graph::{GetLayer, MakePrimitive, PrimitiveIndex},
+        graph::{GetLayer, MakePrimitive},
         primitive::MakePrimitiveShape,
         rules::RulesTrait,
     },
@@ -13,24 +14,23 @@ use crate::{
         compound::CompoundManagerTrait,
         shape::{Shape, ShapeTrait},
     },
-    graph::GenericIndex,
-    layout::{
-        zone::{MakePolyShape, ZoneWeight},
-        Layout, NodeIndex,
-    },
+    layout::{zone::MakePolyShape, Layout, NodeIndex},
+    overlay::ratsnest::Ratsnest,
 };
 
 pub struct Overlay {
+    ratsnest: Ratsnest,
     selection: HashSet<NodeIndex>,
     active_layer: u64,
 }
 
 impl Overlay {
-    pub fn new() -> Self {
-        Self {
+    pub fn new(layout: &Layout<impl RulesTrait>) -> Result<Self, InsertionError> {
+        Ok(Self {
+            ratsnest: Ratsnest::new(layout)?,
             selection: HashSet::new(),
             active_layer: 0,
-        }
+        })
     }
 
     pub fn click(&mut self, layout: &Layout<impl RulesTrait>, at: Point) {
@@ -86,6 +86,10 @@ impl Overlay {
         if !self.selection.insert(node) {
             self.selection.remove(&node);
         }
+    }
+
+    pub fn ratsnest(&self) -> &Ratsnest {
+        &self.ratsnest
     }
 
     pub fn selection(&self) -> &HashSet<NodeIndex> {

@@ -24,7 +24,7 @@ use topola::dsn::design::DsnDesign;
 use topola::geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait};
 use topola::layout::connectivity::BandIndex;
 use topola::layout::Layout;
-use topola::mesh::{Mesh, MeshEdgeReference, VertexIndex};
+use topola::navmesh::{Navmesh, NavmeshEdgeReference, VertexIndex};
 use topola::router::RouterObserverTrait;
 
 use sdl2::event::Event;
@@ -87,12 +87,12 @@ struct EmptyRouterObserver;
 
 impl<R: RulesTrait> RouterObserverTrait<R> for EmptyRouterObserver {
     fn on_rework(&mut self, _tracer: &Tracer<R>, _trace: &Trace) {}
-    fn before_probe(&mut self, _tracer: &Tracer<R>, _trace: &Trace, _edge: MeshEdgeReference) {}
+    fn before_probe(&mut self, _tracer: &Tracer<R>, _trace: &Trace, _edge: NavmeshEdgeReference) {}
     fn on_probe(
         &mut self,
         _tracer: &Tracer<R>,
         _trace: &Trace,
-        _edge: MeshEdgeReference,
+        _edge: NavmeshEdgeReference,
         _result: Result<(), DrawException>,
     ) {
     }
@@ -135,7 +135,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.view,
             RouterOrLayout::Layout(tracer.layout.drawing()),
             None,
-            Some(tracer.mesh.clone()),
+            Some(tracer.navmesh.clone()),
             &trace.path,
             &[],
             &[],
@@ -143,7 +143,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
         );
     }
 
-    fn before_probe(&mut self, tracer: &Tracer<R>, trace: &Trace, edge: MeshEdgeReference) {
+    fn before_probe(&mut self, tracer: &Tracer<R>, trace: &Trace, edge: NavmeshEdgeReference) {
         let mut path = trace.path.clone();
         path.push(edge.target());
         render_times(
@@ -154,7 +154,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.view,
             RouterOrLayout::Layout(tracer.layout.drawing()),
             None,
-            Some(tracer.mesh.clone()),
+            Some(tracer.navmesh.clone()),
             &path,
             &[],
             &[],
@@ -166,7 +166,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
         &mut self,
         tracer: &Tracer<R>,
         trace: &Trace,
-        _edge: MeshEdgeReference,
+        _edge: NavmeshEdgeReference,
         result: Result<(), DrawException>,
     ) {
         let (ghosts, highlighteds, delay) = match result {
@@ -186,7 +186,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.view,
             RouterOrLayout::Layout(tracer.layout.drawing()),
             None,
-            Some(tracer.mesh.clone()),
+            Some(tracer.navmesh.clone()),
             &trace.path,
             &ghosts,
             &highlighteds,
@@ -324,7 +324,7 @@ fn render_times(
     view: &mut View,
     mut router_or_layout: RouterOrLayout<impl RulesTrait>,
     maybe_band: Option<BandIndex>,
-    mut maybe_mesh: Option<Mesh>,
+    mut maybe_navmesh: Option<Navmesh>,
     path: &[VertexIndex],
     ghosts: &[PrimitiveShape],
     highlighteds: &[PrimitiveIndex],
@@ -389,7 +389,7 @@ fn render_times(
                             ),
                         )
                         .ok();
-                    maybe_mesh = None;
+                    maybe_navmesh = None;
                 }
 
                 router.layout.drawing()
@@ -440,8 +440,8 @@ fn render_times(
             painter.paint_shape(&ghost, ColorU::new(75, 75, 150, 255), view.zoom);
         }
 
-        if let Some(ref mesh) = maybe_mesh {
-            for edge in mesh.edge_references() {
+        if let Some(ref navmesh) = maybe_navmesh {
+            for edge in navmesh.edge_references() {
                 let to = edge.source().primitive(drawing).shape().center();
                 let from = edge.target().primitive(drawing).shape().center();
 

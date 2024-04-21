@@ -70,6 +70,14 @@ impl<'a> Painter<'a> {
     }
 
     pub fn paint_edge(&mut self, from: Point, to: Point, color: Color32) {
-        //
+        self.ui.painter().add(epaint::Shape::line_segment(
+            [
+                self.transform
+                    .transform_pos([from.x() as f32, -from.y() as f32].into()),
+                self.transform
+                    .transform_pos([to.x() as f32, -to.y() as f32].into()),
+            ],
+            Stroke::new(1.0, color),
+        ));
     }
 }

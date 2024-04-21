@@ -64,7 +64,7 @@ struct TriangulationWeight {
 }
 
 impl GetVertexIndex<TriangulationVertexIndex> for TriangulationWeight {
-    fn vertex(&self) -> TriangulationVertexIndex {
+    fn vertex_index(&self) -> TriangulationVertexIndex {
         self.vertex
     }
 }
@@ -153,12 +153,12 @@ impl visit::Data for Navmesh {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct MeshEdgeReference {
+pub struct NavmeshEdgeReference {
     from: VertexIndex,
     to: VertexIndex,
 }
 
-impl visit::EdgeRef for MeshEdgeReference {
+impl visit::EdgeRef for NavmeshEdgeReference {
     type NodeId = VertexIndex;
     type EdgeId = (VertexIndex, VertexIndex);
     type Weight = ();
@@ -203,7 +203,7 @@ impl<'a> visit::IntoNeighbors for &'a Navmesh {
 fn edge_with_near_edges(
     triangulation: &Triangulation<TriangulationVertexIndex, TriangulationWeight>,
     edge: TriangulationEdgeReference<TriangulationVertexIndex>,
-) -> impl Iterator<Item = MeshEdgeReference> {
+) -> impl Iterator<Item = NavmeshEdgeReference> {
     let mut from_vertices = vec![edge.source().into()];
 
     // Append rails to the source.
@@ -230,15 +230,15 @@ fn edge_with_near_edges(
     from_vertices
         .into_iter()
         .cartesian_product(to_vertices.into_iter())
-        .map(|pair| MeshEdgeReference {
+        .map(|pair| NavmeshEdgeReference {
             from: pair.0,
             to: pair.1.into(),
         })
 }
 
 impl<'a> visit::IntoEdgeReferences for &'a Navmesh {
-    type EdgeRef = MeshEdgeReference;
-    type EdgeReferences = Box<dyn Iterator<Item = MeshEdgeReference> + 'a>;
+    type EdgeRef = NavmeshEdgeReference;
+    type EdgeReferences = Box<dyn Iterator<Item = NavmeshEdgeReference> + 'a>;
 
     fn edge_references(self) -> Self::EdgeReferences {
         Box::new(
@@ -253,7 +253,7 @@ fn vertex_edges(
     triangulation: &Triangulation<TriangulationVertexIndex, TriangulationWeight>,
     from: VertexIndex,
     to: TriangulationVertexIndex,
-) -> impl Iterator<Item = MeshEdgeReference> {
+) -> impl Iterator<Item = NavmeshEdgeReference> {
     let from_vertices = vec![from];
     let mut to_vertices = vec![to.into()];
 
@@ -270,14 +270,14 @@ fn vertex_edges(
     from_vertices
         .into_iter()
         .cartesian_product(to_vertices.into_iter())
-        .map(|pair| MeshEdgeReference {
+        .map(|pair| NavmeshEdgeReference {
             from: pair.0,
             to: pair.1,
         })
 }
 
 impl<'a> visit::IntoEdges for &'a Navmesh {
-    type Edges = Box<dyn Iterator<Item = MeshEdgeReference> + 'a>;
+    type Edges = Box<dyn Iterator<Item = NavmeshEdgeReference> + 'a>;
 
     fn edges(self, vertex: Self::NodeId) -> Self::Edges {
         Box::new(

@@ -1,5 +1,6 @@
 use futures::executor;
 use geo::point;
+use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use std::{
     future::Future,
     sync::mpsc::{channel, Receiver, Sender},
@@ -10,7 +11,7 @@ use topola::{
     dsn::{design::DsnDesign, rules::DsnRules},
     geometry::{
         compound::CompoundManagerTrait,
-        primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
+        primitive::{BendShape, DotShape, PrimitiveShape, PrimitiveShapeTrait, SegShape},
         GenericNode,
     },
     layout::{zone::MakePolyShape, Layout},
@@ -25,13 +26,13 @@ use crate::painter::Painter;
 #[serde(default)]
 pub struct App {
     #[serde(skip)]
-    overlay: Overlay,
+    maybe_overlay: Option<Overlay>,
 
     #[serde(skip)]
     text_channel: (Sender<String>, Receiver<String>),
 
     #[serde(skip)]
-    layout: Option<Layout<DsnRules>>,
+    maybe_layout: Option<Layout<DsnRules>>,
 
     #[serde(skip)]
     from_rect: egui::emath::Rect,
@@ -40,9 +41,9 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            overlay: Overlay::new(),
+            maybe_overlay: None,
             text_channel: channel(),
-            layout: None,
+            maybe_layout: None,
             from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
         }
     }
@@ -71,12 +72,16 @@ impl eframe::App for App {
         if cfg!(target_arch = "wasm32") {
             if let Ok(file_contents) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_string(file_contents).unwrap();
-                self.layout = Some(design.make_layout());
+                let layout = design.make_layout();
+                self.maybe_overlay = Some(Overlay::new(&layout).unwrap());
+                self.maybe_layout = Some(layout);
             }
         } else {
             if let Ok(path) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_file(&path).unwrap();
-                self.layout = Some(design.make_layout());
+                let layout = design.make_layout();
+                self.maybe_overlay = Some(Overlay::new(&layout).unwrap());
+                self.maybe_layout = Some(layout);
             }
         }
 
@@ -144,9 +149,10 @@ impl eframe::App for App {
                 let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
                 let mut painter = Painter::new(ui, transform);
 
-                if let Some(layout) = &self.layout {
+                if let (Some(layout), Some(overlay)) = (&self.maybe_layout, &mut self.maybe_overlay)
+                {
                     if ctx.input(|i| i.pointer.any_click()) {
-                        self.overlay.click(
+                        overlay.click(
                             layout,
                             point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
                         );
@@ -155,8 +161,7 @@ impl eframe::App for App {
                     for primitive in layout.drawing().layer_primitive_nodes(1) {
                         let shape = primitive.primitive(layout.drawing()).shape();
 
-                        let color = if self
-                            .overlay
+                        let color = if overlay
                             .selection()
                             .contains(&GenericNode::Primitive(primitive))
                         {
@@ -168,11 +173,7 @@ impl eframe::App for App {
                     }
 
                     for zone in layout.layer_zones(1) {
-                        let color = if self
-                            .overlay
-                            .selection()
-                            .contains(&GenericNode::Compound(zone))
-                        {
+                        let color = if overlay.selection().contains(&GenericNode::Compound(zone)) {
                             egui::Color32::from_rgb(100, 100, 255)
                         } else {
                             egui::Color32::from_rgb(52, 52, 200)
@@ -189,8 +190,7 @@ impl eframe::App for App {
                     for primitive in layout.drawing().layer_primitive_nodes(0) {
                         let shape = primitive.primitive(layout.drawing()).shape();
 
-                        let color = if self
-                            .overlay
+                        let color = if overlay
                             .selection()
                             .contains(&GenericNode::Primitive(primitive))
                         {
@@ -202,11 +202,7 @@ impl eframe::App for App {
                     }
 
                     for zone in layout.layer_zones(0) {
-                        let color = if self
-                            .overlay
-                            .selection()
-                            .contains(&GenericNode::Compound(zone))
-                        {
+                        let color = if overlay.selection().contains(&GenericNode::Compound(zone)) {
                             egui::Color32::from_rgb(255, 100, 100)
                         } else {
                             egui::Color32::from_rgb(200, 52, 52)
@@ -219,6 +215,24 @@ impl eframe::App for App {
                             color,
                         )
                     }
+
+                    for edge in overlay.ratsnest().graph().edge_references() {
+                        let from = overlay
+                            .ratsnest()
+                            .graph()
+                            .node_weight(edge.source())
+                            .unwrap()
+                            .pos;
+                        let to = overlay
+                            .ratsnest()
+                            .graph()
+                            .node_weight(edge.target())
+                            .unwrap()
+                            .pos;
+
+                        painter.paint_edge(from, to, egui::Color32::from_rgb(90, 90, 200));
+                    }
+                    //unreachable!();
                 }
             })
         });
