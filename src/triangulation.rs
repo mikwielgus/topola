@@ -175,13 +175,13 @@ impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<
     }
 }
 
-/*#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct TriangulationVertexReference<I: Copy, W> {
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct TriangulationVertexReference<'a, I: Copy, W> {
     index: I,
     weight: &'a W,
 }
 
-impl<I: Copy> visit::NodeRef for TriangulationVertexReference<I, W> {
+impl<'a, I: Copy, W: Copy> visit::NodeRef for TriangulationVertexReference<'a, I, W> {
     type NodeId = I;
     type Weight = W;
 
@@ -192,25 +192,25 @@ impl<I: Copy> visit::NodeRef for TriangulationVertexReference<I, W> {
     fn weight(&self) -> &Self::Weight {
         self.weight
     }
-}*/
+}
 
-impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
-    visit::IntoNodeReferences for &'a Triangulation<I, W>
+impl<
+        'a,
+        I: Copy + PartialEq + GetNodeIndex,
+        W: Copy + GetVertexIndex<I> + HasPosition<Scalar = f64>,
+    > visit::IntoNodeReferences for &'a Triangulation<I, W>
 {
-    /*type NodeRef = TriangulationVertexReference<I, W>;
-    type NodeReferences = Box<dyn Iterator<Item = TriangulationVertexReference<I, W>> + 'a>;*/
-    type NodeRef = (I, &'a W);
-    type NodeReferences = Box<dyn Iterator<Item = (I, &'a W)> + 'a>;
+    type NodeRef = TriangulationVertexReference<'a, I, W>;
+    type NodeReferences = Box<dyn Iterator<Item = TriangulationVertexReference<'a, I, W>> + 'a>;
 
     fn node_references(self) -> Self::NodeReferences {
         Box::new(
             spade::Triangulation::fixed_vertices(&self.triangulation).map(|vertex| {
                 let weight = spade::Triangulation::s(&self.triangulation).vertex_data(vertex);
-                /*TriangulationVertexReference {
+                TriangulationVertexReference {
                     index: weight.vertex_index(),
                     weight,
-                }*/
-                (weight.vertex_index(), weight)
+                }
             }),
         )
     }
