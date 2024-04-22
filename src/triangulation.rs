@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use geo::{point, Point};
+use geo::{point, EuclideanDistance, Point};
 use petgraph::visit;
 use spade::{handles::FixedVertexHandle, DelaunayTriangulation, HasPosition, InsertionError};
 
@@ -75,23 +75,29 @@ impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scal
     type EdgeId = (I, I);
 }
 
+#[derive(Debug, Clone, Copy, PartialEq, PartialOrd)]
+pub struct TriangulationEdgeWeight {
+    length: f64,
+}
+
 impl<I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<Scalar = f64>>
     visit::Data for Triangulation<I, W>
 {
     type NodeWeight = W;
-    type EdgeWeight = ();
+    type EdgeWeight = TriangulationEdgeWeight;
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct TriangulationEdgeReference<I> {
     from: I,
     to: I,
+    weight: TriangulationEdgeWeight,
 }
 
 impl<I: Copy> visit::EdgeRef for TriangulationEdgeReference<I> {
     type NodeId = I;
     type EdgeId = (I, I);
-    type Weight = ();
+    type Weight = TriangulationEdgeWeight;
 
     fn source(&self) -> Self::NodeId {
         self.from
@@ -102,7 +108,7 @@ impl<I: Copy> visit::EdgeRef for TriangulationEdgeReference<I> {
     }
 
     fn weight(&self) -> &Self::Weight {
-        &()
+        &self.weight
     }
 
     fn id(&self) -> Self::EdgeId {
@@ -133,9 +139,14 @@ impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<
     fn edge_references(self) -> Self::EdgeReferences {
         Box::new(
             spade::Triangulation::directed_edges(&self.triangulation).map(|edge| {
+                let from = self.vertex(edge.from().fix());
+                let to = self.vertex(edge.to().fix());
                 TriangulationEdgeReference {
-                    from: self.vertex(edge.from().fix()),
-                    to: self.vertex(edge.to().fix()),
+                    from,
+                    to,
+                    weight: TriangulationEdgeWeight {
+                        length: self.position(from).euclidean_distance(&self.position(to)),
+                    },
                 }
             }),
         )
@@ -151,9 +162,16 @@ impl<'a, I: Copy + PartialEq + GetNodeIndex, W: GetVertexIndex<I> + HasPosition<
         Box::new(
             spade::Triangulation::vertex(&self.triangulation, self.handle(node))
                 .out_edges()
-                .map(|edge| TriangulationEdgeReference {
-                    from: self.vertex(edge.from().fix()),
-                    to: self.vertex(edge.to().fix()),
+                .map(|edge| {
+                    let from = self.vertex(edge.from().fix());
+                    let to = self.vertex(edge.to().fix());
+                    TriangulationEdgeReference {
+                        from,
+                        to,
+                        weight: TriangulationEdgeWeight {
+                            length: self.position(from).euclidean_distance(&self.position(to)),
+                        },
+                    }
                 }),
         )
     }

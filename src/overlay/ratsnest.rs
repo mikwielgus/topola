@@ -15,22 +15,22 @@ use crate::{
     },
     geometry::primitive::PrimitiveShapeTrait,
     layout::Layout,
-    triangulation::{GetVertexIndex, Triangulation},
+    triangulation::{GetVertexIndex, Triangulation, TriangulationEdgeWeight},
 };
 
 #[derive(Debug, Clone, Copy)]
-pub struct TriangulationWeight {
+pub struct VertexWeight {
     vertex: FixedDotIndex,
     pub pos: Point,
 }
 
-impl GetVertexIndex<FixedDotIndex> for TriangulationWeight {
+impl GetVertexIndex<FixedDotIndex> for VertexWeight {
     fn vertex_index(&self) -> FixedDotIndex {
         self.vertex
     }
 }
 
-impl HasPosition for TriangulationWeight {
+impl HasPosition for VertexWeight {
     type Scalar = f64;
     fn position(&self) -> Point2<Self::Scalar> {
         Point2::new(self.pos.x(), self.pos.y())
@@ -38,7 +38,7 @@ impl HasPosition for TriangulationWeight {
 }
 
 pub struct Ratsnest {
-    graph: StableUnGraph<TriangulationWeight, (), usize>,
+    graph: StableUnGraph<VertexWeight, TriangulationEdgeWeight, usize>,
 }
 
 impl Ratsnest {
@@ -55,7 +55,7 @@ impl Ratsnest {
 
             match node {
                 PrimitiveIndex::FixedDot(dot) => {
-                    triangulation.add_vertex(TriangulationWeight {
+                    triangulation.add_vertex(VertexWeight {
                         vertex: dot,
                         pos: center,
                     })?;
@@ -70,7 +70,7 @@ impl Ratsnest {
         Ok(this)
     }
 
-    pub fn graph(&self) -> &StableUnGraph<TriangulationWeight, (), usize> {
+    pub fn graph(&self) -> &StableUnGraph<VertexWeight, TriangulationEdgeWeight, usize> {
         &self.graph
     }
 }
