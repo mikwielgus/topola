@@ -8,6 +8,7 @@ use crate::geometry::{
 
 #[enum_dispatch]
 pub trait ShapeTrait {
+    fn center(&self) -> Point;
     fn contains_point(&self, p: Point) -> bool;
 }
 

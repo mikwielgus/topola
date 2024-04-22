@@ -4,15 +4,18 @@ use petgraph::visit::EdgeRef;
 use spade::InsertionError;
 use thiserror::Error;
 
-use crate::drawing::{
-    dot::FixedDotIndex,
-    graph::{MakePrimitive, PrimitiveIndex},
-    primitive::MakePrimitiveShape,
-    rules::RulesTrait,
-};
 use crate::geometry::primitive::PrimitiveShapeTrait;
 use crate::layout::connectivity::BandIndex;
 use crate::layout::Layout;
+use crate::{
+    drawing::{
+        dot::FixedDotIndex,
+        graph::{MakePrimitive, PrimitiveIndex},
+        primitive::MakePrimitiveShape,
+        rules::RulesTrait,
+    },
+    geometry::shape::ShapeTrait,
+};
 
 use crate::router::{
     astar::{astar, AstarStrategy, PathTracker},

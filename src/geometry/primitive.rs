@@ -8,10 +8,9 @@ use crate::{
 };
 
 #[enum_dispatch]
-pub trait PrimitiveShapeTrait {
+pub trait PrimitiveShapeTrait: ShapeTrait {
     fn priority(&self) -> u64;
     fn inflate(&self, margin: f64) -> PrimitiveShape;
-    fn center(&self) -> Point;
     fn intersects(&self, other: &PrimitiveShape) -> bool;
     fn envelope(&self, margin: f64) -> AABB<[f64; 2]>;
     fn width(&self) -> f64;
@@ -53,6 +52,10 @@ pub struct DotShape {
 }
 
 impl ShapeTrait for DotShape {
+    fn center(&self) -> Point {
+        self.c.pos
+    }
+
     fn contains_point(&self, p: Point) -> bool {
         p.euclidean_distance(&self.c.pos) <= self.c.r
     }
@@ -70,10 +73,6 @@ impl PrimitiveShapeTrait for DotShape {
                 r: self.c.r + margin,
             },
         })
-    }
-
-    fn center(&self) -> Point {
-        self.c.pos
     }
 
     fn intersects(&self, other: &PrimitiveShape) -> bool {
@@ -153,6 +152,10 @@ impl SegShape {
 }
 
 impl ShapeTrait for SegShape {
+    fn center(&self) -> Point {
+        (self.from + self.to) / 2.0
+    }
+
     fn contains_point(&self, p: Point) -> bool {
         self.polygon().contains(&p)
     }
@@ -169,10 +172,6 @@ impl PrimitiveShapeTrait for SegShape {
             to: self.to,
             width: self.width + 2.0 * margin,
         })
-    }
-
-    fn center(&self) -> Point {
-        (self.from + self.to) / 2.0
     }
 
     fn intersects(&self, other: &PrimitiveShape) -> bool {
@@ -268,6 +267,11 @@ impl BendShape {
 }
 
 impl ShapeTrait for BendShape {
+    fn center(&self) -> Point {
+        let sum = (self.from - self.c.pos) + (self.to - self.c.pos);
+        self.c.pos + (sum / sum.euclidean_distance(&point! {x: 0.0, y: 0.0})) * self.c.r
+    }
+
     fn contains_point(&self, p: Point) -> bool {
         let d = p.euclidean_distance(&self.c.pos);
         self.between_ends(p) && d >= self.inner_circle().r && d <= self.outer_circle().r
@@ -289,11 +293,6 @@ impl PrimitiveShapeTrait for BendShape {
             },
             width: self.width + 2.0 * margin,
         })
-    }
-
-    fn center(&self) -> Point {
-        let sum = (self.from - self.c.pos) + (self.to - self.c.pos);
-        self.c.pos + (sum / sum.euclidean_distance(&point! {x: 0.0, y: 0.0})) * self.c.r
     }
 
     fn intersects(&self, other: &PrimitiveShape) -> bool {

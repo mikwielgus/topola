@@ -1,5 +1,5 @@
 use enum_dispatch::enum_dispatch;
-use geo::{Contains, Point, Polygon};
+use geo::{Centroid, Contains, Point, Polygon};
 
 use crate::geometry::shape::ShapeTrait;
 
@@ -9,6 +9,10 @@ pub struct PolyShape {
 }
 
 impl ShapeTrait for PolyShape {
+    fn center(&self) -> Point {
+        self.polygon.centroid().unwrap()
+    }
+
     fn contains_point(&self, p: Point) -> bool {
         self.polygon.contains(&p)
     }

@@ -10,7 +10,10 @@ use crate::{
         rules::GetConditions,
         Drawing,
     },
-    geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait},
+    geometry::{
+        primitive::{PrimitiveShape, PrimitiveShapeTrait},
+        shape::ShapeTrait,
+    },
     math::{self, Circle, NoTangents},
 };
 
