@@ -3,7 +3,8 @@ use geo::Point;
 use petgraph::{
     data::FromElements,
     stable_graph::{NodeIndex, StableUnGraph},
-    visit::{self, EdgeRef, NodeIndexable},
+    unionfind::UnionFind,
+    visit::{self, EdgeRef, IntoEdgeReferences, NodeIndexable},
 };
 use spade::{HasPosition, InsertionError, Point2};
 
@@ -88,6 +89,22 @@ impl Ratsnest {
 
         this.graph =
             StableUnGraph::from_elements(petgraph::algo::min_spanning_tree(&triangulation));
+
+        let mut unionfind = UnionFind::new(layout.drawing().geometry().graph().node_bound());
+
+        for edge in layout.drawing().geometry().graph().edge_references() {
+            unionfind.union(edge.source(), edge.target());
+        }
+
+        this.graph.retain_edges(|g, i| {
+            if let Some((from, to)) = g.edge_endpoints(i) {
+                let from_index = g.node_weight(from).unwrap().vertex_index().node_index();
+                let to_index = g.node_weight(to).unwrap().vertex_index().node_index();
+                !unionfind.equiv(from_index, to_index)
+            } else {
+                true
+            }
+        });
 
         Ok(this)
     }
