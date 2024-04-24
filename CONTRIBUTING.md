@@ -5,8 +5,8 @@
 Contributions can be of any kind: documentation, organization,
 tutorials, blog posts, bug reports, issues, feature requests, feature
 implementations, pull requests, helping to manage issues, etc.. Many of
-these tasks do not require specialized programming knowledge, or writing
-software at all.
+these tasks do not require specialized programming knowledge, or any
+programming at all.
 
 ## Chat
 
@@ -47,9 +47,17 @@ Building Topola from source requires
 [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
 to be installed on your system.
 
+#### Obtaining the source
+
 Clone the [repository](https://codeberg.org/topola/topola):
 
     git clone https://codeberg.org/topola/topola.git
+
+#### Preparing to build
+
+Change your working directory to your clone of Topola's repository:
+
+    cd topola
 
 Topola currently requires nightly Rust to build. Enable it with
 
@@ -57,11 +65,7 @@ Topola currently requires nightly Rust to build. Enable it with
 
 #### Egui port
 
-Change your working directory to your clone of Topola's repository:
-
-    cd topola
-
-Then build the project with
+Build the project with
 
     cargo build --features egui --bin topola-egui	
 
