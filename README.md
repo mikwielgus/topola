@@ -16,7 +16,7 @@ Join the official [Matrix chatroom](https://matrix.to/#/%23topola:tchncs.de) or 
 *Anyone* can contribute to Topola, including you. If you want to help us out, please follow
 our [Contribution guide](CONTRIBUTING.md).
 
-Our official repository is on [Codeberg](https://codeberg.org/mikolaj/topola). We also have a
+Our official repository is on [Codeberg](https://codeberg.org/topola/topola). We also have a
 mirror repository on [GitHub](https://github.com/mikwielgus/topola).
 
 ## Licence
