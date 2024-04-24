@@ -32,7 +32,7 @@ use crate::{
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<ZoneWeight>>;
 
 pub struct Layout<R: RulesTrait> {
-    drawing: Drawing<ZoneWeight, R>, // Shouldn't be public, but is for now because `Draw` needs it.
+    drawing: Drawing<ZoneWeight, R>,
     connectivity: StableDiGraph<ConnectivityWeight, ConnectivityLabel, usize>,
 }
 

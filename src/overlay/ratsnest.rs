@@ -1,8 +1,10 @@
+use std::collections::HashMap;
+
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
-    data::FromElements,
-    stable_graph::{NodeIndex, StableUnGraph},
+    data::{Element, FromElements},
+    stable_graph::{NodeIndex, StableGraph, StableUnGraph},
     unionfind::UnionFind,
     visit::{self, EdgeRef, IntoEdgeReferences, NodeIndexable},
 };
@@ -11,7 +13,7 @@ use spade::{HasPosition, InsertionError, Point2};
 use crate::{
     drawing::{
         dot::FixedDotIndex,
-        graph::{MakePrimitive, PrimitiveIndex},
+        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
         rules::RulesTrait,
     },
@@ -56,21 +58,40 @@ pub struct Ratsnest {
 
 impl Ratsnest {
     pub fn new(layout: &Layout<impl RulesTrait>) -> Result<Self, InsertionError> {
+        let mut unionfind = UnionFind::new(layout.drawing().geometry().graph().node_bound());
+
+        for edge in layout.drawing().geometry().graph().edge_references() {
+            unionfind.union(edge.source(), edge.target());
+        }
+
         let mut this = Self {
             graph: StableUnGraph::default(),
         };
 
-        let mut triangulation =
-            Triangulation::new(layout.drawing().geometry().graph().node_bound());
+        let mut triangulations = HashMap::new();
 
         for node in layout.drawing().primitive_nodes() {
             match node {
                 PrimitiveIndex::FixedDot(dot) => {
                     if layout.compounds(dot).next().is_none() {
-                        triangulation.add_vertex(VertexWeight {
-                            vertex: RatsnestVertexIndex::FixedDot(dot),
-                            pos: node.primitive(layout.drawing()).shape().center(),
-                        })?;
+                        if let Some(net) = layout.drawing().primitive(dot).maybe_net() {
+                            if !triangulations.contains_key(&net) {
+                                triangulations.insert(
+                                    net,
+                                    Triangulation::new(
+                                        layout.drawing().geometry().graph().node_bound(),
+                                    ),
+                                );
+                            }
+
+                            triangulations
+                                .get_mut(&net)
+                                .unwrap()
+                                .add_vertex(VertexWeight {
+                                    vertex: RatsnestVertexIndex::FixedDot(dot),
+                                    pos: node.primitive(layout.drawing()).shape().center(),
+                                })?;
+                        }
                     }
                 }
                 _ => (),
@@ -78,22 +99,44 @@ impl Ratsnest {
         }
 
         for zone in layout.zones() {
-            triangulation.add_vertex(VertexWeight {
-                vertex: RatsnestVertexIndex::Zone(zone),
-                pos: layout
-                    .compound_weight(zone)
-                    .shape(&layout.drawing(), zone)
-                    .center(),
-            })?
+            if let Some(net) = layout.drawing().compound_weight(zone).maybe_net() {
+                if !triangulations.contains_key(&net) {
+                    triangulations.insert(
+                        net,
+                        Triangulation::new(layout.drawing().geometry().graph().node_bound()),
+                    );
+                }
+
+                triangulations
+                    .get_mut(&net)
+                    .unwrap()
+                    .add_vertex(VertexWeight {
+                        vertex: RatsnestVertexIndex::Zone(zone),
+                        pos: layout
+                            .compound_weight(zone)
+                            .shape(&layout.drawing(), zone)
+                            .center(),
+                    })?
+            }
         }
 
-        this.graph =
-            StableUnGraph::from_elements(petgraph::algo::min_spanning_tree(&triangulation));
+        for (net, triangulation) in triangulations {
+            let mut map = Vec::new();
 
-        let mut unionfind = UnionFind::new(layout.drawing().geometry().graph().node_bound());
-
-        for edge in layout.drawing().geometry().graph().edge_references() {
-            unionfind.union(edge.source(), edge.target());
+            for element in petgraph::algo::min_spanning_tree(&triangulation) {
+                match element {
+                    Element::Node { weight } => {
+                        map.push(this.graph.add_node(weight));
+                    }
+                    Element::Edge {
+                        source,
+                        target,
+                        weight,
+                    } => {
+                        this.graph.add_edge(map[source], map[target], weight);
+                    }
+                }
+            }
         }
 
         this.graph.retain_edges(|g, i| {

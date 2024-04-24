@@ -24,7 +24,7 @@ pub trait MakePolyShape {
     ) -> PolyShape;
 }
 
-#[enum_dispatch(GetLayer, MakePolyShape)]
+#[enum_dispatch(GetLayer, GetMaybeNet, MakePolyShape)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum ZoneWeight {
     Solid(SolidZoneWeight),
