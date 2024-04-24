@@ -13,9 +13,15 @@ Join the official [Matrix chatroom](https://matrix.to/#/%23topola:tchncs.de) or 
 
 ## Contributing
 
-[Official repository on Codeberg](https://codeberg.org/mikolaj/topola)
+*Anyone* can contribute to Topola, including you. If you want to help us out, please follow
+our [Contribution guide](CONTRIBUTING.md).
 
-[Mirror repository on GitHub](https://github.com/mikwielgus/topola)
+Our official repository is on [Codeberg](https://codeberg.org/mikolaj/topola). We also have a
+mirror repository on [GitHub](https://github.com/mikwielgus/topola).
+
+## Licence
+
+Topola is licensed under the [MIT licence](LICENSE).
 
 ## Gallery
 ![Animation. There's a rubber band-like trace following cursor, navigating a very simple maze. The maze and the trace are red, the background is solid black but also very slightly white and dark blue](./assets/interactive_routing.gif)

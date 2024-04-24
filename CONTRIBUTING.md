@@ -1,6 +1,6 @@
 # Contributing to Topola
 
-Literally anyone can contribute to Topola, including you.
+*Anyone* can contribute to Topola, including you.
 
 Contributions can be of any kind: documentation, organization,
 tutorials, blog posts, bug reports, issues, feature requests, feature
@@ -19,7 +19,8 @@ which one you join.
 ## Reporting issues
 
 If you believe you have found a defect in Topola or its documentation,
-please report it on our [issue tracker](https://codeberg.org/topola/topola/issues).
+please report it on our [issue
+tracker](https://codeberg.org/topola/topola/issues).
 
 Under normal operation, crashes and panics are always considered
 reportable bugs.
