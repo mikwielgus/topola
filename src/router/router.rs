@@ -56,7 +56,7 @@ pub trait RouterObserverTrait<R: RulesTrait> {
 }
 
 pub struct Router<R: RulesTrait> {
-    pub layout: Layout<R>,
+    layout: Layout<R>,
 }
 
 struct RouterAstarStrategy<'a, RO: RouterObserverTrait<R>, R: RulesTrait> {
@@ -192,5 +192,9 @@ impl<R: RulesTrait> Router<R> {
 
     pub fn tracer<'a>(&'a mut self, mesh: &'a Navmesh) -> Tracer<R> {
         Tracer::new(&mut self.layout, mesh)
+    }
+
+    pub fn layout(&self) -> &Layout<R> {
+        &self.layout
     }
 }

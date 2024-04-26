@@ -5,6 +5,7 @@ use rstar::AABB;
 use spade::InsertionError;
 
 use crate::{
+    autorouter::ratsnest::Ratsnest,
     drawing::{
         graph::{GetLayer, MakePrimitive},
         primitive::MakePrimitiveShape,
@@ -15,7 +16,6 @@ use crate::{
         shape::{Shape, ShapeTrait},
     },
     layout::{zone::MakePolyShape, Layout, NodeIndex},
-    overlay::ratsnest::Ratsnest,
 };
 
 pub struct Overlay {
@@ -82,7 +82,7 @@ impl Overlay {
         false
     }
 
-    fn toggle_selection(&mut self, node: NodeIndex) {
+    pub fn toggle_selection(&mut self, node: NodeIndex) {
         if !self.selection.insert(node) {
             self.selection.remove(&node);
         }
