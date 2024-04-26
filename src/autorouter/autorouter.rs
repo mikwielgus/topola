@@ -3,7 +3,7 @@ use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use spade::InsertionError;
 
 use crate::{
-    autorouter::{overlay::Overlay, ratsnest::RatsnestVertexIndex},
+    autorouter::ratsnest::{Ratsnest, RatsnestVertexIndex},
     drawing::rules::RulesTrait,
     layout::Layout,
     router::Router,
@@ -11,14 +11,14 @@ use crate::{
 };
 
 pub struct Autorouter<R: RulesTrait> {
-    overlay: Overlay,
+    ratsnest: Ratsnest,
     router: Router<R>,
 }
 
 impl<R: RulesTrait> Autorouter<R> {
     pub fn new(layout: Layout<R>) -> Result<Self, InsertionError> {
         Ok(Self {
-            overlay: Overlay::new(&layout)?,
+            ratsnest: Ratsnest::new(&layout)?,
             router: Router::new(layout),
         })
     }
@@ -27,23 +27,15 @@ impl<R: RulesTrait> Autorouter<R> {
         //for ratline in self.overlay.ratsnest().graph().edge_references() {
 
         // For now, let's only take the first ratline.
-        let ratline = self
-            .overlay
-            .ratsnest()
-            .graph()
-            .edge_references()
-            .next()
-            .unwrap();
+        let ratline = self.ratsnest.graph().edge_references().next().unwrap();
 
         self.route(
-            self.overlay
-                .ratsnest()
+            self.ratsnest
                 .graph()
                 .node_weight(ratline.source())
                 .unwrap()
                 .vertex_index(),
-            self.overlay
-                .ratsnest()
+            self.ratsnest
                 .graph()
                 .node_weight(ratline.target())
                 .unwrap()
@@ -55,15 +47,6 @@ impl<R: RulesTrait> Autorouter<R> {
 
     fn route(&mut self, from: RatsnestVertexIndex, to: RatsnestVertexIndex) {
         todo!();
-    }
-
-    // TODO: Move somewhere higher in abstraction.
-    pub fn click(&mut self, at: Point) {
-        self.overlay.click(self.router.layout(), at);
-    }
-
-    pub fn overlay(&self) -> &Overlay {
-        &self.overlay
     }
 
     pub fn router(&self) -> &Router<R> {

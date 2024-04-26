@@ -7,7 +7,7 @@ use std::{
 };
 
 use topola::{
-    autorouter::{overlay::Overlay, Autorouter},
+    autorouter::Autorouter,
     drawing::{graph::MakePrimitive, primitive::MakePrimitiveShape, Drawing},
     dsn::{design::DsnDesign, rules::DsnRules},
     geometry::{
@@ -19,12 +19,15 @@ use topola::{
     math::Circle,
 };
 
-use crate::painter::Painter;
+use crate::{overlay::Overlay, painter::Painter};
 
 /// Deserialize/Serialize is needed to persist app state between restarts.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
 pub struct App {
+    #[serde(skip)]
+    overlay: Option<Overlay>,
+
     #[serde(skip)]
     autorouter: Option<Autorouter<DsnRules>>,
 
@@ -38,6 +41,7 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
+            overlay: None,
             autorouter: None,
             text_channel: channel(),
             from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
@@ -69,13 +73,15 @@ impl eframe::App for App {
             if let Ok(file_contents) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_string(file_contents).unwrap();
                 let layout = design.make_layout();
-                self.autorouter = Some(Autorouter::new(design.make_layout()).unwrap());
+                self.overlay = Some(Overlay::new(&layout).unwrap());
+                self.autorouter = Some(Autorouter::new(layout).unwrap());
             }
         } else {
             if let Ok(path) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_file(&path).unwrap();
                 let layout = design.make_layout();
-                self.autorouter = Some(Autorouter::new(design.make_layout()).unwrap());
+                self.overlay = Some(Overlay::new(&layout).unwrap());
+                self.autorouter = Some(Autorouter::new(layout).unwrap());
             }
         }
 
@@ -143,9 +149,12 @@ impl eframe::App for App {
                 let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
                 let mut painter = Painter::new(ui, transform);
 
-                if let Some(ref mut autorouter) = &mut self.autorouter {
+                if let (Some(autorouter), Some(overlay)) = (&self.autorouter, &mut self.overlay) {
                     if ctx.input(|i| i.pointer.any_click()) {
-                        autorouter.click(point! {x: latest_pos.x as f64, y: -latest_pos.y as f64});
+                        overlay.click(
+                            autorouter.router().layout(),
+                            point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
+                        );
                     }
 
                     for primitive in autorouter
@@ -158,8 +167,7 @@ impl eframe::App for App {
                             .primitive(autorouter.router().layout().drawing())
                             .shape();
 
-                        let color = if autorouter
-                            .overlay()
+                        let color = if overlay
                             .selection()
                             .contains(&GenericNode::Primitive(primitive))
                         {
@@ -171,11 +179,7 @@ impl eframe::App for App {
                     }
 
                     for zone in autorouter.router().layout().layer_zones(1) {
-                        let color = if autorouter
-                            .overlay()
-                            .selection()
-                            .contains(&GenericNode::Compound(zone))
-                        {
+                        let color = if overlay.selection().contains(&GenericNode::Compound(zone)) {
                             egui::Color32::from_rgb(100, 100, 255)
                         } else {
                             egui::Color32::from_rgb(52, 52, 200)
@@ -201,8 +205,7 @@ impl eframe::App for App {
                             .primitive(autorouter.router().layout().drawing())
                             .shape();
 
-                        let color = if autorouter
-                            .overlay()
+                        let color = if overlay
                             .selection()
                             .contains(&GenericNode::Primitive(primitive))
                         {
@@ -214,11 +217,7 @@ impl eframe::App for App {
                     }
 
                     for zone in autorouter.router().layout().layer_zones(0) {
-                        let color = if autorouter
-                            .overlay()
-                            .selection()
-                            .contains(&GenericNode::Compound(zone))
-                        {
+                        let color = if overlay.selection().contains(&GenericNode::Compound(zone)) {
                             egui::Color32::from_rgb(255, 100, 100)
                         } else {
                             egui::Color32::from_rgb(200, 52, 52)
@@ -234,11 +233,19 @@ impl eframe::App for App {
                         )
                     }
 
-                    let ratsnest = autorouter.overlay().ratsnest().graph();
-
-                    for ratline in ratsnest.edge_references() {
-                        let from = ratsnest.node_weight(ratline.source()).unwrap().pos;
-                        let to = ratsnest.node_weight(ratline.target()).unwrap().pos;
+                    for edge in overlay.ratsnest().graph().edge_references() {
+                        let from = overlay
+                            .ratsnest()
+                            .graph()
+                            .node_weight(edge.source())
+                            .unwrap()
+                            .pos;
+                        let to = overlay
+                            .ratsnest()
+                            .graph()
+                            .node_weight(edge.target())
+                            .unwrap()
+                            .pos;
 
                         painter.paint_edge(from, to, egui::Color32::from_rgb(90, 90, 200));
                     }
