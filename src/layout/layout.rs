@@ -6,7 +6,7 @@ use crate::{
     drawing::{
         bend::LooseBendWeight,
         dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-        graph::{PrimitiveIndex, PrimitiveWeight, Retag},
+        graph::{GetLayer, PrimitiveIndex, PrimitiveWeight, Retag},
         rules::RulesTrait,
         seg::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
@@ -17,16 +17,17 @@ use crate::{
         Drawing, Infringement, LayoutException,
     },
     geometry::{
-        compound::CompoundManagerTrait, poly::PolyShape, BendWeightTrait, DotWeightTrait,
-        GenericNode, Geometry, GeometryLabel, GetWidth, SegWeightTrait,
+        compound::CompoundManagerTrait, poly::PolyShape, shape::ShapeTrait, BendWeightTrait,
+        DotWeightTrait, GenericNode, Geometry, GeometryLabel, GetWidth, SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
     layout::{
         connectivity::{
             BandIndex, BandWeight, ConnectivityLabel, ConnectivityWeight, ContinentIndex,
         },
-        zone::{PourZoneIndex, SolidZoneIndex, Zone, ZoneWeight},
+        zone::{GetMaybeApex, MakePolyShape, PourZoneIndex, SolidZoneIndex, Zone, ZoneWeight},
     },
+    math::Circle,
 };
 
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<ZoneWeight>>;
@@ -205,6 +206,25 @@ impl<R: RulesTrait> Layout<R> {
         self.drawing
             .geometry()
             .compound_members(GenericIndex::new(zone.node_index()))
+    }
+
+    pub fn zone_apex(&mut self, zone: GenericIndex<ZoneWeight>) -> FixedDotIndex {
+        if let Some(apex) = self.zone(zone).maybe_apex() {
+            apex
+        } else {
+            self.add_zone_fixed_dot(
+                FixedDotWeight {
+                    circle: Circle {
+                        pos: self.zone(zone).shape().center(),
+                        r: 0.0,
+                    },
+                    layer: self.zone(zone).layer(),
+                    maybe_net: None,
+                },
+                zone,
+            )
+            .unwrap()
+        }
     }
 
     pub fn drawing(&self) -> &Drawing<ZoneWeight, R> {

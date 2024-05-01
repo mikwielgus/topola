@@ -5,9 +5,9 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     drawing::{
-        dot::DotIndex,
+        dot::{DotIndex, FixedDotIndex},
         graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight, Retag},
-        primitive::{GenericPrimitive, Primitive},
+        primitive::{GenericPrimitive, GetLimbs, Primitive},
         rules::RulesTrait,
         Drawing,
     },
@@ -19,6 +19,11 @@ use crate::{
 #[enum_dispatch]
 pub trait MakePolyShape {
     fn shape(&self) -> PolyShape;
+}
+
+#[enum_dispatch]
+pub trait GetMaybeApex {
+    fn maybe_apex(&self) -> Option<FixedDotIndex>;
 }
 
 #[derive(Debug)]
@@ -69,6 +74,26 @@ impl<'a, R: RulesTrait> MakePolyShape for Zone<'a, R> {
                 vec![],
             ),
         }
+    }
+}
+
+impl<'a, R: RulesTrait> GetMaybeApex for Zone<'a, R> {
+    fn maybe_apex(&self) -> Option<FixedDotIndex> {
+        self.layout
+            .drawing()
+            .geometry()
+            .compound_members(self.index)
+            .find_map(|primitive_node| {
+                if let PrimitiveIndex::FixedDot(dot) = primitive_node {
+                    if self.layout.drawing().primitive(dot).segs().is_empty()
+                        && self.layout.drawing().primitive(dot).bends().is_empty()
+                    {
+                        return Some(dot);
+                    }
+                }
+
+                None
+            })
     }
 }
 
