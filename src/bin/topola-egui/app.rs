@@ -178,19 +178,14 @@ impl eframe::App for App {
                         painter.paint_shape(&shape, color);
                     }
 
-                    for zone in autorouter.router().layout().layer_zones(1) {
+                    for zone in autorouter.router().layout().layer_zone_nodes(1) {
                         let color = if overlay.selection().contains(&GenericNode::Compound(zone)) {
                             egui::Color32::from_rgb(100, 100, 255)
                         } else {
                             egui::Color32::from_rgb(52, 52, 200)
                         };
                         painter.paint_polygon(
-                            &autorouter
-                                .router()
-                                .layout()
-                                .compound_weight(zone)
-                                .shape(&autorouter.router().layout().drawing(), zone)
-                                .polygon,
+                            &autorouter.router().layout().zone(zone).shape().polygon,
                             color,
                         )
                     }
@@ -216,19 +211,14 @@ impl eframe::App for App {
                         painter.paint_shape(&shape, color);
                     }
 
-                    for zone in autorouter.router().layout().layer_zones(0) {
+                    for zone in autorouter.router().layout().layer_zone_nodes(0) {
                         let color = if overlay.selection().contains(&GenericNode::Compound(zone)) {
                             egui::Color32::from_rgb(255, 100, 100)
                         } else {
                             egui::Color32::from_rgb(200, 52, 52)
                         };
                         painter.paint_polygon(
-                            &autorouter
-                                .router()
-                                .layout()
-                                .compound_weight(zone)
-                                .shape(&autorouter.router().layout().drawing(), zone)
-                                .polygon,
+                            &autorouter.router().layout().zone(zone).shape().polygon,
                             color,
                         )
                     }

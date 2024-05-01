@@ -69,10 +69,7 @@ impl Overlay {
     ) -> bool {
         let shape: Shape = match node {
             NodeIndex::Primitive(primitive) => primitive.primitive(layout.drawing()).shape().into(),
-            NodeIndex::Compound(compound) => layout
-                .compound_weight(compound)
-                .shape(layout.drawing(), compound)
-                .into(),
+            NodeIndex::Compound(compound) => layout.zone(compound).shape().into(),
         };
 
         if shape.contains_point(p) {

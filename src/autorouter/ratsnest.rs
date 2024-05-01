@@ -98,7 +98,7 @@ impl Ratsnest {
             }
         }
 
-        for zone in layout.zones() {
+        for zone in layout.zone_nodes() {
             if let Some(net) = layout.drawing().compound_weight(zone).maybe_net() {
                 if !triangulations.contains_key(&net) {
                     triangulations.insert(
@@ -112,10 +112,7 @@ impl Ratsnest {
                     .unwrap()
                     .add_vertex(VertexWeight {
                         vertex: RatsnestVertexIndex::Zone(zone),
-                        pos: layout
-                            .compound_weight(zone)
-                            .shape(&layout.drawing(), zone)
-                            .center(),
+                        pos: layout.zone(zone).shape().center(),
                     })?
             }
         }

@@ -25,12 +25,13 @@ use crate::{
         connectivity::{
             BandIndex, BandWeight, ConnectivityLabel, ConnectivityWeight, ContinentIndex,
         },
-        zone::{PourZoneIndex, SolidZoneIndex, ZoneWeight},
+        zone::{PourZoneIndex, SolidZoneIndex, Zone, ZoneWeight},
     },
 };
 
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<ZoneWeight>>;
 
+#[derive(Debug)]
 pub struct Layout<R: RulesTrait> {
     drawing: Drawing<ZoneWeight, R>,
     connectivity: StableDiGraph<ConnectivityWeight, ConnectivityLabel, usize>,
@@ -168,7 +169,7 @@ impl<R: RulesTrait> Layout<R> {
         ContinentIndex::new(0.into())
     }
 
-    pub fn zones(&self) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
+    pub fn zone_nodes(&self) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
         self.drawing.rtree().iter().filter_map(|wrapper| {
             if let NodeIndex::Compound(zone) = wrapper.data {
                 Some(zone)
@@ -178,7 +179,10 @@ impl<R: RulesTrait> Layout<R> {
         })
     }
 
-    pub fn layer_zones(&self, layer: u64) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
+    pub fn layer_zone_nodes(
+        &self,
+        layer: u64,
+    ) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
         self.drawing
             .rtree()
             .locate_in_envelope_intersecting(&AABB::from_corners(
@@ -205,6 +209,10 @@ impl<R: RulesTrait> Layout<R> {
 
     pub fn drawing(&self) -> &Drawing<ZoneWeight, R> {
         &self.drawing
+    }
+
+    pub fn zone(&self, index: GenericIndex<ZoneWeight>) -> Zone<R> {
+        Zone::new(index, self)
     }
 }
 
