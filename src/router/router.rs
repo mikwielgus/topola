@@ -197,4 +197,8 @@ impl<R: RulesTrait> Router<R> {
     pub fn layout(&self) -> &Layout<R> {
         &self.layout
     }
+
+    pub fn layout_mut(&mut self) -> &mut Layout<R> {
+        &mut self.layout
+    }
 }

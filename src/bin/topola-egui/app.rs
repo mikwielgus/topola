@@ -8,7 +8,7 @@ use std::{
 
 use topola::{
     autorouter::Autorouter,
-    drawing::{graph::MakePrimitive, primitive::MakePrimitiveShape, Drawing},
+    drawing::{graph::MakePrimitive, primitive::MakePrimitiveShape, rules::RulesTrait, Drawing},
     dsn::{design::DsnDesign, rules::DsnRules},
     geometry::{
         compound::CompoundManagerTrait,
@@ -17,6 +17,12 @@ use topola::{
     },
     layout::{zone::MakePolyShape, Layout},
     math::Circle,
+    router::{
+        draw::DrawException,
+        navmesh::{NavmeshEdgeReference, VertexIndex},
+        tracer::{Trace, Tracer},
+        RouterObserverTrait,
+    },
 };
 
 use crate::{overlay::Overlay, painter::Painter};
@@ -59,6 +65,22 @@ impl App {
 
         Default::default()
     }
+}
+
+struct EmptyRouterObserver;
+
+impl<R: RulesTrait> RouterObserverTrait<R> for EmptyRouterObserver {
+    fn on_rework(&mut self, _tracer: &Tracer<R>, _trace: &Trace) {}
+    fn before_probe(&mut self, _tracer: &Tracer<R>, _trace: &Trace, _edge: NavmeshEdgeReference) {}
+    fn on_probe(
+        &mut self,
+        _tracer: &Tracer<R>,
+        _trace: &Trace,
+        _edge: NavmeshEdgeReference,
+        _result: Result<(), DrawException>,
+    ) {
+    }
+    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: VertexIndex) {}
 }
 
 impl eframe::App for App {
@@ -112,7 +134,16 @@ impl eframe::App for App {
                         }
                     }
                 });
-                ui.add_space(16.0);
+
+                ui.separator();
+
+                if ui.button("Autoroute").clicked() {
+                    if let Some(ref mut autorouter) = &mut self.autorouter {
+                        autorouter.autoroute(&mut EmptyRouterObserver {});
+                    }
+                }
+
+                ui.separator();
 
                 egui::widgets::global_dark_light_mode_buttons(ui);
             });
