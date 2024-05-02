@@ -8,7 +8,12 @@ use std::{
 
 use topola::{
     autorouter::Autorouter,
-    drawing::{graph::MakePrimitive, primitive::MakePrimitiveShape, rules::RulesTrait, Drawing},
+    drawing::{
+        graph::{MakePrimitive, PrimitiveIndex},
+        primitive::MakePrimitiveShape,
+        rules::RulesTrait,
+        Drawing,
+    },
     dsn::{design::DsnDesign, rules::DsnRules},
     geometry::{
         compound::CompoundManagerTrait,
@@ -69,9 +74,13 @@ impl App {
 
 struct EmptyRouterObserver;
 
-impl<R: RulesTrait> RouterObserverTrait<R> for EmptyRouterObserver {
-    fn on_rework(&mut self, _tracer: &Tracer<R>, _trace: &Trace) {}
-    fn before_probe(&mut self, _tracer: &Tracer<R>, _trace: &Trace, _edge: NavmeshEdgeReference) {}
+impl<R: RulesTrait + std::fmt::Debug> RouterObserverTrait<R> for EmptyRouterObserver {
+    fn on_rework(&mut self, _tracer: &Tracer<R>, _trace: &Trace) {
+        //dbg!(_tracer, _trace);
+    }
+    fn before_probe(&mut self, _tracer: &Tracer<R>, _trace: &Trace, _edge: NavmeshEdgeReference) {
+        //dbg!(_tracer, _trace, _edge);
+    }
     fn on_probe(
         &mut self,
         _tracer: &Tracer<R>,
@@ -79,8 +88,11 @@ impl<R: RulesTrait> RouterObserverTrait<R> for EmptyRouterObserver {
         _edge: NavmeshEdgeReference,
         _result: Result<(), DrawException>,
     ) {
+        //dbg!(_tracer, _trace, _edge, _result);
     }
-    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: VertexIndex) {}
+    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: VertexIndex) {
+        //dbg!(_tracer, _vertex);
+    }
 }
 
 impl eframe::App for App {

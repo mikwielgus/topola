@@ -216,7 +216,7 @@ impl<R: RulesTrait> Layout<R> {
                 FixedDotWeight {
                     circle: Circle {
                         pos: self.zone(zone).shape().center(),
-                        r: 0.0,
+                        r: 100.0,
                     },
                     layer: self.zone(zone).layer(),
                     maybe_net: None,

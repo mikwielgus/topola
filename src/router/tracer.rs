@@ -22,6 +22,7 @@ pub struct Trace {
     pub width: f64,
 }
 
+#[derive(Debug)]
 pub struct Tracer<'a, R: RulesTrait> {
     pub layout: &'a mut Layout<R>,
     pub mesh: &'a Navmesh,

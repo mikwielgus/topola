@@ -29,7 +29,7 @@ impl<R: RulesTrait> Autorouter<R> {
         // For now, let's only take the first ratline.
         let ratline = self.ratsnest.graph().edge_references().next().unwrap();
 
-        /*self.route(
+        self.route(
             self.ratsnest
                 .graph()
                 .node_weight(ratline.source())
@@ -41,7 +41,7 @@ impl<R: RulesTrait> Autorouter<R> {
                 .unwrap()
                 .vertex_index(),
             observer,
-        );*/
+        );
 
         //}
     }
@@ -55,7 +55,7 @@ impl<R: RulesTrait> Autorouter<R> {
         let from_dot = self.terminating_dot(from);
         let to_dot = self.terminating_dot(to);
 
-        self.router.route_band(from_dot, to_dot, 3.0, observer)
+        self.router.route_band(from_dot, to_dot, 100.0, observer)
     }
 
     fn terminating_dot(&mut self, vertex: RatsnestVertexIndex) -> FixedDotIndex {

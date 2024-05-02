@@ -392,7 +392,7 @@ fn render_times(
                     maybe_navmesh = None;
                 }
 
-                router.layout.drawing()
+                router.layout().drawing()
             }
             RouterOrLayout::Layout(layout) => layout,
         };
