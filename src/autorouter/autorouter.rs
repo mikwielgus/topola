@@ -24,38 +24,32 @@ impl<R: RulesTrait> Autorouter<R> {
     }
 
     pub fn autoroute(&mut self, observer: &mut impl RouterObserverTrait<R>) {
-        //for ratline in self.overlay.ratsnest().graph().edge_references() {
-
-        // For now, let's only take the first ratline.
-        let ratline = self.ratsnest.graph().edge_references().next().unwrap();
-
-        self.route(
-            self.ratsnest
+        for ratline in self.ratsnest.graph().edge_references() {
+            let from = self
+                .ratsnest
                 .graph()
                 .node_weight(ratline.source())
                 .unwrap()
-                .vertex_index(),
-            self.ratsnest
+                .vertex_index();
+            let to = self
+                .ratsnest
                 .graph()
                 .node_weight(ratline.target())
                 .unwrap()
-                .vertex_index(),
-            observer,
-        );
+                .vertex_index();
 
-        //}
-    }
+            let from_dot = match from {
+                RatsnestVertexIndex::FixedDot(dot) => dot,
+                RatsnestVertexIndex::Zone(zone) => self.router.layout_mut().zone_apex(zone),
+            };
 
-    fn route(
-        &mut self,
-        from: RatsnestVertexIndex,
-        to: RatsnestVertexIndex,
-        observer: &mut impl RouterObserverTrait<R>,
-    ) -> Result<BandIndex, RoutingError> {
-        let from_dot = self.terminating_dot(from);
-        let to_dot = self.terminating_dot(to);
+            let to_dot = match to {
+                RatsnestVertexIndex::FixedDot(dot) => dot,
+                RatsnestVertexIndex::Zone(zone) => self.router.layout_mut().zone_apex(zone),
+            };
 
-        self.router.route_band(from_dot, to_dot, 100.0, observer)
+            self.router.route_band(from_dot, to_dot, 100.0, observer);
+        }
     }
 
     fn terminating_dot(&mut self, vertex: RatsnestVertexIndex) -> FixedDotIndex {
