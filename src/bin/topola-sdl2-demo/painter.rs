@@ -58,8 +58,8 @@ impl<'a> Painter<'a> {
 
         let envelope = PrimitiveShapeTrait::envelope(shape, 0.0);
         // XXX: points represented as arrays can't be conveniently converted to vector types
-        let topleft = vec2f(envelope.lower()[0] as f32, -envelope.lower()[1] as f32);
-        let bottomright = vec2f(envelope.upper()[0] as f32, -envelope.upper()[1] as f32);
+        let topleft = vec2f(envelope.lower()[0] as f32, -envelope.upper()[1] as f32);
+        let bottomright = vec2f(envelope.upper()[0] as f32, -envelope.lower()[1] as f32);
         self.canvas.set_line_width(2.0 / zoom);
         self.canvas
             .set_stroke_style(ColorU::new(100, 100, 100, 255));
