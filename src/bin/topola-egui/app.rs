@@ -3,7 +3,10 @@ use geo::point;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use std::{
     future::Future,
-    sync::mpsc::{channel, Receiver, Sender},
+    sync::{
+        mpsc::{channel, Receiver, Sender},
+        Arc, Mutex,
+    },
 };
 
 use topola::{
@@ -40,7 +43,7 @@ pub struct App {
     overlay: Option<Overlay>,
 
     #[serde(skip)]
-    autorouter: Option<Autorouter<DsnRules>>,
+    autorouter: Option<Arc<Mutex<Autorouter<DsnRules>>>>,
 
     #[serde(skip)]
     text_channel: (Sender<String>, Receiver<String>),
@@ -108,14 +111,14 @@ impl eframe::App for App {
                 let design = DsnDesign::load_from_string(file_contents).unwrap();
                 let layout = design.make_layout();
                 self.overlay = Some(Overlay::new(&layout).unwrap());
-                self.autorouter = Some(Autorouter::new(layout).unwrap());
+                self.autorouter = Some(Arc::new(Mutex::new(Autorouter::new(layout).unwrap())));
             }
         } else {
             if let Ok(path) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_file(&path).unwrap();
                 let layout = design.make_layout();
                 self.overlay = Some(Overlay::new(&layout).unwrap());
-                self.autorouter = Some(Autorouter::new(layout).unwrap());
+                self.autorouter = Some(Arc::new(Mutex::new(Autorouter::new(layout).unwrap())));
             }
         }
 
@@ -150,8 +153,12 @@ impl eframe::App for App {
                 ui.separator();
 
                 if ui.button("Autoroute").clicked() {
-                    if let Some(ref mut autorouter) = &mut self.autorouter {
-                        autorouter.autoroute(&mut EmptyRouterObserver {});
+                    if let Some(autorouter_arc_mutex) = &self.autorouter {
+                        let autorouter_mutex = autorouter_arc_mutex.clone();
+                        execute(async move {
+                            let mut autorouter = autorouter_mutex.lock().unwrap();
+                            autorouter.autoroute(&mut EmptyRouterObserver {});
+                        });
                     }
                 }
 
@@ -192,97 +199,102 @@ impl eframe::App for App {
                 let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
                 let mut painter = Painter::new(ui, transform);
 
-                if let (Some(autorouter), Some(overlay)) = (&self.autorouter, &mut self.overlay) {
-                    if ctx.input(|i| i.pointer.any_click()) {
-                        overlay.click(
-                            autorouter.router().layout(),
-                            point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
-                        );
-                    }
+                if let (Some(autorouter_arc_mutex), Some(overlay)) =
+                    (&self.autorouter, &mut self.overlay)
+                {
+                    if let Ok(autorouter) = autorouter_arc_mutex.try_lock() {
+                        if ctx.input(|i| i.pointer.any_click()) {
+                            overlay.click(
+                                autorouter.router().layout(),
+                                point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
+                            );
+                        }
 
-                    for primitive in autorouter
-                        .router()
-                        .layout()
-                        .drawing()
-                        .layer_primitive_nodes(1)
-                    {
-                        let shape = primitive
-                            .primitive(autorouter.router().layout().drawing())
-                            .shape();
-
-                        let color = if overlay
-                            .selection()
-                            .contains(&GenericNode::Primitive(primitive))
+                        for primitive in autorouter
+                            .router()
+                            .layout()
+                            .drawing()
+                            .layer_primitive_nodes(1)
                         {
-                            egui::Color32::from_rgb(100, 100, 255)
-                        } else {
-                            egui::Color32::from_rgb(52, 52, 200)
-                        };
-                        painter.paint_shape(&shape, color);
-                    }
+                            let shape = primitive
+                                .primitive(autorouter.router().layout().drawing())
+                                .shape();
 
-                    for zone in autorouter.router().layout().layer_zone_nodes(1) {
-                        let color = if overlay.selection().contains(&GenericNode::Compound(zone)) {
-                            egui::Color32::from_rgb(100, 100, 255)
-                        } else {
-                            egui::Color32::from_rgb(52, 52, 200)
-                        };
-                        painter.paint_polygon(
-                            &autorouter.router().layout().zone(zone).shape().polygon,
-                            color,
-                        )
-                    }
+                            let color = if overlay
+                                .selection()
+                                .contains(&GenericNode::Primitive(primitive))
+                            {
+                                egui::Color32::from_rgb(100, 100, 255)
+                            } else {
+                                egui::Color32::from_rgb(52, 52, 200)
+                            };
+                            painter.paint_shape(&shape, color);
+                        }
 
-                    for primitive in autorouter
-                        .router()
-                        .layout()
-                        .drawing()
-                        .layer_primitive_nodes(0)
-                    {
-                        let shape = primitive
-                            .primitive(autorouter.router().layout().drawing())
-                            .shape();
+                        for zone in autorouter.router().layout().layer_zone_nodes(1) {
+                            let color =
+                                if overlay.selection().contains(&GenericNode::Compound(zone)) {
+                                    egui::Color32::from_rgb(100, 100, 255)
+                                } else {
+                                    egui::Color32::from_rgb(52, 52, 200)
+                                };
+                            painter.paint_polygon(
+                                &autorouter.router().layout().zone(zone).shape().polygon,
+                                color,
+                            )
+                        }
 
-                        let color = if overlay
-                            .selection()
-                            .contains(&GenericNode::Primitive(primitive))
+                        for primitive in autorouter
+                            .router()
+                            .layout()
+                            .drawing()
+                            .layer_primitive_nodes(0)
                         {
-                            egui::Color32::from_rgb(255, 100, 100)
-                        } else {
-                            egui::Color32::from_rgb(200, 52, 52)
-                        };
-                        painter.paint_shape(&shape, color);
-                    }
+                            let shape = primitive
+                                .primitive(autorouter.router().layout().drawing())
+                                .shape();
 
-                    for zone in autorouter.router().layout().layer_zone_nodes(0) {
-                        let color = if overlay.selection().contains(&GenericNode::Compound(zone)) {
-                            egui::Color32::from_rgb(255, 100, 100)
-                        } else {
-                            egui::Color32::from_rgb(200, 52, 52)
-                        };
-                        painter.paint_polygon(
-                            &autorouter.router().layout().zone(zone).shape().polygon,
-                            color,
-                        )
-                    }
+                            let color = if overlay
+                                .selection()
+                                .contains(&GenericNode::Primitive(primitive))
+                            {
+                                egui::Color32::from_rgb(255, 100, 100)
+                            } else {
+                                egui::Color32::from_rgb(200, 52, 52)
+                            };
+                            painter.paint_shape(&shape, color);
+                        }
 
-                    for edge in overlay.ratsnest().graph().edge_references() {
-                        let from = overlay
-                            .ratsnest()
-                            .graph()
-                            .node_weight(edge.source())
-                            .unwrap()
-                            .pos;
-                        let to = overlay
-                            .ratsnest()
-                            .graph()
-                            .node_weight(edge.target())
-                            .unwrap()
-                            .pos;
+                        for zone in autorouter.router().layout().layer_zone_nodes(0) {
+                            let color =
+                                if overlay.selection().contains(&GenericNode::Compound(zone)) {
+                                    egui::Color32::from_rgb(255, 100, 100)
+                                } else {
+                                    egui::Color32::from_rgb(200, 52, 52)
+                                };
+                            painter.paint_polygon(
+                                &autorouter.router().layout().zone(zone).shape().polygon,
+                                color,
+                            )
+                        }
 
-                        painter.paint_edge(from, to, egui::Color32::from_rgb(90, 90, 200));
+                        for edge in overlay.ratsnest().graph().edge_references() {
+                            let from = overlay
+                                .ratsnest()
+                                .graph()
+                                .node_weight(edge.source())
+                                .unwrap()
+                                .pos;
+                            let to = overlay
+                                .ratsnest()
+                                .graph()
+                                .node_weight(edge.target())
+                                .unwrap()
+                                .pos;
+
+                            painter.paint_edge(from, to, egui::Color32::from_rgb(90, 90, 200));
+                        }
                     }
-                    //unreachable!();
                 }
             })
         });
