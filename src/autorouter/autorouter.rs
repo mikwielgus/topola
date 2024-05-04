@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use geo::Point;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use spade::InsertionError;
@@ -16,9 +18,10 @@ pub struct Autorouter<R: RulesTrait> {
 }
 
 impl<R: RulesTrait> Autorouter<R> {
-    pub fn new(layout: Layout<R>) -> Result<Self, InsertionError> {
+    pub fn new(layout: Arc<Mutex<Layout<R>>>) -> Result<Self, InsertionError> {
+        let ratsnest = Ratsnest::new(&layout.lock().unwrap())?;
         Ok(Self {
-            ratsnest: Ratsnest::new(&layout)?,
+            ratsnest,
             router: Router::new(layout),
         })
     }
@@ -38,24 +41,24 @@ impl<R: RulesTrait> Autorouter<R> {
                 .unwrap()
                 .vertex_index();
 
-            let from_dot = match from {
-                RatsnestVertexIndex::FixedDot(dot) => dot,
-                RatsnestVertexIndex::Zone(zone) => self.router.layout_mut().zone_apex(zone),
-            };
+            let (from_dot, to_dot) = {
+                let layout = self.router.layout();
+                let mut layout = layout.lock().unwrap();
 
-            let to_dot = match to {
-                RatsnestVertexIndex::FixedDot(dot) => dot,
-                RatsnestVertexIndex::Zone(zone) => self.router.layout_mut().zone_apex(zone),
+                let from_dot = match from {
+                    RatsnestVertexIndex::FixedDot(dot) => dot,
+                    RatsnestVertexIndex::Zone(zone) => layout.zone_apex(zone),
+                };
+
+                let to_dot = match to {
+                    RatsnestVertexIndex::FixedDot(dot) => dot,
+                    RatsnestVertexIndex::Zone(zone) => layout.zone_apex(zone),
+                };
+
+                (from_dot, to_dot)
             };
 
             self.router.route_band(from_dot, to_dot, 100.0, observer);
-        }
-    }
-
-    fn terminating_dot(&mut self, vertex: RatsnestVertexIndex) -> FixedDotIndex {
-        match vertex {
-            RatsnestVertexIndex::FixedDot(dot) => dot,
-            RatsnestVertexIndex::Zone(zone) => self.router.layout_mut().zone_apex(zone),
         }
     }
 

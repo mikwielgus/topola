@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use contracts::debug_ensures;
 
 use crate::{
@@ -24,17 +26,17 @@ pub struct Trace {
 
 #[derive(Debug)]
 pub struct Tracer<'a, R: RulesTrait> {
-    pub layout: &'a mut Layout<R>,
+    pub layout: Arc<Mutex<Layout<R>>>,
     pub mesh: &'a Navmesh,
 }
 
 impl<'a, R: RulesTrait> Tracer<'a, R> {
-    pub fn new(layout: &'a mut Layout<R>, mesh: &'a Navmesh) -> Self {
+    pub fn new(layout: Arc<Mutex<Layout<R>>>, mesh: &'a Navmesh) -> Self {
         Tracer { layout, mesh }
     }
 
     pub fn start(&mut self, from: FixedDotIndex, width: f64) -> Trace {
-        let band = self.layout.start_band(from);
+        let band = self.layout.lock().unwrap().start_band(from);
         Trace {
             path: vec![from.into()],
             head: BareHead { dot: from }.into(),
@@ -49,8 +51,8 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         into: FixedDotIndex,
         width: f64,
     ) -> Result<(), DrawException> {
-        self.draw().finish_in_dot(trace.head, into, width)?;
-        Ok(self.layout.finish_band(trace.band, into))
+        Draw::new(&mut self.layout.lock().unwrap()).finish_in_dot(trace.head, into, width)?;
+        Ok(self.layout.lock().unwrap().finish_band(trace.band, into))
     }
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == path.len())]
@@ -131,7 +133,11 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         around: FixedDotIndex,
         width: f64,
     ) -> Result<SegbendHead, DrawException> {
-        let head = self.draw().segbend_around_dot(head, around.into(), width)?;
+        let head = Draw::new(&mut self.layout.lock().unwrap()).segbend_around_dot(
+            head,
+            around.into(),
+            width,
+        )?;
         Ok(head)
     }
 
@@ -141,9 +147,11 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         around: LooseBendIndex,
         width: f64,
     ) -> Result<SegbendHead, DrawException> {
-        let head = self
-            .draw()
-            .segbend_around_bend(head, around.into(), width)?;
+        let head = Draw::new(&mut self.layout.lock().unwrap()).segbend_around_bend(
+            head,
+            around.into(),
+            width,
+        )?;
 
         Ok(head)
     }
@@ -151,15 +159,13 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     #[debug_ensures(trace.path.len() == old(trace.path.len() - 1))]
     pub fn undo_step(&mut self, trace: &mut Trace) {
         if let Head::Segbend(head) = trace.head {
-            trace.head = self.draw().undo_segbend(head).unwrap();
+            trace.head = Draw::new(&mut self.layout.lock().unwrap())
+                .undo_segbend(head)
+                .unwrap();
         } else {
             panic!();
         }
 
         trace.path.pop();
-    }
-
-    fn draw(&mut self) -> Draw<R> {
-        Draw::new(&mut self.layout)
     }
 }

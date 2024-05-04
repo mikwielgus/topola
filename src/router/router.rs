@@ -1,3 +1,5 @@
+use std::sync::{Arc, Mutex};
+
 use geo::geometry::Point;
 use geo::EuclideanDistance;
 use petgraph::visit::EdgeRef;
@@ -56,7 +58,7 @@ pub trait RouterObserverTrait<R: RulesTrait> {
 }
 
 pub struct Router<R: RulesTrait> {
-    layout: Layout<R>,
+    layout: Arc<Mutex<Layout<R>>>,
 }
 
 struct RouterAstarStrategy<'a, RO: RouterObserverTrait<R>, R: RulesTrait> {
@@ -103,14 +105,24 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64>
             return None;
         }
 
-        let before_probe_length = self.tracer.layout.band_length(self.trace.band);
+        let before_probe_length = self
+            .tracer
+            .layout
+            .lock()
+            .unwrap()
+            .band_length(self.trace.band);
 
         let width = self.trace.width;
         let result = self.tracer.step(&mut self.trace, edge.target(), width);
         self.observer
             .on_probe(&self.tracer, &self.trace, edge, result);
 
-        let probe_length = self.tracer.layout.band_length(self.trace.band);
+        let probe_length = self
+            .tracer
+            .layout
+            .lock()
+            .unwrap()
+            .band_length(self.trace.band);
 
         if result.is_ok() {
             self.tracer.undo_step(&mut self.trace);
@@ -122,23 +134,20 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64>
 
     fn estimate_cost(&mut self, vertex: VertexIndex) -> f64 {
         self.observer.on_estimate(&self.tracer, vertex);
+
+        let layout = self.tracer.layout.lock().unwrap();
         let start_point = PrimitiveIndex::from(vertex)
-            .primitive(self.tracer.layout.drawing())
+            .primitive(layout.drawing())
             .shape()
             .center();
-        let end_point = self
-            .tracer
-            .layout
-            .drawing()
-            .primitive(self.to)
-            .shape()
-            .center();
+        let end_point = layout.drawing().primitive(self.to).shape().center();
+
         end_point.euclidean_distance(&start_point)
     }
 }
 
 impl<R: RulesTrait> Router<R> {
-    pub fn new(layout: Layout<R>) -> Self {
+    pub fn new(layout: Arc<Mutex<Layout<R>>>) -> Self {
         Router { layout }
     }
 
@@ -152,13 +161,14 @@ impl<R: RulesTrait> Router<R> {
         // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
         // right.
         //self.mesh.triangulate(&self.layout)?;
-        let mesh = Navmesh::new(&self.layout).map_err(|err| RoutingError {
+        let mesh = Navmesh::new(&self.layout.lock().unwrap()).map_err(|err| RoutingError {
             from,
             to,
             source: err.into(),
         })?;
 
         let mut tracer = self.tracer(&mesh);
+
         let trace = tracer.start(from, width);
         let band = trace.band;
 
@@ -183,22 +193,24 @@ impl<R: RulesTrait> Router<R> {
         width: f64,
         observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<BandIndex, RoutingError> {
-        let from_dot = self.layout.band_from(band);
-        let to_dot = self.layout.band_to(band).unwrap();
-        self.layout.remove_band(band);
-        self.layout.move_dot(to_dot.into(), to).unwrap(); // TODO: Remove `.unwrap()`.
+        let (from_dot, to_dot) = {
+            let mut layout = self.layout.lock().unwrap();
+
+            let from_dot = layout.band_from(band);
+            let to_dot = layout.band_to(band).unwrap();
+            layout.remove_band(band);
+            layout.move_dot(to_dot.into(), to).unwrap(); // TODO: Remove `.unwrap()`.
+            (from_dot, to_dot)
+        };
+
         self.route_band(from_dot, to_dot, width, observer)
     }
 
     pub fn tracer<'a>(&'a mut self, mesh: &'a Navmesh) -> Tracer<R> {
-        Tracer::new(&mut self.layout, mesh)
+        Tracer::new(self.layout.clone(), mesh)
     }
 
-    pub fn layout(&self) -> &Layout<R> {
-        &self.layout
-    }
-
-    pub fn layout_mut(&mut self) -> &mut Layout<R> {
-        &mut self.layout
+    pub fn layout(&self) -> Arc<Mutex<Layout<R>>> {
+        self.layout.clone()
     }
 }
