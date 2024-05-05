@@ -6,7 +6,7 @@ use crate::{
     drawing::{
         bend::LooseBendWeight,
         dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-        graph::{GetLayer, PrimitiveIndex, PrimitiveWeight, Retag},
+        graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight, Retag},
         rules::RulesTrait,
         seg::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
@@ -219,7 +219,7 @@ impl<R: RulesTrait> Layout<R> {
                         r: 100.0,
                     },
                     layer: self.zone(zone).layer(),
-                    maybe_net: None,
+                    maybe_net: self.zone(zone).maybe_net(),
                 },
                 zone,
             )
