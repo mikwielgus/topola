@@ -4,9 +4,9 @@ use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
     data::{Element, FromElements},
-    stable_graph::{NodeIndex, StableGraph, StableUnGraph},
+    graph::{NodeIndex, UnGraph},
     unionfind::UnionFind,
-    visit::{self, EdgeRef, IntoEdgeReferences, NodeIndexable},
+    visit::{EdgeRef, IntoEdgeReferences, NodeIndexable},
 };
 use spade::{HasPosition, InsertionError, Point2};
 
@@ -53,7 +53,7 @@ impl HasPosition for VertexWeight {
 }
 
 pub struct Ratsnest {
-    graph: StableUnGraph<VertexWeight, TriangulationEdgeWeight, usize>,
+    graph: UnGraph<VertexWeight, TriangulationEdgeWeight, usize>,
 }
 
 impl Ratsnest {
@@ -65,7 +65,7 @@ impl Ratsnest {
         }
 
         let mut this = Self {
-            graph: StableUnGraph::default(),
+            graph: UnGraph::default(),
         };
 
         let mut triangulations = HashMap::new();
@@ -149,7 +149,7 @@ impl Ratsnest {
         Ok(this)
     }
 
-    pub fn graph(&self) -> &StableUnGraph<VertexWeight, TriangulationEdgeWeight, usize> {
+    pub fn graph(&self) -> &UnGraph<VertexWeight, TriangulationEdgeWeight, usize> {
         &self.graph
     }
 }
