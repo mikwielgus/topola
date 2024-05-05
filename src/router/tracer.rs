@@ -27,12 +27,12 @@ pub struct Trace {
 #[derive(Debug)]
 pub struct Tracer<'a, R: RulesTrait> {
     pub layout: Arc<Mutex<Layout<R>>>,
-    pub mesh: &'a Navmesh,
+    pub navmesh: &'a Navmesh,
 }
 
 impl<'a, R: RulesTrait> Tracer<'a, R> {
-    pub fn new(layout: Arc<Mutex<Layout<R>>>, mesh: &'a Navmesh) -> Self {
-        Tracer { layout, mesh }
+    pub fn new(layout: Arc<Mutex<Layout<R>>>, navmesh: &'a Navmesh) -> Self {
+        Tracer { layout, navmesh }
     }
 
     pub fn start(&mut self, from: FixedDotIndex, width: f64) -> Trace {

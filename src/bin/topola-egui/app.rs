@@ -15,7 +15,7 @@ use topola::{
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
         rules::RulesTrait,
-        Drawing,
+        Drawing, Infringement, LayoutException,
     },
     dsn::{design::DsnDesign, rules::DsnRules},
     geometry::{
@@ -35,6 +35,13 @@ use topola::{
 
 use crate::{overlay::Overlay, painter::Painter};
 
+#[derive(Debug, Default)]
+struct SharedData {
+    pub path: Vec<VertexIndex>,
+    pub ghosts: Vec<PrimitiveShape>,
+    pub highlighteds: Vec<PrimitiveIndex>,
+}
+
 /// Deserialize/Serialize is needed to persist app state between restarts.
 #[derive(serde::Deserialize, serde::Serialize)]
 #[serde(default)]
@@ -44,6 +51,9 @@ pub struct App {
 
     #[serde(skip)]
     layout: Option<Arc<Mutex<Layout<DsnRules>>>>,
+
+    #[serde(skip)]
+    shared_data: Arc<Mutex<SharedData>>,
 
     #[serde(skip)]
     text_channel: (Sender<String>, Receiver<String>),
@@ -57,6 +67,7 @@ impl Default for App {
         Self {
             overlay: None,
             layout: None,
+            shared_data: Default::default(),
             text_channel: channel(),
             from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
         }
@@ -75,23 +86,50 @@ impl App {
     }
 }
 
-struct EmptyRouterObserver;
+struct DebugRouterObserver {
+    shared_data: Arc<Mutex<SharedData>>,
+}
 
-impl<R: RulesTrait + std::fmt::Debug> RouterObserverTrait<R> for EmptyRouterObserver {
-    fn on_rework(&mut self, _tracer: &Tracer<R>, _trace: &Trace) {
+impl<R: RulesTrait + std::fmt::Debug> RouterObserverTrait<R> for DebugRouterObserver {
+    fn on_rework(&mut self, tracer: &Tracer<R>, trace: &Trace) {
         //dbg!(_tracer, _trace);
+        let mut shared_data = self.shared_data.lock().unwrap();
+        shared_data.path = trace.path.clone();
+        shared_data.ghosts = vec![];
+        shared_data.highlighteds = vec![];
+        std::thread::sleep_ms(500);
     }
-    fn before_probe(&mut self, _tracer: &Tracer<R>, _trace: &Trace, _edge: NavmeshEdgeReference) {
+    fn before_probe(&mut self, tracer: &Tracer<R>, trace: &Trace, edge: NavmeshEdgeReference) {
         //dbg!(_tracer, _trace, _edge);
+        let mut shared_data = self.shared_data.lock().unwrap();
+        shared_data.path = trace.path.clone();
+        shared_data.path.push(edge.target());
+        shared_data.ghosts = vec![];
+        shared_data.highlighteds = vec![];
+        std::thread::sleep_ms(100);
     }
     fn on_probe(
         &mut self,
-        _tracer: &Tracer<R>,
-        _trace: &Trace,
-        _edge: NavmeshEdgeReference,
-        _result: Result<(), DrawException>,
+        tracer: &Tracer<R>,
+        trace: &Trace,
+        edge: NavmeshEdgeReference,
+        result: Result<(), DrawException>,
     ) {
         //dbg!(_tracer, _trace, _edge, _result);
+        let mut shared_data = self.shared_data.lock().unwrap();
+        let (ghosts, highlighteds, delay) = match result {
+            Err(DrawException::CannotWrapAround(
+                ..,
+                LayoutException::Infringement(Infringement(shape1, infringee1)),
+                LayoutException::Infringement(Infringement(shape2, infringee2)),
+            )) => (vec![shape1, shape2], vec![infringee1, infringee2], 1500),
+            _ => (vec![], vec![], 300),
+        };
+
+        shared_data.path = trace.path.clone();
+        shared_data.ghosts = ghosts;
+        shared_data.highlighteds = highlighteds;
+        std::thread::sleep_ms(delay);
     }
     fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: VertexIndex) {
         //dbg!(_tracer, _vertex);
@@ -155,10 +193,11 @@ impl eframe::App for App {
                 if ui.button("Autoroute").clicked() {
                     if let Some(layout_arc_mutex) = &self.layout {
                         let layout = layout_arc_mutex.clone();
+                        let shared_data = self.shared_data.clone();
 
                         execute(async move {
                             let mut autorouter = Autorouter::new(layout).unwrap();
-                            autorouter.autoroute(&mut EmptyRouterObserver {});
+                            autorouter.autoroute(&mut DebugRouterObserver { shared_data });
                         });
                     }
                 }
@@ -201,9 +240,11 @@ impl eframe::App for App {
                 let mut painter = Painter::new(ui, transform);
 
                 if let Some(layout_arc_mutex) = &self.layout {
-                    if let (layout, Some(overlay)) =
-                        (&layout_arc_mutex.lock().unwrap(), &mut self.overlay)
-                    {
+                    if let (layout, shared_data, Some(overlay)) = (
+                        &layout_arc_mutex.lock().unwrap(),
+                        self.shared_data.lock().unwrap(),
+                        &mut self.overlay,
+                    ) {
                         if ctx.input(|i| i.pointer.any_click()) {
                             overlay.click(
                                 layout,
@@ -214,9 +255,10 @@ impl eframe::App for App {
                         for primitive in layout.drawing().layer_primitive_nodes(1) {
                             let shape = primitive.primitive(layout.drawing()).shape();
 
-                            let color = if overlay
-                                .selection()
-                                .contains(&GenericNode::Primitive(primitive))
+                            let color = if shared_data.highlighteds.contains(&primitive)
+                                || overlay
+                                    .selection()
+                                    .contains(&GenericNode::Primitive(primitive))
                             {
                                 egui::Color32::from_rgb(100, 100, 255)
                             } else {
@@ -238,9 +280,10 @@ impl eframe::App for App {
                         for primitive in layout.drawing().layer_primitive_nodes(0) {
                             let shape = primitive.primitive(layout.drawing()).shape();
 
-                            let color = if overlay
-                                .selection()
-                                .contains(&GenericNode::Primitive(primitive))
+                            let color = if shared_data.highlighteds.contains(&primitive)
+                                || overlay
+                                    .selection()
+                                    .contains(&GenericNode::Primitive(primitive))
                             {
                                 egui::Color32::from_rgb(255, 100, 100)
                             } else {
@@ -274,6 +317,10 @@ impl eframe::App for App {
                                 .pos;
 
                             painter.paint_edge(from, to, egui::Color32::from_rgb(90, 90, 200));
+                        }
+
+                        for ghost in shared_data.ghosts.iter() {
+                            painter.paint_shape(&ghost, egui::Color32::from_rgb(75, 75, 150));
                         }
                         //unreachable!();
                     }
