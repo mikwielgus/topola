@@ -469,17 +469,18 @@ impl DsnDesign {
         net: usize,
     ) {
         // add the first coordinate in the wire path as a dot and save its index
+        let mut prev_pos = Self::pos(
+            place_pos,
+            place_rot,
+            pin_pos,
+            pin_rot,
+            coords[0].x as f64,
+            coords[0].y as f64,
+        );
         let mut prev_index = layout
             .add_fixed_dot(FixedDotWeight {
                 circle: Circle {
-                    pos: Self::pos(
-                        place_pos,
-                        place_rot,
-                        pin_pos,
-                        pin_rot,
-                        coords[0].x as f64,
-                        coords[0].y as f64,
-                    ),
+                    pos: prev_pos,
                     r: width / 2.0,
                 },
                 layer,
@@ -489,18 +490,23 @@ impl DsnDesign {
 
         // iterate through path coords starting from the second
         for coord in coords.iter().skip(1) {
+            let pos = Self::pos(
+                place_pos,
+                place_rot,
+                pin_pos,
+                pin_rot,
+                coord.x as f64,
+                coord.y as f64,
+            );
+
+            if pos == prev_pos {
+                continue;
+            }
+
             let index = layout
                 .add_fixed_dot(FixedDotWeight {
                     circle: Circle {
-                        pos: Self::pos(
-                            place_pos,
-                            place_rot,
-                            pin_pos,
-                            pin_rot,
-                            coord.x as f64,
-                            coord.y as f64,
-                        )
-                        .into(),
+                        pos,
                         r: width / 2.0,
                     },
                     layer,
@@ -522,6 +528,7 @@ impl DsnDesign {
                 .unwrap();
 
             prev_index = index;
+            prev_pos = pos;
         }
     }
 
