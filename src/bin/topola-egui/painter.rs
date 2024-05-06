@@ -11,7 +11,7 @@ impl<'a> Painter<'a> {
         Self { ui, transform }
     }
 
-    pub fn paint_shape(&mut self, shape: &PrimitiveShape, color: egui::epaint::Color32) {
+    pub fn paint_primitive(&mut self, shape: &PrimitiveShape, color: egui::epaint::Color32) {
         let epaint_shape = match shape {
             PrimitiveShape::Dot(dot) => egui::Shape::circle_filled(
                 self.transform

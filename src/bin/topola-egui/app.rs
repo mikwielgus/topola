@@ -21,13 +21,14 @@ use topola::{
     geometry::{
         compound::CompoundManagerTrait,
         primitive::{BendShape, DotShape, PrimitiveShape, PrimitiveShapeTrait, SegShape},
+        shape::ShapeTrait,
         GenericNode,
     },
     layout::{zone::MakePolyShape, Layout},
     math::Circle,
     router::{
         draw::DrawException,
-        navmesh::{NavmeshEdgeReference, VertexIndex},
+        navmesh::{Navmesh, NavmeshEdgeReference, VertexIndex},
         tracer::{Trace, Tracer},
         RouterObserverTrait,
     },
@@ -37,6 +38,7 @@ use crate::{overlay::Overlay, painter::Painter};
 
 #[derive(Debug, Default)]
 struct SharedData {
+    pub navmesh: Option<Navmesh>,
     pub path: Vec<VertexIndex>,
     pub ghosts: Vec<PrimitiveShape>,
     pub highlighteds: Vec<PrimitiveIndex>,
@@ -197,7 +199,17 @@ impl eframe::App for App {
 
                         execute(async move {
                             let mut autorouter = Autorouter::new(layout).unwrap();
-                            autorouter.autoroute(&mut DebugRouterObserver { shared_data });
+                            let mut it = autorouter.autoroute_iter();
+                            shared_data.lock().unwrap().navmesh = Some(it.navmesh().clone());
+
+                            while let Some(()) = it.next(
+                                &mut autorouter,
+                                &mut DebugRouterObserver {
+                                    shared_data: shared_data.clone(),
+                                },
+                            ) {
+                                shared_data.lock().unwrap().navmesh = Some(it.navmesh().clone());
+                            }
                         });
                     }
                 }
@@ -264,7 +276,7 @@ impl eframe::App for App {
                             } else {
                                 egui::Color32::from_rgb(52, 52, 200)
                             };
-                            painter.paint_shape(&shape, color);
+                            painter.paint_primitive(&shape, color);
                         }
 
                         for zone in layout.layer_zone_nodes(1) {
@@ -289,7 +301,7 @@ impl eframe::App for App {
                             } else {
                                 egui::Color32::from_rgb(200, 52, 52)
                             };
-                            painter.paint_shape(&shape, color);
+                            painter.paint_primitive(&shape, color);
                         }
 
                         for zone in layout.layer_zone_nodes(0) {
@@ -319,8 +331,21 @@ impl eframe::App for App {
                             painter.paint_edge(from, to, egui::Color32::from_rgb(90, 90, 200));
                         }
 
+                        if let Some(navmesh) = &shared_data.navmesh {
+                            for edge in navmesh.edge_references() {
+                                let from =
+                                    edge.source().primitive(layout.drawing()).shape().center();
+                                let to = edge.target().primitive(layout.drawing()).shape().center();
+                                painter.paint_edge(
+                                    from,
+                                    to,
+                                    egui::Color32::from_rgb(125, 125, 125),
+                                );
+                            }
+                        }
+
                         for ghost in shared_data.ghosts.iter() {
-                            painter.paint_shape(&ghost, egui::Color32::from_rgb(75, 75, 150));
+                            painter.paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
                         }
                         //unreachable!();
                     }

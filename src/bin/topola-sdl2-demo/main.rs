@@ -406,7 +406,7 @@ fn render_times(
             };
 
             let shape = node.primitive(drawing).shape();
-            painter.paint_shape(&shape, color, view.zoom);
+            painter.paint_primitive(&shape, color, view.zoom);
         }
 
         for zone in drawing.layer_zones(1) {
@@ -425,7 +425,7 @@ fn render_times(
             };
 
             let shape = node.primitive(drawing).shape();
-            painter.paint_shape(&shape, color, view.zoom);
+            painter.paint_primitive(&shape, color, view.zoom);
         }
 
         for zone in drawing.layer_zones(0) {
@@ -437,13 +437,13 @@ fn render_times(
         }
 
         for ghost in ghosts {
-            painter.paint_shape(&ghost, ColorU::new(75, 75, 150, 255), view.zoom);
+            painter.paint_primitive(&ghost, ColorU::new(75, 75, 150, 255), view.zoom);
         }
 
         if let Some(ref navmesh) = maybe_navmesh {
             for edge in navmesh.edge_references() {
-                let to = edge.source().primitive(drawing).shape().center();
-                let from = edge.target().primitive(drawing).shape().center();
+                let from = edge.source().primitive(drawing).shape().center();
+                let to = edge.target().primitive(drawing).shape().center();
 
                 let color = 'blk: {
                     if let (Some(source_pos), Some(target_pos)) = (

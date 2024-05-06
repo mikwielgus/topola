@@ -13,7 +13,7 @@ impl<'a> Painter<'a> {
         Self { canvas }
     }
 
-    pub fn paint_shape(&mut self, shape: &PrimitiveShape, color: ColorU, zoom: f32) {
+    pub fn paint_primitive(&mut self, shape: &PrimitiveShape, color: ColorU, zoom: f32) {
         self.canvas.set_stroke_style(color);
         self.canvas.set_fill_style(color);
 

@@ -57,24 +57,20 @@ pub trait RouterObserverTrait<R: RulesTrait> {
     fn on_estimate(&mut self, tracer: &Tracer<R>, vertex: VertexIndex);
 }
 
-pub struct Router<R: RulesTrait> {
-    layout: Arc<Mutex<Layout<R>>>,
+pub struct Router<'a, R: RulesTrait> {
+    layout: &'a mut Arc<Mutex<Layout<R>>>,
+    navmesh: Navmesh,
 }
 
 struct RouterAstarStrategy<'a, RO: RouterObserverTrait<R>, R: RulesTrait> {
-    tracer: Tracer<'a, R>,
+    tracer: Tracer<R>,
     trace: Trace,
     to: FixedDotIndex,
     observer: &'a mut RO,
 }
 
 impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> RouterAstarStrategy<'a, RO, R> {
-    pub fn new(
-        tracer: Tracer<'a, R>,
-        trace: Trace,
-        to: FixedDotIndex,
-        observer: &'a mut RO,
-    ) -> Self {
+    pub fn new(tracer: Tracer<R>, trace: Trace, to: FixedDotIndex, observer: &'a mut RO) -> Self {
         Self {
             tracer,
             trace,
@@ -146,9 +142,17 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64>
     }
 }
 
-impl<R: RulesTrait> Router<R> {
-    pub fn new(layout: Arc<Mutex<Layout<R>>>) -> Self {
-        Router { layout }
+impl<'a, R: RulesTrait> Router<'a, R> {
+    pub fn new(layout: &'a mut Arc<Mutex<Layout<R>>>) -> Result<Self, InsertionError> {
+        let navmesh = Navmesh::new(&layout.lock().unwrap())?;
+        Self::new_with_navmesh(layout, navmesh)
+    }
+
+    pub fn new_with_navmesh(
+        layout: &'a mut Arc<Mutex<Layout<R>>>,
+        navmesh: Navmesh,
+    ) -> Result<Self, InsertionError> {
+        Ok(Self { layout, navmesh })
     }
 
     pub fn route_band(
@@ -158,22 +162,13 @@ impl<R: RulesTrait> Router<R> {
         width: f64,
         observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<BandIndex, RoutingError> {
-        // XXX: Should we actually store the mesh? May be useful for debugging, but doesn't look
-        // right.
-        //self.mesh.triangulate(&self.layout)?;
-        let mesh = Navmesh::new(&self.layout.lock().unwrap()).map_err(|err| RoutingError {
-            from,
-            to,
-            source: err.into(),
-        })?;
-
-        let mut tracer = self.tracer(&mesh);
+        let mut tracer = self.tracer();
 
         let trace = tracer.start(from, width);
         let band = trace.band;
 
         let (_cost, _path) = astar(
-            &mesh,
+            &self.navmesh,
             from.into(),
             &mut RouterAstarStrategy::new(tracer, trace, to.into(), observer),
         )
@@ -206,8 +201,8 @@ impl<R: RulesTrait> Router<R> {
         self.route_band(from_dot, to_dot, width, observer)
     }
 
-    pub fn tracer<'a>(&'a mut self, mesh: &'a Navmesh) -> Tracer<R> {
-        Tracer::new(self.layout.clone(), mesh)
+    fn tracer(&mut self) -> Tracer<R> {
+        Tracer::new(self.layout.clone())
     }
 
     pub fn layout(&self) -> Arc<Mutex<Layout<R>>> {
