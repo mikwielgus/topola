@@ -328,7 +328,11 @@ impl eframe::App for App {
                                 .unwrap()
                                 .pos;
 
-                            painter.paint_edge(from, to, egui::Color32::from_rgb(90, 90, 200));
+                            painter.paint_edge(
+                                from,
+                                to,
+                                egui::Stroke::new(1.0, egui::Color32::from_rgb(90, 90, 200)),
+                            );
                         }
 
                         if let Some(navmesh) = &shared_data.navmesh {
@@ -336,11 +340,32 @@ impl eframe::App for App {
                                 let from =
                                     edge.source().primitive(layout.drawing()).shape().center();
                                 let to = edge.target().primitive(layout.drawing()).shape().center();
-                                painter.paint_edge(
-                                    from,
-                                    to,
-                                    egui::Color32::from_rgb(125, 125, 125),
-                                );
+
+                                let stroke = 'blk: {
+                                    if let (Some(source_pos), Some(target_pos)) = (
+                                        shared_data
+                                            .path
+                                            .iter()
+                                            .position(|node| *node == edge.source()),
+                                        shared_data
+                                            .path
+                                            .iter()
+                                            .position(|node| *node == edge.target()),
+                                    ) {
+                                        if target_pos == source_pos + 1
+                                            || source_pos == target_pos + 1
+                                        {
+                                            break 'blk egui::Stroke::new(
+                                                5.0,
+                                                egui::Color32::from_rgb(250, 250, 0),
+                                            );
+                                        }
+                                    }
+
+                                    egui::Stroke::new(1.0, egui::Color32::from_rgb(125, 125, 125))
+                                };
+
+                                painter.paint_edge(from, to, stroke);
                             }
                         }
 

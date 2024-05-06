@@ -79,7 +79,7 @@ impl<'a> Painter<'a> {
         ));
     }
 
-    pub fn paint_edge(&mut self, from: Point, to: Point, color: egui::epaint::Color32) {
+    pub fn paint_edge(&mut self, from: Point, to: Point, stroke: egui::Stroke) {
         self.ui.painter().add(egui::Shape::line_segment(
             [
                 self.transform
@@ -87,7 +87,7 @@ impl<'a> Painter<'a> {
                 self.transform
                     .transform_pos([to.x() as f32, -to.y() as f32].into()),
             ],
-            egui::Stroke::new(1.0, color),
+            stroke,
         ));
     }
 }
