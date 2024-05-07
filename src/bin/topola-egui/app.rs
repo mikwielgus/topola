@@ -199,16 +199,18 @@ impl eframe::App for App {
 
                         execute(async move {
                             let mut autorouter = Autorouter::new(layout).unwrap();
-                            let mut it = autorouter.autoroute_iter();
-                            shared_data.lock().unwrap().navmesh = Some(it.navmesh().clone());
-
-                            while let Some(()) = it.next(
-                                &mut autorouter,
-                                &mut DebugRouterObserver {
-                                    shared_data: shared_data.clone(),
-                                },
-                            ) {
+                            if let Some(mut it) = autorouter.autoroute_iter() {
                                 shared_data.lock().unwrap().navmesh = Some(it.navmesh().clone());
+
+                                while let Some(()) = it.next(
+                                    &mut autorouter,
+                                    &mut DebugRouterObserver {
+                                        shared_data: shared_data.clone(),
+                                    },
+                                ) {
+                                    shared_data.lock().unwrap().navmesh =
+                                        Some(it.navmesh().clone());
+                                }
                             }
                         });
                     }

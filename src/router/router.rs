@@ -6,6 +6,7 @@ use petgraph::visit::EdgeRef;
 use spade::InsertionError;
 use thiserror::Error;
 
+use crate::drawing::graph::GetLayer;
 use crate::geometry::primitive::PrimitiveShapeTrait;
 use crate::layout::connectivity::BandIndex;
 use crate::layout::Layout;
@@ -59,6 +60,7 @@ pub trait RouterObserverTrait<R: RulesTrait> {
 
 pub struct Router<'a, R: RulesTrait> {
     layout: &'a mut Arc<Mutex<Layout<R>>>,
+    from: FixedDotIndex,
     navmesh: Navmesh,
 }
 
@@ -143,37 +145,48 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64>
 }
 
 impl<'a, R: RulesTrait> Router<'a, R> {
-    pub fn new(layout: &'a mut Arc<Mutex<Layout<R>>>) -> Result<Self, InsertionError> {
-        let navmesh = Navmesh::new(&layout.lock().unwrap())?;
-        Self::new_with_navmesh(layout, navmesh)
+    pub fn new(
+        layout: &'a mut Arc<Mutex<Layout<R>>>,
+        from: FixedDotIndex,
+    ) -> Result<Self, InsertionError> {
+        let navmesh = {
+            let layout = layout.lock().unwrap();
+            let layer = layout.drawing().primitive(from).layer();
+            Navmesh::new(&layout, layer)?
+        };
+        Self::new_with_navmesh(layout, from, navmesh)
     }
 
     pub fn new_with_navmesh(
         layout: &'a mut Arc<Mutex<Layout<R>>>,
+        from: FixedDotIndex,
         navmesh: Navmesh,
     ) -> Result<Self, InsertionError> {
-        Ok(Self { layout, navmesh })
+        Ok(Self {
+            layout,
+            from,
+            navmesh,
+        })
     }
 
     pub fn route_band(
         &mut self,
-        from: FixedDotIndex,
         to: FixedDotIndex,
         width: f64,
         observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<BandIndex, RoutingError> {
         let mut tracer = self.tracer();
 
-        let trace = tracer.start(from, width);
+        let trace = tracer.start(self.from, width);
         let band = trace.band;
 
         let (_cost, _path) = astar(
             &self.navmesh,
-            from.into(),
+            self.from.into(),
             &mut RouterAstarStrategy::new(tracer, trace, to.into(), observer),
         )
         .ok_or(RoutingError {
-            from,
+            from: self.from,
             to,
             source: RoutingErrorKind::AStar,
         })?;
@@ -198,7 +211,7 @@ impl<'a, R: RulesTrait> Router<'a, R> {
             (from_dot, to_dot)
         };
 
-        self.route_band(from_dot, to_dot, width, observer)
+        self.route_band(to_dot, width, observer)
     }
 
     fn tracer(&mut self) -> Tracer<R> {

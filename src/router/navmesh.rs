@@ -83,7 +83,7 @@ pub struct Navmesh {
 }
 
 impl Navmesh {
-    pub fn new(layout: &Layout<impl RulesTrait>) -> Result<Self, InsertionError> {
+    pub fn new(layout: &Layout<impl RulesTrait>, layer: u64) -> Result<Self, InsertionError> {
         let mut this = Self {
             triangulation: Triangulation::new(layout.drawing().geometry().graph().node_bound()),
             vertex_to_triangulation_vertex: Vec::new(),
@@ -91,7 +91,7 @@ impl Navmesh {
         this.vertex_to_triangulation_vertex
             .resize(layout.drawing().geometry().graph().node_bound(), None);
 
-        for node in layout.drawing().primitive_nodes() {
+        for node in layout.drawing().layer_primitive_nodes(layer) {
             let center = node.primitive(layout.drawing()).shape().center();
 
             match node {
@@ -113,7 +113,7 @@ impl Navmesh {
             }
         }
 
-        for node in layout.drawing().primitive_nodes() {
+        for node in layout.drawing().layer_primitive_nodes(layer) {
             // Add rails as vertices. This is how the navmesh differs from the triangulation.
             match node {
                 PrimitiveIndex::LooseBend(bend) => {
