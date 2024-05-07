@@ -70,54 +70,55 @@ impl Ratsnest {
 
         let mut triangulations = HashMap::new();
 
-        for node in layout.drawing().primitive_nodes() {
-            match node {
-                PrimitiveIndex::FixedDot(dot) => {
-                    if layout.compounds(dot).next().is_none() {
-                        if let Some(net) = layout.drawing().primitive(dot).maybe_net() {
-                            if !triangulations.contains_key(&net) {
-                                triangulations.insert(
-                                    net,
-                                    Triangulation::new(
-                                        layout.drawing().geometry().graph().node_bound(),
-                                    ),
-                                );
-                            }
+        for layer in 0..layout.drawing().layer_count() {
+            for node in layout.drawing().layer_primitive_nodes(layer) {
+                match node {
+                    PrimitiveIndex::FixedDot(dot) => {
+                        if layout.compounds(dot).next().is_none() {
+                            if let Some(net) = layout.drawing().primitive(dot).maybe_net() {
+                                if !triangulations.contains_key(&(layer, net)) {
+                                    triangulations.insert(
+                                        (layer, net),
+                                        Triangulation::new(
+                                            layout.drawing().geometry().graph().node_bound(),
+                                        ),
+                                    );
+                                }
 
-                            triangulations
-                                .get_mut(&net)
-                                .unwrap()
-                                .add_vertex(VertexWeight {
-                                    vertex: RatsnestVertexIndex::FixedDot(dot),
-                                    pos: node.primitive(layout.drawing()).shape().center(),
-                                })?;
+                                triangulations.get_mut(&(layer, net)).unwrap().add_vertex(
+                                    VertexWeight {
+                                        vertex: RatsnestVertexIndex::FixedDot(dot),
+                                        pos: node.primitive(layout.drawing()).shape().center(),
+                                    },
+                                )?;
+                            }
                         }
                     }
+                    _ => (),
                 }
-                _ => (),
+            }
+
+            for zone in layout.layer_zone_nodes(layer) {
+                if let Some(net) = layout.drawing().compound_weight(zone).maybe_net() {
+                    if !triangulations.contains_key(&(layer, net)) {
+                        triangulations.insert(
+                            (layer, net),
+                            Triangulation::new(layout.drawing().geometry().graph().node_bound()),
+                        );
+                    }
+
+                    triangulations
+                        .get_mut(&(layer, net))
+                        .unwrap()
+                        .add_vertex(VertexWeight {
+                            vertex: RatsnestVertexIndex::Zone(zone),
+                            pos: layout.zone(zone).shape().center(),
+                        })?
+                }
             }
         }
 
-        for zone in layout.zone_nodes() {
-            if let Some(net) = layout.drawing().compound_weight(zone).maybe_net() {
-                if !triangulations.contains_key(&net) {
-                    triangulations.insert(
-                        net,
-                        Triangulation::new(layout.drawing().geometry().graph().node_bound()),
-                    );
-                }
-
-                triangulations
-                    .get_mut(&net)
-                    .unwrap()
-                    .add_vertex(VertexWeight {
-                        vertex: RatsnestVertexIndex::Zone(zone),
-                        pos: layout.zone(zone).shape().center(),
-                    })?
-            }
-        }
-
-        for (net, triangulation) in triangulations {
+        for ((_layer, _net), triangulation) in triangulations {
             let mut map = Vec::new();
 
             for element in petgraph::algo::min_spanning_tree(&triangulation) {

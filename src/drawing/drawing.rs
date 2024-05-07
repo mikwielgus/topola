@@ -840,6 +840,12 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    pub fn layer_count(&self) -> u64 {
+        self.geometry_with_rtree.layer_count()
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn rules(&self) -> &R {
         &self.rules
     }

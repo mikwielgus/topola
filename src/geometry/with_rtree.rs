@@ -347,6 +347,10 @@ impl<
         }
     }
 
+    pub fn layer_count(&self) -> u64 {
+        self.layer_count
+    }
+
     pub fn geometry(&self) -> &Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
         &self.geometry
     }
