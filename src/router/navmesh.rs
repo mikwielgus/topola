@@ -7,6 +7,7 @@ use petgraph::visit::{self, NodeIndexable};
 use petgraph::{stable_graph::NodeIndex, visit::EdgeRef};
 use spade::{HasPosition, InsertionError, Point2};
 
+use crate::drawing::graph::{GetLayer, GetMaybeNet};
 use crate::geometry::shape::ShapeTrait;
 use crate::{
     drawing::{
@@ -83,7 +84,11 @@ pub struct Navmesh {
 }
 
 impl Navmesh {
-    pub fn new(layout: &Layout<impl RulesTrait>, layer: u64) -> Result<Self, InsertionError> {
+    pub fn new(
+        layout: &Layout<impl RulesTrait>,
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+    ) -> Result<Self, InsertionError> {
         let mut this = Self {
             triangulation: Triangulation::new(layout.drawing().geometry().graph().node_bound()),
             vertex_to_triangulation_vertex: Vec::new(),
@@ -91,25 +96,32 @@ impl Navmesh {
         this.vertex_to_triangulation_vertex
             .resize(layout.drawing().geometry().graph().node_bound(), None);
 
-        for node in layout.drawing().layer_primitive_nodes(layer) {
-            let center = node.primitive(layout.drawing()).shape().center();
+        let layer = layout.drawing().primitive(from).layer();
+        let net = layout.drawing().primitive(from).maybe_net().unwrap();
 
-            match node {
-                PrimitiveIndex::FixedDot(dot) => {
-                    this.triangulation.add_vertex(TriangulationWeight {
-                        vertex: dot.into(),
-                        rails: vec![],
-                        pos: center,
-                    })?;
+        for node in layout.drawing().layer_primitive_nodes(layer) {
+            let primitive = node.primitive(layout.drawing());
+
+            if let Some(primitive_net) = primitive.maybe_net() {
+                if node == from.into() || node == to.into() || primitive_net != net {
+                    match node {
+                        PrimitiveIndex::FixedDot(dot) => {
+                            this.triangulation.add_vertex(TriangulationWeight {
+                                vertex: dot.into(),
+                                rails: vec![],
+                                pos: primitive.shape().center(),
+                            })?;
+                        }
+                        PrimitiveIndex::FixedBend(bend) => {
+                            this.triangulation.add_vertex(TriangulationWeight {
+                                vertex: bend.into(),
+                                rails: vec![],
+                                pos: primitive.shape().center(),
+                            })?;
+                        }
+                        _ => (),
+                    }
                 }
-                PrimitiveIndex::FixedBend(bend) => {
-                    this.triangulation.add_vertex(TriangulationWeight {
-                        vertex: bend.into(),
-                        rails: vec![],
-                        pos: center,
-                    })?;
-                }
-                _ => (),
             }
         }
 

@@ -6,7 +6,7 @@ use petgraph::visit::EdgeRef;
 use spade::InsertionError;
 use thiserror::Error;
 
-use crate::drawing::graph::GetLayer;
+use crate::drawing::graph::{GetLayer, GetMaybeNet};
 use crate::geometry::primitive::PrimitiveShapeTrait;
 use crate::layout::connectivity::BandIndex;
 use crate::layout::Layout;
@@ -61,6 +61,7 @@ pub trait RouterObserverTrait<R: RulesTrait> {
 pub struct Router<'a, R: RulesTrait> {
     layout: &'a mut Arc<Mutex<Layout<R>>>,
     from: FixedDotIndex,
+    to: FixedDotIndex,
     navmesh: Navmesh,
 }
 
@@ -148,23 +149,25 @@ impl<'a, R: RulesTrait> Router<'a, R> {
     pub fn new(
         layout: &'a mut Arc<Mutex<Layout<R>>>,
         from: FixedDotIndex,
+        to: FixedDotIndex,
     ) -> Result<Self, InsertionError> {
         let navmesh = {
             let layout = layout.lock().unwrap();
-            let layer = layout.drawing().primitive(from).layer();
-            Navmesh::new(&layout, layer)?
+            Navmesh::new(&layout, from, to)?
         };
-        Self::new_with_navmesh(layout, from, navmesh)
+        Self::new_with_navmesh(layout, from, to, navmesh)
     }
 
     pub fn new_with_navmesh(
         layout: &'a mut Arc<Mutex<Layout<R>>>,
         from: FixedDotIndex,
+        to: FixedDotIndex,
         navmesh: Navmesh,
     ) -> Result<Self, InsertionError> {
         Ok(Self {
             layout,
             from,
+            to,
             navmesh,
         })
     }

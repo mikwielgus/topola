@@ -12,7 +12,11 @@ use spade::InsertionError;
 
 use crate::{
     autorouter::ratsnest::{Ratsnest, RatsnestVertexIndex},
-    drawing::{dot::FixedDotIndex, graph::GetLayer, rules::RulesTrait},
+    drawing::{
+        dot::FixedDotIndex,
+        graph::{GetLayer, GetMaybeNet},
+        rules::RulesTrait,
+    },
     layout::{connectivity::BandIndex, Layout},
     router::{navmesh::Navmesh, Router, RouterObserverTrait, RoutingError},
     triangulation::GetVertexIndex,
@@ -35,7 +39,7 @@ impl Autoroute {
 
         let mut layout = autorouter.layout.lock().unwrap();
         let (from_dot, to_dot) = Self::terminating_dots(autorouter, &mut layout, ratline);
-        let navmesh = Self::next_navmesh(&layout, from_dot);
+        let navmesh = Self::next_navmesh(&layout, from_dot, to_dot);
         Some(Self {
             edge_indices: peekable_edge_indices,
             navmesh,
@@ -54,13 +58,14 @@ impl Autoroute {
         let (navmesh, from_dot, to_dot) = {
             let mut layout = autorouter.layout.lock().unwrap();
             let (from_dot, to_dot) = Self::terminating_dots(autorouter, &mut layout, &ratline);
-            let navmesh = Self::next_navmesh(&layout, from_dot);
+            let navmesh = Self::next_navmesh(&layout, from_dot, to_dot);
             (navmesh, from_dot, to_dot)
         };
 
         let router = Router::new_with_navmesh(
             &mut autorouter.layout,
             from_dot,
+            to_dot,
             std::mem::replace(&mut self.navmesh, navmesh),
         );
         router.unwrap().route_band(to_dot, 100.0, observer);
@@ -103,9 +108,12 @@ impl Autoroute {
         (from_dot, to_dot)
     }
 
-    fn next_navmesh(layout: &Layout<impl RulesTrait>, from: FixedDotIndex) -> Navmesh {
-        let layer = layout.drawing().primitive(from).layer();
-        Navmesh::new(layout, layer).unwrap()
+    fn next_navmesh(
+        layout: &Layout<impl RulesTrait>,
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+    ) -> Navmesh {
+        Navmesh::new(layout, from, to).unwrap()
     }
 
     pub fn navmesh(&self) -> &Navmesh {
