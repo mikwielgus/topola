@@ -12,19 +12,22 @@ macro_rules! dbg_dot {
 use geo::point;
 use painter::Painter;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
-use topola::draw::DrawException;
 use topola::drawing::dot::FixedDotWeight;
 use topola::drawing::graph::{MakePrimitive, PrimitiveIndex};
 use topola::drawing::primitive::MakePrimitiveShape;
 use topola::drawing::rules::{Conditions, RulesTrait};
 use topola::drawing::seg::FixedSegWeight;
-use topola::drawing::zone::MakePolygon;
-use topola::drawing::{Infringement, Layout, LayoutException};
+use topola::drawing::{Infringement, LayoutException};
 use topola::dsn::design::DsnDesign;
+use topola::dsn::rules::DsnRules;
 use topola::geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait};
+use topola::geometry::shape::ShapeTrait;
 use topola::layout::connectivity::BandIndex;
+use topola::layout::zone::MakePolyShape;
 use topola::layout::Layout;
-use topola::navmesh::{Navmesh, NavmeshEdgeReference, VertexIndex};
+use topola::router::draw::DrawException;
+use topola::router::navmesh::{Navmesh, NavmeshEdgeReference, VertexIndex};
+use topola::router::tracer::{Trace, Tracer};
 use topola::router::RouterObserverTrait;
 
 use sdl2::event::Event;
@@ -43,8 +46,8 @@ use pathfinder_renderer::options::BuildOptions;
 use pathfinder_resources::embedded::EmbeddedResourceLoader;
 
 use std::collections::HashMap;
+use std::sync::{Arc, Mutex};
 use std::time::Duration;
-use topola::tracer::{Trace, Tracer};
 
 use topola::math::Circle;
 use topola::router::Router;
@@ -79,8 +82,8 @@ impl RulesTrait for SimpleRules {
 
 // Clunky enum to work around borrow checker.
 enum RouterOrLayout<'a, R: RulesTrait> {
-    Router(&'a mut Router<R>),
-    Layout(&'a Layout<R>),
+    Router(&'a mut Router<'a, R>),
+    Layout(Arc<Mutex<Layout<R>>>),
 }
 
 struct EmptyRouterObserver;
@@ -105,6 +108,7 @@ struct DebugRouterObserver<'a> {
     renderer: &'a mut Renderer<GLDevice>,
     font_context: &'a CanvasFontContext,
     view: &'a mut View,
+    navmesh: Option<Navmesh>,
 }
 
 impl<'a> DebugRouterObserver<'a> {
@@ -114,6 +118,7 @@ impl<'a> DebugRouterObserver<'a> {
         renderer: &'a mut Renderer<GLDevice>,
         font_context: &'a CanvasFontContext,
         view: &'a mut View,
+        navmesh: Option<Navmesh>,
     ) -> Self {
         Self {
             event_pump,
@@ -121,6 +126,7 @@ impl<'a> DebugRouterObserver<'a> {
             renderer,
             font_context,
             view,
+            navmesh,
         }
     }
 }
@@ -133,9 +139,9 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrLayout::Layout(tracer.layout.drawing()),
+            RouterOrLayout::Layout(tracer.layout.clone()),
             None,
-            Some(tracer.navmesh.clone()),
+            self.navmesh.clone(),
             &trace.path,
             &[],
             &[],
@@ -152,9 +158,9 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrLayout::Layout(tracer.layout.drawing()),
+            RouterOrLayout::Layout(tracer.layout.clone()),
             None,
-            Some(tracer.navmesh.clone()),
+            self.navmesh.clone(),
             &path,
             &[],
             &[],
@@ -184,9 +190,9 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrLayout::Layout(tracer.layout.drawing()),
+            RouterOrLayout::Layout(tracer.layout.clone()),
             None,
-            Some(tracer.navmesh.clone()),
+            self.navmesh.clone(),
             &trace.path,
             &ghosts,
             &highlighteds,
@@ -260,9 +266,8 @@ fn main() -> Result<(), anyhow::Error> {
     )?;
     //let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
     //dbg!(&design);
-    let drawing = design.make_layout();
-    let layout = Layout::new(drawing);
-    let mut router = Router::new(layout);
+    let layout = Arc::new(Mutex::new(design.make_layout()));
+    //let mut router = Router::new(layout);
 
     let mut view = View {
         pan: vec2f(-80000.0, -60000.0),
@@ -275,7 +280,7 @@ fn main() -> Result<(), anyhow::Error> {
         &mut renderer,
         &font_context,
         &mut view,
-        RouterOrLayout::Layout(router.layout.drawing()),
+        RouterOrLayout::Layout(layout.clone()),
         None,
         None,
         &[],
@@ -299,7 +304,7 @@ fn main() -> Result<(), anyhow::Error> {
         &mut renderer,
         &font_context,
         &mut view,
-        RouterOrLayout::Layout(router.layout.drawing()),
+        RouterOrLayout::Layout(layout.clone()),
         None,
         None,
         &[],
@@ -370,7 +375,7 @@ fn render_times(
 
         let mut painter = Painter::new(&mut canvas);
 
-        let drawing = match router_or_layout {
+        let layout_arc_mutex = match router_or_layout {
             RouterOrLayout::Router(ref mut router) => {
                 let state = event_pump.mouse_state();
 
@@ -386,51 +391,53 @@ fn render_times(
                                 renderer,
                                 font_context,
                                 view,
+                                maybe_navmesh,
                             ),
                         )
                         .ok();
                     maybe_navmesh = None;
                 }
 
-                router.layout().drawing()
+                router.layout().clone()
             }
-            RouterOrLayout::Layout(layout) => layout,
+            RouterOrLayout::Layout(ref layout) => layout.clone(),
         };
+        let layout = layout_arc_mutex.lock().unwrap();
 
         //let result = panic::catch_unwind(|| {
-        for node in drawing.layer_primitive_nodes(1) {
+        for node in layout.drawing().layer_primitive_nodes(1) {
             let color = if highlighteds.contains(&node) {
                 ColorU::new(100, 100, 255, 255)
             } else {
                 ColorU::new(52, 52, 200, 255)
             };
 
-            let shape = node.primitive(drawing).shape();
+            let shape = node.primitive(layout.drawing()).shape();
             painter.paint_primitive(&shape, color, view.zoom);
         }
 
-        for zone in drawing.layer_zones(1) {
+        for zone in layout.layer_zone_nodes(1) {
             painter.paint_polygon(
-                &zone.polygon(&drawing),
+                &layout.zone(zone).shape().polygon,
                 ColorU::new(52, 52, 200, 255),
                 view.zoom,
             );
         }
 
-        for node in drawing.layer_primitive_nodes(0) {
+        for node in layout.drawing().layer_primitive_nodes(0) {
             let color = if highlighteds.contains(&node) {
                 ColorU::new(255, 100, 100, 255)
             } else {
                 ColorU::new(200, 52, 52, 255)
             };
 
-            let shape = node.primitive(drawing).shape();
+            let shape = node.primitive(layout.drawing()).shape();
             painter.paint_primitive(&shape, color, view.zoom);
         }
 
-        for zone in drawing.layer_zones(0) {
+        for zone in layout.layer_zone_nodes(0) {
             painter.paint_polygon(
-                &zone.polygon(&drawing),
+                &layout.zone(zone).shape().polygon,
                 ColorU::new(200, 52, 52, 255),
                 view.zoom,
             );
@@ -442,8 +449,8 @@ fn render_times(
 
         if let Some(ref navmesh) = maybe_navmesh {
             for edge in navmesh.edge_references() {
-                let from = edge.source().primitive(drawing).shape().center();
-                let to = edge.target().primitive(drawing).shape().center();
+                let from = edge.source().primitive(layout.drawing()).shape().center();
+                let to = edge.target().primitive(layout.drawing()).shape().center();
 
                 let color = 'blk: {
                     if let (Some(source_pos), Some(target_pos)) = (

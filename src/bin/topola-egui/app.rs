@@ -207,8 +207,8 @@ impl eframe::App for App {
 
                                 {
                                     let mut shared_data = shared_data_arc_mutex.lock().unwrap();
-                                    shared_data.from = Some(from_to.0);
-                                    shared_data.to = Some(from_to.1);
+                                    shared_data.from = dbg!(Some(from_to.0));
+                                    shared_data.to = dbg!(Some(from_to.1));
                                     shared_data.navmesh = Some(autoroute.navmesh().clone());
                                 }
 
