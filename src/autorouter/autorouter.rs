@@ -55,20 +55,17 @@ impl Autoroute {
         autorouter: &mut Autorouter<R>,
         observer: &mut impl RouterObserverTrait<R>,
     ) -> Option<()> {
-        let (navmesh, from, to) = {
+        let navmesh = {
             let (from, to) = self.from_to(autorouter);
             let layout = autorouter.layout.lock().unwrap();
-            let navmesh = Navmesh::new(&layout, from, to).ok()?;
-            (navmesh, from, to)
+            Navmesh::new(&layout, from, to).ok()?
         };
 
-        let router = Router::new_with_navmesh(
+        let router = Router::new_from_navmesh(
             &mut autorouter.layout,
-            from,
-            to,
             std::mem::replace(&mut self.navmesh, navmesh),
         );
-        router.unwrap().route_band(to, 100.0, observer);
+        router.unwrap().route_band(100.0, observer);
 
         if let Some(cur_edge) = self.edge_indices.next() {
             self.cur_edge = cur_edge;

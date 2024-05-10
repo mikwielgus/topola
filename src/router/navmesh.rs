@@ -81,6 +81,8 @@ impl HasPosition for TriangulationWeight {
 pub struct Navmesh {
     triangulation: Triangulation<TriangulationVertexIndex, TriangulationWeight>,
     vertex_to_triangulation_vertex: Vec<Option<TriangulationVertexIndex>>,
+    from: FixedDotIndex,
+    to: FixedDotIndex,
 }
 
 impl Navmesh {
@@ -92,6 +94,8 @@ impl Navmesh {
         let mut this = Self {
             triangulation: Triangulation::new(layout.drawing().geometry().graph().node_bound()),
             vertex_to_triangulation_vertex: Vec::new(),
+            from,
+            to,
         };
         this.vertex_to_triangulation_vertex
             .resize(layout.drawing().geometry().graph().node_bound(), None);
@@ -151,6 +155,14 @@ impl Navmesh {
                 self.vertex_to_triangulation_vertex[bend.node_index().index()].unwrap()
             }
         }
+    }
+
+    pub fn from(&self) -> FixedDotIndex {
+        self.from
+    }
+
+    pub fn to(&self) -> FixedDotIndex {
+        self.to
     }
 }
 

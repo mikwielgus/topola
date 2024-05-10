@@ -60,8 +60,6 @@ pub trait RouterObserverTrait<R: RulesTrait> {
 
 pub struct Router<'a, R: RulesTrait> {
     layout: &'a mut Arc<Mutex<Layout<R>>>,
-    from: FixedDotIndex,
-    to: FixedDotIndex,
     navmesh: Navmesh,
 }
 
@@ -155,42 +153,34 @@ impl<'a, R: RulesTrait> Router<'a, R> {
             let layout = layout.lock().unwrap();
             Navmesh::new(&layout, from, to)?
         };
-        Self::new_with_navmesh(layout, from, to, navmesh)
+        Self::new_from_navmesh(layout, navmesh)
     }
 
-    pub fn new_with_navmesh(
+    pub fn new_from_navmesh(
         layout: &'a mut Arc<Mutex<Layout<R>>>,
-        from: FixedDotIndex,
-        to: FixedDotIndex,
         navmesh: Navmesh,
     ) -> Result<Self, InsertionError> {
-        Ok(Self {
-            layout,
-            from,
-            to,
-            navmesh,
-        })
+        Ok(Self { layout, navmesh })
     }
 
     pub fn route_band(
         &mut self,
-        to: FixedDotIndex,
         width: f64,
         observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<BandIndex, RoutingError> {
         let mut tracer = self.tracer();
 
-        let trace = tracer.start(self.from, width);
+        let trace = tracer.start(self.navmesh.from(), width);
         let band = trace.band;
 
         let (_cost, _path) = astar(
             &self.navmesh,
-            self.from.into(),
-            &mut RouterAstarStrategy::new(tracer, trace, to.into(), observer),
+            self.navmesh.from().into(),
+            &mut RouterAstarStrategy::new(tracer, trace, self.navmesh.to(), observer),
         )
         .ok_or(RoutingError {
-            from: self.from,
-            to,
+            from: self.navmesh.from(),
+            to: self.navmesh.to(),
             source: RoutingErrorKind::AStar,
         })?;
 
@@ -204,17 +194,14 @@ impl<'a, R: RulesTrait> Router<'a, R> {
         width: f64,
         observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<BandIndex, RoutingError> {
-        let (from_dot, to_dot) = {
+        {
             let mut layout = self.layout.lock().unwrap();
 
-            let from_dot = layout.band_from(band);
-            let to_dot = layout.band_to(band).unwrap();
             layout.remove_band(band);
-            layout.move_dot(to_dot.into(), to).unwrap(); // TODO: Remove `.unwrap()`.
-            (from_dot, to_dot)
-        };
+            layout.move_dot(self.navmesh.to().into(), to).unwrap(); // TODO: Remove `.unwrap()`.
+        }
 
-        self.route_band(to_dot, width, observer)
+        self.route_band(width, observer)
     }
 
     fn tracer(&mut self) -> Tracer<R> {
