@@ -23,27 +23,31 @@ use crate::{
 };
 
 pub struct Autoroute {
-    edge_indices: Peekable<EdgeIndices<usize>>,
+    edge_indices: EdgeIndices<usize>,
+    cur_edge: EdgeIndex<usize>,
     navmesh: Navmesh, // Useful for debugging.
 }
 
 impl Autoroute {
     pub fn new(
-        edge_indices: EdgeIndices<usize>,
+        mut edge_indices: EdgeIndices<usize>,
         autorouter: &mut Autorouter<impl RulesTrait>,
     ) -> Option<Self> {
-        let mut peekable_edge_indices = edge_indices.peekable();
-        let Some(ratline) = peekable_edge_indices.peek() else {
+        let Some(cur_edge) = edge_indices.next() else {
             return None;
         };
 
-        let mut layout = autorouter.layout.lock().unwrap();
-        let (from_dot, to_dot) = Self::terminating_dots(autorouter, &mut layout, ratline);
-        let navmesh = Self::next_navmesh(&layout, from_dot, to_dot);
-        Some(Self {
-            edge_indices: peekable_edge_indices,
+        let (from, to) = Self::edge_from_to(autorouter, cur_edge);
+        let layout = autorouter.layout.lock().unwrap();
+        let navmesh = Navmesh::new(&layout, from, to).ok()?;
+
+        let this = Self {
+            edge_indices,
+            cur_edge,
             navmesh,
-        })
+        };
+
+        Some(this)
     }
 
     pub fn next<R: RulesTrait>(
@@ -51,37 +55,43 @@ impl Autoroute {
         autorouter: &mut Autorouter<R>,
         observer: &mut impl RouterObserverTrait<R>,
     ) -> Option<()> {
-        let Some(ratline) = self.edge_indices.next() else {
-            return None;
-        };
-
-        let (navmesh, from_dot, to_dot) = {
-            let mut layout = autorouter.layout.lock().unwrap();
-            let (from_dot, to_dot) = Self::terminating_dots(autorouter, &mut layout, &ratline);
-            let navmesh = Self::next_navmesh(&layout, from_dot, to_dot);
-            (navmesh, from_dot, to_dot)
+        let (navmesh, from, to) = {
+            let (from, to) = self.from_to(autorouter);
+            let layout = autorouter.layout.lock().unwrap();
+            let navmesh = Navmesh::new(&layout, from, to).ok()?;
+            (navmesh, from, to)
         };
 
         let router = Router::new_with_navmesh(
             &mut autorouter.layout,
-            from_dot,
-            to_dot,
+            from,
+            to,
             std::mem::replace(&mut self.navmesh, navmesh),
         );
-        router.unwrap().route_band(to_dot, 100.0, observer);
+        router.unwrap().route_band(to, 100.0, observer);
+
+        if let Some(cur_edge) = self.edge_indices.next() {
+            self.cur_edge = cur_edge;
+        } else {
+            return None;
+        }
+
         Some(())
     }
 
-    fn terminating_dots<R: RulesTrait>(
+    pub fn from_to<R: RulesTrait>(
+        &self,
         autorouter: &Autorouter<R>,
-        layout: &mut Layout<R>,
-        ratline: &EdgeIndex<usize>,
     ) -> (FixedDotIndex, FixedDotIndex) {
-        let (from, to) = autorouter
-            .ratsnest
-            .graph()
-            .edge_endpoints(*ratline)
-            .unwrap();
+        Self::edge_from_to(autorouter, self.cur_edge)
+    }
+
+    fn edge_from_to<R: RulesTrait>(
+        autorouter: &Autorouter<R>,
+        edge: EdgeIndex<usize>,
+    ) -> (FixedDotIndex, FixedDotIndex) {
+        let mut layout = autorouter.layout.lock().unwrap();
+        let (from, to) = autorouter.ratsnest.graph().edge_endpoints(edge).unwrap();
 
         let from_dot = match autorouter
             .ratsnest
