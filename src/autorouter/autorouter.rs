@@ -115,14 +115,6 @@ impl Autoroute {
         (from_dot, to_dot)
     }
 
-    fn next_navmesh(
-        layout: &Layout<impl RulesTrait>,
-        from: FixedDotIndex,
-        to: FixedDotIndex,
-    ) -> Navmesh {
-        Navmesh::new(layout, from, to).unwrap()
-    }
-
     pub fn navmesh(&self) -> &Navmesh {
         &self.navmesh
     }

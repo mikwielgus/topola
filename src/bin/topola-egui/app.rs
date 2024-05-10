@@ -12,6 +12,7 @@ use std::{
 use topola::{
     autorouter::Autorouter,
     drawing::{
+        dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
         rules::RulesTrait,
@@ -38,6 +39,8 @@ use crate::{overlay::Overlay, painter::Painter};
 
 #[derive(Debug, Default)]
 struct SharedData {
+    pub from: Option<FixedDotIndex>,
+    pub to: Option<FixedDotIndex>,
     pub navmesh: Option<Navmesh>,
     pub path: Vec<VertexIndex>,
     pub ghosts: Vec<PrimitiveShape>,
@@ -195,21 +198,28 @@ impl eframe::App for App {
                 if ui.button("Autoroute").clicked() {
                     if let Some(layout_arc_mutex) = &self.layout {
                         let layout = layout_arc_mutex.clone();
-                        let shared_data = self.shared_data.clone();
+                        let shared_data_arc_mutex = self.shared_data.clone();
 
                         execute(async move {
                             let mut autorouter = Autorouter::new(layout).unwrap();
-                            if let Some(mut it) = autorouter.autoroute_iter() {
-                                shared_data.lock().unwrap().navmesh = Some(it.navmesh().clone());
+                            if let Some(mut autoroute) = autorouter.autoroute_iter() {
+                                let from_to = autoroute.from_to(&autorouter);
 
-                                while let Some(()) = it.next(
+                                {
+                                    let mut shared_data = shared_data_arc_mutex.lock().unwrap();
+                                    shared_data.from = Some(from_to.0);
+                                    shared_data.to = Some(from_to.1);
+                                    shared_data.navmesh = Some(autoroute.navmesh().clone());
+                                }
+
+                                while let Some(()) = autoroute.next(
                                     &mut autorouter,
                                     &mut DebugRouterObserver {
-                                        shared_data: shared_data.clone(),
+                                        shared_data: shared_data_arc_mutex.clone(),
                                     },
                                 ) {
-                                    shared_data.lock().unwrap().navmesh =
-                                        Some(it.navmesh().clone());
+                                    shared_data_arc_mutex.lock().unwrap().navmesh =
+                                        Some(autoroute.navmesh().clone());
                                 }
                             }
                         });
@@ -374,6 +384,24 @@ impl eframe::App for App {
                         for ghost in shared_data.ghosts.iter() {
                             painter.paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
                         }
+
+                        if let (Some(from), Some(to)) = (shared_data.from, shared_data.to) {
+                            painter.paint_dot(
+                                Circle {
+                                    pos: layout.drawing().primitive(from).shape().center(),
+                                    r: 20.0,
+                                },
+                                egui::Color32::from_rgb(255, 255, 100),
+                            );
+                            painter.paint_dot(
+                                Circle {
+                                    pos: layout.drawing().primitive(to).shape().center(),
+                                    r: 20.0,
+                                },
+                                egui::Color32::from_rgb(255, 255, 100),
+                            );
+                        }
+
                         //unreachable!();
                     }
                 }

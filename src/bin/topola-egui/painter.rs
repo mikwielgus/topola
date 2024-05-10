@@ -1,5 +1,8 @@
 use geo::{CoordsIter, Point, Polygon};
-use topola::geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait};
+use topola::{
+    geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait},
+    math::Circle,
+};
 
 pub struct Painter<'a> {
     ui: &'a mut egui::Ui,
@@ -13,12 +16,7 @@ impl<'a> Painter<'a> {
 
     pub fn paint_primitive(&mut self, shape: &PrimitiveShape, color: egui::epaint::Color32) {
         let epaint_shape = match shape {
-            PrimitiveShape::Dot(dot) => egui::Shape::circle_filled(
-                self.transform
-                    .transform_pos([dot.c.pos.x() as f32, -dot.c.pos.y() as f32].into()),
-                dot.c.r as f32 * self.transform.scale().x,
-                color,
-            ),
+            PrimitiveShape::Dot(dot) => self.dot_shape(dot.c, color),
             PrimitiveShape::Seg(seg) => egui::Shape::line_segment(
                 [
                     self.transform
@@ -63,6 +61,20 @@ impl<'a> Painter<'a> {
             egui::Rounding::ZERO,
             egui::Stroke::new(1.0, egui::Color32::GRAY),
         ));
+    }
+
+    pub fn paint_dot(&mut self, circle: Circle, color: egui::epaint::Color32) {
+        let shape = self.dot_shape(circle, color);
+        self.ui.painter().add(shape);
+    }
+
+    fn dot_shape(&mut self, circle: Circle, color: egui::epaint::Color32) -> egui::Shape {
+        egui::Shape::circle_filled(
+            self.transform
+                .transform_pos([circle.pos.x() as f32, -circle.pos.y() as f32].into()),
+            circle.r as f32 * self.transform.scale().x,
+            color,
+        )
     }
 
     pub fn paint_polygon(&mut self, polygon: &Polygon, color: egui::epaint::Color32) {
