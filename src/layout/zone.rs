@@ -9,6 +9,7 @@ use crate::{
         graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight, Retag},
         primitive::{GenericPrimitive, GetLimbs, Primitive},
         rules::RulesTrait,
+        seg::SegIndex,
         Drawing,
     },
     geometry::{compound::CompoundManagerTrait, poly::PolyShape, GetPos},
@@ -35,6 +36,17 @@ pub struct Zone<'a, R: RulesTrait> {
 impl<'a, R: RulesTrait> Zone<'a, R> {
     pub fn new(index: GenericIndex<ZoneWeight>, layout: &'a Layout<R>) -> Self {
         Self { index, layout }
+    }
+
+    fn is_apex(&self, dot: FixedDotIndex) -> bool {
+        self.layout
+            .drawing()
+            .primitive(dot)
+            .segs()
+            .iter()
+            .find(|seg| matches!(seg, SegIndex::Fixed(..)))
+            .is_none()
+            && self.layout.drawing().primitive(dot).bends().is_empty()
     }
 }
 
@@ -63,10 +75,20 @@ impl<'a, R: RulesTrait> MakePolyShape for Zone<'a, R> {
                         .geometry()
                         .compound_members(self.index)
                         .filter_map(|primitive_node| {
-                            if let Ok(dot) = DotIndex::try_from(primitive_node) {
-                                Some(self.layout.drawing().geometry().dot_weight(dot).pos())
+                            let PrimitiveIndex::FixedDot(dot) = primitive_node else {
+                                return None;
+                            };
+
+                            if self.is_apex(dot) {
+                                return None;
                             } else {
-                                None
+                                Some(
+                                    self.layout
+                                        .drawing()
+                                        .geometry()
+                                        .dot_weight(dot.into())
+                                        .pos(),
+                                )
                             }
                         })
                         .collect::<Vec<Point>>(),
@@ -85,9 +107,7 @@ impl<'a, R: RulesTrait> GetMaybeApex for Zone<'a, R> {
             .compound_members(self.index)
             .find_map(|primitive_node| {
                 if let PrimitiveIndex::FixedDot(dot) = primitive_node {
-                    if self.layout.drawing().primitive(dot).segs().is_empty()
-                        && self.layout.drawing().primitive(dot).bends().is_empty()
-                    {
+                    if self.is_apex(dot) {
                         return Some(dot);
                     }
                 }
