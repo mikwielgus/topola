@@ -749,7 +749,9 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
 
         self.geometry_with_rtree
             .rtree()
-            .locate_in_envelope_intersecting(&limiting_shape.full_height_envelope_3d(0.0, 2))
+            .locate_in_envelope_intersecting(
+                &limiting_shape.envelope_3d(0.0, node.primitive(self).layer()),
+            )
             .filter_map(|wrapper| {
                 if let GenericNode::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
