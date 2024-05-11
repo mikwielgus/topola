@@ -430,7 +430,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "de9_tht_female_tht_female.kicad_pro",
+    "filename": "de9_tht_female_to_tht_female.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -467,7 +467,7 @@
       "netlist": "",
       "plot": "",
       "pos_files": "",
-      "specctra_dsn": "de9_tht_female_tht_female.dsn",
+      "specctra_dsn": "de9_tht_female_to_tht_female.dsn",
       "step": "",
       "svg": "",
       "vrml": ""

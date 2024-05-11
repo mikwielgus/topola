@@ -87,22 +87,6 @@ enum RouterOrLayout<'a, R: RulesTrait> {
     Layout(Arc<Mutex<Layout<R>>>),
 }
 
-struct EmptyRouterObserver;
-
-impl<R: RulesTrait> RouterObserverTrait<R> for EmptyRouterObserver {
-    fn on_rework(&mut self, _tracer: &Tracer<R>, _trace: &Trace) {}
-    fn before_probe(&mut self, _tracer: &Tracer<R>, _trace: &Trace, _edge: NavmeshEdgeReference) {}
-    fn on_probe(
-        &mut self,
-        _tracer: &Tracer<R>,
-        _trace: &Trace,
-        _edge: NavmeshEdgeReference,
-        _result: Result<(), DrawException>,
-    ) {
-    }
-    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: VertexIndex) {}
-}
-
 struct DebugRouterObserver<'a> {
     event_pump: &'a mut sdl2::EventPump,
     window: &'a Window,
@@ -262,7 +246,9 @@ fn main() -> Result<(), anyhow::Error> {
         ]),
     }));*/
 
-    let design = DsnDesign::load_from_file("tests/data/0603_breakout/0603_breakout.dsn")?;
+    let design = DsnDesign::load_from_file(
+        "tests/data/de9_tht_female_to_tht_female/de9_tht_female_to_tht_female.dsn",
+    )?;
     //let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
     //dbg!(&design);
     let layout = Arc::new(Mutex::new(design.make_layout()));

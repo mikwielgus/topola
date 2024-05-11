@@ -1,4 +1,4 @@
-(pcb /home/mikolaj/proj/topola/tests/data/de9_tht_female_tht_female/de9_tht_female_tht_female.dsn
+(pcb /home/mikolaj/proj/topola/tests/data/de9_tht_female_to_tht_female/de9_tht_female_to_tht_female.dsn
   (parser
     (string_quote ")
     (space_in_quoted_tokens on)

@@ -872,7 +872,7 @@
 			(uuid "2470e536-8251-42cc-b52f-556944d3120f")
 		)
 		(instances
-			(project "de9_tht_female_tht_female"
+			(project "de9_tht_female_to_tht_female"
 				(path "/e3e5797e-752b-4633-8c10-5bf78b070097"
 					(reference "J2")
 					(unit 1)
@@ -961,7 +961,7 @@
 			(uuid "9680cc24-7906-4fa2-b70d-e653122e4f83")
 		)
 		(instances
-			(project "de9_tht_female_tht_female"
+			(project "de9_tht_female_to_tht_female"
 				(path "/e3e5797e-752b-4633-8c10-5bf78b070097"
 					(reference "J1")
 					(unit 1)

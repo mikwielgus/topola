@@ -156,7 +156,7 @@
 		(property ki_fp_filters "DSUB*Female*")
 		(path "/8013bc03-7ea4-4584-996e-6232d4bc171c")
 		(sheetname "Root")
-		(sheetfile "de9_tht_female_tht_female.kicad_sch")
+		(sheetfile "de9_tht_female_to_tht_female.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 3.07 7.78)
@@ -997,7 +997,7 @@
 		(property ki_fp_filters "DSUB*Female*")
 		(path "/58f03954-5a09-4a36-97c8-68071de3aeab")
 		(sheetname "Root")
-		(sheetfile "de9_tht_female_tht_female.kicad_sch")
+		(sheetfile "de9_tht_female_to_tht_female.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start -14.15 7.78)
