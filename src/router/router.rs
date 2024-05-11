@@ -58,6 +58,22 @@ pub trait RouterObserverTrait<R: RulesTrait> {
     fn on_estimate(&mut self, tracer: &Tracer<R>, vertex: VertexIndex);
 }
 
+pub struct EmptyRouterObserver;
+
+impl<R: RulesTrait> RouterObserverTrait<R> for EmptyRouterObserver {
+    fn on_rework(&mut self, _tracer: &Tracer<R>, _trace: &Trace) {}
+    fn before_probe(&mut self, _tracer: &Tracer<R>, _trace: &Trace, _edge: NavmeshEdgeReference) {}
+    fn on_probe(
+        &mut self,
+        _tracer: &Tracer<R>,
+        _trace: &Trace,
+        _edge: NavmeshEdgeReference,
+        _result: Result<(), DrawException>,
+    ) {
+    }
+    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: VertexIndex) {}
+}
+
 pub struct Router<'a, R: RulesTrait> {
     layout: &'a mut Arc<Mutex<Layout<R>>>,
     navmesh: Navmesh,

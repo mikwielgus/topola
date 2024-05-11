@@ -57,7 +57,7 @@ impl Autoroute {
             let (from, to) = Self::edge_from_to(autorouter, cur_edge);
 
             let layout = autorouter.layout.lock().unwrap();
-            Some(Navmesh::new(&layout, from, to).ok()?)
+            Some(Navmesh::new(&layout, from, to).ok().unwrap())
         } else {
             None
         };
@@ -109,14 +109,14 @@ impl Autoroute {
 }
 
 pub struct Autorouter<R: RulesTrait> {
-    ratsnest: Ratsnest,
     layout: Arc<Mutex<Layout<R>>>,
+    ratsnest: Ratsnest,
 }
 
 impl<R: RulesTrait> Autorouter<R> {
     pub fn new(layout: Arc<Mutex<Layout<R>>>) -> Result<Self, InsertionError> {
         let ratsnest = Ratsnest::new(&layout.lock().unwrap())?;
-        Ok(Self { ratsnest, layout })
+        Ok(Self { layout, ratsnest })
     }
 
     pub fn autoroute(&mut self, layer: u64, observer: &mut impl RouterObserverTrait<R>) {
@@ -133,5 +133,9 @@ impl<R: RulesTrait> Autorouter<R> {
 
     pub fn layout(&self) -> &Arc<Mutex<Layout<R>>> {
         &self.layout
+    }
+
+    pub fn ratsnest(&self) -> &Ratsnest {
+        &self.ratsnest
     }
 }

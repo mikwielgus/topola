@@ -203,23 +203,24 @@ impl eframe::App for App {
                         execute(async move {
                             let mut autorouter = Autorouter::new(layout).unwrap();
                             if let Some(mut autoroute) = autorouter.autoroute_walk() {
-                                let from_to = autoroute.from_to(&autorouter);
+                                let from = autoroute.navmesh().as_ref().unwrap().from();
+                                let to = autoroute.navmesh().as_ref().unwrap().to();
 
                                 {
                                     let mut shared_data = shared_data_arc_mutex.lock().unwrap();
-                                    shared_data.from = dbg!(Some(from_to.0));
-                                    shared_data.to = dbg!(Some(from_to.1));
-                                    shared_data.navmesh = Some(autoroute.navmesh().clone());
+                                    shared_data.from = Some(from);
+                                    shared_data.to = Some(to);
+                                    shared_data.navmesh = autoroute.navmesh().clone();
                                 }
 
-                                while let Some(()) = autoroute.next(
+                                while autoroute.next(
                                     &mut autorouter,
                                     &mut DebugRouterObserver {
                                         shared_data: shared_data_arc_mutex.clone(),
                                     },
                                 ) {
                                     shared_data_arc_mutex.lock().unwrap().navmesh =
-                                        Some(autoroute.navmesh().clone());
+                                        autoroute.navmesh().clone();
                                 }
                             }
                         });
