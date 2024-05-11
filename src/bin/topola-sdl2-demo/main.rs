@@ -12,6 +12,7 @@ macro_rules! dbg_dot {
 use geo::point;
 use painter::Painter;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use topola::autorouter::Autorouter;
 use topola::drawing::dot::FixedDotWeight;
 use topola::drawing::graph::{MakePrimitive, PrimitiveIndex};
 use topola::drawing::primitive::MakePrimitiveShape;
@@ -261,9 +262,7 @@ fn main() -> Result<(), anyhow::Error> {
         ]),
     }));*/
 
-    let design = DsnDesign::load_from_file(
-        "tests/data/prerouted_lm317_breakout/prerouted_lm317_breakout.dsn",
-    )?;
+    let design = DsnDesign::load_from_file("tests/data/0603_breakout/0603_breakout.dsn")?;
     //let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
     //dbg!(&design);
     let layout = Arc::new(Mutex::new(design.make_layout()));
@@ -288,6 +287,23 @@ fn main() -> Result<(), anyhow::Error> {
         &[],
         -1,
     );
+
+    let mut autorouter = Autorouter::new(layout.clone()).unwrap();
+    if let Some(mut autoroute) = autorouter.autoroute_iter() {
+        while let Some(()) = autoroute.next(
+            &mut autorouter,
+            &mut DebugRouterObserver::new(
+                &mut event_pump,
+                &window,
+                &mut renderer,
+                &font_context,
+                &mut view,
+                Some(autoroute.navmesh().clone()),
+            ),
+        ) {
+            //
+        }
+    }
 
     // these are both on net 1 in the test file
     /*let _ = router.route_band(
