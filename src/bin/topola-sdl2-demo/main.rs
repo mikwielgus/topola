@@ -289,8 +289,8 @@ fn main() -> Result<(), anyhow::Error> {
     );
 
     let mut autorouter = Autorouter::new(layout.clone()).unwrap();
-    if let Some(mut autoroute) = autorouter.autoroute_iter() {
-        while let Some(()) = autoroute.next(
+    if let Some(mut autoroute) = autorouter.autoroute_walk() {
+        while autoroute.next(
             &mut autorouter,
             &mut DebugRouterObserver::new(
                 &mut event_pump,
@@ -298,7 +298,7 @@ fn main() -> Result<(), anyhow::Error> {
                 &mut renderer,
                 &font_context,
                 &mut view,
-                Some(autoroute.navmesh().clone()),
+                autoroute.navmesh().clone(),
             ),
         ) {
             //

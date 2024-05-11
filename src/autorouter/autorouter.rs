@@ -24,8 +24,7 @@ use crate::{
 
 pub struct Autoroute {
     edge_indices: EdgeIndices<usize>,
-    cur_edge: EdgeIndex<usize>,
-    navmesh: Navmesh, // Useful for debugging.
+    navmesh: Option<Navmesh>, // Useful for debugging.
 }
 
 impl Autoroute {
@@ -39,11 +38,10 @@ impl Autoroute {
 
         let (from, to) = Self::edge_from_to(autorouter, cur_edge);
         let layout = autorouter.layout.lock().unwrap();
-        let navmesh = Navmesh::new(&layout, from, to).ok()?;
+        let navmesh = Some(Navmesh::new(&layout, from, to).ok()?);
 
         let this = Self {
             edge_indices,
-            cur_edge,
             navmesh,
         };
 
@@ -54,33 +52,23 @@ impl Autoroute {
         &mut self,
         autorouter: &mut Autorouter<R>,
         observer: &mut impl RouterObserverTrait<R>,
-    ) -> Option<()> {
-        let navmesh = {
-            let (from, to) = self.from_to(autorouter);
+    ) -> bool {
+        let new_navmesh = if let Some(cur_edge) = self.edge_indices.next() {
+            let (from, to) = Self::edge_from_to(autorouter, cur_edge);
+
             let layout = autorouter.layout.lock().unwrap();
-            Navmesh::new(&layout, from, to).ok()?
+            Some(Navmesh::new(&layout, from, to).ok()?)
+        } else {
+            None
         };
 
         let router = Router::new_from_navmesh(
             &mut autorouter.layout,
-            std::mem::replace(&mut self.navmesh, navmesh),
+            std::mem::replace(&mut self.navmesh, new_navmesh).unwrap(),
         );
         router.unwrap().route_band(100.0, observer);
 
-        if let Some(cur_edge) = self.edge_indices.next() {
-            self.cur_edge = cur_edge;
-        } else {
-            return None;
-        }
-
-        Some(())
-    }
-
-    pub fn from_to<R: RulesTrait>(
-        &self,
-        autorouter: &Autorouter<R>,
-    ) -> (FixedDotIndex, FixedDotIndex) {
-        Self::edge_from_to(autorouter, self.cur_edge)
+        self.navmesh.is_some()
     }
 
     fn edge_from_to<R: RulesTrait>(
@@ -115,7 +103,7 @@ impl Autoroute {
         (from_dot, to_dot)
     }
 
-    pub fn navmesh(&self) -> &Navmesh {
+    pub fn navmesh(&self) -> &Option<Navmesh> {
         &self.navmesh
     }
 }
@@ -132,14 +120,14 @@ impl<R: RulesTrait> Autorouter<R> {
     }
 
     pub fn autoroute(&mut self, layer: u64, observer: &mut impl RouterObserverTrait<R>) {
-        if let Some(mut it) = self.autoroute_iter() {
-            while let Some(()) = it.next(self, observer) {
+        if let Some(mut autoroute) = self.autoroute_walk() {
+            while autoroute.next(self, observer) {
                 //
             }
         }
     }
 
-    pub fn autoroute_iter(&mut self) -> Option<Autoroute> {
+    pub fn autoroute_walk(&mut self) -> Option<Autoroute> {
         Autoroute::new(self.ratsnest.graph().edge_indices(), self)
     }
 

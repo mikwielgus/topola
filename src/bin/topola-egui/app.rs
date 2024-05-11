@@ -202,7 +202,7 @@ impl eframe::App for App {
 
                         execute(async move {
                             let mut autorouter = Autorouter::new(layout).unwrap();
-                            if let Some(mut autoroute) = autorouter.autoroute_iter() {
+                            if let Some(mut autoroute) = autorouter.autoroute_walk() {
                                 let from_to = autoroute.from_to(&autorouter);
 
                                 {
