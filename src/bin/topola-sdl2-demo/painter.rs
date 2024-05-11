@@ -37,7 +37,7 @@ impl<'a> Painter<'a> {
                 self.canvas.stroke_path(path);
             }
             PrimitiveShape::Bend(bend) => {
-                let delta1 = bend.from - bend.c.pos;
+                /*let delta1 = bend.from - bend.c.pos;
                 let delta2 = bend.to - bend.c.pos;
 
                 let angle1 = delta1.y().atan2(delta1.x());
@@ -52,7 +52,7 @@ impl<'a> Painter<'a> {
                     ArcDirection::CW,
                 );
                 self.canvas.set_line_width(bend.width as f32);
-                self.canvas.stroke_path(path);
+                self.canvas.stroke_path(path);*/
             }
         }
 
