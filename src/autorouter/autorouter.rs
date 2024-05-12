@@ -1,11 +1,12 @@
 use std::{
+    collections::HashSet,
     iter::Peekable,
     sync::{Arc, Mutex},
 };
 
 use geo::Point;
 use petgraph::{
-    graph::{EdgeIndex, EdgeIndices, NodeIndex},
+    graph::{EdgeIndex, EdgeIndices},
     visit::{EdgeRef, IntoEdgeReferences},
 };
 use spade::InsertionError;
@@ -17,22 +18,24 @@ use crate::{
         graph::{GetLayer, GetMaybeNet},
         rules::RulesTrait,
     },
-    layout::{connectivity::BandIndex, Layout},
+    layout::{connectivity::BandIndex, Layout, NodeIndex},
     router::{navmesh::Navmesh, Router, RouterObserverTrait, RoutingError},
     triangulation::GetVertexIndex,
 };
 
 pub struct Autoroute {
-    edge_indices: EdgeIndices<usize>,
+    ratlines_iter: Box<dyn Iterator<Item = EdgeIndex<usize>>>,
     navmesh: Option<Navmesh>, // Useful for debugging.
 }
 
 impl Autoroute {
     pub fn new(
-        mut edge_indices: EdgeIndices<usize>,
+        ratlines: impl IntoIterator<Item = EdgeIndex<usize>> + 'static,
         autorouter: &mut Autorouter<impl RulesTrait>,
     ) -> Option<Self> {
-        let Some(cur_edge) = edge_indices.next() else {
+        let mut ratlines_iter = Box::new(ratlines.into_iter());
+
+        let Some(cur_edge) = ratlines_iter.next() else {
             return None;
         };
 
@@ -41,7 +44,7 @@ impl Autoroute {
         let navmesh = Some(Navmesh::new(&layout, from, to).ok()?);
 
         let this = Self {
-            edge_indices,
+            ratlines_iter,
             navmesh,
         };
 
@@ -53,7 +56,7 @@ impl Autoroute {
         autorouter: &mut Autorouter<R>,
         observer: &mut impl RouterObserverTrait<R>,
     ) -> bool {
-        let new_navmesh = if let Some(cur_edge) = self.edge_indices.next() {
+        let new_navmesh = if let Some(cur_edge) = self.ratlines_iter.next() {
             let (from, to) = Self::edge_from_to(autorouter, cur_edge);
 
             let layout = autorouter.layout.lock().unwrap();
@@ -119,16 +122,44 @@ impl<R: RulesTrait> Autorouter<R> {
         Ok(Self { layout, ratsnest })
     }
 
-    pub fn autoroute(&mut self, layer: u64, observer: &mut impl RouterObserverTrait<R>) {
-        if let Some(mut autoroute) = self.autoroute_walk() {
+    pub fn autoroute(
+        &mut self,
+        selection: &HashSet<NodeIndex>,
+        observer: &mut impl RouterObserverTrait<R>,
+    ) {
+        if let Some(mut autoroute) = self.autoroute_walk(selection) {
             while autoroute.next(self, observer) {
                 //
             }
         }
     }
 
-    pub fn autoroute_walk(&mut self) -> Option<Autoroute> {
-        Autoroute::new(self.ratsnest.graph().edge_indices(), self)
+    pub fn autoroute_walk(&mut self, selection: &HashSet<NodeIndex>) -> Option<Autoroute> {
+        Autoroute::new(
+            self.ratsnest
+                .graph()
+                .edge_indices()
+                .filter(|edge| {
+                    let (from, to) = self.ratsnest.graph().edge_endpoints(*edge).unwrap();
+
+                    let from_vertex = self
+                        .ratsnest
+                        .graph()
+                        .node_weight(from)
+                        .unwrap()
+                        .vertex_index();
+                    let to_vertex = self
+                        .ratsnest
+                        .graph()
+                        .node_weight(to)
+                        .unwrap()
+                        .vertex_index();
+
+                    selection.contains(&from_vertex.into()) && selection.contains(&to_vertex.into())
+                })
+                .collect::<Vec<_>>(),
+            self,
+        )
     }
 
     pub fn layout(&self) -> &Arc<Mutex<Layout<R>>> {

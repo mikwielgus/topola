@@ -33,6 +33,15 @@ pub enum RatsnestVertexIndex {
     Zone(GenericIndex<ZoneWeight>),
 }
 
+impl From<RatsnestVertexIndex> for crate::layout::NodeIndex {
+    fn from(vertex: RatsnestVertexIndex) -> crate::layout::NodeIndex {
+        match vertex {
+            RatsnestVertexIndex::FixedDot(dot) => crate::layout::NodeIndex::Primitive(dot.into()),
+            RatsnestVertexIndex::Zone(zone) => crate::layout::NodeIndex::Compound(zone.into()),
+        }
+    }
+}
+
 #[derive(Debug, Clone, Copy)]
 pub struct VertexWeight {
     vertex: RatsnestVertexIndex,

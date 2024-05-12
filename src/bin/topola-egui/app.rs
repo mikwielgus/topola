@@ -196,13 +196,15 @@ impl eframe::App for App {
                 ui.separator();
 
                 if ui.button("Autoroute").clicked() {
-                    if let Some(layout_arc_mutex) = &self.layout {
+                    if let (Some(layout_arc_mutex), Some(overlay)) = (&self.layout, &self.overlay) {
                         let layout = layout_arc_mutex.clone();
                         let shared_data_arc_mutex = self.shared_data.clone();
+                        let selection = overlay.selection().clone();
 
                         execute(async move {
                             let mut autorouter = Autorouter::new(layout).unwrap();
-                            if let Some(mut autoroute) = autorouter.autoroute_walk() {
+
+                            if let Some(mut autoroute) = autorouter.autoroute_walk(&selection) {
                                 let from = autoroute.navmesh().as_ref().unwrap().from();
                                 let to = autoroute.navmesh().as_ref().unwrap().to();
 
