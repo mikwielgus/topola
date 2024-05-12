@@ -5,7 +5,7 @@ use rstar::AABB;
 use spade::InsertionError;
 
 use topola::{
-    autorouter::ratsnest::Ratsnest,
+    autorouter::{ratsnest::Ratsnest, selection::Selection},
     drawing::{
         graph::{GetLayer, MakePrimitive},
         primitive::MakePrimitiveShape,
@@ -20,7 +20,7 @@ use topola::{
 
 pub struct Overlay {
     ratsnest: Ratsnest,
-    selection: HashSet<NodeIndex>,
+    selection: Selection,
     active_layer: u64,
 }
 
@@ -28,7 +28,7 @@ impl Overlay {
     pub fn new(layout: &Layout<impl RulesTrait>) -> Result<Self, InsertionError> {
         Ok(Self {
             ratsnest: Ratsnest::new(layout)?,
-            selection: HashSet::new(),
+            selection: Selection::new(),
             active_layer: 0,
         })
     }
@@ -73,23 +73,17 @@ impl Overlay {
         };
 
         if shape.contains_point(p) {
-            self.toggle_selection(node);
+            self.selection.toggle_at_node(node);
             return true;
         }
         false
-    }
-
-    pub fn toggle_selection(&mut self, node: NodeIndex) {
-        if !self.selection.insert(node) {
-            self.selection.remove(&node);
-        }
     }
 
     pub fn ratsnest(&self) -> &Ratsnest {
         &self.ratsnest
     }
 
-    pub fn selection(&self) -> &HashSet<NodeIndex> {
+    pub fn selection(&self) -> &Selection {
         &self.selection
     }
 }

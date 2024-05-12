@@ -12,7 +12,10 @@ use petgraph::{
 use spade::InsertionError;
 
 use crate::{
-    autorouter::ratsnest::{Ratsnest, RatsnestVertexIndex},
+    autorouter::{
+        ratsnest::{Ratsnest, RatsnestVertexIndex},
+        selection::Selection,
+    },
     drawing::{
         dot::FixedDotIndex,
         graph::{GetLayer, GetMaybeNet},
@@ -122,11 +125,7 @@ impl<R: RulesTrait> Autorouter<R> {
         Ok(Self { layout, ratsnest })
     }
 
-    pub fn autoroute(
-        &mut self,
-        selection: &HashSet<NodeIndex>,
-        observer: &mut impl RouterObserverTrait<R>,
-    ) {
+    pub fn autoroute(&mut self, selection: &Selection, observer: &mut impl RouterObserverTrait<R>) {
         if let Some(mut autoroute) = self.autoroute_walk(selection) {
             while autoroute.next(self, observer) {
                 //
@@ -134,7 +133,7 @@ impl<R: RulesTrait> Autorouter<R> {
         }
     }
 
-    pub fn autoroute_walk(&mut self, selection: &HashSet<NodeIndex>) -> Option<Autoroute> {
+    pub fn autoroute_walk(&mut self, selection: &Selection) -> Option<Autoroute> {
         Autoroute::new(
             self.ratsnest
                 .graph()
