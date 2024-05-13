@@ -56,4 +56,8 @@ impl<R: RulesTrait> Invoker<R> {
     pub fn redo(&mut self) {
         todo!();
     }
+
+    pub fn autorouter(&self) -> &Autorouter<R> {
+        &self.autorouter
+    }
 }

@@ -58,7 +58,7 @@ pub struct App {
     overlay: Option<Overlay>,
 
     #[serde(skip)]
-    layout: Option<Arc<Mutex<Layout<DsnRules>>>>,
+    invoker: Option<Arc<Mutex<Invoker<DsnRules>>>>,
 
     #[serde(skip)]
     shared_data: Arc<Mutex<SharedData>>,
@@ -74,7 +74,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             overlay: None,
-            layout: None,
+            invoker: None,
             shared_data: Default::default(),
             text_channel: channel(),
             from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
@@ -157,14 +157,18 @@ impl eframe::App for App {
                 let design = DsnDesign::load_from_string(file_contents).unwrap();
                 let layout = design.make_layout();
                 self.overlay = Some(Overlay::new(&layout).unwrap());
-                self.layout = Some(Arc::new(Mutex::new(layout)));
+                self.invoker = Some(Arc::new(Mutex::new(Invoker::new(
+                    Autorouter::new(Arc::new(Mutex::new(layout))).unwrap(),
+                ))));
             }
         } else {
             if let Ok(path) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_file(&path).unwrap();
                 let layout = design.make_layout();
                 self.overlay = Some(Overlay::new(&layout).unwrap());
-                self.layout = Some(Arc::new(Mutex::new(layout)));
+                self.invoker = Some(Arc::new(Mutex::new(Invoker::new(
+                    Autorouter::new(Arc::new(Mutex::new(layout))).unwrap(),
+                ))));
             }
         }
 
@@ -199,13 +203,14 @@ impl eframe::App for App {
                 ui.separator();
 
                 if ui.button("Autoroute").clicked() {
-                    if let (Some(layout_arc_mutex), Some(overlay)) = (&self.layout, &self.overlay) {
-                        let layout = layout_arc_mutex.clone();
+                    if let (Some(invoker_arc_mutex), Some(overlay)) = (&self.invoker, &self.overlay)
+                    {
+                        let invoker = invoker_arc_mutex.clone();
                         let shared_data_arc_mutex = self.shared_data.clone();
                         let selection = overlay.selection().clone();
 
                         execute(async move {
-                            let mut invoker = Invoker::new(Autorouter::new(layout).unwrap());
+                            let mut invoker = invoker.lock().unwrap();
                             let mut execute = invoker.execute_walk(&Command::Autoroute(selection));
 
                             if let Execute::Autoroute(ref mut autoroute) = execute {
@@ -272,12 +277,14 @@ impl eframe::App for App {
                 let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
                 let mut painter = Painter::new(ui, transform);
 
-                if let Some(layout_arc_mutex) = &self.layout {
-                    if let (layout, shared_data, Some(overlay)) = (
-                        &layout_arc_mutex.lock().unwrap(),
+                if let Some(invoker_arc_mutex) = &self.invoker {
+                    if let (invoker, shared_data, Some(overlay)) = (
+                        &invoker_arc_mutex.lock().unwrap(),
                         self.shared_data.lock().unwrap(),
                         &mut self.overlay,
                     ) {
+                        let layout = &invoker.autorouter().layout().lock().unwrap();
+
                         if ctx.input(|i| i.pointer.any_click()) {
                             overlay.click(
                                 layout,
