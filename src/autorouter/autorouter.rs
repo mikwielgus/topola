@@ -161,6 +161,10 @@ impl<R: RulesTrait> Autorouter<R> {
         )
     }
 
+    pub fn undo_autoroute(&mut self, selection: &Selection) {
+        todo!();
+    }
+
     pub fn layout(&self) -> &Arc<Mutex<Layout<R>>> {
         &self.layout
     }

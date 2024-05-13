@@ -10,7 +10,10 @@ use std::{
 };
 
 use topola::{
-    autorouter::Autorouter,
+    autorouter::{
+        invoker::{Command, Execute, Invoker},
+        Autorouter,
+    },
     drawing::{
         dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
@@ -202,9 +205,10 @@ impl eframe::App for App {
                         let selection = overlay.selection().clone();
 
                         execute(async move {
-                            let mut autorouter = Autorouter::new(layout).unwrap();
+                            let mut invoker = Invoker::new(Autorouter::new(layout).unwrap());
+                            let mut execute = invoker.execute_walk(&Command::Autoroute(selection));
 
-                            if let Some(mut autoroute) = autorouter.autoroute_walk(&selection) {
+                            if let Execute::Autoroute(ref mut autoroute) = execute {
                                 let from = autoroute.navmesh().as_ref().unwrap().from();
                                 let to = autoroute.navmesh().as_ref().unwrap().to();
 
@@ -214,13 +218,15 @@ impl eframe::App for App {
                                     shared_data.to = Some(to);
                                     shared_data.navmesh = autoroute.navmesh().clone();
                                 }
+                            }
 
-                                while autoroute.next(
-                                    &mut autorouter,
-                                    &mut DebugRouterObserver {
-                                        shared_data: shared_data_arc_mutex.clone(),
-                                    },
-                                ) {
+                            while execute.next(
+                                &mut invoker,
+                                &mut DebugRouterObserver {
+                                    shared_data: shared_data_arc_mutex.clone(),
+                                },
+                            ) {
+                                if let Execute::Autoroute(ref mut autoroute) = execute {
                                     shared_data_arc_mutex.lock().unwrap().navmesh =
                                         autoroute.navmesh().clone();
                                 }
