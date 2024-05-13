@@ -5,44 +5,35 @@ use geo::Point;
 use rstar::{RTree, RTreeObject, AABB};
 use thiserror::Error;
 
-use super::graph::GetLayer;
-use super::loose::{GetNextLoose, Loose, LooseIndex};
-use super::rules::RulesTrait;
-use super::segbend::Segbend;
-use crate::drawing::bend::BendIndex;
-use crate::drawing::collect::Collect;
-use crate::drawing::dot::DotWeight;
-use crate::drawing::graph::GetMaybeNet;
-use crate::drawing::guide::Guide;
-use crate::drawing::primitive::GetLimbs;
-use crate::drawing::rules::GetConditions;
-use crate::drawing::wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex};
 use crate::drawing::{
-    bend::{FixedBendIndex, LooseBendIndex, LooseBendWeight},
-    dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    graph::{MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+    band::BandIndex,
+    bend::{BendIndex, BendWeight, FixedBendIndex, LooseBendIndex, LooseBendWeight},
+    collect::Collect,
+    dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+    graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+    guide::Guide,
+    loose::{GetNextLoose, Loose, LooseIndex},
     primitive::{
-        GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetOtherJoint, MakePrimitiveShape,
+        GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetLimbs, GetOtherJoint,
+        MakePrimitiveShape,
     },
+    rules::{GetConditions, RulesTrait},
     seg::{
-        FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
+        FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex, SegWeight,
         SeqLooseSegIndex, SeqLooseSegWeight,
     },
+    segbend::Segbend,
+    wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex},
 };
-use crate::geometry::compound::CompoundManagerTrait;
-use crate::geometry::with_rtree::BboxedIndex;
-use crate::geometry::GenericNode;
 use crate::geometry::{
+    compound::CompoundManagerTrait,
     primitive::{PrimitiveShape, PrimitiveShapeTrait},
-    with_rtree::GeometryWithRtree,
-    BendWeightTrait, DotWeightTrait, Geometry, GeometryLabel, GetOffset, GetPos, GetWidth,
-    SegWeightTrait,
+    with_rtree::{BboxedIndex, GeometryWithRtree},
+    BendWeightTrait, DotWeightTrait, GenericNode, Geometry, GeometryLabel, GetOffset, GetPos,
+    GetWidth, SegWeightTrait,
 };
 use crate::graph::{GenericIndex, GetNodeIndex};
 use crate::math::NoTangents;
-
-use super::bend::BendWeight;
-use super::seg::SegWeight;
 
 #[enum_dispatch]
 #[derive(Error, Debug, Clone, Copy)]
@@ -94,59 +85,66 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         }
     }
 
-    pub fn remove_band(&mut self, first_loose: SeqLooseSegIndex) {
-        let mut dots = vec![];
-        let mut segs = vec![];
-        let mut bends = vec![];
-        let mut outers = vec![];
+    pub fn remove_band(&mut self, band: BandIndex) {
+        match band {
+            BandIndex::Straight(seg) => {
+                self.geometry_with_rtree.remove_seg(seg.into());
+            }
+            BandIndex::Bended(first_loose_seg) => {
+                let mut dots = vec![];
+                let mut segs = vec![];
+                let mut bends = vec![];
+                let mut outers = vec![];
 
-        let mut maybe_loose = Some(first_loose.into());
-        let mut prev = None;
+                let mut maybe_loose = Some(first_loose_seg.into());
+                let mut prev = None;
 
-        while let Some(loose) = maybe_loose {
-            match loose {
-                LooseIndex::Dot(dot) => {
-                    dots.push(dot);
-                }
-                LooseIndex::LoneSeg(seg) => {
-                    self.geometry_with_rtree.remove_seg(seg.into());
-                    break;
-                }
-                LooseIndex::SeqSeg(seg) => {
-                    segs.push(seg);
-                }
-                LooseIndex::Bend(bend) => {
-                    bends.push(bend);
+                while let Some(loose) = maybe_loose {
+                    match loose {
+                        LooseIndex::Dot(dot) => {
+                            dots.push(dot);
+                        }
+                        LooseIndex::LoneSeg(seg) => {
+                            self.geometry_with_rtree.remove_seg(seg.into());
+                            break;
+                        }
+                        LooseIndex::SeqSeg(seg) => {
+                            segs.push(seg);
+                        }
+                        LooseIndex::Bend(bend) => {
+                            bends.push(bend);
 
-                    if let Some(outer) = self.primitive(bend).outer() {
-                        outers.push(outer);
-                        self.reattach_bend(outer, self.primitive(bend).inner());
+                            if let Some(outer) = self.primitive(bend).outer() {
+                                outers.push(outer);
+                                self.reattach_bend(outer, self.primitive(bend).inner());
+                            }
+                        }
                     }
+
+                    let prev_prev = prev;
+                    prev = maybe_loose;
+                    maybe_loose = self.loose(loose).next_loose(prev_prev);
+                }
+
+                for bend in bends {
+                    self.geometry_with_rtree.remove_bend(bend.into());
+                }
+
+                for seg in segs {
+                    self.geometry_with_rtree.remove_seg(seg.into());
+                }
+
+                // We must remove the dots only after the segs and bends because we need dots to calculate
+                // the shapes, which we first need unchanged to remove the segs and bends from the R-tree.
+
+                for dot in dots {
+                    self.geometry_with_rtree.remove_dot(dot.into());
+                }
+
+                for outer in outers {
+                    self.update_this_and_outward_bows(outer).unwrap(); // Must never fail.
                 }
             }
-
-            let prev_prev = prev;
-            prev = maybe_loose;
-            maybe_loose = self.loose(loose).next_loose(prev_prev);
-        }
-
-        for bend in bends {
-            self.geometry_with_rtree.remove_bend(bend.into());
-        }
-
-        for seg in segs {
-            self.geometry_with_rtree.remove_seg(seg.into());
-        }
-
-        // We must remove the dots only after the segs and bends because we need dots to calculate
-        // the shapes, which we first need unchanged to remove the segs and bends from the R-tree.
-
-        for dot in dots {
-            self.geometry_with_rtree.remove_dot(dot.into());
-        }
-
-        for outer in outers {
-            self.update_this_and_outward_bows(outer).unwrap(); // Must never fail.
         }
     }
 
