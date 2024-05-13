@@ -9,7 +9,7 @@ use crate::{
         guide::{BareHead, Head, SegbendHead},
         rules::RulesTrait,
     },
-    layout::{connectivity::BandIndex, Layout},
+    layout::Layout,
     router::{
         draw::{Draw, DrawException},
         navmesh::{Navmesh, VertexIndex},
@@ -20,7 +20,6 @@ use crate::{
 pub struct Trace {
     pub path: Vec<VertexIndex>,
     pub head: Head,
-    pub band: BandIndex,
     pub width: f64,
 }
 
@@ -35,11 +34,9 @@ impl<R: RulesTrait> Tracer<R> {
     }
 
     pub fn start(&mut self, from: FixedDotIndex, width: f64) -> Trace {
-        let band = self.layout.lock().unwrap().start_band(from);
         Trace {
             path: vec![from.into()],
             head: BareHead { dot: from }.into(),
-            band,
             width,
         }
     }
@@ -51,7 +48,7 @@ impl<R: RulesTrait> Tracer<R> {
         width: f64,
     ) -> Result<(), DrawException> {
         Draw::new(&mut self.layout.lock().unwrap()).finish_in_dot(trace.head, into, width)?;
-        Ok(self.layout.lock().unwrap().finish_band(trace.band, into))
+        Ok(())
     }
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == path.len())]

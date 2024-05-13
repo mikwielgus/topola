@@ -7,8 +7,8 @@ use spade::InsertionError;
 use thiserror::Error;
 
 use crate::drawing::graph::{GetLayer, GetMaybeNet};
+use crate::drawing::guide::HeadTrait;
 use crate::geometry::primitive::PrimitiveShapeTrait;
-use crate::layout::connectivity::BandIndex;
 use crate::layout::Layout;
 use crate::{
     drawing::{
@@ -123,7 +123,7 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64>
             .layout
             .lock()
             .unwrap()
-            .band_length(self.trace.band);
+            .band_length(self.trace.head.face());
 
         let width = self.trace.width;
         let result = self.tracer.step(&mut self.trace, edge.target(), width);
@@ -135,7 +135,7 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64>
             .layout
             .lock()
             .unwrap()
-            .band_length(self.trace.band);
+            .band_length(self.trace.head.face());
 
         if result.is_ok() {
             self.tracer.undo_step(&mut self.trace);
@@ -183,11 +183,10 @@ impl<'a, R: RulesTrait> Router<'a, R> {
         &mut self,
         width: f64,
         observer: &mut impl RouterObserverTrait<R>,
-    ) -> Result<BandIndex, RoutingError> {
+    ) -> Result<(), RoutingError> {
         let mut tracer = self.tracer();
 
         let trace = tracer.start(self.navmesh.from(), width);
-        let band = trace.band;
 
         let (_cost, _path) = astar(
             &self.navmesh,
@@ -200,10 +199,10 @@ impl<'a, R: RulesTrait> Router<'a, R> {
             source: RoutingErrorKind::AStar,
         })?;
 
-        Ok(band)
+        Ok(())
     }
 
-    pub fn reroute_band(
+    /*pub fn reroute_band(
         &mut self,
         band: BandIndex,
         to: Point,
@@ -218,7 +217,7 @@ impl<'a, R: RulesTrait> Router<'a, R> {
         }
 
         self.route_band(width, observer)
-    }
+    }*/
 
     fn tracer(&mut self) -> Tracer<R> {
         Tracer::new(self.layout.clone())

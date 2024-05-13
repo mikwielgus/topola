@@ -5,8 +5,6 @@ use crate::geometry::{
     primitive::{PrimitiveShape, PrimitiveShapeTrait},
     GetOffset, GetWidth,
 };
-use crate::graph::{GenericIndex, GetNodeIndex};
-use crate::layout::connectivity::{BandIndex, ContinentIndex};
 use crate::{
     drawing::{
         bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
@@ -21,6 +19,7 @@ use crate::{
         Drawing,
     },
     geometry::GenericNode,
+    graph::{GenericIndex, GetNodeIndex},
 };
 
 #[enum_dispatch]
@@ -248,36 +247,6 @@ where
 
 pub type FixedDot<'a, CW, R> = GenericPrimitive<'a, FixedDotWeight, CW, R>;
 impl_fixed_primitive!(FixedDot, FixedDotWeight);
-
-impl<'a, CW: Copy, R: RulesTrait> FixedDot<'a, CW, R> {
-    pub fn first_loose(&self, _band: BandIndex) -> Option<LooseIndex> {
-        self.drawing
-            .geometry()
-            .joineds(self.index.into())
-            .into_iter()
-            .find_map(|ni| {
-                let weight = self
-                    .drawing
-                    .geometry()
-                    .graph()
-                    .node_weight(ni.node_index())
-                    .unwrap();
-                if matches!(
-                    weight,
-                    GenericNode::Primitive(PrimitiveWeight::LoneLooseSeg(..))
-                ) {
-                    Some(LoneLooseSegIndex::new(ni.node_index()).into())
-                } else if matches!(
-                    weight,
-                    GenericNode::Primitive(PrimitiveWeight::SeqLooseSeg(..))
-                ) {
-                    Some(SeqLooseSegIndex::new(ni.node_index()).into())
-                } else {
-                    None
-                }
-            })
-    }
-}
 
 impl<'a, CW: Copy, R: RulesTrait> MakePrimitiveShape for FixedDot<'a, CW, R> {
     fn shape(&self) -> PrimitiveShape {

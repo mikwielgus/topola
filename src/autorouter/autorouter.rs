@@ -21,7 +21,7 @@ use crate::{
         graph::{GetLayer, GetMaybeNet},
         rules::RulesTrait,
     },
-    layout::{connectivity::BandIndex, Layout, NodeIndex},
+    layout::{Layout, NodeIndex},
     router::{navmesh::Navmesh, Router, RouterObserverTrait, RoutingError},
     triangulation::GetVertexIndex,
 };

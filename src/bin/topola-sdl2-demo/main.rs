@@ -330,7 +330,7 @@ fn render_times(
     font_context: &CanvasFontContext,
     view: &mut View,
     mut router_or_layout: RouterOrLayout<impl RulesTrait>,
-    maybe_band: Option<BandIndex>,
+    _unused: Option<()>,
     mut maybe_navmesh: Option<Navmesh>,
     path: &[VertexIndex],
     ghosts: &[PrimitiveShape],
@@ -381,7 +381,7 @@ fn render_times(
             RouterOrLayout::Router(ref mut router) => {
                 let state = event_pump.mouse_state();
 
-                if let Some(band) = maybe_band {
+                /*if let Some(band) = maybe_band {
                     router
                         .reroute_band(
                             band,
@@ -398,7 +398,7 @@ fn render_times(
                         )
                         .ok();
                     maybe_navmesh = None;
-                }
+                }*/
 
                 router.layout().clone()
             }

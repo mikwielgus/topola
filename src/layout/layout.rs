@@ -21,12 +21,7 @@ use crate::{
         DotWeightTrait, GenericNode, Geometry, GeometryLabel, GetWidth, SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
-    layout::{
-        connectivity::{
-            BandIndex, BandWeight, ConnectivityLabel, ConnectivityWeight, ContinentIndex,
-        },
-        zone::{GetMaybeApex, MakePolyShape, PourZoneIndex, SolidZoneIndex, Zone, ZoneWeight},
-    },
+    layout::zone::{GetMaybeApex, MakePolyShape, PourZoneIndex, SolidZoneIndex, Zone, ZoneWeight},
     math::Circle,
 };
 
@@ -35,43 +30,15 @@ pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<ZoneWeight>>;
 #[derive(Debug)]
 pub struct Layout<R: RulesTrait> {
     drawing: Drawing<ZoneWeight, R>,
-    connectivity: StableDiGraph<ConnectivityWeight, ConnectivityLabel, usize>,
 }
 
 impl<R: RulesTrait> Layout<R> {
     pub fn new(drawing: Drawing<ZoneWeight, R>) -> Self {
-        Self {
-            drawing,
-            connectivity: StableDiGraph::default(),
-        }
-    }
-
-    pub fn remove_band(&mut self, band: BandIndex) {
-        todo!()
+        Self { drawing }
     }
 
     pub fn remove_segbend(&mut self, segbend: &Segbend, face: LooseDotIndex) {
         self.drawing.remove_segbend(segbend, face)
-    }
-
-    pub fn start_band(&mut self, from: FixedDotIndex) -> BandIndex {
-        let band = self
-            .connectivity
-            .add_node(ConnectivityWeight::Band(BandWeight { from, to: None }));
-        self.connectivity.update_edge(
-            self.continent(from.into()).node_index(),
-            band,
-            ConnectivityLabel::Band,
-        );
-        BandIndex::new(band)
-    }
-
-    pub fn finish_band(&mut self, band: BandIndex, to: FixedDotIndex) {
-        self.connectivity.update_edge(
-            band.node_index(),
-            self.continent(to.into()).node_index(),
-            ConnectivityLabel::Band,
-        );
     }
 
     pub fn insert_segbend(
@@ -152,22 +119,9 @@ impl<R: RulesTrait> Layout<R> {
         self.drawing.move_dot(dot, to)
     }
 
-    pub fn band_from(&self, band: BandIndex) -> FixedDotIndex {
-        todo!()
-    }
-
-    pub fn band_to(&self, band: BandIndex) -> Option<FixedDotIndex> {
-        todo!()
-    }
-
-    pub fn band_length(&self, band: BandIndex) -> f64 {
+    pub fn band_length(&self, face: DotIndex) -> f64 {
         // TODO.
         0.0
-    }
-
-    pub fn continent(&self, dot: FixedDotIndex) -> ContinentIndex {
-        // TODO.
-        ContinentIndex::new(0.into())
     }
 
     pub fn zone_nodes(&self) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
