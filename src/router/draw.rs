@@ -4,6 +4,7 @@ use thiserror::Error;
 
 use crate::{
     drawing::{
+        band::BandIndex,
         bend::{BendIndex, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
         graph::{GetLayer, GetMaybeNet, MakePrimitive},
@@ -50,7 +51,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         head: Head,
         into: FixedDotIndex,
         width: f64,
-    ) -> Result<(), DrawException> {
+    ) -> Result<BandIndex, DrawException> {
         let tangent = self
             .guide()
             .head_into_dot_segment(&head, into, width)
@@ -61,8 +62,8 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         let layer = head.face().primitive(self.layout.drawing()).layer();
         let maybe_net = head.face().primitive(self.layout.drawing()).maybe_net();
 
-        match head.face() {
-            DotIndex::Fixed(dot) => {
+        Ok::<BandIndex, DrawException>(match head.face() {
+            DotIndex::Fixed(dot) => BandIndex::Straight(
                 self.layout
                     .add_lone_loose_seg(
                         dot,
@@ -73,9 +74,9 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
                             maybe_net,
                         },
                     )
-                    .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
-            }
-            DotIndex::Loose(dot) => {
+                    .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?,
+            ),
+            DotIndex::Loose(dot) => BandIndex::Bended(
                 self.layout
                     .add_seq_loose_seg(
                         into.into(),
@@ -86,10 +87,9 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
                             maybe_net,
                         },
                     )
-                    .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
-            }
-        }
-        Ok::<(), DrawException>(())
+                    .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?,
+            ),
+        })
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 4))]

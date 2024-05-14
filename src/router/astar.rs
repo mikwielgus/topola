@@ -94,22 +94,22 @@ where
     }
 }
 
-pub trait AstarStrategy<G, K>
+pub trait AstarStrategy<G, K, R>
 where
     G: IntoEdges,
     K: Measure + Copy,
     G::NodeId: Eq + Hash,
 {
-    fn is_goal(&mut self, node: G::NodeId, tracker: &PathTracker<G>) -> bool;
+    fn is_goal(&mut self, node: G::NodeId, tracker: &PathTracker<G>) -> Option<R>;
     fn edge_cost(&mut self, edge: G::EdgeRef) -> Option<K>;
     fn estimate_cost(&mut self, node: G::NodeId) -> K;
 }
 
-pub fn astar<G, K>(
+pub fn astar<G, K, R>(
     graph: G,
     start: G::NodeId,
-    strategy: &mut impl AstarStrategy<G, K>,
-) -> Option<(K, Vec<G::NodeId>)>
+    strategy: &mut impl AstarStrategy<G, K, R>,
+) -> Option<(K, Vec<G::NodeId>, R)>
 where
     G: IntoEdges,
     G::NodeId: Eq + Hash,
@@ -125,10 +125,10 @@ where
     visit_next.push(MinScored(strategy.estimate_cost(start), start));
 
     while let Some(MinScored(estimate_score, node)) = visit_next.pop() {
-        if strategy.is_goal(node, &path_tracker) {
+        if let Some(result) = strategy.is_goal(node, &path_tracker) {
             let path = path_tracker.reconstruct_path_to(node);
             let cost = scores[&node];
-            return Some((cost, path));
+            return Some((cost, path, result));
         }
 
         // This lookup can be unwrapped without fear of panic since the node was

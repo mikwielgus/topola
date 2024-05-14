@@ -6,6 +6,7 @@ use petgraph::visit::EdgeRef;
 use spade::InsertionError;
 use thiserror::Error;
 
+use crate::drawing::band::BandIndex;
 use crate::drawing::graph::{GetLayer, GetMaybeNet};
 use crate::drawing::guide::HeadTrait;
 use crate::geometry::primitive::PrimitiveShapeTrait;
@@ -97,10 +98,14 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> RouterAstarStrategy<'a, RO, 
     }
 }
 
-impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64>
+impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64, BandIndex>
     for RouterAstarStrategy<'a, RO, R>
 {
-    fn is_goal(&mut self, vertex: VertexIndex, tracker: &PathTracker<&Navmesh>) -> bool {
+    fn is_goal(
+        &mut self,
+        vertex: VertexIndex,
+        tracker: &PathTracker<&Navmesh>,
+    ) -> Option<BandIndex> {
         let new_path = tracker.reconstruct_path_to(vertex);
         let width = self.trace.width;
 
@@ -109,7 +114,7 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64>
             .unwrap();
         self.observer.on_rework(&self.tracer, &self.trace);
 
-        self.tracer.finish(&mut self.trace, self.to, width).is_ok()
+        self.tracer.finish(&mut self.trace, self.to, width).ok()
     }
 
     fn edge_cost(&mut self, edge: NavmeshEdgeReference) -> Option<f64> {
@@ -183,12 +188,12 @@ impl<'a, R: RulesTrait> Router<'a, R> {
         &mut self,
         width: f64,
         observer: &mut impl RouterObserverTrait<R>,
-    ) -> Result<(), RoutingError> {
+    ) -> Result<BandIndex, RoutingError> {
         let mut tracer = self.tracer();
 
         let trace = tracer.start(self.navmesh.from(), width);
 
-        let (_cost, _path) = astar(
+        let (_cost, _path, band) = astar(
             &self.navmesh,
             self.navmesh.from().into(),
             &mut RouterAstarStrategy::new(tracer, trace, self.navmesh.to(), observer),
@@ -199,7 +204,7 @@ impl<'a, R: RulesTrait> Router<'a, R> {
             source: RoutingErrorKind::AStar,
         })?;
 
-        Ok(())
+        Ok(band)
     }
 
     /*pub fn reroute_band(

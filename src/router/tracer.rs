@@ -4,6 +4,7 @@ use contracts::debug_ensures;
 
 use crate::{
     drawing::{
+        band::BandIndex,
         bend::LooseBendIndex,
         dot::FixedDotIndex,
         guide::{BareHead, Head, SegbendHead},
@@ -46,9 +47,8 @@ impl<R: RulesTrait> Tracer<R> {
         trace: &mut Trace,
         into: FixedDotIndex,
         width: f64,
-    ) -> Result<(), DrawException> {
-        Draw::new(&mut self.layout.lock().unwrap()).finish_in_dot(trace.head, into, width)?;
-        Ok(())
+    ) -> Result<BandIndex, DrawException> {
+        Draw::new(&mut self.layout.lock().unwrap()).finish_in_dot(trace.head, into, width)
     }
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == path.len())]
