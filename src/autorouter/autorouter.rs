@@ -134,35 +134,45 @@ impl<R: RulesTrait> Autorouter<R> {
     }
 
     pub fn autoroute_walk(&mut self, selection: &Selection) -> Option<Autoroute> {
-        Autoroute::new(
-            self.ratsnest
-                .graph()
-                .edge_indices()
-                .filter(|edge| {
-                    let (from, to) = self.ratsnest.graph().edge_endpoints(*edge).unwrap();
-
-                    let from_vertex = self
-                        .ratsnest
-                        .graph()
-                        .node_weight(from)
-                        .unwrap()
-                        .vertex_index();
-                    let to_vertex = self
-                        .ratsnest
-                        .graph()
-                        .node_weight(to)
-                        .unwrap()
-                        .vertex_index();
-
-                    selection.contains(&from_vertex.into()) && selection.contains(&to_vertex.into())
-                })
-                .collect::<Vec<_>>(),
-            self,
-        )
+        Autoroute::new(self.selected_ratlines(selection), self)
     }
 
     pub fn undo_autoroute(&mut self, selection: &Selection) {
-        todo!();
+        for ratline in self.selected_ratlines(selection).iter() {
+            let band = self
+                .ratsnest
+                .graph()
+                .edge_weight(*ratline)
+                .unwrap()
+                .band
+                .unwrap();
+            self.layout.lock().unwrap().remove_band(band);
+        }
+    }
+
+    fn selected_ratlines(&self, selection: &Selection) -> Vec<EdgeIndex<usize>> {
+        self.ratsnest
+            .graph()
+            .edge_indices()
+            .filter(|ratline| {
+                let (from, to) = self.ratsnest.graph().edge_endpoints(*ratline).unwrap();
+
+                let from_vertex = self
+                    .ratsnest
+                    .graph()
+                    .node_weight(from)
+                    .unwrap()
+                    .vertex_index();
+                let to_vertex = self
+                    .ratsnest
+                    .graph()
+                    .node_weight(to)
+                    .unwrap()
+                    .vertex_index();
+
+                selection.contains(&from_vertex.into()) && selection.contains(&to_vertex.into())
+            })
+            .collect()
     }
 
     pub fn layout(&self) -> &Arc<Mutex<Layout<R>>> {

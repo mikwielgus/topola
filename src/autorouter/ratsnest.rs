@@ -12,6 +12,7 @@ use spade::{HasPosition, InsertionError, Point2};
 
 use crate::{
     drawing::{
+        band::BandIndex,
         dot::FixedDotIndex,
         graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
@@ -23,7 +24,7 @@ use crate::{
         zone::{MakePolyShape, ZoneWeight},
         Layout,
     },
-    triangulation::{GetVertexIndex, Triangulation, TriangulationEdgeWeight},
+    triangulation::{GetVertexIndex, Triangulation},
 };
 
 #[enum_dispatch(GetNodeIndex)]
@@ -61,8 +62,13 @@ impl HasPosition for VertexWeight {
     }
 }
 
+#[derive(Debug, Default, Clone, Copy)]
+pub struct EdgeWeight {
+    pub band: Option<BandIndex>,
+}
+
 pub struct Ratsnest {
-    graph: UnGraph<VertexWeight, TriangulationEdgeWeight, usize>,
+    graph: UnGraph<VertexWeight, EdgeWeight, usize>,
 }
 
 impl Ratsnest {
@@ -140,7 +146,7 @@ impl Ratsnest {
                         target,
                         weight,
                     } => {
-                        this.graph.add_edge(map[source], map[target], weight);
+                        this.graph.add_edge(map[source], map[target], weight.weight);
                     }
                 }
             }
@@ -159,7 +165,7 @@ impl Ratsnest {
         Ok(this)
     }
 
-    pub fn graph(&self) -> &UnGraph<VertexWeight, TriangulationEdgeWeight, usize> {
+    pub fn graph(&self) -> &UnGraph<VertexWeight, EdgeWeight, usize> {
         &self.graph
     }
 }

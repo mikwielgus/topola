@@ -4,6 +4,7 @@ use rstar::AABB;
 
 use crate::{
     drawing::{
+        band::BandIndex,
         bend::LooseBendWeight,
         dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight, Retag},
@@ -35,6 +36,10 @@ pub struct Layout<R: RulesTrait> {
 impl<R: RulesTrait> Layout<R> {
     pub fn new(drawing: Drawing<ZoneWeight, R>) -> Self {
         Self { drawing }
+    }
+
+    pub fn remove_band(&mut self, band: BandIndex) {
+        self.drawing.remove_band(band);
     }
 
     pub fn remove_segbend(&mut self, segbend: &Segbend, face: LooseDotIndex) {

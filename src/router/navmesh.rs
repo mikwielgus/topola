@@ -58,19 +58,19 @@ impl From<TriangulationVertexIndex> for VertexIndex {
 }
 
 #[derive(Debug, Clone)]
-struct TriangulationWeight {
+struct TriangulationVertexWeight {
     vertex: TriangulationVertexIndex,
     rails: Vec<LooseBendIndex>,
     pos: Point,
 }
 
-impl GetVertexIndex<TriangulationVertexIndex> for TriangulationWeight {
+impl GetVertexIndex<TriangulationVertexIndex> for TriangulationVertexWeight {
     fn vertex_index(&self) -> TriangulationVertexIndex {
         self.vertex
     }
 }
 
-impl HasPosition for TriangulationWeight {
+impl HasPosition for TriangulationVertexWeight {
     type Scalar = f64;
     fn position(&self) -> Point2<Self::Scalar> {
         Point2::new(self.pos.x(), self.pos.y())
@@ -79,7 +79,7 @@ impl HasPosition for TriangulationWeight {
 
 #[derive(Debug, Clone)]
 pub struct Navmesh {
-    triangulation: Triangulation<TriangulationVertexIndex, TriangulationWeight>,
+    triangulation: Triangulation<TriangulationVertexIndex, TriangulationVertexWeight, ()>,
     vertex_to_triangulation_vertex: Vec<Option<TriangulationVertexIndex>>,
     from: FixedDotIndex,
     to: FixedDotIndex,
@@ -110,14 +110,14 @@ impl Navmesh {
                 if node == from.into() || node == to.into() || primitive_net != net {
                     match node {
                         PrimitiveIndex::FixedDot(dot) => {
-                            this.triangulation.add_vertex(TriangulationWeight {
+                            this.triangulation.add_vertex(TriangulationVertexWeight {
                                 vertex: dot.into(),
                                 rails: vec![],
                                 pos: primitive.shape().center(),
                             })?;
                         }
                         PrimitiveIndex::FixedBend(bend) => {
-                            this.triangulation.add_vertex(TriangulationWeight {
+                            this.triangulation.add_vertex(TriangulationVertexWeight {
                                 vertex: bend.into(),
                                 rails: vec![],
                                 pos: primitive.shape().center(),
@@ -225,8 +225,8 @@ impl<'a> visit::IntoNeighbors for &'a Navmesh {
 }
 
 fn edge_with_near_edges(
-    triangulation: &Triangulation<TriangulationVertexIndex, TriangulationWeight>,
-    edge: TriangulationEdgeReference<TriangulationVertexIndex>,
+    triangulation: &Triangulation<TriangulationVertexIndex, TriangulationVertexWeight, ()>,
+    edge: TriangulationEdgeReference<TriangulationVertexIndex, ()>,
 ) -> impl Iterator<Item = NavmeshEdgeReference> {
     let mut from_vertices = vec![edge.source().into()];
 
@@ -274,7 +274,7 @@ impl<'a> visit::IntoEdgeReferences for &'a Navmesh {
 }
 
 fn vertex_edges(
-    triangulation: &Triangulation<TriangulationVertexIndex, TriangulationWeight>,
+    triangulation: &Triangulation<TriangulationVertexIndex, TriangulationVertexWeight, ()>,
     from: VertexIndex,
     to: TriangulationVertexIndex,
 ) -> impl Iterator<Item = NavmeshEdgeReference> {
