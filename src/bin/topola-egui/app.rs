@@ -34,7 +34,7 @@ use topola::{
         draw::DrawException,
         navmesh::{Navmesh, NavmeshEdgeReference, VertexIndex},
         tracer::{Trace, Tracer},
-        RouterObserverTrait,
+        EmptyRouterObserver, RouterObserverTrait,
     },
 };
 
@@ -205,13 +205,13 @@ impl eframe::App for App {
                 if ui.button("Autoroute").clicked() {
                     if let (Some(invoker_arc_mutex), Some(overlay)) = (&self.invoker, &self.overlay)
                     {
-                        let invoker = invoker_arc_mutex.clone();
+                        let invoker_arc_mutex = invoker_arc_mutex.clone();
                         let shared_data_arc_mutex = self.shared_data.clone();
                         let selection = overlay.selection().clone();
 
                         execute(async move {
-                            let mut invoker = invoker.lock().unwrap();
-                            let mut execute = invoker.execute_walk(&Command::Autoroute(selection));
+                            let mut invoker = invoker_arc_mutex.lock().unwrap();
+                            let mut execute = invoker.execute_walk(Command::Autoroute(selection));
 
                             if let Execute::Autoroute(ref mut autoroute) = execute {
                                 let from = autoroute.navmesh().as_ref().unwrap().from();
@@ -236,6 +236,27 @@ impl eframe::App for App {
                                         autoroute.navmesh().clone();
                                 }
                             }
+                        });
+                    }
+                }
+
+                if ui.button("Undo").clicked() {
+                    if let Some(invoker_arc_mutex) = &self.invoker {
+                        let invoker_arc_mutex = invoker_arc_mutex.clone();
+                        execute(async move {
+                            invoker_arc_mutex.lock().unwrap().undo();
+                        });
+                    }
+                }
+
+                if ui.button("Redo").clicked() {
+                    if let Some(invoker_arc_mutex) = &self.invoker {
+                        let invoker_arc_mutex = invoker_arc_mutex.clone();
+                        execute(async move {
+                            invoker_arc_mutex
+                                .lock()
+                                .unwrap()
+                                .redo(&mut EmptyRouterObserver);
                         });
                     }
                 }

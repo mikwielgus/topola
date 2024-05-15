@@ -4,7 +4,7 @@ use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
     data::{Element, FromElements},
-    graph::{NodeIndex, UnGraph},
+    graph::{EdgeIndex, NodeIndex, UnGraph},
     unionfind::UnionFind,
     visit::{EdgeRef, IntoEdgeReferences, NodeIndexable},
 };
@@ -153,16 +153,20 @@ impl Ratsnest {
         }
 
         this.graph.retain_edges(|g, i| {
-            if let Some((from, to)) = g.edge_endpoints(i) {
-                let from_index = g.node_weight(from).unwrap().vertex_index().node_index();
-                let to_index = g.node_weight(to).unwrap().vertex_index().node_index();
-                !unionfind.equiv(from_index, to_index)
+            if let Some((source, target)) = g.edge_endpoints(i) {
+                let source_index = g.node_weight(source).unwrap().vertex_index().node_index();
+                let target_index = g.node_weight(target).unwrap().vertex_index().node_index();
+                !unionfind.equiv(source_index, target_index)
             } else {
                 true
             }
         });
 
         Ok(this)
+    }
+
+    pub fn assign_band_to_ratline(&mut self, ratline: EdgeIndex<usize>, band: BandIndex) {
+        self.graph.edge_weight_mut(ratline).unwrap().band = Some(band);
     }
 
     pub fn graph(&self) -> &UnGraph<VertexWeight, EdgeWeight, usize> {

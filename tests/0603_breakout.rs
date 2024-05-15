@@ -15,7 +15,7 @@ fn test() {
     let layout_arc_mutex = Arc::new(Mutex::new(design.make_layout()));
 
     let mut autorouter = Autorouter::new(layout_arc_mutex.clone()).unwrap();
-    autorouter.autoroute(0, &mut EmptyRouterObserver);
+    autorouter.autoroute(&mut EmptyRouterObserver);
 
     let layout = layout_arc_mutex.lock().unwrap();
     let mut unionfind = UnionFind::new(layout.drawing().geometry().graph().node_bound());

@@ -29,6 +29,7 @@ use crate::{
 pub struct Autoroute {
     ratlines_iter: Box<dyn Iterator<Item = EdgeIndex<usize>>>,
     navmesh: Option<Navmesh>, // Useful for debugging.
+    cur_ratline: Option<EdgeIndex<usize>>,
 }
 
 impl Autoroute {
@@ -38,17 +39,18 @@ impl Autoroute {
     ) -> Option<Self> {
         let mut ratlines_iter = Box::new(ratlines.into_iter());
 
-        let Some(cur_edge) = ratlines_iter.next() else {
+        let Some(cur_ratline) = ratlines_iter.next() else {
             return None;
         };
 
-        let (from, to) = Self::edge_from_to(autorouter, cur_edge);
+        let (source, target) = Self::ratline_endpoints(autorouter, cur_ratline);
         let layout = autorouter.layout.lock().unwrap();
-        let navmesh = Some(Navmesh::new(&layout, from, to).ok()?);
+        let navmesh = Some(Navmesh::new(&layout, source, target).ok()?);
 
         let this = Self {
             ratlines_iter,
             navmesh,
+            cur_ratline: Some(cur_ratline),
         };
 
         Some(this)
@@ -59,35 +61,46 @@ impl Autoroute {
         autorouter: &mut Autorouter<R>,
         observer: &mut impl RouterObserverTrait<R>,
     ) -> bool {
-        let new_navmesh = if let Some(cur_edge) = self.ratlines_iter.next() {
-            let (from, to) = Self::edge_from_to(autorouter, cur_edge);
+        let (new_navmesh, new_ratline) = if let Some(cur_ratline) = self.ratlines_iter.next() {
+            let (source, target) = Self::ratline_endpoints(autorouter, cur_ratline);
 
             let layout = autorouter.layout.lock().unwrap();
-            Some(Navmesh::new(&layout, from, to).ok().unwrap())
+            (
+                Some(Navmesh::new(&layout, source, target).ok().unwrap()),
+                Some(cur_ratline),
+            )
         } else {
-            None
+            (None, None)
         };
 
         let router = Router::new_from_navmesh(
             &mut autorouter.layout,
             std::mem::replace(&mut self.navmesh, new_navmesh).unwrap(),
         );
-        router.unwrap().route_band(100.0, observer);
+
+        let Ok(band) = router.unwrap().route_band(100.0, observer) else {
+            return false;
+        };
+
+        autorouter
+            .ratsnest
+            .assign_band_to_ratline(self.cur_ratline.unwrap(), band);
+        self.cur_ratline = new_ratline;
 
         self.navmesh.is_some()
     }
 
-    fn edge_from_to<R: RulesTrait>(
+    fn ratline_endpoints<R: RulesTrait>(
         autorouter: &Autorouter<R>,
-        edge: EdgeIndex<usize>,
+        ratline: EdgeIndex<usize>,
     ) -> (FixedDotIndex, FixedDotIndex) {
         let mut layout = autorouter.layout.lock().unwrap();
-        let (from, to) = autorouter.ratsnest.graph().edge_endpoints(edge).unwrap();
+        let (source, target) = autorouter.ratsnest.graph().edge_endpoints(ratline).unwrap();
 
-        let from_dot = match autorouter
+        let source_dot = match autorouter
             .ratsnest
             .graph()
-            .node_weight(from)
+            .node_weight(source)
             .unwrap()
             .vertex_index()
         {
@@ -95,10 +108,10 @@ impl Autoroute {
             RatsnestVertexIndex::Zone(zone) => layout.zone_apex(zone),
         };
 
-        let to_dot = match autorouter
+        let target_dot = match autorouter
             .ratsnest
             .graph()
-            .node_weight(to)
+            .node_weight(target)
             .unwrap()
             .vertex_index()
         {
@@ -106,7 +119,7 @@ impl Autoroute {
             RatsnestVertexIndex::Zone(zone) => layout.zone_apex(zone),
         };
 
-        (from_dot, to_dot)
+        (source_dot, target_dot)
     }
 
     pub fn navmesh(&self) -> &Option<Navmesh> {
@@ -155,22 +168,22 @@ impl<R: RulesTrait> Autorouter<R> {
             .graph()
             .edge_indices()
             .filter(|ratline| {
-                let (from, to) = self.ratsnest.graph().edge_endpoints(*ratline).unwrap();
+                let (source, target) = self.ratsnest.graph().edge_endpoints(*ratline).unwrap();
 
-                let from_vertex = self
+                let source_vertex = self
                     .ratsnest
                     .graph()
-                    .node_weight(from)
+                    .node_weight(source)
                     .unwrap()
                     .vertex_index();
                 let to_vertex = self
                     .ratsnest
                     .graph()
-                    .node_weight(to)
+                    .node_weight(target)
                     .unwrap()
                     .vertex_index();
 
-                selection.contains(&from_vertex.into()) && selection.contains(&to_vertex.into())
+                selection.contains(&source_vertex.into()) && selection.contains(&to_vertex.into())
             })
             .collect()
     }

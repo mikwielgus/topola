@@ -190,7 +190,6 @@ impl<'a, R: RulesTrait> Router<'a, R> {
         observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<BandIndex, RoutingError> {
         let mut tracer = self.tracer();
-
         let trace = tracer.start(self.navmesh.from(), width);
 
         let (_cost, _path, band) = astar(
