@@ -240,7 +240,9 @@ impl eframe::App for App {
                     }
                 }
 
-                if ui.button("Undo").clicked() {
+                if ui.button("Undo").clicked()
+                    || ctx.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Z))
+                {
                     if let Some(invoker_arc_mutex) = &self.invoker {
                         let invoker_arc_mutex = invoker_arc_mutex.clone();
                         execute(async move {
@@ -249,7 +251,9 @@ impl eframe::App for App {
                     }
                 }
 
-                if ui.button("Redo").clicked() {
+                if ui.button("Redo").clicked()
+                    || ctx.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Y))
+                {
                     if let Some(invoker_arc_mutex) = &self.invoker {
                         let invoker_arc_mutex = invoker_arc_mutex.clone();
                         execute(async move {
