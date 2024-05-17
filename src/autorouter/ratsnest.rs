@@ -89,7 +89,7 @@ impl Ratsnest {
             for node in layout.drawing().layer_primitive_nodes(layer) {
                 match node {
                     PrimitiveIndex::FixedDot(dot) => {
-                        if layout.compounds(dot).next().is_none() {
+                        if layout.zones(dot).next().is_none() {
                             if let Some(net) = layout.drawing().primitive(dot).maybe_net() {
                                 if !triangulations.contains_key(&(layer, net)) {
                                     triangulations.insert(

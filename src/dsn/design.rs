@@ -106,6 +106,7 @@ impl DsnDesign {
                                     circle.diameter as f64 / 2.0,
                                     layer as u64,
                                     *net_id,
+                                    Some(pin_name.clone()),
                                 )
                             }
                             Shape::Rect(rect) => {
@@ -127,6 +128,7 @@ impl DsnDesign {
                                     rect.y2 as f64,
                                     layer as u64,
                                     *net_id,
+                                    Some(pin_name.clone()),
                                 )
                             }
                             Shape::Path(path) => {
@@ -146,6 +148,7 @@ impl DsnDesign {
                                     path.width as f64,
                                     layer as u64,
                                     *net_id,
+                                    Some(pin_name.clone()),
                                 )
                             }
                             Shape::Polygon(polygon) => {
@@ -165,6 +168,7 @@ impl DsnDesign {
                                     polygon.width as f64,
                                     layer as u64,
                                     *net_id,
+                                    Some(pin_name.clone()),
                                 )
                             }
                         };
@@ -203,6 +207,7 @@ impl DsnDesign {
                             circle.diameter as f64 / 2.0,
                             layer as u64,
                             net_id,
+                            None,
                         )
                     }
                     Shape::Rect(rect) => {
@@ -224,6 +229,7 @@ impl DsnDesign {
                             rect.y2 as f64,
                             layer as u64,
                             net_id,
+                            None,
                         )
                     }
                     Shape::Path(path) => {
@@ -243,6 +249,7 @@ impl DsnDesign {
                             path.width as f64,
                             layer as u64,
                             net_id,
+                            None,
                         )
                     }
                     Shape::Polygon(polygon) => {
@@ -262,6 +269,7 @@ impl DsnDesign {
                             polygon.width as f64,
                             layer as u64,
                             net_id,
+                            None,
                         )
                     }
                 };
@@ -287,6 +295,7 @@ impl DsnDesign {
                 wire.path.width as f64,
                 layer_id as u64,
                 net_id,
+                None,
             );
         }
 
@@ -317,6 +326,7 @@ impl DsnDesign {
         r: f64,
         layer: u64,
         net: usize,
+        maybe_pin: Option<String>,
     ) {
         let circle = Circle {
             pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, 0.0, 0.0),
@@ -324,11 +334,14 @@ impl DsnDesign {
         };
 
         layout
-            .add_fixed_dot(FixedDotWeight {
-                circle,
-                layer,
-                maybe_net: Some(net),
-            })
+            .add_fixed_dot(
+                FixedDotWeight {
+                    circle,
+                    layer,
+                    maybe_net: Some(net),
+                },
+                maybe_pin.clone(),
+            )
             .unwrap();
     }
 
@@ -344,13 +357,15 @@ impl DsnDesign {
         y2: f64,
         layer: u64,
         net: usize,
+        maybe_pin: Option<String>,
     ) {
-        let zone = layout.add_compound(
+        let zone = layout.add_zone(
             SolidZoneWeight {
                 layer,
                 maybe_net: Some(net),
             }
             .into(),
+            maybe_pin.clone(),
         );
 
         // Corners.
@@ -467,6 +482,7 @@ impl DsnDesign {
         width: f64,
         layer: u64,
         net: usize,
+        maybe_pin: Option<String>,
     ) {
         // add the first coordinate in the wire path as a dot and save its index
         let mut prev_pos = Self::pos(
@@ -478,14 +494,17 @@ impl DsnDesign {
             coords[0].y as f64,
         );
         let mut prev_index = layout
-            .add_fixed_dot(FixedDotWeight {
-                circle: Circle {
-                    pos: prev_pos,
-                    r: width / 2.0,
+            .add_fixed_dot(
+                FixedDotWeight {
+                    circle: Circle {
+                        pos: prev_pos,
+                        r: width / 2.0,
+                    },
+                    layer,
+                    maybe_net: Some(net),
                 },
-                layer,
-                maybe_net: Some(net),
-            })
+                maybe_pin.clone(),
+            )
             .unwrap();
 
         // iterate through path coords starting from the second
@@ -504,14 +523,17 @@ impl DsnDesign {
             }
 
             let index = layout
-                .add_fixed_dot(FixedDotWeight {
-                    circle: Circle {
-                        pos,
-                        r: width / 2.0,
+                .add_fixed_dot(
+                    FixedDotWeight {
+                        circle: Circle {
+                            pos,
+                            r: width / 2.0,
+                        },
+                        layer,
+                        maybe_net: Some(net),
                     },
-                    layer,
-                    maybe_net: Some(net),
-                })
+                    maybe_pin.clone(),
+                )
                 .unwrap();
 
             // add a seg between the current and previous coords
@@ -524,6 +546,7 @@ impl DsnDesign {
                         layer,
                         maybe_net: Some(net),
                     },
+                    maybe_pin.clone(),
                 )
                 .unwrap();
 
@@ -542,13 +565,15 @@ impl DsnDesign {
         width: f64,
         layer: u64,
         net: usize,
+        maybe_pin: Option<String>,
     ) {
-        let zone = layout.add_compound(
+        let zone = layout.add_zone(
             SolidZoneWeight {
                 layer,
                 maybe_net: Some(net),
             }
             .into(),
+            maybe_pin.clone(),
         );
 
         // add the first coordinate in the wire path as a dot and save its index
