@@ -73,7 +73,7 @@ impl Overlay {
         };
 
         if shape.contains_point(p) {
-            self.selection.toggle_at_node(node);
+            self.selection.toggle_at_node(layout, node);
             return true;
         }
         false

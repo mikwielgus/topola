@@ -85,7 +85,7 @@ impl<R: RulesTrait> Layout<R> {
         weight: FixedDotWeight,
         zone: GenericIndex<ZoneWeight>,
     ) -> Result<FixedDotIndex, Infringement> {
-        let pin = self.node_to_pin.get(&GenericNode::Compound(zone));
+        let pin = self.node_pin(GenericNode::Compound(zone));
         let maybe_dot = self.drawing.add_fixed_dot(weight);
 
         if let Ok(dot) = maybe_dot {
@@ -119,7 +119,7 @@ impl<R: RulesTrait> Layout<R> {
         weight: FixedSegWeight,
         zone: GenericIndex<ZoneWeight>,
     ) -> Result<FixedSegIndex, Infringement> {
-        let pin = self.node_to_pin.get(&GenericNode::Compound(zone));
+        let pin = self.node_pin(GenericNode::Compound(zone));
         let maybe_seg = self.add_fixed_seg(from, to, weight, pin.cloned());
 
         if let Ok(seg) = maybe_seg {
@@ -171,6 +171,10 @@ impl<R: RulesTrait> Layout<R> {
         node: GenericIndex<W>,
     ) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
         self.drawing.compounds(node)
+    }
+
+    pub fn node_pin(&self, node: NodeIndex) -> Option<&String> {
+        self.node_to_pin.get(&node)
     }
 
     pub fn band_length(&self, face: DotIndex) -> f64 {

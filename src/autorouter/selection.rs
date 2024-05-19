@@ -1,26 +1,83 @@
 use std::collections::HashSet;
 
-use crate::layout::NodeIndex;
+use crate::{
+    drawing::{graph::PrimitiveIndex, rules::RulesTrait},
+    graph::GenericIndex,
+    layout::{zone::ZoneWeight, Layout, NodeIndex},
+};
 
 #[derive(Debug, Clone)]
 pub struct Selection {
-    set: HashSet<NodeIndex>,
+    pins: HashSet<String>,
+    primitives: HashSet<PrimitiveIndex>,
+    zones: HashSet<GenericIndex<ZoneWeight>>,
 }
 
 impl Selection {
     pub fn new() -> Selection {
         Self {
-            set: HashSet::new(),
+            pins: HashSet::new(),
+            primitives: HashSet::new(),
+            zones: HashSet::new(),
         }
     }
 
-    pub fn toggle_at_node(&mut self, node: NodeIndex) {
-        if !self.set.insert(node) {
-            self.set.remove(&node);
+    pub fn toggle_at_node(&mut self, layout: &Layout<impl RulesTrait>, node: NodeIndex) {
+        let maybe_pin = layout.node_pin(node);
+
+        if let Some(ref pin) = maybe_pin {
+            if self.contains(node) {
+                self.remove_pin(layout, pin);
+            } else {
+                self.add_pin(layout, pin);
+            }
         }
     }
 
-    pub fn contains(&self, node: &NodeIndex) -> bool {
-        self.set.contains(node)
+    fn add_pin(&mut self, layout: &Layout<impl RulesTrait>, pin: &String) {
+        for primitive in layout.drawing().primitive_nodes().filter(|primitive| {
+            layout
+                .node_pin(NodeIndex::Primitive(*primitive))
+                .is_some_and(|p| p == pin)
+        }) {
+            self.primitives.insert(primitive);
+        }
+
+        for zone in layout.zone_nodes().filter(|zone| {
+            layout
+                .node_pin(NodeIndex::Compound(*zone))
+                .is_some_and(|p| p == pin)
+        }) {
+            self.zones.insert(zone);
+        }
+
+        self.pins.insert(pin.clone());
+    }
+
+    fn remove_pin(&mut self, layout: &Layout<impl RulesTrait>, pin: &String) {
+        for primitive in layout.drawing().primitive_nodes().filter(|primitive| {
+            layout
+                .node_pin(NodeIndex::Primitive(*primitive))
+                .is_some_and(|p| p == pin)
+        }) {
+            self.primitives.remove(&primitive);
+        }
+
+        for zone in layout.zone_nodes().filter(|zone| {
+            layout
+                .node_pin(NodeIndex::Compound(*zone))
+                .is_some_and(|p| p == pin)
+        }) {
+            self.zones.remove(&zone);
+        }
+
+        self.pins.remove(pin);
+    }
+
+    pub fn contains(&self, node: NodeIndex) -> bool {
+        match node {
+            NodeIndex::Primitive(primitive) => self.primitives.contains(&primitive),
+            NodeIndex::Compound(zone) => self.zones.contains(&zone),
+        }
     }
 }
