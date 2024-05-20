@@ -68,6 +68,9 @@ pub struct App {
 
     #[serde(skip)]
     from_rect: egui::emath::Rect,
+
+    #[serde(skip)]
+    show_ratsnest: bool,
 }
 
 impl Default for App {
@@ -78,6 +81,7 @@ impl Default for App {
             shared_data: Default::default(),
             text_channel: channel(),
             from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
+            show_ratsnest: true,
         }
     }
 }
@@ -267,6 +271,10 @@ impl eframe::App for App {
 
                 ui.separator();
 
+                ui.toggle_value(&mut self.show_ratsnest, "Show Ratsnest");
+
+                ui.separator();
+
                 egui::widgets::global_dark_light_mode_buttons(ui);
             });
         });
@@ -367,25 +375,27 @@ impl eframe::App for App {
                             painter.paint_polygon(&layout.zone(zone).shape().polygon, color)
                         }
 
-                        for edge in overlay.ratsnest().graph().edge_references() {
-                            let from = overlay
-                                .ratsnest()
-                                .graph()
-                                .node_weight(edge.source())
-                                .unwrap()
-                                .pos;
-                            let to = overlay
-                                .ratsnest()
-                                .graph()
-                                .node_weight(edge.target())
-                                .unwrap()
-                                .pos;
+                        if self.show_ratsnest {
+                            for edge in overlay.ratsnest().graph().edge_references() {
+                                let from = overlay
+                                    .ratsnest()
+                                    .graph()
+                                    .node_weight(edge.source())
+                                    .unwrap()
+                                    .pos;
+                                let to = overlay
+                                    .ratsnest()
+                                    .graph()
+                                    .node_weight(edge.target())
+                                    .unwrap()
+                                    .pos;
 
-                            painter.paint_edge(
-                                from,
-                                to,
-                                egui::Stroke::new(1.0, egui::Color32::from_rgb(90, 90, 200)),
-                            );
+                                painter.paint_edge(
+                                    from,
+                                    to,
+                                    egui::Stroke::new(1.0, egui::Color32::from_rgb(90, 90, 200)),
+                                );
+                            }
                         }
 
                         if let Some(navmesh) = &shared_data.navmesh {
