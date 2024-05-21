@@ -35,7 +35,7 @@ pub struct Autoroute {
 impl Autoroute {
     pub fn new(
         ratlines: impl IntoIterator<Item = EdgeIndex<usize>> + 'static,
-        autorouter: &mut Autorouter<impl RulesTrait>,
+        autorouter: &Autorouter<impl RulesTrait>,
     ) -> Option<Self> {
         let mut ratlines_iter = Box::new(ratlines.into_iter());
 
@@ -146,7 +146,7 @@ impl<R: RulesTrait> Autorouter<R> {
         }
     }
 
-    pub fn autoroute_walk(&mut self, selection: &Selection) -> Option<Autoroute> {
+    pub fn autoroute_walk(&self, selection: &Selection) -> Option<Autoroute> {
         Autoroute::new(self.selected_ratlines(selection), self)
     }
 

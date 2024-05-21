@@ -6,10 +6,12 @@ use crate::{
     layout::{zone::ZoneWeight, Layout, NodeIndex},
 };
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Selection {
     pins: HashSet<String>,
+    #[serde(skip)]
     primitives: HashSet<PrimitiveIndex>,
+    #[serde(skip)]
     zones: HashSet<GenericIndex<ZoneWeight>>,
 }
 

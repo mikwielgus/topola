@@ -1,9 +1,10 @@
 use crate::{
-    autorouter::{selection::Selection, Autoroute, Autorouter},
+    autorouter::{history::History, selection::Selection, Autoroute, Autorouter},
     drawing::rules::RulesTrait,
-    router::RouterObserverTrait,
+    router::{EmptyRouterObserver, RouterObserverTrait},
 };
 
+#[derive(serde::Serialize, serde::Deserialize)]
 pub enum Command {
     Autoroute(Selection),
 }
@@ -26,16 +27,14 @@ impl Execute {
 
 pub struct Invoker<R: RulesTrait> {
     autorouter: Autorouter<R>,
-    history: Vec<Command>,
-    undone_history: Vec<Command>,
+    history: History,
 }
 
 impl<R: RulesTrait> Invoker<R> {
     pub fn new(autorouter: Autorouter<R>) -> Self {
         Self {
             autorouter,
-            history: vec![],
-            undone_history: vec![],
+            history: History::new(),
         }
     }
 
@@ -48,31 +47,39 @@ impl<R: RulesTrait> Invoker<R> {
     }
 
     pub fn execute_walk(&mut self, command: Command) -> Execute {
-        let execute = match command {
-            Command::Autoroute(ref selection) => {
-                Execute::Autoroute(self.autorouter.autoroute_walk(selection).unwrap())
-            }
-        };
-
-        self.history.push(command);
+        let execute = self.dispatch_command(&command);
+        self.history.do_(command);
         execute
     }
 
-    pub fn undo(&mut self) {
-        let command = self.history.pop().unwrap();
-
+    fn dispatch_command(&self, command: &Command) -> Execute {
         match command {
             Command::Autoroute(ref selection) => {
-                self.autorouter.undo_autoroute(selection);
+                Execute::Autoroute(self.autorouter.autoroute_walk(selection).unwrap())
             }
         }
-
-        self.undone_history.push(command);
     }
 
-    pub fn redo(&mut self, observer: &mut impl RouterObserverTrait<R>) {
-        let command = self.undone_history.pop().unwrap();
-        self.execute(command, observer);
+    pub fn undo(&mut self) {
+        let command = self.history.done().last().unwrap();
+        let mut execute = self.dispatch_command(command);
+
+        while execute.next(self, &mut EmptyRouterObserver) {
+            //
+        }
+
+        self.history.undo();
+    }
+
+    pub fn redo(&mut self) {
+        let command = self.history.undone().last().unwrap();
+        let mut execute = self.dispatch_command(command);
+
+        while execute.next(self, &mut EmptyRouterObserver) {
+            //
+        }
+
+        self.history.redo();
     }
 
     pub fn autorouter(&self) -> &Autorouter<R> {

@@ -260,12 +260,7 @@ impl eframe::App for App {
                 {
                     if let Some(invoker_arc_mutex) = &self.invoker {
                         let invoker_arc_mutex = invoker_arc_mutex.clone();
-                        execute(async move {
-                            invoker_arc_mutex
-                                .lock()
-                                .unwrap()
-                                .redo(&mut EmptyRouterObserver);
-                        });
+                        execute(async move { invoker_arc_mutex.lock().unwrap().redo() });
                     }
                 }
 
