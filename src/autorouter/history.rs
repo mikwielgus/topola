@@ -1,5 +1,8 @@
+use serde::{Deserialize, Serialize};
+
 use crate::autorouter::invoker::Command;
 
+#[derive(Serialize, Deserialize)]
 pub struct History {
     done: Vec<Command>,
     undone: Vec<Command>,

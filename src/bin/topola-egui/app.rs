@@ -2,6 +2,7 @@ use futures::executor;
 use geo::point;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use std::{
+    fs::File,
     future::Future,
     sync::{
         mpsc::{channel, Receiver, Sender},
@@ -187,14 +188,33 @@ impl eframe::App for App {
                         let task = rfd::AsyncFileDialog::new().pick_file();
 
                         execute(async move {
-                            let maybe_file_handle = task.await;
-
-                            if let Some(file_handle) = maybe_file_handle {
-                                let _ = sender.send(channel_text(file_handle).await);
+                            if let Some(file_handle) = task.await {
+                                sender.send(channel_text(file_handle).await);
                                 ctx.request_repaint();
                             }
                         });
                     }
+
+                    ui.separator();
+
+                    if ui.button("Save history").clicked() {
+                        if let Some(invoker_arc_mutex) = &self.invoker {
+                            let invoker_arc_mutex = invoker_arc_mutex.clone();
+                            let ctx = ui.ctx().clone();
+                            let task = rfd::AsyncFileDialog::new().save_file();
+
+                            execute(async move {
+                                if let Some(file_handle) = task.await {
+                                    let path = file_handle.path();
+                                    let mut file = File::create(path).unwrap();
+                                    let mut invoker = invoker_arc_mutex.lock().unwrap();
+                                    serde_json::to_writer(file, invoker.history());
+                                }
+                            });
+                        }
+                    }
+
+                    ui.separator();
 
                     // "Quit" button wouldn't work on a Web page.
                     if !cfg!(target_arch = "wasm32") {

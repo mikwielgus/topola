@@ -62,10 +62,9 @@ impl<R: RulesTrait> Invoker<R> {
 
     pub fn undo(&mut self) {
         let command = self.history.done().last().unwrap();
-        let mut execute = self.dispatch_command(command);
 
-        while execute.next(self, &mut EmptyRouterObserver) {
-            //
+        match command {
+            Command::Autoroute(ref selection) => self.autorouter.undo_autoroute(selection),
         }
 
         self.history.undo();
@@ -84,5 +83,9 @@ impl<R: RulesTrait> Invoker<R> {
 
     pub fn autorouter(&self) -> &Autorouter<R> {
         &self.autorouter
+    }
+
+    pub fn history(&self) -> &History {
+        &self.history
     }
 }
