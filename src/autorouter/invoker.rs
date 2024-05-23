@@ -1,6 +1,9 @@
+use core::fmt;
+
 use crate::{
     autorouter::{history::History, selection::Selection, Autoroute, Autorouter},
     drawing::rules::RulesTrait,
+    layout::Layout,
     router::{EmptyRouterObserver, RouterObserverTrait},
 };
 
@@ -44,6 +47,8 @@ impl<R: RulesTrait> Invoker<R> {
         while execute.next(self, observer) {
             //
         }
+
+        self.history.set_undone(std::iter::empty());
     }
 
     pub fn execute_walk(&mut self, command: Command) -> Execute {
@@ -79,6 +84,16 @@ impl<R: RulesTrait> Invoker<R> {
         }
 
         self.history.redo();
+    }
+
+    pub fn replay(&mut self, history: History) {
+        let (done, undone) = history.destructure();
+
+        for command in done {
+            self.execute(command, &mut EmptyRouterObserver);
+        }
+
+        self.history.set_undone(undone.into_iter());
     }
 
     pub fn autorouter(&self) -> &Autorouter<R> {

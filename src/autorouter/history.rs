@@ -16,6 +16,10 @@ impl History {
         }
     }
 
+    pub fn destructure(self) -> (Vec<Command>, Vec<Command>) {
+        (self.done, self.undone)
+    }
+
     pub fn do_(&mut self, command: Command) {
         self.done.push(command);
     }
@@ -28,6 +32,10 @@ impl History {
     pub fn redo(&mut self) {
         let command = self.undone.pop().unwrap();
         self.done.push(command);
+    }
+
+    pub fn set_undone(&mut self, iter: impl IntoIterator<Item = Command>) {
+        self.undone = Vec::from_iter(iter);
     }
 
     pub fn done(&self) -> &[Command] {

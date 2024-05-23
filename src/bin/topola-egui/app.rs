@@ -197,6 +197,23 @@ impl eframe::App for App {
 
                     ui.separator();
 
+                    if ui.button("Load history").clicked() {
+                        if let Some(invoker_arc_mutex) = &self.invoker {
+                            let invoker_arc_mutex = invoker_arc_mutex.clone();
+                            let ctx = ui.ctx().clone();
+                            let task = rfd::AsyncFileDialog::new().pick_file();
+
+                            execute(async move {
+                                if let Some(file_handle) = task.await {
+                                    let path = file_handle.path();
+                                    let mut file = File::open(path).unwrap();
+                                    let mut invoker = invoker_arc_mutex.lock().unwrap();
+                                    invoker.replay(serde_json::from_reader(file).unwrap());
+                                }
+                            });
+                        }
+                    }
+
                     if ui.button("Save history").clicked() {
                         if let Some(invoker_arc_mutex) = &self.invoker {
                             let invoker_arc_mutex = invoker_arc_mutex.clone();
@@ -208,7 +225,7 @@ impl eframe::App for App {
                                     let path = file_handle.path();
                                     let mut file = File::create(path).unwrap();
                                     let mut invoker = invoker_arc_mutex.lock().unwrap();
-                                    serde_json::to_writer(file, invoker.history());
+                                    serde_json::to_writer_pretty(file, invoker.history());
                                 }
                             });
                         }
