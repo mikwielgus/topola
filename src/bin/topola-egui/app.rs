@@ -363,7 +363,7 @@ impl eframe::App for App {
                             let color = if shared_data.highlighteds.contains(&primitive)
                                 || overlay
                                     .selection()
-                                    .contains(GenericNode::Primitive(primitive))
+                                    .contains_node(&layout, GenericNode::Primitive(primitive))
                             {
                                 egui::Color32::from_rgb(100, 100, 255)
                             } else {
@@ -373,7 +373,9 @@ impl eframe::App for App {
                         }
 
                         for zone in layout.layer_zone_nodes(1) {
-                            let color = if overlay.selection().contains(GenericNode::Compound(zone))
+                            let color = if overlay
+                                .selection()
+                                .contains_node(&layout, GenericNode::Compound(zone))
                             {
                                 egui::Color32::from_rgb(100, 100, 255)
                             } else {
@@ -388,7 +390,7 @@ impl eframe::App for App {
                             let color = if shared_data.highlighteds.contains(&primitive)
                                 || overlay
                                     .selection()
-                                    .contains(GenericNode::Primitive(primitive))
+                                    .contains_node(&layout, GenericNode::Primitive(primitive))
                             {
                                 egui::Color32::from_rgb(255, 100, 100)
                             } else {
@@ -398,7 +400,9 @@ impl eframe::App for App {
                         }
 
                         for zone in layout.layer_zone_nodes(0) {
-                            let color = if overlay.selection().contains(GenericNode::Compound(zone))
+                            let color = if overlay
+                                .selection()
+                                .contains_node(&layout, GenericNode::Compound(zone))
                             {
                                 egui::Color32::from_rgb(255, 100, 100)
                             } else {

@@ -10,18 +10,12 @@ use crate::{
 #[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub struct Selection {
     pins: HashSet<String>,
-    #[serde(skip)]
-    primitives: HashSet<PrimitiveIndex>,
-    #[serde(skip)]
-    zones: HashSet<GenericIndex<ZoneWeight>>,
 }
 
 impl Selection {
     pub fn new() -> Selection {
         Self {
             pins: HashSet::new(),
-            primitives: HashSet::new(),
-            zones: HashSet::new(),
         }
     }
 
@@ -29,7 +23,7 @@ impl Selection {
         let maybe_pin = layout.node_pin(node);
 
         if let Some(ref pin) = maybe_pin {
-            if self.contains(node) {
+            if self.contains_node(layout, node) {
                 self.remove_pin(layout, pin);
             } else {
                 self.add_pin(layout, pin);
@@ -38,49 +32,18 @@ impl Selection {
     }
 
     fn add_pin(&mut self, layout: &Layout<impl RulesTrait>, pin: &String) {
-        for primitive in layout.drawing().primitive_nodes().filter(|primitive| {
-            layout
-                .node_pin(NodeIndex::Primitive(*primitive))
-                .is_some_and(|p| p == pin)
-        }) {
-            self.primitives.insert(primitive);
-        }
-
-        for zone in layout.zone_nodes().filter(|zone| {
-            layout
-                .node_pin(NodeIndex::Compound(*zone))
-                .is_some_and(|p| p == pin)
-        }) {
-            self.zones.insert(zone);
-        }
-
         self.pins.insert(pin.clone());
     }
 
     fn remove_pin(&mut self, layout: &Layout<impl RulesTrait>, pin: &String) {
-        for primitive in layout.drawing().primitive_nodes().filter(|primitive| {
-            layout
-                .node_pin(NodeIndex::Primitive(*primitive))
-                .is_some_and(|p| p == pin)
-        }) {
-            self.primitives.remove(&primitive);
-        }
-
-        for zone in layout.zone_nodes().filter(|zone| {
-            layout
-                .node_pin(NodeIndex::Compound(*zone))
-                .is_some_and(|p| p == pin)
-        }) {
-            self.zones.remove(&zone);
-        }
-
         self.pins.remove(pin);
     }
 
-    pub fn contains(&self, node: NodeIndex) -> bool {
-        match node {
-            NodeIndex::Primitive(primitive) => self.primitives.contains(&primitive),
-            NodeIndex::Compound(zone) => self.zones.contains(&zone),
+    pub fn contains_node(&self, layout: &Layout<impl RulesTrait>, node: NodeIndex) -> bool {
+        if let Some(pin) = layout.node_pin(node) {
+            self.pins.contains(pin)
+        } else {
+            false
         }
     }
 }

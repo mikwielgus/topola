@@ -183,7 +183,9 @@ impl<R: RulesTrait> Autorouter<R> {
                     .unwrap()
                     .vertex_index();
 
-                selection.contains(source_vertex.into()) && selection.contains(to_vertex.into())
+                let layout = self.layout.lock().unwrap();
+                selection.contains_node(&layout, source_vertex.into())
+                    && selection.contains_node(&layout, to_vertex.into())
             })
             .collect()
     }
