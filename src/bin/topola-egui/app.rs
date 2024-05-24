@@ -206,8 +206,8 @@ impl eframe::App for App {
                             execute(async move {
                                 if let Some(file_handle) = task.await {
                                     let path = file_handle.path();
-                                    let mut file = File::open(path).unwrap();
                                     let mut invoker = invoker_arc_mutex.lock().unwrap();
+                                    let mut file = File::open(path).unwrap();
                                     invoker.replay(serde_json::from_reader(file).unwrap());
                                 }
                             });
@@ -223,8 +223,8 @@ impl eframe::App for App {
                             execute(async move {
                                 if let Some(file_handle) = task.await {
                                     let path = file_handle.path();
-                                    let mut file = File::create(path).unwrap();
                                     let mut invoker = invoker_arc_mutex.lock().unwrap();
+                                    let mut file = File::create(path).unwrap();
                                     serde_json::to_writer_pretty(file, invoker.history());
                                 }
                             });

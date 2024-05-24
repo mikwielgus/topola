@@ -2,11 +2,17 @@ use petgraph::{
     unionfind::UnionFind,
     visit::{EdgeRef, IntoEdgeReferences, NodeIndexable},
 };
-use std::sync::{Arc, Mutex};
+use std::{
+    fs::File,
+    sync::{Arc, Mutex},
+};
 
 use topola::{
-    autorouter::Autorouter, dsn::design::DsnDesign, graph::GetNodeIndex,
-    router::EmptyRouterObserver, triangulation::GetVertexIndex,
+    autorouter::{invoker::Invoker, Autorouter},
+    dsn::design::DsnDesign,
+    graph::GetNodeIndex,
+    router::EmptyRouterObserver,
+    triangulation::GetVertexIndex,
 };
 
 #[test]
@@ -14,8 +20,9 @@ fn test() {
     let design = DsnDesign::load_from_file("tests/data/0603_breakout/0603_breakout.dsn").unwrap();
     let layout_arc_mutex = Arc::new(Mutex::new(design.make_layout()));
 
-    let mut autorouter = Autorouter::new(layout_arc_mutex.clone()).unwrap();
-    autorouter.autoroute(&mut EmptyRouterObserver);
+    let mut invoker = Invoker::new(Autorouter::new(layout_arc_mutex.clone()).unwrap());
+    let file = File::open("tests/data/0603_breakout/autoroute_all.cmd").unwrap();
+    invoker.replay(serde_json::from_reader(file).unwrap());
 
     let layout = layout_arc_mutex.lock().unwrap();
     let mut unionfind = UnionFind::new(layout.drawing().geometry().graph().node_bound());
@@ -25,7 +32,8 @@ fn test() {
     }
 
     assert_eq!(
-        autorouter
+        invoker
+            .autorouter()
             .ratsnest()
             .graph()
             .edge_indices()
@@ -34,15 +42,17 @@ fn test() {
         2
     );
 
-    for ratline in autorouter.ratsnest().graph().edge_references() {
-        let from_index = autorouter
+    for ratline in invoker.autorouter().ratsnest().graph().edge_references() {
+        let from_index = invoker
+            .autorouter()
             .ratsnest()
             .graph()
             .node_weight(ratline.source())
             .unwrap()
             .vertex_index()
             .node_index();
-        let to_index = autorouter
+        let to_index = invoker
+            .autorouter()
             .ratsnest()
             .graph()
             .node_weight(ratline.target())
