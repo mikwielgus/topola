@@ -18,6 +18,7 @@ required-features = ["sdl2"]
 [features]
 egui = ["dep:eframe", "dep:egui", "dep:rfd", "dep:futures"]
 sdl2 = ["dep:sdl2", "dep:gl", "dep:pathfinder_canvas", "dep:pathfinder_geometry", "dep:pathfinder_gl", "dep:pathfinder_renderer", "dep:pathfinder_resources"]
+disable_contracts = ["contracts/disable_contracts"]
 
 [dependencies]
 thiserror = "1.0.56"

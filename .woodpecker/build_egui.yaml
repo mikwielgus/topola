@@ -1,10 +1,14 @@
 matrix:
-  RUST: [stable, nightly]
+  include:
+    - CHANNEL: stable
+      FEATURES: egui,disable_contracts
+    - CHANNEL: nightly
+      FEATURES: egui
 
 steps:
   build_egui:
     image: rust
     environment: [CARGO_TERM_COLOR=always]
     commands:
-      - rustup default $RUST
-      - cargo build --features "egui" --bin "topola-egui"
+      - rustup default "$CHANNEL"
+      - cargo build --features "$FEATURES" --bin "topola-egui"

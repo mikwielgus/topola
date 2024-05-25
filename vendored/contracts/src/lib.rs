@@ -180,8 +180,6 @@ extern crate proc_macro;
 
 mod implementation;
 
-use rustc_version::{version, version_meta, Channel, Version};
-
 use implementation::ContractMode;
 use proc_macro::TokenStream;
 
@@ -199,7 +197,7 @@ use proc_macro::TokenStream;
 /// ```
 #[proc_macro_attribute]
 pub fn requires(attr: TokenStream, toks: TokenStream) -> TokenStream {
-    if let Channel::Nightly = version_meta().unwrap().channel {
+    if cfg!(feature = "disable_contracts") {
         return toks;
     }
 
@@ -213,7 +211,7 @@ pub fn requires(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// [`requires`]: attr.requires.html
 #[proc_macro_attribute]
 pub fn debug_requires(attr: TokenStream, toks: TokenStream) -> TokenStream {
-    if let Channel::Nightly = version_meta().unwrap().channel {
+    if cfg!(feature = "disable_contracts") {
         return toks;
     }
 
@@ -227,7 +225,7 @@ pub fn debug_requires(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// [`requires`]: attr.requires.html
 #[proc_macro_attribute]
 pub fn test_requires(attr: TokenStream, toks: TokenStream) -> TokenStream {
-    if let Channel::Nightly = version_meta().unwrap().channel {
+    if cfg!(feature = "disable_contracts") {
         return toks;
     }
 
@@ -266,7 +264,7 @@ pub fn test_requires(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn ensures(attr: TokenStream, toks: TokenStream) -> TokenStream {
-    if let Channel::Nightly = version_meta().unwrap().channel {
+    if cfg!(feature = "disable_contracts") {
         return toks;
     }
 
@@ -280,7 +278,7 @@ pub fn ensures(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// [`ensures`]: attr.ensures.html
 #[proc_macro_attribute]
 pub fn debug_ensures(attr: TokenStream, toks: TokenStream) -> TokenStream {
-    if let Channel::Nightly = version_meta().unwrap().channel {
+    if cfg!(feature = "disable_contracts") {
         return toks;
     }
 
@@ -294,7 +292,7 @@ pub fn debug_ensures(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// [`ensures`]: attr.ensures.html
 #[proc_macro_attribute]
 pub fn test_ensures(attr: TokenStream, toks: TokenStream) -> TokenStream {
-    if let Channel::Nightly = version_meta().unwrap().channel {
+    if cfg!(feature = "disable_contracts") {
         return toks;
     }
 
@@ -346,7 +344,7 @@ pub fn test_ensures(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn invariant(attr: TokenStream, toks: TokenStream) -> TokenStream {
-    if let Channel::Nightly = version_meta().unwrap().channel {
+    if cfg!(feature = "disable_contracts") {
         return toks;
     }
 
@@ -367,7 +365,7 @@ pub fn invariant(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// [`invariant`]: attr.invariant.html
 #[proc_macro_attribute]
 pub fn debug_invariant(attr: TokenStream, toks: TokenStream) -> TokenStream {
-    if let Channel::Nightly = version_meta().unwrap().channel {
+    if cfg!(feature = "disable_contracts") {
         return toks;
     }
 
@@ -382,7 +380,7 @@ pub fn debug_invariant(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// [`invariant`]: attr.invariant.html
 #[proc_macro_attribute]
 pub fn test_invariant(attr: TokenStream, toks: TokenStream) -> TokenStream {
-    if let Channel::Nightly = version_meta().unwrap().channel {
+    if cfg!(feature = "disable_contracts") {
         return toks;
     }
 
@@ -427,7 +425,7 @@ pub fn test_invariant(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn contract_trait(attrs: TokenStream, toks: TokenStream) -> TokenStream {
-    if let Channel::Nightly = version_meta().unwrap().channel {
+    if cfg!(feature = "disable_contracts") {
         return toks;
     }
 

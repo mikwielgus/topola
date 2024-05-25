@@ -38,4 +38,3 @@ mirai_assertions = []
 syn = { version = "1.0", features = ["extra-traits", "full", "visit", "visit-mut"] }
 quote = "1.0"
 proc-macro2 = "1.0"
-rustc_version = "0.4"

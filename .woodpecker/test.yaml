@@ -1,11 +1,15 @@
 matrix:
-  RUST: [stable, nightly]
+  include:
+    - CHANNEL: stable
+      FEATURES: disable_contracts
+    - CHANNEL: nightly
+      FEATURES:
 
 steps:
   test:
     image: rust
     environment: [CARGO_TERM_COLOR=always]
     commands:
-      - rustup default $RUST
+      - rustup default "$CHANNEL"
       - cargo check
-      - cargo test
+      - cargo test --features "$FEATURES"

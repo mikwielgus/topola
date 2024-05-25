@@ -1,5 +1,9 @@
 matrix:
-  RUST: [stable, nightly]
+  include:
+    - CHANNEL: stable
+      FEATURES: sdl2,disable_contracts
+    - CHANNEL: nightly
+      FEATURES: sdl2
 
 steps:
   build_sdl2:
@@ -8,5 +12,5 @@ steps:
     commands:
       - apt-get update
       - apt-get -y install cmake
-      - rustup default $RUST
-      - cargo build --features "sdl2" --bin "topola-sdl2-demo"
+      - rustup default "$CHANNEL"
+      - cargo build --features "$FEATURES" --bin "topola-sdl2-demo"

@@ -1,4 +1,4 @@
-#![feature(try_blocks)]
+#![cfg_attr(not(feature = "disable_contracts"), feature(try_blocks))]
 
 pub mod graph;
 #[macro_use]
