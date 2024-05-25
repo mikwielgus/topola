@@ -1,0 +1,10 @@
+matrix:
+  RUST: [nightly]
+
+steps:
+  build_egui:
+    image: rust
+    environment: [CARGO_TERM_COLOR=always]
+    commands:
+      - rustup default $RUST
+      - cargo build --features "egui" --bin "topola-egui"
