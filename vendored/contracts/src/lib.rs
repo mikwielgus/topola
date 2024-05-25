@@ -180,6 +180,8 @@ extern crate proc_macro;
 
 mod implementation;
 
+use rustc_version::{version, version_meta, Channel, Version};
+
 use implementation::ContractMode;
 use proc_macro::TokenStream;
 
@@ -197,6 +199,10 @@ use proc_macro::TokenStream;
 /// ```
 #[proc_macro_attribute]
 pub fn requires(attr: TokenStream, toks: TokenStream) -> TokenStream {
+    if let Channel::Nightly = version_meta().unwrap().channel {
+        return toks;
+    }
+
     let attr = attr.into();
     let toks = toks.into();
     implementation::requires(ContractMode::Always, attr, toks).into()
@@ -207,6 +213,10 @@ pub fn requires(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// [`requires`]: attr.requires.html
 #[proc_macro_attribute]
 pub fn debug_requires(attr: TokenStream, toks: TokenStream) -> TokenStream {
+    if let Channel::Nightly = version_meta().unwrap().channel {
+        return toks;
+    }
+
     let attr = attr.into();
     let toks = toks.into();
     implementation::requires(ContractMode::Debug, attr, toks).into()
@@ -217,6 +227,10 @@ pub fn debug_requires(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// [`requires`]: attr.requires.html
 #[proc_macro_attribute]
 pub fn test_requires(attr: TokenStream, toks: TokenStream) -> TokenStream {
+    if let Channel::Nightly = version_meta().unwrap().channel {
+        return toks;
+    }
+
     let attr = attr.into();
     let toks = toks.into();
     implementation::requires(ContractMode::Test, attr, toks).into()
@@ -252,6 +266,10 @@ pub fn test_requires(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn ensures(attr: TokenStream, toks: TokenStream) -> TokenStream {
+    if let Channel::Nightly = version_meta().unwrap().channel {
+        return toks;
+    }
+
     let attr = attr.into();
     let toks = toks.into();
     implementation::ensures(ContractMode::Always, attr, toks).into()
@@ -262,6 +280,10 @@ pub fn ensures(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// [`ensures`]: attr.ensures.html
 #[proc_macro_attribute]
 pub fn debug_ensures(attr: TokenStream, toks: TokenStream) -> TokenStream {
+    if let Channel::Nightly = version_meta().unwrap().channel {
+        return toks;
+    }
+
     let attr = attr.into();
     let toks = toks.into();
     implementation::ensures(ContractMode::Debug, attr, toks).into()
@@ -272,6 +294,10 @@ pub fn debug_ensures(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// [`ensures`]: attr.ensures.html
 #[proc_macro_attribute]
 pub fn test_ensures(attr: TokenStream, toks: TokenStream) -> TokenStream {
+    if let Channel::Nightly = version_meta().unwrap().channel {
+        return toks;
+    }
+
     let attr = attr.into();
     let toks = toks.into();
     implementation::ensures(ContractMode::Test, attr, toks).into()
@@ -320,6 +346,10 @@ pub fn test_ensures(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn invariant(attr: TokenStream, toks: TokenStream) -> TokenStream {
+    if let Channel::Nightly = version_meta().unwrap().channel {
+        return toks;
+    }
+
     // Invariant attributes might apply to `impl` blocks as well, where the same
     // level is simply replicated on all methods.
     // Function expansions will resolve the actual mode themselves, so the
@@ -337,6 +367,10 @@ pub fn invariant(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// [`invariant`]: attr.invariant.html
 #[proc_macro_attribute]
 pub fn debug_invariant(attr: TokenStream, toks: TokenStream) -> TokenStream {
+    if let Channel::Nightly = version_meta().unwrap().channel {
+        return toks;
+    }
+
     let mode = ContractMode::Debug;
     let attr = attr.into();
     let toks = toks.into();
@@ -348,6 +382,10 @@ pub fn debug_invariant(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// [`invariant`]: attr.invariant.html
 #[proc_macro_attribute]
 pub fn test_invariant(attr: TokenStream, toks: TokenStream) -> TokenStream {
+    if let Channel::Nightly = version_meta().unwrap().channel {
+        return toks;
+    }
+
     let mode = ContractMode::Test;
     let attr = attr.into();
     let toks = toks.into();
@@ -389,6 +427,10 @@ pub fn test_invariant(attr: TokenStream, toks: TokenStream) -> TokenStream {
 /// ```
 #[proc_macro_attribute]
 pub fn contract_trait(attrs: TokenStream, toks: TokenStream) -> TokenStream {
+    if let Channel::Nightly = version_meta().unwrap().channel {
+        return toks;
+    }
+
     let attrs: proc_macro2::TokenStream = attrs.into();
     let toks: proc_macro2::TokenStream = toks.into();
 
