@@ -12,6 +12,7 @@ macro_rules! dbg_dot {
 use geo::point;
 use painter::Painter;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use topola::autorouter::selection::Selection;
 use topola::autorouter::Autorouter;
 use topola::drawing::dot::FixedDotWeight;
 use topola::drawing::graph::{MakePrimitive, PrimitiveIndex};
@@ -23,7 +24,6 @@ use topola::dsn::design::DsnDesign;
 use topola::dsn::rules::DsnRules;
 use topola::geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait};
 use topola::geometry::shape::ShapeTrait;
-use topola::layout::connectivity::BandIndex;
 use topola::layout::zone::MakePolyShape;
 use topola::layout::Layout;
 use topola::router::draw::DrawException;
@@ -275,7 +275,7 @@ fn main() -> Result<(), anyhow::Error> {
     );
 
     let mut autorouter = Autorouter::new(layout.clone()).unwrap();
-    if let Some(mut autoroute) = autorouter.autoroute_walk() {
+    if let Some(mut autoroute) = autorouter.autoroute_walk(&Selection::new()) {
         while autoroute.next(
             &mut autorouter,
             &mut DebugRouterObserver::new(
