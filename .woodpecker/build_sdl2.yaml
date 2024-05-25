@@ -6,5 +6,7 @@ steps:
     image: rust
     environment: [CARGO_TERM_COLOR=always]
     commands:
+      - apt-get update
+      - apt-get -y install cmake
       - rustup default $RUST
       - cargo build --features "sdl2" --bin "topola-sdl2-demo"
