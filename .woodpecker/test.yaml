@@ -1,5 +1,5 @@
 matrix:
-  RUST: [nightly]
+  RUST: [stable, nightly]
 
 steps:
   test:
