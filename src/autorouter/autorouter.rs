@@ -56,7 +56,7 @@ impl Autoroute {
         Some(this)
     }
 
-    pub fn next<R: RulesTrait>(
+    pub fn step<R: RulesTrait>(
         &mut self,
         autorouter: &mut Autorouter<R>,
         observer: &mut impl RouterObserverTrait<R>,
@@ -140,7 +140,7 @@ impl<R: RulesTrait> Autorouter<R> {
 
     pub fn autoroute(&mut self, selection: &Selection, observer: &mut impl RouterObserverTrait<R>) {
         if let Some(mut autoroute) = self.autoroute_walk(selection) {
-            while autoroute.next(self, observer) {
+            while autoroute.step(self, observer) {
                 //
             }
         }

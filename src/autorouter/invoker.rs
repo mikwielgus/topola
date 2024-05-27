@@ -23,7 +23,7 @@ impl Execute {
         observer: &mut impl RouterObserverTrait<R>,
     ) -> bool {
         match self {
-            Execute::Autoroute(autoroute) => autoroute.next(&mut invoker.autorouter, observer),
+            Execute::Autoroute(autoroute) => autoroute.step(&mut invoker.autorouter, observer),
         }
     }
 }

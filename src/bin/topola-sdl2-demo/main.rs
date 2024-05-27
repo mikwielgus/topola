@@ -276,7 +276,7 @@ fn main() -> Result<(), anyhow::Error> {
 
     let mut autorouter = Autorouter::new(layout.clone()).unwrap();
     if let Some(mut autoroute) = autorouter.autoroute_walk(&Selection::new()) {
-        while autoroute.next(
+        while autoroute.step(
             &mut autorouter,
             &mut DebugRouterObserver::new(
                 &mut event_pump,
