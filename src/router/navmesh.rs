@@ -101,13 +101,13 @@ impl Navmesh {
             .resize(layout.drawing().geometry().graph().node_bound(), None);
 
         let layer = layout.drawing().primitive(from).layer();
-        let net = layout.drawing().primitive(from).maybe_net().unwrap();
+        let maybe_net = layout.drawing().primitive(from).maybe_net();
 
         for node in layout.drawing().layer_primitive_nodes(layer) {
             let primitive = node.primitive(layout.drawing());
 
             if let Some(primitive_net) = primitive.maybe_net() {
-                if node == from.into() || node == to.into() || primitive_net != net {
+                if node == from.into() || node == to.into() || Some(primitive_net) != maybe_net {
                     match node {
                         PrimitiveIndex::FixedDot(dot) => {
                             this.triangulation.add_vertex(TriangulationVertexWeight {
@@ -147,7 +147,7 @@ impl Navmesh {
         Ok(this)
     }
 
-    pub fn triangulation_vertex(&self, vertex: VertexIndex) -> TriangulationVertexIndex {
+    fn triangulation_vertex(&self, vertex: VertexIndex) -> TriangulationVertexIndex {
         match vertex {
             VertexIndex::FixedDot(dot) => TriangulationVertexIndex::FixedDot(dot),
             VertexIndex::FixedBend(bend) => TriangulationVertexIndex::FixedBend(bend),
