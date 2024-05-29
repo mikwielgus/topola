@@ -6,31 +6,28 @@ use petgraph::visit::EdgeRef;
 use spade::InsertionError;
 use thiserror::Error;
 
-use crate::drawing::band::BandIndex;
-use crate::drawing::graph::{GetLayer, GetMaybeNet};
-use crate::drawing::guide::HeadTrait;
-use crate::geometry::primitive::PrimitiveShapeTrait;
-use crate::layout::Layout;
 use crate::{
     drawing::{
+        band::BandIndex,
         dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
+        guide::HeadTrait,
         primitive::MakePrimitiveShape,
         rules::RulesTrait,
     },
     geometry::shape::ShapeTrait,
+    layout::Layout,
+    router::{
+        astar::{astar, AstarError, AstarStrategy, PathTracker},
+        draw::DrawException,
+        navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, VertexIndex},
+        tracer::{Trace, Tracer},
+    },
 };
 
-use crate::router::{
-    astar::{astar, AstarStrategy, PathTracker},
-    draw::DrawException,
-    navmesh::{Navmesh, NavmeshEdgeReference, VertexIndex},
-    tracer::{Trace, Tracer},
-};
-
-#[derive(Error, Debug, Clone, Copy)]
+/*#[derive(Error, Debug, Clone, Copy)]
 #[error("failed to route from {from:?} to {to:?}")] // this should eventually use Display
-pub struct RoutingError {
+pub struct RouterError {
     from: FixedDotIndex,
     to: FixedDotIndex,
     source: RoutingErrorKind,
@@ -44,6 +41,13 @@ pub enum RoutingErrorKind {
     // TODO more descriptive message
     #[error("A* found no path")]
     AStar,
+}*/
+
+#[derive(Error, Debug, Clone)]
+#[error("routing failed")]
+pub enum RouterError {
+    Navmesh(#[from] NavmeshError),
+    Astar(#[from] AstarError),
 }
 
 pub trait RouterObserverTrait<R: RulesTrait> {
@@ -169,26 +173,23 @@ impl<'a, R: RulesTrait> Router<'a, R> {
         layout: &'a mut Arc<Mutex<Layout<R>>>,
         from: FixedDotIndex,
         to: FixedDotIndex,
-    ) -> Result<Self, InsertionError> {
+    ) -> Result<Self, RouterError> {
         let navmesh = {
             let layout = layout.lock().unwrap();
             Navmesh::new(&layout, from, to)?
         };
-        Self::new_from_navmesh(layout, navmesh)
+        Ok(Self::new_from_navmesh(layout, navmesh))
     }
 
-    pub fn new_from_navmesh(
-        layout: &'a mut Arc<Mutex<Layout<R>>>,
-        navmesh: Navmesh,
-    ) -> Result<Self, InsertionError> {
-        Ok(Self { layout, navmesh })
+    pub fn new_from_navmesh(layout: &'a mut Arc<Mutex<Layout<R>>>, navmesh: Navmesh) -> Self {
+        Self { layout, navmesh }
     }
 
     pub fn route_band(
         &mut self,
         width: f64,
         observer: &mut impl RouterObserverTrait<R>,
-    ) -> Result<BandIndex, RoutingError> {
+    ) -> Result<BandIndex, RouterError> {
         let mut tracer = self.tracer();
         let trace = tracer.start(self.navmesh.from(), width);
 
@@ -196,12 +197,7 @@ impl<'a, R: RulesTrait> Router<'a, R> {
             &self.navmesh,
             self.navmesh.from().into(),
             &mut RouterAstarStrategy::new(tracer, trace, self.navmesh.to(), observer),
-        )
-        .ok_or(RoutingError {
-            from: self.navmesh.from(),
-            to: self.navmesh.to(),
-            source: RoutingErrorKind::AStar,
-        })?;
+        )?;
 
         Ok(band)
     }

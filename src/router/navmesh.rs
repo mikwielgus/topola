@@ -6,6 +6,7 @@ use itertools::Itertools;
 use petgraph::visit::{self, NodeIndexable};
 use petgraph::{stable_graph::NodeIndex, visit::EdgeRef};
 use spade::{HasPosition, InsertionError, Point2};
+use thiserror::Error;
 
 use crate::drawing::graph::{GetLayer, GetMaybeNet};
 use crate::geometry::shape::ShapeTrait;
@@ -85,12 +86,18 @@ pub struct Navmesh {
     to: FixedDotIndex,
 }
 
+#[derive(Error, Debug, Clone)]
+pub enum NavmeshError {
+    #[error("failed to insert vertex in navmesh")]
+    Insertion(#[from] InsertionError),
+}
+
 impl Navmesh {
     pub fn new(
         layout: &Layout<impl RulesTrait>,
         from: FixedDotIndex,
         to: FixedDotIndex,
-    ) -> Result<Self, InsertionError> {
+    ) -> Result<Self, NavmeshError> {
         let mut this = Self {
             triangulation: Triangulation::new(layout.drawing().geometry().graph().node_bound()),
             vertex_to_triangulation_vertex: Vec::new(),

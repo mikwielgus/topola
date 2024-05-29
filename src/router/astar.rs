@@ -11,6 +11,7 @@ use std::hash::Hash;
 
 use petgraph::algo::Measure;
 use petgraph::visit::{EdgeRef, GraphBase, IntoEdges};
+use thiserror::Error;
 
 use std::cmp::Ordering;
 
@@ -105,7 +106,7 @@ where
     fn estimate_cost(&mut self, node: G::NodeId) -> K;
 }
 
-struct Astar<G, K>
+pub struct Astar<G, K>
 where
     G: IntoEdges,
     G::NodeId: Eq + Hash,
@@ -118,15 +119,21 @@ where
     pub path_tracker: PathTracker<G>,
 }
 
-enum AstarStatus<G, K, R>
+#[derive(Error, Debug, Clone)]
+pub enum AstarError {
+    #[error("A* search found no path")]
+    NotFound,
+}
+
+pub enum AstarStatus<G, K, R>
 where
     G: IntoEdges,
     G::NodeId: Eq + Hash,
     K: Measure + Copy,
 {
     Running,
-    Success(K, Vec<G::NodeId>, R),
-    Failure,
+    Finished(K, Vec<G::NodeId>, R),
+    Error(AstarError),
 }
 
 impl<G, K> Astar<G, K>
@@ -153,13 +160,13 @@ where
 
     pub fn step<R>(&mut self, strategy: &mut impl AstarStrategy<G, K, R>) -> AstarStatus<G, K, R> {
         let Some(MinScored(estimate_score, node)) = self.visit_next.pop() else {
-            return AstarStatus::Failure;
+            return AstarStatus::Error(AstarError::NotFound);
         };
 
         if let Some(result) = strategy.is_goal(node, &self.path_tracker) {
             let path = self.path_tracker.reconstruct_path_to(node);
             let cost = self.scores[&node];
-            return AstarStatus::Success(cost, path, result);
+            return AstarStatus::Finished(cost, path, result);
         }
 
         // This lookup can be unwrapped without fear of panic since the node was
@@ -213,7 +220,7 @@ pub fn astar<G, K, R>(
     graph: G,
     start: G::NodeId,
     strategy: &mut impl AstarStrategy<G, K, R>,
-) -> Option<(K, Vec<G::NodeId>, R)>
+) -> Result<(K, Vec<G::NodeId>, R), AstarError>
 where
     G: IntoEdges,
     G::NodeId: Eq + Hash,
@@ -221,9 +228,17 @@ where
 {
     let mut astar = Astar::new(graph, start, strategy);
 
-    while let AstarStatus::Running = astar.step(strategy) {
-        //
-    }
+    loop {
+        let status = astar.step(strategy);
 
-    None
+        /*if !matches!(status, AstarStatus::Running) {
+            return status;
+        }*/
+
+        match status {
+            AstarStatus::Running => (),
+            AstarStatus::Finished(cost, path, band) => return Ok((cost, path, band)),
+            AstarStatus::Error(err) => return Err(err),
+        }
+    }
 }

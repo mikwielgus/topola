@@ -22,7 +22,7 @@ use crate::{
         rules::RulesTrait,
     },
     layout::{Layout, NodeIndex},
-    router::{navmesh::Navmesh, Router, RouterObserverTrait, RoutingError},
+    router::{navmesh::Navmesh, Router, RouterError, RouterObserverTrait},
     triangulation::GetVertexIndex,
 };
 
@@ -73,12 +73,12 @@ impl Autoroute {
             (None, None)
         };
 
-        let router = Router::new_from_navmesh(
+        let mut router = Router::new_from_navmesh(
             &mut autorouter.layout,
             std::mem::replace(&mut self.navmesh, new_navmesh).unwrap(),
         );
 
-        let Ok(band) = router.unwrap().route_band(100.0, observer) else {
+        let Ok(band) = router.route_band(100.0, observer) else {
             return false;
         };
 
