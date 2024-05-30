@@ -171,7 +171,6 @@ impl<'a, R: RulesTrait> Router<'a, R> {
     ) -> Result<BandIndex, RouterError> {
         let from = self.navmesh.from();
         let to = self.navmesh.to();
-        //let mut tracer = self.tracer();
         let mut tracer = Tracer::new(self.layout);
         let trace = tracer.start(from, width);
 
@@ -199,10 +198,6 @@ impl<'a, R: RulesTrait> Router<'a, R> {
         }
 
         self.route_band(width, observer)
-    }*/
-
-    /*fn tracer(&mut self) -> Tracer<R> {
-        Tracer::new(self.layout)
     }*/
 
     pub fn layout(&mut self) -> &mut Layout<R> {

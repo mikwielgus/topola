@@ -18,13 +18,14 @@ use topola::{
 #[test]
 fn test() {
     let design = DsnDesign::load_from_file("tests/data/0603_breakout/0603_breakout.dsn").unwrap();
-    let mut invoker = Invoker::new(Autorouter::new(design.make_layout()).unwrap());
+    let mut invoker = Invoker::new(Autorouter::new(design.make_board()).unwrap());
     let file = File::open("tests/data/0603_breakout/autoroute_all.cmd").unwrap();
     invoker.replay(serde_json::from_reader(file).unwrap());
 
     let mut unionfind = UnionFind::new(
         invoker
             .autorouter()
+            .board()
             .layout()
             .drawing()
             .geometry()
@@ -34,6 +35,7 @@ fn test() {
 
     for edge in invoker
         .autorouter()
+        .board()
         .layout()
         .drawing()
         .geometry()

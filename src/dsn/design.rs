@@ -4,6 +4,7 @@ use geo::{point, Point, Rotate, Translate};
 use thiserror::Error;
 
 use crate::{
+    autorouter::board::Board,
     drawing::{dot::FixedDotWeight, seg::FixedSegWeight, Drawing},
     dsn::{
         de,
@@ -43,9 +44,9 @@ impl DsnDesign {
         Ok(Self { pcb })
     }
 
-    pub fn make_layout(&self) -> Layout<DsnRules> {
+    pub fn make_board(&self) -> Board<DsnRules> {
         let rules = DsnRules::from_pcb(&self.pcb);
-        let mut layout = Layout::new(Drawing::new(rules));
+        let mut board = Board::new(Layout::new(Drawing::new(rules)));
 
         // mapping of pin id -> net id prepared for adding pins
         let pin_nets = HashMap::<String, usize>::from_iter(
@@ -55,7 +56,13 @@ impl DsnDesign {
                 .iter()
                 .map(|net| {
                     // resolve the id so we don't work with strings
-                    let net_id = layout.drawing().rules().net_ids.get(&net.name).unwrap();
+                    let net_id = board
+                        .layout()
+                        .drawing()
+                        .rules()
+                        .net_ids
+                        .get(&net.name)
+                        .unwrap();
 
                     // take the list of pins
                     // and for each pin id output (pin id, net id)
@@ -92,13 +99,13 @@ impl DsnDesign {
                         match shape {
                             Shape::Circle(circle) => {
                                 let layer = Self::layer(
-                                    &mut layout,
+                                    &mut board,
                                     &self.pcb.structure.layer_vec,
                                     &circle.layer,
                                     place.side == "front",
                                 );
                                 Self::add_circle(
-                                    &mut layout,
+                                    &mut board,
                                     (place.x as f64, place.y as f64).into(),
                                     place.rotation as f64,
                                     (pin.x as f64, pin.y as f64).into(),
@@ -111,13 +118,13 @@ impl DsnDesign {
                             }
                             Shape::Rect(rect) => {
                                 let layer = Self::layer(
-                                    &mut layout,
+                                    &mut board,
                                     &self.pcb.structure.layer_vec,
                                     &rect.layer,
                                     place.side == "front",
                                 );
                                 Self::add_rect(
-                                    &mut layout,
+                                    &mut board,
                                     (place.x as f64, place.y as f64).into(),
                                     place.rotation as f64,
                                     (pin.x as f64, pin.y as f64).into(),
@@ -133,13 +140,13 @@ impl DsnDesign {
                             }
                             Shape::Path(path) => {
                                 let layer = Self::layer(
-                                    &mut layout,
+                                    &mut board,
                                     &self.pcb.structure.layer_vec,
                                     &path.layer,
                                     place.side == "front",
                                 );
                                 Self::add_path(
-                                    &mut layout,
+                                    &mut board,
                                     (place.x as f64, place.y as f64).into(),
                                     place.rotation as f64,
                                     (pin.x as f64, pin.y as f64).into(),
@@ -153,13 +160,13 @@ impl DsnDesign {
                             }
                             Shape::Polygon(polygon) => {
                                 let layer = Self::layer(
-                                    &mut layout,
+                                    &mut board,
                                     &self.pcb.structure.layer_vec,
                                     &polygon.layer,
                                     place.side == "front",
                                 );
                                 Self::add_polygon(
-                                    &mut layout,
+                                    &mut board,
                                     (place.x as f64, place.y as f64).into(),
                                     place.rotation as f64,
                                     (pin.x as f64, pin.y as f64).into(),
@@ -178,7 +185,13 @@ impl DsnDesign {
         }
 
         for via in &self.pcb.wiring.via_vec {
-            let net_id = *layout.drawing().rules().net_ids.get(&via.net).unwrap();
+            let net_id = *board
+                .layout()
+                .drawing()
+                .rules()
+                .net_ids
+                .get(&via.net)
+                .unwrap();
 
             // find the padstack referenced by this via placement
             let padstack = &self
@@ -193,13 +206,13 @@ impl DsnDesign {
                 match shape {
                     Shape::Circle(circle) => {
                         let layer = Self::layer(
-                            &mut layout,
+                            &mut board,
                             &self.pcb.structure.layer_vec,
                             &circle.layer,
                             true,
                         );
                         Self::add_circle(
-                            &mut layout,
+                            &mut board,
                             (0.0, 0.0).into(),
                             0.0,
                             (0.0, 0.0).into(),
@@ -212,13 +225,13 @@ impl DsnDesign {
                     }
                     Shape::Rect(rect) => {
                         let layer = Self::layer(
-                            &mut layout,
+                            &mut board,
                             &self.pcb.structure.layer_vec,
                             &rect.layer,
                             true,
                         );
                         Self::add_rect(
-                            &mut layout,
+                            &mut board,
                             (0.0, 0.0).into(),
                             0.0,
                             (0.0, 0.0).into(),
@@ -234,13 +247,13 @@ impl DsnDesign {
                     }
                     Shape::Path(path) => {
                         let layer = Self::layer(
-                            &mut layout,
+                            &mut board,
                             &self.pcb.structure.layer_vec,
                             &path.layer,
                             true,
                         );
                         Self::add_path(
-                            &mut layout,
+                            &mut board,
                             (0.0, 0.0).into(),
                             0.0,
                             (0.0, 0.0).into(),
@@ -254,13 +267,13 @@ impl DsnDesign {
                     }
                     Shape::Polygon(polygon) => {
                         let layer = Self::layer(
-                            &mut layout,
+                            &mut board,
                             &self.pcb.structure.layer_vec,
                             &polygon.layer,
                             true,
                         );
                         Self::add_polygon(
-                            &mut layout,
+                            &mut board,
                             (0.0, 0.0).into(),
                             0.0,
                             (0.0, 0.0).into(),
@@ -277,16 +290,23 @@ impl DsnDesign {
         }
 
         for wire in self.pcb.wiring.wire_vec.iter() {
-            let layer_id = *layout
+            let layer_id = *board
+                .layout()
                 .drawing()
                 .rules()
                 .layer_ids
                 .get(&wire.path.layer)
                 .unwrap();
-            let net_id = *layout.drawing().rules().net_ids.get(&wire.net).unwrap();
+            let net_id = *board
+                .layout()
+                .drawing()
+                .rules()
+                .net_ids
+                .get(&wire.net)
+                .unwrap();
 
             Self::add_path(
-                &mut layout,
+                &mut board,
                 (0.0, 0.0).into(),
                 0.0,
                 (0.0, 0.0).into(),
@@ -299,16 +319,22 @@ impl DsnDesign {
             );
         }
 
-        layout
+        board
     }
 
     fn layer(
-        layout: &Layout<DsnRules>,
+        board: &Board<DsnRules>,
         layer_vec: &Vec<Layer>,
         layer_name: &str,
         front: bool,
     ) -> usize {
-        let image_layer = *layout.drawing().rules().layer_ids.get(layer_name).unwrap();
+        let image_layer = *board
+            .layout()
+            .drawing()
+            .rules()
+            .layer_ids
+            .get(layer_name)
+            .unwrap();
 
         if front {
             image_layer as usize
@@ -318,7 +344,7 @@ impl DsnDesign {
     }
 
     fn add_circle(
-        layout: &mut Layout<DsnRules>,
+        board: &mut Board<DsnRules>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -333,7 +359,7 @@ impl DsnDesign {
             r,
         };
 
-        layout
+        board
             .add_fixed_dot(
                 FixedDotWeight {
                     circle,
@@ -346,7 +372,7 @@ impl DsnDesign {
     }
 
     fn add_rect(
-        layout: &mut Layout<DsnRules>,
+        board: &mut Board<DsnRules>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -359,7 +385,7 @@ impl DsnDesign {
         net: usize,
         maybe_pin: Option<String>,
     ) {
-        let zone = layout.add_zone(
+        let zone = board.add_zone(
             SolidZoneWeight {
                 layer,
                 maybe_net: Some(net),
@@ -369,7 +395,7 @@ impl DsnDesign {
         );
 
         // Corners.
-        let dot_1_1 = layout
+        let dot_1_1 = board
             .add_zone_fixed_dot(
                 FixedDotWeight {
                     circle: Circle {
@@ -382,7 +408,7 @@ impl DsnDesign {
                 zone,
             )
             .unwrap();
-        let dot_2_1 = layout
+        let dot_2_1 = board
             .add_zone_fixed_dot(
                 FixedDotWeight {
                     circle: Circle {
@@ -395,7 +421,7 @@ impl DsnDesign {
                 zone,
             )
             .unwrap();
-        let dot_2_2 = layout
+        let dot_2_2 = board
             .add_zone_fixed_dot(
                 FixedDotWeight {
                     circle: Circle {
@@ -408,7 +434,7 @@ impl DsnDesign {
                 zone,
             )
             .unwrap();
-        let dot_1_2 = layout
+        let dot_1_2 = board
             .add_zone_fixed_dot(
                 FixedDotWeight {
                     circle: Circle {
@@ -422,7 +448,7 @@ impl DsnDesign {
             )
             .unwrap();
         // Sides.
-        layout
+        board
             .add_zone_fixed_seg(
                 dot_1_1,
                 dot_2_1,
@@ -434,7 +460,7 @@ impl DsnDesign {
                 zone,
             )
             .unwrap();
-        layout
+        board
             .add_zone_fixed_seg(
                 dot_2_1,
                 dot_2_2,
@@ -446,7 +472,7 @@ impl DsnDesign {
                 zone,
             )
             .unwrap();
-        layout
+        board
             .add_zone_fixed_seg(
                 dot_2_2,
                 dot_1_2,
@@ -458,7 +484,7 @@ impl DsnDesign {
                 zone,
             )
             .unwrap();
-        layout
+        board
             .add_zone_fixed_seg(
                 dot_1_2,
                 dot_1_1,
@@ -473,7 +499,7 @@ impl DsnDesign {
     }
 
     fn add_path(
-        layout: &mut Layout<DsnRules>,
+        board: &mut Board<DsnRules>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -493,7 +519,7 @@ impl DsnDesign {
             coords[0].x as f64,
             coords[0].y as f64,
         );
-        let mut prev_index = layout
+        let mut prev_index = board
             .add_fixed_dot(
                 FixedDotWeight {
                     circle: Circle {
@@ -522,7 +548,7 @@ impl DsnDesign {
                 continue;
             }
 
-            let index = layout
+            let index = board
                 .add_fixed_dot(
                     FixedDotWeight {
                         circle: Circle {
@@ -537,7 +563,7 @@ impl DsnDesign {
                 .unwrap();
 
             // add a seg between the current and previous coords
-            let _ = layout
+            let _ = board
                 .add_fixed_seg(
                     prev_index,
                     index,
@@ -556,7 +582,7 @@ impl DsnDesign {
     }
 
     fn add_polygon(
-        layout: &mut Layout<DsnRules>,
+        board: &mut Board<DsnRules>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -567,7 +593,7 @@ impl DsnDesign {
         net: usize,
         maybe_pin: Option<String>,
     ) {
-        let zone = layout.add_zone(
+        let zone = board.add_zone(
             SolidZoneWeight {
                 layer,
                 maybe_net: Some(net),
@@ -577,7 +603,7 @@ impl DsnDesign {
         );
 
         // add the first coordinate in the wire path as a dot and save its index
-        let mut prev_index = layout
+        let mut prev_index = board
             .add_zone_fixed_dot(
                 FixedDotWeight {
                     circle: Circle {
@@ -602,7 +628,7 @@ impl DsnDesign {
 
         // iterate through path coords starting from the second
         for coord in coords.iter().skip(1) {
-            let index = layout
+            let index = board
                 .add_zone_fixed_dot(
                     FixedDotWeight {
                         circle: Circle {
@@ -626,7 +652,7 @@ impl DsnDesign {
                 .unwrap();
 
             // add a seg between the current and previous coords
-            let _ = layout
+            let _ = board
                 .add_zone_fixed_seg(
                     prev_index,
                     index,

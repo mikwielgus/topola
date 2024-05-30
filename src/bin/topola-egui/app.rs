@@ -160,19 +160,19 @@ impl eframe::App for App {
         if cfg!(target_arch = "wasm32") {
             if let Ok(file_contents) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_string(file_contents).unwrap();
-                let layout = design.make_layout();
-                self.overlay = Some(Overlay::new(&layout).unwrap());
+                let board = design.make_board();
+                self.overlay = Some(Overlay::new(&board).unwrap());
                 self.invoker = Some(Arc::new(Mutex::new(Invoker::new(
-                    Autorouter::new(layout).unwrap(),
+                    Autorouter::new(board).unwrap(),
                 ))));
             }
         } else {
             if let Ok(path) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_file(&path).unwrap();
-                let layout = design.make_layout();
-                self.overlay = Some(Overlay::new(&layout).unwrap());
+                let board = design.make_board();
+                self.overlay = Some(Overlay::new(&board).unwrap());
                 self.invoker = Some(Arc::new(Mutex::new(Invoker::new(
-                    Autorouter::new(layout).unwrap(),
+                    Autorouter::new(board).unwrap(),
                 ))));
             }
         }
@@ -359,22 +359,22 @@ impl eframe::App for App {
                         self.shared_data.lock().unwrap(),
                         &mut self.overlay,
                     ) {
-                        let layout = &invoker.autorouter().layout();
+                        let board = invoker.autorouter().board();
 
                         if ctx.input(|i| i.pointer.any_click()) {
                             overlay.click(
-                                layout,
+                                board,
                                 point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
                             );
                         }
 
-                        for primitive in layout.drawing().layer_primitive_nodes(1) {
-                            let shape = primitive.primitive(layout.drawing()).shape();
+                        for primitive in board.layout().drawing().layer_primitive_nodes(1) {
+                            let shape = primitive.primitive(board.layout().drawing()).shape();
 
                             let color = if shared_data.highlighteds.contains(&primitive)
                                 || overlay
                                     .selection()
-                                    .contains_node(&layout, GenericNode::Primitive(primitive))
+                                    .contains_node(board, GenericNode::Primitive(primitive))
                             {
                                 egui::Color32::from_rgb(100, 100, 255)
                             } else {
@@ -383,25 +383,25 @@ impl eframe::App for App {
                             painter.paint_primitive(&shape, color);
                         }
 
-                        for zone in layout.layer_zone_nodes(1) {
+                        for zone in board.layout().layer_zone_nodes(1) {
                             let color = if overlay
                                 .selection()
-                                .contains_node(&layout, GenericNode::Compound(zone))
+                                .contains_node(board, GenericNode::Compound(zone))
                             {
                                 egui::Color32::from_rgb(100, 100, 255)
                             } else {
                                 egui::Color32::from_rgb(52, 52, 200)
                             };
-                            painter.paint_polygon(&layout.zone(zone).shape().polygon, color)
+                            painter.paint_polygon(&board.layout().zone(zone).shape().polygon, color)
                         }
 
-                        for primitive in layout.drawing().layer_primitive_nodes(0) {
-                            let shape = primitive.primitive(layout.drawing()).shape();
+                        for primitive in board.layout().drawing().layer_primitive_nodes(0) {
+                            let shape = primitive.primitive(board.layout().drawing()).shape();
 
                             let color = if shared_data.highlighteds.contains(&primitive)
                                 || overlay
                                     .selection()
-                                    .contains_node(&layout, GenericNode::Primitive(primitive))
+                                    .contains_node(board, GenericNode::Primitive(primitive))
                             {
                                 egui::Color32::from_rgb(255, 100, 100)
                             } else {
@@ -410,16 +410,16 @@ impl eframe::App for App {
                             painter.paint_primitive(&shape, color);
                         }
 
-                        for zone in layout.layer_zone_nodes(0) {
+                        for zone in board.layout().layer_zone_nodes(0) {
                             let color = if overlay
                                 .selection()
-                                .contains_node(&layout, GenericNode::Compound(zone))
+                                .contains_node(board, GenericNode::Compound(zone))
                             {
                                 egui::Color32::from_rgb(255, 100, 100)
                             } else {
                                 egui::Color32::from_rgb(200, 52, 52)
                             };
-                            painter.paint_polygon(&layout.zone(zone).shape().polygon, color)
+                            painter.paint_polygon(&board.layout().zone(zone).shape().polygon, color)
                         }
 
                         if self.show_ratsnest {
@@ -447,9 +447,16 @@ impl eframe::App for App {
 
                         if let Some(navmesh) = &shared_data.navmesh {
                             for edge in navmesh.edge_references() {
-                                let from =
-                                    edge.source().primitive(layout.drawing()).shape().center();
-                                let to = edge.target().primitive(layout.drawing()).shape().center();
+                                let from = edge
+                                    .source()
+                                    .primitive(board.layout().drawing())
+                                    .shape()
+                                    .center();
+                                let to = edge
+                                    .target()
+                                    .primitive(board.layout().drawing())
+                                    .shape()
+                                    .center();
 
                                 let stroke = 'blk: {
                                     if let (Some(source_pos), Some(target_pos)) = (
@@ -486,14 +493,14 @@ impl eframe::App for App {
                         if let (Some(from), Some(to)) = (shared_data.from, shared_data.to) {
                             painter.paint_dot(
                                 Circle {
-                                    pos: layout.drawing().primitive(from).shape().center(),
+                                    pos: board.layout().drawing().primitive(from).shape().center(),
                                     r: 20.0,
                                 },
                                 egui::Color32::from_rgb(255, 255, 100),
                             );
                             painter.paint_dot(
                                 Circle {
-                                    pos: layout.drawing().primitive(to).shape().center(),
+                                    pos: board.layout().drawing().primitive(to).shape().center(),
                                     r: 20.0,
                                 },
                                 egui::Color32::from_rgb(255, 255, 100),

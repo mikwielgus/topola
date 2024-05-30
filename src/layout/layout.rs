@@ -33,15 +33,11 @@ pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<ZoneWeight>>;
 #[derive(Debug)]
 pub struct Layout<R: RulesTrait> {
     drawing: Drawing<ZoneWeight, R>,
-    node_to_pin: HashMap<NodeIndex, String>,
 }
 
 impl<R: RulesTrait> Layout<R> {
     pub fn new(drawing: Drawing<ZoneWeight, R>) -> Self {
-        Self {
-            drawing,
-            node_to_pin: HashMap::new(),
-        }
+        Self { drawing }
     }
 
     pub fn remove_band(&mut self, band: BandIndex) {
@@ -65,19 +61,8 @@ impl<R: RulesTrait> Layout<R> {
             .insert_segbend(from, around, dot_weight, seg_weight, bend_weight, cw)
     }
 
-    pub fn add_fixed_dot(
-        &mut self,
-        weight: FixedDotWeight,
-        maybe_pin: Option<String>,
-    ) -> Result<FixedDotIndex, Infringement> {
-        let dot = self.drawing.add_fixed_dot(weight)?;
-
-        if let Some(pin) = maybe_pin {
-            self.node_to_pin
-                .insert(GenericNode::Primitive(dot.into()), pin);
-        }
-
-        Ok(dot)
+    pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, Infringement> {
+        self.drawing.add_fixed_dot(weight)
     }
 
     pub fn add_zone_fixed_dot(
@@ -85,7 +70,6 @@ impl<R: RulesTrait> Layout<R> {
         weight: FixedDotWeight,
         zone: GenericIndex<ZoneWeight>,
     ) -> Result<FixedDotIndex, Infringement> {
-        let pin = self.node_pin(GenericNode::Compound(zone));
         let maybe_dot = self.drawing.add_fixed_dot(weight);
 
         if let Ok(dot) = maybe_dot {
@@ -100,16 +84,8 @@ impl<R: RulesTrait> Layout<R> {
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
-        maybe_pin: Option<String>,
     ) -> Result<FixedSegIndex, Infringement> {
-        let seg = self.drawing.add_fixed_seg(from, to, weight)?;
-
-        if let Some(pin) = maybe_pin {
-            self.node_to_pin
-                .insert(GenericNode::Primitive(seg.into()), pin);
-        }
-
-        Ok(seg)
+        self.drawing.add_fixed_seg(from, to, weight)
     }
 
     pub fn add_zone_fixed_seg(
@@ -119,8 +95,7 @@ impl<R: RulesTrait> Layout<R> {
         weight: FixedSegWeight,
         zone: GenericIndex<ZoneWeight>,
     ) -> Result<FixedSegIndex, Infringement> {
-        let pin = self.node_pin(GenericNode::Compound(zone));
-        let maybe_seg = self.add_fixed_seg(from, to, weight, pin.cloned());
+        let maybe_seg = self.add_fixed_seg(from, to, weight);
 
         if let Ok(seg) = maybe_seg {
             self.drawing.add_to_compound(seg, zone);
@@ -151,19 +126,8 @@ impl<R: RulesTrait> Layout<R> {
         self.drawing.move_dot(dot, to)
     }
 
-    pub fn add_zone(
-        &mut self,
-        weight: ZoneWeight,
-        maybe_pin: Option<String>,
-    ) -> GenericIndex<ZoneWeight> {
-        let zone = self.drawing.add_compound(weight);
-
-        if let Some(pin) = maybe_pin {
-            self.node_to_pin
-                .insert(GenericNode::Compound(zone.into()), pin);
-        }
-
-        zone
+    pub fn add_zone(&mut self, weight: ZoneWeight) -> GenericIndex<ZoneWeight> {
+        self.drawing.add_compound(weight)
     }
 
     pub fn zones<W: 'static>(
@@ -171,10 +135,6 @@ impl<R: RulesTrait> Layout<R> {
         node: GenericIndex<W>,
     ) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
         self.drawing.compounds(node)
-    }
-
-    pub fn node_pin(&self, node: NodeIndex) -> Option<&String> {
-        self.node_to_pin.get(&node)
     }
 
     pub fn band_length(&self, face: DotIndex) -> f64 {

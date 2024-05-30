@@ -251,7 +251,7 @@ fn main() -> Result<(), anyhow::Error> {
     )?;
     //let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
     //dbg!(&design);
-    let layout = Arc::new(Mutex::new(design.make_layout()));
+    let layout = Arc::new(Mutex::new(design.make_board()));
     //let mut router = Router::new(layout);
 
     let mut view = View {

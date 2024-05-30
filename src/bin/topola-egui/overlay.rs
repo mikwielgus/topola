@@ -5,7 +5,7 @@ use rstar::AABB;
 use spade::InsertionError;
 
 use topola::{
-    autorouter::{ratsnest::Ratsnest, selection::Selection},
+    autorouter::{board::Board, ratsnest::Ratsnest, selection::Selection},
     drawing::{
         graph::{GetLayer, MakePrimitive},
         primitive::MakePrimitiveShape,
@@ -25,16 +25,17 @@ pub struct Overlay {
 }
 
 impl Overlay {
-    pub fn new(layout: &Layout<impl RulesTrait>) -> Result<Self, InsertionError> {
+    pub fn new(board: &Board<impl RulesTrait>) -> Result<Self, InsertionError> {
         Ok(Self {
-            ratsnest: Ratsnest::new(layout)?,
+            ratsnest: Ratsnest::new(board.layout())?,
             selection: Selection::new(),
             active_layer: 0,
         })
     }
 
-    pub fn click(&mut self, layout: &Layout<impl RulesTrait>, at: Point) {
-        let geoms: Vec<_> = layout
+    pub fn click(&mut self, board: &Board<impl RulesTrait>, at: Point) {
+        let geoms: Vec<_> = board
+            .layout()
             .drawing()
             .rtree()
             .locate_in_envelope_intersecting(&AABB::<[f64; 3]>::from_corners(
@@ -45,17 +46,17 @@ impl Overlay {
 
         if let Some(geom) = geoms.iter().find(|&&geom| match geom.data {
             NodeIndex::Primitive(primitive) => {
-                primitive.primitive(layout.drawing()).layer() == self.active_layer
+                primitive.primitive(board.layout().drawing()).layer() == self.active_layer
             }
             NodeIndex::Compound(compound) => false,
         }) {
-            if self.toggle_selection_if_contains_point(layout, geom.data, at) {
+            if self.toggle_selection_if_contains_point(board, geom.data, at) {
                 return;
             }
         }
 
         for geom in geoms {
-            if self.toggle_selection_if_contains_point(layout, geom.data, at) {
+            if self.toggle_selection_if_contains_point(board, geom.data, at) {
                 return;
             }
         }
@@ -63,17 +64,19 @@ impl Overlay {
 
     fn toggle_selection_if_contains_point(
         &mut self,
-        layout: &Layout<impl RulesTrait>,
+        board: &Board<impl RulesTrait>,
         node: NodeIndex,
         p: Point,
     ) -> bool {
         let shape: Shape = match node {
-            NodeIndex::Primitive(primitive) => primitive.primitive(layout.drawing()).shape().into(),
-            NodeIndex::Compound(compound) => layout.zone(compound).shape().into(),
+            NodeIndex::Primitive(primitive) => {
+                primitive.primitive(board.layout().drawing()).shape().into()
+            }
+            NodeIndex::Compound(compound) => board.layout().zone(compound).shape().into(),
         };
 
         if shape.contains_point(p) {
-            self.selection.toggle_at_node(layout, node);
+            self.selection.toggle_at_node(board, node);
             return true;
         }
         false

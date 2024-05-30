@@ -14,6 +14,7 @@ use thiserror::Error;
 
 use crate::{
     autorouter::{
+        board::Board,
         ratsnest::{Ratsnest, RatsnestVertexIndex},
         selection::Selection,
     },
@@ -22,7 +23,7 @@ use crate::{
         graph::{GetLayer, GetMaybeNet},
         rules::RulesTrait,
     },
-    layout::{Layout, NodeIndex},
+    layout::Layout,
     router::{
         navmesh::{Navmesh, NavmeshError},
         Router, RouterError, RouterObserverTrait,
@@ -63,7 +64,7 @@ impl Autoroute {
         };
 
         let (source, target) = Self::ratline_endpoints(autorouter, cur_ratline);
-        let navmesh = Some(Navmesh::new(&autorouter.layout, source, target)?);
+        let navmesh = Some(Navmesh::new(autorouter.board.layout(), source, target)?);
 
         let this = Self {
             ratlines_iter,
@@ -84,7 +85,7 @@ impl Autoroute {
 
             (
                 Some(
-                    Navmesh::new(&autorouter.layout, source, target)
+                    Navmesh::new(autorouter.board.layout(), source, target)
                         .ok()
                         .unwrap(),
                 ),
@@ -95,7 +96,7 @@ impl Autoroute {
         };
 
         let mut router = Router::new_from_navmesh(
-            &mut autorouter.layout,
+            autorouter.board.layout_mut(),
             std::mem::replace(&mut self.navmesh, new_navmesh).unwrap(),
         );
 
@@ -130,7 +131,7 @@ impl Autoroute {
             .vertex_index()
         {
             RatsnestVertexIndex::FixedDot(dot) => dot,
-            RatsnestVertexIndex::Zone(zone) => autorouter.layout.zone_apex(zone),
+            RatsnestVertexIndex::Zone(zone) => autorouter.board.layout_mut().zone_apex(zone),
         };
 
         let target_dot = match autorouter
@@ -141,7 +142,7 @@ impl Autoroute {
             .vertex_index()
         {
             RatsnestVertexIndex::FixedDot(dot) => dot,
-            RatsnestVertexIndex::Zone(zone) => autorouter.layout.zone_apex(zone),
+            RatsnestVertexIndex::Zone(zone) => autorouter.board.layout_mut().zone_apex(zone),
         };
 
         (source_dot, target_dot)
@@ -153,14 +154,14 @@ impl Autoroute {
 }
 
 pub struct Autorouter<R: RulesTrait> {
-    layout: Layout<R>,
+    board: Board<R>,
     ratsnest: Ratsnest,
 }
 
 impl<R: RulesTrait> Autorouter<R> {
-    pub fn new(layout: Layout<R>) -> Result<Self, InsertionError> {
-        let ratsnest = Ratsnest::new(&layout)?;
-        Ok(Self { layout, ratsnest })
+    pub fn new(board: Board<R>) -> Result<Self, InsertionError> {
+        let ratsnest = Ratsnest::new(board.layout())?;
+        Ok(Self { board, ratsnest })
     }
 
     pub fn autoroute(
@@ -195,7 +196,7 @@ impl<R: RulesTrait> Autorouter<R> {
                 .unwrap()
                 .band
                 .unwrap();
-            self.layout.remove_band(band);
+            self.board.layout_mut().remove_band(band);
         }
     }
 
@@ -219,14 +220,14 @@ impl<R: RulesTrait> Autorouter<R> {
                     .unwrap()
                     .vertex_index();
 
-                selection.contains_node(&self.layout, source_vertex.into())
-                    && selection.contains_node(&self.layout, to_vertex.into())
+                selection.contains_node(&self.board, source_vertex.into())
+                    && selection.contains_node(&self.board, to_vertex.into())
             })
             .collect()
     }
 
-    pub fn layout(&self) -> &Layout<R> {
-        &self.layout
+    pub fn board(&self) -> &Board<R> {
+        &self.board
     }
 
     pub fn ratsnest(&self) -> &Ratsnest {
