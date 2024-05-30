@@ -25,24 +25,6 @@ use crate::{
     },
 };
 
-/*#[derive(Error, Debug, Clone, Copy)]
-#[error("failed to route from {from:?} to {to:?}")] // this should eventually use Display
-pub struct RouterError {
-    from: FixedDotIndex,
-    to: FixedDotIndex,
-    source: RoutingErrorKind,
-}
-
-#[derive(Error, Debug, Clone, Copy)]
-pub enum RoutingErrorKind {
-    #[error(transparent)]
-    MeshInsertion(#[from] InsertionError),
-    // exposing more details here seems difficult
-    // TODO more descriptive message
-    #[error("A* found no path")]
-    AStar,
-}*/
-
 #[derive(Error, Debug, Clone)]
 #[error("routing failed")]
 pub enum RouterError {

@@ -1,11 +1,30 @@
 use core::fmt;
 
+use thiserror::Error;
+
 use crate::{
-    autorouter::{history::History, selection::Selection, Autoroute, Autorouter},
+    autorouter::{
+        history::{History, HistoryError},
+        selection::Selection,
+        Autoroute, Autorouter, AutorouterError, AutorouterStatus,
+    },
     drawing::rules::RulesTrait,
     layout::Layout,
     router::{EmptyRouterObserver, RouterObserverTrait},
 };
+
+#[derive(Error, Debug, Clone)]
+pub enum InvokerError {
+    #[error(transparent)]
+    History(#[from] HistoryError),
+    #[error(transparent)]
+    Autorouter(#[from] AutorouterError),
+}
+
+pub enum InvokerStatus {
+    Running,
+    Finished,
+}
 
 #[derive(serde::Serialize, serde::Deserialize)]
 pub enum Command {
@@ -17,13 +36,18 @@ pub enum Execute {
 }
 
 impl Execute {
-    pub fn next<R: RulesTrait>(
+    pub fn step<R: RulesTrait>(
         &mut self,
         invoker: &mut Invoker<R>,
         observer: &mut impl RouterObserverTrait<R>,
-    ) -> bool {
+    ) -> Result<InvokerStatus, InvokerError> {
         match self {
-            Execute::Autoroute(autoroute) => autoroute.step(&mut invoker.autorouter, observer),
+            Execute::Autoroute(autoroute) => {
+                match autoroute.step(&mut invoker.autorouter, observer)? {
+                    AutorouterStatus::Running => Ok(InvokerStatus::Running),
+                    AutorouterStatus::Finished => Ok(InvokerStatus::Finished),
+                }
+            }
         }
     }
 }
@@ -41,14 +65,24 @@ impl<R: RulesTrait> Invoker<R> {
         }
     }
 
-    pub fn execute(&mut self, command: Command, observer: &mut impl RouterObserverTrait<R>) {
+    pub fn execute(
+        &mut self,
+        command: Command,
+        observer: &mut impl RouterObserverTrait<R>,
+    ) -> Result<(), InvokerError> {
         let mut execute = self.execute_walk(command);
 
-        while execute.next(self, observer) {
-            //
-        }
+        loop {
+            let status = match execute.step(self, observer) {
+                Ok(status) => status,
+                Err(err) => return Err(err),
+            };
 
-        self.history.set_undone(std::iter::empty());
+            if let InvokerStatus::Finished = status {
+                self.history.set_undone(std::iter::empty());
+                return Ok(());
+            }
+        }
     }
 
     pub fn execute_walk(&mut self, command: Command) -> Execute {
@@ -65,25 +99,30 @@ impl<R: RulesTrait> Invoker<R> {
         }
     }
 
-    pub fn undo(&mut self) {
-        let command = self.history.done().last().unwrap();
+    pub fn undo(&mut self) -> Result<(), InvokerError> {
+        let command = self.history.last_done()?;
 
         match command {
             Command::Autoroute(ref selection) => self.autorouter.undo_autoroute(selection),
         }
 
-        self.history.undo();
+        Ok(self.history.undo()?)
     }
 
-    pub fn redo(&mut self) {
-        let command = self.history.undone().last().unwrap();
+    pub fn redo(&mut self) -> Result<(), InvokerError> {
+        let command = self.history.last_undone()?;
         let mut execute = self.dispatch_command(command);
 
-        while execute.next(self, &mut EmptyRouterObserver) {
-            //
-        }
+        loop {
+            let status = match execute.step(self, &mut EmptyRouterObserver) {
+                Ok(status) => status,
+                Err(err) => return Err(err),
+            };
 
-        self.history.redo();
+            if let InvokerStatus::Finished = status {
+                return Ok(self.history.redo()?);
+            }
+        }
     }
 
     pub fn replay(&mut self, history: History) {

@@ -12,7 +12,7 @@ use std::{
 
 use topola::{
     autorouter::{
-        invoker::{Command, Execute, Invoker},
+        invoker::{Command, Execute, Invoker, InvokerStatus},
         Autorouter,
     },
     drawing::{
@@ -266,17 +266,26 @@ impl eframe::App for App {
                                 }
                             }
 
-                            while execute.next(
-                                &mut invoker,
-                                &mut DebugRouterObserver {
-                                    shared_data: shared_data_arc_mutex.clone(),
-                                },
-                            ) {
+                            let _ = loop {
+                                let status = match execute.step(
+                                    &mut invoker,
+                                    &mut DebugRouterObserver {
+                                        shared_data: shared_data_arc_mutex.clone(),
+                                    },
+                                ) {
+                                    Ok(status) => status,
+                                    Err(err) => return, //Err(err),
+                                };
+
                                 if let Execute::Autoroute(ref mut autoroute) = execute {
                                     shared_data_arc_mutex.lock().unwrap().navmesh =
                                         autoroute.navmesh().clone();
                                 }
-                            }
+
+                                if let InvokerStatus::Finished = status {
+                                    break;
+                                }
+                            };
                         });
                     }
                 }
@@ -297,7 +306,9 @@ impl eframe::App for App {
                 {
                     if let Some(invoker_arc_mutex) = &self.invoker {
                         let invoker_arc_mutex = invoker_arc_mutex.clone();
-                        execute(async move { invoker_arc_mutex.lock().unwrap().redo() });
+                        execute(async move {
+                            invoker_arc_mutex.lock().unwrap().redo();
+                        });
                     }
                 }
 

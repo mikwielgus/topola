@@ -133,7 +133,6 @@ where
 {
     Running,
     Finished(K, Vec<G::NodeId>, R),
-    Error(AstarError),
 }
 
 impl<G, K> Astar<G, K>
@@ -158,15 +157,18 @@ where
         this
     }
 
-    pub fn step<R>(&mut self, strategy: &mut impl AstarStrategy<G, K, R>) -> AstarStatus<G, K, R> {
+    pub fn step<R>(
+        &mut self,
+        strategy: &mut impl AstarStrategy<G, K, R>,
+    ) -> Result<AstarStatus<G, K, R>, AstarError> {
         let Some(MinScored(estimate_score, node)) = self.visit_next.pop() else {
-            return AstarStatus::Error(AstarError::NotFound);
+            return Err(AstarError::NotFound);
         };
 
         if let Some(result) = strategy.is_goal(node, &self.path_tracker) {
             let path = self.path_tracker.reconstruct_path_to(node);
             let cost = self.scores[&node];
-            return AstarStatus::Finished(cost, path, result);
+            return Ok(AstarStatus::Finished(cost, path, result));
         }
 
         // This lookup can be unwrapped without fear of panic since the node was
@@ -178,7 +180,7 @@ where
                 // If the node has already been visited with an equal or lower score than
                 // now, then we do not need to re-visit it.
                 if *entry.get() <= estimate_score {
-                    return AstarStatus::Running;
+                    return Ok(AstarStatus::Running);
                 }
                 entry.insert(estimate_score);
             }
@@ -197,7 +199,7 @@ where
                         // No need to add neighbors that we have already reached through a
                         // shorter path than now.
                         if *entry.get() <= next_score {
-                            return AstarStatus::Running;
+                            return Ok(AstarStatus::Running);
                         }
                         entry.insert(next_score);
                     }
@@ -212,7 +214,7 @@ where
             }
         }
 
-        AstarStatus::Running
+        Ok(AstarStatus::Running)
     }
 }
 
@@ -229,16 +231,13 @@ where
     let mut astar = Astar::new(graph, start, strategy);
 
     loop {
-        let status = astar.step(strategy);
+        let status = match astar.step(strategy) {
+            Ok(status) => status,
+            Err(err) => return Err(err),
+        };
 
-        /*if !matches!(status, AstarStatus::Running) {
-            return status;
-        }*/
-
-        match status {
-            AstarStatus::Running => (),
-            AstarStatus::Finished(cost, path, band) => return Ok((cost, path, band)),
-            AstarStatus::Error(err) => return Err(err),
+        if let AstarStatus::Finished(cost, path, band) = status {
+            return Ok((cost, path, band));
         }
     }
 }

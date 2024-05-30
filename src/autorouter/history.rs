@@ -1,6 +1,15 @@
 use serde::{Deserialize, Serialize};
+use thiserror::Error;
 
 use crate::autorouter::invoker::Command;
+
+#[derive(Error, Debug, Clone)]
+pub enum HistoryError {
+    #[error("no previous command")]
+    NoPreviousCommand,
+    #[error("no next command")]
+    NoNextCommand,
+}
 
 #[derive(Serialize, Deserialize)]
 pub struct History {
@@ -24,18 +33,34 @@ impl History {
         self.done.push(command);
     }
 
-    pub fn undo(&mut self) {
-        let command = self.done.pop().unwrap();
+    pub fn undo(&mut self) -> Result<(), HistoryError> {
+        let Some(command) = self.done.pop() else {
+            return Err(HistoryError::NoPreviousCommand);
+        };
+
         self.undone.push(command);
+        Ok(())
     }
 
-    pub fn redo(&mut self) {
-        let command = self.undone.pop().unwrap();
+    pub fn redo(&mut self) -> Result<(), HistoryError> {
+        let Some(command) = self.undone.pop() else {
+            return Err(HistoryError::NoNextCommand);
+        };
+
         self.done.push(command);
+        Ok(())
     }
 
     pub fn set_undone(&mut self, iter: impl IntoIterator<Item = Command>) {
         self.undone = Vec::from_iter(iter);
+    }
+
+    pub fn last_done(&self) -> Result<&Command, HistoryError> {
+        self.done.last().ok_or(HistoryError::NoPreviousCommand)
+    }
+
+    pub fn last_undone(&self) -> Result<&Command, HistoryError> {
+        self.undone.last().ok_or(HistoryError::NoNextCommand)
     }
 
     pub fn done(&self) -> &[Command] {

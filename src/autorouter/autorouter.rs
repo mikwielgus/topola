@@ -10,6 +10,7 @@ use petgraph::{
     visit::{EdgeRef, IntoEdgeReferences},
 };
 use spade::InsertionError;
+use thiserror::Error;
 
 use crate::{
     autorouter::{
@@ -22,9 +23,27 @@ use crate::{
         rules::RulesTrait,
     },
     layout::{Layout, NodeIndex},
-    router::{navmesh::Navmesh, Router, RouterError, RouterObserverTrait},
+    router::{
+        navmesh::{Navmesh, NavmeshError},
+        Router, RouterError, RouterObserverTrait,
+    },
     triangulation::GetVertexIndex,
 };
+
+#[derive(Error, Debug, Clone)]
+pub enum AutorouterError {
+    #[error("nothing to route")]
+    NothingToRoute,
+    #[error(transparent)]
+    Navmesh(#[from] NavmeshError),
+    #[error(transparent)]
+    Router(#[from] RouterError),
+}
+
+pub enum AutorouterStatus {
+    Running,
+    Finished,
+}
 
 pub struct Autoroute {
     ratlines_iter: Box<dyn Iterator<Item = EdgeIndex<usize>>>,
@@ -36,16 +55,16 @@ impl Autoroute {
     pub fn new(
         ratlines: impl IntoIterator<Item = EdgeIndex<usize>> + 'static,
         autorouter: &Autorouter<impl RulesTrait>,
-    ) -> Option<Self> {
+    ) -> Result<Self, AutorouterError> {
         let mut ratlines_iter = Box::new(ratlines.into_iter());
 
         let Some(cur_ratline) = ratlines_iter.next() else {
-            return None;
+            return Err(AutorouterError::NothingToRoute);
         };
 
         let (source, target) = Self::ratline_endpoints(autorouter, cur_ratline);
         let layout = autorouter.layout.lock().unwrap();
-        let navmesh = Some(Navmesh::new(&layout, source, target).ok()?);
+        let navmesh = Some(Navmesh::new(&layout, source, target)?);
 
         let this = Self {
             ratlines_iter,
@@ -53,14 +72,14 @@ impl Autoroute {
             cur_ratline: Some(cur_ratline),
         };
 
-        Some(this)
+        Ok(this)
     }
 
     pub fn step<R: RulesTrait>(
         &mut self,
         autorouter: &mut Autorouter<R>,
         observer: &mut impl RouterObserverTrait<R>,
-    ) -> bool {
+    ) -> Result<AutorouterStatus, AutorouterError> {
         let (new_navmesh, new_ratline) = if let Some(cur_ratline) = self.ratlines_iter.next() {
             let (source, target) = Self::ratline_endpoints(autorouter, cur_ratline);
 
@@ -78,16 +97,21 @@ impl Autoroute {
             std::mem::replace(&mut self.navmesh, new_navmesh).unwrap(),
         );
 
-        let Ok(band) = router.route_band(100.0, observer) else {
-            return false;
-        };
+        match router.route_band(100.0, observer) {
+            Ok(band) => {
+                autorouter
+                    .ratsnest
+                    .assign_band_to_ratline(self.cur_ratline.unwrap(), band);
+                self.cur_ratline = new_ratline;
 
-        autorouter
-            .ratsnest
-            .assign_band_to_ratline(self.cur_ratline.unwrap(), band);
-        self.cur_ratline = new_ratline;
-
-        self.navmesh.is_some()
+                if self.navmesh.is_some() {
+                    Ok(AutorouterStatus::Running)
+                } else {
+                    Ok(AutorouterStatus::Finished)
+                }
+            }
+            Err(err) => Err(AutorouterError::Router(err)),
+        }
     }
 
     fn ratline_endpoints<R: RulesTrait>(
@@ -138,15 +162,26 @@ impl<R: RulesTrait> Autorouter<R> {
         Ok(Self { layout, ratsnest })
     }
 
-    pub fn autoroute(&mut self, selection: &Selection, observer: &mut impl RouterObserverTrait<R>) {
-        if let Some(mut autoroute) = self.autoroute_walk(selection) {
-            while autoroute.step(self, observer) {
-                //
+    pub fn autoroute(
+        &mut self,
+        selection: &Selection,
+        observer: &mut impl RouterObserverTrait<R>,
+    ) -> Result<(), AutorouterError> {
+        let mut autoroute = self.autoroute_walk(selection)?;
+
+        loop {
+            let status = match autoroute.step(self, observer) {
+                Ok(status) => status,
+                Err(err) => return Err(err),
+            };
+
+            if let AutorouterStatus::Finished = status {
+                return Ok(());
             }
         }
     }
 
-    pub fn autoroute_walk(&self, selection: &Selection) -> Option<Autoroute> {
+    pub fn autoroute_walk(&self, selection: &Selection) -> Result<Autoroute, AutorouterError> {
         Autoroute::new(self.selected_ratlines(selection), self)
     }
 
