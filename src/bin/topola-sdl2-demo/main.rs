@@ -28,7 +28,7 @@ use topola::layout::zone::MakePolyShape;
 use topola::layout::Layout;
 use topola::router::draw::DrawException;
 use topola::router::navmesh::{Navmesh, NavmeshEdgeReference, VertexIndex};
-use topola::router::tracer::{Trace, Tracer};
+use topola::router::trace::{Trace, Tracer};
 use topola::router::RouterObserverTrait;
 
 use sdl2::event::Event;

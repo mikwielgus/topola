@@ -54,7 +54,7 @@ pub struct Autoroute {
 impl Autoroute {
     pub fn new(
         ratlines: impl IntoIterator<Item = EdgeIndex<usize>> + 'static,
-        autorouter: &Autorouter<impl RulesTrait>,
+        autorouter: &mut Autorouter<impl RulesTrait>,
     ) -> Result<Self, AutorouterError> {
         let mut ratlines_iter = Box::new(ratlines.into_iter());
 
@@ -63,8 +63,7 @@ impl Autoroute {
         };
 
         let (source, target) = Self::ratline_endpoints(autorouter, cur_ratline);
-        let layout = autorouter.layout.lock().unwrap();
-        let navmesh = Some(Navmesh::new(&layout, source, target)?);
+        let navmesh = Some(Navmesh::new(&autorouter.layout, source, target)?);
 
         let this = Self {
             ratlines_iter,
@@ -83,9 +82,12 @@ impl Autoroute {
         let (new_navmesh, new_ratline) = if let Some(cur_ratline) = self.ratlines_iter.next() {
             let (source, target) = Self::ratline_endpoints(autorouter, cur_ratline);
 
-            let layout = autorouter.layout.lock().unwrap();
             (
-                Some(Navmesh::new(&layout, source, target).ok().unwrap()),
+                Some(
+                    Navmesh::new(&autorouter.layout, source, target)
+                        .ok()
+                        .unwrap(),
+                ),
                 Some(cur_ratline),
             )
         } else {
@@ -115,10 +117,9 @@ impl Autoroute {
     }
 
     fn ratline_endpoints<R: RulesTrait>(
-        autorouter: &Autorouter<R>,
+        autorouter: &mut Autorouter<R>,
         ratline: EdgeIndex<usize>,
     ) -> (FixedDotIndex, FixedDotIndex) {
-        let mut layout = autorouter.layout.lock().unwrap();
         let (source, target) = autorouter.ratsnest.graph().edge_endpoints(ratline).unwrap();
 
         let source_dot = match autorouter
@@ -129,7 +130,7 @@ impl Autoroute {
             .vertex_index()
         {
             RatsnestVertexIndex::FixedDot(dot) => dot,
-            RatsnestVertexIndex::Zone(zone) => layout.zone_apex(zone),
+            RatsnestVertexIndex::Zone(zone) => autorouter.layout.zone_apex(zone),
         };
 
         let target_dot = match autorouter
@@ -140,7 +141,7 @@ impl Autoroute {
             .vertex_index()
         {
             RatsnestVertexIndex::FixedDot(dot) => dot,
-            RatsnestVertexIndex::Zone(zone) => layout.zone_apex(zone),
+            RatsnestVertexIndex::Zone(zone) => autorouter.layout.zone_apex(zone),
         };
 
         (source_dot, target_dot)
@@ -152,13 +153,13 @@ impl Autoroute {
 }
 
 pub struct Autorouter<R: RulesTrait> {
-    layout: Arc<Mutex<Layout<R>>>,
+    layout: Layout<R>,
     ratsnest: Ratsnest,
 }
 
 impl<R: RulesTrait> Autorouter<R> {
-    pub fn new(layout: Arc<Mutex<Layout<R>>>) -> Result<Self, InsertionError> {
-        let ratsnest = Ratsnest::new(&layout.lock().unwrap())?;
+    pub fn new(layout: Layout<R>) -> Result<Self, InsertionError> {
+        let ratsnest = Ratsnest::new(&layout)?;
         Ok(Self { layout, ratsnest })
     }
 
@@ -181,7 +182,7 @@ impl<R: RulesTrait> Autorouter<R> {
         }
     }
 
-    pub fn autoroute_walk(&self, selection: &Selection) -> Result<Autoroute, AutorouterError> {
+    pub fn autoroute_walk(&mut self, selection: &Selection) -> Result<Autoroute, AutorouterError> {
         Autoroute::new(self.selected_ratlines(selection), self)
     }
 
@@ -194,7 +195,7 @@ impl<R: RulesTrait> Autorouter<R> {
                 .unwrap()
                 .band
                 .unwrap();
-            self.layout.lock().unwrap().remove_band(band);
+            self.layout.remove_band(band);
         }
     }
 
@@ -218,14 +219,13 @@ impl<R: RulesTrait> Autorouter<R> {
                     .unwrap()
                     .vertex_index();
 
-                let layout = self.layout.lock().unwrap();
-                selection.contains_node(&layout, source_vertex.into())
-                    && selection.contains_node(&layout, to_vertex.into())
+                selection.contains_node(&self.layout, source_vertex.into())
+                    && selection.contains_node(&self.layout, to_vertex.into())
             })
             .collect()
     }
 
-    pub fn layout(&self) -> &Arc<Mutex<Layout<R>>> {
+    pub fn layout(&self) -> &Layout<R> {
         &self.layout
     }
 

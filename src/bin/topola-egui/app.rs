@@ -163,7 +163,7 @@ impl eframe::App for App {
                 let layout = design.make_layout();
                 self.overlay = Some(Overlay::new(&layout).unwrap());
                 self.invoker = Some(Arc::new(Mutex::new(Invoker::new(
-                    Autorouter::new(Arc::new(Mutex::new(layout))).unwrap(),
+                    Autorouter::new(layout).unwrap(),
                 ))));
             }
         } else {
@@ -172,7 +172,7 @@ impl eframe::App for App {
                 let layout = design.make_layout();
                 self.overlay = Some(Overlay::new(&layout).unwrap());
                 self.invoker = Some(Arc::new(Mutex::new(Invoker::new(
-                    Autorouter::new(Arc::new(Mutex::new(layout))).unwrap(),
+                    Autorouter::new(layout).unwrap(),
                 ))));
             }
         }
@@ -359,7 +359,7 @@ impl eframe::App for App {
                         self.shared_data.lock().unwrap(),
                         &mut self.overlay,
                     ) {
-                        let layout = &invoker.autorouter().layout().lock().unwrap();
+                        let layout = &invoker.autorouter().layout();
 
                         if ctx.input(|i| i.pointer.any_click()) {
                             overlay.click(

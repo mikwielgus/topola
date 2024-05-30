@@ -25,12 +25,12 @@ pub struct Trace {
 }
 
 #[derive(Debug)]
-pub struct Tracer<R: RulesTrait> {
-    pub layout: Arc<Mutex<Layout<R>>>,
+pub struct Tracer<'a, R: RulesTrait> {
+    pub layout: &'a mut Layout<R>,
 }
 
-impl<R: RulesTrait> Tracer<R> {
-    pub fn new(layout: Arc<Mutex<Layout<R>>>) -> Self {
+impl<'a, R: RulesTrait> Tracer<'a, R> {
+    pub fn new(layout: &mut Layout<R>) -> Tracer<R> {
         Tracer { layout }
     }
 
@@ -48,7 +48,7 @@ impl<R: RulesTrait> Tracer<R> {
         into: FixedDotIndex,
         width: f64,
     ) -> Result<BandIndex, DrawException> {
-        Draw::new(&mut self.layout.lock().unwrap()).finish_in_dot(trace.head, into, width)
+        Draw::new(self.layout).finish_in_dot(trace.head, into, width)
     }
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == path.len())]
@@ -129,11 +129,7 @@ impl<R: RulesTrait> Tracer<R> {
         around: FixedDotIndex,
         width: f64,
     ) -> Result<SegbendHead, DrawException> {
-        let head = Draw::new(&mut self.layout.lock().unwrap()).segbend_around_dot(
-            head,
-            around.into(),
-            width,
-        )?;
+        let head = Draw::new(self.layout).segbend_around_dot(head, around.into(), width)?;
         Ok(head)
     }
 
@@ -143,11 +139,7 @@ impl<R: RulesTrait> Tracer<R> {
         around: LooseBendIndex,
         width: f64,
     ) -> Result<SegbendHead, DrawException> {
-        let head = Draw::new(&mut self.layout.lock().unwrap()).segbend_around_bend(
-            head,
-            around.into(),
-            width,
-        )?;
+        let head = Draw::new(self.layout).segbend_around_bend(head, around.into(), width)?;
 
         Ok(head)
     }
@@ -155,9 +147,7 @@ impl<R: RulesTrait> Tracer<R> {
     #[debug_ensures(trace.path.len() == old(trace.path.len() - 1))]
     pub fn undo_step(&mut self, trace: &mut Trace) {
         if let Head::Segbend(head) = trace.head {
-            trace.head = Draw::new(&mut self.layout.lock().unwrap())
-                .undo_segbend(head)
-                .unwrap();
+            trace.head = Draw::new(self.layout).undo_segbend(head).unwrap();
         } else {
             panic!();
         }

@@ -26,7 +26,7 @@ pub enum InvokerStatus {
     Finished,
 }
 
-#[derive(serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
 pub enum Command {
     Autoroute(Selection),
 }
@@ -91,7 +91,7 @@ impl<R: RulesTrait> Invoker<R> {
         execute
     }
 
-    fn dispatch_command(&self, command: &Command) -> Execute {
+    fn dispatch_command(&mut self, command: &Command) -> Execute {
         match command {
             Command::Autoroute(ref selection) => {
                 Execute::Autoroute(self.autorouter.autoroute_walk(selection).unwrap())
@@ -110,8 +110,8 @@ impl<R: RulesTrait> Invoker<R> {
     }
 
     pub fn redo(&mut self) -> Result<(), InvokerError> {
-        let command = self.history.last_undone()?;
-        let mut execute = self.dispatch_command(command);
+        let command = self.history.last_undone()?.clone();
+        let mut execute = self.dispatch_command(&command);
 
         loop {
             let status = match execute.step(self, &mut EmptyRouterObserver) {
