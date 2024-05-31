@@ -25,12 +25,12 @@ pub struct DsnRules {
     // net class name -> rule
     class_rules: HashMap<String, DsnRule>,
 
-    // layer names -> layer IDs for Layout
-    pub layer_ids: HashMap<String, u64>,
-    // net names -> net IDs for Layout
-    pub net_ids: HashMap<String, usize>,
-    // net ID -> net class
-    net_id_classes: HashMap<usize, String>,
+    // layernames -> layers for Layout
+    pub layername_to_layer: HashMap<String, u64>,
+    // netnames -> nets for Layout
+    pub netname_to_net: HashMap<String, usize>,
+    // net -> netclass
+    net_to_netclass: HashMap<usize, String>,
 }
 
 impl DsnRules {
@@ -43,7 +43,7 @@ impl DsnRules {
         );
 
         // keeping this as a separate iter pass because it might be moved into a different struct later?
-        let net_ids = HashMap::from_iter(
+        let netname_to_net = HashMap::from_iter(
             pcb.network
                 .class_vec
                 .iter()
@@ -59,7 +59,7 @@ impl DsnRules {
                 .iter()
                 .inspect(|class| {
                     for net in &class.net_vec {
-                        let net_id = net_ids.get(net).unwrap();
+                        let net_id = netname_to_net.get(net).unwrap();
                         net_id_classes.insert(*net_id, class.name.clone());
                     }
                 })
@@ -69,14 +69,14 @@ impl DsnRules {
         Self {
             structure_rule: DsnRule::from_dsn(&pcb.structure.rule),
             class_rules,
-            layer_ids,
-            net_ids,
-            net_id_classes,
+            layername_to_layer: layer_ids,
+            netname_to_net,
+            net_to_netclass: net_id_classes,
         }
     }
 
     pub fn get_rule(&self, net: usize) -> &DsnRule {
-        if let Some(netclass) = self.net_id_classes.get(&net) {
+        if let Some(netclass) = self.net_to_netclass.get(&net) {
             self.class_rules
                 .get(netclass)
                 .unwrap_or(&self.structure_rule)

@@ -48,25 +48,29 @@ impl DsnDesign {
         let rules = DsnRules::from_pcb(&self.pcb);
         let mut board = Board::new(Layout::new(Drawing::new(rules)));
 
-        // mapping of pin id -> net id prepared for adding pins
+        // mapping of pin -> net prepared for adding pins
         let pin_nets = HashMap::<String, usize>::from_iter(
             self.pcb
                 .network
                 .net_vec
                 .iter()
-                .map(|net| {
+                .map(|net_pin_assignments| {
                     // resolve the id so we don't work with strings
-                    let net_id = board
+                    let net = board
                         .layout()
                         .drawing()
                         .rules()
-                        .net_ids
-                        .get(&net.name)
+                        .netname_to_net
+                        .get(&net_pin_assignments.name)
                         .unwrap();
 
                     // take the list of pins
                     // and for each pin id output (pin id, net id)
-                    net.pins.names.iter().map(|id| (id.clone(), *net_id))
+                    net_pin_assignments
+                        .pins
+                        .names
+                        .iter()
+                        .map(|id| (id.clone(), *net))
                 })
                 // flatten the nested iters into a single stream of tuples
                 .flatten(),
@@ -85,7 +89,7 @@ impl DsnDesign {
 
                 for pin in &image.pin_vec {
                     let pin_name = format!("{}-{}", place.name, pin.id);
-                    let net_id = pin_nets.get(&pin_name).unwrap();
+                    let net = pin_nets.get(&pin_name).unwrap();
 
                     let padstack = &self
                         .pcb
@@ -112,7 +116,7 @@ impl DsnDesign {
                                     pin.rotate.unwrap_or(0.0) as f64,
                                     circle.diameter as f64 / 2.0,
                                     layer as u64,
-                                    *net_id,
+                                    *net,
                                     Some(pin_name.clone()),
                                 )
                             }
@@ -134,7 +138,7 @@ impl DsnDesign {
                                     rect.x2 as f64,
                                     rect.y2 as f64,
                                     layer as u64,
-                                    *net_id,
+                                    *net,
                                     Some(pin_name.clone()),
                                 )
                             }
@@ -154,7 +158,7 @@ impl DsnDesign {
                                     &path.coord_vec,
                                     path.width as f64,
                                     layer as u64,
-                                    *net_id,
+                                    *net,
                                     Some(pin_name.clone()),
                                 )
                             }
@@ -174,7 +178,7 @@ impl DsnDesign {
                                     &polygon.coord_vec,
                                     polygon.width as f64,
                                     layer as u64,
-                                    *net_id,
+                                    *net,
                                     Some(pin_name.clone()),
                                 )
                             }
@@ -185,11 +189,11 @@ impl DsnDesign {
         }
 
         for via in &self.pcb.wiring.via_vec {
-            let net_id = *board
+            let net = *board
                 .layout()
                 .drawing()
                 .rules()
-                .net_ids
+                .netname_to_net
                 .get(&via.net)
                 .unwrap();
 
@@ -219,7 +223,7 @@ impl DsnDesign {
                             0.0,
                             circle.diameter as f64 / 2.0,
                             layer as u64,
-                            net_id,
+                            net,
                             None,
                         )
                     }
@@ -241,7 +245,7 @@ impl DsnDesign {
                             rect.x2 as f64,
                             rect.y2 as f64,
                             layer as u64,
-                            net_id,
+                            net,
                             None,
                         )
                     }
@@ -261,7 +265,7 @@ impl DsnDesign {
                             &path.coord_vec,
                             path.width as f64,
                             layer as u64,
-                            net_id,
+                            net,
                             None,
                         )
                     }
@@ -281,7 +285,7 @@ impl DsnDesign {
                             &polygon.coord_vec,
                             polygon.width as f64,
                             layer as u64,
-                            net_id,
+                            net,
                             None,
                         )
                     }
@@ -290,18 +294,18 @@ impl DsnDesign {
         }
 
         for wire in self.pcb.wiring.wire_vec.iter() {
-            let layer_id = *board
+            let layer = *board
                 .layout()
                 .drawing()
                 .rules()
-                .layer_ids
+                .layername_to_layer
                 .get(&wire.path.layer)
                 .unwrap();
-            let net_id = *board
+            let net = *board
                 .layout()
                 .drawing()
                 .rules()
-                .net_ids
+                .netname_to_net
                 .get(&wire.net)
                 .unwrap();
 
@@ -313,10 +317,17 @@ impl DsnDesign {
                 0.0,
                 &wire.path.coord_vec,
                 wire.path.width as f64,
-                layer_id as u64,
-                net_id,
+                layer as u64,
+                net,
                 None,
             );
+        }
+
+        // The clone here is bad, we'll have something better later on.
+        let netname_to_net = &board.layout().drawing().rules().netname_to_net.clone();
+
+        for (netname, net) in netname_to_net.iter() {
+            board.bename_net(*net, netname.to_string());
         }
 
         board
@@ -332,7 +343,7 @@ impl DsnDesign {
             .layout()
             .drawing()
             .rules()
-            .layer_ids
+            .layername_to_layer
             .get(layer_name)
             .unwrap();
 
