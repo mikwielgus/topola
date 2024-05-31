@@ -73,6 +73,6 @@ fn test() {
             .unwrap()
             .vertex_index()
             .node_index();
-        assert!(unionfind.equiv(from_index, to_index));
+        assert_eq!(unionfind.find(from_index), unionfind.find(to_index));
     }
 }

@@ -63,7 +63,7 @@ impl Autoroute {
             return Err(AutorouterError::NothingToRoute);
         };
 
-        let (source, target) = Self::ratline_endpoints(autorouter, cur_ratline);
+        let (source, target) = autorouter.ratline_endpoints(cur_ratline);
         let navmesh = Some(Navmesh::new(autorouter.board.layout(), source, target)?);
 
         let this = Self {
@@ -81,7 +81,7 @@ impl Autoroute {
         observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<AutorouterStatus, AutorouterError> {
         let (new_navmesh, new_ratline) = if let Some(cur_ratline) = self.ratlines_iter.next() {
-            let (source, target) = Self::ratline_endpoints(autorouter, cur_ratline);
+            let (source, target) = autorouter.ratline_endpoints(cur_ratline);
 
             (
                 Some(
@@ -115,37 +115,6 @@ impl Autoroute {
             }
             Err(err) => Err(AutorouterError::Router(err)),
         }
-    }
-
-    fn ratline_endpoints<R: RulesTrait>(
-        autorouter: &mut Autorouter<R>,
-        ratline: EdgeIndex<usize>,
-    ) -> (FixedDotIndex, FixedDotIndex) {
-        let (source, target) = autorouter.ratsnest.graph().edge_endpoints(ratline).unwrap();
-
-        let source_dot = match autorouter
-            .ratsnest
-            .graph()
-            .node_weight(source)
-            .unwrap()
-            .vertex_index()
-        {
-            RatsnestVertexIndex::FixedDot(dot) => dot,
-            RatsnestVertexIndex::Zone(zone) => autorouter.board.layout_mut().zone_apex(zone),
-        };
-
-        let target_dot = match autorouter
-            .ratsnest
-            .graph()
-            .node_weight(target)
-            .unwrap()
-            .vertex_index()
-        {
-            RatsnestVertexIndex::FixedDot(dot) => dot,
-            RatsnestVertexIndex::Zone(zone) => autorouter.board.layout_mut().zone_apex(zone),
-        };
-
-        (source_dot, target_dot)
     }
 
     pub fn navmesh(&self) -> &Option<Navmesh> {
@@ -198,6 +167,37 @@ impl<R: RulesTrait> Autorouter<R> {
                 .unwrap();
             self.board.layout_mut().remove_band(band);
         }
+    }
+
+    pub fn ratline_endpoints(
+        &mut self,
+        ratline: EdgeIndex<usize>,
+    ) -> (FixedDotIndex, FixedDotIndex) {
+        let (source, target) = self.ratsnest.graph().edge_endpoints(ratline).unwrap();
+
+        let source_dot = match self
+            .ratsnest
+            .graph()
+            .node_weight(source)
+            .unwrap()
+            .vertex_index()
+        {
+            RatsnestVertexIndex::FixedDot(dot) => dot,
+            RatsnestVertexIndex::Zone(zone) => self.board.layout_mut().zone_apex(zone),
+        };
+
+        let target_dot = match self
+            .ratsnest
+            .graph()
+            .node_weight(target)
+            .unwrap()
+            .vertex_index()
+        {
+            RatsnestVertexIndex::FixedDot(dot) => dot,
+            RatsnestVertexIndex::Zone(zone) => self.board.layout_mut().zone_apex(zone),
+        };
+
+        (source_dot, target_dot)
     }
 
     fn selected_ratlines(&self, selection: &Selection) -> Vec<EdgeIndex<usize>> {

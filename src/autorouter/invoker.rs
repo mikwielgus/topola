@@ -65,6 +65,10 @@ impl<R: RulesTrait> Invoker<R> {
         }
     }
 
+    pub fn destruct(self) -> (Autorouter<R>, History) {
+        (self.autorouter, self.history)
+    }
+
     pub fn execute(
         &mut self,
         command: Command,

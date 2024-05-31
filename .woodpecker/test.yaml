@@ -11,4 +11,4 @@ steps:
     environment: [CARGO_TERM_COLOR=always]
     commands:
       - rustup default "$CHANNEL"
-      - cargo test --features "$FEATURES"
+      - cargo test --verbose --features "$FEATURES"
