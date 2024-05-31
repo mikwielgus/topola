@@ -13,7 +13,7 @@ use geo::point;
 use painter::Painter;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use topola::autorouter::selection::Selection;
-use topola::autorouter::Autorouter;
+use topola::autorouter::{Autorouter, AutorouterStatus};
 use topola::drawing::dot::FixedDotWeight;
 use topola::drawing::graph::{MakePrimitive, PrimitiveIndex};
 use topola::drawing::primitive::MakePrimitiveShape;
@@ -28,7 +28,7 @@ use topola::layout::zone::MakePolyShape;
 use topola::layout::Layout;
 use topola::router::draw::DrawException;
 use topola::router::navmesh::{Navmesh, NavmeshEdgeReference, VertexIndex};
-use topola::router::trace::{Trace, Tracer};
+use topola::router::tracer::{Trace, Tracer};
 use topola::router::RouterObserverTrait;
 
 use sdl2::event::Event;
@@ -84,7 +84,7 @@ impl RulesTrait for SimpleRules {
 // Clunky enum to work around borrow checker.
 enum RouterOrLayout<'a, R: RulesTrait> {
     Router(&'a mut Router<'a, R>),
-    Layout(Arc<Mutex<Layout<R>>>),
+    Layout(&'a Layout<R>),
 }
 
 struct DebugRouterObserver<'a> {
@@ -124,7 +124,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrLayout::Layout(tracer.layout.clone()),
+            RouterOrLayout::Layout(tracer.layout),
             None,
             self.navmesh.clone(),
             &trace.path,
@@ -143,7 +143,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrLayout::Layout(tracer.layout.clone()),
+            RouterOrLayout::Layout(tracer.layout),
             None,
             self.navmesh.clone(),
             &path,
@@ -175,7 +175,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
             self.renderer,
             self.font_context,
             self.view,
-            RouterOrLayout::Layout(tracer.layout.clone()),
+            RouterOrLayout::Layout(tracer.layout),
             None,
             self.navmesh.clone(),
             &trace.path,
@@ -251,7 +251,7 @@ fn main() -> Result<(), anyhow::Error> {
     )?;
     //let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
     //dbg!(&design);
-    let layout = Arc::new(Mutex::new(design.make_board()));
+    let board = design.make_board();
     //let mut router = Router::new(layout);
 
     let mut view = View {
@@ -265,7 +265,7 @@ fn main() -> Result<(), anyhow::Error> {
         &mut renderer,
         &font_context,
         &mut view,
-        RouterOrLayout::Layout(layout.clone()),
+        RouterOrLayout::Layout(board.layout()),
         None,
         None,
         &[],
@@ -274,9 +274,9 @@ fn main() -> Result<(), anyhow::Error> {
         -1,
     );
 
-    let mut autorouter = Autorouter::new(layout.clone()).unwrap();
-    if let Some(mut autoroute) = autorouter.autoroute_walk(&Selection::new()) {
-        while autoroute.step(
+    let mut autorouter = Autorouter::new(board).unwrap();
+    if let Ok(mut autoroute) = autorouter.autoroute_walk(&Selection::new()) {
+        /*while autoroute.step(
             &mut autorouter,
             &mut DebugRouterObserver::new(
                 &mut event_pump,
@@ -288,6 +288,27 @@ fn main() -> Result<(), anyhow::Error> {
             ),
         ) {
             //
+        }*/
+
+        loop {
+            let status = match autoroute.step(
+                &mut autorouter,
+                &mut DebugRouterObserver::new(
+                    &mut event_pump,
+                    &window,
+                    &mut renderer,
+                    &font_context,
+                    &mut view,
+                    autoroute.navmesh().clone(),
+                ),
+            ) {
+                Ok(status) => status,
+                Err(err) => break,
+            };
+
+            if let AutorouterStatus::Finished = status {
+                break;
+            }
         }
     }
 
@@ -306,7 +327,7 @@ fn main() -> Result<(), anyhow::Error> {
         &mut renderer,
         &font_context,
         &mut view,
-        RouterOrLayout::Layout(layout.clone()),
+        RouterOrLayout::Layout(autorouter.board().layout()),
         None,
         None,
         &[],
@@ -377,7 +398,7 @@ fn render_times(
 
         let mut painter = Painter::new(&mut canvas);
 
-        let layout_arc_mutex = match router_or_layout {
+        let layout = match router_or_layout {
             RouterOrLayout::Router(ref mut router) => {
                 let state = event_pump.mouse_state();
 
@@ -400,11 +421,10 @@ fn render_times(
                     maybe_navmesh = None;
                 }*/
 
-                router.layout().clone()
+                router.layout()
             }
             RouterOrLayout::Layout(ref layout) => layout.clone(),
         };
-        let layout = layout_arc_mutex.lock().unwrap();
 
         //let result = panic::catch_unwind(|| {
         for node in layout.drawing().layer_primitive_nodes(1) {
