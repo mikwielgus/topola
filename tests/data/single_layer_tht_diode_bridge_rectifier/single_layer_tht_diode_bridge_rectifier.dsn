@@ -1,0 +1,163 @@
+(pcb /home/mikolaj/proj/topola/tests/data/single_layer_tht_diode_bridge_rectifier/single_layer_tht_diode_bridge_rectifier.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "8.0.2")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (boundary
+      (path pcb 0  129540 -87630  96520 -87630  96520 -67310  129540 -67310
+            129540 -87630)
+    )
+    (via "Via[0-1]_600:300_um")
+    (rule
+      (width 200)
+      (clearance 200)
+      (clearance 200 (type default_smd))
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component "TerminalBlock:TerminalBlock_bornier-2_P5.08mm"
+      (place J2 124460.000000 -80010.000000 front 90.000000 (PN Screw_Terminal_01x02))
+    )
+    (component "TerminalBlock:TerminalBlock_bornier-2_P5.08mm::1"
+      (place J1 101600.000000 -74930.000000 front -90.000000 (PN Screw_Terminal_01x02))
+    )
+    (component "Diode_THT:D_DO-15_P10.16mm_Horizontal"
+      (place D4 107950.000000 -85090.000000 front 0.000000 (PN D_45deg))
+      (place D3 118110.000000 -80010.000000 front 180.000000 (PN D_45deg))
+      (place D2 118110.000000 -74930.000000 front 180.000000 (PN D_45deg))
+      (place D1 107950.000000 -69850.000000 front 0.000000 (PN D_45deg))
+    )
+  )
+  (library
+    (image "TerminalBlock:TerminalBlock_bornier-2_P5.08mm"
+      (outline (path signal 120  -2540 3810  -2540 -3810))
+      (outline (path signal 120  -2540 -3810  7620 -3810))
+      (outline (path signal 120  7620 3810  -2540 3810))
+      (outline (path signal 120  7620 -2540  -2540 -2540))
+      (outline (path signal 120  7620 -3810  7620 3810))
+      (outline (path signal 50  -2710 4000  -2710 -4000))
+      (outline (path signal 50  -2710 4000  7790 4000))
+      (outline (path signal 50  7790 -4000  -2710 -4000))
+      (outline (path signal 50  7790 -4000  7790 4000))
+      (outline (path signal 100  -2460 3750  -2460 -3750))
+      (outline (path signal 100  -2460 -3750  7540 -3750))
+      (outline (path signal 100  -2410 -2550  7490 -2550))
+      (outline (path signal 100  7540 3750  -2460 3750))
+      (outline (path signal 100  7540 -3750  7540 3750))
+      (pin Rect[A]Pad_3000x3000_um 1 0 0)
+      (pin Round[A]Pad_3000_um 2 5080 0)
+    )
+    (image "TerminalBlock:TerminalBlock_bornier-2_P5.08mm::1"
+      (outline (path signal 100  7540 -3750  7540 3750))
+      (outline (path signal 100  7540 3750  -2460 3750))
+      (outline (path signal 100  -2410 -2550  7490 -2550))
+      (outline (path signal 100  -2460 -3750  7540 -3750))
+      (outline (path signal 100  -2460 3750  -2460 -3750))
+      (outline (path signal 50  7790 -4000  7790 4000))
+      (outline (path signal 50  7790 -4000  -2710 -4000))
+      (outline (path signal 50  -2710 4000  7790 4000))
+      (outline (path signal 50  -2710 4000  -2710 -4000))
+      (outline (path signal 120  7620 -3810  7620 3810))
+      (outline (path signal 120  7620 -2540  -2540 -2540))
+      (outline (path signal 120  7620 3810  -2540 3810))
+      (outline (path signal 120  -2540 -3810  7620 -3810))
+      (outline (path signal 120  -2540 3810  -2540 -3810))
+      (pin Round[A]Pad_3000_um 2 5080 0)
+      (pin Rect[A]Pad_3000x3000_um 1 0 0)
+    )
+    (image "Diode_THT:D_DO-15_P10.16mm_Horizontal"
+      (outline (path signal 120  1160 1920  9000 1920))
+      (outline (path signal 120  1160 1440  1160 1920))
+      (outline (path signal 120  1160 -1440  1160 -1920))
+      (outline (path signal 120  1160 -1920  9000 -1920))
+      (outline (path signal 120  2300 1920  2300 -1920))
+      (outline (path signal 120  2420 1920  2420 -1920))
+      (outline (path signal 120  2540 1920  2540 -1920))
+      (outline (path signal 120  9000 1920  9000 1440))
+      (outline (path signal 120  9000 -1920  9000 -1440))
+      (outline (path signal 50  -1450 2050  -1450 -2050))
+      (outline (path signal 50  -1450 -2050  11610 -2050))
+      (outline (path signal 50  11610 2050  -1450 2050))
+      (outline (path signal 50  11610 -2050  11610 2050))
+      (outline (path signal 100  0 0  1280 0))
+      (outline (path signal 100  1280 1800  1280 -1800))
+      (outline (path signal 100  1280 -1800  8880 -1800))
+      (outline (path signal 100  2320 1800  2320 -1800))
+      (outline (path signal 100  2420 1800  2420 -1800))
+      (outline (path signal 100  2520 1800  2520 -1800))
+      (outline (path signal 100  8880 1800  1280 1800))
+      (outline (path signal 100  8880 -1800  8880 1800))
+      (outline (path signal 100  10160 0  8880 0))
+      (pin Rect[A]Pad_2400x2400_um 1 0 0)
+      (pin Oval[A]Pad_2400x2400_um 2 10160 0)
+    )
+    (padstack Round[A]Pad_3000_um
+      (shape (circle F.Cu 3000))
+      (shape (circle B.Cu 3000))
+      (attach off)
+    )
+    (padstack Oval[A]Pad_2400x2400_um
+      (shape (path F.Cu 2400  0 0  0 0))
+      (shape (path B.Cu 2400  0 0  0 0))
+      (attach off)
+    )
+    (padstack Rect[A]Pad_2400x2400_um
+      (shape (rect F.Cu -1200 -1200 1200 1200))
+      (shape (rect B.Cu -1200 -1200 1200 1200))
+      (attach off)
+    )
+    (padstack Rect[A]Pad_3000x3000_um
+      (shape (rect F.Cu -1500 -1500 1500 1500))
+      (shape (rect B.Cu -1500 -1500 1500 1500))
+      (attach off)
+    )
+    (padstack "Via[0-1]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+  )
+  (network
+    (net "Net-(D1-K)"
+      (pins J1-1 D2-2 D1-1)
+    )
+    (net "Net-(D1-A)"
+      (pins J2-2 D4-2 D1-2)
+    )
+    (net "Net-(D2-K)"
+      (pins J2-1 D3-1 D2-1)
+    )
+    (net "Net-(D3-A)"
+      (pins J1-2 D4-1 D3-2)
+    )
+    (class kicad_default "" "Net-(D1-A)" "Net-(D1-K)" "Net-(D2-K)" "Net-(D3-A)"
+      (circuit
+        (use_via Via[0-1]_600:300_um)
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+  )
+)

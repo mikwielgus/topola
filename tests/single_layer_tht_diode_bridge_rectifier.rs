@@ -15,13 +15,13 @@ use topola::{
 #[test]
 fn test() {
     let design = DsnDesign::load_from_file(
-        "tests/data/four_3rd_order_smd_lc_filters/four_3rd_order_smd_lc_filters.dsn",
+        "tests/data/single_layer_tht_diode_bridge_rectifier/single_layer_tht_diode_bridge_rectifier.dsn",
     );
     let board = design.unwrap().make_board();
 
     let mut invoker = Invoker::new(Autorouter::new(board).unwrap());
     let file =
-        File::open("tests/data/four_3rd_order_smd_lc_filters/autoroute_signals.cmd").unwrap();
+        File::open("tests/data/single_layer_tht_diode_bridge_rectifier/autoroute_all.cmd").unwrap();
     invoker.replay(serde_json::from_reader(file).unwrap());
 
     let (mut autorouter, ..) = invoker.destruct();
@@ -73,15 +73,10 @@ fn test() {
 
         if let Some(netname) = autorouter.board().netname(net) {
             dbg!(netname);
-
-            // We don't route GND.
-            if netname != "GND" {
-                dbg!(source_dot, target_dot);
-                assert_eq!(
-                    unionfind.find(source_dot.node_index()),
-                    unionfind.find(target_dot.node_index())
-                );
-            }
+            assert_eq!(
+                unionfind.find(source_dot.node_index()),
+                unionfind.find(target_dot.node_index())
+            );
         }
     }
 }
