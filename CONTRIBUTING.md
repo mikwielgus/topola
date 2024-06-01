@@ -25,14 +25,14 @@ tracker](https://codeberg.org/topola/topola/issues).
 Under normal operation, crashes and panics are always considered
 reportable bugs.
 
-## Code contribution
+## Writing code
 
-We welcome code contributions from anyone regardless of skill or
-experience level. We're friendly to newcomers. We will help you with
-your contribution if there are any problems.
+We welcome code from anyone regardless of skill or experience level.
+We're friendly to newcomers. We will help you with your contribution if
+there are any problems.
 
-Topola accepts contributions using pull requests. For a step-by-step
-guide on how to use these, refer to Codeberg's
+Topola accepts contributions via pull requests. For a step-by-step guide
+on how to use these, refer to Codeberg's
 [documentation](https://docs.codeberg.org/collaborating/pull-requests-and-git-flow/).
 
 Before you submit a pull request, make sure Topola actually builds with
@@ -45,7 +45,8 @@ your changes. Follow the build instructions from the next section.
 Building Topola from source requires
 [git](https://git-scm.com/book/en/v2/Getting-Started-Installing-Git) and
 [cargo](https://doc.rust-lang.org/cargo/getting-started/installation.html)
-to be installed on your system.
+to be installed on your system. Follow the instructions in above links
+to obtain these.
 
 #### Obtaining the source
 
@@ -59,19 +60,15 @@ Change your working directory to your clone of Topola's repository:
 
     cd topola
 
-Topola currently requires nightly Rust to build. Enable it with
-
-    rustup override set nightly
-
 #### Egui port
 
 Build the project with
 
-    cargo build --features egui --bin topola-egui	
+    cargo build --features "egui,disable_contracts" --bin topola-egui
 
 Finally, run Topola by executing
 
-    cargo run --features egui --bin topola-egui
+    cargo run --features "egui,disable_contracts" --bin topola-egui
 
 ##### Running Topola in a Web browser
 
@@ -94,3 +91,46 @@ of the Egui port:
     cargo run --features sdl2 --bin topola-sdl2-demo
 
 The downside is that the SDL2 demo's user interface is highly incomplete.
+
+
+#### Automated tests
+
+Topola has automated tests to make sure its basic functionalities work.
+To execute these, run
+
+    cargo test --features disable_contracts
+
+#### Contracts
+
+When trying to locate the source of a bug, it may be helpful to enable
+[contracts](https://en.wikipedia.org/wiki/Design_by_contract) (yes, this
+Wikipedia article needs improvement), which are nothing else but
+slightly enchanced assertions.
+
+Unfortunately, the
+[contracts](https://docs.rs/contracts/latest/contracts/) library which
+we have been using enforces post-conditions via closures, which have
+numerous limitations. To bypass these we have forked and modified it to
+use `try` blocks instead. The fork is vendored in the
+[vendored/contracts/](vendored/contracts/) directory.
+
+However, `try` blocks aren't present in stable Rust versions yet, so to
+use these you need to set up your toolchain to use a nightly version of
+Rust.
+
+##### Nightly Rust
+
+To use nightly Rust, run the following command:
+
+    rustup override set nightly
+
+You can go back to stable with
+
+    rustup override unset
+
+##### Enabling contracts
+
+To enable contracts, simply remove the `disable_contracts` feature from
+commands. For example, to build tests with contracts, simply run
+
+    cargo test
