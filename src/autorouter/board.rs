@@ -3,14 +3,18 @@ use std::collections::HashMap;
 use crate::{
     drawing::{
         dot::{FixedDotIndex, FixedDotWeight},
-        graph::PrimitiveIndex,
+        graph::{GetLayer, GetMaybeNet, PrimitiveIndex},
         rules::RulesTrait,
         seg::{FixedSegIndex, FixedSegWeight},
         Infringement,
     },
-    geometry::GenericNode,
+    geometry::{shape::ShapeTrait, GenericNode},
     graph::GenericIndex,
-    layout::{zone::ZoneWeight, Layout},
+    layout::{
+        zone::{GetMaybeApex, MakePolyShape, ZoneWeight},
+        Layout,
+    },
+    math::Circle,
 };
 
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<ZoneWeight>>;
@@ -112,6 +116,25 @@ impl<R: RulesTrait> Board<R> {
 
     pub fn bename_net(&mut self, net: usize, netname: String) {
         self.net_to_netname.insert(net, netname);
+    }
+
+    pub fn zone_apex(&mut self, zone: GenericIndex<ZoneWeight>) -> FixedDotIndex {
+        if let Some(apex) = self.layout.zone(zone).maybe_apex() {
+            apex
+        } else {
+            self.add_zone_fixed_dot(
+                FixedDotWeight {
+                    circle: Circle {
+                        pos: self.layout.zone(zone).shape().center(),
+                        r: 100.0,
+                    },
+                    layer: self.layout.zone(zone).layer(),
+                    maybe_net: self.layout.zone(zone).maybe_net(),
+                },
+                zone,
+            )
+            .unwrap()
+        }
     }
 
     pub fn node_pin(&self, node: NodeIndex) -> Option<&String> {

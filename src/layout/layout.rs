@@ -180,25 +180,6 @@ impl<R: RulesTrait> Layout<R> {
             .compound_members(GenericIndex::new(zone.node_index()))
     }
 
-    pub fn zone_apex(&mut self, zone: GenericIndex<ZoneWeight>) -> FixedDotIndex {
-        if let Some(apex) = self.zone(zone).maybe_apex() {
-            apex
-        } else {
-            self.add_zone_fixed_dot(
-                FixedDotWeight {
-                    circle: Circle {
-                        pos: self.zone(zone).shape().center(),
-                        r: 100.0,
-                    },
-                    layer: self.zone(zone).layer(),
-                    maybe_net: self.zone(zone).maybe_net(),
-                },
-                zone,
-            )
-            .unwrap()
-        }
-    }
-
     pub fn drawing(&self) -> &Drawing<ZoneWeight, R> {
         &self.drawing
     }

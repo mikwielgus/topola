@@ -183,7 +183,7 @@ impl<R: RulesTrait> Autorouter<R> {
             .trianvertex_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Zone(zone) => self.board.layout_mut().zone_apex(zone),
+            RatvertexIndex::Zone(zone) => self.board.zone_apex(zone),
         };
 
         let target_dot = match self
@@ -194,7 +194,7 @@ impl<R: RulesTrait> Autorouter<R> {
             .trianvertex_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Zone(zone) => self.board.layout_mut().zone_apex(zone),
+            RatvertexIndex::Zone(zone) => self.board.zone_apex(zone),
         };
 
         (source_dot, target_dot)
