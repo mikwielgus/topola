@@ -33,7 +33,7 @@ use topola::{
     math::Circle,
     router::{
         draw::DrawException,
-        navmesh::{Navmesh, NavmeshEdgeReference, VertexIndex},
+        navmesh::{Navmesh, NavmeshEdgeReference, NavvertexIndex},
         tracer::{Trace, Tracer},
         EmptyRouterObserver, RouterObserverTrait,
     },
@@ -46,7 +46,7 @@ struct SharedData {
     pub from: Option<FixedDotIndex>,
     pub to: Option<FixedDotIndex>,
     pub navmesh: Option<Navmesh>,
-    pub path: Vec<VertexIndex>,
+    pub path: Vec<NavvertexIndex>,
     pub ghosts: Vec<PrimitiveShape>,
     pub highlighteds: Vec<PrimitiveIndex>,
 }
@@ -144,7 +144,7 @@ impl<R: RulesTrait + std::fmt::Debug> RouterObserverTrait<R> for DebugRouterObse
         shared_data.highlighteds = highlighteds;
         std::thread::sleep_ms(delay);
     }
-    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: VertexIndex) {
+    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: NavvertexIndex) {
         //dbg!(_tracer, _vertex);
     }
 }

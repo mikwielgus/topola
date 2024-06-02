@@ -20,7 +20,7 @@ use crate::{
     router::{
         astar::{astar, AstarError, AstarStrategy, PathTracker},
         draw::DrawException,
-        navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, VertexIndex},
+        navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
         tracer::{Trace, Tracer},
     },
 };
@@ -42,7 +42,7 @@ pub trait RouterObserverTrait<R: RulesTrait> {
         edge: NavmeshEdgeReference,
         result: Result<(), DrawException>,
     );
-    fn on_estimate(&mut self, tracer: &Tracer<R>, vertex: VertexIndex);
+    fn on_estimate(&mut self, tracer: &Tracer<R>, vertex: NavvertexIndex);
 }
 
 pub struct EmptyRouterObserver;
@@ -58,7 +58,7 @@ impl<R: RulesTrait> RouterObserverTrait<R> for EmptyRouterObserver {
         _result: Result<(), DrawException>,
     ) {
     }
-    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: VertexIndex) {}
+    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: NavvertexIndex) {}
 }
 
 pub struct Router<'a, R: RulesTrait> {
@@ -94,7 +94,7 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64,
 {
     fn is_goal(
         &mut self,
-        vertex: VertexIndex,
+        vertex: NavvertexIndex,
         tracker: &PathTracker<&Navmesh>,
     ) -> Option<BandIndex> {
         let new_path = tracker.reconstruct_path_to(vertex);
@@ -131,7 +131,7 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64,
         }
     }
 
-    fn estimate_cost(&mut self, vertex: VertexIndex) -> f64 {
+    fn estimate_cost(&mut self, vertex: NavvertexIndex) -> f64 {
         self.observer.on_estimate(&self.tracer, vertex);
 
         let start_point = PrimitiveIndex::from(vertex)

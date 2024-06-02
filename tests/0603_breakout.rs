@@ -12,7 +12,7 @@ use topola::{
     dsn::design::DsnDesign,
     graph::GetNodeIndex,
     router::EmptyRouterObserver,
-    triangulation::GetVertexIndex,
+    triangulation::GetTrianvertexIndex,
 };
 
 #[test]
@@ -63,7 +63,7 @@ fn test() {
             .graph()
             .node_weight(ratline.source())
             .unwrap()
-            .vertex_index()
+            .trianvertex_index()
             .node_index();
         let to_index = invoker
             .autorouter()
@@ -71,7 +71,7 @@ fn test() {
             .graph()
             .node_weight(ratline.target())
             .unwrap()
-            .vertex_index()
+            .trianvertex_index()
             .node_index();
         assert_eq!(unionfind.find(from_index), unionfind.find(to_index));
     }

@@ -27,7 +27,7 @@ use topola::geometry::shape::ShapeTrait;
 use topola::layout::zone::MakePolyShape;
 use topola::layout::Layout;
 use topola::router::draw::DrawException;
-use topola::router::navmesh::{Navmesh, NavmeshEdgeReference, VertexIndex};
+use topola::router::navmesh::{Navmesh, NavmeshEdgeReference, NavvertexIndex};
 use topola::router::tracer::{Trace, Tracer};
 use topola::router::RouterObserverTrait;
 
@@ -185,7 +185,7 @@ impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
         );
     }
 
-    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: VertexIndex) {}
+    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: NavvertexIndex) {}
 }
 
 fn main() -> Result<(), anyhow::Error> {
@@ -353,7 +353,7 @@ fn render_times(
     mut router_or_layout: RouterOrLayout<impl RulesTrait>,
     _unused: Option<()>,
     mut maybe_navmesh: Option<Navmesh>,
-    path: &[VertexIndex],
+    path: &[NavvertexIndex],
     ghosts: &[PrimitiveShape],
     highlighteds: &[PrimitiveIndex],
     times: i64,

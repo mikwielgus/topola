@@ -6,40 +6,40 @@ use spade::{handles::FixedVertexHandle, DelaunayTriangulation, HasPosition, Inse
 
 use crate::graph::GetNodeIndex;
 
-pub trait GetVertexIndex<I> {
-    fn vertex_index(&self) -> I;
+pub trait GetTrianvertexIndex<I> {
+    fn trianvertex_index(&self) -> I;
 }
 
 #[derive(Debug, Clone)]
 pub struct Triangulation<
     I: Copy + PartialEq + GetNodeIndex,
-    VW: GetVertexIndex<I> + HasPosition,
+    VW: GetTrianvertexIndex<I> + HasPosition,
     EW: Copy + Default,
 > {
     triangulation: DelaunayTriangulation<VW, EW>,
-    vertex_to_handle: Vec<Option<FixedVertexHandle>>,
+    trianvertex_to_handle: Vec<Option<FixedVertexHandle>>,
     index_marker: PhantomData<I>,
 }
 
 impl<
         I: Copy + PartialEq + GetNodeIndex,
-        VW: GetVertexIndex<I> + HasPosition<Scalar = f64>,
+        VW: GetTrianvertexIndex<I> + HasPosition<Scalar = f64>,
         EW: Copy + Default,
     > Triangulation<I, VW, EW>
 {
     pub fn new(node_bound: usize) -> Self {
         let mut this = Self {
             triangulation: <DelaunayTriangulation<VW, EW> as spade::Triangulation>::new(),
-            vertex_to_handle: Vec::new(),
+            trianvertex_to_handle: Vec::new(),
             index_marker: PhantomData,
         };
-        this.vertex_to_handle.resize(node_bound, None);
+        this.trianvertex_to_handle.resize(node_bound, None);
         this
     }
 
     pub fn add_vertex(&mut self, weight: VW) -> Result<(), InsertionError> {
-        let index = weight.vertex_index().node_index().index();
-        self.vertex_to_handle[index] = Some(spade::Triangulation::insert(
+        let index = weight.trianvertex_index().node_index().index();
+        self.trianvertex_to_handle[index] = Some(spade::Triangulation::insert(
             &mut self.triangulation,
             weight,
         )?);
@@ -48,13 +48,13 @@ impl<
 
     pub fn weight(&self, vertex: I) -> &VW {
         spade::Triangulation::s(&self.triangulation)
-            .vertex_data(self.vertex_to_handle[vertex.node_index().index()].unwrap())
+            .vertex_data(self.trianvertex_to_handle[vertex.node_index().index()].unwrap())
     }
 
     pub fn weight_mut(&mut self, vertex: I) -> &mut VW {
         spade::Triangulation::vertex_data_mut(
             &mut self.triangulation,
-            self.vertex_to_handle[vertex.node_index().index()].unwrap(),
+            self.trianvertex_to_handle[vertex.node_index().index()].unwrap(),
         )
     }
 
@@ -67,17 +67,17 @@ impl<
     fn vertex(&self, handle: FixedVertexHandle) -> I {
         spade::Triangulation::vertex(&self.triangulation, handle)
             .as_ref()
-            .vertex_index()
+            .trianvertex_index()
     }
 
     fn handle(&self, vertex: I) -> FixedVertexHandle {
-        self.vertex_to_handle[vertex.node_index().index()].unwrap()
+        self.trianvertex_to_handle[vertex.node_index().index()].unwrap()
     }
 }
 
 impl<
         I: Copy + PartialEq + GetNodeIndex,
-        VW: GetVertexIndex<I> + HasPosition<Scalar = f64>,
+        VW: GetTrianvertexIndex<I> + HasPosition<Scalar = f64>,
         EW: Copy + Default,
     > visit::GraphBase for Triangulation<I, VW, EW>
 {
@@ -105,7 +105,7 @@ impl<EW: Copy + Default> PartialOrd for TriangulationEdgeWeightWrapper<EW> {
 
 impl<
         I: Copy + PartialEq + GetNodeIndex,
-        VW: GetVertexIndex<I> + HasPosition<Scalar = f64>,
+        VW: GetTrianvertexIndex<I> + HasPosition<Scalar = f64>,
         EW: Copy + Default,
     > visit::Data for Triangulation<I, VW, EW>
 {
@@ -145,7 +145,7 @@ impl<I: Copy, EW: Copy + Default> visit::EdgeRef for TriangulationEdgeReference<
 impl<
         'a,
         I: Copy + PartialEq + GetNodeIndex,
-        VW: GetVertexIndex<I> + HasPosition<Scalar = f64>,
+        VW: GetTrianvertexIndex<I> + HasPosition<Scalar = f64>,
         EW: Copy + Default,
     > visit::IntoNeighbors for &'a Triangulation<I, VW, EW>
 {
@@ -163,7 +163,7 @@ impl<
 impl<
         'a,
         I: Copy + PartialEq + GetNodeIndex,
-        VW: GetVertexIndex<I> + HasPosition<Scalar = f64>,
+        VW: GetTrianvertexIndex<I> + HasPosition<Scalar = f64>,
         EW: Copy + Default,
     > visit::IntoEdgeReferences for &'a Triangulation<I, VW, EW>
 {
@@ -192,7 +192,7 @@ impl<
 impl<
         'a,
         I: Copy + PartialEq + GetNodeIndex,
-        VW: GetVertexIndex<I> + HasPosition<Scalar = f64>,
+        VW: GetTrianvertexIndex<I> + HasPosition<Scalar = f64>,
         EW: Copy + Default,
     > visit::IntoEdges for &'a Triangulation<I, VW, EW>
 {
@@ -222,7 +222,7 @@ impl<
 impl<
         'a,
         I: Copy + PartialEq + GetNodeIndex,
-        VW: GetVertexIndex<I> + HasPosition<Scalar = f64>,
+        VW: GetTrianvertexIndex<I> + HasPosition<Scalar = f64>,
         EW: Copy + Default,
     > visit::IntoNodeIdentifiers for &'a Triangulation<I, VW, EW>
 {
@@ -233,7 +233,7 @@ impl<
             spade::Triangulation::fixed_vertices(&self.triangulation).map(|vertex| {
                 spade::Triangulation::s(&self.triangulation)
                     .vertex_data(vertex)
-                    .vertex_index()
+                    .trianvertex_index()
             }),
         )
     }
@@ -261,7 +261,7 @@ impl<'a, I: Copy, VW: Copy> visit::NodeRef for TriangulationVertexReference<'a, 
 impl<
         'a,
         I: Copy + PartialEq + GetNodeIndex,
-        VW: Copy + GetVertexIndex<I> + HasPosition<Scalar = f64>,
+        VW: Copy + GetTrianvertexIndex<I> + HasPosition<Scalar = f64>,
         EW: Copy + Default,
     > visit::IntoNodeReferences for &'a Triangulation<I, VW, EW>
 {
@@ -273,7 +273,7 @@ impl<
             spade::Triangulation::fixed_vertices(&self.triangulation).map(|vertex| {
                 let weight = spade::Triangulation::s(&self.triangulation).vertex_data(vertex);
                 TriangulationVertexReference {
-                    index: weight.vertex_index(),
+                    index: weight.trianvertex_index(),
                     weight,
                 }
             }),
@@ -284,13 +284,13 @@ impl<
 impl<
         'a,
         I: Copy + PartialEq + GetNodeIndex + std::fmt::Debug,
-        VW: GetVertexIndex<I> + HasPosition<Scalar = f64>,
+        VW: GetTrianvertexIndex<I> + HasPosition<Scalar = f64>,
         EW: Copy + Default,
     > visit::NodeIndexable for &'a Triangulation<I, VW, EW>
 {
     fn node_bound(&self) -> usize {
         //spade::Triangulation::num_vertices(&self.triangulation)
-        self.vertex_to_handle.len()
+        self.trianvertex_to_handle.len()
     }
 
     fn to_index(&self, node: I) -> usize {
@@ -299,7 +299,7 @@ impl<
 
     fn from_index(&self, index: usize) -> I {
         spade::Triangulation::s(&self.triangulation)
-            .vertex_data(self.vertex_to_handle[index].unwrap())
-            .vertex_index()
+            .vertex_data(self.trianvertex_to_handle[index].unwrap())
+            .trianvertex_index()
     }
 }

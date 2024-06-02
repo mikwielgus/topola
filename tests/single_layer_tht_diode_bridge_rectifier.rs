@@ -9,7 +9,7 @@ use topola::{
     drawing::graph::GetMaybeNet,
     dsn::design::DsnDesign,
     graph::GetNodeIndex,
-    triangulation::GetVertexIndex,
+    triangulation::GetTrianvertexIndex,
 };
 
 #[test]

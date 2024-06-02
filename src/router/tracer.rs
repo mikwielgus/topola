@@ -13,13 +13,13 @@ use crate::{
     layout::Layout,
     router::{
         draw::{Draw, DrawException},
-        navmesh::{Navmesh, VertexIndex},
+        navmesh::{Navmesh, NavvertexIndex},
     },
 };
 
 #[derive(Debug)]
 pub struct Trace {
-    pub path: Vec<VertexIndex>,
+    pub path: Vec<NavvertexIndex>,
     pub head: Head,
     pub width: f64,
 }
@@ -55,7 +55,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     pub fn rework_path(
         &mut self,
         trace: &mut Trace,
-        path: &[VertexIndex],
+        path: &[NavvertexIndex],
         width: f64,
     ) -> Result<(), DrawException> {
         let prefix_length = trace
@@ -74,7 +74,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     pub fn path(
         &mut self,
         trace: &mut Trace,
-        path: &[VertexIndex],
+        path: &[NavvertexIndex],
         width: f64,
     ) -> Result<(), DrawException> {
         for (i, vertex) in path.iter().enumerate() {
@@ -99,7 +99,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     pub fn step(
         &mut self,
         trace: &mut Trace,
-        to: VertexIndex,
+        to: NavvertexIndex,
         width: f64,
     ) -> Result<(), DrawException> {
         trace.head = self.wrap(trace.head, to, width)?.into();
@@ -111,13 +111,13 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     fn wrap(
         &mut self,
         head: Head,
-        around: VertexIndex,
+        around: NavvertexIndex,
         width: f64,
     ) -> Result<SegbendHead, DrawException> {
         match around {
-            VertexIndex::FixedDot(dot) => self.wrap_around_fixed_dot(head, dot, width),
-            VertexIndex::FixedBend(_fixed_bend) => todo!(),
-            VertexIndex::LooseBend(loose_bend) => {
+            NavvertexIndex::FixedDot(dot) => self.wrap_around_fixed_dot(head, dot, width),
+            NavvertexIndex::FixedBend(_fixed_bend) => todo!(),
+            NavvertexIndex::LooseBend(loose_bend) => {
                 self.wrap_around_loose_bend(head, loose_bend, width)
             }
         }

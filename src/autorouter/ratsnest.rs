@@ -24,38 +24,38 @@ use crate::{
         zone::{MakePolyShape, ZoneWeight},
         Layout,
     },
-    triangulation::{GetVertexIndex, Triangulation},
+    triangulation::{GetTrianvertexIndex, Triangulation},
 };
 
 #[enum_dispatch(GetNodeIndex)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum RatsnestVertexIndex {
+pub enum RatvertexIndex {
     FixedDot(FixedDotIndex),
     Zone(GenericIndex<ZoneWeight>),
 }
 
-impl From<RatsnestVertexIndex> for crate::layout::NodeIndex {
-    fn from(vertex: RatsnestVertexIndex) -> crate::layout::NodeIndex {
+impl From<RatvertexIndex> for crate::layout::NodeIndex {
+    fn from(vertex: RatvertexIndex) -> crate::layout::NodeIndex {
         match vertex {
-            RatsnestVertexIndex::FixedDot(dot) => crate::layout::NodeIndex::Primitive(dot.into()),
-            RatsnestVertexIndex::Zone(zone) => crate::layout::NodeIndex::Compound(zone.into()),
+            RatvertexIndex::FixedDot(dot) => crate::layout::NodeIndex::Primitive(dot.into()),
+            RatvertexIndex::Zone(zone) => crate::layout::NodeIndex::Compound(zone.into()),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct VertexWeight {
-    vertex: RatsnestVertexIndex,
+pub struct RatvertexWeight {
+    vertex: RatvertexIndex,
     pub pos: Point,
 }
 
-impl GetVertexIndex<RatsnestVertexIndex> for VertexWeight {
-    fn vertex_index(&self) -> RatsnestVertexIndex {
+impl GetTrianvertexIndex<RatvertexIndex> for RatvertexWeight {
+    fn trianvertex_index(&self) -> RatvertexIndex {
         self.vertex
     }
 }
 
-impl HasPosition for VertexWeight {
+impl HasPosition for RatvertexWeight {
     type Scalar = f64;
     fn position(&self) -> Point2<Self::Scalar> {
         Point2::new(self.pos.x(), self.pos.y())
@@ -63,12 +63,12 @@ impl HasPosition for VertexWeight {
 }
 
 #[derive(Debug, Default, Clone, Copy)]
-pub struct EdgeWeight {
+pub struct RatlineWeight {
     pub band: Option<BandIndex>,
 }
 
 pub struct Ratsnest {
-    graph: UnGraph<VertexWeight, EdgeWeight, usize>,
+    graph: UnGraph<RatvertexWeight, RatlineWeight, usize>,
 }
 
 impl Ratsnest {
@@ -101,8 +101,8 @@ impl Ratsnest {
                                 }
 
                                 triangulations.get_mut(&(layer, net)).unwrap().add_vertex(
-                                    VertexWeight {
-                                        vertex: RatsnestVertexIndex::FixedDot(dot),
+                                    RatvertexWeight {
+                                        vertex: RatvertexIndex::FixedDot(dot),
                                         pos: node.primitive(layout.drawing()).shape().center(),
                                     },
                                 )?;
@@ -125,8 +125,8 @@ impl Ratsnest {
                     triangulations
                         .get_mut(&(layer, net))
                         .unwrap()
-                        .add_vertex(VertexWeight {
-                            vertex: RatsnestVertexIndex::Zone(zone),
+                        .add_vertex(RatvertexWeight {
+                            vertex: RatvertexIndex::Zone(zone),
                             pos: layout.zone(zone).shape().center(),
                         })?
                 }
@@ -154,8 +154,16 @@ impl Ratsnest {
 
         this.graph.retain_edges(|g, i| {
             if let Some((source, target)) = g.edge_endpoints(i) {
-                let source_index = g.node_weight(source).unwrap().vertex_index().node_index();
-                let target_index = g.node_weight(target).unwrap().vertex_index().node_index();
+                let source_index = g
+                    .node_weight(source)
+                    .unwrap()
+                    .trianvertex_index()
+                    .node_index();
+                let target_index = g
+                    .node_weight(target)
+                    .unwrap()
+                    .trianvertex_index()
+                    .node_index();
                 !unionfind.equiv(source_index, target_index)
             } else {
                 true
@@ -169,7 +177,7 @@ impl Ratsnest {
         self.graph.edge_weight_mut(ratline).unwrap().band = Some(band);
     }
 
-    pub fn graph(&self) -> &UnGraph<VertexWeight, EdgeWeight, usize> {
+    pub fn graph(&self) -> &UnGraph<RatvertexWeight, RatlineWeight, usize> {
         &self.graph
     }
 }

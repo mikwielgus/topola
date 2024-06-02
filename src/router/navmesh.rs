@@ -21,12 +21,12 @@ use crate::{
     },
     graph::GetNodeIndex,
     layout::Layout,
-    triangulation::{GetVertexIndex, Triangulation, TriangulationEdgeReference},
+    triangulation::{GetTrianvertexIndex, Triangulation, TriangulationEdgeReference},
 };
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
-pub enum VertexIndex {
+pub enum NavvertexIndex {
     FixedDot(FixedDotIndex),
     FixedBend(FixedBendIndex),
     LooseBend(LooseBendIndex),
@@ -34,44 +34,44 @@ pub enum VertexIndex {
 
 #[enum_dispatch(GetNodeIndex, MakePrimitive)]
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
-enum TriangulationVertexIndex {
+enum TrianvertexIndex {
     FixedDot(FixedDotIndex),
     FixedBend(FixedBendIndex),
 }
 
-impl From<VertexIndex> for PrimitiveIndex {
-    fn from(vertex: VertexIndex) -> Self {
+impl From<NavvertexIndex> for PrimitiveIndex {
+    fn from(vertex: NavvertexIndex) -> Self {
         match vertex {
-            VertexIndex::FixedDot(dot) => PrimitiveIndex::FixedDot(dot),
-            VertexIndex::FixedBend(bend) => PrimitiveIndex::FixedBend(bend),
-            VertexIndex::LooseBend(bend) => PrimitiveIndex::LooseBend(bend),
+            NavvertexIndex::FixedDot(dot) => PrimitiveIndex::FixedDot(dot),
+            NavvertexIndex::FixedBend(bend) => PrimitiveIndex::FixedBend(bend),
+            NavvertexIndex::LooseBend(bend) => PrimitiveIndex::LooseBend(bend),
         }
     }
 }
 
-impl From<TriangulationVertexIndex> for VertexIndex {
-    fn from(vertex: TriangulationVertexIndex) -> Self {
+impl From<TrianvertexIndex> for NavvertexIndex {
+    fn from(vertex: TrianvertexIndex) -> Self {
         match vertex {
-            TriangulationVertexIndex::FixedDot(dot) => VertexIndex::FixedDot(dot),
-            TriangulationVertexIndex::FixedBend(bend) => VertexIndex::FixedBend(bend),
+            TrianvertexIndex::FixedDot(dot) => NavvertexIndex::FixedDot(dot),
+            TrianvertexIndex::FixedBend(bend) => NavvertexIndex::FixedBend(bend),
         }
     }
 }
 
 #[derive(Debug, Clone)]
-struct TriangulationVertexWeight {
-    vertex: TriangulationVertexIndex,
+struct TrianvertexWeight {
+    trianvertex: TrianvertexIndex,
     rails: Vec<LooseBendIndex>,
     pos: Point,
 }
 
-impl GetVertexIndex<TriangulationVertexIndex> for TriangulationVertexWeight {
-    fn vertex_index(&self) -> TriangulationVertexIndex {
-        self.vertex
+impl GetTrianvertexIndex<TrianvertexIndex> for TrianvertexWeight {
+    fn trianvertex_index(&self) -> TrianvertexIndex {
+        self.trianvertex
     }
 }
 
-impl HasPosition for TriangulationVertexWeight {
+impl HasPosition for TrianvertexWeight {
     type Scalar = f64;
     fn position(&self) -> Point2<Self::Scalar> {
         Point2::new(self.pos.x(), self.pos.y())
@@ -80,8 +80,8 @@ impl HasPosition for TriangulationVertexWeight {
 
 #[derive(Debug, Clone)]
 pub struct Navmesh {
-    triangulation: Triangulation<TriangulationVertexIndex, TriangulationVertexWeight, ()>,
-    vertex_to_triangulation_vertex: Vec<Option<TriangulationVertexIndex>>,
+    triangulation: Triangulation<TrianvertexIndex, TrianvertexWeight, ()>,
+    navvertex_to_trianvertex: Vec<Option<TrianvertexIndex>>,
     from: FixedDotIndex,
     to: FixedDotIndex,
 }
@@ -100,11 +100,11 @@ impl Navmesh {
     ) -> Result<Self, NavmeshError> {
         let mut this = Self {
             triangulation: Triangulation::new(layout.drawing().geometry().graph().node_bound()),
-            vertex_to_triangulation_vertex: Vec::new(),
+            navvertex_to_trianvertex: Vec::new(),
             from,
             to,
         };
-        this.vertex_to_triangulation_vertex
+        this.navvertex_to_trianvertex
             .resize(layout.drawing().geometry().graph().node_bound(), None);
 
         let layer = layout.drawing().primitive(from).layer();
@@ -117,15 +117,15 @@ impl Navmesh {
                 if node == from.into() || node == to.into() || Some(primitive_net) != maybe_net {
                     match node {
                         PrimitiveIndex::FixedDot(dot) => {
-                            this.triangulation.add_vertex(TriangulationVertexWeight {
-                                vertex: dot.into(),
+                            this.triangulation.add_vertex(TrianvertexWeight {
+                                trianvertex: dot.into(),
                                 rails: vec![],
                                 pos: primitive.shape().center(),
                             })?;
                         }
                         PrimitiveIndex::FixedBend(bend) => {
-                            this.triangulation.add_vertex(TriangulationVertexWeight {
-                                vertex: bend.into(),
+                            this.triangulation.add_vertex(TrianvertexWeight {
+                                trianvertex: bend.into(),
                                 rails: vec![],
                                 pos: primitive.shape().center(),
                             })?;
@@ -144,7 +144,7 @@ impl Navmesh {
                         .weight_mut(layout.drawing().primitive(bend).core().into())
                         .rails
                         .push(bend.into());
-                    this.vertex_to_triangulation_vertex[bend.node_index().index()] =
+                    this.navvertex_to_trianvertex[bend.node_index().index()] =
                         Some(layout.drawing().primitive(bend).core().into());
                 }
                 _ => (),
@@ -154,12 +154,12 @@ impl Navmesh {
         Ok(this)
     }
 
-    fn triangulation_vertex(&self, vertex: VertexIndex) -> TriangulationVertexIndex {
+    fn triangulation_vertex(&self, vertex: NavvertexIndex) -> TrianvertexIndex {
         match vertex {
-            VertexIndex::FixedDot(dot) => TriangulationVertexIndex::FixedDot(dot),
-            VertexIndex::FixedBend(bend) => TriangulationVertexIndex::FixedBend(bend),
-            VertexIndex::LooseBend(bend) => {
-                self.vertex_to_triangulation_vertex[bend.node_index().index()].unwrap()
+            NavvertexIndex::FixedDot(dot) => TrianvertexIndex::FixedDot(dot),
+            NavvertexIndex::FixedBend(bend) => TrianvertexIndex::FixedBend(bend),
+            NavvertexIndex::LooseBend(bend) => {
+                self.navvertex_to_trianvertex[bend.node_index().index()].unwrap()
             }
         }
     }
@@ -174,8 +174,8 @@ impl Navmesh {
 }
 
 impl visit::GraphBase for Navmesh {
-    type NodeId = VertexIndex;
-    type EdgeId = (VertexIndex, VertexIndex);
+    type NodeId = NavvertexIndex;
+    type EdgeId = (NavvertexIndex, NavvertexIndex);
 }
 
 impl visit::Data for Navmesh {
@@ -185,13 +185,13 @@ impl visit::Data for Navmesh {
 
 #[derive(Debug, Clone, Copy)]
 pub struct NavmeshEdgeReference {
-    from: VertexIndex,
-    to: VertexIndex,
+    from: NavvertexIndex,
+    to: NavvertexIndex,
 }
 
 impl visit::EdgeRef for NavmeshEdgeReference {
-    type NodeId = VertexIndex;
-    type EdgeId = (VertexIndex, VertexIndex);
+    type NodeId = NavvertexIndex;
+    type EdgeId = (NavvertexIndex, NavvertexIndex);
     type Weight = ();
 
     fn source(&self) -> Self::NodeId {
@@ -212,7 +212,7 @@ impl visit::EdgeRef for NavmeshEdgeReference {
 }
 
 impl<'a> visit::IntoNeighbors for &'a Navmesh {
-    type Neighbors = Box<dyn Iterator<Item = VertexIndex> + 'a>;
+    type Neighbors = Box<dyn Iterator<Item = NavvertexIndex> + 'a>;
 
     fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
         Box::new(
@@ -224,7 +224,7 @@ impl<'a> visit::IntoNeighbors for &'a Navmesh {
                             .weight(neighbor)
                             .rails
                             .iter()
-                            .map(|index| VertexIndex::from(*index)),
+                            .map(|index| NavvertexIndex::from(*index)),
                     )
                 }),
         )
@@ -232,8 +232,8 @@ impl<'a> visit::IntoNeighbors for &'a Navmesh {
 }
 
 fn edge_with_near_edges(
-    triangulation: &Triangulation<TriangulationVertexIndex, TriangulationVertexWeight, ()>,
-    edge: TriangulationEdgeReference<TriangulationVertexIndex, ()>,
+    triangulation: &Triangulation<TrianvertexIndex, TrianvertexWeight, ()>,
+    edge: TriangulationEdgeReference<TrianvertexIndex, ()>,
 ) -> impl Iterator<Item = NavmeshEdgeReference> {
     let mut from_vertices = vec![edge.source().into()];
 
@@ -243,7 +243,7 @@ fn edge_with_near_edges(
             .weight(edge.source())
             .rails
             .iter()
-            .map(|bend| VertexIndex::from(*bend)),
+            .map(|bend| NavvertexIndex::from(*bend)),
     );
 
     let mut to_vertices = vec![edge.target().into()];
@@ -254,7 +254,7 @@ fn edge_with_near_edges(
             .weight(edge.target())
             .rails
             .iter()
-            .map(|bend| VertexIndex::from(*bend)),
+            .map(|bend| NavvertexIndex::from(*bend)),
     );
 
     // Return cartesian product.
@@ -281,9 +281,9 @@ impl<'a> visit::IntoEdgeReferences for &'a Navmesh {
 }
 
 fn vertex_edges(
-    triangulation: &Triangulation<TriangulationVertexIndex, TriangulationVertexWeight, ()>,
-    from: VertexIndex,
-    to: TriangulationVertexIndex,
+    triangulation: &Triangulation<TrianvertexIndex, TrianvertexWeight, ()>,
+    from: NavvertexIndex,
+    to: TrianvertexIndex,
 ) -> impl Iterator<Item = NavmeshEdgeReference> {
     let from_vertices = vec![from];
     let mut to_vertices = vec![to.into()];
@@ -294,7 +294,7 @@ fn vertex_edges(
             .weight(to)
             .rails
             .iter()
-            .map(|bend| VertexIndex::from(*bend)),
+            .map(|bend| NavvertexIndex::from(*bend)),
     );
 
     // Return cartesian product.

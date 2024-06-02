@@ -15,7 +15,7 @@ use thiserror::Error;
 use crate::{
     autorouter::{
         board::Board,
-        ratsnest::{Ratsnest, RatsnestVertexIndex},
+        ratsnest::{Ratsnest, RatvertexIndex},
         selection::Selection,
     },
     drawing::{
@@ -28,7 +28,7 @@ use crate::{
         navmesh::{Navmesh, NavmeshError},
         Router, RouterError, RouterObserverTrait,
     },
-    triangulation::GetVertexIndex,
+    triangulation::GetTrianvertexIndex,
 };
 
 #[derive(Error, Debug, Clone)]
@@ -180,10 +180,10 @@ impl<R: RulesTrait> Autorouter<R> {
             .graph()
             .node_weight(source)
             .unwrap()
-            .vertex_index()
+            .trianvertex_index()
         {
-            RatsnestVertexIndex::FixedDot(dot) => dot,
-            RatsnestVertexIndex::Zone(zone) => self.board.layout_mut().zone_apex(zone),
+            RatvertexIndex::FixedDot(dot) => dot,
+            RatvertexIndex::Zone(zone) => self.board.layout_mut().zone_apex(zone),
         };
 
         let target_dot = match self
@@ -191,10 +191,10 @@ impl<R: RulesTrait> Autorouter<R> {
             .graph()
             .node_weight(target)
             .unwrap()
-            .vertex_index()
+            .trianvertex_index()
         {
-            RatsnestVertexIndex::FixedDot(dot) => dot,
-            RatsnestVertexIndex::Zone(zone) => self.board.layout_mut().zone_apex(zone),
+            RatvertexIndex::FixedDot(dot) => dot,
+            RatvertexIndex::Zone(zone) => self.board.layout_mut().zone_apex(zone),
         };
 
         (source_dot, target_dot)
@@ -212,13 +212,13 @@ impl<R: RulesTrait> Autorouter<R> {
                     .graph()
                     .node_weight(source)
                     .unwrap()
-                    .vertex_index();
+                    .trianvertex_index();
                 let to_vertex = self
                     .ratsnest
                     .graph()
                     .node_weight(target)
                     .unwrap()
-                    .vertex_index();
+                    .trianvertex_index();
 
                 selection.contains_node(&self.board, source_vertex.into())
                     && selection.contains_node(&self.board, to_vertex.into())
