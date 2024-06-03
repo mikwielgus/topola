@@ -1,8 +1,9 @@
 use std::collections::HashMap;
 
-use crate::drawing::rules::{Conditions, RulesTrait};
-
-use super::structure::Pcb;
+use crate::{
+    drawing::rules::{Conditions, RulesTrait},
+    dsn::structure::Pcb,
+};
 
 #[derive(Debug)]
 pub struct DsnRule {

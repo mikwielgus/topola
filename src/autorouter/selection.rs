@@ -1,49 +1,78 @@
-use core::fmt;
 use std::collections::HashSet;
+
+use serde::{Deserialize, Serialize};
 
 use crate::{
     autorouter::board::{Board, NodeIndex},
-    drawing::{graph::PrimitiveIndex, rules::RulesTrait},
+    drawing::{
+        graph::{GetLayer, MakePrimitive, PrimitiveIndex},
+        rules::RulesTrait,
+    },
     graph::GenericIndex,
 };
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct Selector {
+    pin: String,
+    layer: String,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Selection {
-    pins: HashSet<String>,
+    selectors: HashSet<Selector>,
 }
 
 impl Selection {
     pub fn new() -> Selection {
         Self {
-            pins: HashSet::new(),
+            selectors: HashSet::new(),
         }
     }
 
     pub fn toggle_at_node(&mut self, board: &Board<impl RulesTrait>, node: NodeIndex) {
-        let maybe_pin = board.node_pin(node);
+        let Some(selector) = self.node_selector(board, node) else {
+            return;
+        };
 
-        if let Some(ref pin) = maybe_pin {
-            if self.contains_node(board, node) {
-                self.remove_pin(board, pin);
-            } else {
-                self.add_pin(board, pin);
-            }
+        if self.contains_node(board, node) {
+            self.deselect(board, &selector);
+        } else {
+            self.select(board, selector);
         }
     }
 
-    fn add_pin(&mut self, board: &Board<impl RulesTrait>, pin: &String) {
-        self.pins.insert(pin.clone());
+    fn select(&mut self, board: &Board<impl RulesTrait>, selector: Selector) {
+        self.selectors.insert(selector);
     }
 
-    fn remove_pin(&mut self, board: &Board<impl RulesTrait>, pin: &String) {
-        self.pins.remove(pin);
+    fn deselect(&mut self, board: &Board<impl RulesTrait>, selector: &Selector) {
+        self.selectors.remove(selector);
     }
 
     pub fn contains_node(&self, board: &Board<impl RulesTrait>, node: NodeIndex) -> bool {
-        if let Some(pin) = board.node_pin(node) {
-            self.pins.contains(pin)
+        let Some(selector) = self.node_selector(board, node) else {
+            return false;
+        };
+
+        self.selectors.contains(&selector)
+    }
+
+    fn node_selector(&self, board: &Board<impl RulesTrait>, node: NodeIndex) -> Option<Selector> {
+        let layer = match node {
+            NodeIndex::Primitive(primitive) => {
+                primitive.primitive(board.layout().drawing()).layer()
+            }
+            NodeIndex::Compound(compound) => board.layout().zone(compound).layer(),
+        };
+
+        if let (Some(pinname), Some(layername)) = (board.node_pinname(node), board.layername(layer))
+        {
+            Some(Selector {
+                pin: pinname.to_string(),
+                layer: layername.to_string(),
+            })
         } else {
-            false
+            None
         }
     }
 }

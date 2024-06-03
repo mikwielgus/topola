@@ -2,17 +2,29 @@
   "done": [
     {
       "Autoroute": {
-        "pins": [
-          "R1-2",
-          "J1-2"
+        "selectors": [
+          {
+            "pin": "R1-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J1-2",
+            "layer": "F.Cu"
+          }
         ]
       }
     },
     {
       "Autoroute": {
-        "pins": [
-          "J1-1",
-          "R1-1"
+        "selectors": [
+          {
+            "pin": "J1-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "R1-1",
+            "layer": "F.Cu"
+          }
         ]
       }
     }

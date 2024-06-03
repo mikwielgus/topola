@@ -11,7 +11,7 @@ pub enum HistoryError {
     NoNextCommand,
 }
 
-#[derive(Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct History {
     done: Vec<Command>,
     undone: Vec<Command>,

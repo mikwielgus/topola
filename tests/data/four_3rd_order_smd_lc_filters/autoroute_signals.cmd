@@ -2,69 +2,201 @@
   "done": [
     {
       "Autoroute": {
-        "pins": [
-          "L3-1",
-          "L3-2",
-          "C3-1",
-          "L1-2",
-          "C2-1",
-          "L2-2",
-          "J2-1",
-          "J1-1",
-          "L1-1",
-          "C1-1",
-          "L2-1"
+        "selectors": [
+          {
+            "pin": "L3-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L3-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "C3-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L1-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "C2-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L2-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J2-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J1-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L1-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "C1-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L2-1",
+            "layer": "F.Cu"
+          }
         ]
       }
     },
     {
       "Autoroute": {
-        "pins": [
-          "C6-1",
-          "J4-1",
-          "L5-1",
-          "J3-1",
-          "C5-1",
-          "L6-2",
-          "L5-2",
-          "C4-1",
-          "L6-1",
-          "L4-1",
-          "L4-2"
+        "selectors": [
+          {
+            "pin": "C6-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J4-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L5-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J3-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "C5-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L6-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L5-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "C4-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L6-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L4-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L4-2",
+            "layer": "F.Cu"
+          }
         ]
       }
     },
     {
       "Autoroute": {
-        "pins": [
-          "C9-1",
-          "J5-1",
-          "L7-1",
-          "J6-1",
-          "L9-2",
-          "C7-1",
-          "L8-2",
-          "L9-1",
-          "L8-1",
-          "L7-2",
-          "C8-1"
+        "selectors": [
+          {
+            "pin": "C9-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J5-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L7-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J6-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L9-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "C7-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L8-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L9-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L8-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L7-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "C8-1",
+            "layer": "F.Cu"
+          }
         ]
       }
     },
     {
       "Autoroute": {
-        "pins": [
-          "L10-1",
-          "L12-1",
-          "J7-1",
-          "L10-2",
-          "C10-1",
-          "C12-1",
-          "L12-2",
-          "L11-1",
-          "C11-1",
-          "L11-2",
-          "J8-1"
+        "selectors": [
+          {
+            "pin": "L10-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L12-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J7-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L10-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "C10-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "C12-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L12-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L11-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "C11-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "L11-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J8-1",
+            "layer": "F.Cu"
+          }
         ]
       }
     }

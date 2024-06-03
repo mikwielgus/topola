@@ -1,5 +1,4 @@
-use core::fmt;
-
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
@@ -26,7 +25,7 @@ pub enum InvokerStatus {
     Finished,
 }
 
-#[derive(Debug, Clone, serde::Serialize, serde::Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     Autoroute(Selection),
 }
