@@ -323,7 +323,14 @@ impl DsnDesign {
             );
         }
 
-        // The clone here is bad, we'll have something better later on.
+        // The clones here are bad, we'll have something better later on.
+
+        let layername_to_layer = &board.layout().drawing().rules().layername_to_layer.clone();
+
+        for (layername, layer) in layername_to_layer.iter() {
+            board.bename_layer(*layer, layername.to_string());
+        }
+
         let netname_to_net = &board.layout().drawing().rules().netname_to_net.clone();
 
         for (netname, net) in netname_to_net.iter() {

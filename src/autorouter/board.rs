@@ -23,6 +23,7 @@ pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<ZoneWeight>>;
 pub struct Board<R: RulesTrait> {
     layout: Layout<R>,
     node_to_pin: HashMap<NodeIndex, String>,
+    layer_to_layername: HashMap<u64, String>,
     net_to_netname: HashMap<usize, String>,
 }
 
@@ -31,6 +32,7 @@ impl<R: RulesTrait> Board<R> {
         Self {
             layout,
             node_to_pin: HashMap::new(),
+            layer_to_layername: HashMap::new(),
             net_to_netname: HashMap::new(),
         }
     }
@@ -112,6 +114,10 @@ impl<R: RulesTrait> Board<R> {
         }
 
         zone
+    }
+
+    pub fn bename_layer(&mut self, layer: u64, layername: String) {
+        self.layer_to_layername.insert(layer, layername);
     }
 
     pub fn bename_net(&mut self, net: usize, netname: String) {
