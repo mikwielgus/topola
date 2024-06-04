@@ -82,8 +82,8 @@ impl HasPosition for TrianvertexWeight {
 pub struct Navmesh {
     triangulation: Triangulation<TrianvertexIndex, TrianvertexWeight, ()>,
     navvertex_to_trianvertex: Vec<Option<TrianvertexIndex>>,
-    from: FixedDotIndex,
-    to: FixedDotIndex,
+    source: FixedDotIndex,
+    target: FixedDotIndex,
 }
 
 #[derive(Error, Debug, Clone)]
@@ -95,26 +95,29 @@ pub enum NavmeshError {
 impl Navmesh {
     pub fn new(
         layout: &Layout<impl RulesTrait>,
-        from: FixedDotIndex,
-        to: FixedDotIndex,
+        source: FixedDotIndex,
+        target: FixedDotIndex,
     ) -> Result<Self, NavmeshError> {
         let mut this = Self {
             triangulation: Triangulation::new(layout.drawing().geometry().graph().node_bound()),
             navvertex_to_trianvertex: Vec::new(),
-            from,
-            to,
+            source,
+            target,
         };
         this.navvertex_to_trianvertex
             .resize(layout.drawing().geometry().graph().node_bound(), None);
 
-        let layer = layout.drawing().primitive(from).layer();
-        let maybe_net = layout.drawing().primitive(from).maybe_net();
+        let layer = layout.drawing().primitive(source).layer();
+        let maybe_net = layout.drawing().primitive(source).maybe_net();
 
         for node in layout.drawing().layer_primitive_nodes(layer) {
             let primitive = node.primitive(layout.drawing());
 
             if let Some(primitive_net) = primitive.maybe_net() {
-                if node == from.into() || node == to.into() || Some(primitive_net) != maybe_net {
+                if node == source.into()
+                    || node == target.into()
+                    || Some(primitive_net) != maybe_net
+                {
                     match node {
                         PrimitiveIndex::FixedDot(dot) => {
                             this.triangulation.add_vertex(TrianvertexWeight {
@@ -164,12 +167,12 @@ impl Navmesh {
         }
     }
 
-    pub fn from(&self) -> FixedDotIndex {
-        self.from
+    pub fn source(&self) -> FixedDotIndex {
+        self.source
     }
 
-    pub fn to(&self) -> FixedDotIndex {
-        self.to
+    pub fn target(&self) -> FixedDotIndex {
+        self.target
     }
 }
 

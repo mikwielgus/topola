@@ -1,6 +1,6 @@
 use crate::drawing::seg::{LoneLooseSegIndex, SeqLooseSegIndex};
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Hash, Clone, Copy, Eq, PartialEq)]
 pub enum BandIndex {
     Straight(LoneLooseSegIndex),
     Bended(SeqLooseSegIndex),

@@ -95,12 +95,11 @@ impl Autoroute {
             (None, None)
         };
 
-        let mut router = Router::new_from_navmesh(
-            autorouter.board.layout_mut(),
+        match autorouter.board.route_band(
             std::mem::replace(&mut self.navmesh, new_navmesh).unwrap(),
-        );
-
-        match router.route_band(100.0, observer) {
+            100.0,
+            observer,
+        ) {
             Ok(band) => {
                 autorouter
                     .ratsnest

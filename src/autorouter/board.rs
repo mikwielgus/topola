@@ -2,6 +2,7 @@ use std::collections::HashMap;
 
 use crate::{
     drawing::{
+        band::BandIndex,
         dot::{FixedDotIndex, FixedDotWeight},
         graph::{GetLayer, GetMaybeNet, PrimitiveIndex},
         rules::RulesTrait,
@@ -15,6 +16,7 @@ use crate::{
         Layout,
     },
     math::Circle,
+    router::{navmesh::Navmesh, Router, RouterError, RouterObserverTrait},
 };
 
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<ZoneWeight>>;
@@ -25,6 +27,7 @@ pub struct Board<R: RulesTrait> {
     node_to_pinname: HashMap<NodeIndex, String>,
     layer_to_layername: HashMap<u64, String>,
     net_to_netname: HashMap<usize, String>,
+    pinname_pair_to_band: HashMap<(String, String), BandIndex>,
 }
 
 impl<R: RulesTrait> Board<R> {
@@ -34,6 +37,7 @@ impl<R: RulesTrait> Board<R> {
             node_to_pinname: HashMap::new(),
             layer_to_layername: HashMap::new(),
             net_to_netname: HashMap::new(),
+            pinname_pair_to_band: HashMap::new(),
         }
     }
 
@@ -116,6 +120,32 @@ impl<R: RulesTrait> Board<R> {
         zone
     }
 
+    pub fn route_band(
+        &mut self,
+        navmesh: Navmesh,
+        width: f64,
+        observer: &mut impl RouterObserverTrait<R>,
+    ) -> Result<BandIndex, RouterError> {
+        let source_pinname = self
+            .node_pinname(GenericNode::Primitive(navmesh.source().into()))
+            .unwrap()
+            .to_string();
+        let target_pinname = self
+            .node_pinname(GenericNode::Primitive(navmesh.target().into()))
+            .unwrap()
+            .to_string();
+
+        let mut router = Router::new_from_navmesh(self.layout_mut(), navmesh);
+        let result = router.route_band(100.0, observer);
+
+        if let Ok(band) = result {
+            self.pinname_pair_to_band
+                .insert((source_pinname, target_pinname), band);
+        }
+
+        result
+    }
+
     pub fn bename_layer(&mut self, layer: u64, layername: String) {
         self.layer_to_layername.insert(layer, layername);
     }
@@ -153,6 +183,22 @@ impl<R: RulesTrait> Board<R> {
 
     pub fn netname(&self, net: usize) -> Option<&String> {
         self.net_to_netname.get(&net)
+    }
+
+    pub fn band_between_pins(&self, pinname1: &String, pinname2: &String) -> Option<BandIndex> {
+        if let Some(band) = self
+            .pinname_pair_to_band
+            .get(&(pinname1.to_string(), pinname2.to_string()))
+        {
+            Some(*band)
+        } else if let Some(band) = self
+            .pinname_pair_to_band
+            .get(&(pinname2.to_string(), pinname1.to_string()))
+        {
+            Some(*band)
+        } else {
+            None
+        }
     }
 
     pub fn layout(&self) -> &Layout<R> {

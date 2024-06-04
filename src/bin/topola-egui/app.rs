@@ -255,8 +255,8 @@ impl eframe::App for App {
                             let mut execute = invoker.execute_walk(Command::Autoroute(selection));
 
                             if let Execute::Autoroute(ref mut autoroute) = execute {
-                                let from = autoroute.navmesh().as_ref().unwrap().from();
-                                let to = autoroute.navmesh().as_ref().unwrap().to();
+                                let from = autoroute.navmesh().as_ref().unwrap().source();
+                                let to = autoroute.navmesh().as_ref().unwrap().target();
 
                                 {
                                     let mut shared_data = shared_data_arc_mutex.lock().unwrap();
