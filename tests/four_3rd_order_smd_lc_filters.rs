@@ -42,15 +42,18 @@ fn test() {
             .node_bound(),
     );
 
-    for edge in autorouter
-        .board()
-        .layout()
-        .drawing()
-        .geometry()
-        .graph()
-        .edge_references()
-    {
-        unionfind.union(edge.source(), edge.target());
+    for primitive in autorouter.board().layout().drawing().primitive_nodes() {
+        dbg!(primitive);
+        for joined in autorouter
+            .board()
+            .layout()
+            .drawing()
+            .geometry()
+            .joineds(primitive)
+        {
+            dbg!(joined);
+            unionfind.union(primitive.node_index(), joined.node_index());
+        }
     }
 
     for ratline in autorouter.ratsnest().graph().edge_indices() {

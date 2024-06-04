@@ -2,26 +2,65 @@
   "done": [
     {
       "Autoroute": {
-        "pins": [
-          "J2-2",
-          "J2-1",
-          "D3-2",
-          "D2-1",
-          "D3-1",
-          "D1-1",
-          "J1-1",
-          "D2-2",
-          "D1-2",
-          "D4-1",
-          "J1-2"
+        "selectors": [
+          {
+            "pin": "J2-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J2-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "D3-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "D2-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "D3-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "D1-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J1-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "D2-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "D1-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "D4-1",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J1-2",
+            "layer": "F.Cu"
+          }
         ]
       }
     },
     {
       "Autoroute": {
-        "pins": [
-          "D4-2",
-          "J2-2"
+        "selectors": [
+          {
+            "pin": "D4-2",
+            "layer": "F.Cu"
+          },
+          {
+            "pin": "J2-2",
+            "layer": "F.Cu"
+          }
         ]
       }
     }

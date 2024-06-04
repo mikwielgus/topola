@@ -6,7 +6,10 @@ use petgraph::{
 };
 use topola::{
     autorouter::{invoker::Invoker, Autorouter},
-    drawing::graph::GetMaybeNet,
+    drawing::{
+        graph::{GetLayer, GetMaybeNet},
+        primitive::GetInnerOuter,
+    },
     dsn::design::DsnDesign,
     graph::GetNodeIndex,
     triangulation::GetTrianvertexIndex,
@@ -42,19 +45,48 @@ fn test() {
             .node_bound(),
     );
 
-    for edge in autorouter
-        .board()
-        .layout()
-        .drawing()
-        .geometry()
-        .graph()
-        .edge_references()
-    {
-        unionfind.union(edge.source(), edge.target());
+    for primitive in autorouter.board().layout().drawing().primitive_nodes() {
+        dbg!(primitive);
+        for joined in autorouter
+            .board()
+            .layout()
+            .drawing()
+            .geometry()
+            .joineds(primitive)
+        {
+            dbg!(joined);
+            unionfind.union(primitive.node_index(), joined.node_index());
+        }
     }
 
     for ratline in autorouter.ratsnest().graph().edge_indices() {
         let (source_dot, target_dot) = autorouter.ratline_endpoints(ratline);
+
+        let source_layer = autorouter
+            .board()
+            .layout()
+            .drawing()
+            .primitive(source_dot)
+            .layer();
+        let target_layer = autorouter
+            .board()
+            .layout()
+            .drawing()
+            .primitive(target_dot)
+            .layer();
+
+        let Some(source_layername) = autorouter.board().layername(source_layer) else {
+            continue;
+        };
+
+        let Some(target_layername) = autorouter.board().layername(target_layer) else {
+            continue;
+        };
+
+        if source_layername != "F.Cu" || target_layername != "F.Cu" {
+            continue;
+        }
+
         let source_net = autorouter
             .board()
             .layout()
@@ -73,6 +105,7 @@ fn test() {
 
         if let Some(netname) = autorouter.board().netname(net) {
             dbg!(netname);
+            dbg!(source_dot, target_dot);
             assert_eq!(
                 unionfind.find(source_dot.node_index()),
                 unionfind.find(target_dot.node_index())
