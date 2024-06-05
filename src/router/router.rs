@@ -114,14 +114,14 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64,
             return None;
         }
 
-        let before_probe_length = self.tracer.layout.band_length(self.trace.head.face());
+        let before_probe_length = 0.0; //self.tracer.layout.band_length(self.trace.head.face());
 
         let width = self.trace.width;
         let result = self.tracer.step(&mut self.trace, edge.target(), width);
         self.observer
             .on_probe(&self.tracer, &self.trace, edge, result);
 
-        let probe_length = self.tracer.layout.band_length(self.trace.head.face());
+        let probe_length = 0.0; //self.tracer.layout.band_length(self.trace.head.face());
 
         if result.is_ok() {
             self.tracer.undo_step(&mut self.trace);

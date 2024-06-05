@@ -13,13 +13,11 @@ use crate::{
     graph::GenericIndex,
     layout::{
         zone::{GetMaybeApex, MakePolyShape, ZoneWeight},
-        Layout,
+        Layout, NodeIndex,
     },
     math::Circle,
     router::{navmesh::Navmesh, Router, RouterError, RouterObserverTrait},
 };
-
-pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<ZoneWeight>>;
 
 #[derive(Debug)]
 pub struct Board<R: RulesTrait> {

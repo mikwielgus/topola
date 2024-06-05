@@ -3,12 +3,13 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    autorouter::board::{Board, NodeIndex},
+    autorouter::board::Board,
     drawing::{
         graph::{GetLayer, MakePrimitive, PrimitiveIndex},
         rules::RulesTrait,
     },
     graph::GenericIndex,
+    layout::NodeIndex,
 };
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]

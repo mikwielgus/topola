@@ -10,6 +10,7 @@ use crate::{
         bend::LooseBendWeight,
         dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight, Retag},
+        primitive::{GetJoints, GetOtherJoint},
         rules::RulesTrait,
         seg::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
@@ -20,8 +21,9 @@ use crate::{
         Drawing, Infringement, LayoutException,
     },
     geometry::{
-        compound::CompoundManagerTrait, poly::PolyShape, shape::ShapeTrait, BendWeightTrait,
-        DotWeightTrait, GenericNode, Geometry, GeometryLabel, GetWidth, SegWeightTrait,
+        compound::CompoundManagerTrait, poly::PolyShape, primitive::PrimitiveShapeTrait,
+        shape::ShapeTrait, BendWeightTrait, DotWeightTrait, GenericNode, Geometry, GeometryLabel,
+        GetWidth, SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
     layout::zone::{GetMaybeApex, MakePolyShape, PourZoneIndex, SolidZoneIndex, Zone, ZoneWeight},
@@ -137,9 +139,34 @@ impl<R: RulesTrait> Layout<R> {
         self.drawing.compounds(node)
     }
 
-    pub fn band_length(&self, face: DotIndex) -> f64 {
-        // TODO.
-        0.0
+    pub fn band_length(&self, band: BandIndex) -> f64 {
+        match band {
+            BandIndex::Straight(seg) => self.drawing.geometry().seg_shape(seg.into()).length(),
+            BandIndex::Bended(mut start_seg) => {
+                let mut length = self.drawing.geometry().seg_shape(start_seg.into()).length();
+                let mut start_dot = self.drawing.primitive(start_seg).joints().1;
+
+                let bend = self.drawing.primitive(start_dot).bend();
+                length += self.drawing.geometry().bend_shape(bend.into()).length();
+
+                let mut prev_dot = self.drawing.primitive(bend).other_joint(start_dot.into());
+                let mut seg = self.drawing.primitive(prev_dot).seg().unwrap();
+                length += self.drawing.geometry().seg_shape(seg.into()).length();
+
+                while let DotIndex::Loose(dot) =
+                    self.drawing.primitive(seg).other_joint(prev_dot.into())
+                {
+                    let bend = self.drawing.primitive(dot).bend();
+                    length += self.drawing.geometry().bend_shape(bend.into()).length();
+
+                    prev_dot = self.drawing.primitive(bend).other_joint(dot);
+                    seg = self.drawing.primitive(prev_dot).seg().unwrap();
+                    length += self.drawing.geometry().seg_shape(seg.into()).length();
+                }
+
+                length
+            }
+        }
     }
 
     pub fn zone_nodes(&self) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {

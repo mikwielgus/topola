@@ -12,6 +12,7 @@ use topola::{
     },
     dsn::design::DsnDesign,
     graph::GetNodeIndex,
+    layout::NodeIndex,
     triangulation::GetTrianvertexIndex,
 };
 
@@ -111,5 +112,21 @@ fn test() {
                 unionfind.find(target_dot.node_index())
             );
         }
+
+        let source_pinname = autorouter
+            .board()
+            .node_pinname(NodeIndex::Primitive(source_dot.into()))
+            .unwrap();
+        let target_pinname = autorouter
+            .board()
+            .node_pinname(NodeIndex::Primitive(target_dot.into()))
+            .unwrap();
+        dbg!(source_pinname, target_pinname);
+
+        let band = autorouter
+            .board()
+            .band_between_pins(source_pinname, target_pinname)
+            .unwrap();
+        dbg!(autorouter.board().layout().band_length(band));
     }
 }
