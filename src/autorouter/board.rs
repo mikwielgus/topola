@@ -183,7 +183,7 @@ impl<R: RulesTrait> Board<R> {
         self.net_to_netname.get(&net)
     }
 
-    pub fn band_between_pins(&self, pinname1: &String, pinname2: &String) -> Option<BandIndex> {
+    pub fn band_between_pins(&self, pinname1: &str, pinname2: &str) -> Option<BandIndex> {
         if let Some(band) = self
             .pinname_pair_to_band
             .get(&(pinname1.to_string(), pinname2.to_string()))
