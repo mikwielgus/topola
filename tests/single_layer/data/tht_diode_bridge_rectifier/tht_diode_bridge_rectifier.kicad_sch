@@ -622,7 +622,7 @@
 			(uuid "eb13c935-c65a-4af4-91d0-e1c7f144534f")
 		)
 		(instances
-			(project "single_layer_tht_diode_bridge_rectifier"
+			(project "tht_diode_bridge_rectifier"
 				(path "/71099ece-09c5-443c-9dd7-b57178821ade"
 					(reference "D4")
 					(unit 1)
@@ -708,7 +708,7 @@
 			(uuid "55798640-e0b9-4318-88ae-05a588dcc8de")
 		)
 		(instances
-			(project "single_layer_tht_diode_bridge_rectifier"
+			(project "tht_diode_bridge_rectifier"
 				(path "/71099ece-09c5-443c-9dd7-b57178821ade"
 					(reference "D2")
 					(unit 1)
@@ -775,7 +775,7 @@
 			(uuid "76873a01-09a0-41b5-a565-c34fa72949b4")
 		)
 		(instances
-			(project "single_layer_tht_diode_bridge_rectifier"
+			(project "tht_diode_bridge_rectifier"
 				(path "/71099ece-09c5-443c-9dd7-b57178821ade"
 					(reference "J2")
 					(unit 1)
@@ -863,7 +863,7 @@
 			(uuid "b88d0fbd-eb5d-4478-bc85-190a180d8763")
 		)
 		(instances
-			(project "single_layer_tht_diode_bridge_rectifier"
+			(project "tht_diode_bridge_rectifier"
 				(path "/71099ece-09c5-443c-9dd7-b57178821ade"
 					(reference "D3")
 					(unit 1)
@@ -950,7 +950,7 @@
 			(uuid "0215e937-8c55-4ec8-aadd-547f2b1cb992")
 		)
 		(instances
-			(project "single_layer_tht_diode_bridge_rectifier"
+			(project "tht_diode_bridge_rectifier"
 				(path "/71099ece-09c5-443c-9dd7-b57178821ade"
 					(reference "D1")
 					(unit 1)
@@ -1019,7 +1019,7 @@
 			(uuid "3fa85bee-cae3-47ab-a12d-2dccf43e2d48")
 		)
 		(instances
-			(project "single_layer_tht_diode_bridge_rectifier"
+			(project "tht_diode_bridge_rectifier"
 				(path "/71099ece-09c5-443c-9dd7-b57178821ade"
 					(reference "J1")
 					(unit 1)

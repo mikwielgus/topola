@@ -177,7 +177,7 @@
 		(property ki_fp_filters "D*Bridge* D*Rectifier*")
 		(path "/43ab64df-926a-4e01-8a98-67d2c800c849")
 		(sheetname "Root")
-		(sheetfile "single_layer_tht_diode_bridge_rectifier.kicad_sch")
+		(sheetfile "tht_diode_bridge_rectifier.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 9 1.92)
@@ -559,7 +559,7 @@
 		(property ki_fp_filters "D*Bridge* D*Rectifier*")
 		(path "/aae449ee-03c9-4537-996f-100e098107e1")
 		(sheetname "Root")
-		(sheetfile "single_layer_tht_diode_bridge_rectifier.kicad_sch")
+		(sheetfile "tht_diode_bridge_rectifier.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 1.16 -1.92)
@@ -915,7 +915,7 @@
 		(property ki_fp_filters "TerminalBlock*:*")
 		(path "/33bb9157-e6b0-4858-a7ac-9a21f6b6b928")
 		(sheetname "Root")
-		(sheetfile "single_layer_tht_diode_bridge_rectifier.kicad_sch")
+		(sheetfile "tht_diode_bridge_rectifier.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 7.62 -3.81)
@@ -1169,7 +1169,7 @@
 		(property ki_fp_filters "TerminalBlock*:*")
 		(path "/ae531f5f-c43e-4c22-8182-faed35881b46")
 		(sheetname "Root")
-		(sheetfile "single_layer_tht_diode_bridge_rectifier.kicad_sch")
+		(sheetfile "tht_diode_bridge_rectifier.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start -2.54 3.81)
@@ -1449,7 +1449,7 @@
 		(property ki_fp_filters "D*Bridge* D*Rectifier*")
 		(path "/12bc0990-5e61-4c01-a094-e653d3a60893")
 		(sheetname "Root")
-		(sheetfile "single_layer_tht_diode_bridge_rectifier.kicad_sch")
+		(sheetfile "tht_diode_bridge_rectifier.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 1.16 -1.92)
@@ -1831,7 +1831,7 @@
 		(property ki_fp_filters "D*Bridge* D*Rectifier*")
 		(path "/1f9b7479-94b6-46d1-90eb-c315c0b77b34")
 		(sheetname "Root")
-		(sheetfile "single_layer_tht_diode_bridge_rectifier.kicad_sch")
+		(sheetfile "tht_diode_bridge_rectifier.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 9 1.92)

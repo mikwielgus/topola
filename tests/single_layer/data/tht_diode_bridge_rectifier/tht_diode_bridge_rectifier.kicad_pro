@@ -430,7 +430,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "single_layer_tht_diode_bridge_rectifier.kicad_pro",
+    "filename": "tht_diode_bridge_rectifier.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -467,7 +467,7 @@
       "netlist": "",
       "plot": "",
       "pos_files": "",
-      "specctra_dsn": "single_layer_tht_diode_bridge_rectifier.dsn",
+      "specctra_dsn": "tht_diode_bridge_rectifier.dsn",
       "step": "",
       "svg": "",
       "vrml": ""

@@ -1,4 +1,4 @@
-(pcb /home/mikolaj/proj/topola/tests/data/single_layer_tht_diode_bridge_rectifier/single_layer_tht_diode_bridge_rectifier.dsn
+(pcb /home/mikolaj/proj/topola/tests/data/tht_diode_bridge_rectifier/tht_diode_bridge_rectifier.dsn
   (parser
     (string_quote ")
     (space_in_quoted_tokens on)

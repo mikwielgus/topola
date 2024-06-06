@@ -74,7 +74,7 @@
     "ssh_key": ""
   },
   "meta": {
-    "filename": "single_layer_tht_diode_bridge_rectifier.kicad_prl",
+    "filename": "tht_diode_bridge_rectifier.kicad_prl",
     "version": 3
   },
   "project": {
