@@ -604,7 +604,9 @@ impl<'de, 'a> SeqAccess<'de> for StructFields<'a, 'de> {
 
         self.de.skip_ws();
 
-        let ret = if field_name.ends_with("_vec") {
+        let ret = if field_name.ends_with("_anonymous") {
+            seed.deserialize(&mut *self.de).map(Some)
+        } else if field_name.ends_with("_vec") {
             self.de.vec_type = field_name.strip_suffix("_vec");
             let value = seed.deserialize(&mut *self.de).map(Some);
             self.de.vec_type = None;

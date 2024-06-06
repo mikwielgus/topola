@@ -101,6 +101,7 @@ pub struct Image {
     pub name: String,
     pub outline_vec: Vec<Outline>,
     pub pin_vec: Vec<Pin>,
+    pub keepout_vec: Vec<Keepout>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -115,6 +116,12 @@ pub struct Pin {
     pub id: String,
     pub x: f32,
     pub y: f32,
+}
+
+#[derive(Deserialize, Debug)]
+pub struct Keepout {
+    pub idk: String,
+    pub shape_anonymous: Shape,
 }
 
 #[derive(Deserialize, Debug)]
@@ -145,6 +152,8 @@ pub enum Shape {
 pub struct Circle {
     pub layer: String,
     pub diameter: u32,
+    #[serde(deserialize_with = "de_point_optional")]
+    pub offset: Option<Point>,
 }
 
 #[derive(Deserialize, Debug)]
@@ -200,11 +209,40 @@ pub struct Wire {
 
 // This type isn't deserialized as is. Instead, Vec<Point> is converted from
 // what's effectively Vec<f32> (with even length) in the file.
-// Use #[serde(deserialize_with = "de_points")].
+// Use #[serde(deserialize_with = "de_points")] for Vec<Point>
+// and #[serde(deserialize_with = "de_point_optional")] for a single Point.
+
 #[derive(Debug)]
 pub struct Point {
     pub x: f32,
     pub y: f32,
+}
+
+// Used to deserialize Option<Point>
+fn de_point_optional<'de, D>(deserializer: D) -> Result<Option<Point>, D::Error>
+where
+    D: Deserializer<'de>,
+{
+    let mut vec: Vec<Point> = Vec::<f32>::deserialize(deserializer)?
+        .chunks(2)
+        .map(|pair| {
+            // 0th index is guaranteed to exist by `.chunks()`
+            // (it ends iteration instead of emitting an empty Vec)
+            let x = pair[0];
+            // but if the file is malformed we may get an odd number of floats
+            let y = *pair.get(1).ok_or(Error::custom(
+                "expected paired x y coordinates, list ended at x",
+            ))?;
+
+            Ok(Point { x, y })
+        })
+        .collect::<Result<Vec<Point>, D::Error>>()?;
+
+    if vec.len() > 1 {
+        Err(Error::custom("expected a single pair of coordinates"))
+    } else {
+        Ok(vec.pop())
+    }
 }
 
 // Used to deserialize Vec<Point>.
