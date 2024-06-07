@@ -1,43 +1,61 @@
+use std::fs::File;
+
 use petgraph::{stable_graph::NodeIndex, unionfind::UnionFind, visit::NodeIndexable};
 use topola::{
-    autorouter::{board::Board, Autorouter},
+    autorouter::{
+        board::Board,
+        history::HistoryError,
+        invoker::{Invoker, InvokerError},
+        Autorouter,
+    },
     drawing::{
         graph::{GetLayer, GetMaybeNet},
         rules::RulesTrait,
     },
+    dsn::{design::DsnDesign, rules::DsnRules},
     graph::GetNodeIndex,
 };
 
-fn unionfind(autorouter: &mut Autorouter<impl RulesTrait>) -> UnionFind<NodeIndex<usize>> {
-    for ratline in autorouter.ratsnest().graph().edge_indices() {
-        // Accessing endpoints may create new dots because apex construction is lazy, so we access
-        // tem all before starting unionfind, as it requires a constant index bound.
-        let _ = autorouter.ratline_endpoints(ratline);
+pub fn load_design_and_assert(filename: &str) -> Invoker<DsnRules> {
+    let design = DsnDesign::load_from_file(filename).unwrap();
+    let mut invoker = Invoker::new(Autorouter::new(design.make_board()).unwrap());
+
+    assert!(matches!(
+        invoker.undo(),
+        Err(InvokerError::History(HistoryError::NoPreviousCommand))
+    ));
+    assert!(matches!(
+        invoker.redo(),
+        Err(InvokerError::History(HistoryError::NoNextCommand))
+    ));
+
+    invoker
+}
+
+pub fn replay_and_assert(invoker: &mut Invoker<DsnRules>, filename: &str) {
+    let file = File::open(filename).unwrap();
+    invoker.replay(serde_json::from_reader(file).unwrap());
+
+    let prev_node_count = invoker.autorouter().board().layout().drawing().node_count();
+
+    // Sanity test: check if node count remained the same after some attempts at undo-redo.
+
+    if invoker.redo().is_ok() {
+        let _ = invoker.undo();
     }
 
-    let mut unionfind = UnionFind::new(
-        autorouter
-            .board()
-            .layout()
-            .drawing()
-            .geometry()
-            .graph()
-            .node_bound(),
-    );
-
-    for primitive in autorouter.board().layout().drawing().primitive_nodes() {
-        for joined in autorouter
-            .board()
-            .layout()
-            .drawing()
-            .geometry()
-            .joineds(primitive)
-        {
-            unionfind.union(primitive.node_index(), joined.node_index());
+    if invoker.undo().is_ok() {
+        if invoker.undo().is_ok() {
+            let _ = invoker.redo();
         }
+
+        let _ = invoker.redo();
     }
 
-    unionfind
+    assert_eq!(
+        invoker.autorouter().board().layout().drawing().node_count(),
+        prev_node_count,
+    );
 }
 
 pub fn assert_single_layer_groundless_autoroute(
@@ -129,4 +147,36 @@ pub fn assert_band_length(
     let band_length = board.layout().band_length(band);
     dbg!(band_length);
     assert!((band_length - length).abs() < epsilon);
+}
+
+fn unionfind(autorouter: &mut Autorouter<impl RulesTrait>) -> UnionFind<NodeIndex<usize>> {
+    for ratline in autorouter.ratsnest().graph().edge_indices() {
+        // Accessing endpoints may create new dots because apex construction is lazy, so we access
+        // tem all before starting unionfind, as it requires a constant index bound.
+        let _ = autorouter.ratline_endpoints(ratline);
+    }
+
+    let mut unionfind = UnionFind::new(
+        autorouter
+            .board()
+            .layout()
+            .drawing()
+            .geometry()
+            .graph()
+            .node_bound(),
+    );
+
+    for primitive in autorouter.board().layout().drawing().primitive_nodes() {
+        for joined in autorouter
+            .board()
+            .layout()
+            .drawing()
+            .geometry()
+            .joineds(primitive)
+        {
+            unionfind.union(primitive.node_index(), joined.node_index());
+        }
+    }
+
+    unionfind
 }
