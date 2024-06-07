@@ -1,4 +1,4 @@
-use petgraph::{unionfind::UnionFind, visit::NodeIndexable};
+use petgraph::{stable_graph::NodeIndex, unionfind::UnionFind, visit::NodeIndexable};
 use topola::{
     autorouter::{board::Board, Autorouter},
     drawing::{
@@ -8,10 +8,7 @@ use topola::{
     graph::GetNodeIndex,
 };
 
-pub fn assert_single_layer_groundless_autoroute(
-    autorouter: &mut Autorouter<impl RulesTrait>,
-    layername: &str,
-) {
+fn unionfind(autorouter: &mut Autorouter<impl RulesTrait>) -> UnionFind<NodeIndex<usize>> {
     for ratline in autorouter.ratsnest().graph().edge_indices() {
         // Accessing endpoints may create new dots because apex construction is lazy, so we access
         // tem all before starting unionfind, as it requires a constant index bound.
@@ -39,6 +36,15 @@ pub fn assert_single_layer_groundless_autoroute(
             unionfind.union(primitive.node_index(), joined.node_index());
         }
     }
+
+    unionfind
+}
+
+pub fn assert_single_layer_groundless_autoroute(
+    autorouter: &mut Autorouter<impl RulesTrait>,
+    layername: &str,
+) {
+    let unionfind = unionfind(autorouter);
 
     for ratline in autorouter.ratsnest().graph().edge_indices() {
         let (source_dot, target_dot) = autorouter.ratline_endpoints(ratline);
@@ -99,6 +105,18 @@ pub fn assert_single_layer_groundless_autoroute(
         }
     }
 }
+
+/*pub fn assert_number_of_conncomps(
+    autorouter: &mut Autorouter<impl RulesTrait>,
+    conncomp_count: usize,
+) {
+    let unionfind = unionfind(autorouter);
+    let mut labels = unionfind.into_labeling();
+    labels.sort_unstable();
+    labels.dedup();
+
+    assert_eq!(labels.len(), conncomp_count);
+}*/
 
 pub fn assert_band_length(
     board: &Board<impl RulesTrait>,

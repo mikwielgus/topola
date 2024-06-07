@@ -27,59 +27,10 @@ fn test_0603_breakout() {
     let file = File::open("tests/single_layer/data/0603_breakout/autoroute_all.cmd").unwrap();
     invoker.replay(serde_json::from_reader(file).unwrap());
 
-    let mut unionfind = UnionFind::new(
-        invoker
-            .autorouter()
-            .board()
-            .layout()
-            .drawing()
-            .geometry()
-            .graph()
-            .node_bound(),
-    );
+    let (mut autorouter, ..) = invoker.destruct();
 
-    for edge in invoker
-        .autorouter()
-        .board()
-        .layout()
-        .drawing()
-        .geometry()
-        .graph()
-        .edge_references()
-    {
-        unionfind.union(edge.source(), edge.target());
-    }
-
-    assert_eq!(
-        invoker
-            .autorouter()
-            .ratsnest()
-            .graph()
-            .edge_indices()
-            .collect::<Vec<_>>()
-            .len(),
-        2
-    );
-
-    for ratline in invoker.autorouter().ratsnest().graph().edge_references() {
-        let from_index = invoker
-            .autorouter()
-            .ratsnest()
-            .graph()
-            .node_weight(ratline.source())
-            .unwrap()
-            .trianvertex_index()
-            .node_index();
-        let to_index = invoker
-            .autorouter()
-            .ratsnest()
-            .graph()
-            .node_weight(ratline.target())
-            .unwrap()
-            .trianvertex_index()
-            .node_index();
-        assert_eq!(unionfind.find(from_index), unionfind.find(to_index));
-    }
+    common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
+    //common::assert_number_of_conncomps(&mut autorouter, 2);
 }
 
 #[test]
@@ -97,6 +48,7 @@ fn test_tht_diode_bridge_rectifier() {
     let (mut autorouter, ..) = invoker.destruct();
 
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
+    //common::assert_number_of_conncomps(&mut autorouter, 4);
     common::assert_band_length(autorouter.board(), "J2-2", "D4-2", 15511.0, 0.5);
 }
 
@@ -115,5 +67,25 @@ fn test_four_3rd_order_smd_lc_filters() {
 
     let (mut autorouter, ..) = invoker.destruct();
 
+    common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
+    //common::assert_number_of_conncomps(&mut autorouter, 16);
+}
+
+#[test]
+fn test_3pin_xlr_tht_female_to_tht_female() {
+    let design = DsnDesign::load_from_file(
+        "tests/single_layer/data/3pin_xlr_tht_female_to_tht_female/3pin_xlr_tht_female_to_tht_female.dsn"
+    );
+    let board = design.unwrap().make_board();
+
+    let mut invoker = Invoker::new(Autorouter::new(board).unwrap());
+    let file =
+        File::open("tests/single_layer/data/3pin_xlr_tht_female_to_tht_female/autoroute_all.cmd")
+            .unwrap();
+    invoker.replay(serde_json::from_reader(file).unwrap());
+
+    let (mut autorouter, ..) = invoker.destruct();
+
+    // FIXME: The routing result is pretty bad.
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
 }

@@ -58,9 +58,13 @@ pub struct Invoker<R: RulesTrait> {
 
 impl<R: RulesTrait> Invoker<R> {
     pub fn new(autorouter: Autorouter<R>) -> Self {
+        Self::new_with_history(autorouter, History::new())
+    }
+
+    pub fn new_with_history(autorouter: Autorouter<R>, history: History) -> Self {
         Self {
             autorouter,
-            history: History::new(),
+            history,
         }
     }
 
