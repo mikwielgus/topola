@@ -729,8 +729,6 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         Ok(())
     }
 
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     fn detect_infringement_except(
         &self,
         node: PrimitiveIndex,
@@ -777,8 +775,6 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
             .and_then(|infringee| Some(Infringement(inflated_shape, infringee)))
     }
 
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     fn detect_collision(&self, node: PrimitiveIndex) -> Option<Collision> {
         let shape = node.primitive(self).shape();
 
@@ -799,8 +795,6 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
             .and_then(|collidee| Some(Collision(shape, collidee)))
     }
 
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     fn are_connectable(&self, node1: PrimitiveIndex, node2: PrimitiveIndex) -> bool {
         if let (Some(node1_net_id), Some(node2_net_id)) = (
             node1.primitive(self).maybe_net(),
@@ -814,8 +808,6 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
 }
 
 impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn geometry(
         &self,
     ) -> &Geometry<
@@ -832,50 +824,34 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         self.geometry_with_rtree.geometry()
     }
 
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn rtree(&self) -> &RTree<BboxedIndex<GenericNode<PrimitiveIndex, GenericIndex<CW>>>> {
         self.geometry_with_rtree.rtree()
     }
 
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn layer_count(&self) -> u64 {
         self.geometry_with_rtree.layer_count()
     }
 
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn rules(&self) -> &R {
         &self.rules
     }
 
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn guide(&self) -> Guide<CW, R> {
         Guide::new(self)
     }
 
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn collect(&self) -> Collect<CW, R> {
         Collect::new(self)
     }
 
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W, CW, R> {
         GenericPrimitive::new(index, self)
     }
 
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn wraparoundable(&self, index: WraparoundableIndex) -> Wraparoundable<CW, R> {
         Wraparoundable::new(index, self)
     }
 
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn loose(&self, index: LooseIndex) -> Loose<CW, R> {
         Loose::new(index, self)
     }
