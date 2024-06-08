@@ -17,8 +17,8 @@ pub struct DsnRule {
 impl DsnRule {
     fn from_dsn(rule: &super::structure::Rule) -> Self {
         Self {
-            width: rule.width as f64 / 100.0,
-            clearance: rule.clearance_vec[0].value as f64 / 100.0, // picks the generic clearance only for now
+            width: rule.width as f64,
+            clearance: rule.clearance_vec[0].value as f64, // picks the generic clearance only for now
         }
     }
 }
