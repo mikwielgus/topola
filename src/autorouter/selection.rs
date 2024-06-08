@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    autorouter::board::Board,
+    board::Board,
     drawing::{
         graph::{GetLayer, MakePrimitive, PrimitiveIndex},
         rules::RulesTrait,

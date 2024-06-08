@@ -4,7 +4,7 @@ use geo::{point, Point, Rotate, Translate};
 use thiserror::Error;
 
 use crate::{
-    autorouter::board::Board,
+    board::Board,
     drawing::{dot::FixedDotWeight, seg::FixedSegWeight, Drawing},
     dsn::{
         de,

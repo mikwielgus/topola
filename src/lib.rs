@@ -4,6 +4,7 @@ pub mod graph;
 #[macro_use]
 pub mod drawing;
 pub mod autorouter;
+pub mod board;
 pub mod dsn;
 pub mod geometry;
 pub mod layout;

@@ -3,11 +3,11 @@ use std::fs::File;
 use petgraph::{stable_graph::NodeIndex, unionfind::UnionFind, visit::NodeIndexable};
 use topola::{
     autorouter::{
-        board::Board,
         history::HistoryError,
         invoker::{Invoker, InvokerError},
         Autorouter,
     },
+    board::Board,
     drawing::{
         graph::{GetLayer, GetMaybeNet},
         rules::RulesTrait,

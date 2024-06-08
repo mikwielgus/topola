@@ -14,10 +14,10 @@ use thiserror::Error;
 
 use crate::{
     autorouter::{
-        board::Board,
         ratsnest::{Ratsnest, RatvertexIndex},
         selection::Selection,
     },
+    board::Board,
     drawing::{
         dot::FixedDotIndex,
         graph::{GetLayer, GetMaybeNet},

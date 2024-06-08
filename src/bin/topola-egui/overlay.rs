@@ -5,7 +5,8 @@ use rstar::AABB;
 use spade::InsertionError;
 
 use topola::{
-    autorouter::{board::Board, ratsnest::Ratsnest, selection::Selection},
+    autorouter::{ratsnest::Ratsnest, selection::Selection},
+    board::Board,
     drawing::{
         graph::{GetLayer, MakePrimitive},
         primitive::MakePrimitiveShape,
