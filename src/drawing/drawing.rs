@@ -836,6 +836,12 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         &self.rules
     }
 
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    pub fn rules_mut(&mut self) -> &mut R {
+        &mut self.rules
+    }
+
     pub fn guide(&self) -> Guide<CW, R> {
         Guide::new(self)
     }

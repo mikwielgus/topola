@@ -4,7 +4,7 @@ use geo::{point, Point, Rotate, Translate};
 use thiserror::Error;
 
 use crate::{
-    board::Board,
+    board::{mesadata::MesadataTrait, Board},
     drawing::{dot::FixedDotWeight, seg::FixedSegWeight, Drawing},
     dsn::{
         de,
@@ -60,8 +60,7 @@ impl DsnDesign {
                         .layout()
                         .drawing()
                         .rules()
-                        .netname_to_net
-                        .get(&net_pin_assignments.name)
+                        .netname_net(&net_pin_assignments.name)
                         .unwrap();
 
                     // take the list of pins
@@ -70,7 +69,7 @@ impl DsnDesign {
                         .pins
                         .names
                         .iter()
-                        .map(|id| (id.clone(), *net))
+                        .map(move |pinname| (pinname.clone(), net))
                 })
                 // flatten the nested iters into a single stream of tuples
                 .flatten(),
@@ -88,8 +87,8 @@ impl DsnDesign {
                     .unwrap();
 
                 for pin in &image.pin_vec {
-                    let pin_name = format!("{}-{}", place.name, pin.id);
-                    let net = pin_nets.get(&pin_name).unwrap();
+                    let pinname = format!("{}-{}", place.name, pin.id);
+                    let net = pin_nets.get(&pinname).unwrap();
 
                     let padstack = &self
                         .pcb
@@ -117,7 +116,7 @@ impl DsnDesign {
                                     circle.diameter as f64 / 2.0,
                                     layer as u64,
                                     *net,
-                                    Some(pin_name.clone()),
+                                    Some(pinname.clone()),
                                 )
                             }
                             Shape::Rect(rect) => {
@@ -139,7 +138,7 @@ impl DsnDesign {
                                     rect.y2 as f64,
                                     layer as u64,
                                     *net,
-                                    Some(pin_name.clone()),
+                                    Some(pinname.clone()),
                                 )
                             }
                             Shape::Path(path) => {
@@ -159,7 +158,7 @@ impl DsnDesign {
                                     path.width as f64,
                                     layer as u64,
                                     *net,
-                                    Some(pin_name.clone()),
+                                    Some(pinname.clone()),
                                 )
                             }
                             Shape::Polygon(polygon) => {
@@ -179,7 +178,7 @@ impl DsnDesign {
                                     polygon.width as f64,
                                     layer as u64,
                                     *net,
-                                    Some(pin_name.clone()),
+                                    Some(pinname.clone()),
                                 )
                             }
                         };
@@ -189,12 +188,11 @@ impl DsnDesign {
         }
 
         for via in &self.pcb.wiring.via_vec {
-            let net = *board
+            let net = board
                 .layout()
                 .drawing()
                 .rules()
-                .netname_to_net
-                .get(&via.net)
+                .netname_net(&via.net)
                 .unwrap();
 
             // find the padstack referenced by this via placement
@@ -294,19 +292,17 @@ impl DsnDesign {
         }
 
         for wire in self.pcb.wiring.wire_vec.iter() {
-            let layer = *board
+            let layer = board
                 .layout()
                 .drawing()
                 .rules()
-                .layername_to_layer
-                .get(&wire.path.layer)
+                .layername_layer(&wire.path.layer)
                 .unwrap();
-            let net = *board
+            let net = board
                 .layout()
                 .drawing()
                 .rules()
-                .netname_to_net
-                .get(&wire.net)
+                .netname_net(&wire.net)
                 .unwrap();
 
             Self::add_path(
@@ -325,16 +321,22 @@ impl DsnDesign {
 
         // The clones here are bad, we'll have something better later on.
 
-        let layername_to_layer = &board.layout().drawing().rules().layername_to_layer.clone();
+        let layername_to_layer = &board.layout().drawing().rules().layer_layername.clone();
 
-        for (layername, layer) in layername_to_layer.iter() {
-            board.bename_layer(*layer, layername.to_string());
+        for (layer, layername) in layername_to_layer.iter() {
+            board
+                .layout_mut()
+                .rules_mut()
+                .bename_layer(*layer, layername.to_string());
         }
 
-        let netname_to_net = &board.layout().drawing().rules().netname_to_net.clone();
+        let netname_to_net = &board.layout().drawing().rules().net_netname.clone();
 
-        for (netname, net) in netname_to_net.iter() {
-            board.bename_net(*net, netname.to_string());
+        for (net, netname) in netname_to_net.iter() {
+            board
+                .layout_mut()
+                .rules_mut()
+                .bename_net(*net, netname.to_string());
         }
 
         board
@@ -343,15 +345,14 @@ impl DsnDesign {
     fn layer(
         board: &Board<DsnMesadata>,
         layer_vec: &Vec<Layer>,
-        layer_name: &str,
+        layername: &str,
         front: bool,
     ) -> usize {
-        let image_layer = *board
+        let image_layer = board
             .layout()
             .drawing()
             .rules()
-            .layername_to_layer
-            .get(layer_name)
+            .layername_layer(layername)
             .unwrap();
 
         if front {

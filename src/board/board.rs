@@ -24,8 +24,6 @@ use crate::{
 pub struct Board<M: MesadataTrait> {
     layout: Layout<M>,
     node_to_pinname: HashMap<NodeIndex, String>,
-    layer_to_layername: HashMap<u64, String>,
-    net_to_netname: HashMap<usize, String>,
     pinname_pair_to_band: HashMap<(String, String), BandIndex>,
 }
 
@@ -34,8 +32,6 @@ impl<M: MesadataTrait> Board<M> {
         Self {
             layout,
             node_to_pinname: HashMap::new(),
-            layer_to_layername: HashMap::new(),
-            net_to_netname: HashMap::new(),
             pinname_pair_to_band: HashMap::new(),
         }
     }
@@ -145,14 +141,6 @@ impl<M: MesadataTrait> Board<M> {
         result
     }
 
-    pub fn bename_layer(&mut self, layer: u64, layername: String) {
-        self.layer_to_layername.insert(layer, layername);
-    }
-
-    pub fn bename_net(&mut self, net: usize, netname: String) {
-        self.net_to_netname.insert(net, netname);
-    }
-
     pub fn zone_apex(&mut self, zone: GenericIndex<ZoneWeight>) -> FixedDotIndex {
         if let Some(apex) = self.layout.zone(zone).maybe_apex() {
             apex
@@ -174,14 +162,6 @@ impl<M: MesadataTrait> Board<M> {
 
     pub fn node_pinname(&self, node: NodeIndex) -> Option<&String> {
         self.node_to_pinname.get(&node)
-    }
-
-    pub fn layername(&self, layer: u64) -> Option<&String> {
-        self.layer_to_layername.get(&layer)
-    }
-
-    pub fn netname(&self, net: usize) -> Option<&String> {
-        self.net_to_netname.get(&net)
     }
 
     pub fn band_between_pins(&self, pinname1: &str, pinname2: &str) -> Option<BandIndex> {

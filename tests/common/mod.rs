@@ -78,8 +78,16 @@ pub fn assert_single_layer_groundless_autoroute(
             .layer();
 
         if let (Some(source_layername), Some(target_layername)) = (
-            autorouter.board().layername(source_layer),
-            autorouter.board().layername(target_layer),
+            autorouter
+                .board()
+                .layout()
+                .rules()
+                .layer_layername(source_layer),
+            autorouter
+                .board()
+                .layout()
+                .rules()
+                .layer_layername(target_layer),
         ) {
             dbg!(source_layername, target_layername);
             assert_eq!(source_layername, target_layername);
@@ -108,7 +116,7 @@ pub fn assert_single_layer_groundless_autoroute(
 
         let net = source_net.unwrap();
 
-        if let Some(netname) = autorouter.board().netname(net) {
+        if let Some(netname) = autorouter.board().layout().rules().net_netname(net) {
             // We don't route ground.
             if netname != "GND" {
                 dbg!(source_dot, target_dot);

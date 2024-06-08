@@ -211,6 +211,14 @@ impl<R: RulesTrait> Layout<R> {
         &self.drawing
     }
 
+    pub fn rules(&self) -> &R {
+        self.drawing.rules()
+    }
+
+    pub fn rules_mut(&mut self) -> &mut R {
+        self.drawing.rules_mut()
+    }
+
     pub fn zone(&self, index: GenericIndex<ZoneWeight>) -> Zone<R> {
         Zone::new(index, self)
     }

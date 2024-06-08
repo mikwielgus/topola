@@ -1,5 +1,7 @@
 use std::collections::HashMap;
 
+use bimap::BiHashMap;
+
 use crate::{
     board::mesadata::MesadataTrait,
     drawing::rules::{Conditions, RulesTrait},
@@ -27,42 +29,44 @@ pub struct DsnMesadata {
     // net class name -> rule
     class_rules: HashMap<String, DsnRule>,
 
-    // layernames -> layers for Layout
-    pub layername_to_layer: HashMap<String, u64>,
-    // netnames -> nets for Layout
-    pub netname_to_net: HashMap<String, usize>,
+    // layername <-> layer for Layout
+    pub layer_layername: BiHashMap<u64, String>,
+
+    // netname <-> net for Layout
+    pub net_netname: BiHashMap<usize, String>,
+
     // net -> netclass
-    net_to_netclass: HashMap<usize, String>,
+    net_netclass: HashMap<usize, String>,
 }
 
 impl DsnMesadata {
     pub fn from_pcb(pcb: &Pcb) -> Self {
-        let layer_ids = HashMap::from_iter(
+        let layer_layername = BiHashMap::from_iter(
             pcb.structure
                 .layer_vec
                 .iter()
-                .map(|layer| (layer.name.clone(), layer.property.index as u64)),
+                .map(|layer| (layer.property.index as u64, layer.name.clone())),
         );
 
         // keeping this as a separate iter pass because it might be moved into a different struct later?
-        let netname_to_net = HashMap::from_iter(
+        let net_netname = BiHashMap::from_iter(
             pcb.network
                 .class_vec
                 .iter()
                 .flat_map(|class| &class.net_vec)
                 .enumerate()
-                .map(|(id, net)| (net.clone(), id)),
+                .map(|(net, netname)| (net, netname.clone())),
         );
 
-        let mut net_id_classes = HashMap::new();
+        let mut net_netclass = HashMap::new();
         let class_rules = HashMap::from_iter(
             pcb.network
                 .class_vec
                 .iter()
                 .inspect(|class| {
-                    for net in &class.net_vec {
-                        let net_id = netname_to_net.get(net).unwrap();
-                        net_id_classes.insert(*net_id, class.name.clone());
+                    for netname in &class.net_vec {
+                        let net = net_netname.get_by_right(netname).unwrap();
+                        net_netclass.insert(*net, class.name.clone());
                     }
                 })
                 .map(|class| (class.name.clone(), DsnRule::from_dsn(&class.rule))),
@@ -71,14 +75,14 @@ impl DsnMesadata {
         Self {
             structure_rule: DsnRule::from_dsn(&pcb.structure.rule),
             class_rules,
-            layername_to_layer: layer_ids,
-            netname_to_net,
-            net_to_netclass: net_id_classes,
+            layer_layername,
+            net_netname,
+            net_netclass,
         }
     }
 
     pub fn get_rule(&self, net: usize) -> &DsnRule {
-        if let Some(netclass) = self.net_to_netclass.get(&net) {
+        if let Some(netclass) = self.net_netclass.get(&net) {
             self.class_rules
                 .get(netclass)
                 .unwrap_or(&self.structure_rule)
@@ -118,5 +122,27 @@ impl RulesTrait for DsnMesadata {
 }
 
 impl MesadataTrait for DsnMesadata {
-    //
+    fn bename_layer(&mut self, layer: u64, layername: String) {
+        self.layer_layername.insert(layer, layername);
+    }
+
+    fn layer_layername(&self, layer: u64) -> Option<&str> {
+        self.layer_layername.get_by_left(&layer).map(|s| s.as_str())
+    }
+
+    fn layername_layer(&self, layername: &str) -> Option<u64> {
+        self.layer_layername.get_by_right(layername).copied()
+    }
+
+    fn bename_net(&mut self, net: usize, netname: String) {
+        self.net_netname.insert(net, netname);
+    }
+
+    fn net_netname(&self, net: usize) -> Option<&str> {
+        self.net_netname.get_by_left(&net).map(|s| s.as_str())
+    }
+
+    fn netname_net(&self, netname: &str) -> Option<usize> {
+        self.net_netname.get_by_right(netname).copied()
+    }
 }

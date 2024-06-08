@@ -6,11 +6,10 @@ use spade::InsertionError;
 
 use topola::{
     autorouter::{ratsnest::Ratsnest, selection::Selection},
-    board::Board,
+    board::{mesadata::MesadataTrait, Board},
     drawing::{
         graph::{GetLayer, MakePrimitive},
         primitive::MakePrimitiveShape,
-        rules::RulesTrait,
     },
     geometry::{
         compound::CompoundManagerTrait,
@@ -26,7 +25,7 @@ pub struct Overlay {
 }
 
 impl Overlay {
-    pub fn new(board: &Board<impl RulesTrait>) -> Result<Self, InsertionError> {
+    pub fn new(board: &Board<impl MesadataTrait>) -> Result<Self, InsertionError> {
         Ok(Self {
             ratsnest: Ratsnest::new(board.layout())?,
             selection: Selection::new(),
@@ -34,7 +33,7 @@ impl Overlay {
         })
     }
 
-    pub fn click(&mut self, board: &Board<impl RulesTrait>, at: Point) {
+    pub fn click(&mut self, board: &Board<impl MesadataTrait>, at: Point) {
         let geoms: Vec<_> = board
             .layout()
             .drawing()
@@ -65,7 +64,7 @@ impl Overlay {
 
     fn toggle_selection_if_contains_point(
         &mut self,
-        board: &Board<impl RulesTrait>,
+        board: &Board<impl MesadataTrait>,
         node: NodeIndex,
         p: Point,
     ) -> bool {

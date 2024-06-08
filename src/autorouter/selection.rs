@@ -67,8 +67,10 @@ impl Selection {
             NodeIndex::Compound(compound) => board.layout().zone(compound).layer(),
         };
 
-        if let (Some(pinname), Some(layername)) = (board.node_pinname(node), board.layername(layer))
-        {
+        if let (Some(pinname), Some(layername)) = (
+            board.node_pinname(node),
+            board.layout().rules().layer_layername(layer),
+        ) {
             Some(Selector {
                 pin: pinname.to_string(),
                 layer: layername.to_string(),
