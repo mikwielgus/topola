@@ -8,7 +8,7 @@ use crate::{
     drawing::{dot::FixedDotWeight, seg::FixedSegWeight, Drawing},
     dsn::{
         de,
-        rules::DsnRules,
+        mesadata::DsnMesadata,
         structure::{self, DsnFile, Layer, Pcb, Shape},
     },
     geometry::compound::CompoundManagerTrait,
@@ -44,8 +44,8 @@ impl DsnDesign {
         Ok(Self { pcb })
     }
 
-    pub fn make_board(&self) -> Board<DsnRules> {
-        let rules = DsnRules::from_pcb(&self.pcb);
+    pub fn make_board(&self) -> Board<DsnMesadata> {
+        let rules = DsnMesadata::from_pcb(&self.pcb);
         let mut board = Board::new(Layout::new(Drawing::new(rules)));
 
         // mapping of pin -> net prepared for adding pins
@@ -341,7 +341,7 @@ impl DsnDesign {
     }
 
     fn layer(
-        board: &Board<DsnRules>,
+        board: &Board<DsnMesadata>,
         layer_vec: &Vec<Layer>,
         layer_name: &str,
         front: bool,
@@ -362,7 +362,7 @@ impl DsnDesign {
     }
 
     fn add_circle(
-        board: &mut Board<DsnRules>,
+        board: &mut Board<DsnMesadata>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -390,7 +390,7 @@ impl DsnDesign {
     }
 
     fn add_rect(
-        board: &mut Board<DsnRules>,
+        board: &mut Board<DsnMesadata>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -517,7 +517,7 @@ impl DsnDesign {
     }
 
     fn add_path(
-        board: &mut Board<DsnRules>,
+        board: &mut Board<DsnMesadata>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -600,7 +600,7 @@ impl DsnDesign {
     }
 
     fn add_polygon(
-        board: &mut Board<DsnRules>,
+        board: &mut Board<DsnMesadata>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,

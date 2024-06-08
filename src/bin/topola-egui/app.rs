@@ -22,7 +22,7 @@ use topola::{
         rules::RulesTrait,
         Drawing, Infringement, LayoutException,
     },
-    dsn::{design::DsnDesign, rules::DsnRules},
+    dsn::{design::DsnDesign, mesadata::DsnMesadata},
     geometry::{
         compound::CompoundManagerTrait,
         primitive::{BendShape, DotShape, PrimitiveShape, PrimitiveShapeTrait, SegShape},
@@ -59,7 +59,7 @@ pub struct App {
     overlay: Option<Overlay>,
 
     #[serde(skip)]
-    invoker: Option<Arc<Mutex<Invoker<DsnRules>>>>,
+    invoker: Option<Arc<Mutex<Invoker<DsnMesadata>>>>,
 
     #[serde(skip)]
     shared_data: Arc<Mutex<SharedData>>,

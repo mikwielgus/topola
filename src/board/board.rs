@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
+    board::mesadata::MesadataTrait,
     drawing::{
         band::BandIndex,
         dot::{FixedDotIndex, FixedDotWeight},
@@ -20,16 +21,16 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct Board<R: RulesTrait> {
-    layout: Layout<R>,
+pub struct Board<M: MesadataTrait> {
+    layout: Layout<M>,
     node_to_pinname: HashMap<NodeIndex, String>,
     layer_to_layername: HashMap<u64, String>,
     net_to_netname: HashMap<usize, String>,
     pinname_pair_to_band: HashMap<(String, String), BandIndex>,
 }
 
-impl<R: RulesTrait> Board<R> {
-    pub fn new(layout: Layout<R>) -> Self {
+impl<M: MesadataTrait> Board<M> {
+    pub fn new(layout: Layout<M>) -> Self {
         Self {
             layout,
             node_to_pinname: HashMap::new(),
@@ -122,7 +123,7 @@ impl<R: RulesTrait> Board<R> {
         &mut self,
         navmesh: Navmesh,
         width: f64,
-        observer: &mut impl RouterObserverTrait<R>,
+        observer: &mut impl RouterObserverTrait<M>,
     ) -> Result<BandIndex, RouterError> {
         let source_pinname = self
             .node_pinname(GenericNode::Primitive(navmesh.source().into()))
@@ -199,11 +200,11 @@ impl<R: RulesTrait> Board<R> {
         }
     }
 
-    pub fn layout(&self) -> &Layout<R> {
+    pub fn layout(&self) -> &Layout<M> {
         &self.layout
     }
 
-    pub fn layout_mut(&mut self) -> &mut Layout<R> {
+    pub fn layout_mut(&mut self) -> &mut Layout<M> {
         &mut self.layout
     }
 }

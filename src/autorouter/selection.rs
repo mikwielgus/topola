@@ -3,11 +3,8 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    board::Board,
-    drawing::{
-        graph::{GetLayer, MakePrimitive, PrimitiveIndex},
-        rules::RulesTrait,
-    },
+    board::{mesadata::MesadataTrait, Board},
+    drawing::graph::{GetLayer, MakePrimitive, PrimitiveIndex},
     graph::GenericIndex,
     layout::NodeIndex,
 };
@@ -30,7 +27,7 @@ impl Selection {
         }
     }
 
-    pub fn toggle_at_node(&mut self, board: &Board<impl RulesTrait>, node: NodeIndex) {
+    pub fn toggle_at_node(&mut self, board: &Board<impl MesadataTrait>, node: NodeIndex) {
         let Some(selector) = self.node_selector(board, node) else {
             return;
         };
@@ -42,15 +39,15 @@ impl Selection {
         }
     }
 
-    fn select(&mut self, board: &Board<impl RulesTrait>, selector: Selector) {
+    fn select(&mut self, board: &Board<impl MesadataTrait>, selector: Selector) {
         self.selectors.insert(selector);
     }
 
-    fn deselect(&mut self, board: &Board<impl RulesTrait>, selector: &Selector) {
+    fn deselect(&mut self, board: &Board<impl MesadataTrait>, selector: &Selector) {
         self.selectors.remove(selector);
     }
 
-    pub fn contains_node(&self, board: &Board<impl RulesTrait>, node: NodeIndex) -> bool {
+    pub fn contains_node(&self, board: &Board<impl MesadataTrait>, node: NodeIndex) -> bool {
         let Some(selector) = self.node_selector(board, node) else {
             return false;
         };
@@ -58,7 +55,11 @@ impl Selection {
         self.selectors.contains(&selector)
     }
 
-    fn node_selector(&self, board: &Board<impl RulesTrait>, node: NodeIndex) -> Option<Selector> {
+    fn node_selector(
+        &self,
+        board: &Board<impl MesadataTrait>,
+        node: NodeIndex,
+    ) -> Option<Selector> {
         let layer = match node {
             NodeIndex::Primitive(primitive) => {
                 primitive.primitive(board.layout().drawing()).layer()

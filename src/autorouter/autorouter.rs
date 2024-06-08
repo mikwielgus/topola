@@ -17,11 +17,10 @@ use crate::{
         ratsnest::{Ratsnest, RatvertexIndex},
         selection::Selection,
     },
-    board::Board,
+    board::{mesadata::MesadataTrait, Board},
     drawing::{
         dot::FixedDotIndex,
         graph::{GetLayer, GetMaybeNet},
-        rules::RulesTrait,
     },
     layout::Layout,
     router::{
@@ -55,7 +54,7 @@ pub struct Autoroute {
 impl Autoroute {
     pub fn new(
         ratlines: impl IntoIterator<Item = EdgeIndex<usize>> + 'static,
-        autorouter: &mut Autorouter<impl RulesTrait>,
+        autorouter: &mut Autorouter<impl MesadataTrait>,
     ) -> Result<Self, AutorouterError> {
         let mut ratlines_iter = Box::new(ratlines.into_iter());
 
@@ -75,10 +74,10 @@ impl Autoroute {
         Ok(this)
     }
 
-    pub fn step<R: RulesTrait>(
+    pub fn step<M: MesadataTrait>(
         &mut self,
-        autorouter: &mut Autorouter<R>,
-        observer: &mut impl RouterObserverTrait<R>,
+        autorouter: &mut Autorouter<M>,
+        observer: &mut impl RouterObserverTrait<M>,
     ) -> Result<AutorouterStatus, AutorouterError> {
         let (new_navmesh, new_ratline) = if let Some(cur_ratline) = self.ratlines_iter.next() {
             let (source, target) = autorouter.ratline_endpoints(cur_ratline);
@@ -121,13 +120,13 @@ impl Autoroute {
     }
 }
 
-pub struct Autorouter<R: RulesTrait> {
-    board: Board<R>,
+pub struct Autorouter<M: MesadataTrait> {
+    board: Board<M>,
     ratsnest: Ratsnest,
 }
 
-impl<R: RulesTrait> Autorouter<R> {
-    pub fn new(board: Board<R>) -> Result<Self, InsertionError> {
+impl<M: MesadataTrait> Autorouter<M> {
+    pub fn new(board: Board<M>) -> Result<Self, InsertionError> {
         let ratsnest = Ratsnest::new(board.layout())?;
         Ok(Self { board, ratsnest })
     }
@@ -135,7 +134,7 @@ impl<R: RulesTrait> Autorouter<R> {
     pub fn autoroute(
         &mut self,
         selection: &Selection,
-        observer: &mut impl RouterObserverTrait<R>,
+        observer: &mut impl RouterObserverTrait<M>,
     ) -> Result<(), AutorouterError> {
         let mut autoroute = self.autoroute_walk(selection)?;
 
@@ -225,7 +224,7 @@ impl<R: RulesTrait> Autorouter<R> {
             .collect()
     }
 
-    pub fn board(&self) -> &Board<R> {
+    pub fn board(&self) -> &Board<M> {
         &self.board
     }
 

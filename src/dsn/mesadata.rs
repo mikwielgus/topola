@@ -1,6 +1,7 @@
 use std::collections::HashMap;
 
 use crate::{
+    board::mesadata::MesadataTrait,
     drawing::rules::{Conditions, RulesTrait},
     dsn::structure::Pcb,
 };
@@ -21,7 +22,7 @@ impl DsnRule {
 }
 
 #[derive(Debug)]
-pub struct DsnRules {
+pub struct DsnMesadata {
     structure_rule: DsnRule,
     // net class name -> rule
     class_rules: HashMap<String, DsnRule>,
@@ -34,7 +35,7 @@ pub struct DsnRules {
     net_to_netclass: HashMap<usize, String>,
 }
 
-impl DsnRules {
+impl DsnMesadata {
     pub fn from_pcb(pcb: &Pcb) -> Self {
         let layer_ids = HashMap::from_iter(
             pcb.structure
@@ -87,7 +88,7 @@ impl DsnRules {
     }
 }
 
-impl RulesTrait for DsnRules {
+impl RulesTrait for DsnMesadata {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64 {
         let (Some(net1), Some(net2)) = (conditions1.maybe_net, conditions2.maybe_net) else {
             return 0.0;
@@ -114,4 +115,8 @@ impl RulesTrait for DsnRules {
 
         largest
     }
+}
+
+impl MesadataTrait for DsnMesadata {
+    //
 }

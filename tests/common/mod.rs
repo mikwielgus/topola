@@ -7,16 +7,13 @@ use topola::{
         invoker::{Invoker, InvokerError},
         Autorouter,
     },
-    board::Board,
-    drawing::{
-        graph::{GetLayer, GetMaybeNet},
-        rules::RulesTrait,
-    },
-    dsn::{design::DsnDesign, rules::DsnRules},
+    board::{mesadata::MesadataTrait, Board},
+    drawing::graph::{GetLayer, GetMaybeNet},
+    dsn::{design::DsnDesign, mesadata::DsnMesadata},
     graph::GetNodeIndex,
 };
 
-pub fn load_design_and_assert(filename: &str) -> Invoker<DsnRules> {
+pub fn load_design_and_assert(filename: &str) -> Invoker<DsnMesadata> {
     let design = DsnDesign::load_from_file(filename).unwrap();
     let mut invoker = Invoker::new(Autorouter::new(design.make_board()).unwrap());
 
@@ -32,7 +29,7 @@ pub fn load_design_and_assert(filename: &str) -> Invoker<DsnRules> {
     invoker
 }
 
-pub fn replay_and_assert(invoker: &mut Invoker<DsnRules>, filename: &str) {
+pub fn replay_and_assert(invoker: &mut Invoker<DsnMesadata>, filename: &str) {
     let file = File::open(filename).unwrap();
     invoker.replay(serde_json::from_reader(file).unwrap());
 
@@ -59,7 +56,7 @@ pub fn replay_and_assert(invoker: &mut Invoker<DsnRules>, filename: &str) {
 }
 
 pub fn assert_single_layer_groundless_autoroute(
-    autorouter: &mut Autorouter<impl RulesTrait>,
+    autorouter: &mut Autorouter<impl MesadataTrait>,
     layername: &str,
 ) {
     let unionfind = unionfind(autorouter);
@@ -125,7 +122,7 @@ pub fn assert_single_layer_groundless_autoroute(
 }
 
 /*pub fn assert_number_of_conncomps(
-    autorouter: &mut Autorouter<impl RulesTrait>,
+    autorouter: &mut Autorouter<impl MesadataTrait>,
     conncomp_count: usize,
 ) {
     let unionfind = unionfind(autorouter);
@@ -137,7 +134,7 @@ pub fn assert_single_layer_groundless_autoroute(
 }*/
 
 pub fn assert_band_length(
-    board: &Board<impl RulesTrait>,
+    board: &Board<impl MesadataTrait>,
     source: &str,
     target: &str,
     length: f64,
@@ -149,7 +146,7 @@ pub fn assert_band_length(
     assert!((band_length - length).abs() < epsilon);
 }
 
-fn unionfind(autorouter: &mut Autorouter<impl RulesTrait>) -> UnionFind<NodeIndex<usize>> {
+fn unionfind(autorouter: &mut Autorouter<impl MesadataTrait>) -> UnionFind<NodeIndex<usize>> {
     for ratline in autorouter.ratsnest().graph().edge_indices() {
         // Accessing endpoints may create new dots because apex construction is lazy, so we access
         // tem all before starting unionfind, as it requires a constant index bound.

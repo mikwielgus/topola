@@ -21,7 +21,7 @@ use topola::drawing::rules::{Conditions, RulesTrait};
 use topola::drawing::seg::FixedSegWeight;
 use topola::drawing::{Infringement, LayoutException};
 use topola::dsn::design::DsnDesign;
-use topola::dsn::rules::DsnRules;
+use topola::dsn::mesadata::DsnMesadata;
 use topola::geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait};
 use topola::geometry::shape::ShapeTrait;
 use topola::layout::zone::MakePolyShape;

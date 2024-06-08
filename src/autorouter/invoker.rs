@@ -7,7 +7,7 @@ use crate::{
         selection::Selection,
         Autoroute, Autorouter, AutorouterError, AutorouterStatus,
     },
-    drawing::rules::RulesTrait,
+    board::mesadata::MesadataTrait,
     layout::Layout,
     router::{EmptyRouterObserver, RouterObserverTrait},
 };
@@ -35,10 +35,10 @@ pub enum Execute {
 }
 
 impl Execute {
-    pub fn step<R: RulesTrait>(
+    pub fn step<M: MesadataTrait>(
         &mut self,
-        invoker: &mut Invoker<R>,
-        observer: &mut impl RouterObserverTrait<R>,
+        invoker: &mut Invoker<M>,
+        observer: &mut impl RouterObserverTrait<M>,
     ) -> Result<InvokerStatus, InvokerError> {
         match self {
             Execute::Autoroute(autoroute) => {
@@ -51,31 +51,31 @@ impl Execute {
     }
 }
 
-pub struct Invoker<R: RulesTrait> {
-    autorouter: Autorouter<R>,
+pub struct Invoker<M: MesadataTrait> {
+    autorouter: Autorouter<M>,
     history: History,
 }
 
-impl<R: RulesTrait> Invoker<R> {
-    pub fn new(autorouter: Autorouter<R>) -> Self {
+impl<M: MesadataTrait> Invoker<M> {
+    pub fn new(autorouter: Autorouter<M>) -> Self {
         Self::new_with_history(autorouter, History::new())
     }
 
-    pub fn new_with_history(autorouter: Autorouter<R>, history: History) -> Self {
+    pub fn new_with_history(autorouter: Autorouter<M>, history: History) -> Self {
         Self {
             autorouter,
             history,
         }
     }
 
-    pub fn destruct(self) -> (Autorouter<R>, History) {
+    pub fn destruct(self) -> (Autorouter<M>, History) {
         (self.autorouter, self.history)
     }
 
     pub fn execute(
         &mut self,
         command: Command,
-        observer: &mut impl RouterObserverTrait<R>,
+        observer: &mut impl RouterObserverTrait<M>,
     ) -> Result<(), InvokerError> {
         let mut execute = self.execute_walk(command);
 
@@ -142,7 +142,7 @@ impl<R: RulesTrait> Invoker<R> {
         self.history.set_undone(undone.into_iter());
     }
 
-    pub fn autorouter(&self) -> &Autorouter<R> {
+    pub fn autorouter(&self) -> &Autorouter<M> {
         &self.autorouter
     }
 
