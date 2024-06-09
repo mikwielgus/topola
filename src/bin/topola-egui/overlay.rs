@@ -17,6 +17,7 @@ use topola::{
     },
     graph::{GenericIndex, GetNodeIndex},
     layout::{
+        via::ViaWeight,
         zone::{MakePolyShape, Zone, ZoneWeight},
         CompoundWeight, Layout, NodeIndex,
     },
@@ -78,13 +79,22 @@ impl Overlay {
             }
             NodeIndex::Compound(compound) => {
                 match board.layout().drawing().compound_weight(compound) {
-                    CompoundWeight::Zone(zone) => Zone::new(
+                    /*CompoundWeight::Zone(zone) => Zone::new(
                         GenericIndex::<ZoneWeight>::new(compound.node_index()),
                         board.layout(),
                     )
                     .shape()
-                    .into(),
-                    CompoundWeight::Via(via) => unreachable!(),
+                    .into(),*/
+                    CompoundWeight::Zone(weight) => board
+                        .layout()
+                        .zone(GenericIndex::<ZoneWeight>::new(compound.node_index()))
+                        .shape()
+                        .into(),
+                    CompoundWeight::Via(weight) => board
+                        .layout()
+                        .via(GenericIndex::<ViaWeight>::new(compound.node_index()))
+                        .shape()
+                        .into(),
                 }
             }
         };

@@ -28,7 +28,7 @@ use crate::{
     },
     graph::{GenericIndex, GetNodeIndex},
     layout::{
-        via::ViaWeight,
+        via::{Via, ViaWeight},
         zone::{GetMaybeApex, MakePolyShape, Zone, ZoneWeight},
     },
     math::Circle,
@@ -256,33 +256,8 @@ impl<R: RulesTrait> Layout<R> {
     pub fn zone(&self, index: GenericIndex<ZoneWeight>) -> Zone<R> {
         Zone::new(index, self)
     }
+
+    pub fn via(&self, index: GenericIndex<ViaWeight>) -> Via<R> {
+        Via::new(index, self)
+    }
 }
-
-/*impl<R: RulesTrait> CompoundManagerTrait<ZoneWeight, GenericIndex<ZoneWeight>> for Layout<R> {
-    fn add_compound(&mut self, weight: ZoneWeight) -> GenericIndex<ZoneWeight> {
-        self.drawing.add_compound(weight)
-    }
-
-    fn remove_compound(&mut self, compound: GenericIndex<ZoneWeight>) {
-        self.drawing.remove_compound(compound);
-    }
-
-    fn add_to_compound<W>(
-        &mut self,
-        primitive: GenericIndex<W>,
-        compound: GenericIndex<ZoneWeight>,
-    ) {
-        self.drawing.add_to_compound(primitive, compound);
-    }
-
-    fn compound_weight(&self, compound: GenericIndex<ZoneWeight>) -> ZoneWeight {
-        self.drawing.compound_weight(compound)
-    }
-
-    fn compounds<W>(
-        &self,
-        node: GenericIndex<W>,
-    ) -> impl Iterator<Item = GenericIndex<ZoneWeight>> {
-        self.drawing.compounds(node)
-    }
-}*/
