@@ -3,12 +3,12 @@ use thiserror::Error;
 
 use crate::{
     autorouter::{
+        autoroute::Autoroute,
         history::{History, HistoryError},
         selection::Selection,
-        Autoroute, Autorouter, AutorouterError, AutorouterStatus,
+        Autorouter, AutorouterError, AutorouterStatus,
     },
     board::mesadata::MesadataTrait,
-    layout::Layout,
     router::{EmptyRouterObserver, RouterObserverTrait},
 };
 

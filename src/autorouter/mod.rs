@@ -1,3 +1,4 @@
+pub mod autoroute;
 mod autorouter;
 pub mod history;
 pub mod invoker;
