@@ -14,7 +14,7 @@ use crate::{
     },
     geometry::{compound::CompoundManagerTrait, poly::PolyShape, GetPos},
     graph::{GenericIndex, GetNodeIndex},
-    layout::Layout,
+    layout::{CompoundWeight, Layout},
 };
 
 #[enum_dispatch]
@@ -52,7 +52,13 @@ impl<'a, R: RulesTrait> Zone<'a, R> {
 
 impl<'a, R: RulesTrait> GetLayer for Zone<'a, R> {
     fn layer(&self) -> u64 {
-        self.layout.drawing().compound_weight(self.index).layer()
+        if let CompoundWeight::Zone(weight) =
+            self.layout.drawing().compound_weight(self.index.into())
+        {
+            weight.layer()
+        } else {
+            unreachable!();
+        }
     }
 }
 
@@ -60,7 +66,7 @@ impl<'a, R: RulesTrait> GetMaybeNet for Zone<'a, R> {
     fn maybe_net(&self) -> Option<usize> {
         self.layout
             .drawing()
-            .compound_weight(self.index)
+            .compound_weight(self.index.into())
             .maybe_net()
     }
 }
@@ -73,7 +79,7 @@ impl<'a, R: RulesTrait> MakePolyShape for Zone<'a, R> {
                     self.layout
                         .drawing()
                         .geometry()
-                        .compound_members(self.index)
+                        .compound_members(self.index.into())
                         .filter_map(|primitive_node| {
                             let PrimitiveIndex::FixedDot(dot) = primitive_node else {
                                 return None;
@@ -104,7 +110,7 @@ impl<'a, R: RulesTrait> GetMaybeApex for Zone<'a, R> {
         self.layout
             .drawing()
             .geometry()
-            .compound_members(self.index)
+            .compound_members(self.index.into())
             .find_map(|primitive_node| {
                 if let PrimitiveIndex::FixedDot(dot) = primitive_node {
                     if self.is_apex(dot) {
@@ -124,25 +130,35 @@ pub enum ZoneWeight {
     Pour(PourZoneWeight),
 }
 
+impl From<GenericIndex<ZoneWeight>> for GenericIndex<CompoundWeight> {
+    fn from(zone: GenericIndex<ZoneWeight>) -> Self {
+        GenericIndex::<CompoundWeight>::new(zone.node_index())
+    }
+}
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SolidZoneWeight {
     pub layer: u64,
     pub maybe_net: Option<usize>,
 }
 
-impl<'a> GetLayer for SolidZoneWeight {
+impl GetLayer for SolidZoneWeight {
     fn layer(&self) -> u64 {
         self.layer
     }
 }
 
-impl<'a> GetMaybeNet for SolidZoneWeight {
+impl GetMaybeNet for SolidZoneWeight {
     fn maybe_net(&self) -> Option<usize> {
         self.maybe_net
     }
 }
 
-pub type SolidZoneIndex = GenericIndex<SolidZoneWeight>;
+impl From<GenericIndex<SolidZoneWeight>> for GenericIndex<CompoundWeight> {
+    fn from(zone: GenericIndex<SolidZoneWeight>) -> Self {
+        GenericIndex::<CompoundWeight>::new(zone.node_index())
+    }
+}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PourZoneWeight {
@@ -162,4 +178,8 @@ impl<'a> GetMaybeNet for PourZoneWeight {
     }
 }
 
-pub type PourZoneIndex = GenericIndex<PourZoneWeight>;
+impl From<GenericIndex<PourZoneWeight>> for GenericIndex<CompoundWeight> {
+    fn from(zone: GenericIndex<PourZoneWeight>) -> Self {
+        GenericIndex::<CompoundWeight>::new(zone.node_index())
+    }
+}

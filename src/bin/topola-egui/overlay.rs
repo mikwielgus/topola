@@ -15,7 +15,11 @@ use topola::{
         compound::CompoundManagerTrait,
         shape::{Shape, ShapeTrait},
     },
-    layout::{zone::MakePolyShape, Layout, NodeIndex},
+    graph::{GenericIndex, GetNodeIndex},
+    layout::{
+        zone::{MakePolyShape, Zone, ZoneWeight},
+        CompoundWeight, Layout, NodeIndex,
+    },
 };
 
 pub struct Overlay {
@@ -72,7 +76,17 @@ impl Overlay {
             NodeIndex::Primitive(primitive) => {
                 primitive.primitive(board.layout().drawing()).shape().into()
             }
-            NodeIndex::Compound(compound) => board.layout().zone(compound).shape().into(),
+            NodeIndex::Compound(compound) => {
+                match board.layout().drawing().compound_weight(compound) {
+                    CompoundWeight::Zone(zone) => Zone::new(
+                        GenericIndex::<ZoneWeight>::new(compound.node_index()),
+                        board.layout(),
+                    )
+                    .shape()
+                    .into(),
+                    CompoundWeight::Via(via) => unreachable!(),
+                }
+            }
         };
 
         if shape.contains_point(p) {

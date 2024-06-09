@@ -5,8 +5,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     board::{mesadata::MesadataTrait, Board},
     drawing::graph::{GetLayer, MakePrimitive, PrimitiveIndex},
-    graph::GenericIndex,
-    layout::NodeIndex,
+    geometry::compound::CompoundManagerTrait,
+    graph::{GenericIndex, GetNodeIndex},
+    layout::{zone::ZoneWeight, CompoundWeight, NodeIndex},
 };
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -64,7 +65,17 @@ impl Selection {
             NodeIndex::Primitive(primitive) => {
                 primitive.primitive(board.layout().drawing()).layer()
             }
-            NodeIndex::Compound(compound) => board.layout().zone(compound).layer(),
+            NodeIndex::Compound(compound) => {
+                if let CompoundWeight::Zone(..) = board.layout().drawing().compound_weight(compound)
+                {
+                    board
+                        .layout()
+                        .zone(GenericIndex::<ZoneWeight>::new(compound.node_index()))
+                        .layer()
+                } else {
+                    unreachable!()
+                }
+            }
         };
 
         if let (Some(pinname), Some(layername)) = (

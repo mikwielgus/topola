@@ -58,7 +58,7 @@ impl<M: MesadataTrait> Board<M> {
     ) -> Result<FixedDotIndex, Infringement> {
         let dot = self.layout.add_zone_fixed_dot(weight, zone)?;
 
-        if let Some(pin) = self.node_pinname(GenericNode::Compound(zone)) {
+        if let Some(pin) = self.node_pinname(GenericNode::Compound(zone.into())) {
             self.node_to_pinname
                 .insert(GenericNode::Primitive(dot.into()), pin.to_string());
         }
@@ -92,7 +92,7 @@ impl<M: MesadataTrait> Board<M> {
     ) -> Result<FixedSegIndex, Infringement> {
         let seg = self.layout.add_zone_fixed_seg(from, to, weight, zone)?;
 
-        if let Some(pin) = self.node_pinname(GenericNode::Compound(zone)) {
+        if let Some(pin) = self.node_pinname(GenericNode::Compound(zone.into())) {
             self.node_to_pinname
                 .insert(GenericNode::Primitive(seg.into()), pin.to_string());
         }

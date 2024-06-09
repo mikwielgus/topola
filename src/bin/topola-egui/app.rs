@@ -386,7 +386,7 @@ impl eframe::App for App {
                         for zone in board.layout().layer_zone_nodes(1) {
                             let color = if overlay
                                 .selection()
-                                .contains_node(board, GenericNode::Compound(zone))
+                                .contains_node(board, GenericNode::Compound(zone.into()))
                             {
                                 egui::Color32::from_rgb(100, 100, 255)
                             } else {
@@ -413,7 +413,7 @@ impl eframe::App for App {
                         for zone in board.layout().layer_zone_nodes(0) {
                             let color = if overlay
                                 .selection()
-                                .contains_node(board, GenericNode::Compound(zone))
+                                .contains_node(board, GenericNode::Compound(zone.into()))
                             {
                                 egui::Color32::from_rgb(255, 100, 100)
                             } else {

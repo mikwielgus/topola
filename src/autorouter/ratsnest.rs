@@ -114,7 +114,7 @@ impl Ratsnest {
             }
 
             for zone in layout.layer_zone_nodes(layer) {
-                if let Some(net) = layout.drawing().compound_weight(zone).maybe_net() {
+                if let Some(net) = layout.drawing().compound_weight(zone.into()).maybe_net() {
                     if !triangulations.contains_key(&(layer, net)) {
                         triangulations.insert(
                             (layer, net),

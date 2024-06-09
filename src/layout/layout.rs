@@ -1,5 +1,6 @@
 use std::collections::HashMap;
 
+use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
 use rstar::AABB;
@@ -26,19 +27,29 @@ use crate::{
         GetWidth, SegWeightTrait,
     },
     graph::{GenericIndex, GetNodeIndex},
-    layout::zone::{GetMaybeApex, MakePolyShape, PourZoneIndex, SolidZoneIndex, Zone, ZoneWeight},
+    layout::{
+        via::ViaWeight,
+        zone::{GetMaybeApex, MakePolyShape, Zone, ZoneWeight},
+    },
     math::Circle,
 };
 
-pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<ZoneWeight>>;
+#[derive(Debug, Clone, Copy)]
+#[enum_dispatch(GetMaybeNet)]
+pub enum CompoundWeight {
+    Zone(ZoneWeight),
+    Via(ViaWeight),
+}
+
+pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<CompoundWeight>>;
 
 #[derive(Debug)]
 pub struct Layout<R: RulesTrait> {
-    drawing: Drawing<ZoneWeight, R>,
+    drawing: Drawing<CompoundWeight, R>,
 }
 
 impl<R: RulesTrait> Layout<R> {
-    pub fn new(drawing: Drawing<ZoneWeight, R>) -> Self {
+    pub fn new(drawing: Drawing<CompoundWeight, R>) -> Self {
         Self { drawing }
     }
 
@@ -63,6 +74,21 @@ impl<R: RulesTrait> Layout<R> {
             .insert_segbend(from, around, dot_weight, seg_weight, bend_weight, cw)
     }
 
+    pub fn add_via(&mut self, weight: ViaWeight) -> Result<GenericIndex<ViaWeight>, Infringement> {
+        let compound = self.drawing.add_compound(weight.into());
+
+        for layer in weight.from_layer..weight.to_layer {
+            let dot = self.drawing.add_fixed_dot(FixedDotWeight {
+                circle: weight.circle,
+                layer,
+                maybe_net: weight.maybe_net,
+            })?;
+            self.drawing.add_to_compound(dot, compound);
+        }
+
+        Ok(GenericIndex::<ViaWeight>::new(compound.node_index()))
+    }
+
     pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, Infringement> {
         self.drawing.add_fixed_dot(weight)
     }
@@ -75,7 +101,7 @@ impl<R: RulesTrait> Layout<R> {
         let maybe_dot = self.drawing.add_fixed_dot(weight);
 
         if let Ok(dot) = maybe_dot {
-            self.drawing.add_to_compound(dot, zone);
+            self.drawing.add_to_compound(dot, zone.into());
         }
 
         maybe_dot
@@ -100,7 +126,7 @@ impl<R: RulesTrait> Layout<R> {
         let maybe_seg = self.add_fixed_seg(from, to, weight);
 
         if let Ok(seg) = maybe_seg {
-            self.drawing.add_to_compound(seg, zone);
+            self.drawing.add_to_compound(seg, zone.into());
         }
 
         maybe_seg
@@ -129,13 +155,17 @@ impl<R: RulesTrait> Layout<R> {
     }
 
     pub fn add_zone(&mut self, weight: ZoneWeight) -> GenericIndex<ZoneWeight> {
-        self.drawing.add_compound(weight)
+        GenericIndex::<ZoneWeight>::new(
+            self.drawing
+                .add_compound(CompoundWeight::Zone(weight))
+                .node_index(),
+        )
     }
 
     pub fn zones<W: 'static>(
         &self,
         node: GenericIndex<W>,
-    ) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
+    ) -> impl Iterator<Item = GenericIndex<CompoundWeight>> + '_ {
         self.drawing.compounds(node)
     }
 
@@ -171,11 +201,13 @@ impl<R: RulesTrait> Layout<R> {
 
     pub fn zone_nodes(&self) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
         self.drawing.rtree().iter().filter_map(|wrapper| {
-            if let NodeIndex::Compound(zone) = wrapper.data {
-                Some(zone)
-            } else {
-                None
+            if let NodeIndex::Compound(compound) = wrapper.data {
+                if let CompoundWeight::Zone(..) = self.drawing.compound_weight(compound) {
+                    return Some(GenericIndex::<ZoneWeight>::new(compound.node_index()));
+                }
             }
+
+            None
         })
     }
 
@@ -190,11 +222,13 @@ impl<R: RulesTrait> Layout<R> {
                 [f64::INFINITY, f64::INFINITY, layer as f64],
             ))
             .filter_map(|wrapper| {
-                if let NodeIndex::Compound(zone) = wrapper.data {
-                    Some(zone)
-                } else {
-                    None
+                if let NodeIndex::Compound(compound) = wrapper.data {
+                    if let CompoundWeight::Zone(..) = self.drawing.compound_weight(compound) {
+                        return Some(GenericIndex::<ZoneWeight>::new(compound.node_index()));
+                    }
                 }
+
+                None
             })
     }
 
@@ -207,7 +241,7 @@ impl<R: RulesTrait> Layout<R> {
             .compound_members(GenericIndex::new(zone.node_index()))
     }
 
-    pub fn drawing(&self) -> &Drawing<ZoneWeight, R> {
+    pub fn drawing(&self) -> &Drawing<CompoundWeight, R> {
         &self.drawing
     }
 
