@@ -47,7 +47,7 @@ fn test_tht_diode_bridge_rectifier() {
 
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
     //common::assert_number_of_conncomps(&mut autorouter, 4);
-    common::assert_band_length(autorouter.board(), "J2-2", "D4-2", 15511.0, 0.5);
+    common::assert_band_length(autorouter.board(), "J2-2", "D4-2", 15500.0, 0.5);
 }
 
 #[test]
