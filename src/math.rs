@@ -1,4 +1,5 @@
 use geo::{geometry::Point, point, EuclideanDistance, Line};
+use serde::{Deserialize, Serialize};
 use std::ops::Sub;
 use thiserror::Error;
 
@@ -13,7 +14,7 @@ pub struct CanonicalLine {
     pub c: f64,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
+#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Circle {
     pub pos: Point,
     pub r: f64,

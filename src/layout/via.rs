@@ -1,3 +1,5 @@
+use serde::{Deserialize, Serialize};
+
 use crate::{
     drawing::{graph::GetMaybeNet, primitive::MakePrimitiveShape, rules::RulesTrait},
     geometry::{
@@ -42,7 +44,7 @@ impl<'a, R: RulesTrait> MakePrimitiveShape for Via<'a, R> {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct ViaWeight {
     pub from_layer: u64,
     pub to_layer: u64,

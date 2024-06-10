@@ -5,10 +5,12 @@ use crate::{
     autorouter::{
         autoroute::Autoroute,
         history::{History, HistoryError},
+        place_via::PlaceVia,
         selection::Selection,
         Autorouter, AutorouterError, AutorouterStatus,
     },
     board::mesadata::MesadataTrait,
+    layout::via::ViaWeight,
     router::{EmptyRouterObserver, RouterObserverTrait},
 };
 
@@ -28,10 +30,12 @@ pub enum InvokerStatus {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     Autoroute(Selection),
+    PlaceVia(ViaWeight),
 }
 
 pub enum Execute {
     Autoroute(Autoroute),
+    PlaceVia(PlaceVia),
 }
 
 impl Execute {
@@ -46,6 +50,10 @@ impl Execute {
                     AutorouterStatus::Running => Ok(InvokerStatus::Running),
                     AutorouterStatus::Finished => Ok(InvokerStatus::Finished),
                 }
+            }
+            Execute::PlaceVia(place_via) => {
+                place_via.doit(&mut invoker.autorouter)?;
+                Ok(InvokerStatus::Finished)
             }
         }
     }
@@ -100,8 +108,11 @@ impl<M: MesadataTrait> Invoker<M> {
 
     fn dispatch_command(&mut self, command: &Command) -> Execute {
         match command {
-            Command::Autoroute(ref selection) => {
+            Command::Autoroute(selection) => {
                 Execute::Autoroute(self.autorouter.autoroute_walk(selection).unwrap())
+            }
+            Command::PlaceVia(weight) => {
+                Execute::PlaceVia(self.autorouter.place_via_walk(*weight).unwrap())
             }
         }
     }
@@ -111,6 +122,7 @@ impl<M: MesadataTrait> Invoker<M> {
 
         match command {
             Command::Autoroute(ref selection) => self.autorouter.undo_autoroute(selection),
+            Command::PlaceVia(weight) => self.autorouter.undo_place_via(*weight),
         }
 
         Ok(self.history.undo()?)

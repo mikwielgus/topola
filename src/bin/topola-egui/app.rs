@@ -1,6 +1,7 @@
 use futures::executor;
 use geo::point;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use serde::{Deserialize, Serialize};
 use std::{
     fs::File,
     future::Future,
@@ -52,7 +53,7 @@ struct SharedData {
 }
 
 /// Deserialize/Serialize is needed to persist app state between restarts.
-#[derive(serde::Deserialize, serde::Serialize)]
+#[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct App {
     #[serde(skip)]

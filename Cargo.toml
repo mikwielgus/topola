@@ -23,7 +23,6 @@ disable_contracts = ["contracts/disable_contracts"]
 [dependencies]
 thiserror = "1.0.56"
 anyhow = "1.0.79"
-geo = "0.25.1"
 rstar = "0.11.0"
 petgraph = "0.6.3"
 spade = "2.2.0"
@@ -33,6 +32,10 @@ itertools = "0.8.2"
 contracts = "0.6.3"
 bimap = "0.6.3"
 log = "0.4"
+
+[dependencies.geo]
+version = "0.25.1"
+features = ["use-serde"]
 
 [dependencies.serde]
 version = "1"

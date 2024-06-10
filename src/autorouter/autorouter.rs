@@ -15,6 +15,7 @@ use thiserror::Error;
 use crate::{
     autorouter::{
         autoroute::Autoroute,
+        place_via::PlaceVia,
         ratsnest::{Ratsnest, RatvertexIndex},
         selection::Selection,
     },
@@ -23,7 +24,8 @@ use crate::{
         dot::FixedDotIndex,
         graph::{GetLayer, GetMaybeNet},
     },
-    layout::Layout,
+    layout::{via::ViaWeight, Layout},
+    math::Circle,
     router::{
         navmesh::{Navmesh, NavmeshError},
         Router, RouterError, RouterObserverTrait,
@@ -91,6 +93,19 @@ impl<M: MesadataTrait> Autorouter<M> {
                 .unwrap();
             self.board.layout_mut().remove_band(band);
         }
+    }
+
+    pub fn place_via(&mut self, weight: ViaWeight) -> Result<(), AutorouterError> {
+        self.board.layout_mut().add_via(weight);
+        Ok(())
+    }
+
+    pub fn place_via_walk(&self, weight: ViaWeight) -> Result<PlaceVia, AutorouterError> {
+        PlaceVia::new(weight)
+    }
+
+    pub fn undo_place_via(&mut self, weight: ViaWeight) {
+        todo!();
     }
 
     pub fn ratline_endpoints(
