@@ -77,7 +77,7 @@ impl<R: RulesTrait> Layout<R> {
     pub fn add_via(&mut self, weight: ViaWeight) -> Result<GenericIndex<ViaWeight>, Infringement> {
         let compound = self.drawing.add_compound(weight.into());
 
-        for layer in weight.from_layer..weight.to_layer {
+        for layer in weight.from_layer..=weight.to_layer {
             let dot = self.drawing.add_fixed_dot(FixedDotWeight {
                 circle: weight.circle,
                 layer,
