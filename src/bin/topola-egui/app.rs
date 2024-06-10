@@ -162,6 +162,8 @@ impl eframe::App for App {
 
     /// Called each time the UI has to be repainted.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        let mut has_acted = false;
+
         if cfg!(target_arch = "wasm32") {
             if let Ok(file_contents) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_string(file_contents).unwrap();
@@ -279,7 +281,7 @@ impl eframe::App for App {
                                     },
                                 ) {
                                     Ok(status) => status,
-                                    Err(err) => return, //Err(err),
+                                    Err(err) => return,
                                 };
 
                                 if let Execute::Autoroute(ref mut autoroute) = execute {
@@ -295,7 +297,12 @@ impl eframe::App for App {
                     }
                 }
 
-                ui.toggle_value(&mut self.is_placing_via, "Place Via");
+                if ui
+                    .toggle_value(&mut self.is_placing_via, "Place Via")
+                    .clicked()
+                {
+                    has_acted = true;
+                }
 
                 ui.separator();
 
@@ -364,30 +371,32 @@ impl eframe::App for App {
 
                 if let Some(invoker_arc_mutex) = &self.invoker {
                     if ctx.input(|i| i.pointer.any_click()) {
-                        if self.is_placing_via {
-                            let invoker_arc_mutex = invoker_arc_mutex.clone();
+                        if !has_acted {
+                            if self.is_placing_via {
+                                let invoker_arc_mutex = invoker_arc_mutex.clone();
 
-                            execute(async move {
-                                let mut invoker = invoker_arc_mutex.lock().unwrap();
-                                invoker.execute(
-                                    Command::PlaceVia(ViaWeight {
-                                        from_layer: 0,
-                                        to_layer: 0,
-                                        circle: Circle {
-                                            pos: point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
-                                            r: 100.0,
-                                        },
-                                        maybe_net: None,
-                                    }),
-                                    &mut EmptyRouterObserver,
+                                execute(async move {
+                                    let mut invoker = invoker_arc_mutex.lock().unwrap();
+                                    invoker.execute(
+                                        Command::PlaceVia(ViaWeight {
+                                            from_layer: 0,
+                                            to_layer: 0,
+                                            circle: Circle {
+                                                pos: point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
+                                                r: 100.0,
+                                            },
+                                            maybe_net: None,
+                                        }),
+                                        &mut EmptyRouterObserver,
+                                    );
+                                });
+                            } else if let Some(overlay) = &mut self.overlay {
+                                let invoker = invoker_arc_mutex.lock().unwrap();
+                                overlay.click(
+                                    invoker.autorouter().board(),
+                                    point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
                                 );
-                            });
-                        } else if let Some(overlay) = &mut self.overlay {
-                            let invoker = invoker_arc_mutex.lock().unwrap();
-                            overlay.click(
-                                invoker.autorouter().board(),
-                                point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
-                            );
+                            }
                         }
                     }
 
