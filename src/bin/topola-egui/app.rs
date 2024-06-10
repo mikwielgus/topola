@@ -30,7 +30,7 @@ use topola::{
         shape::ShapeTrait,
         GenericNode,
     },
-    layout::{zone::MakePolyShape, Layout},
+    layout::{via::ViaWeight, zone::MakePolyShape, Layout},
     math::Circle,
     router::{
         draw::DrawException,
@@ -72,6 +72,9 @@ pub struct App {
     from_rect: egui::emath::Rect,
 
     #[serde(skip)]
+    is_placing_via: bool,
+
+    #[serde(skip)]
     show_ratsnest: bool,
 }
 
@@ -83,6 +86,7 @@ impl Default for App {
             shared_data: Default::default(),
             text_channel: channel(),
             from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
+            is_placing_via: false,
             show_ratsnest: true,
         }
     }
@@ -291,6 +295,10 @@ impl eframe::App for App {
                     }
                 }
 
+                ui.toggle_value(&mut self.is_placing_via, "Place Via");
+
+                ui.separator();
+
                 if ui.button("Undo").clicked()
                     || ctx.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Z))
                 {
@@ -355,19 +363,40 @@ impl eframe::App for App {
                 let mut painter = Painter::new(ui, transform);
 
                 if let Some(invoker_arc_mutex) = &self.invoker {
+                    if ctx.input(|i| i.pointer.any_click()) {
+                        if self.is_placing_via {
+                            let invoker_arc_mutex = invoker_arc_mutex.clone();
+
+                            execute(async move {
+                                let mut invoker = invoker_arc_mutex.lock().unwrap();
+                                invoker.execute(
+                                    Command::PlaceVia(ViaWeight {
+                                        from_layer: 0,
+                                        to_layer: 0,
+                                        circle: Circle {
+                                            pos: point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
+                                            r: 100.0,
+                                        },
+                                        maybe_net: None,
+                                    }),
+                                    &mut EmptyRouterObserver,
+                                );
+                            });
+                        } else if let Some(overlay) = &mut self.overlay {
+                            let invoker = invoker_arc_mutex.lock().unwrap();
+                            overlay.click(
+                                invoker.autorouter().board(),
+                                point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
+                            );
+                        }
+                    }
+
                     if let (invoker, shared_data, Some(overlay)) = (
                         &invoker_arc_mutex.lock().unwrap(),
                         self.shared_data.lock().unwrap(),
                         &mut self.overlay,
                     ) {
                         let board = invoker.autorouter().board();
-
-                        if ctx.input(|i| i.pointer.any_click()) {
-                            overlay.click(
-                                board,
-                                point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
-                            );
-                        }
 
                         for primitive in board.layout().drawing().layer_primitive_nodes(1) {
                             let shape = primitive.primitive(board.layout().drawing()).shape();
