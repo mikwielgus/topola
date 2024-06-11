@@ -780,6 +780,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
                 &limiting_shape.envelope_3d(0.0, node.primitive(self).layer()),
             )
             .filter_map(|wrapper| {
+                dbg!("a");
                 if let GenericNode::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
                 } else {
@@ -787,19 +788,21 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
                 }
             })
             .filter(|primitive_node| {
+                dbg!("b");
                 maybe_except.is_some_and(|except| !except.contains(&primitive_node))
             })
-            .filter(|primitive_node| !self.are_connectable(node, *primitive_node))
+            .filter(|primitive_node| dbg!(!self.are_connectable(node, *primitive_node)))
             .filter(|primitive_node| {
+                dbg!(node, primitive_node);
                 let infringee_conditions = primitive_node.primitive(self).conditions();
 
                 let epsilon = 1.0;
-                inflated_shape = node.primitive(self).shape().inflate(
+                inflated_shape = dbg!(node.primitive(self).shape().inflate(
                     (self.rules.clearance(&conditions, &infringee_conditions) - epsilon)
                         .clamp(0.0, f64::INFINITY),
-                );
+                ));
 
-                inflated_shape.intersects(&primitive_node.primitive(self).shape())
+                dbg!(inflated_shape.intersects(&dbg!(primitive_node.primitive(self).shape())))
             })
             .map(|primitive_node| primitive_node)
             .next()

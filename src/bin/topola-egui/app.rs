@@ -383,9 +383,9 @@ impl eframe::App for App {
                                             to_layer: 0,
                                             circle: Circle {
                                                 pos: point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
-                                                r: 100.0,
+                                                r: 10000.0,
                                             },
-                                            maybe_net: None,
+                                            maybe_net: Some(1234),
                                         }),
                                         &mut EmptyRouterObserver,
                                     );

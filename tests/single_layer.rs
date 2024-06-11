@@ -5,14 +5,19 @@ use petgraph::{
     visit::{EdgeRef, IntoEdgeReferences, NodeIndexable},
 };
 use topola::{
-    autorouter::{invoker::Invoker, Autorouter},
+    autorouter::{
+        invoker::{Command, Invoker, InvokerError},
+        Autorouter, AutorouterError,
+    },
     drawing::{
         graph::{GetLayer, GetMaybeNet},
         primitive::GetInnerOuter,
     },
     dsn::design::DsnDesign,
     graph::GetNodeIndex,
-    layout::NodeIndex,
+    layout::{via::ViaWeight, NodeIndex},
+    math::Circle,
+    router::EmptyRouterObserver,
     triangulation::GetTrianvertexIndex,
 };
 
@@ -48,6 +53,27 @@ fn test_tht_diode_bridge_rectifier() {
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
     //common::assert_number_of_conncomps(&mut autorouter, 4);
     common::assert_band_length(autorouter.board(), "J2-2", "D4-2", 15500.0, 0.5);
+
+    let mut invoker = Invoker::new(autorouter);
+    let result = invoker.execute(
+        Command::PlaceVia(ViaWeight {
+            from_layer: 0,
+            to_layer: 1,
+            circle: Circle {
+                pos: [0.0, 0.0].into(),
+                r: 200000.0,
+            },
+            maybe_net: Some(1234),
+        }),
+        &mut EmptyRouterObserver,
+    );
+    let result = dbg!(result);
+    assert!(matches!(
+        result,
+        Err(InvokerError::Autorouter(AutorouterError::CouldNotPlaceVia(
+            ..
+        )))
+    ));
 }
 
 #[test]

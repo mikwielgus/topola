@@ -23,6 +23,7 @@ use crate::{
     drawing::{
         dot::FixedDotIndex,
         graph::{GetLayer, GetMaybeNet},
+        Infringement,
     },
     layout::{via::ViaWeight, Layout},
     math::Circle,
@@ -41,6 +42,8 @@ pub enum AutorouterError {
     Navmesh(#[from] NavmeshError),
     #[error(transparent)]
     Router(#[from] RouterError),
+    #[error("could not place via")]
+    CouldNotPlaceVia(#[from] Infringement),
 }
 
 pub enum AutorouterStatus {
@@ -96,7 +99,7 @@ impl<M: MesadataTrait> Autorouter<M> {
     }
 
     pub fn place_via(&mut self, weight: ViaWeight) -> Result<(), AutorouterError> {
-        self.board.layout_mut().add_via(weight);
+        self.board.layout_mut().add_via(weight)?;
         Ok(())
     }
 
