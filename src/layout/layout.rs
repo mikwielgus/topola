@@ -90,6 +90,10 @@ impl<R: RulesTrait> Layout<R> {
     }
 
     pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, Infringement> {
+        self.drawing.add_fixed_dot(weight)
+    }
+
+    pub fn add_fixed_dot_infringably(&mut self, weight: FixedDotWeight) -> FixedDotIndex {
         self.drawing.add_fixed_dot_infringably(weight)
     }
 
@@ -107,6 +111,16 @@ impl<R: RulesTrait> Layout<R> {
         maybe_dot
     }
 
+    pub fn add_zone_fixed_dot_infringably(
+        &mut self,
+        weight: FixedDotWeight,
+        zone: GenericIndex<ZoneWeight>,
+    ) -> FixedDotIndex {
+        let dot = self.drawing.add_fixed_dot_infringably(weight);
+        self.drawing.add_to_compound(dot, zone.into());
+        dot
+    }
+
     pub fn add_fixed_seg(
         &mut self,
         from: FixedDotIndex,
@@ -114,6 +128,15 @@ impl<R: RulesTrait> Layout<R> {
         weight: FixedSegWeight,
     ) -> Result<FixedSegIndex, Infringement> {
         self.drawing.add_fixed_seg(from, to, weight)
+    }
+
+    pub fn add_fixed_seg_infringably(
+        &mut self,
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+        weight: FixedSegWeight,
+    ) -> FixedSegIndex {
+        self.drawing.add_fixed_seg_infringably(from, to, weight)
     }
 
     pub fn add_zone_fixed_seg(
@@ -130,6 +153,18 @@ impl<R: RulesTrait> Layout<R> {
         }
 
         maybe_seg
+    }
+
+    pub fn add_zone_fixed_seg_infringably(
+        &mut self,
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+        weight: FixedSegWeight,
+        zone: GenericIndex<ZoneWeight>,
+    ) -> FixedSegIndex {
+        let seg = self.add_fixed_seg_infringably(from, to, weight);
+        self.drawing.add_to_compound(seg, zone.into());
+        seg
     }
 
     pub fn add_lone_loose_seg(

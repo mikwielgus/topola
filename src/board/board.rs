@@ -36,68 +36,70 @@ impl<M: MesadataTrait> Board<M> {
         }
     }
 
-    pub fn add_fixed_dot(
+    pub fn add_fixed_dot_infringably(
         &mut self,
         weight: FixedDotWeight,
         maybe_pin: Option<String>,
-    ) -> Result<FixedDotIndex, Infringement> {
-        let dot = self.layout.add_fixed_dot(weight)?;
+    ) -> FixedDotIndex {
+        let dot = self.layout.add_fixed_dot_infringably(weight);
 
         if let Some(ref pin) = maybe_pin {
             self.node_to_pinname
                 .insert(GenericNode::Primitive(dot.into()), pin.clone());
         }
 
-        Ok(dot)
+        dot
     }
 
-    pub fn add_zone_fixed_dot(
+    pub fn add_zone_fixed_dot_infringably(
         &mut self,
         weight: FixedDotWeight,
         zone: GenericIndex<ZoneWeight>,
-    ) -> Result<FixedDotIndex, Infringement> {
-        let dot = self.layout.add_zone_fixed_dot(weight, zone)?;
+    ) -> FixedDotIndex {
+        let dot = self.layout.add_zone_fixed_dot_infringably(weight, zone);
 
         if let Some(pin) = self.node_pinname(GenericNode::Compound(zone.into())) {
             self.node_to_pinname
                 .insert(GenericNode::Primitive(dot.into()), pin.to_string());
         }
 
-        Ok(dot)
+        dot
     }
 
-    pub fn add_fixed_seg(
+    pub fn add_fixed_seg_infringably(
         &mut self,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
         maybe_pin: Option<String>,
-    ) -> Result<FixedSegIndex, Infringement> {
-        let seg = self.layout.add_fixed_seg(from, to, weight)?;
+    ) -> FixedSegIndex {
+        let seg = self.layout.add_fixed_seg_infringably(from, to, weight);
 
         if let Some(pin) = maybe_pin {
             self.node_to_pinname
                 .insert(GenericNode::Primitive(seg.into()), pin.to_string());
         }
 
-        Ok(seg)
+        seg
     }
 
-    pub fn add_zone_fixed_seg(
+    pub fn add_zone_fixed_seg_infringably(
         &mut self,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
         zone: GenericIndex<ZoneWeight>,
-    ) -> Result<FixedSegIndex, Infringement> {
-        let seg = self.layout.add_zone_fixed_seg(from, to, weight, zone)?;
+    ) -> FixedSegIndex {
+        let seg = self
+            .layout
+            .add_zone_fixed_seg_infringably(from, to, weight, zone);
 
         if let Some(pin) = self.node_pinname(GenericNode::Compound(zone.into())) {
             self.node_to_pinname
                 .insert(GenericNode::Primitive(seg.into()), pin.to_string());
         }
 
-        Ok(seg)
+        seg
     }
 
     pub fn add_zone(
@@ -145,7 +147,7 @@ impl<M: MesadataTrait> Board<M> {
         if let Some(apex) = self.layout.zone(zone).maybe_apex() {
             apex
         } else {
-            self.add_zone_fixed_dot(
+            self.add_zone_fixed_dot_infringably(
                 FixedDotWeight {
                     circle: Circle {
                         pos: self.layout.zone(zone).shape().center(),
@@ -156,7 +158,6 @@ impl<M: MesadataTrait> Board<M> {
                 },
                 zone,
             )
-            .unwrap()
         }
     }
 

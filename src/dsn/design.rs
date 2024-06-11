@@ -378,16 +378,14 @@ impl DsnDesign {
             r,
         };
 
-        board
-            .add_fixed_dot(
-                FixedDotWeight {
-                    circle,
-                    layer,
-                    maybe_net: Some(net),
-                },
-                maybe_pin.clone(),
-            )
-            .unwrap();
+        board.add_fixed_dot_infringably(
+            FixedDotWeight {
+                circle,
+                layer,
+                maybe_net: Some(net),
+            },
+            maybe_pin.clone(),
+        );
     }
 
     fn add_rect(
@@ -414,107 +412,91 @@ impl DsnDesign {
         );
 
         // Corners.
-        let dot_1_1 = board
-            .add_zone_fixed_dot(
-                FixedDotWeight {
-                    circle: Circle {
-                        pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y1),
-                        r: 0.5,
-                    },
-                    layer,
-                    maybe_net: Some(net),
+        let dot_1_1 = board.add_zone_fixed_dot_infringably(
+            FixedDotWeight {
+                circle: Circle {
+                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y1),
+                    r: 0.5,
                 },
-                zone,
-            )
-            .unwrap();
-        let dot_2_1 = board
-            .add_zone_fixed_dot(
-                FixedDotWeight {
-                    circle: Circle {
-                        pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y1),
-                        r: 0.5,
-                    },
-                    layer,
-                    maybe_net: Some(net),
+                layer,
+                maybe_net: Some(net),
+            },
+            zone,
+        );
+        let dot_2_1 = board.add_zone_fixed_dot_infringably(
+            FixedDotWeight {
+                circle: Circle {
+                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y1),
+                    r: 0.5,
                 },
-                zone,
-            )
-            .unwrap();
-        let dot_2_2 = board
-            .add_zone_fixed_dot(
-                FixedDotWeight {
-                    circle: Circle {
-                        pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y2),
-                        r: 0.5,
-                    },
-                    layer,
-                    maybe_net: Some(net),
+                layer,
+                maybe_net: Some(net),
+            },
+            zone,
+        );
+        let dot_2_2 = board.add_zone_fixed_dot_infringably(
+            FixedDotWeight {
+                circle: Circle {
+                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y2),
+                    r: 0.5,
                 },
-                zone,
-            )
-            .unwrap();
-        let dot_1_2 = board
-            .add_zone_fixed_dot(
-                FixedDotWeight {
-                    circle: Circle {
-                        pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y2),
-                        r: 0.5,
-                    },
-                    layer,
-                    maybe_net: Some(net),
+                layer,
+                maybe_net: Some(net),
+            },
+            zone,
+        );
+        let dot_1_2 = board.add_zone_fixed_dot_infringably(
+            FixedDotWeight {
+                circle: Circle {
+                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y2),
+                    r: 0.5,
                 },
-                zone,
-            )
-            .unwrap();
+                layer,
+                maybe_net: Some(net),
+            },
+            zone,
+        );
         // Sides.
-        board
-            .add_zone_fixed_seg(
-                dot_1_1,
-                dot_2_1,
-                FixedSegWeight {
-                    width: 1.0,
-                    layer,
-                    maybe_net: Some(net),
-                },
-                zone,
-            )
-            .unwrap();
-        board
-            .add_zone_fixed_seg(
-                dot_2_1,
-                dot_2_2,
-                FixedSegWeight {
-                    width: 1.0,
-                    layer,
-                    maybe_net: Some(net),
-                },
-                zone,
-            )
-            .unwrap();
-        board
-            .add_zone_fixed_seg(
-                dot_2_2,
-                dot_1_2,
-                FixedSegWeight {
-                    width: 1.0,
-                    layer,
-                    maybe_net: Some(net),
-                },
-                zone,
-            )
-            .unwrap();
-        board
-            .add_zone_fixed_seg(
-                dot_1_2,
-                dot_1_1,
-                FixedSegWeight {
-                    width: 1.0,
-                    layer,
-                    maybe_net: Some(net),
-                },
-                zone,
-            )
-            .unwrap();
+        board.add_zone_fixed_seg_infringably(
+            dot_1_1,
+            dot_2_1,
+            FixedSegWeight {
+                width: 1.0,
+                layer,
+                maybe_net: Some(net),
+            },
+            zone,
+        );
+        board.add_zone_fixed_seg_infringably(
+            dot_2_1,
+            dot_2_2,
+            FixedSegWeight {
+                width: 1.0,
+                layer,
+                maybe_net: Some(net),
+            },
+            zone,
+        );
+        board.add_zone_fixed_seg_infringably(
+            dot_2_2,
+            dot_1_2,
+            FixedSegWeight {
+                width: 1.0,
+                layer,
+                maybe_net: Some(net),
+            },
+            zone,
+        );
+        board.add_zone_fixed_seg_infringably(
+            dot_1_2,
+            dot_1_1,
+            FixedSegWeight {
+                width: 1.0,
+                layer,
+                maybe_net: Some(net),
+            },
+            zone,
+        );
     }
 
     fn add_path(
@@ -538,19 +520,17 @@ impl DsnDesign {
             coords[0].x as f64,
             coords[0].y as f64,
         );
-        let mut prev_index = board
-            .add_fixed_dot(
-                FixedDotWeight {
-                    circle: Circle {
-                        pos: prev_pos,
-                        r: width / 2.0,
-                    },
-                    layer,
-                    maybe_net: Some(net),
+        let mut prev_index = board.add_fixed_dot_infringably(
+            FixedDotWeight {
+                circle: Circle {
+                    pos: prev_pos,
+                    r: width / 2.0,
                 },
-                maybe_pin.clone(),
-            )
-            .unwrap();
+                layer,
+                maybe_net: Some(net),
+            },
+            maybe_pin.clone(),
+        );
 
         // iterate through path coords starting from the second
         for coord in coords.iter().skip(1) {
@@ -567,33 +547,29 @@ impl DsnDesign {
                 continue;
             }
 
-            let index = board
-                .add_fixed_dot(
-                    FixedDotWeight {
-                        circle: Circle {
-                            pos,
-                            r: width / 2.0,
-                        },
-                        layer,
-                        maybe_net: Some(net),
+            let index = board.add_fixed_dot_infringably(
+                FixedDotWeight {
+                    circle: Circle {
+                        pos,
+                        r: width / 2.0,
                     },
-                    maybe_pin.clone(),
-                )
-                .unwrap();
+                    layer,
+                    maybe_net: Some(net),
+                },
+                maybe_pin.clone(),
+            );
 
             // add a seg between the current and previous coords
-            let _ = board
-                .add_fixed_seg(
-                    prev_index,
-                    index,
-                    FixedSegWeight {
-                        width,
-                        layer,
-                        maybe_net: Some(net),
-                    },
-                    maybe_pin.clone(),
-                )
-                .unwrap();
+            let _ = board.add_fixed_seg_infringably(
+                prev_index,
+                index,
+                FixedSegWeight {
+                    width,
+                    layer,
+                    maybe_net: Some(net),
+                },
+                maybe_pin.clone(),
+            );
 
             prev_index = index;
             prev_pos = pos;
@@ -622,8 +598,30 @@ impl DsnDesign {
         );
 
         // add the first coordinate in the wire path as a dot and save its index
-        let mut prev_index = board
-            .add_zone_fixed_dot(
+        let mut prev_index = board.add_zone_fixed_dot_infringably(
+            FixedDotWeight {
+                circle: Circle {
+                    pos: Self::pos(
+                        place_pos,
+                        place_rot,
+                        pin_pos,
+                        pin_rot,
+                        coords[0].x as f64,
+                        coords[0].y as f64,
+                    ),
+                    r: width / 2.0,
+                },
+                layer,
+                maybe_net: Some(net),
+            },
+            // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
+            //GenericIndex::new(zone.node_index()).into(),
+            zone,
+        );
+
+        // iterate through path coords starting from the second
+        for coord in coords.iter().skip(1) {
+            let index = board.add_zone_fixed_dot_infringably(
                 FixedDotWeight {
                     circle: Circle {
                         pos: Self::pos(
@@ -631,59 +629,31 @@ impl DsnDesign {
                             place_rot,
                             pin_pos,
                             pin_rot,
-                            coords[0].x as f64,
-                            coords[0].y as f64,
-                        ),
+                            coord.x as f64,
+                            coord.y as f64,
+                        )
+                        .into(),
                         r: width / 2.0,
                     },
                     layer,
                     maybe_net: Some(net),
                 },
                 // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
-                //GenericIndex::new(zone.node_index()).into(),
                 zone,
-            )
-            .unwrap();
-
-        // iterate through path coords starting from the second
-        for coord in coords.iter().skip(1) {
-            let index = board
-                .add_zone_fixed_dot(
-                    FixedDotWeight {
-                        circle: Circle {
-                            pos: Self::pos(
-                                place_pos,
-                                place_rot,
-                                pin_pos,
-                                pin_rot,
-                                coord.x as f64,
-                                coord.y as f64,
-                            )
-                            .into(),
-                            r: width / 2.0,
-                        },
-                        layer,
-                        maybe_net: Some(net),
-                    },
-                    // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
-                    zone,
-                )
-                .unwrap();
+            );
 
             // add a seg between the current and previous coords
-            let _ = board
-                .add_zone_fixed_seg(
-                    prev_index,
-                    index,
-                    FixedSegWeight {
-                        width,
-                        layer,
-                        maybe_net: Some(net),
-                    },
-                    // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
-                    zone,
-                )
-                .unwrap();
+            let _ = board.add_zone_fixed_seg_infringably(
+                prev_index,
+                index,
+                FixedSegWeight {
+                    width,
+                    layer,
+                    maybe_net: Some(net),
+                },
+                // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
+                zone,
+            );
 
             prev_index = index;
         }

@@ -148,14 +148,16 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         }
     }
 
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn add_fixed_dot_infringably(
-        &mut self,
-        weight: FixedDotWeight,
-    ) -> Result<FixedDotIndex, Infringement> {
-        self.add_dot_with_infringables(weight, None)
+    pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, Infringement> {
+        self.add_dot_with_infringables(weight, Some(&[]))
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    pub fn add_fixed_dot_infringably(&mut self, weight: FixedDotWeight) -> FixedDotIndex {
+        self.add_dot_infringably(weight)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
@@ -168,23 +170,44 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     where
         GenericIndex<W>: Into<PrimitiveIndex> + Copy,
     {
-        let dot = self.geometry_with_rtree.add_dot(weight);
+        let dot = self.add_dot_infringably(weight);
         self.fail_and_remove_if_infringes_except(dot.into(), infringables)?;
 
         Ok(dot)
     }
 
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 2))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn add_fixed_seg_infringably(
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    fn add_dot_infringably<W: DotWeightTrait<PrimitiveWeight> + GetLayer>(
+        &mut self,
+        weight: W,
+    ) -> GenericIndex<W>
+    where
+        GenericIndex<W>: Into<PrimitiveIndex> + Copy,
+    {
+        self.geometry_with_rtree.add_dot(weight)
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    pub fn add_fixed_seg(
         &mut self,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
     ) -> Result<FixedSegIndex, Infringement> {
-        self.add_seg_with_infringables(from.into(), to.into(), weight, None)
+        self.add_seg_with_infringables(from.into(), to.into(), weight, Some(&[]))
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 2))]
+    pub fn add_fixed_seg_infringably(
+        &mut self,
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+        weight: FixedSegWeight,
+    ) -> FixedSegIndex {
+        self.add_seg_infringably(from.into(), to.into(), weight)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
@@ -229,10 +252,22 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     where
         GenericIndex<W>: Into<PrimitiveIndex> + Copy,
     {
-        let seg = self.geometry_with_rtree.add_seg(from, to, weight);
+        let seg = self.add_seg_infringably(from, to, weight);
         self.fail_and_remove_if_infringes_except(seg.into(), infringables)?;
 
         Ok(seg)
+    }
+
+    fn add_seg_infringably<W: SegWeightTrait<PrimitiveWeight> + GetLayer>(
+        &mut self,
+        from: DotIndex,
+        to: DotIndex,
+        weight: W,
+    ) -> GenericIndex<W>
+    where
+        GenericIndex<W>: Into<PrimitiveIndex>,
+    {
+        self.geometry_with_rtree.add_seg(from, to, weight)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
