@@ -90,7 +90,7 @@ impl<R: RulesTrait> Layout<R> {
     }
 
     pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, Infringement> {
-        self.drawing.add_fixed_dot(weight)
+        self.drawing.add_fixed_dot_infringably(weight)
     }
 
     pub fn add_zone_fixed_dot(

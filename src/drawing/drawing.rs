@@ -151,13 +151,16 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, Infringement> {
-        self.add_dot_infringably(weight, None)
+    pub fn add_fixed_dot_infringably(
+        &mut self,
+        weight: FixedDotWeight,
+    ) -> Result<FixedDotIndex, Infringement> {
+        self.add_dot_with_infringables(weight, None)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    fn add_dot_infringably<W: DotWeightTrait<PrimitiveWeight> + GetLayer>(
+    fn add_dot_with_infringables<W: DotWeightTrait<PrimitiveWeight> + GetLayer>(
         &mut self,
         weight: W,
         infringables: Option<&[PrimitiveIndex]>,
@@ -175,271 +178,13 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn add_fixed_seg(
+    pub fn add_fixed_seg_infringably(
         &mut self,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
     ) -> Result<FixedSegIndex, Infringement> {
-        self.add_seg_infringably(from.into(), to.into(), weight, None)
-    }
-
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 4))]
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() >= old(self.geometry_with_rtree.graph().edge_count() + 5))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn insert_segbend(
-        &mut self,
-        from: DotIndex,
-        around: WraparoundableIndex,
-        dot_weight: LooseDotWeight,
-        seg_weight: SeqLooseSegWeight,
-        bend_weight: LooseBendWeight,
-        cw: bool,
-    ) -> Result<Segbend, LayoutException> {
-        let maybe_wraparound = self.wraparoundable(around).wraparound();
-        let infringables = self.collect().wraparounded_bows(around);
-
-        let segbend = self.add_segbend_infringably(
-            from,
-            around,
-            dot_weight,
-            seg_weight,
-            bend_weight,
-            cw,
-            Some(&infringables),
-        )?;
-
-        if let Some(wraparound) = maybe_wraparound {
-            self.reattach_bend(wraparound, Some(segbend.bend));
-        }
-
-        if let Some(outer) = self.primitive(segbend.bend).outer() {
-            self.update_this_and_outward_bows(outer).map_err(|err| {
-                let joint = self.primitive(segbend.bend).other_joint(segbend.dot);
-                self.remove_segbend(&segbend, joint.into());
-                err
-            })?;
-        }
-
-        // Segs must not cross.
-        if let Some(collision) = self.detect_collision(segbend.seg.into()) {
-            let joint = self.primitive(segbend.bend).other_joint(segbend.dot);
-            self.remove_segbend(&segbend, joint.into());
-            return Err(collision.into());
-        }
-
-        Ok::<Segbend, LayoutException>(segbend)
-    }
-
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count())
-        || self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() - 1)
-        || self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 1))]
-    fn reattach_bend(&mut self, bend: LooseBendIndex, maybe_new_inner: Option<LooseBendIndex>) {
-        self.geometry_with_rtree
-            .reattach_bend(bend.into(), maybe_new_inner.map(Into::into));
-    }
-
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn update_this_and_outward_bows(
-        &mut self,
-        around: LooseBendIndex,
-    ) -> Result<(), LayoutException> {
-        // FIXME: Fail gracefully on infringement.
-        let mut maybe_rail = Some(around);
-
-        while let Some(rail) = maybe_rail {
-            let rail_primitive = self.primitive(rail);
-            let joints = rail_primitive.joints();
-
-            let guide = Guide::new(self);
-            let from_head = guide.rear_head(joints.1);
-            let to_head = guide.rear_head(joints.0);
-
-            if let Some(inner) = rail_primitive.inner() {
-                let from = guide
-                    .head_around_bend_segment(
-                        &from_head.into(),
-                        inner.into(),
-                        true,
-                        self.primitive(rail).width(),
-                    )?
-                    .end_point();
-                let to = guide
-                    .head_around_bend_segment(
-                        &to_head.into(),
-                        inner.into(),
-                        false,
-                        self.primitive(rail).width(),
-                    )?
-                    .end_point();
-                let offset = guide.head_around_bend_offset(
-                    &from_head.into(),
-                    inner.into(),
-                    self.primitive(rail).width(),
-                );
-
-                self.move_dot_infringably(
-                    joints.0.into(),
-                    from,
-                    Some(&self.collect().bend_outer_bows(rail)),
-                )?;
-                self.move_dot_infringably(
-                    joints.1.into(),
-                    to,
-                    Some(&self.collect().bend_outer_bows(rail)),
-                )?;
-
-                self.shift_bend_infringably(
-                    rail.into(),
-                    offset,
-                    Some(&self.collect().bend_outer_bows(rail)),
-                )?;
-
-                // Update offsets in case the rule conditions changed.
-            } else {
-                let core = rail_primitive.core();
-                let from = guide
-                    .head_around_dot_segment(
-                        &from_head.into(),
-                        core.into(),
-                        true,
-                        self.primitive(rail).width(),
-                    )?
-                    .end_point();
-                let to = guide
-                    .head_around_dot_segment(
-                        &to_head.into(),
-                        core.into(),
-                        false,
-                        self.primitive(rail).width(),
-                    )?
-                    .end_point();
-                let offset = guide.head_around_dot_offset(
-                    &from_head.into(),
-                    core.into(),
-                    self.primitive(rail).width(),
-                );
-
-                self.move_dot_infringably(
-                    joints.0.into(),
-                    from,
-                    Some(&self.collect().bend_outer_bows(rail)),
-                )?;
-                self.move_dot_infringably(
-                    joints.1.into(),
-                    to,
-                    Some(&self.collect().bend_outer_bows(rail)),
-                )?;
-
-                self.shift_bend_infringably(
-                    rail.into(),
-                    offset,
-                    Some(&self.collect().bend_outer_bows(rail)),
-                )?;
-            }
-
-            maybe_rail = self.primitive(rail).outer();
-        }
-
-        Ok::<(), LayoutException>(())
-    }
-
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 4))]
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() >= old(self.geometry_with_rtree.graph().edge_count() + 5))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn add_segbend(
-        &mut self,
-        from: DotIndex,
-        around: WraparoundableIndex,
-        dot_weight: LooseDotWeight,
-        seg_weight: SeqLooseSegWeight,
-        bend_weight: LooseBendWeight,
-        cw: bool,
-    ) -> Result<Segbend, LayoutException> {
-        self.add_segbend_infringably(
-            from,
-            around,
-            dot_weight,
-            seg_weight,
-            bend_weight,
-            cw,
-            Some(&self.collect().wraparounded_bows(around)),
-        )
-    }
-
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 4))]
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() >= old(self.geometry_with_rtree.graph().edge_count() + 5))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_segbend_infringably(
-        &mut self,
-        from: DotIndex,
-        around: WraparoundableIndex,
-        dot_weight: LooseDotWeight,
-        seg_weight: SeqLooseSegWeight,
-        bend_weight: LooseBendWeight,
-        cw: bool,
-        infringables: Option<&[PrimitiveIndex]>,
-    ) -> Result<Segbend, LayoutException> {
-        let seg_to = self.add_dot_infringably(dot_weight, infringables)?;
-        let seg = self
-            .add_seg_infringably(from, seg_to.into(), seg_weight, infringables)
-            .map_err(|err| {
-                self.geometry_with_rtree.remove_dot(seg_to.into());
-                err
-            })?;
-
-        let to = self
-            .add_dot_infringably(dot_weight, infringables)
-            .map_err(|err| {
-                self.geometry_with_rtree.remove_seg(seg.into());
-                self.geometry_with_rtree.remove_dot(seg_to.into());
-                err
-            })?;
-
-        let (bend_from, bend_to) = if cw { (to, seg_to) } else { (seg_to, to) };
-
-        let bend = self
-            .add_loose_bend_infringably(bend_from, bend_to, around, bend_weight, infringables)
-            .map_err(|err| {
-                self.geometry_with_rtree.remove_dot(to.into());
-                self.geometry_with_rtree.remove_seg(seg.into());
-                self.geometry_with_rtree.remove_dot(seg_to.into());
-                err
-            })?;
-
-        Ok::<Segbend, LayoutException>(Segbend {
-            seg,
-            dot: seg_to,
-            bend,
-        })
-    }
-
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() - 4))]
-    pub fn remove_segbend(&mut self, segbend: &Segbend, face: LooseDotIndex) {
-        let maybe_outer = self.primitive(segbend.bend).outer();
-
-        // Removing a loose bend affects its outer bends.
-        if let Some(outer) = maybe_outer {
-            self.reattach_bend(outer, self.primitive(segbend.bend).inner());
-        }
-
-        self.geometry_with_rtree.remove_bend(segbend.bend.into());
-        self.geometry_with_rtree.remove_seg(segbend.seg.into());
-
-        // We must remove the dots only after the segs and bends because we need dots to calculate
-        // the shapes, which we first need unchanged to remove the segs and bends from the R-tree.
-
-        self.geometry_with_rtree.remove_dot(face.into());
-        self.geometry_with_rtree.remove_dot(segbend.dot.into());
-
-        if let Some(outer) = maybe_outer {
-            self.update_this_and_outward_bows(outer).unwrap(); // Must never fail.
-        }
+        self.add_seg_with_infringables(from.into(), to.into(), weight, None)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
@@ -452,7 +197,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         to: FixedDotIndex,
         weight: LoneLooseSegWeight,
     ) -> Result<LoneLooseSegIndex, Infringement> {
-        let seg = self.add_seg_infringably(from.into(), to.into(), weight, Some(&[]))?;
+        let seg = self.add_seg_with_infringables(from.into(), to.into(), weight, Some(&[]))?;
         Ok(seg)
     }
 
@@ -466,7 +211,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
     ) -> Result<SeqLooseSegIndex, Infringement> {
-        let seg = self.add_seg_infringably(from, to.into(), weight, Some(&[]))?;
+        let seg = self.add_seg_with_infringables(from, to.into(), weight, Some(&[]))?;
         Ok(seg)
     }
 
@@ -474,7 +219,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() >= old(self.geometry_with_rtree.graph().edge_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_seg_infringably<W: SegWeightTrait<PrimitiveWeight> + GetLayer>(
+    fn add_seg_with_infringables<W: SegWeightTrait<PrimitiveWeight> + GetLayer>(
         &mut self,
         from: DotIndex,
         to: DotIndex,
@@ -495,7 +240,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         || self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 4))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_loose_bend_infringably(
+    fn add_loose_bend_with_infringables(
         &mut self,
         from: LooseDotIndex,
         to: LooseDotIndex,
@@ -523,13 +268,13 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
 
         match around {
             WraparoundableIndex::FixedDot(core) => self
-                .add_core_bend_infringably(from.into(), to.into(), core, weight, infringables)
+                .add_core_bend_with_infringables(from.into(), to.into(), core, weight, infringables)
                 .map_err(Into::into),
             WraparoundableIndex::FixedBend(around) => self
-                .add_outer_bend_infringably(from, to, around.into(), weight, infringables)
+                .add_outer_bend_with_infringables(from, to, around.into(), weight, infringables)
                 .map_err(Into::into),
             WraparoundableIndex::LooseBend(around) => self
-                .add_outer_bend_infringably(from, to, around.into(), weight, infringables)
+                .add_outer_bend_with_infringables(from, to, around.into(), weight, infringables)
                 .map_err(Into::into),
         }
     }
@@ -538,7 +283,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 3))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_core_bend_infringably<W: BendWeightTrait<PrimitiveWeight> + GetLayer>(
+    fn add_core_bend_with_infringables<W: BendWeightTrait<PrimitiveWeight> + GetLayer>(
         &mut self,
         from: DotIndex,
         to: DotIndex,
@@ -561,7 +306,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 4))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_outer_bend_infringably(
+    fn add_outer_bend_with_infringables(
         &mut self,
         from: LooseDotIndex,
         to: LooseDotIndex,
@@ -606,6 +351,264 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn flip_bend(&mut self, bend: FixedBendIndex) {
         self.geometry_with_rtree.flip_bend(bend.into());
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count())
+        || self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() - 1)
+        || self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 1))]
+    fn reattach_bend(&mut self, bend: LooseBendIndex, maybe_new_inner: Option<LooseBendIndex>) {
+        self.geometry_with_rtree
+            .reattach_bend(bend.into(), maybe_new_inner.map(Into::into));
+    }
+
+    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 4))]
+    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() >= old(self.geometry_with_rtree.graph().edge_count() + 5))]
+    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    pub fn insert_segbend(
+        &mut self,
+        from: DotIndex,
+        around: WraparoundableIndex,
+        dot_weight: LooseDotWeight,
+        seg_weight: SeqLooseSegWeight,
+        bend_weight: LooseBendWeight,
+        cw: bool,
+    ) -> Result<Segbend, LayoutException> {
+        let maybe_wraparound = self.wraparoundable(around).wraparound();
+        let infringables = self.collect().wraparounded_bows(around);
+
+        let segbend = self.add_segbend_with_infringables(
+            from,
+            around,
+            dot_weight,
+            seg_weight,
+            bend_weight,
+            cw,
+            Some(&infringables),
+        )?;
+
+        if let Some(wraparound) = maybe_wraparound {
+            self.reattach_bend(wraparound, Some(segbend.bend));
+        }
+
+        if let Some(outer) = self.primitive(segbend.bend).outer() {
+            self.update_this_and_outward_bows(outer).map_err(|err| {
+                let joint = self.primitive(segbend.bend).other_joint(segbend.dot);
+                self.remove_segbend(&segbend, joint.into());
+                err
+            })?;
+        }
+
+        // Segs must not cross.
+        if let Some(collision) = self.detect_collision(segbend.seg.into()) {
+            let joint = self.primitive(segbend.bend).other_joint(segbend.dot);
+            self.remove_segbend(&segbend, joint.into());
+            return Err(collision.into());
+        }
+
+        Ok::<Segbend, LayoutException>(segbend)
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    fn update_this_and_outward_bows(
+        &mut self,
+        around: LooseBendIndex,
+    ) -> Result<(), LayoutException> {
+        // FIXME: Fail gracefully on infringement.
+        let mut maybe_rail = Some(around);
+
+        while let Some(rail) = maybe_rail {
+            let rail_primitive = self.primitive(rail);
+            let joints = rail_primitive.joints();
+
+            let guide = Guide::new(self);
+            let from_head = guide.rear_head(joints.1);
+            let to_head = guide.rear_head(joints.0);
+
+            if let Some(inner) = rail_primitive.inner() {
+                let from = guide
+                    .head_around_bend_segment(
+                        &from_head.into(),
+                        inner.into(),
+                        true,
+                        self.primitive(rail).width(),
+                    )?
+                    .end_point();
+                let to = guide
+                    .head_around_bend_segment(
+                        &to_head.into(),
+                        inner.into(),
+                        false,
+                        self.primitive(rail).width(),
+                    )?
+                    .end_point();
+                let offset = guide.head_around_bend_offset(
+                    &from_head.into(),
+                    inner.into(),
+                    self.primitive(rail).width(),
+                );
+
+                self.move_dot_with_infringables(
+                    joints.0.into(),
+                    from,
+                    Some(&self.collect().bend_outer_bows(rail)),
+                )?;
+                self.move_dot_with_infringables(
+                    joints.1.into(),
+                    to,
+                    Some(&self.collect().bend_outer_bows(rail)),
+                )?;
+
+                self.shift_bend_with_infringables(
+                    rail.into(),
+                    offset,
+                    Some(&self.collect().bend_outer_bows(rail)),
+                )?;
+
+                // Update offsets in case the rule conditions changed.
+            } else {
+                let core = rail_primitive.core();
+                let from = guide
+                    .head_around_dot_segment(
+                        &from_head.into(),
+                        core.into(),
+                        true,
+                        self.primitive(rail).width(),
+                    )?
+                    .end_point();
+                let to = guide
+                    .head_around_dot_segment(
+                        &to_head.into(),
+                        core.into(),
+                        false,
+                        self.primitive(rail).width(),
+                    )?
+                    .end_point();
+                let offset = guide.head_around_dot_offset(
+                    &from_head.into(),
+                    core.into(),
+                    self.primitive(rail).width(),
+                );
+
+                self.move_dot_with_infringables(
+                    joints.0.into(),
+                    from,
+                    Some(&self.collect().bend_outer_bows(rail)),
+                )?;
+                self.move_dot_with_infringables(
+                    joints.1.into(),
+                    to,
+                    Some(&self.collect().bend_outer_bows(rail)),
+                )?;
+
+                self.shift_bend_with_infringables(
+                    rail.into(),
+                    offset,
+                    Some(&self.collect().bend_outer_bows(rail)),
+                )?;
+            }
+
+            maybe_rail = self.primitive(rail).outer();
+        }
+
+        Ok::<(), LayoutException>(())
+    }
+
+    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 4))]
+    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() >= old(self.geometry_with_rtree.graph().edge_count() + 5))]
+    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    pub fn add_segbend(
+        &mut self,
+        from: DotIndex,
+        around: WraparoundableIndex,
+        dot_weight: LooseDotWeight,
+        seg_weight: SeqLooseSegWeight,
+        bend_weight: LooseBendWeight,
+        cw: bool,
+    ) -> Result<Segbend, LayoutException> {
+        self.add_segbend_with_infringables(
+            from,
+            around,
+            dot_weight,
+            seg_weight,
+            bend_weight,
+            cw,
+            Some(&self.collect().wraparounded_bows(around)),
+        )
+    }
+
+    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 4))]
+    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() >= old(self.geometry_with_rtree.graph().edge_count() + 5))]
+    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    fn add_segbend_with_infringables(
+        &mut self,
+        from: DotIndex,
+        around: WraparoundableIndex,
+        dot_weight: LooseDotWeight,
+        seg_weight: SeqLooseSegWeight,
+        bend_weight: LooseBendWeight,
+        cw: bool,
+        infringables: Option<&[PrimitiveIndex]>,
+    ) -> Result<Segbend, LayoutException> {
+        let seg_to = self.add_dot_with_infringables(dot_weight, infringables)?;
+        let seg = self
+            .add_seg_with_infringables(from, seg_to.into(), seg_weight, infringables)
+            .map_err(|err| {
+                self.geometry_with_rtree.remove_dot(seg_to.into());
+                err
+            })?;
+
+        let to = self
+            .add_dot_with_infringables(dot_weight, infringables)
+            .map_err(|err| {
+                self.geometry_with_rtree.remove_seg(seg.into());
+                self.geometry_with_rtree.remove_dot(seg_to.into());
+                err
+            })?;
+
+        let (bend_from, bend_to) = if cw { (to, seg_to) } else { (seg_to, to) };
+
+        let bend = self
+            .add_loose_bend_with_infringables(bend_from, bend_to, around, bend_weight, infringables)
+            .map_err(|err| {
+                self.geometry_with_rtree.remove_dot(to.into());
+                self.geometry_with_rtree.remove_seg(seg.into());
+                self.geometry_with_rtree.remove_dot(seg_to.into());
+                err
+            })?;
+
+        Ok::<Segbend, LayoutException>(Segbend {
+            seg,
+            dot: seg_to,
+            bend,
+        })
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() - 4))]
+    pub fn remove_segbend(&mut self, segbend: &Segbend, face: LooseDotIndex) {
+        let maybe_outer = self.primitive(segbend.bend).outer();
+
+        // Removing a loose bend affects its outer bends.
+        if let Some(outer) = maybe_outer {
+            self.reattach_bend(outer, self.primitive(segbend.bend).inner());
+        }
+
+        self.geometry_with_rtree.remove_bend(segbend.bend.into());
+        self.geometry_with_rtree.remove_seg(segbend.seg.into());
+
+        // We must remove the dots only after the segs and bends because we need dots to calculate
+        // the shapes, which we first need unchanged to remove the segs and bends from the R-tree.
+
+        self.geometry_with_rtree.remove_dot(face.into());
+        self.geometry_with_rtree.remove_dot(segbend.dot.into());
+
+        if let Some(outer) = maybe_outer {
+            self.update_this_and_outward_bows(outer).unwrap(); // Must never fail.
+        }
     }
 
     pub fn segbend(&self, dot: LooseDotIndex) -> Segbend {
@@ -661,25 +664,18 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
                 }
             })
     }
-
-    pub fn node_count(&self) -> usize {
-        self.geometry_with_rtree.graph().node_count()
-    }
-}
-
-impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), Infringement> {
         match dot {
-            DotIndex::Fixed(..) => self.move_dot_infringably(dot, to, Some(&[])),
-            DotIndex::Loose(..) => self.move_dot_infringably(dot, to, Some(&[])),
+            DotIndex::Fixed(..) => self.move_dot_with_infringables(dot, to, Some(&[])),
+            DotIndex::Loose(..) => self.move_dot_with_infringables(dot, to, Some(&[])),
         }
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn move_dot_infringably(
+    fn move_dot_with_infringables(
         &mut self,
         dot: DotIndex,
         to: Point,
@@ -707,7 +703,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn shift_bend_infringably(
+    fn shift_bend_with_infringables(
         &mut self,
         bend: BendIndex,
         offset: f64,
@@ -805,9 +801,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
             true
         }
     }
-}
 
-impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     pub fn geometry(
         &self,
     ) -> &Geometry<
@@ -826,10 +820,6 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
 
     pub fn rtree(&self) -> &RTree<BboxedIndex<GenericNode<PrimitiveIndex, GenericIndex<CW>>>> {
         self.geometry_with_rtree.rtree()
-    }
-
-    pub fn layer_count(&self) -> u64 {
-        self.geometry_with_rtree.layer_count()
     }
 
     pub fn rules(&self) -> &R {
@@ -860,6 +850,14 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
 
     pub fn loose(&self, index: LooseIndex) -> Loose<CW, R> {
         Loose::new(index, self)
+    }
+
+    pub fn layer_count(&self) -> u64 {
+        self.geometry_with_rtree.layer_count()
+    }
+
+    pub fn node_count(&self) -> usize {
+        self.geometry_with_rtree.graph().node_count()
     }
 }
 
