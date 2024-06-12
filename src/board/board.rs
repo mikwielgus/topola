@@ -6,7 +6,6 @@ use crate::{
         band::BandIndex,
         dot::{FixedDotIndex, FixedDotWeight},
         graph::{GetLayer, GetMaybeNet, PrimitiveIndex},
-        rules::RulesTrait,
         seg::{FixedSegIndex, FixedSegWeight},
         Infringement,
     },

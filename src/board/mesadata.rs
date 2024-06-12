@@ -1,6 +1,5 @@
 use crate::{drawing::rules::RulesTrait, layout::NodeIndex};
 
-// TODO: use this trait.
 pub trait MesadataTrait: RulesTrait {
     fn bename_layer(&mut self, layer: u64, layername: String);
     fn layer_layername(&self, layer: u64) -> Option<&str>;

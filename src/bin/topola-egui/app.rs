@@ -40,7 +40,7 @@ use topola::{
     },
 };
 
-use crate::{overlay::Overlay, painter::Painter};
+use crate::{layers::Layers, overlay::Overlay, painter::Painter};
 
 #[derive(Debug, Default)]
 struct SharedData {
@@ -76,6 +76,9 @@ pub struct App {
 
     #[serde(skip)]
     show_ratsnest: bool,
+
+    #[serde(skip)]
+    layers: Option<Layers>,
 }
 
 impl Default for App {
@@ -88,6 +91,7 @@ impl Default for App {
             from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
             is_placing_via: false,
             show_ratsnest: true,
+            layers: None,
         }
     }
 }
@@ -169,6 +173,7 @@ impl eframe::App for App {
                 let design = DsnDesign::load_from_string(file_contents).unwrap();
                 let board = design.make_board();
                 self.overlay = Some(Overlay::new(&board).unwrap());
+                self.layers = Some(Layers::new(&board));
                 self.invoker = Some(Arc::new(Mutex::new(Invoker::new(
                     Autorouter::new(board).unwrap(),
                 ))));
@@ -178,6 +183,7 @@ impl eframe::App for App {
                 let design = DsnDesign::load_from_file(&path).unwrap();
                 let board = design.make_board();
                 self.overlay = Some(Overlay::new(&board).unwrap());
+                self.layers = Some(Layers::new(&board));
                 self.invoker = Some(Arc::new(Mutex::new(Invoker::new(
                     Autorouter::new(board).unwrap(),
                 ))));
@@ -337,6 +343,12 @@ impl eframe::App for App {
                 egui::widgets::global_dark_light_mode_buttons(ui);
             });
         });
+
+        if let Some(ref mut layers) = self.layers {
+            if let Some(invoker_arc_mutex) = &self.invoker {
+                layers.update(ctx, invoker_arc_mutex.lock().unwrap().autorouter().board());
+            }
+        }
 
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
