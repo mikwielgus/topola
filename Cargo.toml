@@ -32,6 +32,10 @@ itertools = "0.8.2"
 contracts = "0.6.3"
 bimap = "0.6.3"
 log = "0.4"
+utf8-chars = "3.0.2"
+
+[dependencies.dsn_derive]
+path = "macro/dsn_derive"
 
 [dependencies.geo]
 version = "0.25.1"
