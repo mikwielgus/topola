@@ -1,8 +1,8 @@
+mod common;
 mod de;
 pub mod design;
 pub mod mesadata;
-mod structure;
-mod common;
-mod structure2;
 mod read;
+mod structure;
+mod structure2;
 mod write;

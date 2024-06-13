@@ -5,17 +5,17 @@ use geo::Point;
 use petgraph::{
     stable_graph::{NodeIndex, StableDiGraph},
     visit::EdgeRef,
-    Direction::{Incoming, Outgoing},
+    Direction::Incoming,
 };
 
 use crate::{
     drawing::{
-        bend::{BendWeight, FixedBendWeight, LooseBendWeight},
-        dot::{DotWeight, FixedDotWeight, LooseDotWeight},
+        bend::BendWeight,
+        dot::DotWeight,
         graph::{PrimitiveWeight, Retag},
         primitive::Primitive,
         rules::RulesTrait,
-        seg::{FixedSegWeight, LoneLooseSegWeight, SegWeight, SeqLooseSegWeight},
+        seg::SegWeight,
     },
     geometry::{
         compound::CompoundManagerTrait,

@@ -1,9 +1,5 @@
-use std::sync::{Arc, Mutex};
-
-use geo::geometry::Point;
 use geo::EuclideanDistance;
 use petgraph::visit::EdgeRef;
-use spade::InsertionError;
 use thiserror::Error;
 
 use crate::{
@@ -11,7 +7,6 @@ use crate::{
         band::BandIndex,
         dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
-        guide::HeadTrait,
         primitive::MakePrimitiveShape,
         rules::RulesTrait,
     },

@@ -1,4 +1,4 @@
-use crate::{drawing::rules::RulesTrait, layout::NodeIndex};
+use crate::drawing::rules::RulesTrait;
 
 pub trait MesadataTrait: RulesTrait {
     fn bename_layer(&mut self, layer: u64, layername: String);

@@ -1,8 +1,4 @@
-use dsn_derive::ReadDsn;
-
-use super::structure2::*;
-use super::read::{ListTokenizer, ReadDsn, ParseError};
-use super::write::{ListWriter, WriteDsn};
+use super::read::ParseError;
 
 pub enum ListToken {
     Start { name: String },
@@ -39,7 +35,7 @@ impl ListToken {
         }
     }
 
-    pub fn expect_end(self) -> Result<(), ParseError>  {
+    pub fn expect_end(self) -> Result<(), ParseError> {
         if let Self::End = self {
             Ok(())
         } else {
@@ -55,4 +51,3 @@ impl ListToken {
         }
     }
 }
-

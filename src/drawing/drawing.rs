@@ -2,7 +2,7 @@ use contracts::debug_ensures;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 
-use rstar::{RTree, RTreeObject, AABB};
+use rstar::{RTree, AABB};
 use thiserror::Error;
 
 use crate::drawing::{

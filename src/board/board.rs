@@ -5,9 +5,8 @@ use crate::{
     drawing::{
         band::BandIndex,
         dot::{FixedDotIndex, FixedDotWeight},
-        graph::{GetLayer, GetMaybeNet, PrimitiveIndex},
+        graph::{GetLayer, GetMaybeNet},
         seg::{FixedSegIndex, FixedSegWeight},
-        Infringement,
     },
     geometry::{shape::ShapeTrait, GenericNode},
     graph::GenericIndex,

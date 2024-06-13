@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     board::{mesadata::MesadataTrait, Board},
-    drawing::graph::{GetLayer, MakePrimitive, PrimitiveIndex},
+    drawing::graph::{GetLayer, MakePrimitive},
     geometry::compound::CompoundManagerTrait,
     graph::{GenericIndex, GetNodeIndex},
     layout::{zone::ZoneWeight, CompoundWeight, NodeIndex},

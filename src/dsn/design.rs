@@ -1,6 +1,6 @@
 use std::collections::HashMap;
 
-use geo::{point, Point, Rotate, Translate};
+use geo::{point, Point, Rotate};
 use thiserror::Error;
 
 use crate::{
@@ -11,8 +11,6 @@ use crate::{
         mesadata::DsnMesadata,
         structure::{self, DsnFile, Layer, Pcb, Shape},
     },
-    geometry::compound::CompoundManagerTrait,
-    graph::{GenericIndex, GetNodeIndex},
     layout::{zone::SolidZoneWeight, Layout},
     math::Circle,
 };
@@ -32,12 +30,11 @@ pub struct DsnDesign {
 
 impl DsnDesign {
     pub fn load_from_file(filename: &str) -> Result<Self, LoadingError> {
-
         let file = std::fs::File::open(filename)?;
         let reader = std::io::BufReader::new(file);
         let mut list_reader = super::read::ListTokenizer::new(reader);
 
-        let mut dsn = list_reader.read_value::<super::structure2::DsnFile>();
+        let dsn = list_reader.read_value::<super::structure2::DsnFile>();
 
         // TODO: make_board() still uses the old version of structure.rs
         // so we can't pass the data to topola for real
@@ -62,22 +59,28 @@ impl DsnDesign {
                 if let Some(net) = net_outs.get_mut(&wire.net) {
                     net.wire.push(wire);
                 } else {
-                    net_outs.insert(wire.net.clone(), NetOut {
-                        name: wire.net.clone(),
-                        wire: vec!(wire),
-                        via: Vec::new()
-                    });
+                    net_outs.insert(
+                        wire.net.clone(),
+                        NetOut {
+                            name: wire.net.clone(),
+                            wire: vec![wire],
+                            via: Vec::new(),
+                        },
+                    );
                 }
             }
             for via in dsn.pcb.wiring.vias {
                 if let Some(net) = net_outs.get_mut(&via.net) {
                     net.via.push(via);
                 } else {
-                    net_outs.insert(via.net.clone(), NetOut {
-                        name: via.net.clone(),
-                        wire: Vec::new(),
-                        via: vec!(via)
-                    });
+                    net_outs.insert(
+                        via.net.clone(),
+                        NetOut {
+                            name: via.net.clone(),
+                            wire: Vec::new(),
+                            via: vec![via],
+                        },
+                    );
                 }
             }
 
@@ -89,7 +92,7 @@ impl DsnDesign {
                         resolution: Resolution {
                             unit: "um".into(),
                             // TODO: why does resolution need to be adjusted from what was imported?
-                            value: 1.0
+                            value: 1.0,
                         },
                         library_out: Library {
                             images: Vec::new(),
@@ -98,8 +101,8 @@ impl DsnDesign {
                         network_out: NetworkOut {
                             net: net_outs.into_values().collect(),
                         },
-                    }
-                }
+                    },
+                },
             };
 
             println!("{:?}", list_writer.write_value(&ses));

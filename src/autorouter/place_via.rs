@@ -1,5 +1,3 @@
-use geo::Point;
-
 use crate::{
     autorouter::{Autorouter, AutorouterError},
     board::mesadata::MesadataTrait,

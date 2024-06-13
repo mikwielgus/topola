@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use contracts::debug_ensures;
 
 use crate::{
@@ -13,7 +11,7 @@ use crate::{
     layout::Layout,
     router::{
         draw::{Draw, DrawException},
-        navmesh::{Navmesh, NavvertexIndex},
+        navmesh::NavvertexIndex,
     },
 };
 

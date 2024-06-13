@@ -1,8 +1,5 @@
-use std::collections::HashMap;
-
 use enum_dispatch::enum_dispatch;
 use geo::Point;
-use petgraph::stable_graph::StableDiGraph;
 use rstar::AABB;
 
 use crate::{
@@ -10,7 +7,7 @@ use crate::{
         band::BandIndex,
         bend::LooseBendWeight,
         dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-        graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight, Retag},
+        graph::{GetMaybeNet, PrimitiveIndex},
         primitive::{GetJoints, GetOtherJoint},
         rules::RulesTrait,
         seg::{
@@ -21,17 +18,12 @@ use crate::{
         wraparoundable::WraparoundableIndex,
         Drawing, Infringement, LayoutException,
     },
-    geometry::{
-        compound::CompoundManagerTrait, poly::PolyShape, primitive::PrimitiveShapeTrait,
-        shape::ShapeTrait, BendWeightTrait, DotWeightTrait, GenericNode, Geometry, GeometryLabel,
-        GetWidth, SegWeightTrait,
-    },
+    geometry::{compound::CompoundManagerTrait, primitive::PrimitiveShapeTrait, GenericNode},
     graph::{GenericIndex, GetNodeIndex},
     layout::{
         via::{Via, ViaWeight},
-        zone::{GetMaybeApex, MakePolyShape, Zone, ZoneWeight},
+        zone::{Zone, ZoneWeight},
     },
-    math::Circle,
 };
 
 #[derive(Debug, Clone, Copy)]
@@ -207,9 +199,9 @@ impl<R: RulesTrait> Layout<R> {
     pub fn band_length(&self, band: BandIndex) -> f64 {
         match band {
             BandIndex::Straight(seg) => self.drawing.geometry().seg_shape(seg.into()).length(),
-            BandIndex::Bended(mut start_seg) => {
+            BandIndex::Bended(start_seg) => {
                 let mut length = self.drawing.geometry().seg_shape(start_seg.into()).length();
-                let mut start_dot = self.drawing.primitive(start_seg).joints().1;
+                let start_dot = self.drawing.primitive(start_seg).joints().1;
 
                 let bend = self.drawing.primitive(start_dot).bend();
                 length += self.drawing.geometry().bend_shape(bend.into()).length();

@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
-    data::{Element, FromElements},
+    data::Element,
     graph::{EdgeIndex, NodeIndex, UnGraph},
     unionfind::UnionFind,
     visit::{EdgeRef, IntoEdgeReferences, NodeIndexable},

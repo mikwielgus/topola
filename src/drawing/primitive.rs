@@ -10,12 +10,8 @@ use crate::{
         bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight, Retag},
-        loose::LooseIndex,
         rules::{Conditions, GetConditions, RulesTrait},
-        seg::{
-            FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex,
-            SeqLooseSegWeight,
-        },
+        seg::{FixedSegWeight, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex, SeqLooseSegWeight},
         Drawing,
     },
     geometry::GenericNode,

@@ -1,7 +1,7 @@
-use thiserror::Error;
-use utf8_chars::BufReadCharsExt;
 use super::common::ListToken;
 use super::structure2::Parser;
+use thiserror::Error;
+use utf8_chars::BufReadCharsExt;
 
 #[derive(Error, Debug)]
 pub enum ParseError {
@@ -33,7 +33,6 @@ impl<R: std::io::BufRead> ReadDsn<R> for Parser {
         })
     }
 }
-
 
 impl<R: std::io::BufRead> ReadDsn<R> for String {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
@@ -236,12 +235,16 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         Ok(if chr == '(' {
             self.next_char().unwrap();
             self.skip_whitespace()?;
-            ListToken::Start { name: self.read_string()? }
+            ListToken::Start {
+                name: self.read_string()?,
+            }
         } else if chr == ')' {
             self.next_char().unwrap();
             ListToken::End
         } else {
-            ListToken::Leaf { value: self.read_string()? }
+            ListToken::Leaf {
+                value: self.read_string()?,
+            }
         })
     }
 
@@ -256,9 +259,15 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         Ok(value)
     }
 
-    pub fn read_optional<T: ReadDsn<R>>(&mut self, name: &'static str) -> Result<Option<T>, ParseError> {
+    pub fn read_optional<T: ReadDsn<R>>(
+        &mut self,
+        name: &'static str,
+    ) -> Result<Option<T>, ParseError> {
         let token = self.consume_token()?;
-        if let ListToken::Start { name: ref actual_name } = token {
+        if let ListToken::Start {
+            name: ref actual_name,
+        } = token
+        {
             if actual_name == name {
                 let value = self.read_value::<T>()?;
                 self.consume_token()?.expect_end()?;
@@ -282,31 +291,36 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
                 array.push(self.read_value::<T>()?);
             } else {
                 self.return_token(token);
-                break
+                break;
             }
         }
         Ok(array)
     }
 
-    pub fn read_named_array<T: ReadDsn<R>>(&mut self, name: &'static str) -> Result<Vec<T>, ParseError> {
+    pub fn read_named_array<T: ReadDsn<R>>(
+        &mut self,
+        name: &'static str,
+    ) -> Result<Vec<T>, ParseError> {
         let mut array = Vec::<T>::new();
         loop {
             let token = self.consume_token()?;
-            if let ListToken::Start { name: ref actual_name } = token {
+            if let ListToken::Start {
+                name: ref actual_name,
+            } = token
+            {
                 if actual_name == name {
                     let value = self.read_value::<T>()?;
                     self.consume_token()?.expect_end()?;
                     array.push(value);
                 } else {
                     self.return_token(token);
-                    break
+                    break;
                 }
             } else {
                 self.return_token(token);
-                break
+                break;
             }
         }
         Ok(array)
     }
 }
-

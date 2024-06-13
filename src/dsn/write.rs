@@ -16,9 +16,9 @@ impl<W: io::Write> WriteDsn<W> for String {
         let string = if self.len() == 0 {
             "\"\"".to_string()
         } else if self.contains(" ")
-               || self.contains("(")
-               || self.contains(")")
-               || self.contains("\n")
+            || self.contains("(")
+            || self.contains(")")
+            || self.contains("\n")
         {
             format!("\"{}\"", self)
         } else {
@@ -83,7 +83,8 @@ impl<W: io::Write> ListWriter<W> {
 
         match token {
             ListToken::Start { name } => {
-                write!(self.writable,
+                write!(
+                    self.writable,
                     "\n{}({}",
                     "  ".repeat(self.indent_level),
                     name
@@ -101,10 +102,7 @@ impl<W: io::Write> ListWriter<W> {
                 if self.indent_level <= self.multiline_level {
                     self.indent_level -= 1;
                     self.line_len = 2 * self.indent_level + len;
-                    write!(self.writable,
-                        "\n{})",
-                        "  ".repeat(self.indent_level)
-                    )
+                    write!(self.writable, "\n{})", "  ".repeat(self.indent_level))
                 } else {
                     self.indent_level -= 1;
                     self.line_len += len;
@@ -118,10 +116,7 @@ impl<W: io::Write> ListWriter<W> {
         self.write_token(ListToken::Leaf { value })
     }
 
-    pub fn write_value<T: WriteDsn<W>>(
-        &mut self,
-        value: &T,
-    ) -> Result<(), io::Error> {
+    pub fn write_value<T: WriteDsn<W>>(&mut self, value: &T) -> Result<(), io::Error> {
         value.write_dsn(self)
     }
 
@@ -129,10 +124,10 @@ impl<W: io::Write> ListWriter<W> {
         &mut self,
         name: &'static str,
         value: &T,
-    )
-        -> Result<(), io::Error>
-    {
-        self.write_token(ListToken::Start { name: name.to_string() } )?;
+    ) -> Result<(), io::Error> {
+        self.write_token(ListToken::Start {
+            name: name.to_string(),
+        })?;
         self.write_value(value)?;
         self.write_token(ListToken::End)?;
 
@@ -143,9 +138,7 @@ impl<W: io::Write> ListWriter<W> {
         &mut self,
         name: &'static str,
         optional: &Option<T>,
-    )
-        -> Result<(), io::Error>
-    {
+    ) -> Result<(), io::Error> {
         if let Some(value) = optional {
             self.write_named(name, value)?;
         }
@@ -153,12 +146,7 @@ impl<W: io::Write> ListWriter<W> {
         Ok(())
     }
 
-    pub fn write_array<T: WriteDsn<W>>(
-        &mut self,
-        array: &Vec<T>,
-    )
-        -> Result<(), io::Error>
-    {
+    pub fn write_array<T: WriteDsn<W>>(&mut self, array: &Vec<T>) -> Result<(), io::Error> {
         for elem in array {
             self.write_value(elem)?;
         }
@@ -170,9 +158,7 @@ impl<W: io::Write> ListWriter<W> {
         &mut self,
         name: &'static str,
         array: &Vec<T>,
-    )
-        -> Result<(), io::Error>
-    {
+    ) -> Result<(), io::Error> {
         for elem in array {
             self.write_named(name, elem)?;
         }

@@ -1,4 +1,3 @@
-use enum_dispatch::enum_dispatch;
 use geo::{Centroid, Contains, Point, Polygon};
 
 use crate::geometry::shape::ShapeTrait;

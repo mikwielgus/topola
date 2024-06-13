@@ -1,16 +1,14 @@
 use enum_dispatch::enum_dispatch;
 
 use geo::{LineString, Point, Polygon};
-use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     drawing::{
-        dot::{DotIndex, FixedDotIndex},
-        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight, Retag},
-        primitive::{GenericPrimitive, GetLimbs, Primitive},
+        dot::FixedDotIndex,
+        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex},
+        primitive::GetLimbs,
         rules::RulesTrait,
         seg::SegIndex,
-        Drawing,
     },
     geometry::{compound::CompoundManagerTrait, poly::PolyShape, GetPos},
     graph::{GenericIndex, GetNodeIndex},

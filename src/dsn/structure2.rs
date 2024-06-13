@@ -1,10 +1,10 @@
+use super::common::ListToken;
 use super::read::ReadDsn;
+use super::read::{ListTokenizer, ParseError};
+use super::write::ListWriter;
 use super::write::WriteDsn;
 use dsn_derive::ReadDsn;
 use dsn_derive::WriteDsn;
-use super::common::ListToken;
-use super::read::{ListTokenizer, ParseError};
-use super::write::ListWriter;
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Dummy {}
@@ -16,7 +16,8 @@ pub struct SesFile {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Session {
-    #[anon] pub id: String,
+    #[anon]
+    pub id: String,
     pub routes: Routes,
 }
 
@@ -35,7 +36,8 @@ pub struct NetworkOut {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct NetOut {
-    #[anon] pub name: String,
+    #[anon]
+    pub name: String,
     #[vec("wire")]
     pub wire: Vec<Wire>,
     #[vec("via")]
@@ -49,7 +51,8 @@ pub struct DsnFile {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Pcb {
-    #[anon] pub name: String,
+    #[anon]
+    pub name: String,
     pub parser: Parser,
     pub resolution: Resolution,
     pub unit: String,
@@ -70,8 +73,10 @@ pub struct Parser {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Resolution {
-    #[anon] pub unit: String,
-    #[anon] pub value: f32,
+    #[anon]
+    pub unit: String,
+    #[anon]
+    pub value: f32,
 }
 
 #[derive(ReadDsn, WriteDsn, Debug)]
@@ -87,7 +92,8 @@ pub struct Structure {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Layer {
-    #[anon] pub name: String,
+    #[anon]
+    pub name: String,
     pub r#type: String,
     pub property: Property,
 }
@@ -104,7 +110,8 @@ pub struct Boundary {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Plane {
-    #[anon] pub net: String,
+    #[anon]
+    pub net: String,
     pub polygon: Polygon,
 }
 
@@ -122,7 +129,8 @@ pub struct Placement {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Component {
-    #[anon] pub name: String,
+    #[anon]
+    pub name: String,
     #[vec("place")]
     pub places: Vec<Place>,
 }
@@ -130,11 +138,16 @@ pub struct Component {
 #[derive(ReadDsn, WriteDsn, Debug)]
 #[allow(non_snake_case)]
 pub struct Place {
-    #[anon] pub name: String,
-    #[anon] pub x: f32,
-    #[anon] pub y: f32,
-    #[anon] pub side: String,
-    #[anon] pub rotation: f32,
+    #[anon]
+    pub name: String,
+    #[anon]
+    pub x: f32,
+    #[anon]
+    pub y: f32,
+    #[anon]
+    pub side: String,
+    #[anon]
+    pub rotation: f32,
     pub PN: Option<String>,
 }
 
@@ -148,7 +161,8 @@ pub struct Library {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Image {
-    #[anon] pub name: String,
+    #[anon]
+    pub name: String,
     #[vec("outline")]
     pub outlines: Vec<Outline>,
     #[vec("pin")]
@@ -164,11 +178,15 @@ pub struct Outline {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Pin {
-    #[anon] pub name: String,
+    #[anon]
+    pub name: String,
     pub rotate: Option<f32>,
-    #[anon] pub id: String,
-    #[anon] pub x: f32,
-    #[anon] pub y: f32,
+    #[anon]
+    pub id: String,
+    #[anon]
+    pub x: f32,
+    #[anon]
+    pub y: f32,
 }
 
 #[derive(ReadDsn, WriteDsn, Debug)]
@@ -178,13 +196,16 @@ pub struct Rotate {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Keepout {
-    #[anon] pub idk: String,
-    #[anon] pub shape: Shape,
+    #[anon]
+    pub idk: String,
+    #[anon]
+    pub shape: Shape,
 }
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Padstack {
-    #[anon] pub name: String,
+    #[anon]
+    pub name: String,
     #[vec("shape")]
     pub shapes: Vec<Shape>,
     pub attach: bool,
@@ -227,9 +248,12 @@ impl<W: std::io::Write> WriteDsn<W> for Shape {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Circle {
-    #[anon] pub layer: String,
-    #[anon] pub diameter: u32,
-    #[anon] pub offset: Option<Point>,
+    #[anon]
+    pub layer: String,
+    #[anon]
+    pub diameter: u32,
+    #[anon]
+    pub offset: Option<Point>,
 }
 
 #[derive(ReadDsn, WriteDsn, Debug)]
@@ -243,7 +267,8 @@ pub struct Network {
 #[derive(ReadDsn, WriteDsn, Debug)]
 // dsn names this "net", but it's a structure unrelated to "net" in wiring or elsewhere
 pub struct NetPinAssignments {
-    #[anon] pub name: String,
+    #[anon]
+    pub name: String,
     pub pins: Pins,
 }
 
@@ -309,7 +334,7 @@ impl<R: std::io::BufRead> ReadDsn<R> for Vec<Point> {
                 array.push(Point { x, y });
             } else {
                 tokenizer.return_token(token);
-                break
+                break;
             }
         }
         Ok(array)
@@ -352,25 +377,36 @@ impl<W: std::io::Write> WriteDsn<W> for Option<Point> {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Polygon {
-    #[anon] pub layer: String,
-    #[anon] pub width: f32,
-    #[anon] pub coords: Vec<Point>,
+    #[anon]
+    pub layer: String,
+    #[anon]
+    pub width: f32,
+    #[anon]
+    pub coords: Vec<Point>,
 }
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Path {
-    #[anon] pub layer: String,
-    #[anon] pub width: f32,
-    #[anon] pub coords: Vec<Point>,
+    #[anon]
+    pub layer: String,
+    #[anon]
+    pub width: f32,
+    #[anon]
+    pub coords: Vec<Point>,
 }
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Rect {
-    #[anon] pub layer: String,
-    #[anon] pub x1: f32,
-    #[anon] pub y1: f32,
-    #[anon] pub x2: f32,
-    #[anon] pub y2: f32,
+    #[anon]
+    pub layer: String,
+    #[anon]
+    pub x1: f32,
+    #[anon]
+    pub y1: f32,
+    #[anon]
+    pub x2: f32,
+    #[anon]
+    pub y2: f32,
 }
 
 #[derive(ReadDsn, WriteDsn, Debug)]
@@ -394,6 +430,7 @@ pub struct Rule {
 
 #[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Clearance {
-    #[anon] pub value: f32,
+    #[anon]
+    pub value: f32,
     pub r#type: Option<String>,
 }

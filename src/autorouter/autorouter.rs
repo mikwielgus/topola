@@ -1,14 +1,4 @@
-use std::{
-    collections::HashSet,
-    iter::Peekable,
-    sync::{Arc, Mutex},
-};
-
-use geo::Point;
-use petgraph::{
-    graph::{EdgeIndex, EdgeIndices},
-    visit::{EdgeRef, IntoEdgeReferences},
-};
+use petgraph::graph::EdgeIndex;
 use spade::InsertionError;
 use thiserror::Error;
 
@@ -20,17 +10,9 @@ use crate::{
         selection::Selection,
     },
     board::{mesadata::MesadataTrait, Board},
-    drawing::{
-        dot::FixedDotIndex,
-        graph::{GetLayer, GetMaybeNet},
-        Infringement,
-    },
-    layout::{via::ViaWeight, Layout},
-    math::Circle,
-    router::{
-        navmesh::{Navmesh, NavmeshError},
-        Router, RouterError, RouterObserverTrait,
-    },
+    drawing::{dot::FixedDotIndex, Infringement},
+    layout::via::ViaWeight,
+    router::{navmesh::NavmeshError, RouterError, RouterObserverTrait},
     triangulation::GetTrianvertexIndex,
 };
 

@@ -1,24 +1,11 @@
-use std::fs::File;
-
-use petgraph::{
-    unionfind::UnionFind,
-    visit::{EdgeRef, IntoEdgeReferences, NodeIndexable},
-};
 use topola::{
     autorouter::{
         invoker::{Command, Invoker, InvokerError},
-        Autorouter, AutorouterError,
+        AutorouterError,
     },
-    drawing::{
-        graph::{GetLayer, GetMaybeNet},
-        primitive::GetInnerOuter,
-    },
-    dsn::design::DsnDesign,
-    graph::GetNodeIndex,
-    layout::{via::ViaWeight, NodeIndex},
+    layout::via::ViaWeight,
     math::Circle,
     router::EmptyRouterObserver,
-    triangulation::GetTrianvertexIndex,
 };
 
 mod common;
