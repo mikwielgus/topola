@@ -40,10 +40,10 @@ use topola::{
     },
 };
 
-use crate::{layers::Layers, overlay::Overlay, painter::Painter};
+use crate::{layers::Layers, overlay::Overlay, painter::Painter, top::Top};
 
 #[derive(Debug, Default)]
-struct SharedData {
+pub struct SharedData {
     pub from: Option<FixedDotIndex>,
     pub to: Option<FixedDotIndex>,
     pub navmesh: Option<Navmesh>,
@@ -72,10 +72,7 @@ pub struct App {
     from_rect: egui::emath::Rect,
 
     #[serde(skip)]
-    is_placing_via: bool,
-
-    #[serde(skip)]
-    show_ratsnest: bool,
+    top: Top,
 
     #[serde(skip)]
     layers: Option<Layers>,
@@ -89,8 +86,7 @@ impl Default for App {
             shared_data: Default::default(),
             text_channel: channel(),
             from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
-            is_placing_via: false,
-            show_ratsnest: true,
+            top: Top::new(),
             layers: None,
         }
     }
@@ -108,8 +104,8 @@ impl App {
     }
 }
 
-struct DebugRouterObserver {
-    shared_data: Arc<Mutex<SharedData>>,
+pub struct DebugRouterObserver {
+    pub shared_data: Arc<Mutex<SharedData>>,
 }
 
 impl<R: RulesTrait + std::fmt::Debug> RouterObserverTrait<R> for DebugRouterObserver {
@@ -166,8 +162,6 @@ impl eframe::App for App {
 
     /// Called each time the UI has to be repainted.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        let mut has_acted = false;
-
         if cfg!(target_arch = "wasm32") {
             if let Ok(file_contents) = self.text_channel.1.try_recv() {
                 let design = DsnDesign::load_from_string(file_contents).unwrap();
@@ -190,159 +184,13 @@ impl eframe::App for App {
             }
         }
 
-        egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
-            egui::menu::bar(ui, |ui| {
-                ui.menu_button("File", |ui| {
-                    if ui.button("Open").clicked() {
-                        // `Context` is cheap to clone as it's wrapped in an `Arc`.
-                        let ctx = ui.ctx().clone();
-                        // NOTE: On Linux, this requires Zenity to be installed on your system.
-                        let sender = self.text_channel.0.clone();
-                        let task = rfd::AsyncFileDialog::new().pick_file();
-
-                        execute(async move {
-                            if let Some(file_handle) = task.await {
-                                sender.send(channel_text(file_handle).await);
-                                ctx.request_repaint();
-                            }
-                        });
-                    }
-
-                    ui.separator();
-
-                    if ui.button("Load history").clicked() {
-                        if let Some(invoker_arc_mutex) = &self.invoker {
-                            let invoker_arc_mutex = invoker_arc_mutex.clone();
-                            let ctx = ui.ctx().clone();
-                            let task = rfd::AsyncFileDialog::new().pick_file();
-
-                            execute(async move {
-                                if let Some(file_handle) = task.await {
-                                    let path = file_handle.path();
-                                    let mut invoker = invoker_arc_mutex.lock().unwrap();
-                                    let mut file = File::open(path).unwrap();
-                                    invoker.replay(serde_json::from_reader(file).unwrap());
-                                }
-                            });
-                        }
-                    }
-
-                    if ui.button("Save history").clicked() {
-                        if let Some(invoker_arc_mutex) = &self.invoker {
-                            let invoker_arc_mutex = invoker_arc_mutex.clone();
-                            let ctx = ui.ctx().clone();
-                            let task = rfd::AsyncFileDialog::new().save_file();
-
-                            execute(async move {
-                                if let Some(file_handle) = task.await {
-                                    let path = file_handle.path();
-                                    let mut invoker = invoker_arc_mutex.lock().unwrap();
-                                    let mut file = File::create(path).unwrap();
-                                    serde_json::to_writer_pretty(file, invoker.history());
-                                }
-                            });
-                        }
-                    }
-
-                    ui.separator();
-
-                    // "Quit" button wouldn't work on a Web page.
-                    if !cfg!(target_arch = "wasm32") {
-                        if ui.button("Quit").clicked() {
-                            ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                        }
-                    }
-                });
-
-                ui.separator();
-
-                if ui.button("Autoroute").clicked() {
-                    if let (Some(invoker_arc_mutex), Some(overlay)) = (&self.invoker, &self.overlay)
-                    {
-                        let invoker_arc_mutex = invoker_arc_mutex.clone();
-                        let shared_data_arc_mutex = self.shared_data.clone();
-                        let selection = overlay.selection().clone();
-
-                        execute(async move {
-                            let mut invoker = invoker_arc_mutex.lock().unwrap();
-                            let mut execute = invoker.execute_walk(Command::Autoroute(selection));
-
-                            if let Execute::Autoroute(ref mut autoroute) = execute {
-                                let from = autoroute.navmesh().as_ref().unwrap().source();
-                                let to = autoroute.navmesh().as_ref().unwrap().target();
-
-                                {
-                                    let mut shared_data = shared_data_arc_mutex.lock().unwrap();
-                                    shared_data.from = Some(from);
-                                    shared_data.to = Some(to);
-                                    shared_data.navmesh = autoroute.navmesh().clone();
-                                }
-                            }
-
-                            let _ = loop {
-                                let status = match execute.step(
-                                    &mut invoker,
-                                    &mut DebugRouterObserver {
-                                        shared_data: shared_data_arc_mutex.clone(),
-                                    },
-                                ) {
-                                    Ok(status) => status,
-                                    Err(err) => return,
-                                };
-
-                                if let Execute::Autoroute(ref mut autoroute) = execute {
-                                    shared_data_arc_mutex.lock().unwrap().navmesh =
-                                        autoroute.navmesh().clone();
-                                }
-
-                                if let InvokerStatus::Finished = status {
-                                    break;
-                                }
-                            };
-                        });
-                    }
-                }
-
-                if ui
-                    .toggle_value(&mut self.is_placing_via, "Place Via")
-                    .clicked()
-                {
-                    has_acted = true;
-                }
-
-                ui.separator();
-
-                if ui.button("Undo").clicked()
-                    || ctx.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Z))
-                {
-                    if let Some(invoker_arc_mutex) = &self.invoker {
-                        let invoker_arc_mutex = invoker_arc_mutex.clone();
-                        execute(async move {
-                            invoker_arc_mutex.lock().unwrap().undo();
-                        });
-                    }
-                }
-
-                if ui.button("Redo").clicked()
-                    || ctx.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Y))
-                {
-                    if let Some(invoker_arc_mutex) = &self.invoker {
-                        let invoker_arc_mutex = invoker_arc_mutex.clone();
-                        execute(async move {
-                            invoker_arc_mutex.lock().unwrap().redo();
-                        });
-                    }
-                }
-
-                ui.separator();
-
-                ui.toggle_value(&mut self.show_ratsnest, "Show Ratsnest");
-
-                ui.separator();
-
-                egui::widgets::global_dark_light_mode_buttons(ui);
-            });
-        });
+        self.top.update(
+            ctx,
+            self.shared_data.clone(),
+            self.text_channel.0.clone(),
+            &self.invoker,
+            &self.overlay,
+        );
 
         if let Some(ref mut layers) = self.layers {
             if let Some(invoker_arc_mutex) = &self.invoker {
@@ -383,32 +231,30 @@ impl eframe::App for App {
 
                 if let Some(invoker_arc_mutex) = &self.invoker {
                     if ctx.input(|i| i.pointer.any_click()) {
-                        if !has_acted {
-                            if self.is_placing_via {
-                                let invoker_arc_mutex = invoker_arc_mutex.clone();
+                        if self.top.is_placing_via {
+                            let invoker_arc_mutex = invoker_arc_mutex.clone();
 
-                                execute(async move {
-                                    let mut invoker = invoker_arc_mutex.lock().unwrap();
-                                    invoker.execute(
-                                        Command::PlaceVia(ViaWeight {
-                                            from_layer: 0,
-                                            to_layer: 0,
-                                            circle: Circle {
-                                                pos: point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
-                                                r: 10000.0,
-                                            },
-                                            maybe_net: Some(1234),
-                                        }),
-                                        &mut EmptyRouterObserver,
-                                    );
-                                });
-                            } else if let Some(overlay) = &mut self.overlay {
-                                let invoker = invoker_arc_mutex.lock().unwrap();
-                                overlay.click(
-                                    invoker.autorouter().board(),
-                                    point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
+                            execute(async move {
+                                let mut invoker = invoker_arc_mutex.lock().unwrap();
+                                invoker.execute(
+                                    Command::PlaceVia(ViaWeight {
+                                        from_layer: 0,
+                                        to_layer: 0,
+                                        circle: Circle {
+                                            pos: point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
+                                            r: 10000.0,
+                                        },
+                                        maybe_net: Some(1234),
+                                    }),
+                                    &mut EmptyRouterObserver,
                                 );
-                            }
+                            });
+                        } else if let Some(overlay) = &mut self.overlay {
+                            let invoker = invoker_arc_mutex.lock().unwrap();
+                            overlay.click(
+                                invoker.autorouter().board(),
+                                point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
+                            );
                         }
                     }
 
@@ -473,7 +319,7 @@ impl eframe::App for App {
                             painter.paint_polygon(&board.layout().zone(zone).shape().polygon, color)
                         }
 
-                        if self.show_ratsnest {
+                        if self.top.show_ratsnest {
                             for edge in overlay.ratsnest().graph().edge_references() {
                                 let from = overlay
                                     .ratsnest()
@@ -571,22 +417,22 @@ impl eframe::App for App {
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
+pub fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
     std::thread::spawn(move || futures::executor::block_on(f));
 }
 
 #[cfg(target_arch = "wasm32")]
-fn execute<F: Future<Output = ()> + 'static>(f: F) {
+pub fn execute<F: Future<Output = ()> + 'static>(f: F) {
     wasm_bindgen_futures::spawn_local(f);
 }
 
 #[cfg(not(target_arch = "wasm32"))]
-async fn channel_text(file_handle: rfd::FileHandle) -> String {
+pub async fn channel_text(file_handle: rfd::FileHandle) -> String {
     file_handle.path().to_str().unwrap().to_string()
 }
 
 #[cfg(target_arch = "wasm32")]
-async fn channel_text(file_handle: rfd::FileHandle) -> String {
+pub async fn channel_text(file_handle: rfd::FileHandle) -> String {
     std::str::from_utf8(&file_handle.read().await)
         .unwrap()
         .to_string()

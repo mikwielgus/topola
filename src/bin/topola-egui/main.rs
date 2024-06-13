@@ -4,6 +4,7 @@ mod app;
 mod layers;
 mod overlay;
 mod painter;
+mod top;
 use app::App;
 
 // Build to native.
