@@ -204,6 +204,7 @@ impl eframe::App for App {
             self.shared_data.clone(),
             &self.invoker,
             &mut self.overlay,
+            &self.layers,
         );
 
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {

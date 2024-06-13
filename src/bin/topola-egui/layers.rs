@@ -1,7 +1,7 @@
 use topola::board::{mesadata::MesadataTrait, Board};
 
 pub struct Layers {
-    visible: Box<[bool]>,
+    pub visible: Box<[bool]>,
 }
 
 impl Layers {

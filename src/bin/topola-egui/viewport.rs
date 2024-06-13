@@ -15,6 +15,7 @@ use topola::{
 
 use crate::{
     app::{execute, SharedData},
+    layers::Layers,
     overlay::Overlay,
     painter::Painter,
     top::Top,
@@ -38,6 +39,7 @@ impl Viewport {
         shared_data: Arc<Mutex<SharedData>>,
         maybe_invoker: &Option<Arc<Mutex<Invoker<DsnMesadata>>>>,
         maybe_overlay: &mut Option<Overlay>,
+        maybe_layers: &Option<Layers>,
     ) {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
@@ -106,58 +108,64 @@ impl Viewport {
                     ) {
                         let board = invoker.autorouter().board();
 
-                        for primitive in board.layout().drawing().layer_primitive_nodes(1) {
-                            let shape = primitive.primitive(board.layout().drawing()).shape();
+                        if let Some(layers) = maybe_layers {
+                            if layers.visible[1] {
+                                for primitive in board.layout().drawing().layer_primitive_nodes(1) {
+                                    let shape = primitive.primitive(board.layout().drawing()).shape();
 
-                            let color = if shared_data.highlighteds.contains(&primitive)
-                                || overlay
-                                    .selection()
-                                    .contains_node(board, GenericNode::Primitive(primitive))
-                            {
-                                egui::Color32::from_rgb(100, 100, 255)
-                            } else {
-                                egui::Color32::from_rgb(52, 52, 200)
-                            };
-                            painter.paint_primitive(&shape, color);
-                        }
+                                    let color = if shared_data.highlighteds.contains(&primitive)
+                                        || overlay
+                                            .selection()
+                                            .contains_node(board, GenericNode::Primitive(primitive))
+                                    {
+                                        egui::Color32::from_rgb(100, 100, 255)
+                                    } else {
+                                        egui::Color32::from_rgb(52, 52, 200)
+                                    };
+                                    painter.paint_primitive(&shape, color);
+                                }
 
-                        for zone in board.layout().layer_zone_nodes(1) {
-                            let color = if overlay
-                                .selection()
-                                .contains_node(board, GenericNode::Compound(zone.into()))
-                            {
-                                egui::Color32::from_rgb(100, 100, 255)
-                            } else {
-                                egui::Color32::from_rgb(52, 52, 200)
-                            };
-                            painter.paint_polygon(&board.layout().zone(zone).shape().polygon, color)
-                        }
+                                for zone in board.layout().layer_zone_nodes(1) {
+                                    let color = if overlay
+                                        .selection()
+                                        .contains_node(board, GenericNode::Compound(zone.into()))
+                                    {
+                                        egui::Color32::from_rgb(100, 100, 255)
+                                    } else {
+                                        egui::Color32::from_rgb(52, 52, 200)
+                                    };
+                                    painter.paint_polygon(&board.layout().zone(zone).shape().polygon, color)
+                                }
+                            }
 
-                        for primitive in board.layout().drawing().layer_primitive_nodes(0) {
-                            let shape = primitive.primitive(board.layout().drawing()).shape();
+                            if layers.visible[0] {
+                                for primitive in board.layout().drawing().layer_primitive_nodes(0) {
+                                    let shape = primitive.primitive(board.layout().drawing()).shape();
 
-                            let color = if shared_data.highlighteds.contains(&primitive)
-                                || overlay
-                                    .selection()
-                                    .contains_node(board, GenericNode::Primitive(primitive))
-                            {
-                                egui::Color32::from_rgb(255, 100, 100)
-                            } else {
-                                egui::Color32::from_rgb(200, 52, 52)
-                            };
-                            painter.paint_primitive(&shape, color);
-                        }
+                                    let color = if shared_data.highlighteds.contains(&primitive)
+                                        || overlay
+                                            .selection()
+                                            .contains_node(board, GenericNode::Primitive(primitive))
+                                    {
+                                        egui::Color32::from_rgb(255, 100, 100)
+                                    } else {
+                                        egui::Color32::from_rgb(200, 52, 52)
+                                    };
+                                    painter.paint_primitive(&shape, color);
+                                }
 
-                        for zone in board.layout().layer_zone_nodes(0) {
-                            let color = if overlay
-                                .selection()
-                                .contains_node(board, GenericNode::Compound(zone.into()))
-                            {
-                                egui::Color32::from_rgb(255, 100, 100)
-                            } else {
-                                egui::Color32::from_rgb(200, 52, 52)
-                            };
-                            painter.paint_polygon(&board.layout().zone(zone).shape().polygon, color)
+                                for zone in board.layout().layer_zone_nodes(0) {
+                                    let color = if overlay
+                                        .selection()
+                                        .contains_node(board, GenericNode::Compound(zone.into()))
+                                    {
+                                        egui::Color32::from_rgb(255, 100, 100)
+                                    } else {
+                                        egui::Color32::from_rgb(200, 52, 52)
+                                    };
+                                    painter.paint_polygon(&board.layout().zone(zone).shape().polygon, color)
+                                }
+                            }
                         }
 
                         if top.show_ratsnest {
