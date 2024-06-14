@@ -20,10 +20,16 @@ impl Layers {
         let colors = std::iter::repeat(egui::Color32::from_rgb(255, 255, 255))
             .enumerate()
             .map(|(i, color)| {
-                if matches!(board.mesadata().layer_layername(i), Some("F.Cu")) {
+                let layername = board.mesadata().layer_layername(i);
+
+                if matches!(layername, Some("F.Cu")) {
                     egui::Color32::from_rgb(255, 52, 52)
-                } else if matches!(board.mesadata().layer_layername(i), Some("B.Cu")) {
+                } else if matches!(layername, Some("B.Cu")) {
                     egui::Color32::from_rgb(52, 52, 255)
+                } else if matches!(layername, Some("In1.Cu")) {
+                    egui::Color32::from_rgb(127, 200, 127)
+                } else if matches!(layername, Some("In2.Cu")) {
+                    egui::Color32::from_rgb(206, 125, 44)
                 } else {
                     color
                 }
@@ -34,10 +40,16 @@ impl Layers {
         let highlight_colors = std::iter::repeat(egui::Color32::from_rgb(255, 255, 255))
             .enumerate()
             .map(|(i, color)| {
-                if matches!(board.mesadata().layer_layername(i), Some("F.Cu")) {
+                let layername = board.mesadata().layer_layername(i);
+
+                if matches!(layername, Some("F.Cu")) {
                     egui::Color32::from_rgb(255, 100, 100)
-                } else if matches!(board.mesadata().layer_layername(i), Some("B.Cu")) {
+                } else if matches!(layername, Some("B.Cu")) {
                     egui::Color32::from_rgb(100, 100, 255)
+                } else if matches!(layername, Some("In1.Cu")) {
+                    egui::Color32::from_rgb(213, 236, 213)
+                } else if matches!(layername, Some("In2.Cu")) {
+                    egui::Color32::from_rgb(232, 195, 158)
                 } else {
                     color
                 }
