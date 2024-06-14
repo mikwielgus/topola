@@ -1,0 +1,149 @@
+(pcb /home/mikolaj/proj/topola/tests/multilayer/signal_integrity_test/signal_integrity_test.dsn
+  (parser
+    (string_quote ")
+    (space_in_quoted_tokens on)
+    (host_cad "KiCad's Pcbnew")
+    (host_version "8.0.2")
+  )
+  (resolution um 10)
+  (unit um)
+  (structure
+    (layer F.Cu
+      (type signal)
+      (property
+        (index 0)
+      )
+    )
+    (layer In1.Cu
+      (type signal)
+      (property
+        (index 1)
+      )
+    )
+    (layer In2.Cu
+      (type signal)
+      (property
+        (index 2)
+      )
+    )
+    (layer B.Cu
+      (type signal)
+      (property
+        (index 3)
+      )
+    )
+    (boundary
+      (path pcb 0  200660 -152400  104140 -152400  104140 -50800  200660 -50800
+            200660 -152400)
+    )
+    (plane GND (polygon F.Cu 0  104140 -50800  200660 -50800  200660 -152400  104140 -152400
+            104140 -50800))
+    (plane GND (polygon B.Cu 0  104140 -50800  200660 -50800  200660 -152400  104140 -152400
+            104140 -50800))
+    (plane GND (polygon In1.Cu 0  104140 -50800  200660 -50800  200660 -152400  104140 -152400
+            104140 -50800))
+    (via "Via[0-3]_600:300_um" "Via[0-3]_2000:1000_um" "Via[0-2]_2000:1000_um")
+    (rule
+      (width 200)
+      (clearance 200)
+      (clearance 200 (type default_smd))
+      (clearance 50 (type smd_smd))
+    )
+  )
+  (placement
+    (component Connector_Coaxial:SMA_Amphenol_132289_EdgeMount
+      (place J2 197837.500000 -101600.000000 front 0.000000 (PN Conn_Coaxial))
+      (place J1 106962.500000 -101600.000000 front 180.000000 (PN Conn_Coaxial))
+    )
+  )
+  (library
+    (image Connector_Coaxial:SMA_Amphenol_132289_EdgeMount
+      (outline (path signal 120  -3710 250  -3710 -250))
+      (outline (path signal 120  -3710 -250  -3210 0))
+      (outline (path signal 120  -3210 0  -3710 250))
+      (outline (path signal 50  -3040 -5580  -3040 5580))
+      (outline (path signal 50  14470 5580  -3040 5580))
+      (outline (path signal 50  14470 5580  14470 -5580))
+      (outline (path signal 50  14470 -5580  -3040 -5580))
+      (outline (path signal 50  -3040 -5580  -3040 5580))
+      (outline (path signal 50  14470 5580  -3040 5580))
+      (outline (path signal 50  14470 5580  14470 -5580))
+      (outline (path signal 50  14470 -5580  -3040 -5580))
+      (outline (path signal 100  -1910 5080  -1910 3810))
+      (outline (path signal 100  -1910 5080  4445 5080))
+      (outline (path signal 100  -1910 3810  2540 3810))
+      (outline (path signal 100  -1910 -3810  -1910 -5080))
+      (outline (path signal 100  -1910 -5080  4445 -5080))
+      (outline (path signal 100  2540 3810  2540 -3810))
+      (outline (path signal 100  2540 750  3540 0))
+      (outline (path signal 100  2540 -3810  -1910 -3810))
+      (outline (path signal 100  3540 0  2540 -750))
+      (outline (path signal 100  4445 3810  4445 5080))
+      (outline (path signal 100  4445 3810  13970 3810))
+      (outline (path signal 100  4445 -5080  4445 -3810))
+      (outline (path signal 100  13970 3810  13970 -3810))
+      (outline (path signal 100  13970 -3810  4445 -3810))
+      (pin Rect[T]Pad_1500x5080_um (rotate 90) 1 0 0)
+      (pin Rect[T]Pad_1500x5080_um (rotate 90) 2 0 4250)
+      (pin Rect[B]Pad_1500x5080_um (rotate 90) 2@1 0 4250)
+      (pin Rect[T]Pad_1500x5080_um (rotate 90) 2@2 0 -4250)
+      (pin Rect[B]Pad_1500x5080_um (rotate 90) 2@3 0 -4250)
+    )
+    (padstack Rect[B]Pad_1500x5080_um
+      (shape (rect B.Cu -750 -2540 750 2540))
+      (attach off)
+    )
+    (padstack Rect[T]Pad_1500x5080_um
+      (shape (rect F.Cu -750 -2540 750 2540))
+      (attach off)
+    )
+    (padstack "Via[0-3]_600:300_um"
+      (shape (circle F.Cu 600))
+      (shape (circle In1.Cu 600))
+      (shape (circle In2.Cu 600))
+      (shape (circle B.Cu 600))
+      (attach off)
+    )
+    (padstack "Via[0-3]_2000:1000_um"
+      (shape (circle F.Cu 2000))
+      (shape (circle In1.Cu 2000))
+      (shape (circle In2.Cu 2000))
+      (shape (circle B.Cu 2000))
+      (attach off)
+    )
+    (padstack "Via[0-2]_2000:1000_um"
+      (shape (circle F.Cu 2000))
+      (shape (circle In1.Cu 2000))
+      (shape (circle In2.Cu 2000))
+      (attach off)
+    )
+  )
+  (network
+    (net GND
+      (pins J2-2 J2-2@1 J2-2@2 J2-2@3 J1-2 J1-2@1 J1-2@2 J1-2@3)
+    )
+    (net "Net-(J1-In)"
+      (pins J2-1 J1-1)
+    )
+    (class kicad_default "" GND "Net-(J1-In)"
+      (circuit
+        (use_via Via[0-3]_600:300_um)
+      )
+      (rule
+        (width 200)
+        (clearance 200)
+      )
+    )
+  )
+  (wiring
+    (wire (path In2.Cu 1000  110744 -101600  194056 -101600)(net "Net-(J1-In)")(type route))
+    (wire (path F.Cu 1000  110744 -101600  106962 -101600)(net "Net-(J1-In)")(type route))
+    (wire (path F.Cu 1000  197838 -101600  194310 -101600)(net "Net-(J1-In)")(type route))
+    (via "Via[0-3]_2000:1000_um"  106680 -109220 (net GND)(type route))
+    (via "Via[0-3]_2000:1000_um"  106680 -93980 (net GND)(type route))
+    (via "Via[0-3]_2000:1000_um"  198120 -109220 (net GND)(type route))
+    (via "Via[0-2]_2000:1000_um"  194056 -101600 (net "Net-(J1-In)")(type route))
+    (via "Via[0-2]_2000:1000_um"  110744 -101600 (net "Net-(J1-In)")(type route))
+    (via "Via[0-3]_2000:1000_um"  198120 -93980 (net GND)(type route))
+  )
+)
