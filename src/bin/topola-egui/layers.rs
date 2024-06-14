@@ -1,18 +1,82 @@
 use topola::board::{mesadata::MesadataTrait, Board};
 
 pub struct Layers {
+    // TODO:
+    // In1.Cu shall be #7fc87f (#d5ecd5 when selected).
+    // In2.Cu shall be #ce7d2c (#e8c39e when selected).
     pub visible: Box<[bool]>,
+    pub colors: Box<[egui::Color32]>,
+    pub highlight_colors: Box<[egui::Color32]>,
 }
 
 impl Layers {
     pub fn new(board: &Board<impl MesadataTrait>) -> Self {
         let layer_count = board.layout().drawing().layer_count();
+        let visible = std::iter::repeat(true)
+            .take(layer_count.try_into().unwrap() /* FIXME */)
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
+        let colors = std::iter::repeat(egui::Color32::from_rgb(255, 255, 255))
+            .enumerate()
+            .map(|(i, color)| {
+                if matches!(
+                    board
+                        .layout()
+                        .drawing()
+                        .rules()
+                        .layer_layername(i.try_into().unwrap() /* FIXME */),
+                    Some("F.Cu")
+                ) {
+                    egui::Color32::from_rgb(255, 52, 52)
+                } else if matches!(
+                    board
+                        .layout()
+                        .drawing()
+                        .rules()
+                        .layer_layername(i.try_into().unwrap() /* FIXME */),
+                    Some("B.Cu")
+                ) {
+                    egui::Color32::from_rgb(52, 52, 255)
+                } else {
+                    color
+                }
+            })
+            .take(layer_count.try_into().unwrap() /* FIXME */)
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
+        let highlight_colors = std::iter::repeat(egui::Color32::from_rgb(255, 255, 255))
+            .enumerate()
+            .map(|(i, color)| {
+                if matches!(
+                    board
+                        .layout()
+                        .drawing()
+                        .rules()
+                        .layer_layername(i.try_into().unwrap() /* FIXME */),
+                    Some("F.Cu")
+                ) {
+                    egui::Color32::from_rgb(255, 100, 100)
+                } else if matches!(
+                    board
+                        .layout()
+                        .drawing()
+                        .rules()
+                        .layer_layername(i.try_into().unwrap() /* FIXME */),
+                    Some("B.Cu")
+                ) {
+                    egui::Color32::from_rgb(100, 100, 255)
+                } else {
+                    color
+                }
+            })
+            .take(layer_count.try_into().unwrap() /* FIXME */)
+            .collect::<Vec<_>>()
+            .into_boxed_slice();
 
         Self {
-            visible: std::iter::repeat(true)
-                .take(layer_count.try_into().unwrap() /* FIXME */)
-                .collect::<Vec<_>>()
-                .into_boxed_slice(),
+            visible,
+            colors,
+            highlight_colors,
         }
     }
 
