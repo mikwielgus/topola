@@ -78,9 +78,9 @@ pub struct Drawing<CW: Copy, R: RulesTrait> {
 }
 
 impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
-    pub fn new(rules: R) -> Self {
+    pub fn new(rules: R, layer_count: usize) -> Self {
         Self {
-            geometry_with_rtree: GeometryWithRtree::new(2),
+            geometry_with_rtree: GeometryWithRtree::new(layer_count),
             rules,
         }
     }

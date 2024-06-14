@@ -124,8 +124,11 @@ impl DsnDesign {
     }
 
     pub fn make_board(&self) -> Board<DsnMesadata> {
-        let rules = DsnMesadata::from_pcb(&self.pcb);
-        let mut board = Board::new(Layout::new(Drawing::new(rules)));
+        let mesadata = DsnMesadata::from_pcb(&self.pcb);
+        let mut board = Board::new(Layout::new(Drawing::new(
+            mesadata,
+            self.pcb.structure.layer_vec.len(),
+        )));
 
         // mapping of pin -> net prepared for adding pins
         let pin_nets = HashMap::<String, usize>::from_iter(
