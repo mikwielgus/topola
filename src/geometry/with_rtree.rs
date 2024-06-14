@@ -50,7 +50,7 @@ pub struct GeometryWithRtree<
 > {
     geometry: Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
     rtree: RTree<BboxedIndex<GenericNode<PI, GenericIndex<CW>>>>,
-    layer_count: u64,
+    layer_count: usize,
     weight_marker: PhantomData<PW>,
     dot_weight_marker: PhantomData<DW>,
     seg_weight_marker: PhantomData<SW>,
@@ -75,7 +75,7 @@ impl<
         BI: GetNodeIndex + Into<PI> + Copy,
     > GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
-    pub fn new(layer_count: u64) -> Self {
+    pub fn new(layer_count: usize) -> Self {
         Self {
             geometry: Geometry::<PW, DW, SW, BW, CW, PI, DI, SI, BI>::new(),
             rtree: RTree::new(),
@@ -335,7 +335,7 @@ impl<
         }
     }
 
-    fn layer(&self, primitive: PI) -> u64 {
+    fn layer(&self, primitive: PI) -> usize {
         if let Ok(dot) = <PI as TryInto<DI>>::try_into(primitive) {
             self.geometry.dot_weight(dot).layer()
         } else if let Ok(seg) = <PI as TryInto<SI>>::try_into(primitive) {
@@ -347,7 +347,7 @@ impl<
         }
     }
 
-    pub fn layer_count(&self) -> u64 {
+    pub fn layer_count(&self) -> usize {
         self.layer_count
     }
 

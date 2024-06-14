@@ -46,8 +46,8 @@ impl<'a, R: RulesTrait> MakePrimitiveShape for Via<'a, R> {
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct ViaWeight {
-    pub from_layer: u64,
-    pub to_layer: u64,
+    pub from_layer: usize,
+    pub to_layer: usize,
     pub circle: Circle,
     pub maybe_net: Option<usize>,
 }

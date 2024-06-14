@@ -193,7 +193,7 @@ impl DsnDesign {
                                     (pin.x as f64, pin.y as f64).into(),
                                     pin.rotate.unwrap_or(0.0) as f64,
                                     circle.diameter as f64 / 2.0,
-                                    layer as u64,
+                                    layer as usize,
                                     *net,
                                     Some(pinname.clone()),
                                 )
@@ -215,7 +215,7 @@ impl DsnDesign {
                                     rect.y1 as f64,
                                     rect.x2 as f64,
                                     rect.y2 as f64,
-                                    layer as u64,
+                                    layer as usize,
                                     *net,
                                     Some(pinname.clone()),
                                 )
@@ -235,7 +235,7 @@ impl DsnDesign {
                                     pin.rotate.unwrap_or(0.0) as f64,
                                     &path.coord_vec,
                                     path.width as f64,
-                                    layer as u64,
+                                    layer as usize,
                                     *net,
                                     Some(pinname.clone()),
                                 )
@@ -255,7 +255,7 @@ impl DsnDesign {
                                     pin.rotate.unwrap_or(0.0) as f64,
                                     &polygon.coord_vec,
                                     polygon.width as f64,
-                                    layer as u64,
+                                    layer as usize,
                                     *net,
                                     Some(pinname.clone()),
                                 )
@@ -299,7 +299,7 @@ impl DsnDesign {
                             (0.0, 0.0).into(),
                             0.0,
                             circle.diameter as f64 / 2.0,
-                            layer as u64,
+                            layer as usize,
                             net,
                             None,
                         )
@@ -321,7 +321,7 @@ impl DsnDesign {
                             rect.y1 as f64,
                             rect.x2 as f64,
                             rect.y2 as f64,
-                            layer as u64,
+                            layer as usize,
                             net,
                             None,
                         )
@@ -341,7 +341,7 @@ impl DsnDesign {
                             0.0,
                             &path.coord_vec,
                             path.width as f64,
-                            layer as u64,
+                            layer as usize,
                             net,
                             None,
                         )
@@ -361,7 +361,7 @@ impl DsnDesign {
                             0.0,
                             &polygon.coord_vec,
                             polygon.width as f64,
-                            layer as u64,
+                            layer as usize,
                             net,
                             None,
                         )
@@ -392,7 +392,7 @@ impl DsnDesign {
                 0.0,
                 &wire.path.coord_vec,
                 wire.path.width as f64,
-                layer as u64,
+                layer,
                 net,
                 None,
             );
@@ -448,7 +448,7 @@ impl DsnDesign {
         pin_pos: Point,
         pin_rot: f64,
         r: f64,
-        layer: u64,
+        layer: usize,
         net: usize,
         maybe_pin: Option<String>,
     ) {
@@ -477,7 +477,7 @@ impl DsnDesign {
         y1: f64,
         x2: f64,
         y2: f64,
-        layer: u64,
+        layer: usize,
         net: usize,
         maybe_pin: Option<String>,
     ) {
@@ -586,7 +586,7 @@ impl DsnDesign {
         pin_rot: f64,
         coords: &Vec<structure::Point>,
         width: f64,
-        layer: u64,
+        layer: usize,
         net: usize,
         maybe_pin: Option<String>,
     ) {
@@ -663,7 +663,7 @@ impl DsnDesign {
         pin_rot: f64,
         coords: &Vec<structure::Point>,
         width: f64,
-        layer: u64,
+        layer: usize,
         net: usize,
         maybe_pin: Option<String>,
     ) {

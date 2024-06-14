@@ -26,7 +26,7 @@ use topola::{
 pub struct Overlay {
     ratsnest: Ratsnest,
     selection: Selection,
-    active_layer: u64,
+    active_layer: usize,
 }
 
 impl Overlay {

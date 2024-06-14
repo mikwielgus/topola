@@ -179,6 +179,10 @@ impl<M: MesadataTrait> Board<M> {
         }
     }
 
+    pub fn mesadata(&self) -> &M {
+        self.layout.drawing().rules()
+    }
+
     pub fn layout(&self) -> &Layout<M> {
         &self.layout
     }

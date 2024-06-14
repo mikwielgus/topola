@@ -76,7 +76,7 @@ impl DotWeightTrait<PrimitiveWeight> for DotWeight {}
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedDotWeight {
     pub circle: Circle,
-    pub layer: u64,
+    pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 
@@ -104,7 +104,7 @@ impl GetWidth for FixedDotWeight {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LooseDotWeight {
     pub circle: Circle,
-    pub layer: u64,
+    pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 

@@ -30,7 +30,7 @@ pub struct DsnMesadata {
     class_rules: HashMap<String, DsnRule>,
 
     // layername <-> layer for Layout
-    pub layer_layername: BiHashMap<u64, String>,
+    pub layer_layername: BiHashMap<usize, String>,
 
     // netname <-> net for Layout
     pub net_netname: BiHashMap<usize, String>,
@@ -45,7 +45,7 @@ impl DsnMesadata {
             pcb.structure
                 .layer_vec
                 .iter()
-                .map(|layer| (layer.property.index as u64, layer.name.clone())),
+                .map(|layer| (layer.property.index, layer.name.clone())),
         );
 
         // keeping this as a separate iter pass because it might be moved into a different struct later?
@@ -122,15 +122,15 @@ impl RulesTrait for DsnMesadata {
 }
 
 impl MesadataTrait for DsnMesadata {
-    fn bename_layer(&mut self, layer: u64, layername: String) {
+    fn bename_layer(&mut self, layer: usize, layername: String) {
         self.layer_layername.insert(layer, layername);
     }
 
-    fn layer_layername(&self, layer: u64) -> Option<&str> {
+    fn layer_layername(&self, layer: usize) -> Option<&str> {
         self.layer_layername.get_by_left(&layer).map(|s| s.as_str())
     }
 
-    fn layername_layer(&self, layername: &str) -> Option<u64> {
+    fn layername_layer(&self, layername: &str) -> Option<usize> {
         self.layer_layername.get_by_right(layername).copied()
     }
 

@@ -75,7 +75,7 @@ impl BendWeightTrait<PrimitiveWeight> for BendWeight {}
 pub struct FixedBendWeight {
     pub width: f64,
     pub offset: f64,
-    pub layer: u64,
+    pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 
@@ -104,7 +104,7 @@ impl GetWidth for FixedBendWeight {
 pub struct LooseBendWeight {
     pub width: f64,
     pub offset: f64,
-    pub layer: u64,
+    pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 

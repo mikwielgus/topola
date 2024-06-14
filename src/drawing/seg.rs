@@ -80,7 +80,7 @@ impl SegWeightTrait<PrimitiveWeight> for SegWeight {}
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedSegWeight {
     pub width: f64,
-    pub layer: u64,
+    pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 
@@ -96,7 +96,7 @@ impl GetWidth for FixedSegWeight {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct LoneLooseSegWeight {
     pub width: f64,
-    pub layer: u64,
+    pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 
@@ -112,7 +112,7 @@ impl GetWidth for LoneLooseSegWeight {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SeqLooseSegWeight {
     pub width: f64,
-    pub layer: u64,
+    pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 

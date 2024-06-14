@@ -13,63 +13,36 @@ impl Layers {
     pub fn new(board: &Board<impl MesadataTrait>) -> Self {
         let layer_count = board.layout().drawing().layer_count();
         let visible = std::iter::repeat(true)
-            .take(layer_count.try_into().unwrap() /* FIXME */)
+            .take(layer_count)
             .collect::<Vec<_>>()
             .into_boxed_slice();
+
         let colors = std::iter::repeat(egui::Color32::from_rgb(255, 255, 255))
             .enumerate()
             .map(|(i, color)| {
-                if matches!(
-                    board
-                        .layout()
-                        .drawing()
-                        .rules()
-                        .layer_layername(i.try_into().unwrap() /* FIXME */),
-                    Some("F.Cu")
-                ) {
+                if matches!(board.mesadata().layer_layername(i), Some("F.Cu")) {
                     egui::Color32::from_rgb(255, 52, 52)
-                } else if matches!(
-                    board
-                        .layout()
-                        .drawing()
-                        .rules()
-                        .layer_layername(i.try_into().unwrap() /* FIXME */),
-                    Some("B.Cu")
-                ) {
+                } else if matches!(board.mesadata().layer_layername(i), Some("B.Cu")) {
                     egui::Color32::from_rgb(52, 52, 255)
                 } else {
                     color
                 }
             })
-            .take(layer_count.try_into().unwrap() /* FIXME */)
+            .take(layer_count)
             .collect::<Vec<_>>()
             .into_boxed_slice();
         let highlight_colors = std::iter::repeat(egui::Color32::from_rgb(255, 255, 255))
             .enumerate()
             .map(|(i, color)| {
-                if matches!(
-                    board
-                        .layout()
-                        .drawing()
-                        .rules()
-                        .layer_layername(i.try_into().unwrap() /* FIXME */),
-                    Some("F.Cu")
-                ) {
+                if matches!(board.mesadata().layer_layername(i), Some("F.Cu")) {
                     egui::Color32::from_rgb(255, 100, 100)
-                } else if matches!(
-                    board
-                        .layout()
-                        .drawing()
-                        .rules()
-                        .layer_layername(i.try_into().unwrap() /* FIXME */),
-                    Some("B.Cu")
-                ) {
+                } else if matches!(board.mesadata().layer_layername(i), Some("B.Cu")) {
                     egui::Color32::from_rgb(100, 100, 255)
                 } else {
                     color
                 }
             })
-            .take(layer_count.try_into().unwrap() /* FIXME */)
+            .take(layer_count)
             .collect::<Vec<_>>()
             .into_boxed_slice();
 

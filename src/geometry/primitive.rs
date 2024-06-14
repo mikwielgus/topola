@@ -9,14 +9,14 @@ use crate::{
 
 #[enum_dispatch]
 pub trait PrimitiveShapeTrait: ShapeTrait {
-    fn priority(&self) -> u64;
+    fn priority(&self) -> usize;
     fn inflate(&self, margin: f64) -> PrimitiveShape;
     fn intersects(&self, other: &PrimitiveShape) -> bool;
     fn envelope(&self, margin: f64) -> AABB<[f64; 2]>;
     fn width(&self) -> f64;
     fn length(&self) -> f64;
 
-    fn envelope_3d(&self, margin: f64, layer: u64) -> AABB<[f64; 3]> {
+    fn envelope_3d(&self, margin: f64, layer: usize) -> AABB<[f64; 3]> {
         let envelope = self.envelope(margin);
         AABB::from_corners(
             [envelope.lower()[0], envelope.lower()[1], layer as f64],
@@ -24,7 +24,7 @@ pub trait PrimitiveShapeTrait: ShapeTrait {
         )
     }
 
-    fn full_height_envelope_3d(&self, margin: f64, layer_count: u64) -> AABB<[f64; 3]> {
+    fn full_height_envelope_3d(&self, margin: f64, layer_count: usize) -> AABB<[f64; 3]> {
         let envelope = self.envelope(margin);
         AABB::from_corners(
             [envelope.lower()[0], envelope.lower()[1], 0.0],
@@ -62,7 +62,7 @@ impl ShapeTrait for DotShape {
 }
 
 impl PrimitiveShapeTrait for DotShape {
-    fn priority(&self) -> u64 {
+    fn priority(&self) -> usize {
         3
     }
 
@@ -162,7 +162,7 @@ impl ShapeTrait for SegShape {
 }
 
 impl PrimitiveShapeTrait for SegShape {
-    fn priority(&self) -> u64 {
+    fn priority(&self) -> usize {
         2
     }
 
@@ -279,7 +279,7 @@ impl ShapeTrait for BendShape {
 }
 
 impl PrimitiveShapeTrait for BendShape {
-    fn priority(&self) -> u64 {
+    fn priority(&self) -> usize {
         1
     }
 

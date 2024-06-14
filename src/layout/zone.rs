@@ -49,7 +49,7 @@ impl<'a, R: RulesTrait> Zone<'a, R> {
 }
 
 impl<'a, R: RulesTrait> GetLayer for Zone<'a, R> {
-    fn layer(&self) -> u64 {
+    fn layer(&self) -> usize {
         if let CompoundWeight::Zone(weight) =
             self.layout.drawing().compound_weight(self.index.into())
         {
@@ -136,12 +136,12 @@ impl From<GenericIndex<ZoneWeight>> for GenericIndex<CompoundWeight> {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct SolidZoneWeight {
-    pub layer: u64,
+    pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 
 impl GetLayer for SolidZoneWeight {
-    fn layer(&self) -> u64 {
+    fn layer(&self) -> usize {
         self.layer
     }
 }
@@ -160,12 +160,12 @@ impl From<GenericIndex<SolidZoneWeight>> for GenericIndex<CompoundWeight> {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct PourZoneWeight {
-    pub layer: u64,
+    pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 
 impl<'a> GetLayer for PourZoneWeight {
-    fn layer(&self) -> u64 {
+    fn layer(&self) -> usize {
         self.layer
     }
 }

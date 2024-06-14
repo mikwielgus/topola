@@ -240,7 +240,7 @@ impl<R: RulesTrait> Layout<R> {
 
     pub fn layer_zone_nodes(
         &self,
-        layer: u64,
+        layer: usize,
     ) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
         self.drawing
             .rtree()

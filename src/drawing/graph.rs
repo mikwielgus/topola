@@ -22,7 +22,7 @@ pub trait Retag<PrimitiveIndex> {
 
 #[enum_dispatch]
 pub trait GetLayer {
-    fn layer(&self) -> u64;
+    fn layer(&self) -> usize;
 }
 
 #[enum_dispatch]
@@ -47,7 +47,7 @@ macro_rules! impl_weight {
         }
 
         impl<'a> GetLayer for $weight_struct {
-            fn layer(&self) -> u64 {
+            fn layer(&self) -> usize {
                 self.layer
             }
         }

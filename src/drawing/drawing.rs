@@ -686,7 +686,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
             })
     }
 
-    pub fn layer_primitive_nodes(&self, layer: u64) -> impl Iterator<Item = PrimitiveIndex> + '_ {
+    pub fn layer_primitive_nodes(&self, layer: usize) -> impl Iterator<Item = PrimitiveIndex> + '_ {
         self.geometry_with_rtree
             .rtree()
             .locate_in_envelope_intersecting(&AABB::from_corners(
@@ -889,7 +889,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         Loose::new(index, self)
     }
 
-    pub fn layer_count(&self) -> u64 {
+    pub fn layer_count(&self) -> usize {
         self.geometry_with_rtree.layer_count()
     }
 

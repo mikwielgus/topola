@@ -125,7 +125,7 @@ macro_rules! impl_primitive {
         }
 
         impl<'a, CW: Copy, R: RulesTrait> GetLayer for $primitive_struct<'a, CW, R> {
-            fn layer(&self) -> u64 {
+            fn layer(&self) -> usize {
                 self.weight().layer()
             }
         }
