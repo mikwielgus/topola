@@ -45,7 +45,7 @@ pub struct NetOut {
 }
 
 #[derive(ReadDsn, WriteSes, Debug)]
-pub struct SpecctraFile {
+pub struct DsnFile {
     pub pcb: Pcb,
 }
 
