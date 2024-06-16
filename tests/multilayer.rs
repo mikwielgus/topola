@@ -39,13 +39,13 @@ fn test_signal_integrity_test() {
             .layer_layername(layer);
 
         if layer == 0 {
-            assert_eq(layername, "F.Cu");
+            assert_eq!(layername, Some("F.Cu"));
         } else if layer == 1 {
-            assert_eq(layername, "In1.Cu");
+            assert_eq!(layername, Some("In1.Cu"));
         } else if layer == 2 {
-            assert_eq(layername, "In2.Cu");
+            assert_eq!(layername, Some("In2.Cu"));
         } else if layer == 3 {
-            assert_eq(layername, "B.Cu");
+            assert_eq!(layername, Some("B.Cu"));
         }
     }
 }
