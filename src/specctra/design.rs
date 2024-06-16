@@ -9,7 +9,7 @@ use crate::{
     layout::{zone::SolidZoneWeight, Layout},
     math::Circle,
     specctra::{
-        de,
+        read,
         mesadata::SpecctraMesadata,
         structure::{self, Layer, Pcb, Shape, SpecctraFile},
     },
@@ -20,7 +20,7 @@ pub enum LoadingError {
     #[error(transparent)]
     Io(#[from] std::io::Error),
     #[error(transparent)]
-    Syntax(#[from] de::SyntaxError),
+    Parse(#[from] read::ParseError),
 }
 
 #[derive(Debug)]
@@ -32,9 +32,9 @@ impl SpecctraDesign {
     pub fn load_from_file(filename: &str) -> Result<Self, LoadingError> {
         let file = std::fs::File::open(filename)?;
         let reader = std::io::BufReader::new(file);
-        let mut list_reader = super::read::ListTokenizer::new(reader);
+        let mut list_reader = read::ListTokenizer::new(reader);
 
-        if let Ok(file) = list_reader.read_value::<super::structure::SpecctraFile>() {
+        if let Ok(file) = list_reader.read_value::<structure::SpecctraFile>() {
             //use super::structure::*;
 
             // (this entire if let block does not belong here)
@@ -114,8 +114,8 @@ impl SpecctraDesign {
             .pcb;
 
         Ok(Self { pcb })*/
-        let mut list_reader = super::read::ListTokenizer::new(contents.as_bytes());
-        let dsn = list_reader.read_value::<super::structure::SpecctraFile>();
+        let mut list_reader = read::ListTokenizer::new(contents.as_bytes());
+        let dsn = list_reader.read_value::<structure::SpecctraFile>();
 
         Ok(Self {
             pcb: dsn.unwrap().pcb,
