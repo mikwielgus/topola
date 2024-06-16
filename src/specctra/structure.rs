@@ -2,39 +2,39 @@ use super::common::ListToken;
 use super::read::ReadDsn;
 use super::read::{ListTokenizer, ParseError};
 use super::write::ListWriter;
-use super::write::WriteDsn;
-use dsn_derive::ReadDsn;
-use dsn_derive::WriteDsn;
+use super::write::WriteSes;
+use specctra_derive::ReadDsn;
+use specctra_derive::WriteSes;
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Dummy {}
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct SesFile {
     pub session: Session,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Session {
     #[anon]
     pub id: String,
     pub routes: Routes,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Routes {
     pub resolution: Resolution,
     pub library_out: Library,
     pub network_out: NetworkOut,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct NetworkOut {
     #[vec("net")]
     pub net: Vec<NetOut>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct NetOut {
     #[anon]
     pub name: String,
@@ -44,12 +44,12 @@ pub struct NetOut {
     pub via: Vec<Via>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
-pub struct DsnFile {
+#[derive(ReadDsn, WriteSes, Debug)]
+pub struct SpecctraFile {
     pub pcb: Pcb,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Pcb {
     #[anon]
     pub name: String,
@@ -63,7 +63,7 @@ pub struct Pcb {
     pub wiring: Wiring,
 }
 
-#[derive(WriteDsn, Debug)]
+#[derive(WriteSes, Debug)]
 pub struct Parser {
     pub string_quote: Option<char>,
     pub space_in_quoted_tokens: Option<bool>,
@@ -71,7 +71,7 @@ pub struct Parser {
     pub host_version: Option<String>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Resolution {
     #[anon]
     pub unit: String,
@@ -79,7 +79,7 @@ pub struct Resolution {
     pub value: f32,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Structure {
     #[vec("layer")]
     pub layers: Vec<Layer>,
@@ -90,7 +90,7 @@ pub struct Structure {
     pub rule: Rule,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Layer {
     #[anon]
     pub name: String,
@@ -98,36 +98,36 @@ pub struct Layer {
     pub property: Property,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Property {
     pub index: usize,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Boundary {
     pub path: Path,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Plane {
     #[anon]
     pub net: String,
     pub polygon: Polygon,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct ViaNames {
     #[anon_vec]
     pub names: Vec<String>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Placement {
     #[vec("component")]
     pub components: Vec<Component>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Component {
     #[anon]
     pub name: String,
@@ -135,7 +135,7 @@ pub struct Component {
     pub places: Vec<Place>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 #[allow(non_snake_case)]
 pub struct Place {
     #[anon]
@@ -151,7 +151,7 @@ pub struct Place {
     pub PN: Option<String>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Library {
     #[vec("image")]
     pub images: Vec<Image>,
@@ -159,7 +159,7 @@ pub struct Library {
     pub padstacks: Vec<Padstack>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Image {
     #[anon]
     pub name: String,
@@ -171,12 +171,12 @@ pub struct Image {
     pub keepouts: Vec<Keepout>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Outline {
     pub path: Path,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Pin {
     #[anon]
     pub name: String,
@@ -189,12 +189,12 @@ pub struct Pin {
     pub y: f32,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Rotate {
     pub angle: f32,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Keepout {
     #[anon]
     pub idk: String,
@@ -202,7 +202,7 @@ pub struct Keepout {
     pub shape: Shape,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Padstack {
     #[anon]
     pub name: String,
@@ -235,7 +235,7 @@ impl<R: std::io::BufRead> ReadDsn<R> for Shape {
     }
 }
 
-impl<W: std::io::Write> WriteDsn<W> for Shape {
+impl<W: std::io::Write> WriteSes<W> for Shape {
     fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), std::io::Error> {
         match self {
             Self::Circle(inner) => writer.write_named("circle", inner),
@@ -246,7 +246,7 @@ impl<W: std::io::Write> WriteDsn<W> for Shape {
     }
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Circle {
     #[anon]
     pub layer: String,
@@ -256,7 +256,7 @@ pub struct Circle {
     pub offset: Option<Point>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Network {
     #[vec("net")]
     pub nets: Vec<NetPinAssignments>,
@@ -264,7 +264,7 @@ pub struct Network {
     pub classes: Vec<Class>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 // dsn names this "net", but it's a structure unrelated to "net" in wiring or elsewhere
 pub struct NetPinAssignments {
     #[anon]
@@ -272,13 +272,13 @@ pub struct NetPinAssignments {
     pub pins: Pins,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Pins {
     #[anon_vec]
     pub names: Vec<String>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Class {
     #[anon]
     pub name: String,
@@ -288,12 +288,12 @@ pub struct Class {
     pub rule: Rule,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Circuit {
     pub use_via: String,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Wiring {
     #[vec("wire")]
     pub wires: Vec<Wire>,
@@ -301,7 +301,7 @@ pub struct Wiring {
     pub vias: Vec<Via>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Wire {
     pub path: Path,
     pub net: String,
@@ -355,7 +355,7 @@ impl<R: std::io::BufRead> ReadDsn<R> for Option<Point> {
     }
 }
 
-impl<W: std::io::Write> WriteDsn<W> for Vec<Point> {
+impl<W: std::io::Write> WriteSes<W> for Vec<Point> {
     fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), std::io::Error> {
         for elem in self {
             writer.write_value(&elem.x)?;
@@ -365,7 +365,7 @@ impl<W: std::io::Write> WriteDsn<W> for Vec<Point> {
     }
 }
 
-impl<W: std::io::Write> WriteDsn<W> for Option<Point> {
+impl<W: std::io::Write> WriteSes<W> for Option<Point> {
     fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), std::io::Error> {
         if let Some(value) = self {
             writer.write_value(&value.x)?;
@@ -375,7 +375,7 @@ impl<W: std::io::Write> WriteDsn<W> for Option<Point> {
     }
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Polygon {
     #[anon]
     pub layer: String,
@@ -385,7 +385,7 @@ pub struct Polygon {
     pub coords: Vec<Point>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Path {
     #[anon]
     pub layer: String,
@@ -395,7 +395,7 @@ pub struct Path {
     pub coords: Vec<Point>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Rect {
     #[anon]
     pub layer: String,
@@ -409,7 +409,7 @@ pub struct Rect {
     pub y2: f32,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Via {
     #[anon]
     pub name: String,
@@ -421,14 +421,14 @@ pub struct Via {
     pub r#type: String,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Rule {
     pub width: f32,
     #[vec("clearance")]
     pub clearances: Vec<Clearance>,
 }
 
-#[derive(ReadDsn, WriteDsn, Debug)]
+#[derive(ReadDsn, WriteSes, Debug)]
 pub struct Clearance {
     #[anon]
     pub value: f32,

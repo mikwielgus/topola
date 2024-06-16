@@ -5,7 +5,7 @@ use std::{
 
 use topola::{
     autorouter::invoker::{Command, Execute, Invoker, InvokerStatus},
-    dsn::mesadata::DsnMesadata,
+    specctra::mesadata::SpecctraMesadata,
 };
 
 use crate::{
@@ -31,7 +31,7 @@ impl Top {
         ctx: &egui::Context,
         shared_data: Arc<Mutex<SharedData>>,
         sender: Sender<String>,
-        maybe_invoker: &Option<Arc<Mutex<Invoker<DsnMesadata>>>>,
+        maybe_invoker: &Option<Arc<Mutex<Invoker<SpecctraMesadata>>>>,
         maybe_overlay: &Option<Overlay>,
     ) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {

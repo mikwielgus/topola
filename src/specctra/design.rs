@@ -6,13 +6,13 @@ use thiserror::Error;
 use crate::{
     board::{mesadata::MesadataTrait, Board},
     drawing::{dot::FixedDotWeight, seg::FixedSegWeight, Drawing},
-    dsn::{
-        de,
-        mesadata::DsnMesadata,
-        structure::{self, DsnFile, Layer, Pcb, Shape},
-    },
     layout::{zone::SolidZoneWeight, Layout},
     math::Circle,
+    specctra::{
+        de,
+        mesadata::SpecctraMesadata,
+        structure::{self, Layer, Pcb, Shape, SpecctraFile},
+    },
 };
 
 #[derive(Error, Debug)]
@@ -24,23 +24,18 @@ pub enum LoadingError {
 }
 
 #[derive(Debug)]
-pub struct DsnDesign {
+pub struct SpecctraDesign {
     pcb: Pcb,
 }
 
-impl DsnDesign {
+impl SpecctraDesign {
     pub fn load_from_file(filename: &str) -> Result<Self, LoadingError> {
         let file = std::fs::File::open(filename)?;
         let reader = std::io::BufReader::new(file);
         let mut list_reader = super::read::ListTokenizer::new(reader);
 
-        let dsn = list_reader.read_value::<super::structure::DsnFile>();
-
-        // TODO: make_board() still uses the old version of structure.rs
-        // so we can't pass the data to topola for real
-
-        if let Ok(dsn) = dsn {
-            use super::structure::*;
+        if let Ok(file) = list_reader.read_value::<super::structure::SpecctraFile>() {
+            //use super::structure::*;
 
             // (this entire if let block does not belong here)
 
@@ -107,9 +102,8 @@ impl DsnDesign {
 
             //println!("{:?}", list_writer.write_value(&ses));
 
-            Ok(Self { pcb: dsn.pcb })
+            Ok(Self { pcb: file.pcb })
         } else {
-            dbg!(dsn);
             todo!();
         }
     }
@@ -121,15 +115,15 @@ impl DsnDesign {
 
         Ok(Self { pcb })*/
         let mut list_reader = super::read::ListTokenizer::new(contents.as_bytes());
-        let dsn = list_reader.read_value::<super::structure::DsnFile>();
+        let dsn = list_reader.read_value::<super::structure::SpecctraFile>();
 
         Ok(Self {
             pcb: dsn.unwrap().pcb,
         })
     }
 
-    pub fn make_board(&self) -> Board<DsnMesadata> {
-        let mesadata = DsnMesadata::from_pcb(&self.pcb);
+    pub fn make_board(&self) -> Board<SpecctraMesadata> {
+        let mesadata = SpecctraMesadata::from_pcb(&self.pcb);
         let mut board = Board::new(Layout::new(Drawing::new(
             mesadata,
             self.pcb.structure.layers.len(),
@@ -422,7 +416,7 @@ impl DsnDesign {
     }
 
     fn layer(
-        board: &Board<DsnMesadata>,
+        board: &Board<SpecctraMesadata>,
         layers: &Vec<Layer>,
         layername: &str,
         front: bool,
@@ -442,7 +436,7 @@ impl DsnDesign {
     }
 
     fn add_circle(
-        board: &mut Board<DsnMesadata>,
+        board: &mut Board<SpecctraMesadata>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -468,7 +462,7 @@ impl DsnDesign {
     }
 
     fn add_rect(
-        board: &mut Board<DsnMesadata>,
+        board: &mut Board<SpecctraMesadata>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -579,7 +573,7 @@ impl DsnDesign {
     }
 
     fn add_path(
-        board: &mut Board<DsnMesadata>,
+        board: &mut Board<SpecctraMesadata>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,
@@ -656,7 +650,7 @@ impl DsnDesign {
     }
 
     fn add_polygon(
-        board: &mut Board<DsnMesadata>,
+        board: &mut Board<SpecctraMesadata>,
         place_pos: Point,
         place_rot: f64,
         pin_pos: Point,

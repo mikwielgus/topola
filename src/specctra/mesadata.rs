@@ -5,16 +5,16 @@ use bimap::BiHashMap;
 use crate::{
     board::mesadata::MesadataTrait,
     drawing::rules::{Conditions, RulesTrait},
-    dsn::structure::Pcb,
+    specctra::structure::Pcb,
 };
 
 #[derive(Debug)]
-pub struct DsnRule {
+pub struct SpecctraRule {
     pub width: f64,
     pub clearance: f64,
 }
 
-impl DsnRule {
+impl SpecctraRule {
     fn from_dsn(rule: &super::structure::Rule) -> Self {
         Self {
             width: rule.width as f64,
@@ -24,10 +24,10 @@ impl DsnRule {
 }
 
 #[derive(Debug)]
-pub struct DsnMesadata {
-    structure_rule: DsnRule,
+pub struct SpecctraMesadata {
+    structure_rule: SpecctraRule,
     // net class name -> rule
-    class_rules: HashMap<String, DsnRule>,
+    class_rules: HashMap<String, SpecctraRule>,
 
     // layername <-> layer for Layout
     pub layer_layername: BiHashMap<usize, String>,
@@ -39,7 +39,7 @@ pub struct DsnMesadata {
     net_netclass: HashMap<usize, String>,
 }
 
-impl DsnMesadata {
+impl SpecctraMesadata {
     pub fn from_pcb(pcb: &Pcb) -> Self {
         let layer_layername = BiHashMap::from_iter(
             pcb.structure
@@ -69,11 +69,11 @@ impl DsnMesadata {
                         net_netclass.insert(*net, class.name.clone());
                     }
                 })
-                .map(|class| (class.name.clone(), DsnRule::from_dsn(&class.rule))),
+                .map(|class| (class.name.clone(), SpecctraRule::from_dsn(&class.rule))),
         );
 
         Self {
-            structure_rule: DsnRule::from_dsn(&pcb.structure.rule),
+            structure_rule: SpecctraRule::from_dsn(&pcb.structure.rule),
             class_rules,
             layer_layername,
             net_netname,
@@ -81,7 +81,7 @@ impl DsnMesadata {
         }
     }
 
-    pub fn get_rule(&self, net: usize) -> &DsnRule {
+    pub fn get_rule(&self, net: usize) -> &SpecctraRule {
         if let Some(netclass) = self.net_netclass.get(&net) {
             self.class_rules
                 .get(netclass)
@@ -92,7 +92,7 @@ impl DsnMesadata {
     }
 }
 
-impl RulesTrait for DsnMesadata {
+impl RulesTrait for SpecctraMesadata {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64 {
         let (Some(net1), Some(net2)) = (conditions1.maybe_net, conditions2.maybe_net) else {
             return 0.0;
@@ -121,7 +121,7 @@ impl RulesTrait for DsnMesadata {
     }
 }
 
-impl MesadataTrait for DsnMesadata {
+impl MesadataTrait for SpecctraMesadata {
     fn bename_layer(&mut self, layer: usize, layername: String) {
         self.layer_layername.insert(layer, layername);
     }

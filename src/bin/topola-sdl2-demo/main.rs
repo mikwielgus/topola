@@ -20,8 +20,6 @@ use topola::drawing::primitive::MakePrimitiveShape;
 use topola::drawing::rules::{Conditions, RulesTrait};
 use topola::drawing::seg::FixedSegWeight;
 use topola::drawing::{Infringement, LayoutException};
-use topola::dsn::design::DsnDesign;
-use topola::dsn::mesadata::DsnMesadata;
 use topola::geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait};
 use topola::geometry::shape::ShapeTrait;
 use topola::layout::zone::MakePolyShape;
@@ -30,6 +28,8 @@ use topola::router::draw::DrawException;
 use topola::router::navmesh::{Navmesh, NavmeshEdgeReference, NavvertexIndex};
 use topola::router::tracer::{Trace, Tracer};
 use topola::router::RouterObserverTrait;
+use topola::specctra::design::SpecctraDesign;
+use topola::specctra::mesadata::SpecctraMesadata;
 
 use sdl2::event::Event;
 use sdl2::keyboard::Keycode;
@@ -246,7 +246,7 @@ fn main() -> Result<(), anyhow::Error> {
         ]),
     }));*/
 
-    let design = DsnDesign::load_from_file(
+    let design = SpecctraDesign::load_from_file(
         "tests/data/de9_tht_female_to_tht_female/de9_tht_female_to_tht_female.dsn",
     )?;
     //let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;

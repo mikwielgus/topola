@@ -9,12 +9,12 @@ use topola::{
     },
     board::{mesadata::MesadataTrait, Board},
     drawing::graph::{GetLayer, GetMaybeNet},
-    dsn::{design::DsnDesign, mesadata::DsnMesadata},
     graph::GetNodeIndex,
+    specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
 
-pub fn load_design_and_assert(filename: &str) -> Invoker<DsnMesadata> {
-    let design = DsnDesign::load_from_file(filename).unwrap();
+pub fn load_design_and_assert(filename: &str) -> Invoker<SpecctraMesadata> {
+    let design = SpecctraDesign::load_from_file(filename).unwrap();
     let mut invoker = Invoker::new(Autorouter::new(design.make_board()).unwrap());
 
     assert!(matches!(
@@ -29,7 +29,7 @@ pub fn load_design_and_assert(filename: &str) -> Invoker<DsnMesadata> {
     invoker
 }
 
-pub fn replay_and_assert(invoker: &mut Invoker<DsnMesadata>, filename: &str) {
+pub fn replay_and_assert(invoker: &mut Invoker<SpecctraMesadata>, filename: &str) {
     let file = File::open(filename).unwrap();
     invoker.replay(serde_json::from_reader(file).unwrap());
 

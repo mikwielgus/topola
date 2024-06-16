@@ -1,17 +1,17 @@
 use super::common::ListToken;
 use std::io;
 
-pub trait WriteDsn<W: io::Write> {
+pub trait WriteSes<W: io::Write> {
     fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error>;
 }
 
-impl<W: io::Write> WriteDsn<W> for char {
+impl<W: io::Write> WriteSes<W> for char {
     fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
         writer.write_leaf(self.to_string())
     }
 }
 
-impl<W: io::Write> WriteDsn<W> for String {
+impl<W: io::Write> WriteSes<W> for String {
     fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
         let string = if self.len() == 0 {
             "\"\"".to_string()
@@ -28,7 +28,7 @@ impl<W: io::Write> WriteDsn<W> for String {
     }
 }
 
-impl<W: io::Write> WriteDsn<W> for bool {
+impl<W: io::Write> WriteSes<W> for bool {
     fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
         writer.write_leaf(match self {
             true => "on".to_string(),
@@ -37,25 +37,25 @@ impl<W: io::Write> WriteDsn<W> for bool {
     }
 }
 
-impl<W: io::Write> WriteDsn<W> for i32 {
+impl<W: io::Write> WriteSes<W> for i32 {
     fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
         writer.write_leaf(self.to_string())
     }
 }
 
-impl<W: io::Write> WriteDsn<W> for u32 {
+impl<W: io::Write> WriteSes<W> for u32 {
     fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
         writer.write_leaf(self.to_string())
     }
 }
 
-impl<W: io::Write> WriteDsn<W> for usize {
+impl<W: io::Write> WriteSes<W> for usize {
     fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
         writer.write_leaf(self.to_string())
     }
 }
 
-impl<W: io::Write> WriteDsn<W> for f32 {
+impl<W: io::Write> WriteSes<W> for f32 {
     fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
         writer.write_leaf(self.to_string())
     }
@@ -116,11 +116,11 @@ impl<W: io::Write> ListWriter<W> {
         self.write_token(ListToken::Leaf { value })
     }
 
-    pub fn write_value<T: WriteDsn<W>>(&mut self, value: &T) -> Result<(), io::Error> {
+    pub fn write_value<T: WriteSes<W>>(&mut self, value: &T) -> Result<(), io::Error> {
         value.write_dsn(self)
     }
 
-    pub fn write_named<T: WriteDsn<W>>(
+    pub fn write_named<T: WriteSes<W>>(
         &mut self,
         name: &'static str,
         value: &T,
@@ -134,7 +134,7 @@ impl<W: io::Write> ListWriter<W> {
         Ok(())
     }
 
-    pub fn write_optional<T: WriteDsn<W>>(
+    pub fn write_optional<T: WriteSes<W>>(
         &mut self,
         name: &'static str,
         optional: &Option<T>,
@@ -146,7 +146,7 @@ impl<W: io::Write> ListWriter<W> {
         Ok(())
     }
 
-    pub fn write_array<T: WriteDsn<W>>(&mut self, array: &Vec<T>) -> Result<(), io::Error> {
+    pub fn write_array<T: WriteSes<W>>(&mut self, array: &Vec<T>) -> Result<(), io::Error> {
         for elem in array {
             self.write_value(elem)?;
         }
@@ -154,7 +154,7 @@ impl<W: io::Write> ListWriter<W> {
         Ok(())
     }
 
-    pub fn write_named_array<T: WriteDsn<W>>(
+    pub fn write_named_array<T: WriteSes<W>>(
         &mut self,
         name: &'static str,
         array: &Vec<T>,

@@ -1,11 +1,11 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Data, DeriveInput, Fields, Field};
-use syn::Type::Path;
 use syn::ext::IdentExt;
+use syn::Type::Path;
+use syn::{Data, DeriveInput, Field, Fields};
 
-use crate::attr_present;
 use crate::attr_content;
+use crate::attr_present;
 
 pub fn impl_write(input: &DeriveInput) -> TokenStream {
     let name = &input.ident;
@@ -13,7 +13,7 @@ pub fn impl_write(input: &DeriveInput) -> TokenStream {
     let body = impl_body(&input.data);
 
     quote! {
-        impl<W: std::io::Write> WriteDsn<W> for #name {
+        impl<W: std::io::Write> WriteSes<W> for #name {
             fn write_dsn(&self, writer: &mut ListWriter<W>)
                 -> std::io::Result<()>
             {
@@ -25,23 +25,19 @@ pub fn impl_write(input: &DeriveInput) -> TokenStream {
 
 fn impl_body(data: &Data) -> TokenStream {
     match data {
-        Data::Struct(data) => {
-            match &data.fields {
-                Fields::Named(fields) => {
-                    let fields = fields.named.iter().map(|field| {
-                        impl_field(field)
-                    });
+        Data::Struct(data) => match &data.fields {
+            Fields::Named(fields) => {
+                let fields = fields.named.iter().map(|field| impl_field(field));
 
-                    quote! {
-                        #(#fields)* 
+                quote! {
+                    #(#fields)*
 
-                        Ok(())
-                    }
+                    Ok(())
                 }
-                _ => unimplemented!()
             }
-        }
-        _ => unimplemented!()
+            _ => unimplemented!(),
+        },
+        _ => unimplemented!(),
     }
 }
 
@@ -61,7 +57,6 @@ fn impl_field(field: &Field) -> TokenStream {
         quote! {
             writer.write_array(&self.#name)?;
         }
-
     } else {
         if let Path(type_path) = &field.ty {
             let segments = &type_path.path.segments;
@@ -70,7 +65,7 @@ fn impl_field(field: &Field) -> TokenStream {
                 if ident == "Option" {
                     return quote! {
                         writer.write_optional(stringify!(#name_str), &self.#name)?;
-                    }
+                    };
                 }
             }
         }
@@ -80,5 +75,3 @@ fn impl_field(field: &Field) -> TokenStream {
         }
     }
 }
-
-

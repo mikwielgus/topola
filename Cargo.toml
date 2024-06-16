@@ -34,8 +34,8 @@ bimap = "0.6.3"
 log = "0.4"
 utf8-chars = "3.0.2"
 
-[dependencies.dsn_derive]
-path = "macro/dsn_derive"
+[dependencies.specctra_derive]
+path = "macro/specctra_derive"
 
 [dependencies.geo]
 version = "0.25.1"

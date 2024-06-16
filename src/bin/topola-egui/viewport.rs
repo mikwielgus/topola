@@ -6,11 +6,11 @@ use topola::{
     autorouter::invoker::{Command, Invoker},
     board::mesadata::MesadataTrait,
     drawing::{graph::MakePrimitive, primitive::MakePrimitiveShape},
-    dsn::mesadata::DsnMesadata,
     geometry::{shape::ShapeTrait, GenericNode},
     layout::{via::ViaWeight, zone::MakePolyShape},
     math::Circle,
     router::EmptyRouterObserver,
+    specctra::mesadata::SpecctraMesadata,
 };
 
 use crate::{
@@ -37,7 +37,7 @@ impl Viewport {
         ctx: &egui::Context,
         top: &Top,
         shared_data: Arc<Mutex<SharedData>>,
-        maybe_invoker: &Option<Arc<Mutex<Invoker<DsnMesadata>>>>,
+        maybe_invoker: &Option<Arc<Mutex<Invoker<SpecctraMesadata>>>>,
         maybe_overlay: &mut Option<Overlay>,
         maybe_layers: &Option<Layers>,
     ) {

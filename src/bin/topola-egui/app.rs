@@ -23,7 +23,6 @@ use topola::{
         rules::RulesTrait,
         Drawing, Infringement, LayoutException,
     },
-    dsn::{design::DsnDesign, mesadata::DsnMesadata},
     geometry::{
         compound::CompoundManagerTrait,
         primitive::{BendShape, DotShape, PrimitiveShape, PrimitiveShapeTrait, SegShape},
@@ -38,6 +37,7 @@ use topola::{
         tracer::{Trace, Tracer},
         EmptyRouterObserver, RouterObserverTrait,
     },
+    specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
 
 use crate::{layers::Layers, overlay::Overlay, painter::Painter, top::Top, viewport::Viewport};
@@ -60,7 +60,7 @@ pub struct App {
     overlay: Option<Overlay>,
 
     #[serde(skip)]
-    invoker: Option<Arc<Mutex<Invoker<DsnMesadata>>>>,
+    invoker: Option<Arc<Mutex<Invoker<SpecctraMesadata>>>>,
 
     #[serde(skip)]
     shared_data: Arc<Mutex<SharedData>>,
@@ -164,7 +164,7 @@ impl eframe::App for App {
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
         if cfg!(target_arch = "wasm32") {
             if let Ok(file_contents) = self.text_channel.1.try_recv() {
-                let design = DsnDesign::load_from_string(file_contents).unwrap();
+                let design = SpecctraDesign::load_from_string(file_contents).unwrap();
                 let board = design.make_board();
                 self.overlay = Some(Overlay::new(&board).unwrap());
                 self.layers = Some(Layers::new(&board));
@@ -174,7 +174,7 @@ impl eframe::App for App {
             }
         } else {
             if let Ok(path) = self.text_channel.1.try_recv() {
-                let design = DsnDesign::load_from_file(&path).unwrap();
+                let design = SpecctraDesign::load_from_file(&path).unwrap();
                 let board = design.make_board();
                 self.overlay = Some(Overlay::new(&board).unwrap());
                 self.layers = Some(Layers::new(&board));
