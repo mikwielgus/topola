@@ -141,13 +141,13 @@ pub struct Place {
     #[anon]
     pub name: String,
     #[anon]
-    pub x: f32,
+    pub x: f64,
     #[anon]
-    pub y: f32,
+    pub y: f64,
     #[anon]
     pub side: String,
     #[anon]
-    pub rotation: f32,
+    pub rotation: f64,
     pub PN: Option<String>,
 }
 
@@ -180,18 +180,13 @@ pub struct Outline {
 pub struct Pin {
     #[anon]
     pub name: String,
-    pub rotate: Option<f32>,
+    pub rotate: Option<f64>,
     #[anon]
     pub id: String,
     #[anon]
-    pub x: f32,
+    pub x: f64,
     #[anon]
-    pub y: f32,
-}
-
-#[derive(ReadDsn, WriteSes, Debug)]
-pub struct Rotate {
-    pub angle: f32,
+    pub y: f64,
 }
 
 #[derive(ReadDsn, WriteSes, Debug)]
@@ -251,7 +246,7 @@ pub struct Circle {
     #[anon]
     pub layer: String,
     #[anon]
-    pub diameter: u32,
+    pub diameter: f64,
     #[anon]
     pub offset: Option<Point>,
 }
@@ -318,8 +313,8 @@ pub struct Wire {
 // (and enforce that such an array actually contains a whole number of points)
 #[derive(Debug)]
 pub struct Point {
-    pub x: f32,
-    pub y: f32,
+    pub x: f64,
+    pub y: f64,
 }
 
 // Custom impl for the case described above
@@ -329,8 +324,8 @@ impl<R: std::io::BufRead> ReadDsn<R> for Vec<Point> {
         loop {
             let token = tokenizer.consume_token()?;
             if let ListToken::Leaf { value: ref x } = token {
-                let x = x.parse::<f32>().unwrap();
-                let y = tokenizer.read_value::<f32>()?;
+                let x = x.parse::<f64>().unwrap();
+                let y = tokenizer.read_value::<f64>()?;
                 array.push(Point { x, y });
             } else {
                 tokenizer.return_token(token);
@@ -345,8 +340,8 @@ impl<R: std::io::BufRead> ReadDsn<R> for Option<Point> {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
         let token = tokenizer.consume_token()?;
         if let ListToken::Leaf { value: ref x } = token {
-            let x = x.parse::<f32>().unwrap();
-            let y = tokenizer.read_value::<f32>()?;
+            let x = x.parse::<f64>().unwrap();
+            let y = tokenizer.read_value::<f64>()?;
             Ok(Some(Point { x, y }))
         } else {
             tokenizer.return_token(token);
@@ -380,7 +375,7 @@ pub struct Polygon {
     #[anon]
     pub layer: String,
     #[anon]
-    pub width: f32,
+    pub width: f64,
     #[anon]
     pub coords: Vec<Point>,
 }
@@ -390,7 +385,7 @@ pub struct Path {
     #[anon]
     pub layer: String,
     #[anon]
-    pub width: f32,
+    pub width: f64,
     #[anon]
     pub coords: Vec<Point>,
 }
@@ -400,13 +395,13 @@ pub struct Rect {
     #[anon]
     pub layer: String,
     #[anon]
-    pub x1: f32,
+    pub x1: f64,
     #[anon]
-    pub y1: f32,
+    pub y1: f64,
     #[anon]
-    pub x2: f32,
+    pub x2: f64,
     #[anon]
-    pub y2: f32,
+    pub y2: f64,
 }
 
 #[derive(ReadDsn, WriteSes, Debug)]

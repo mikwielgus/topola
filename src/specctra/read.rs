@@ -80,6 +80,7 @@ impl<R: std::io::BufRead> ReadDsn<R> for u32 {
             .map_err(|_| ParseError::Expected("u32"))?)
     }
 }
+
 impl<R: std::io::BufRead> ReadDsn<R> for usize {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
         Ok(tokenizer
@@ -89,6 +90,7 @@ impl<R: std::io::BufRead> ReadDsn<R> for usize {
             .map_err(|_| ParseError::Expected("usize"))?)
     }
 }
+
 impl<R: std::io::BufRead> ReadDsn<R> for f32 {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
         Ok(tokenizer
@@ -96,6 +98,16 @@ impl<R: std::io::BufRead> ReadDsn<R> for f32 {
             .expect_leaf()?
             .parse()
             .map_err(|_| ParseError::Expected("f32"))?)
+    }
+}
+
+impl<R: std::io::BufRead> ReadDsn<R> for f64 {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+        Ok(tokenizer
+            .consume_token()?
+            .expect_leaf()?
+            .parse()
+            .map_err(|_| ParseError::Expected("f64"))?)
     }
 }
 

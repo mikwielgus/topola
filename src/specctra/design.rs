@@ -184,12 +184,12 @@ impl SpecctraDesign {
                                 );
                                 Self::add_circle(
                                     &mut board,
-                                    (place.x as f64, place.y as f64).into(),
-                                    place.rotation as f64,
-                                    (pin.x as f64, pin.y as f64).into(),
-                                    pin.rotate.unwrap_or(0.0) as f64,
-                                    circle.diameter as f64 / 2.0,
-                                    layer as usize,
+                                    (place.x, place.y).into(),
+                                    place.rotation,
+                                    (pin.x, pin.y).into(),
+                                    pin.rotate.unwrap_or(0.0),
+                                    circle.diameter / 2.0,
+                                    layer,
                                     *net,
                                     Some(pinname.clone()),
                                 )
@@ -203,15 +203,15 @@ impl SpecctraDesign {
                                 );
                                 Self::add_rect(
                                     &mut board,
-                                    (place.x as f64, place.y as f64).into(),
-                                    place.rotation as f64,
-                                    (pin.x as f64, pin.y as f64).into(),
-                                    pin.rotate.unwrap_or(0.0) as f64,
-                                    rect.x1 as f64,
-                                    rect.y1 as f64,
-                                    rect.x2 as f64,
-                                    rect.y2 as f64,
-                                    layer as usize,
+                                    (place.x, place.y).into(),
+                                    place.rotation,
+                                    (pin.x, pin.y).into(),
+                                    pin.rotate.unwrap_or(0.0),
+                                    rect.x1,
+                                    rect.y1,
+                                    rect.x2,
+                                    rect.y2,
+                                    layer,
                                     *net,
                                     Some(pinname.clone()),
                                 )
@@ -225,13 +225,13 @@ impl SpecctraDesign {
                                 );
                                 Self::add_path(
                                     &mut board,
-                                    (place.x as f64, place.y as f64).into(),
-                                    place.rotation as f64,
-                                    (pin.x as f64, pin.y as f64).into(),
-                                    pin.rotate.unwrap_or(0.0) as f64,
+                                    (place.x, place.y).into(),
+                                    place.rotation,
+                                    (pin.x, pin.y).into(),
+                                    pin.rotate.unwrap_or(0.0),
                                     &path.coords,
-                                    path.width as f64,
-                                    layer as usize,
+                                    path.width,
+                                    layer,
                                     *net,
                                     Some(pinname.clone()),
                                 )
@@ -245,13 +245,13 @@ impl SpecctraDesign {
                                 );
                                 Self::add_polygon(
                                     &mut board,
-                                    (place.x as f64, place.y as f64).into(),
-                                    place.rotation as f64,
-                                    (pin.x as f64, pin.y as f64).into(),
-                                    pin.rotate.unwrap_or(0.0) as f64,
+                                    (place.x, place.y).into(),
+                                    place.rotation,
+                                    (pin.x, pin.y).into(),
+                                    pin.rotate.unwrap_or(0.0),
                                     &polygon.coords,
-                                    polygon.width as f64,
-                                    layer as usize,
+                                    polygon.width,
+                                    layer,
                                     *net,
                                     Some(pinname.clone()),
                                 )
@@ -294,8 +294,8 @@ impl SpecctraDesign {
                             0.0,
                             (0.0, 0.0).into(),
                             0.0,
-                            circle.diameter as f64 / 2.0,
-                            layer as usize,
+                            circle.diameter / 2.0,
+                            layer,
                             net,
                             None,
                         )
@@ -309,11 +309,11 @@ impl SpecctraDesign {
                             0.0,
                             (0.0, 0.0).into(),
                             0.0,
-                            rect.x1 as f64,
-                            rect.y1 as f64,
-                            rect.x2 as f64,
-                            rect.y2 as f64,
-                            layer as usize,
+                            rect.x1,
+                            rect.y1,
+                            rect.x2,
+                            rect.y2,
+                            layer,
                             net,
                             None,
                         )
@@ -328,8 +328,8 @@ impl SpecctraDesign {
                             (0.0, 0.0).into(),
                             0.0,
                             &path.coords,
-                            path.width as f64,
-                            layer as usize,
+                            path.width,
+                            layer,
                             net,
                             None,
                         )
@@ -348,8 +348,8 @@ impl SpecctraDesign {
                             (0.0, 0.0).into(),
                             0.0,
                             &polygon.coords,
-                            polygon.width as f64,
-                            layer as usize,
+                            polygon.width,
+                            layer,
                             net,
                             None,
                         )
@@ -379,7 +379,7 @@ impl SpecctraDesign {
                 (0.0, 0.0).into(),
                 0.0,
                 &wire.path.coords,
-                wire.path.width as f64,
+                wire.path.width,
                 layer,
                 net,
                 None,
@@ -423,9 +423,9 @@ impl SpecctraDesign {
             .unwrap();
 
         if front {
-            image_layer as usize
+            image_layer
         } else {
-            layers.len() - image_layer as usize - 1
+            layers.len() - image_layer - 1
         }
     }
 
@@ -584,8 +584,8 @@ impl SpecctraDesign {
             place_rot,
             pin_pos,
             pin_rot,
-            coords[0].x as f64,
-            coords[0].y as f64,
+            coords[0].x,
+            coords[0].y,
         );
         let mut prev_index = board.add_fixed_dot_infringably(
             FixedDotWeight {
@@ -606,8 +606,8 @@ impl SpecctraDesign {
                 place_rot,
                 pin_pos,
                 pin_rot,
-                coord.x as f64,
-                coord.y as f64,
+                coord.x,
+                coord.y,
             );
 
             if pos == prev_pos {
@@ -673,8 +673,8 @@ impl SpecctraDesign {
                         place_rot,
                         pin_pos,
                         pin_rot,
-                        coords[0].x as f64,
-                        coords[0].y as f64,
+                        coords[0].x,
+                        coords[0].y,
                     ),
                     r: width / 2.0,
                 },
@@ -696,8 +696,8 @@ impl SpecctraDesign {
                             place_rot,
                             pin_pos,
                             pin_rot,
-                            coord.x as f64,
-                            coord.y as f64,
+                            coord.x,
+                            coord.y,
                         )
                         .into(),
                         r: width / 2.0,

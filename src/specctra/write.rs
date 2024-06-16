@@ -61,6 +61,12 @@ impl<W: io::Write> WriteSes<W> for f32 {
     }
 }
 
+impl<W: io::Write> WriteSes<W> for f64 {
+    fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
+        writer.write_leaf(self.to_string())
+    }
+}
+
 pub struct ListWriter<W: io::Write> {
     writable: W,
     indent_level: usize,
