@@ -1,12 +1,57 @@
-use serde::{de::Error, Deserialize, Deserializer};
+use super::common::ListToken;
+use super::read::ReadDsn;
+use super::read::{ListTokenizer, ParseError};
+use super::write::ListWriter;
+use super::write::WriteDsn;
+use dsn_derive::ReadDsn;
+use dsn_derive::WriteDsn;
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
+pub struct Dummy {}
+
+#[derive(ReadDsn, WriteDsn, Debug)]
+pub struct SesFile {
+    pub session: Session,
+}
+
+#[derive(ReadDsn, WriteDsn, Debug)]
+pub struct Session {
+    #[anon]
+    pub id: String,
+    pub routes: Routes,
+}
+
+#[derive(ReadDsn, WriteDsn, Debug)]
+pub struct Routes {
+    pub resolution: Resolution,
+    pub library_out: Library,
+    pub network_out: NetworkOut,
+}
+
+#[derive(ReadDsn, WriteDsn, Debug)]
+pub struct NetworkOut {
+    #[vec("net")]
+    pub net: Vec<NetOut>,
+}
+
+#[derive(ReadDsn, WriteDsn, Debug)]
+pub struct NetOut {
+    #[anon]
+    pub name: String,
+    #[vec("wire")]
+    pub wire: Vec<Wire>,
+    #[vec("via")]
+    pub via: Vec<Via>,
+}
+
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct DsnFile {
     pub pcb: Pcb,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Pcb {
+    #[anon]
     pub name: String,
     pub parser: Parser,
     pub resolution: Resolution,
@@ -18,7 +63,7 @@ pub struct Pcb {
     pub wiring: Wiring,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(WriteDsn, Debug)]
 pub struct Parser {
     pub string_quote: Option<char>,
     pub space_in_quoted_tokens: Option<bool>,
@@ -26,288 +71,366 @@ pub struct Parser {
     pub host_version: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Resolution {
+    #[anon]
     pub unit: String,
-    pub value: u32,
+    #[anon]
+    pub value: f32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Structure {
-    pub layer_vec: Vec<Layer>,
+    #[vec("layer")]
+    pub layers: Vec<Layer>,
     pub boundary: Boundary,
-    pub plane_vec: Vec<Plane>,
+    #[vec("plane")]
+    pub planes: Vec<Plane>,
     pub via: ViaNames,
     pub rule: Rule,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Layer {
+    #[anon]
     pub name: String,
     pub r#type: String,
     pub property: Property,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Property {
     pub index: usize,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Boundary {
     pub path: Path,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Plane {
+    #[anon]
     pub net: String,
     pub polygon: Polygon,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct ViaNames {
-    pub name_vec: Vec<String>,
+    #[anon_vec]
+    pub names: Vec<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Placement {
-    pub component_vec: Vec<Component>,
+    #[vec("component")]
+    pub components: Vec<Component>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Component {
+    #[anon]
     pub name: String,
-    pub place_vec: Vec<Place>,
+    #[vec("place")]
+    pub places: Vec<Place>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
+#[allow(non_snake_case)]
 pub struct Place {
+    #[anon]
     pub name: String,
+    #[anon]
     pub x: f32,
+    #[anon]
     pub y: f32,
+    #[anon]
     pub side: String,
+    #[anon]
     pub rotation: f32,
     pub PN: Option<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Library {
-    pub image_vec: Vec<Image>,
-    pub padstack_vec: Vec<Padstack>,
+    #[vec("image")]
+    pub images: Vec<Image>,
+    #[vec("padstack")]
+    pub padstacks: Vec<Padstack>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Image {
+    #[anon]
     pub name: String,
-    pub outline_vec: Vec<Outline>,
-    pub pin_vec: Vec<Pin>,
-    pub keepout_vec: Vec<Keepout>,
+    #[vec("outline")]
+    pub outlines: Vec<Outline>,
+    #[vec("pin")]
+    pub pins: Vec<Pin>,
+    #[vec("keepout")]
+    pub keepouts: Vec<Keepout>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Outline {
     pub path: Path,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Pin {
+    #[anon]
     pub name: String,
     pub rotate: Option<f32>,
+    #[anon]
     pub id: String,
+    #[anon]
     pub x: f32,
+    #[anon]
     pub y: f32,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct Keepout {
-    pub idk: String,
-    pub shape_anonymous: Shape,
-}
-
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Rotate {
     pub angle: f32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
+pub struct Keepout {
+    #[anon]
+    pub idk: String,
+    #[anon]
+    pub shape: Shape,
+}
+
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Padstack {
+    #[anon]
     pub name: String,
-    pub shape_vec: Vec<Shape>,
+    #[vec("shape")]
+    pub shapes: Vec<Shape>,
     pub attach: bool,
 }
 
-#[derive(Deserialize, Debug)]
+// TODO: derive for enums if more than this single one is needed
+#[derive(Debug)]
 pub enum Shape {
-    #[serde(rename = "circle")]
     Circle(Circle),
-    #[serde(rename = "rect")]
     Rect(Rect),
-    #[serde(rename = "path")]
     Path(Path),
-    #[serde(rename = "polygon")]
     Polygon(Polygon),
 }
 
-#[derive(Deserialize, Debug)]
+impl<R: std::io::BufRead> ReadDsn<R> for Shape {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+        let name = tokenizer.consume_token()?.expect_any_start()?;
+        let value = match name.as_str() {
+            "circle" => Ok(Shape::Circle(tokenizer.read_value()?)),
+            "rect" => Ok(Shape::Rect(tokenizer.read_value()?)),
+            "path" => Ok(Shape::Path(tokenizer.read_value()?)),
+            "polygon" => Ok(Shape::Polygon(tokenizer.read_value()?)),
+            _ => Err(ParseError::Expected("a different keyword")),
+        };
+        tokenizer.consume_token()?.expect_end()?;
+        value
+    }
+}
+
+impl<W: std::io::Write> WriteDsn<W> for Shape {
+    fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), std::io::Error> {
+        match self {
+            Self::Circle(inner) => writer.write_named("circle", inner),
+            Self::Rect(inner) => writer.write_named("rect", inner),
+            Self::Path(inner) => writer.write_named("path", inner),
+            Self::Polygon(inner) => writer.write_named("polygon", inner),
+        }
+    }
+}
+
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Circle {
+    #[anon]
     pub layer: String,
+    #[anon]
     pub diameter: u32,
-    #[serde(deserialize_with = "de_point_optional")]
+    #[anon]
     pub offset: Option<Point>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Network {
-    pub net_vec: Vec<NetPinAssignments>,
-    pub class_vec: Vec<Class>,
+    #[vec("net")]
+    pub nets: Vec<NetPinAssignments>,
+    #[vec("class")]
+    pub classes: Vec<Class>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 // dsn names this "net", but it's a structure unrelated to "net" in wiring or elsewhere
 pub struct NetPinAssignments {
+    #[anon]
     pub name: String,
     pub pins: Pins,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Pins {
+    #[anon_vec]
     pub names: Vec<String>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Class {
+    #[anon]
     pub name: String,
-    pub net_vec: Vec<String>,
+    #[anon_vec]
+    pub nets: Vec<String>,
     pub circuit: Circuit,
     pub rule: Rule,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Circuit {
-    pub use_via: UseVia,
+    pub use_via: String,
 }
 
-#[derive(Deserialize, Debug)]
-pub struct UseVia {
-    pub name: String,
-}
-
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Wiring {
-    pub wire_vec: Vec<Wire>,
-    pub via_vec: Vec<Via>,
+    #[vec("wire")]
+    pub wires: Vec<Wire>,
+    #[vec("via")]
+    pub vias: Vec<Via>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Wire {
     pub path: Path,
     pub net: String,
     pub r#type: String,
 }
 
-// structs that appear in multiple places
+////////////////////////////////////////////
+// structs that appear in multiple places //
+////////////////////////////////////////////
 
-// This type isn't deserialized as is. Instead, Vec<Point> is converted from
-// what's effectively Vec<f32> (with even length) in the file.
-// Use #[serde(deserialize_with = "de_points")] for Vec<Point>
-// and #[serde(deserialize_with = "de_point_optional")] for a single Point.
-
+// This type isn't meant to be deserialized as is (single points are
+// more conveniently represented as fields on the enclosing struct)
+// It exists to give a way to read arrays of coordinates
+// (and enforce that such an array actually contains a whole number of points)
 #[derive(Debug)]
 pub struct Point {
     pub x: f32,
     pub y: f32,
 }
 
-// Used to deserialize Option<Point>
-fn de_point_optional<'de, D>(deserializer: D) -> Result<Option<Point>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    let mut vec: Vec<Point> = Vec::<f32>::deserialize(deserializer)?
-        .chunks(2)
-        .map(|pair| {
-            // 0th index is guaranteed to exist by `.chunks()`
-            // (it ends iteration instead of emitting an empty Vec)
-            let x = pair[0];
-            // but if the file is malformed we may get an odd number of floats
-            let y = *pair.get(1).ok_or(Error::custom(
-                "expected paired x y coordinates, list ended at x",
-            ))?;
-
-            Ok(Point { x, y })
-        })
-        .collect::<Result<Vec<Point>, D::Error>>()?;
-
-    if vec.len() > 1 {
-        Err(Error::custom("expected a single pair of coordinates"))
-    } else {
-        Ok(vec.pop())
+// Custom impl for the case described above
+impl<R: std::io::BufRead> ReadDsn<R> for Vec<Point> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+        let mut array = Vec::<Point>::new();
+        loop {
+            let token = tokenizer.consume_token()?;
+            if let ListToken::Leaf { value: ref x } = token {
+                let x = x.parse::<f32>().unwrap();
+                let y = tokenizer.read_value::<f32>()?;
+                array.push(Point { x, y });
+            } else {
+                tokenizer.return_token(token);
+                break;
+            }
+        }
+        Ok(array)
     }
 }
 
-// Used to deserialize Vec<Point>.
-fn de_points<'de, D>(deserializer: D) -> Result<Vec<Point>, D::Error>
-where
-    D: Deserializer<'de>,
-{
-    Vec::<f32>::deserialize(deserializer)?
-        .chunks(2)
-        .map(|pair| {
-            // 0th index is guaranteed to exist by `.chunks()`
-            // (it ends iteration instead of emitting an empty Vec)
-            let x = pair[0];
-            // but if the file is malformed we may get an odd number of floats
-            let y = *pair.get(1).ok_or(Error::custom(
-                "expected paired x y coordinates, list ended at x",
-            ))?;
-
-            Ok(Point { x, y })
-        })
-        .collect::<Result<Vec<Point>, D::Error>>()
+impl<R: std::io::BufRead> ReadDsn<R> for Option<Point> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+        let token = tokenizer.consume_token()?;
+        if let ListToken::Leaf { value: ref x } = token {
+            let x = x.parse::<f32>().unwrap();
+            let y = tokenizer.read_value::<f32>()?;
+            Ok(Some(Point { x, y }))
+        } else {
+            tokenizer.return_token(token);
+            Ok(None)
+        }
+    }
 }
 
-#[derive(Deserialize, Debug)]
+impl<W: std::io::Write> WriteDsn<W> for Vec<Point> {
+    fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), std::io::Error> {
+        for elem in self {
+            writer.write_value(&elem.x)?;
+            writer.write_value(&elem.y)?;
+        }
+        Ok(())
+    }
+}
+
+impl<W: std::io::Write> WriteDsn<W> for Option<Point> {
+    fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), std::io::Error> {
+        if let Some(value) = self {
+            writer.write_value(&value.x)?;
+            writer.write_value(&value.y)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Polygon {
+    #[anon]
     pub layer: String,
+    #[anon]
     pub width: f32,
-    #[serde(deserialize_with = "de_points")]
-    pub coord_vec: Vec<Point>,
+    #[anon]
+    pub coords: Vec<Point>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Path {
+    #[anon]
     pub layer: String,
+    #[anon]
     pub width: f32,
-    #[serde(deserialize_with = "de_points")]
-    pub coord_vec: Vec<Point>,
+    #[anon]
+    pub coords: Vec<Point>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Rect {
+    #[anon]
     pub layer: String,
+    #[anon]
     pub x1: f32,
+    #[anon]
     pub y1: f32,
+    #[anon]
     pub x2: f32,
+    #[anon]
     pub y2: f32,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Via {
+    #[anon]
     pub name: String,
+    #[anon]
     pub x: i32,
+    #[anon]
     pub y: i32,
     pub net: String,
     pub r#type: String,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Rule {
     pub width: f32,
-    pub clearance_vec: Vec<Clearance>,
+    #[vec("clearance")]
+    pub clearances: Vec<Clearance>,
 }
 
-#[derive(Deserialize, Debug)]
+#[derive(ReadDsn, WriteDsn, Debug)]
 pub struct Clearance {
+    #[anon]
     pub value: f32,
     pub r#type: Option<String>,
 }

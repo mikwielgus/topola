@@ -1,5 +1,5 @@
 use super::common::ListToken;
-use super::structure2::Parser;
+use super::structure::Parser;
 use thiserror::Error;
 use utf8_chars::BufReadCharsExt;
 

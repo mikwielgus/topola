@@ -34,17 +34,17 @@ impl DsnDesign {
         let reader = std::io::BufReader::new(file);
         let mut list_reader = super::read::ListTokenizer::new(reader);
 
-        let dsn = list_reader.read_value::<super::structure2::DsnFile>();
+        let dsn = list_reader.read_value::<super::structure::DsnFile>();
 
         // TODO: make_board() still uses the old version of structure.rs
         // so we can't pass the data to topola for real
 
         if let Ok(dsn) = dsn {
-            use super::structure2::*;
+            use super::structure::*;
 
             // (this entire if let block does not belong here)
 
-            let ses_name = filename.replace(".dsn", ".ses");
+            /*let ses_name = filename.replace(".dsn", ".ses");
             let file2 = std::fs::File::create(ses_name).unwrap();
             let writer = std::io::BufWriter::new(file2);
             let mut list_writer = super::write::ListWriter::new(writer);
@@ -103,38 +103,43 @@ impl DsnDesign {
                         },
                     },
                 },
-            };
+            };*/
 
-            println!("{:?}", list_writer.write_value(&ses));
+            //println!("{:?}", list_writer.write_value(&ses));
+
+            Ok(Self { pcb: dsn.pcb })
         } else {
             dbg!(dsn);
+            todo!();
         }
-
-        let contents = std::fs::read_to_string(filename)?;
-
-        Self::load_from_string(contents)
     }
 
     pub fn load_from_string(contents: String) -> Result<Self, LoadingError> {
-        let pcb = de::from_str::<DsnFile>(&contents)
+        /*let dsn = de::from_str::<DsnFile>(&contents)
             .map_err(|err| LoadingError::Syntax(err))?
             .pcb;
 
-        Ok(Self { pcb })
+        Ok(Self { pcb })*/
+        let mut list_reader = super::read::ListTokenizer::new(contents.as_bytes());
+        let dsn = list_reader.read_value::<super::structure::DsnFile>();
+
+        Ok(Self {
+            pcb: dsn.unwrap().pcb,
+        })
     }
 
     pub fn make_board(&self) -> Board<DsnMesadata> {
         let mesadata = DsnMesadata::from_pcb(&self.pcb);
         let mut board = Board::new(Layout::new(Drawing::new(
             mesadata,
-            self.pcb.structure.layer_vec.len(),
+            self.pcb.structure.layers.len(),
         )));
 
         // mapping of pin -> net prepared for adding pins
         let pin_nets = HashMap::<String, usize>::from_iter(
             self.pcb
                 .network
-                .net_vec
+                .nets
                 .iter()
                 .map(|net_pin_assignments| {
                     // resolve the id so we don't work with strings
@@ -158,34 +163,34 @@ impl DsnDesign {
         );
 
         // add pins from components
-        for component in &self.pcb.placement.component_vec {
-            for place in &component.place_vec {
+        for component in &self.pcb.placement.components {
+            for place in &component.places {
                 let image = self
                     .pcb
                     .library
-                    .image_vec
+                    .images
                     .iter()
                     .find(|image| image.name == component.name)
                     .unwrap();
 
-                for pin in &image.pin_vec {
+                for pin in &image.pins {
                     let pinname = format!("{}-{}", place.name, pin.id);
                     let net = pin_nets.get(&pinname).unwrap();
 
                     let padstack = &self
                         .pcb
                         .library
-                        .padstack_vec
+                        .padstacks
                         .iter()
                         .find(|padstack| padstack.name == pin.name)
                         .unwrap();
 
-                    for shape in padstack.shape_vec.iter() {
+                    for shape in padstack.shapes.iter() {
                         match shape {
                             Shape::Circle(circle) => {
                                 let layer = Self::layer(
                                     &mut board,
-                                    &self.pcb.structure.layer_vec,
+                                    &self.pcb.structure.layers,
                                     &circle.layer,
                                     place.side == "front",
                                 );
@@ -204,7 +209,7 @@ impl DsnDesign {
                             Shape::Rect(rect) => {
                                 let layer = Self::layer(
                                     &mut board,
-                                    &self.pcb.structure.layer_vec,
+                                    &self.pcb.structure.layers,
                                     &rect.layer,
                                     place.side == "front",
                                 );
@@ -226,7 +231,7 @@ impl DsnDesign {
                             Shape::Path(path) => {
                                 let layer = Self::layer(
                                     &mut board,
-                                    &self.pcb.structure.layer_vec,
+                                    &self.pcb.structure.layers,
                                     &path.layer,
                                     place.side == "front",
                                 );
@@ -236,7 +241,7 @@ impl DsnDesign {
                                     place.rotation as f64,
                                     (pin.x as f64, pin.y as f64).into(),
                                     pin.rotate.unwrap_or(0.0) as f64,
-                                    &path.coord_vec,
+                                    &path.coords,
                                     path.width as f64,
                                     layer as usize,
                                     *net,
@@ -246,7 +251,7 @@ impl DsnDesign {
                             Shape::Polygon(polygon) => {
                                 let layer = Self::layer(
                                     &mut board,
-                                    &self.pcb.structure.layer_vec,
+                                    &self.pcb.structure.layers,
                                     &polygon.layer,
                                     place.side == "front",
                                 );
@@ -256,7 +261,7 @@ impl DsnDesign {
                                     place.rotation as f64,
                                     (pin.x as f64, pin.y as f64).into(),
                                     pin.rotate.unwrap_or(0.0) as f64,
-                                    &polygon.coord_vec,
+                                    &polygon.coords,
                                     polygon.width as f64,
                                     layer as usize,
                                     *net,
@@ -269,7 +274,7 @@ impl DsnDesign {
             }
         }
 
-        for via in &self.pcb.wiring.via_vec {
+        for via in &self.pcb.wiring.vias {
             let net = board
                 .layout()
                 .drawing()
@@ -281,17 +286,17 @@ impl DsnDesign {
             let padstack = &self
                 .pcb
                 .library
-                .padstack_vec
+                .padstacks
                 .iter()
                 .find(|padstack| padstack.name == via.name)
                 .unwrap();
 
-            for shape in &padstack.shape_vec {
+            for shape in &padstack.shapes {
                 match shape {
                     Shape::Circle(circle) => {
                         let layer = Self::layer(
                             &mut board,
-                            &self.pcb.structure.layer_vec,
+                            &self.pcb.structure.layers,
                             &circle.layer,
                             true,
                         );
@@ -308,12 +313,8 @@ impl DsnDesign {
                         )
                     }
                     Shape::Rect(rect) => {
-                        let layer = Self::layer(
-                            &mut board,
-                            &self.pcb.structure.layer_vec,
-                            &rect.layer,
-                            true,
-                        );
+                        let layer =
+                            Self::layer(&mut board, &self.pcb.structure.layers, &rect.layer, true);
                         Self::add_rect(
                             &mut board,
                             (0.0, 0.0).into(),
@@ -330,19 +331,15 @@ impl DsnDesign {
                         )
                     }
                     Shape::Path(path) => {
-                        let layer = Self::layer(
-                            &mut board,
-                            &self.pcb.structure.layer_vec,
-                            &path.layer,
-                            true,
-                        );
+                        let layer =
+                            Self::layer(&mut board, &self.pcb.structure.layers, &path.layer, true);
                         Self::add_path(
                             &mut board,
                             (0.0, 0.0).into(),
                             0.0,
                             (0.0, 0.0).into(),
                             0.0,
-                            &path.coord_vec,
+                            &path.coords,
                             path.width as f64,
                             layer as usize,
                             net,
@@ -352,7 +349,7 @@ impl DsnDesign {
                     Shape::Polygon(polygon) => {
                         let layer = Self::layer(
                             &mut board,
-                            &self.pcb.structure.layer_vec,
+                            &self.pcb.structure.layers,
                             &polygon.layer,
                             true,
                         );
@@ -362,7 +359,7 @@ impl DsnDesign {
                             0.0,
                             (0.0, 0.0).into(),
                             0.0,
-                            &polygon.coord_vec,
+                            &polygon.coords,
                             polygon.width as f64,
                             layer as usize,
                             net,
@@ -373,7 +370,7 @@ impl DsnDesign {
             }
         }
 
-        for wire in self.pcb.wiring.wire_vec.iter() {
+        for wire in self.pcb.wiring.wires.iter() {
             let layer = board
                 .layout()
                 .drawing()
@@ -393,7 +390,7 @@ impl DsnDesign {
                 0.0,
                 (0.0, 0.0).into(),
                 0.0,
-                &wire.path.coord_vec,
+                &wire.path.coords,
                 wire.path.width as f64,
                 layer,
                 net,
@@ -426,7 +423,7 @@ impl DsnDesign {
 
     fn layer(
         board: &Board<DsnMesadata>,
-        layer_vec: &Vec<Layer>,
+        layers: &Vec<Layer>,
         layername: &str,
         front: bool,
     ) -> usize {
@@ -440,7 +437,7 @@ impl DsnDesign {
         if front {
             image_layer as usize
         } else {
-            layer_vec.len() - image_layer as usize - 1
+            layers.len() - image_layer as usize - 1
         }
     }
 

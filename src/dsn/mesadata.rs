@@ -18,7 +18,7 @@ impl DsnRule {
     fn from_dsn(rule: &super::structure::Rule) -> Self {
         Self {
             width: rule.width as f64,
-            clearance: rule.clearance_vec[0].value as f64, // picks the generic clearance only for now
+            clearance: rule.clearances[0].value as f64, // picks the generic clearance only for now
         }
     }
 }
@@ -43,7 +43,7 @@ impl DsnMesadata {
     pub fn from_pcb(pcb: &Pcb) -> Self {
         let layer_layername = BiHashMap::from_iter(
             pcb.structure
-                .layer_vec
+                .layers
                 .iter()
                 .map(|layer| (layer.property.index, layer.name.clone())),
         );
@@ -51,9 +51,9 @@ impl DsnMesadata {
         // keeping this as a separate iter pass because it might be moved into a different struct later?
         let net_netname = BiHashMap::from_iter(
             pcb.network
-                .class_vec
+                .classes
                 .iter()
-                .flat_map(|class| &class.net_vec)
+                .flat_map(|class| &class.nets)
                 .enumerate()
                 .map(|(net, netname)| (net, netname.clone())),
         );
@@ -61,10 +61,10 @@ impl DsnMesadata {
         let mut net_netclass = HashMap::new();
         let class_rules = HashMap::from_iter(
             pcb.network
-                .class_vec
+                .classes
                 .iter()
                 .inspect(|class| {
-                    for netname in &class.net_vec {
+                    for netname in &class.nets {
                         let net = net_netname.get_by_right(netname).unwrap();
                         net_netclass.insert(*net, class.name.clone());
                     }
