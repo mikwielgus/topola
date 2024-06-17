@@ -40,7 +40,10 @@ use topola::{
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
 
-use crate::{layers::Layers, overlay::Overlay, painter::Painter, top::Top, viewport::Viewport};
+use crate::{
+    bottom::Bottom, layers::Layers, overlay::Overlay, painter::Painter, top::Top,
+    viewport::Viewport,
+};
 
 #[derive(Debug, Default)]
 pub struct SharedData {
@@ -75,6 +78,9 @@ pub struct App {
     top: Top,
 
     #[serde(skip)]
+    bottom: Bottom,
+
+    #[serde(skip)]
     layers: Option<Layers>,
 }
 
@@ -87,6 +93,7 @@ impl Default for App {
             text_channel: channel(),
             viewport: Viewport::new(),
             top: Top::new(),
+            bottom: Bottom::new(),
             layers: None,
         }
     }
@@ -198,7 +205,7 @@ impl eframe::App for App {
             }
         }
 
-        self.viewport.update(
+        let viewport_rect = self.viewport.update(
             ctx,
             &self.top,
             self.shared_data.clone(),
@@ -206,6 +213,8 @@ impl eframe::App for App {
             &mut self.overlay,
             &self.layers,
         );
+
+        self.bottom.update(ctx, &self.viewport, viewport_rect);
 
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);

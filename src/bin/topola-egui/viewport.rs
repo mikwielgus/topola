@@ -22,7 +22,7 @@ use crate::{
 };
 
 pub struct Viewport {
-    from_rect: egui::emath::Rect,
+    pub from_rect: egui::emath::Rect,
 }
 
 impl Viewport {
@@ -40,7 +40,7 @@ impl Viewport {
         maybe_invoker: &Option<Arc<Mutex<Invoker<SpecctraMesadata>>>>,
         maybe_overlay: &mut Option<Overlay>,
         maybe_layers: &Option<Layers>,
-    ) {
+    ) -> egui::Rect {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
                 ui.ctx().request_repaint();
@@ -227,11 +227,11 @@ impl Viewport {
                                 egui::Color32::from_rgb(255, 255, 100),
                             );
                         }
-
-                        //unreachable!();
                     }
                 }
+
+                viewport_rect
             })
-        });
+        }).inner.inner
     }
 }
