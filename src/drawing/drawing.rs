@@ -8,6 +8,7 @@ use thiserror::Error;
 use crate::drawing::{
     band::BandIndex,
     bend::{BendIndex, BendWeight, FixedBendIndex, LooseBendIndex, LooseBendWeight},
+    cane::Cane,
     collect::Collect,
     dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
@@ -22,7 +23,6 @@ use crate::drawing::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex, SegWeight,
         SeqLooseSegIndex, SeqLooseSegWeight,
     },
-    segbend::Segbend,
     wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex},
 };
 use crate::geometry::{
@@ -409,7 +409,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() >= old(self.geometry_with_rtree.graph().edge_count() + 5))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn insert_segbend(
+    pub fn insert_cane(
         &mut self,
         from: DotIndex,
         around: WraparoundableIndex,
@@ -417,11 +417,11 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         cw: bool,
-    ) -> Result<Segbend, LayoutException> {
+    ) -> Result<Cane, LayoutException> {
         let maybe_wraparound = self.wraparoundable(around).wraparound();
         let infringables = self.collect().wraparounded_bows(around);
 
-        let segbend = self.add_segbend_with_infringables(
+        let cane = self.add_cane_with_infringables(
             from,
             around,
             dot_weight,
@@ -432,25 +432,25 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         )?;
 
         if let Some(wraparound) = maybe_wraparound {
-            self.reattach_bend(wraparound, Some(segbend.bend));
+            self.reattach_bend(wraparound, Some(cane.bend));
         }
 
-        if let Some(outer) = self.primitive(segbend.bend).outer() {
+        if let Some(outer) = self.primitive(cane.bend).outer() {
             self.update_this_and_outward_bows(outer).map_err(|err| {
-                let joint = self.primitive(segbend.bend).other_joint(segbend.dot);
-                self.remove_segbend(&segbend, joint.into());
+                let joint = self.primitive(cane.bend).other_joint(cane.dot);
+                self.remove_cane(&cane, joint.into());
                 err
             })?;
         }
 
         // Segs must not cross.
-        if let Some(collision) = self.detect_collision(segbend.seg.into()) {
-            let joint = self.primitive(segbend.bend).other_joint(segbend.dot);
-            self.remove_segbend(&segbend, joint.into());
+        if let Some(collision) = self.detect_collision(cane.seg.into()) {
+            let joint = self.primitive(cane.bend).other_joint(cane.dot);
+            self.remove_cane(&cane, joint.into());
             return Err(collision.into());
         }
 
-        Ok::<Segbend, LayoutException>(segbend)
+        Ok::<Cane, LayoutException>(cane)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
@@ -563,7 +563,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() >= old(self.geometry_with_rtree.graph().edge_count() + 5))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    pub fn add_segbend(
+    pub fn add_cane(
         &mut self,
         from: DotIndex,
         around: WraparoundableIndex,
@@ -571,8 +571,8 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         cw: bool,
-    ) -> Result<Segbend, LayoutException> {
-        self.add_segbend_with_infringables(
+    ) -> Result<Cane, LayoutException> {
+        self.add_cane_with_infringables(
             from,
             around,
             dot_weight,
@@ -587,7 +587,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() >= old(self.geometry_with_rtree.graph().edge_count() + 5))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_segbend_with_infringables(
+    fn add_cane_with_infringables(
         &mut self,
         from: DotIndex,
         around: WraparoundableIndex,
@@ -596,7 +596,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         bend_weight: LooseBendWeight,
         cw: bool,
         infringables: Option<&[PrimitiveIndex]>,
-    ) -> Result<Segbend, LayoutException> {
+    ) -> Result<Cane, LayoutException> {
         let seg_to = self.add_dot_with_infringables(dot_weight, infringables)?;
         let seg = self
             .add_seg_with_infringables(from, seg_to.into(), seg_weight, infringables)
@@ -624,7 +624,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
                 err
             })?;
 
-        Ok::<Segbend, LayoutException>(Segbend {
+        Ok::<Cane, LayoutException>(Cane {
             seg,
             dot: seg_to,
             bend,
@@ -632,30 +632,30 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() - 4))]
-    pub fn remove_segbend(&mut self, segbend: &Segbend, face: LooseDotIndex) {
-        let maybe_outer = self.primitive(segbend.bend).outer();
+    pub fn remove_cane(&mut self, cane: &Cane, face: LooseDotIndex) {
+        let maybe_outer = self.primitive(cane.bend).outer();
 
         // Removing a loose bend affects its outer bends.
         if let Some(outer) = maybe_outer {
-            self.reattach_bend(outer, self.primitive(segbend.bend).inner());
+            self.reattach_bend(outer, self.primitive(cane.bend).inner());
         }
 
-        self.geometry_with_rtree.remove_bend(segbend.bend.into());
-        self.geometry_with_rtree.remove_seg(segbend.seg.into());
+        self.geometry_with_rtree.remove_bend(cane.bend.into());
+        self.geometry_with_rtree.remove_seg(cane.seg.into());
 
         // We must remove the dots only after the segs and bends because we need dots to calculate
         // the shapes, which we first need unchanged to remove the segs and bends from the R-tree.
 
         self.geometry_with_rtree.remove_dot(face.into());
-        self.geometry_with_rtree.remove_dot(segbend.dot.into());
+        self.geometry_with_rtree.remove_dot(cane.dot.into());
 
         if let Some(outer) = maybe_outer {
             self.update_this_and_outward_bows(outer).unwrap(); // Must never fail.
         }
     }
 
-    pub fn segbend(&self, dot: LooseDotIndex) -> Segbend {
-        Segbend::from_dot(dot, self)
+    pub fn cane(&self, dot: LooseDotIndex) -> Cane {
+        Cane::from_dot(dot, self)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]

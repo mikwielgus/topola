@@ -7,6 +7,7 @@ use crate::{
     drawing::{
         band::BandIndex,
         bend::LooseBendWeight,
+        cane::Cane,
         dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         graph::{GetMaybeNet, PrimitiveIndex},
         primitive::{GetJoints, GetOtherJoint},
@@ -15,7 +16,6 @@ use crate::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
             SeqLooseSegWeight,
         },
-        segbend::Segbend,
         wraparoundable::WraparoundableIndex,
         Drawing, Infringement, LayoutException,
     },
@@ -50,11 +50,11 @@ impl<R: RulesTrait> Layout<R> {
         self.drawing.remove_band(band);
     }
 
-    pub fn remove_segbend(&mut self, segbend: &Segbend, face: LooseDotIndex) {
-        self.drawing.remove_segbend(segbend, face)
+    pub fn remove_cane(&mut self, cane: &Cane, face: LooseDotIndex) {
+        self.drawing.remove_cane(cane, face)
     }
 
-    pub fn insert_segbend(
+    pub fn insert_cane(
         &mut self,
         from: DotIndex,
         around: WraparoundableIndex,
@@ -62,9 +62,9 @@ impl<R: RulesTrait> Layout<R> {
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         cw: bool,
-    ) -> Result<Segbend, LayoutException> {
+    ) -> Result<Cane, LayoutException> {
         self.drawing
-            .insert_segbend(from, around, dot_weight, seg_weight, bend_weight, cw)
+            .insert_cane(from, around, dot_weight, seg_weight, bend_weight, cw)
     }
 
     #[debug_ensures(ret.is_ok() -> self.drawing.node_count() == old(self.drawing.node_count()) + weight.to_layer - weight.from_layer)]

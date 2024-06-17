@@ -10,13 +10,13 @@ use crate::drawing::{
 use super::rules::RulesTrait;
 
 #[derive(Debug, Clone, Copy)]
-pub struct Segbend {
+pub struct Cane {
     pub seg: SeqLooseSegIndex,
     pub dot: LooseDotIndex,
     pub bend: LooseBendIndex,
 }
 
-impl Segbend {
+impl Cane {
     pub fn from_dot(dot: LooseDotIndex, drawing: &Drawing<impl Copy, impl RulesTrait>) -> Self {
         let bend = LooseDot::new(dot, drawing).bend();
         let dot = LooseBend::new(bend, drawing).other_joint(dot);
@@ -25,13 +25,13 @@ impl Segbend {
     }
 }
 
-impl GetInterior<PrimitiveIndex> for Segbend {
+impl GetInterior<PrimitiveIndex> for Cane {
     fn interior(&self) -> Vec<PrimitiveIndex> {
         vec![self.bend.into(), self.dot.into(), self.seg.into()]
     }
 }
 
-impl GetJoints<SeqLooseSegIndex, LooseBendIndex> for Segbend {
+impl GetJoints<SeqLooseSegIndex, LooseBendIndex> for Cane {
     fn joints(&self) -> (SeqLooseSegIndex, LooseBendIndex) {
         (self.seg, self.bend)
     }

@@ -5,7 +5,7 @@ use crate::{
         band::BandIndex,
         bend::LooseBendIndex,
         dot::FixedDotIndex,
-        guide::{BareHead, Head, SegbendHead},
+        guide::{BareHead, CaneHead, Head},
         rules::RulesTrait,
     },
     layout::Layout,
@@ -111,7 +111,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         head: Head,
         around: NavvertexIndex,
         width: f64,
-    ) -> Result<SegbendHead, DrawException> {
+    ) -> Result<CaneHead, DrawException> {
         match around {
             NavvertexIndex::FixedDot(dot) => self.wrap_around_fixed_dot(head, dot, width),
             NavvertexIndex::FixedBend(_fixed_bend) => todo!(),
@@ -126,8 +126,8 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         head: Head,
         around: FixedDotIndex,
         width: f64,
-    ) -> Result<SegbendHead, DrawException> {
-        let head = Draw::new(self.layout).segbend_around_dot(head, around.into(), width)?;
+    ) -> Result<CaneHead, DrawException> {
+        let head = Draw::new(self.layout).cane_around_dot(head, around.into(), width)?;
         Ok(head)
     }
 
@@ -136,16 +136,16 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         head: Head,
         around: LooseBendIndex,
         width: f64,
-    ) -> Result<SegbendHead, DrawException> {
-        let head = Draw::new(self.layout).segbend_around_bend(head, around.into(), width)?;
+    ) -> Result<CaneHead, DrawException> {
+        let head = Draw::new(self.layout).cane_around_bend(head, around.into(), width)?;
 
         Ok(head)
     }
 
     #[debug_ensures(trace.path.len() == old(trace.path.len() - 1))]
     pub fn undo_step(&mut self, trace: &mut Trace) {
-        if let Head::Segbend(head) = trace.head {
-            trace.head = Draw::new(self.layout).undo_segbend(head).unwrap();
+        if let Head::Cane(head) = trace.head {
+            trace.head = Draw::new(self.layout).undo_cane(head).unwrap();
         } else {
             panic!();
         }

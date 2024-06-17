@@ -18,10 +18,10 @@ use crate::{
 };
 
 use super::{
+    cane::Cane,
     graph::PrimitiveIndex,
     primitive::GetJoints,
     rules::{Conditions, RulesTrait},
-    segbend::Segbend,
 };
 
 #[enum_dispatch]
@@ -33,7 +33,7 @@ pub trait HeadTrait {
 #[derive(Debug, Clone, Copy)]
 pub enum Head {
     Bare(BareHead),
-    Segbend(SegbendHead),
+    Cane(CaneHead),
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -48,12 +48,12 @@ impl HeadTrait for BareHead {
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct SegbendHead {
+pub struct CaneHead {
     pub face: LooseDotIndex,
-    pub segbend: Segbend,
+    pub cane: Cane,
 }
 
-impl HeadTrait for SegbendHead {
+impl HeadTrait for CaneHead {
     fn face(&self) -> DotIndex {
         self.face.into()
     }
@@ -157,8 +157,8 @@ impl<'a, CW: Copy, R: RulesTrait> Guide<'a, CW, R> {
     }
 
     pub fn head_cw(&self, head: &Head) -> Option<bool> {
-        if let Head::Segbend(head) = head {
-            let joints = self.drawing.primitive(head.segbend.bend).joints();
+        if let Head::Cane(head) = head {
+            let joints = self.drawing.primitive(head.cane.bend).joints();
 
             if head.face() == joints.0.into() {
                 Some(false)
@@ -176,12 +176,12 @@ impl<'a, CW: Copy, R: RulesTrait> Guide<'a, CW, R> {
                 pos: head.face().primitive(self.drawing).shape().center(), // TODO.
                 r: 0.0,
             },
-            Head::Segbend(head) => {
-                if let Some(inner) = self.drawing.primitive(head.segbend.bend).inner() {
+            Head::Cane(head) => {
+                if let Some(inner) = self.drawing.primitive(head.cane.bend).inner() {
                     self.bend_circle(inner.into(), width, &self.conditions(head.face().into()))
                 } else {
                     self.dot_circle(
-                        self.drawing.primitive(head.segbend.bend).core().into(),
+                        self.drawing.primitive(head.cane.bend).core().into(),
                         width,
                         &self.conditions(head.face().into()),
                     )
@@ -220,28 +220,28 @@ impl<'a, CW: Copy, R: RulesTrait> Guide<'a, CW, R> {
         }
     }
 
-    pub fn segbend_head(&self, dot: LooseDotIndex) -> SegbendHead {
-        SegbendHead {
+    pub fn cane_head(&self, dot: LooseDotIndex) -> CaneHead {
+        CaneHead {
             face: dot,
-            segbend: self.drawing.segbend(dot),
+            cane: self.drawing.cane(dot),
         }
     }
 
     pub fn rear_head(&self, dot: LooseDotIndex) -> Head {
-        self.head(self.rear(self.segbend_head(dot)))
+        self.head(self.rear(self.cane_head(dot)))
     }
 
     pub fn head(&self, dot: DotIndex) -> Head {
         match dot {
             DotIndex::Fixed(fixed) => BareHead { dot: fixed }.into(),
-            DotIndex::Loose(loose) => self.segbend_head(loose).into(),
+            DotIndex::Loose(loose) => self.cane_head(loose).into(),
         }
     }
 
-    fn rear(&self, head: SegbendHead) -> DotIndex {
+    fn rear(&self, head: CaneHead) -> DotIndex {
         self.drawing
-            .primitive(head.segbend.seg)
-            .other_joint(head.segbend.dot.into())
+            .primitive(head.cane.seg)
+            .other_joint(head.cane.dot.into())
     }
 
     fn conditions(&self, node: PrimitiveIndex) -> Conditions {

@@ -8,7 +8,7 @@ use crate::{
         bend::{BendIndex, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
         graph::{GetLayer, GetMaybeNet, MakePrimitive},
-        guide::{Guide, Head, HeadTrait, SegbendHead},
+        guide::{CaneHead, Guide, Head, HeadTrait},
         primitive::GetOtherJoint,
         rules::RulesTrait,
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
@@ -41,7 +41,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
     }
 
     pub fn start(&mut self, from: LooseDotIndex) -> Head {
-        self.guide().segbend_head(from).into()
+        self.guide().cane_head(from).into()
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 1))]
@@ -94,12 +94,12 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
 
     #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 4))]
     #[debug_ensures(ret.is_err() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
-    pub fn segbend_around_dot(
+    pub fn cane_around_dot(
         &mut self,
         head: Head,
         around: FixedDotIndex,
         width: f64,
-    ) -> Result<SegbendHead, DrawException> {
+    ) -> Result<CaneHead, DrawException> {
         let mut tangents = self
             .guide()
             .head_around_dot_segments(&head, around.into(), width)?;
@@ -116,7 +116,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         let mut errs = vec![];
 
         for (i, tangent) in [tangents.0, tangents.1].iter().enumerate() {
-            match self.segbend_around(
+            match self.cane_around(
                 head,
                 around.into(),
                 tangent.start_point(),
@@ -139,12 +139,12 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
 
     #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 4))]
     #[debug_ensures(ret.is_err() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
-    pub fn segbend_around_bend(
+    pub fn cane_around_bend(
         &mut self,
         head: Head,
         around: BendIndex,
         width: f64,
-    ) -> Result<SegbendHead, DrawException> {
+    ) -> Result<CaneHead, DrawException> {
         let mut tangents = self
             .guide()
             .head_around_bend_segments(&head, around.into(), width)?;
@@ -161,7 +161,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         let mut errs = vec![];
 
         for (i, tangent) in [tangents.0, tangents.1].iter().enumerate() {
-            match self.segbend_around(
+            match self.cane_around(
                 head,
                 around.into(),
                 tangent.start_point(),
@@ -184,7 +184,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
 
     #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 4))]
     #[debug_ensures(ret.is_err() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
-    fn segbend_around(
+    fn cane_around(
         &mut self,
         head: Head,
         around: WraparoundableIndex,
@@ -193,16 +193,16 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         cw: bool,
         width: f64,
         offset: f64,
-    ) -> Result<SegbendHead, LayoutException> {
+    ) -> Result<CaneHead, LayoutException> {
         let head = self.extend_head(head, from)?;
-        self.segbend(head, around, to, cw, width, offset)
+        self.cane(head, around, to, cw, width, offset)
     }
 
     #[debug_ensures(self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
     fn extend_head(&mut self, head: Head, to: Point) -> Result<Head, Infringement> {
-        if let Head::Segbend(head) = head {
+        if let Head::Cane(head) = head {
             self.layout.move_dot(head.face.into(), to)?;
-            Ok(Head::Segbend(head))
+            Ok(Head::Cane(head))
         } else {
             Ok(head)
         }
@@ -210,7 +210,7 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
 
     #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 4))]
     #[debug_ensures(ret.is_err() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
-    fn segbend(
+    fn cane(
         &mut self,
         head: Head,
         around: WraparoundableIndex,
@@ -218,10 +218,10 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         cw: bool,
         width: f64,
         offset: f64,
-    ) -> Result<SegbendHead, LayoutException> {
+    ) -> Result<CaneHead, LayoutException> {
         let layer = head.face().primitive(self.layout.drawing()).layer();
         let maybe_net = head.face().primitive(self.layout.drawing()).maybe_net();
-        let segbend = self.layout.insert_segbend(
+        let cane = self.layout.insert_cane(
             head.face(),
             around,
             LooseDotWeight {
@@ -245,26 +245,26 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
             },
             cw,
         )?;
-        Ok::<SegbendHead, LayoutException>(SegbendHead {
+        Ok::<CaneHead, LayoutException>(CaneHead {
             face: self
                 .layout
                 .drawing()
-                .primitive(segbend.bend)
-                .other_joint(segbend.dot),
-            segbend,
+                .primitive(cane.bend)
+                .other_joint(cane.dot),
+            cane,
         })
     }
 
     #[debug_ensures(ret.is_some() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() - 4))]
     #[debug_ensures(ret.is_none() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
-    pub fn undo_segbend(&mut self, head: SegbendHead) -> Option<Head> {
+    pub fn undo_cane(&mut self, head: CaneHead) -> Option<Head> {
         let prev_dot = self
             .layout
             .drawing()
-            .primitive(head.segbend.seg)
-            .other_joint(head.segbend.dot.into());
+            .primitive(head.cane.seg)
+            .other_joint(head.cane.dot.into());
 
-        self.layout.remove_segbend(&head.segbend, head.face);
+        self.layout.remove_cane(&head.cane, head.face);
         Some(self.guide().head(prev_dot))
     }
 

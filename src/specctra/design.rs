@@ -9,9 +9,9 @@ use crate::{
     layout::{zone::SolidZoneWeight, Layout},
     math::Circle,
     specctra::{
-        read::{self, ListTokenizer},
         mesadata::SpecctraMesadata,
-        structure::{self, Layer, Pcb, Shape, DsnFile},
+        read::{self, ListTokenizer},
+        structure::{self, DsnFile, Layer, Pcb, Shape},
     },
 };
 
@@ -35,85 +35,81 @@ impl SpecctraDesign {
         let mut list_reader = read::ListTokenizer::new(reader);
         let dsn = list_reader.read_value::<DsnFile>()?;
 
-        Ok(Self {
-            pcb: dsn.pcb,
-        })
+        Ok(Self { pcb: dsn.pcb })
 
-            //use super::structure::*;
+        //use super::structure::*;
 
-            // (this entire if let block does not belong here)
+        // (this entire if let block does not belong here)
 
-            /*let ses_name = filename.replace(".dsn", ".ses");
-            let file2 = std::fs::File::create(ses_name).unwrap();
-            let writer = std::io::BufWriter::new(file2);
-            let mut list_writer = super::write::ListWriter::new(writer);
+        /*let ses_name = filename.replace(".dsn", ".ses");
+        let file2 = std::fs::File::create(ses_name).unwrap();
+        let writer = std::io::BufWriter::new(file2);
+        let mut list_writer = super::write::ListWriter::new(writer);
 
-            let mut net_outs = HashMap::<String, NetOut>::new();
-            for mut wire in dsn.pcb.wiring.wires {
-                // move wires to double check that importing the resulting file into KiCad does something
-                for point in &mut wire.path.coords {
-                    point.x += 1000.0;
-                }
-
-                if let Some(net) = net_outs.get_mut(&wire.net) {
-                    net.wire.push(wire);
-                } else {
-                    net_outs.insert(
-                        wire.net.clone(),
-                        NetOut {
-                            name: wire.net.clone(),
-                            wire: vec![wire],
-                            via: Vec::new(),
-                        },
-                    );
-                }
-            }
-            for via in dsn.pcb.wiring.vias {
-                if let Some(net) = net_outs.get_mut(&via.net) {
-                    net.via.push(via);
-                } else {
-                    net_outs.insert(
-                        via.net.clone(),
-                        NetOut {
-                            name: via.net.clone(),
-                            wire: Vec::new(),
-                            via: vec![via],
-                        },
-                    );
-                }
+        let mut net_outs = HashMap::<String, NetOut>::new();
+        for mut wire in dsn.pcb.wiring.wires {
+            // move wires to double check that importing the resulting file into KiCad does something
+            for point in &mut wire.path.coords {
+                point.x += 1000.0;
             }
 
-            // build a basic .ses file from what was loaded
-            let ses = SesFile {
-                session: Session {
-                    id: "ID".to_string(),
-                    routes: Routes {
-                        resolution: Resolution {
-                            unit: "um".into(),
-                            // TODO: why does resolution need to be adjusted from what was imported?
-                            value: 1.0,
-                        },
-                        library_out: Library {
-                            images: Vec::new(),
-                            padstacks: dsn.pcb.library.padstacks,
-                        },
-                        network_out: NetworkOut {
-                            net: net_outs.into_values().collect(),
-                        },
+            if let Some(net) = net_outs.get_mut(&wire.net) {
+                net.wire.push(wire);
+            } else {
+                net_outs.insert(
+                    wire.net.clone(),
+                    NetOut {
+                        name: wire.net.clone(),
+                        wire: vec![wire],
+                        via: Vec::new(),
+                    },
+                );
+            }
+        }
+        for via in dsn.pcb.wiring.vias {
+            if let Some(net) = net_outs.get_mut(&via.net) {
+                net.via.push(via);
+            } else {
+                net_outs.insert(
+                    via.net.clone(),
+                    NetOut {
+                        name: via.net.clone(),
+                        wire: Vec::new(),
+                        via: vec![via],
+                    },
+                );
+            }
+        }
+
+        // build a basic .ses file from what was loaded
+        let ses = SesFile {
+            session: Session {
+                id: "ID".to_string(),
+                routes: Routes {
+                    resolution: Resolution {
+                        unit: "um".into(),
+                        // TODO: why does resolution need to be adjusted from what was imported?
+                        value: 1.0,
+                    },
+                    library_out: Library {
+                        images: Vec::new(),
+                        padstacks: dsn.pcb.library.padstacks,
+                    },
+                    network_out: NetworkOut {
+                        net: net_outs.into_values().collect(),
                     },
                 },
-            };*/
+            },
+        };*/
 
-            //println!("{:?}", list_writer.write_value(&ses));
+        //println!("{:?}", list_writer.write_value(&ses));
     }
 
     pub fn load_from_string(contents: String) -> Result<Self, LoadingError> {
         let mut list_reader = ListTokenizer::new(contents.as_bytes());
         let dsn = list_reader.read_value::<DsnFile>()?;
 
-        Ok(Self {
-            pcb: dsn.pcb,
-        })
+        Ok(Self { pcb: dsn.pcb })
     }
 
     pub fn make_board(&self) -> Board<SpecctraMesadata> {
@@ -601,14 +597,7 @@ impl SpecctraDesign {
 
         // iterate through path coords starting from the second
         for coord in coords.iter().skip(1) {
-            let pos = Self::pos(
-                place_pos,
-                place_rot,
-                pin_pos,
-                pin_rot,
-                coord.x,
-                coord.y,
-            );
+            let pos = Self::pos(place_pos, place_rot, pin_pos, pin_rot, coord.x, coord.y);
 
             if pos == prev_pos {
                 continue;
@@ -691,15 +680,8 @@ impl SpecctraDesign {
             let index = board.add_zone_fixed_dot_infringably(
                 FixedDotWeight {
                     circle: Circle {
-                        pos: Self::pos(
-                            place_pos,
-                            place_rot,
-                            pin_pos,
-                            pin_rot,
-                            coord.x,
-                            coord.y,
-                        )
-                        .into(),
+                        pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, coord.x, coord.y)
+                            .into(),
                         r: width / 2.0,
                     },
                     layer,
