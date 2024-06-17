@@ -27,7 +27,6 @@ use topola::layout::Layout;
 use topola::router::draw::DrawException;
 use topola::router::navmesh::{Navmesh, NavmeshEdgeReference, NavvertexIndex};
 use topola::router::tracer::{Trace, Tracer};
-use topola::router::RouterObserverTrait;
 use topola::specctra::design::SpecctraDesign;
 use topola::specctra::mesadata::SpecctraMesadata;
 
@@ -87,107 +86,6 @@ enum RouterOrLayout<'a, R: RulesTrait> {
     Layout(&'a Layout<R>),
 }
 
-struct DebugRouterObserver<'a> {
-    event_pump: &'a mut sdl2::EventPump,
-    window: &'a Window,
-    renderer: &'a mut Renderer<GLDevice>,
-    font_context: &'a CanvasFontContext,
-    view: &'a mut View,
-    navmesh: Option<Navmesh>,
-}
-
-impl<'a> DebugRouterObserver<'a> {
-    pub fn new(
-        event_pump: &'a mut sdl2::EventPump,
-        window: &'a Window,
-        renderer: &'a mut Renderer<GLDevice>,
-        font_context: &'a CanvasFontContext,
-        view: &'a mut View,
-        navmesh: Option<Navmesh>,
-    ) -> Self {
-        Self {
-            event_pump,
-            window,
-            renderer,
-            font_context,
-            view,
-            navmesh,
-        }
-    }
-}
-
-impl<'a, R: RulesTrait> RouterObserverTrait<R> for DebugRouterObserver<'a> {
-    fn on_rework(&mut self, tracer: &Tracer<R>, trace: &Trace) {
-        render_times(
-            self.event_pump,
-            self.window,
-            self.renderer,
-            self.font_context,
-            self.view,
-            RouterOrLayout::Layout(tracer.layout),
-            None,
-            self.navmesh.clone(),
-            &trace.path,
-            &[],
-            &[],
-            40,
-        );
-    }
-
-    fn before_probe(&mut self, tracer: &Tracer<R>, trace: &Trace, edge: NavmeshEdgeReference) {
-        let mut path = trace.path.clone();
-        path.push(edge.target());
-        render_times(
-            self.event_pump,
-            self.window,
-            self.renderer,
-            self.font_context,
-            self.view,
-            RouterOrLayout::Layout(tracer.layout),
-            None,
-            self.navmesh.clone(),
-            &path,
-            &[],
-            &[],
-            10,
-        );
-    }
-
-    fn on_probe(
-        &mut self,
-        tracer: &Tracer<R>,
-        trace: &Trace,
-        _edge: NavmeshEdgeReference,
-        result: Result<(), DrawException>,
-    ) {
-        let (ghosts, highlighteds, delay) = match result {
-            Err(DrawException::CannotWrapAround(
-                ..,
-                LayoutException::Infringement(Infringement(shape1, infringee1)),
-                LayoutException::Infringement(Infringement(shape2, infringee2)),
-            )) => (vec![shape1, shape2], vec![infringee1, infringee2], 30),
-            _ => (vec![], vec![], 10),
-        };
-
-        render_times(
-            self.event_pump,
-            self.window,
-            self.renderer,
-            self.font_context,
-            self.view,
-            RouterOrLayout::Layout(tracer.layout),
-            None,
-            self.navmesh.clone(),
-            &trace.path,
-            &ghosts,
-            &highlighteds,
-            delay,
-        );
-    }
-
-    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: NavvertexIndex) {}
-}
-
 fn main() -> Result<(), anyhow::Error> {
     let sdl_context = sdl2::init().unwrap();
     let video_subsystem = sdl_context.video().unwrap();
@@ -230,7 +128,7 @@ fn main() -> Result<(), anyhow::Error> {
     let font_context = CanvasFontContext::from_system_source();
 
     // TODO: make a type like this wrapping the details of pathfinder
-    // so we don't pass so many arguments to render_times() and through the debug observer
+    // so we don't pass so many arguments to render_times()
     //let mut canvas = window.into_canvas().build().unwrap();
 
     let mut event_pump = sdl_context.event_pump().unwrap();
@@ -276,32 +174,8 @@ fn main() -> Result<(), anyhow::Error> {
 
     let mut autorouter = Autorouter::new(board).unwrap();
     if let Ok(mut autoroute) = autorouter.autoroute_walk(&Selection::new()) {
-        /*while autoroute.step(
-            &mut autorouter,
-            &mut DebugRouterObserver::new(
-                &mut event_pump,
-                &window,
-                &mut renderer,
-                &font_context,
-                &mut view,
-                autoroute.navmesh().clone(),
-            ),
-        ) {
-            //
-        }*/
-
         loop {
-            let status = match autoroute.step(
-                &mut autorouter,
-                &mut DebugRouterObserver::new(
-                    &mut event_pump,
-                    &window,
-                    &mut renderer,
-                    &font_context,
-                    &mut view,
-                    autoroute.navmesh().clone(),
-                ),
-            ) {
+            let status = match autoroute.step(&mut autorouter) {
                 Ok(status) => status,
                 Err(err) => break,
             };
@@ -317,8 +191,6 @@ fn main() -> Result<(), anyhow::Error> {
         dot_indices[1],
         dot_indices[2],
         3.0,
-        //&mut EmptyRouterObserver,
-        &mut DebugRouterObserver::new(&mut event_pump, &window, &mut renderer, &font_context),
     )?;*/
 
     render_times(
@@ -408,14 +280,6 @@ fn render_times(
                             band,
                             point! {x: state.x() as f64, y: state.y() as f64},
                             3.0,
-                            &mut DebugRouterObserver::new(
-                                event_pump,
-                                window,
-                                renderer,
-                                font_context,
-                                view,
-                                maybe_navmesh,
-                            ),
                         )
                         .ok();
                     maybe_navmesh = None;

@@ -5,7 +5,6 @@ use topola::{
     },
     layout::via::ViaWeight,
     math::Circle,
-    router::EmptyRouterObserver,
 };
 
 mod common;
@@ -42,18 +41,15 @@ fn test_tht_diode_bridge_rectifier() {
     common::assert_band_length(autorouter.board(), "J2-2", "D4-2", 15500.0, 0.5);
 
     let mut invoker = Invoker::new(autorouter);
-    let result = invoker.execute(
-        Command::PlaceVia(ViaWeight {
-            from_layer: 0,
-            to_layer: 1,
-            circle: Circle {
-                pos: [0.0, 0.0].into(),
-                r: 200000.0,
-            },
-            maybe_net: Some(1234),
-        }),
-        &mut EmptyRouterObserver,
-    );
+    let result = invoker.execute(Command::PlaceVia(ViaWeight {
+        from_layer: 0,
+        to_layer: 1,
+        circle: Circle {
+            pos: [0.0, 0.0].into(),
+            r: 200000.0,
+        },
+        maybe_net: Some(1234),
+    }));
     assert!(matches!(
         result,
         Err(InvokerError::Autorouter(AutorouterError::CouldNotPlaceVia(

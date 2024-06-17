@@ -15,7 +15,7 @@ use crate::{
         Layout, NodeIndex,
     },
     math::Circle,
-    router::{navmesh::Navmesh, Router, RouterError, RouterObserverTrait},
+    router::{navmesh::Navmesh, Router, RouterError},
 };
 
 #[derive(Debug)]
@@ -115,12 +115,7 @@ impl<M: MesadataTrait> Board<M> {
         zone
     }
 
-    pub fn route_band(
-        &mut self,
-        navmesh: Navmesh,
-        width: f64,
-        observer: &mut impl RouterObserverTrait<M>,
-    ) -> Result<BandIndex, RouterError> {
+    pub fn route_band(&mut self, navmesh: Navmesh, width: f64) -> Result<BandIndex, RouterError> {
         let source_pinname = self
             .node_pinname(GenericNode::Primitive(navmesh.source().into()))
             .unwrap()
@@ -131,7 +126,7 @@ impl<M: MesadataTrait> Board<M> {
             .to_string();
 
         let mut router = Router::new_from_navmesh(self.layout_mut(), navmesh);
-        let result = router.route_band(100.0, observer);
+        let result = router.route_band(100.0);
 
         if let Ok(band) = result {
             self.pinname_pair_to_band

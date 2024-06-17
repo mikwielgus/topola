@@ -35,7 +35,6 @@ use topola::{
         draw::DrawException,
         navmesh::{Navmesh, NavmeshEdgeReference, NavvertexIndex},
         tracer::{Trace, Tracer},
-        EmptyRouterObserver, RouterObserverTrait,
     },
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
@@ -108,56 +107,6 @@ impl App {
         }
 
         Default::default()
-    }
-}
-
-pub struct DebugRouterObserver {
-    pub shared_data: Arc<Mutex<SharedData>>,
-}
-
-impl<R: RulesTrait + std::fmt::Debug> RouterObserverTrait<R> for DebugRouterObserver {
-    fn on_rework(&mut self, tracer: &Tracer<R>, trace: &Trace) {
-        //dbg!(_tracer, _trace);
-        let mut shared_data = self.shared_data.lock().unwrap();
-        shared_data.path = trace.path.clone();
-        shared_data.ghosts = vec![];
-        shared_data.highlighteds = vec![];
-        std::thread::sleep_ms(500);
-    }
-    fn before_probe(&mut self, tracer: &Tracer<R>, trace: &Trace, edge: NavmeshEdgeReference) {
-        //dbg!(_tracer, _trace, _edge);
-        let mut shared_data = self.shared_data.lock().unwrap();
-        shared_data.path = trace.path.clone();
-        shared_data.path.push(edge.target());
-        shared_data.ghosts = vec![];
-        shared_data.highlighteds = vec![];
-        std::thread::sleep_ms(100);
-    }
-    fn on_probe(
-        &mut self,
-        tracer: &Tracer<R>,
-        trace: &Trace,
-        edge: NavmeshEdgeReference,
-        result: Result<(), DrawException>,
-    ) {
-        //dbg!(_tracer, _trace, _edge, _result);
-        let mut shared_data = self.shared_data.lock().unwrap();
-        let (ghosts, highlighteds, delay) = match result {
-            Err(DrawException::CannotWrapAround(
-                ..,
-                LayoutException::Infringement(Infringement(shape1, infringee1)),
-                LayoutException::Infringement(Infringement(shape2, infringee2)),
-            )) => (vec![shape1, shape2], vec![infringee1, infringee2], 1500),
-            _ => (vec![], vec![], 300),
-        };
-
-        shared_data.path = trace.path.clone();
-        shared_data.ghosts = ghosts;
-        shared_data.highlighteds = highlighteds;
-        std::thread::sleep_ms(delay);
-    }
-    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: NavvertexIndex) {
-        //dbg!(_tracer, _vertex);
     }
 }
 

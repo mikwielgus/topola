@@ -11,7 +11,6 @@ use crate::{
     },
     board::mesadata::MesadataTrait,
     layout::via::ViaWeight,
-    router::{EmptyRouterObserver, RouterObserverTrait},
 };
 
 #[derive(Error, Debug, Clone)]
@@ -42,15 +41,12 @@ impl Execute {
     pub fn step<M: MesadataTrait>(
         &mut self,
         invoker: &mut Invoker<M>,
-        observer: &mut impl RouterObserverTrait<M>,
     ) -> Result<InvokerStatus, InvokerError> {
         match self {
-            Execute::Autoroute(autoroute) => {
-                match autoroute.step(&mut invoker.autorouter, observer)? {
-                    AutorouterStatus::Running => Ok(InvokerStatus::Running),
-                    AutorouterStatus::Finished => Ok(InvokerStatus::Finished),
-                }
-            }
+            Execute::Autoroute(autoroute) => match autoroute.step(&mut invoker.autorouter)? {
+                AutorouterStatus::Running => Ok(InvokerStatus::Running),
+                AutorouterStatus::Finished => Ok(InvokerStatus::Finished),
+            },
             Execute::PlaceVia(place_via) => {
                 place_via.doit(&mut invoker.autorouter)?;
                 Ok(InvokerStatus::Finished)
@@ -80,15 +76,11 @@ impl<M: MesadataTrait> Invoker<M> {
         (self.autorouter, self.history)
     }
 
-    pub fn execute(
-        &mut self,
-        command: Command,
-        observer: &mut impl RouterObserverTrait<M>,
-    ) -> Result<(), InvokerError> {
+    pub fn execute(&mut self, command: Command) -> Result<(), InvokerError> {
         let mut execute = self.execute_walk(command);
 
         loop {
-            let status = match execute.step(self, observer) {
+            let status = match execute.step(self) {
                 Ok(status) => status,
                 Err(err) => return Err(err),
             };
@@ -133,7 +125,7 @@ impl<M: MesadataTrait> Invoker<M> {
         let mut execute = self.dispatch_command(&command);
 
         loop {
-            let status = match execute.step(self, &mut EmptyRouterObserver) {
+            let status = match execute.step(self) {
                 Ok(status) => status,
                 Err(err) => return Err(err),
             };
@@ -148,7 +140,7 @@ impl<M: MesadataTrait> Invoker<M> {
         let (done, undone) = history.destructure();
 
         for command in done {
-            self.execute(command, &mut EmptyRouterObserver);
+            self.execute(command);
         }
 
         self.history.set_undone(undone.into_iter());

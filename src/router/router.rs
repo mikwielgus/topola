@@ -27,66 +27,24 @@ pub enum RouterError {
     Astar(#[from] AstarError),
 }
 
-pub trait RouterObserverTrait<R: RulesTrait> {
-    fn on_rework(&mut self, tracer: &Tracer<R>, trace: &Trace);
-    fn before_probe(&mut self, tracer: &Tracer<R>, trace: &Trace, edge: NavmeshEdgeReference);
-    fn on_probe(
-        &mut self,
-        tracer: &Tracer<R>,
-        trace: &Trace,
-        edge: NavmeshEdgeReference,
-        result: Result<(), DrawException>,
-    );
-    fn on_estimate(&mut self, tracer: &Tracer<R>, vertex: NavvertexIndex);
-}
-
-pub struct EmptyRouterObserver;
-
-impl<R: RulesTrait> RouterObserverTrait<R> for EmptyRouterObserver {
-    fn on_rework(&mut self, _tracer: &Tracer<R>, _trace: &Trace) {}
-    fn before_probe(&mut self, _tracer: &Tracer<R>, _trace: &Trace, _edge: NavmeshEdgeReference) {}
-    fn on_probe(
-        &mut self,
-        _tracer: &Tracer<R>,
-        _trace: &Trace,
-        _edge: NavmeshEdgeReference,
-        _result: Result<(), DrawException>,
-    ) {
-    }
-    fn on_estimate(&mut self, _tracer: &Tracer<R>, _vertex: NavvertexIndex) {}
-}
-
 pub struct Router<'a, R: RulesTrait> {
     layout: &'a mut Layout<R>,
     navmesh: Navmesh,
 }
 
-struct RouterAstarStrategy<'a, RO: RouterObserverTrait<R>, R: RulesTrait> {
+struct RouterAstarStrategy<'a, R: RulesTrait> {
     tracer: Tracer<'a, R>,
     trace: Trace,
     to: FixedDotIndex,
-    observer: &'a mut RO,
 }
 
-impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> RouterAstarStrategy<'a, RO, R> {
-    pub fn new(
-        tracer: Tracer<'a, R>,
-        trace: Trace,
-        to: FixedDotIndex,
-        observer: &'a mut RO,
-    ) -> Self {
-        Self {
-            tracer,
-            trace,
-            to,
-            observer,
-        }
+impl<'a, R: RulesTrait> RouterAstarStrategy<'a, R> {
+    pub fn new(tracer: Tracer<'a, R>, trace: Trace, to: FixedDotIndex) -> Self {
+        Self { tracer, trace, to }
     }
 }
 
-impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64, BandIndex>
-    for RouterAstarStrategy<'a, RO, R>
-{
+impl<'a, R: RulesTrait> AstarStrategy<&Navmesh, f64, BandIndex> for RouterAstarStrategy<'a, R> {
     fn is_goal(
         &mut self,
         vertex: NavvertexIndex,
@@ -98,13 +56,11 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64,
         self.tracer
             .rework_path(&mut self.trace, &new_path, width)
             .unwrap();
-        self.observer.on_rework(&self.tracer, &self.trace);
 
         self.tracer.finish(&mut self.trace, self.to, width).ok()
     }
 
     fn edge_cost(&mut self, edge: NavmeshEdgeReference) -> Option<f64> {
-        self.observer.before_probe(&self.tracer, &self.trace, edge);
         if edge.target() == self.to.into() {
             return None;
         }
@@ -113,8 +69,6 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64,
 
         let width = self.trace.width;
         let result = self.tracer.step(&mut self.trace, edge.target(), width);
-        self.observer
-            .on_probe(&self.tracer, &self.trace, edge, result);
 
         let probe_length = 0.0; //self.tracer.layout.band_length(self.trace.head.face());
 
@@ -127,8 +81,6 @@ impl<'a, RO: RouterObserverTrait<R>, R: RulesTrait> AstarStrategy<&Navmesh, f64,
     }
 
     fn estimate_cost(&mut self, vertex: NavvertexIndex) -> f64 {
-        self.observer.on_estimate(&self.tracer, vertex);
-
         let start_point = PrimitiveIndex::from(vertex)
             .primitive(self.tracer.layout.drawing())
             .shape()
@@ -159,11 +111,7 @@ impl<'a, R: RulesTrait> Router<'a, R> {
         Self { layout, navmesh }
     }
 
-    pub fn route_band(
-        &mut self,
-        width: f64,
-        observer: &mut impl RouterObserverTrait<R>,
-    ) -> Result<BandIndex, RouterError> {
+    pub fn route_band(&mut self, width: f64) -> Result<BandIndex, RouterError> {
         let from = self.navmesh.source();
         let to = self.navmesh.target();
         let mut tracer = Tracer::new(self.layout);
@@ -172,7 +120,7 @@ impl<'a, R: RulesTrait> Router<'a, R> {
         let (_cost, _path, band) = astar(
             &self.navmesh,
             from.into(),
-            &mut RouterAstarStrategy::new(tracer, trace, to, observer),
+            &mut RouterAstarStrategy::new(tracer, trace, to),
         )?;
 
         Ok(band)
@@ -183,7 +131,6 @@ impl<'a, R: RulesTrait> Router<'a, R> {
         band: BandIndex,
         to: Point,
         width: f64,
-        observer: &mut impl RouterObserverTrait<R>,
     ) -> Result<BandIndex, RoutingError> {
         {
             let mut layout = self.layout.lock().unwrap();
@@ -192,7 +139,7 @@ impl<'a, R: RulesTrait> Router<'a, R> {
             layout.move_dot(self.navmesh.to().into(), to).unwrap(); // TODO: Remove `.unwrap()`.
         }
 
-        self.route_band(width, observer)
+        self.route_band(width)
     }*/
 
     pub fn layout(&mut self) -> &mut Layout<R> {

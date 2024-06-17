@@ -9,7 +9,7 @@ use topola::{
 };
 
 use crate::{
-    app::{channel_text, execute, DebugRouterObserver, SharedData},
+    app::{channel_text, execute, SharedData},
     overlay::Overlay,
 };
 
@@ -124,12 +124,7 @@ impl Top {
                             }
 
                             let _ = loop {
-                                let status = match execute.step(
-                                    &mut invoker,
-                                    &mut DebugRouterObserver {
-                                        shared_data: shared_data_arc_mutex.clone(),
-                                    },
-                                ) {
+                                let status = match execute.step(&mut invoker) {
                                     Ok(status) => status,
                                     Err(err) => return,
                                 };

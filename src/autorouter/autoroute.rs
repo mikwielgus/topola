@@ -3,7 +3,7 @@ use petgraph::graph::EdgeIndex;
 use crate::{
     autorouter::{Autorouter, AutorouterError, AutorouterStatus},
     board::mesadata::MesadataTrait,
-    router::{navmesh::Navmesh, RouterObserverTrait},
+    router::navmesh::Navmesh,
 };
 
 pub struct Autoroute {
@@ -38,7 +38,6 @@ impl Autoroute {
     pub fn step<M: MesadataTrait>(
         &mut self,
         autorouter: &mut Autorouter<M>,
-        observer: &mut impl RouterObserverTrait<M>,
     ) -> Result<AutorouterStatus, AutorouterError> {
         let (new_navmesh, new_ratline) = if let Some(cur_ratline) = self.ratlines_iter.next() {
             let (source, target) = autorouter.ratline_endpoints(cur_ratline);
@@ -58,7 +57,6 @@ impl Autoroute {
         match autorouter.board.route_band(
             std::mem::replace(&mut self.navmesh, new_navmesh).unwrap(),
             100.0,
-            observer,
         ) {
             Ok(band) => {
                 autorouter

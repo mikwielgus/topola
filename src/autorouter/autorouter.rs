@@ -12,7 +12,7 @@ use crate::{
     board::{mesadata::MesadataTrait, Board},
     drawing::{dot::FixedDotIndex, Infringement},
     layout::via::ViaWeight,
-    router::{navmesh::NavmeshError, RouterError, RouterObserverTrait},
+    router::{navmesh::NavmeshError, RouterError},
     triangulation::GetTrianvertexIndex,
 };
 
@@ -44,15 +44,11 @@ impl<M: MesadataTrait> Autorouter<M> {
         Ok(Self { board, ratsnest })
     }
 
-    pub fn autoroute(
-        &mut self,
-        selection: &Selection,
-        observer: &mut impl RouterObserverTrait<M>,
-    ) -> Result<(), AutorouterError> {
+    pub fn autoroute(&mut self, selection: &Selection) -> Result<(), AutorouterError> {
         let mut autoroute = self.autoroute_walk(selection)?;
 
         loop {
-            let status = match autoroute.step(self, observer) {
+            let status = match autoroute.step(self) {
                 Ok(status) => status,
                 Err(err) => return Err(err),
             };

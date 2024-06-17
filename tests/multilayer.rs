@@ -6,7 +6,6 @@ use topola::{
     board::mesadata::MesadataTrait,
     layout::via::ViaWeight,
     math::Circle,
-    router::EmptyRouterObserver,
 };
 
 mod common;
@@ -17,18 +16,15 @@ fn test_unrouted_lm317_breakout() {
         "tests/multilayer/data/prerouted_lm317_breakout/unrouted_lm317_breakout.dsn",
     );
 
-    let result = invoker.execute(
-        Command::PlaceVia(ViaWeight {
-            from_layer: 0,
-            to_layer: 1,
-            circle: Circle {
-                pos: [125000.0, -84000.0].into(),
-                r: 1000.0,
-            },
-            maybe_net: Some(1234),
-        }),
-        &mut EmptyRouterObserver,
-    );
+    let result = invoker.execute(Command::PlaceVia(ViaWeight {
+        from_layer: 0,
+        to_layer: 1,
+        circle: Circle {
+            pos: [125000.0, -84000.0].into(),
+            r: 1000.0,
+        },
+        maybe_net: Some(1234),
+    }));
     let result = dbg!(result);
     assert!(matches!(
         result,

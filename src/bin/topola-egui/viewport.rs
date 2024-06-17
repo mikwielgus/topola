@@ -9,7 +9,6 @@ use topola::{
     geometry::{shape::ShapeTrait, GenericNode},
     layout::{via::ViaWeight, zone::MakePolyShape},
     math::Circle,
-    router::EmptyRouterObserver,
     specctra::mesadata::SpecctraMesadata,
 };
 
@@ -89,7 +88,6 @@ impl Viewport {
                                         },
                                         maybe_net: Some(1234),
                                     }),
-                                    &mut EmptyRouterObserver,
                                 );
                             });
                         } else if let Some(overlay) = maybe_overlay {
