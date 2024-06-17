@@ -111,7 +111,7 @@ impl Viewport {
                         if let Some(layers) = maybe_layers {
                             for i in (0..layers.visible.len()).rev() {
                                 if layers.visible[i] {
-                                    for primitive in board.layout().drawing().layer_primitive_nodes(i.try_into().unwrap() /* FIXME */) {
+                                    for primitive in board.layout().drawing().layer_primitive_nodes(i) {
                                         let shape = primitive.primitive(board.layout().drawing()).shape();
 
                                         let color = if shared_data.highlighteds.contains(&primitive)
@@ -127,7 +127,7 @@ impl Viewport {
                                         painter.paint_primitive(&shape, color);
                                     }
 
-                                    for zone in board.layout().layer_zone_nodes(1) {
+                                    for zone in board.layout().layer_zone_nodes(i) {
                                         let color = if overlay
                                             .selection()
                                             .contains_node(board, GenericNode::Compound(zone.into()))
