@@ -54,7 +54,6 @@ fn test_tht_diode_bridge_rectifier() {
         }),
         &mut EmptyRouterObserver,
     );
-    let result = dbg!(result);
     assert!(matches!(
         result,
         Err(InvokerError::Autorouter(AutorouterError::CouldNotPlaceVia(

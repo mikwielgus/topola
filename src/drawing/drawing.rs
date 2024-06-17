@@ -155,6 +155,12 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         self.add_dot_with_infringables(weight, Some(&[]))
     }
 
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() - 1))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    pub fn remove_fixed_dot(&mut self, dot: FixedDotIndex) {
+        self.geometry_with_rtree.remove_dot(dot.into());
+    }
+
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn add_fixed_dot_infringably(&mut self, weight: FixedDotWeight) -> FixedDotIndex {

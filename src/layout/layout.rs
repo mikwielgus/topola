@@ -1,3 +1,4 @@
+use contracts::debug_ensures;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use rstar::AABB;
@@ -66,16 +67,34 @@ impl<R: RulesTrait> Layout<R> {
             .insert_segbend(from, around, dot_weight, seg_weight, bend_weight, cw)
     }
 
+    #[debug_ensures(ret.is_ok() -> self.drawing.node_count() == old(self.drawing.node_count()) + weight.to_layer - weight.from_layer)]
+    #[debug_ensures(ret.is_err() -> self.drawing.node_count() == old(self.drawing.node_count()))]
     pub fn add_via(&mut self, weight: ViaWeight) -> Result<GenericIndex<ViaWeight>, Infringement> {
         let compound = self.drawing.add_compound(weight.into());
+        let mut dots = vec![];
 
         for layer in weight.from_layer..=weight.to_layer {
-            let dot = self.drawing.add_fixed_dot(FixedDotWeight {
+            match self.drawing.add_fixed_dot(FixedDotWeight {
                 circle: weight.circle,
                 layer,
                 maybe_net: weight.maybe_net,
-            })?;
-            self.drawing.add_to_compound(dot, compound);
+            }) {
+                Ok(dot) => {
+                    self.drawing.add_to_compound(dot, compound);
+                    dots.push(dot);
+                }
+                Err(err) => {
+                    // Remove inserted dots.
+
+                    self.drawing.remove_compound(compound);
+
+                    for dot in dots.iter().rev() {
+                        self.drawing.remove_fixed_dot(*dot);
+                    }
+
+                    return Err(err);
+                }
+            }
         }
 
         Ok(GenericIndex::<ViaWeight>::new(compound.node_index()))
