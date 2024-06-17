@@ -13,7 +13,7 @@ impl Bottom {
             let latest_pos = transform
                 .inverse()
                 .transform_pos(ctx.input(|i| i.pointer.latest_pos().unwrap_or_default()));
-            ui.label(format!("x: {} y: {}", latest_pos.x, latest_pos.y));
+            ui.label(format!("x: {} y: {}", latest_pos.x, -latest_pos.y));
         });
     }
 }
