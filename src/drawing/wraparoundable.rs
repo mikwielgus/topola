@@ -10,15 +10,15 @@ use crate::{
         rules::RulesTrait,
         Drawing,
     },
-    graph::GetNodeIndex,
+    graph::GetPetgraphIndex,
 };
 
 #[enum_dispatch]
-pub trait GetWraparound: GetNodeIndex {
+pub trait GetWraparound: GetPetgraphIndex {
     fn wraparound(&self) -> Option<LooseBendIndex>;
 }
 
-#[enum_dispatch(GetNodeIndex, MakePrimitive)]
+#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum WraparoundableIndex {
     FixedDot(FixedDotIndex),
@@ -45,7 +45,7 @@ impl From<BendIndex> for WraparoundableIndex {
     }
 }
 
-#[enum_dispatch(GetWraparound, GetDrawing, GetNodeIndex)]
+#[enum_dispatch(GetWraparound, GetDrawing, GetPetgraphIndex)]
 pub enum Wraparoundable<'a, CW: Copy, R: RulesTrait> {
     FixedDot(FixedDot<'a, CW, R>),
     FixedBend(FixedBend<'a, CW, R>),

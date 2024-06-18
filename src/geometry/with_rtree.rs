@@ -13,7 +13,7 @@ use crate::{
         BendWeightTrait, DotWeightTrait, GenericNode, Geometry, GeometryLabel, GetWidth,
         SegWeightTrait,
     },
-    graph::{GenericIndex, GetNodeIndex},
+    graph::{GenericIndex, GetPetgraphIndex},
 };
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -43,10 +43,10 @@ pub struct GeometryWithRtree<
     SW: SegWeightTrait<PW> + GetLayer,
     BW: BendWeightTrait<PW> + GetLayer,
     CW: Copy,
-    PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
-    DI: GetNodeIndex + Into<PI> + Copy,
-    SI: GetNodeIndex + Into<PI> + Copy,
-    BI: GetNodeIndex + Into<PI> + Copy,
+    PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
+    DI: GetPetgraphIndex + Into<PI> + Copy,
+    SI: GetPetgraphIndex + Into<PI> + Copy,
+    BI: GetPetgraphIndex + Into<PI> + Copy,
 > {
     geometry: Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
     rtree: RTree<BboxedIndex<GenericNode<PI, GenericIndex<CW>>>>,
@@ -69,10 +69,10 @@ impl<
         SW: SegWeightTrait<PW> + GetLayer,
         BW: BendWeightTrait<PW> + GetLayer,
         CW: Copy,
-        PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
-        DI: GetNodeIndex + Into<PI> + Copy,
-        SI: GetNodeIndex + Into<PI> + Copy,
-        BI: GetNodeIndex + Into<PI> + Copy,
+        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
+        DI: GetPetgraphIndex + Into<PI> + Copy,
+        SI: GetPetgraphIndex + Into<PI> + Copy,
+        BI: GetPetgraphIndex + Into<PI> + Copy,
     > GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
     pub fn new(layer_count: usize) -> Self {
@@ -259,10 +259,10 @@ impl<
         SW: SegWeightTrait<PW> + GetLayer,
         BW: BendWeightTrait<PW> + GetLayer,
         CW: Copy,
-        PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
-        DI: GetNodeIndex + Into<PI> + Copy,
-        SI: GetNodeIndex + Into<PI> + Copy,
-        BI: GetNodeIndex + Into<PI> + Copy,
+        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
+        DI: GetPetgraphIndex + Into<PI> + Copy,
+        SI: GetPetgraphIndex + Into<PI> + Copy,
+        BI: GetPetgraphIndex + Into<PI> + Copy,
     > GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
     fn make_bbox(&self, primitive: PI) -> BboxedIndex<GenericNode<PI, GenericIndex<CW>>> {
@@ -390,10 +390,10 @@ impl<
         SW: SegWeightTrait<PW> + GetLayer,
         BW: BendWeightTrait<PW> + GetLayer,
         CW: Copy,
-        PI: GetNodeIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
-        DI: GetNodeIndex + Into<PI> + Copy,
-        SI: GetNodeIndex + Into<PI> + Copy,
-        BI: GetNodeIndex + Into<PI> + Copy,
+        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
+        DI: GetPetgraphIndex + Into<PI> + Copy,
+        SI: GetPetgraphIndex + Into<PI> + Copy,
+        BI: GetPetgraphIndex + Into<PI> + Copy,
     > CompoundManagerTrait<CW, GenericIndex<CW>>
     for GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {

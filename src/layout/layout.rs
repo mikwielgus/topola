@@ -5,7 +5,7 @@ use rstar::AABB;
 
 use crate::{
     drawing::{
-        band::BandIndex,
+        band::BandFirstSegIndex,
         bend::LooseBendWeight,
         cane::Cane,
         dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
@@ -20,7 +20,7 @@ use crate::{
         Drawing, Infringement, LayoutException,
     },
     geometry::{compound::CompoundManagerTrait, primitive::PrimitiveShapeTrait, GenericNode},
-    graph::{GenericIndex, GetNodeIndex},
+    graph::{GenericIndex, GetPetgraphIndex},
     layout::{
         via::{Via, ViaWeight},
         zone::{Zone, ZoneWeight},
@@ -46,7 +46,7 @@ impl<R: RulesTrait> Layout<R> {
         Self { drawing }
     }
 
-    pub fn remove_band(&mut self, band: BandIndex) {
+    pub fn remove_band(&mut self, band: BandFirstSegIndex) {
         self.drawing.remove_band(band);
     }
 
@@ -97,7 +97,7 @@ impl<R: RulesTrait> Layout<R> {
             }
         }
 
-        Ok(GenericIndex::<ViaWeight>::new(compound.node_index()))
+        Ok(GenericIndex::<ViaWeight>::new(compound.petgraph_index()))
     }
 
     pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, Infringement> {
@@ -204,7 +204,7 @@ impl<R: RulesTrait> Layout<R> {
         GenericIndex::<ZoneWeight>::new(
             self.drawing
                 .add_compound(CompoundWeight::Zone(weight))
-                .node_index(),
+                .petgraph_index(),
         )
     }
 
@@ -215,10 +215,12 @@ impl<R: RulesTrait> Layout<R> {
         self.drawing.compounds(node)
     }
 
-    pub fn band_length(&self, band: BandIndex) -> f64 {
+    pub fn band_length(&self, band: BandFirstSegIndex) -> f64 {
         match band {
-            BandIndex::Straight(seg) => self.drawing.geometry().seg_shape(seg.into()).length(),
-            BandIndex::Bended(start_seg) => {
+            BandFirstSegIndex::Straight(seg) => {
+                self.drawing.geometry().seg_shape(seg.into()).length()
+            }
+            BandFirstSegIndex::Bended(start_seg) => {
                 let mut length = self.drawing.geometry().seg_shape(start_seg.into()).length();
                 let start_dot = self.drawing.primitive(start_seg).joints().1;
 
@@ -249,7 +251,7 @@ impl<R: RulesTrait> Layout<R> {
         self.drawing.rtree().iter().filter_map(|wrapper| {
             if let NodeIndex::Compound(compound) = wrapper.data {
                 if let CompoundWeight::Zone(..) = self.drawing.compound_weight(compound) {
-                    return Some(GenericIndex::<ZoneWeight>::new(compound.node_index()));
+                    return Some(GenericIndex::<ZoneWeight>::new(compound.petgraph_index()));
                 }
             }
 
@@ -270,7 +272,7 @@ impl<R: RulesTrait> Layout<R> {
             .filter_map(|wrapper| {
                 if let NodeIndex::Compound(compound) = wrapper.data {
                     if let CompoundWeight::Zone(..) = self.drawing.compound_weight(compound) {
-                        return Some(GenericIndex::<ZoneWeight>::new(compound.node_index()));
+                        return Some(GenericIndex::<ZoneWeight>::new(compound.petgraph_index()));
                     }
                 }
 
@@ -284,7 +286,7 @@ impl<R: RulesTrait> Layout<R> {
     ) -> impl Iterator<Item = PrimitiveIndex> + '_ {
         self.drawing
             .geometry()
-            .compound_members(GenericIndex::new(zone.node_index()))
+            .compound_members(GenericIndex::new(zone.petgraph_index()))
     }
 
     pub fn drawing(&self) -> &Drawing<CompoundWeight, R> {

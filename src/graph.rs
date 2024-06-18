@@ -9,8 +9,8 @@ use petgraph::stable_graph::NodeIndex;
 // Due to apparent limitations of enum_dispatch we're forced to import some types backwards.
 
 #[enum_dispatch]
-pub trait GetNodeIndex {
-    fn node_index(&self) -> NodeIndex<usize>;
+pub trait GetPetgraphIndex {
+    fn petgraph_index(&self) -> NodeIndex<usize>;
 }
 
 #[derive(Debug, Clone, Copy)]
@@ -42,8 +42,8 @@ impl<W> PartialEq for GenericIndex<W> {
 
 impl<W> Eq for GenericIndex<W> {}
 
-impl<W> GetNodeIndex for GenericIndex<W> {
-    fn node_index(&self) -> NodeIndex<usize> {
+impl<W> GetPetgraphIndex for GenericIndex<W> {
+    fn petgraph_index(&self) -> NodeIndex<usize> {
         self.node_index
     }
 }

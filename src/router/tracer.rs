@@ -2,7 +2,7 @@ use contracts::debug_ensures;
 
 use crate::{
     drawing::{
-        band::BandIndex,
+        band::BandFirstSegIndex,
         bend::LooseBendIndex,
         dot::FixedDotIndex,
         guide::{BareHead, CaneHead, Head},
@@ -11,13 +11,13 @@ use crate::{
     layout::Layout,
     router::{
         draw::{Draw, DrawException},
-        navmesh::NavvertexIndex,
+        navmesh::NavvertexNodeIndex,
     },
 };
 
 #[derive(Debug)]
 pub struct Trace {
-    pub path: Vec<NavvertexIndex>,
+    pub path: Vec<NavvertexNodeIndex>,
     pub head: Head,
     pub width: f64,
 }
@@ -45,7 +45,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         trace: &mut Trace,
         into: FixedDotIndex,
         width: f64,
-    ) -> Result<BandIndex, DrawException> {
+    ) -> Result<BandFirstSegIndex, DrawException> {
         Draw::new(self.layout).finish_in_dot(trace.head, into, width)
     }
 
@@ -53,7 +53,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     pub fn rework_path(
         &mut self,
         trace: &mut Trace,
-        path: &[NavvertexIndex],
+        path: &[NavvertexNodeIndex],
         width: f64,
     ) -> Result<(), DrawException> {
         let prefix_length = trace
@@ -72,7 +72,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     pub fn path(
         &mut self,
         trace: &mut Trace,
-        path: &[NavvertexIndex],
+        path: &[NavvertexNodeIndex],
         width: f64,
     ) -> Result<(), DrawException> {
         for (i, vertex) in path.iter().enumerate() {
@@ -97,7 +97,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     pub fn step(
         &mut self,
         trace: &mut Trace,
-        to: NavvertexIndex,
+        to: NavvertexNodeIndex,
         width: f64,
     ) -> Result<(), DrawException> {
         trace.head = self.wrap(trace.head, to, width)?.into();
@@ -109,13 +109,13 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     fn wrap(
         &mut self,
         head: Head,
-        around: NavvertexIndex,
+        around: NavvertexNodeIndex,
         width: f64,
     ) -> Result<CaneHead, DrawException> {
         match around {
-            NavvertexIndex::FixedDot(dot) => self.wrap_around_fixed_dot(head, dot, width),
-            NavvertexIndex::FixedBend(_fixed_bend) => todo!(),
-            NavvertexIndex::LooseBend(loose_bend) => {
+            NavvertexNodeIndex::FixedDot(dot) => self.wrap_around_fixed_dot(head, dot, width),
+            NavvertexNodeIndex::FixedBend(_fixed_bend) => todo!(),
+            NavvertexNodeIndex::LooseBend(loose_bend) => {
                 self.wrap_around_loose_bend(head, loose_bend, width)
             }
         }

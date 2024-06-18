@@ -25,7 +25,7 @@ use topola::geometry::shape::ShapeTrait;
 use topola::layout::zone::MakePolyShape;
 use topola::layout::Layout;
 use topola::router::draw::DrawException;
-use topola::router::navmesh::{Navmesh, NavmeshEdgeReference, NavvertexIndex};
+use topola::router::navmesh::{Navmesh, NavmeshEdgeReference, NavvertexNodeIndex};
 use topola::router::tracer::{Trace, Tracer};
 use topola::specctra::design::SpecctraDesign;
 use topola::specctra::mesadata::SpecctraMesadata;
@@ -225,7 +225,7 @@ fn render_times(
     mut router_or_layout: RouterOrLayout<impl RulesTrait>,
     _unused: Option<()>,
     mut maybe_navmesh: Option<Navmesh>,
-    path: &[NavvertexIndex],
+    path: &[NavvertexNodeIndex],
     ghosts: &[PrimitiveShape],
     highlighteds: &[PrimitiveIndex],
     times: i64,

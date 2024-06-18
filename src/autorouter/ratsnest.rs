@@ -12,22 +12,22 @@ use spade::{HasPosition, InsertionError, Point2};
 
 use crate::{
     drawing::{
-        band::BandIndex,
+        band::BandFirstSegIndex,
         dot::FixedDotIndex,
         graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
         rules::RulesTrait,
     },
     geometry::{compound::CompoundManagerTrait, shape::ShapeTrait},
-    graph::{GenericIndex, GetNodeIndex},
+    graph::{GenericIndex, GetPetgraphIndex},
     layout::{
         zone::{MakePolyShape, ZoneWeight},
         Layout,
     },
-    triangulation::{GetTrianvertexIndex, Triangulation},
+    triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
 
-#[enum_dispatch(GetNodeIndex)]
+#[enum_dispatch(GetPetgraphIndex)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RatvertexIndex {
     FixedDot(FixedDotIndex),
@@ -49,8 +49,8 @@ pub struct RatvertexWeight {
     pub pos: Point,
 }
 
-impl GetTrianvertexIndex<RatvertexIndex> for RatvertexWeight {
-    fn trianvertex_index(&self) -> RatvertexIndex {
+impl GetTrianvertexNodeIndex<RatvertexIndex> for RatvertexWeight {
+    fn node_index(&self) -> RatvertexIndex {
         self.vertex
     }
 }
@@ -64,7 +64,7 @@ impl HasPosition for RatvertexWeight {
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RatlineWeight {
-    pub band: Option<BandIndex>,
+    pub band: Option<BandFirstSegIndex>,
 }
 
 pub struct Ratsnest {
@@ -154,16 +154,8 @@ impl Ratsnest {
 
         this.graph.retain_edges(|g, i| {
             if let Some((source, target)) = g.edge_endpoints(i) {
-                let source_index = g
-                    .node_weight(source)
-                    .unwrap()
-                    .trianvertex_index()
-                    .node_index();
-                let target_index = g
-                    .node_weight(target)
-                    .unwrap()
-                    .trianvertex_index()
-                    .node_index();
+                let source_index = g.node_weight(source).unwrap().node_index().petgraph_index();
+                let target_index = g.node_weight(target).unwrap().node_index().petgraph_index();
                 !unionfind.equiv(source_index, target_index)
             } else {
                 true
@@ -173,7 +165,7 @@ impl Ratsnest {
         Ok(this)
     }
 
-    pub fn assign_band_to_ratline(&mut self, ratline: EdgeIndex<usize>, band: BandIndex) {
+    pub fn assign_band_to_ratline(&mut self, ratline: EdgeIndex<usize>, band: BandFirstSegIndex) {
         self.graph.edge_weight_mut(ratline).unwrap().band = Some(band);
     }
 

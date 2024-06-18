@@ -11,11 +11,11 @@ use crate::{
         Drawing,
     },
     geometry::{DotWeightTrait, GetPos, GetWidth, SetPos},
-    graph::{GenericIndex, GetNodeIndex},
+    graph::{GenericIndex, GetPetgraphIndex},
     math::Circle,
 };
 
-#[enum_dispatch(GetNodeIndex, MakePrimitive)]
+#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DotIndex {
     Fixed(FixedDotIndex),

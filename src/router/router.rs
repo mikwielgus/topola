@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::{
     drawing::{
-        band::BandIndex,
+        band::BandFirstSegIndex,
         dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
@@ -15,7 +15,7 @@ use crate::{
     router::{
         astar::{astar, AstarError, AstarStrategy, PathTracker},
         draw::DrawException,
-        navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
+        navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexNodeIndex},
         tracer::{Trace, Tracer},
     },
 };
@@ -44,12 +44,14 @@ impl<'a, R: RulesTrait> RouterAstarStrategy<'a, R> {
     }
 }
 
-impl<'a, R: RulesTrait> AstarStrategy<&Navmesh, f64, BandIndex> for RouterAstarStrategy<'a, R> {
+impl<'a, R: RulesTrait> AstarStrategy<&Navmesh, f64, BandFirstSegIndex>
+    for RouterAstarStrategy<'a, R>
+{
     fn is_goal(
         &mut self,
-        vertex: NavvertexIndex,
+        vertex: NavvertexNodeIndex,
         tracker: &PathTracker<&Navmesh>,
-    ) -> Option<BandIndex> {
+    ) -> Option<BandFirstSegIndex> {
         let new_path = tracker.reconstruct_path_to(vertex);
         let width = self.trace.width;
 
@@ -80,7 +82,7 @@ impl<'a, R: RulesTrait> AstarStrategy<&Navmesh, f64, BandIndex> for RouterAstarS
         }
     }
 
-    fn estimate_cost(&mut self, vertex: NavvertexIndex) -> f64 {
+    fn estimate_cost(&mut self, vertex: NavvertexNodeIndex) -> f64 {
         let start_point = PrimitiveIndex::from(vertex)
             .primitive(self.tracer.layout.drawing())
             .shape()
@@ -111,7 +113,7 @@ impl<'a, R: RulesTrait> Router<'a, R> {
         Self { layout, navmesh }
     }
 
-    pub fn route_band(&mut self, width: f64) -> Result<BandIndex, RouterError> {
+    pub fn route_band(&mut self, width: f64) -> Result<BandFirstSegIndex, RouterError> {
         let from = self.navmesh.source();
         let to = self.navmesh.target();
         let mut tracer = Tracer::new(self.layout);

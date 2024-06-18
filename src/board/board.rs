@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     board::mesadata::MesadataTrait,
     drawing::{
-        band::BandIndex,
+        band::BandFirstSegIndex,
         dot::{FixedDotIndex, FixedDotWeight},
         graph::{GetLayer, GetMaybeNet},
         seg::{FixedSegIndex, FixedSegWeight},
@@ -22,7 +22,7 @@ use crate::{
 pub struct Board<M: MesadataTrait> {
     layout: Layout<M>,
     node_to_pinname: HashMap<NodeIndex, String>,
-    pinname_pair_to_band: HashMap<(String, String), BandIndex>,
+    pinname_pair_to_band: HashMap<(String, String), BandFirstSegIndex>,
 }
 
 impl<M: MesadataTrait> Board<M> {
@@ -115,7 +115,11 @@ impl<M: MesadataTrait> Board<M> {
         zone
     }
 
-    pub fn route_band(&mut self, navmesh: Navmesh, width: f64) -> Result<BandIndex, RouterError> {
+    pub fn route_band(
+        &mut self,
+        navmesh: Navmesh,
+        width: f64,
+    ) -> Result<BandFirstSegIndex, RouterError> {
         let source_pinname = self
             .node_pinname(GenericNode::Primitive(navmesh.source().into()))
             .unwrap()
@@ -158,7 +162,7 @@ impl<M: MesadataTrait> Board<M> {
         self.node_to_pinname.get(&node)
     }
 
-    pub fn band_between_pins(&self, pinname1: &str, pinname2: &str) -> Option<BandIndex> {
+    pub fn band_between_pins(&self, pinname1: &str, pinname2: &str) -> Option<BandFirstSegIndex> {
         if let Some(band) = self
             .pinname_pair_to_band
             .get(&(pinname1.to_string(), pinname2.to_string()))

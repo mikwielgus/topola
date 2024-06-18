@@ -11,7 +11,7 @@ use crate::{
         seg::SegIndex,
     },
     geometry::{compound::CompoundManagerTrait, poly::PolyShape, GetPos},
-    graph::{GenericIndex, GetNodeIndex},
+    graph::{GenericIndex, GetPetgraphIndex},
     layout::{CompoundWeight, Layout},
 };
 
@@ -130,7 +130,7 @@ pub enum ZoneWeight {
 
 impl From<GenericIndex<ZoneWeight>> for GenericIndex<CompoundWeight> {
     fn from(zone: GenericIndex<ZoneWeight>) -> Self {
-        GenericIndex::<CompoundWeight>::new(zone.node_index())
+        GenericIndex::<CompoundWeight>::new(zone.petgraph_index())
     }
 }
 
@@ -154,7 +154,7 @@ impl GetMaybeNet for SolidZoneWeight {
 
 impl From<GenericIndex<SolidZoneWeight>> for GenericIndex<CompoundWeight> {
     fn from(zone: GenericIndex<SolidZoneWeight>) -> Self {
-        GenericIndex::<CompoundWeight>::new(zone.node_index())
+        GenericIndex::<CompoundWeight>::new(zone.petgraph_index())
     }
 }
 
@@ -178,6 +178,6 @@ impl<'a> GetMaybeNet for PourZoneWeight {
 
 impl From<GenericIndex<PourZoneWeight>> for GenericIndex<CompoundWeight> {
     fn from(zone: GenericIndex<PourZoneWeight>) -> Self {
-        GenericIndex::<CompoundWeight>::new(zone.node_index())
+        GenericIndex::<CompoundWeight>::new(zone.petgraph_index())
     }
 }

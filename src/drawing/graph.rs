@@ -2,7 +2,7 @@ use enum_dispatch::enum_dispatch;
 
 use petgraph::stable_graph::NodeIndex;
 
-use crate::{drawing::Drawing, graph::GetNodeIndex};
+use crate::{drawing::Drawing, graph::GetPetgraphIndex};
 
 use super::{
     bend::{FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
@@ -85,7 +85,7 @@ macro_rules! impl_loose_weight {
 
 // TODO: This enum shouldn't exist: we shouldn't be carrying the tag around like this. Instead we
 // should be getting it from the graph when it's needed.
-#[enum_dispatch(GetNodeIndex, MakePrimitive)]
+#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
 pub enum PrimitiveIndex {
     FixedDot(FixedDotIndex),

@@ -671,7 +671,7 @@ impl SpecctraDesign {
                 maybe_net: Some(net),
             },
             // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
-            //GenericIndex::new(zone.node_index()).into(),
+            //GenericIndex::new(zone.petgraph_index()).into(),
             zone,
         );
 

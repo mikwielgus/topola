@@ -9,7 +9,7 @@ use topola::{
     },
     board::{mesadata::MesadataTrait, Board},
     drawing::graph::{GetLayer, GetMaybeNet},
-    graph::GetNodeIndex,
+    graph::GetPetgraphIndex,
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
 
@@ -121,8 +121,8 @@ pub fn assert_single_layer_groundless_autoroute(
             if netname != "GND" {
                 dbg!(source_dot, target_dot);
                 assert_eq!(
-                    unionfind.find(source_dot.node_index()),
-                    unionfind.find(target_dot.node_index())
+                    unionfind.find(source_dot.petgraph_index()),
+                    unionfind.find(target_dot.petgraph_index())
                 );
             }
         }
@@ -179,7 +179,7 @@ fn unionfind(autorouter: &mut Autorouter<impl MesadataTrait>) -> UnionFind<NodeI
             .geometry()
             .joineds(primitive)
         {
-            unionfind.union(primitive.node_index(), joined.node_index());
+            unionfind.union(primitive.petgraph_index(), joined.petgraph_index());
         }
     }
 

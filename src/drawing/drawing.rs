@@ -6,7 +6,7 @@ use rstar::{RTree, AABB};
 use thiserror::Error;
 
 use crate::drawing::{
-    band::BandIndex,
+    band::BandFirstSegIndex,
     bend::{BendIndex, BendWeight, FixedBendIndex, LooseBendIndex, LooseBendWeight},
     cane::Cane,
     collect::Collect,
@@ -32,7 +32,7 @@ use crate::geometry::{
     BendWeightTrait, DotWeightTrait, GenericNode, Geometry, GeometryLabel, GetOffset, GetPos,
     GetWidth, SegWeightTrait,
 };
-use crate::graph::{GenericIndex, GetNodeIndex};
+use crate::graph::{GenericIndex, GetPetgraphIndex};
 use crate::math::NoTangents;
 
 #[enum_dispatch]
@@ -85,12 +85,12 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         }
     }
 
-    pub fn remove_band(&mut self, band: BandIndex) {
+    pub fn remove_band(&mut self, band: BandFirstSegIndex) {
         match band {
-            BandIndex::Straight(seg) => {
+            BandFirstSegIndex::Straight(seg) => {
                 self.geometry_with_rtree.remove_seg(seg.into());
             }
-            BandIndex::Bended(first_loose_seg) => {
+            BandFirstSegIndex::Bended(first_loose_seg) => {
                 let mut dots = vec![];
                 let mut segs = vec![];
                 let mut bends = vec![];
@@ -360,7 +360,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         let core = *self
             .geometry_with_rtree
             .graph()
-            .neighbors(inner.node_index())
+            .neighbors(inner.petgraph_index())
             .filter(|ni| {
                 matches!(
                     self.geometry_with_rtree
@@ -368,7 +368,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
                         .edge_weight(
                             self.geometry_with_rtree
                                 .graph()
-                                .find_edge(inner.node_index(), *ni)
+                                .find_edge(inner.petgraph_index(), *ni)
                                 .unwrap()
                         )
                         .unwrap(),

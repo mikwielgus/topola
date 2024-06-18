@@ -13,7 +13,7 @@ use crate::{
     drawing::{dot::FixedDotIndex, Infringement},
     layout::via::ViaWeight,
     router::{navmesh::NavmeshError, RouterError},
-    triangulation::GetTrianvertexIndex,
+    triangulation::GetTrianvertexNodeIndex,
 };
 
 #[derive(Error, Debug, Clone)]
@@ -100,7 +100,7 @@ impl<M: MesadataTrait> Autorouter<M> {
             .graph()
             .node_weight(source)
             .unwrap()
-            .trianvertex_index()
+            .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
             RatvertexIndex::Zone(zone) => self.board.zone_apex(zone),
@@ -111,7 +111,7 @@ impl<M: MesadataTrait> Autorouter<M> {
             .graph()
             .node_weight(target)
             .unwrap()
-            .trianvertex_index()
+            .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
             RatvertexIndex::Zone(zone) => self.board.zone_apex(zone),
@@ -132,13 +132,13 @@ impl<M: MesadataTrait> Autorouter<M> {
                     .graph()
                     .node_weight(source)
                     .unwrap()
-                    .trianvertex_index();
+                    .node_index();
                 let to_vertex = self
                     .ratsnest
                     .graph()
                     .node_weight(target)
                     .unwrap()
-                    .trianvertex_index();
+                    .node_index();
 
                 selection.contains_node(&self.board, source_vertex.into())
                     && selection.contains_node(&self.board, to_vertex.into())

@@ -1,6 +1,6 @@
-use crate::graph::{GenericIndex, GetNodeIndex};
+use crate::graph::{GenericIndex, GetPetgraphIndex};
 
-pub trait CompoundManagerTrait<CW: Copy, GI: GetNodeIndex + Copy> {
+pub trait CompoundManagerTrait<CW: Copy, GI: GetPetgraphIndex + Copy> {
     fn add_compound(&mut self, weight: CW) -> GenericIndex<CW>;
     fn remove_compound(&mut self, compound: GenericIndex<CW>);
     fn add_to_compound<W>(&mut self, node: GenericIndex<W>, compound: GenericIndex<CW>);

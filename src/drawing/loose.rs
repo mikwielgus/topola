@@ -10,7 +10,7 @@ use crate::{
         primitive::{GetJoints, LoneLooseSeg, LooseBend, LooseDot, Primitive, SeqLooseSeg},
         seg::{LoneLooseSegIndex, SeqLooseSegIndex},
     },
-    graph::GetNodeIndex,
+    graph::GetPetgraphIndex,
 };
 
 use super::rules::RulesTrait;
@@ -20,7 +20,7 @@ pub trait GetNextLoose {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex>;
 }
 
-#[enum_dispatch(GetNodeIndex, MakePrimitive)]
+#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LooseIndex {
     Dot(LooseDotIndex),
@@ -40,7 +40,7 @@ impl From<LooseIndex> for PrimitiveIndex {
     }
 }
 
-#[enum_dispatch(GetNextLoose, GetDrawing, GetNodeIndex)]
+#[enum_dispatch(GetNextLoose, GetDrawing, GetPetgraphIndex)]
 pub enum Loose<'a, CW: Copy, R: RulesTrait> {
     Dot(LooseDot<'a, CW, R>),
     LoneSeg(LoneLooseSeg<'a, CW, R>),
@@ -66,7 +66,7 @@ impl<'a, CW: Copy, R: RulesTrait> GetNextLoose for LooseDot<'a, CW, R> {
             unreachable!();
         };
 
-        if bend.node_index() != prev.node_index() {
+        if bend.petgraph_index() != prev.petgraph_index() {
             Some(bend.into())
         } else {
             self.seg().map(Into::into)
@@ -87,7 +87,7 @@ impl<'a, CW: Copy, R: RulesTrait> GetNextLoose for SeqLooseSeg<'a, CW, R> {
             return Some(ends.1.into());
         };
 
-        if ends.0.node_index() != prev.node_index() {
+        if ends.0.petgraph_index() != prev.petgraph_index() {
             match ends.0 {
                 DotIndex::Fixed(..) => None,
                 DotIndex::Loose(dot) => Some(dot.into()),
@@ -105,7 +105,7 @@ impl<'a, CW: Copy, R: RulesTrait> GetNextLoose for LooseBend<'a, CW, R> {
             unreachable!();
         };
 
-        if ends.0.node_index() != prev.node_index() {
+        if ends.0.petgraph_index() != prev.petgraph_index() {
             Some(ends.0.into())
         } else {
             Some(ends.1.into())

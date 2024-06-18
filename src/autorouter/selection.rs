@@ -6,7 +6,7 @@ use crate::{
     board::{mesadata::MesadataTrait, Board},
     drawing::graph::{GetLayer, MakePrimitive},
     geometry::compound::CompoundManagerTrait,
-    graph::{GenericIndex, GetNodeIndex},
+    graph::{GenericIndex, GetPetgraphIndex},
     layout::{zone::ZoneWeight, CompoundWeight, NodeIndex},
 };
 
@@ -70,7 +70,7 @@ impl Selection {
                 {
                     board
                         .layout()
-                        .zone(GenericIndex::<ZoneWeight>::new(compound.node_index()))
+                        .zone(GenericIndex::<ZoneWeight>::new(compound.petgraph_index()))
                         .layer()
                 } else {
                     unreachable!()

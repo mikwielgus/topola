@@ -8,12 +8,12 @@ use crate::{
         Drawing,
     },
     geometry::{GetWidth, SegWeightTrait},
-    graph::{GenericIndex, GetNodeIndex},
+    graph::{GenericIndex, GetPetgraphIndex},
 };
 
 use petgraph::stable_graph::NodeIndex;
 
-#[enum_dispatch(GetNodeIndex, MakePrimitive)]
+#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum SegIndex {
     Fixed(FixedSegIndex),
