@@ -101,9 +101,9 @@ where
     K: Measure + Copy,
     G::NodeId: Eq + Hash,
 {
-    fn is_goal(&mut self, node: G::NodeId, tracker: &PathTracker<G>) -> Option<R>;
-    fn edge_cost(&mut self, edge: G::EdgeRef) -> Option<K>;
-    fn estimate_cost(&mut self, node: G::NodeId) -> K;
+    fn is_goal(&mut self, graph: &G, node: G::NodeId, tracker: &PathTracker<G>) -> Option<R>;
+    fn edge_cost(&mut self, graph: &G, edge: G::EdgeRef) -> Option<K>;
+    fn estimate_cost(&mut self, graph: &G, node: G::NodeId) -> K;
 }
 
 pub struct Astar<G, K>
@@ -153,7 +153,7 @@ where
         let zero_score = K::default();
         this.scores.insert(start, zero_score);
         this.visit_next
-            .push(MinScored(strategy.estimate_cost(start), start));
+            .push(MinScored(strategy.estimate_cost(&&graph, start), start));
         this
     }
 
@@ -165,7 +165,7 @@ where
             return Err(AstarError::NotFound);
         };
 
-        if let Some(result) = strategy.is_goal(node, &self.path_tracker) {
+        if let Some(result) = strategy.is_goal(&self.graph, node, &self.path_tracker) {
             let path = self.path_tracker.reconstruct_path_to(node);
             let cost = self.scores[&node];
             return Ok(AstarStatus::Finished(cost, path, result));
@@ -190,7 +190,7 @@ where
         }
 
         for edge in self.graph.edges(node) {
-            if let Some(edge_cost) = strategy.edge_cost(edge) {
+            if let Some(edge_cost) = strategy.edge_cost(&self.graph, edge) {
                 let next = edge.target();
                 let next_score = node_score + edge_cost;
 
@@ -209,7 +209,7 @@ where
                 }
 
                 self.path_tracker.set_predecessor(next, node);
-                let next_estimate_score = next_score + strategy.estimate_cost(next);
+                let next_estimate_score = next_score + strategy.estimate_cost(&self.graph, next);
                 self.visit_next.push(MinScored(next_estimate_score, next));
             }
         }

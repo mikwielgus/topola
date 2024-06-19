@@ -1,5 +1,8 @@
 use geo::EuclideanDistance;
-use petgraph::visit::EdgeRef;
+use petgraph::{
+    graph::{EdgeReference, NodeIndex, UnGraph},
+    visit::EdgeRef,
+};
 use thiserror::Error;
 
 use crate::{
@@ -11,11 +14,12 @@ use crate::{
         rules::RulesTrait,
     },
     geometry::shape::ShapeTrait,
+    graph::GetPetgraphIndex,
     layout::Layout,
     router::{
         astar::{astar, AstarError, AstarStrategy, PathTracker},
         draw::DrawException,
-        navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexNodeIndex},
+        navmesh::{BinavvertexNodeIndex, Navmesh, NavmeshError, NavvertexWeight},
         tracer::{Trace, Tracer},
     },
 };
@@ -35,55 +39,75 @@ pub struct Router<'a, R: RulesTrait> {
 struct RouterAstarStrategy<'a, R: RulesTrait> {
     tracer: Tracer<'a, R>,
     trace: Trace,
-    to: FixedDotIndex,
+    target: FixedDotIndex,
 }
 
 impl<'a, R: RulesTrait> RouterAstarStrategy<'a, R> {
-    pub fn new(tracer: Tracer<'a, R>, trace: Trace, to: FixedDotIndex) -> Self {
-        Self { tracer, trace, to }
+    pub fn new(tracer: Tracer<'a, R>, trace: Trace, target: FixedDotIndex) -> Self {
+        Self {
+            tracer,
+            trace,
+            target,
+        }
     }
 }
 
-impl<'a, R: RulesTrait> AstarStrategy<&Navmesh, f64, BandFirstSegIndex>
+impl<'a, R: RulesTrait> AstarStrategy<&UnGraph<NavvertexWeight, (), usize>, f64, BandFirstSegIndex>
     for RouterAstarStrategy<'a, R>
 {
     fn is_goal(
         &mut self,
-        vertex: NavvertexNodeIndex,
-        tracker: &PathTracker<&Navmesh>,
+        graph: &&UnGraph<NavvertexWeight, (), usize>,
+        vertex: NodeIndex<usize>,
+        tracker: &PathTracker<&UnGraph<NavvertexWeight, (), usize>>,
     ) -> Option<BandFirstSegIndex> {
         let new_path = tracker.reconstruct_path_to(vertex);
+        /*.into_iter()
+        .map(|ni| graph.node_weight(ni).unwrap().node)
+        .collect();*/
         let width = self.trace.width;
 
         self.tracer
-            .rework_path(&mut self.trace, &new_path, width)
+            .rework_path(*graph, &mut self.trace, &new_path[..], width)
             .unwrap();
 
-        self.tracer.finish(&mut self.trace, self.to, width).ok()
+        self.tracer
+            .finish(*graph, &mut self.trace, self.target, width)
+            .ok()
     }
 
-    fn edge_cost(&mut self, edge: NavmeshEdgeReference) -> Option<f64> {
-        if edge.target() == self.to.into() {
+    fn edge_cost(
+        &mut self,
+        graph: &&UnGraph<NavvertexWeight, (), usize>,
+        edge: EdgeReference<(), usize>,
+    ) -> Option<f64> {
+        if edge.target() == self.target.petgraph_index() {
             return None;
         }
 
         let before_probe_length = 0.0; //self.tracer.layout.band_length(self.trace.head.face());
 
         let width = self.trace.width;
-        let result = self.tracer.step(&mut self.trace, edge.target(), width);
+        let result = self
+            .tracer
+            .step(*graph, &mut self.trace, edge.target(), width);
 
         let probe_length = 0.0; //self.tracer.layout.band_length(self.trace.head.face());
 
         if result.is_ok() {
-            self.tracer.undo_step(&mut self.trace);
+            self.tracer.undo_step(*graph, &mut self.trace);
             Some(probe_length - before_probe_length)
         } else {
             None
         }
     }
 
-    fn estimate_cost(&mut self, vertex: NavvertexNodeIndex) -> f64 {
-        let start_point = PrimitiveIndex::from(vertex)
+    fn estimate_cost(
+        &mut self,
+        graph: &&UnGraph<NavvertexWeight, (), usize>,
+        vertex: NodeIndex<usize>,
+    ) -> f64 {
+        let start_point = PrimitiveIndex::from(graph.node_weight(vertex).unwrap().node)
             .primitive(self.tracer.layout.drawing())
             .shape()
             .center();
@@ -91,7 +115,7 @@ impl<'a, R: RulesTrait> AstarStrategy<&Navmesh, f64, BandFirstSegIndex>
             .tracer
             .layout
             .drawing()
-            .primitive(self.to)
+            .primitive(self.target)
             .shape()
             .center();
 
@@ -114,15 +138,18 @@ impl<'a, R: RulesTrait> Router<'a, R> {
     }
 
     pub fn route_band(&mut self, width: f64) -> Result<BandFirstSegIndex, RouterError> {
-        let from = self.navmesh.source();
-        let to = self.navmesh.target();
         let mut tracer = Tracer::new(self.layout);
-        let trace = tracer.start(from, width);
+        let trace = tracer.start(
+            self.navmesh.graph(),
+            self.navmesh.source(),
+            self.navmesh.source_vertex(),
+            width,
+        );
 
         let (_cost, _path, band) = astar(
-            &self.navmesh,
-            from.into(),
-            &mut RouterAstarStrategy::new(tracer, trace, to),
+            self.navmesh.graph(),
+            self.navmesh.source_vertex(),
+            &mut RouterAstarStrategy::new(tracer, trace, self.navmesh.target()),
         )?;
 
         Ok(band)

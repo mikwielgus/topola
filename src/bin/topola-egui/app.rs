@@ -33,7 +33,7 @@ use topola::{
     math::Circle,
     router::{
         draw::DrawException,
-        navmesh::{Navmesh, NavmeshEdgeReference, NavvertexNodeIndex},
+        navmesh::{BinavvertexNodeIndex, Navmesh},
         tracer::{Trace, Tracer},
     },
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
@@ -49,7 +49,7 @@ pub struct SharedData {
     pub from: Option<FixedDotIndex>,
     pub to: Option<FixedDotIndex>,
     pub navmesh: Option<Navmesh>,
-    pub path: Vec<NavvertexNodeIndex>,
+    pub path: Vec<BinavvertexNodeIndex>,
     pub ghosts: Vec<PrimitiveShape>,
     pub highlighteds: Vec<PrimitiveIndex>,
 }

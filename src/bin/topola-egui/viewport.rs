@@ -5,7 +5,10 @@ use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use topola::{
     autorouter::invoker::{Command, Invoker},
     board::mesadata::MesadataTrait,
-    drawing::{graph::MakePrimitive, primitive::MakePrimitiveShape},
+    drawing::{
+        graph::{MakePrimitive, PrimitiveIndex},
+        primitive::MakePrimitiveShape,
+    },
     geometry::{shape::ShapeTrait, GenericNode},
     layout::{via::ViaWeight, zone::MakePolyShape},
     math::Circle,
@@ -165,14 +168,12 @@ impl Viewport {
                         }
 
                         if let Some(navmesh) = &shared_data.navmesh {
-                            for edge in navmesh.edge_references() {
-                                let from = edge
-                                    .source()
+                            for edge in navmesh.graph().edge_references() {
+                                let from = PrimitiveIndex::from(navmesh.graph().node_weight(edge.source()).unwrap().node)
                                     .primitive(board.layout().drawing())
                                     .shape()
                                     .center();
-                                let to = edge
-                                    .target()
+                                let to = PrimitiveIndex::from(navmesh.graph().node_weight(edge.target()).unwrap().node)
                                     .primitive(board.layout().drawing())
                                     .shape()
                                     .center();
@@ -182,11 +183,11 @@ impl Viewport {
                                         shared_data
                                             .path
                                             .iter()
-                                            .position(|node| *node == edge.source()),
+                                            .position(|node| *node == navmesh.graph().node_weight(edge.source()).unwrap().node),
                                         shared_data
                                             .path
                                             .iter()
-                                            .position(|node| *node == edge.target()),
+                                            .position(|node| *node == navmesh.graph().node_weight(edge.target()).unwrap().node),
                                     ) {
                                         if target_pos == source_pos + 1
                                             || source_pos == target_pos + 1
