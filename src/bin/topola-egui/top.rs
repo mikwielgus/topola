@@ -129,13 +129,13 @@ impl Top {
                                     Err(err) => return,
                                 };
 
+                                if let InvokerStatus::Finished = status {
+                                    break;
+                                }
+
                                 if let Execute::Autoroute(ref mut autoroute) = execute {
                                     shared_data_arc_mutex.lock().unwrap().navmesh =
                                         autoroute.navmesh().clone();
-                                }
-
-                                if let InvokerStatus::Finished = status {
-                                    break;
                                 }
                             };
                         });
