@@ -156,11 +156,6 @@ impl Navmesh {
             }
 
             map.insert(trianvertex, navvertex);
-
-            /*// TODO: iterate over triangulation's edges instead of vertices.
-            for edge in triangulation.edges(trianvertex) {
-                graph.add_edge(edge.source(), edge.target(), &edge.weight());
-            }*/
         }
 
         for edge in triangulation.edge_references() {

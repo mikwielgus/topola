@@ -16,6 +16,7 @@ use crate::{
 pub struct Top {
     pub is_placing_via: bool,
     pub show_ratsnest: bool,
+    pub show_navmesh: bool,
 }
 
 impl Top {
@@ -23,6 +24,7 @@ impl Top {
         Self {
             is_placing_via: false,
             show_ratsnest: false,
+            show_navmesh: false,
         }
     }
 
@@ -171,6 +173,7 @@ impl Top {
                 ui.separator();
 
                 ui.toggle_value(&mut self.show_ratsnest, "Show Ratsnest");
+                ui.toggle_value(&mut self.show_navmesh, "Show Navmesh");
 
                 ui.separator();
 
