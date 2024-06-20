@@ -1,3 +1,4 @@
+use contracts::debug_requires;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -42,6 +43,23 @@ impl Execute {
         &mut self,
         invoker: &mut Invoker<M>,
     ) -> Result<InvokerStatus, InvokerError> {
+        match self.step_catch_err(invoker) {
+            Ok(InvokerStatus::Running) => Ok(InvokerStatus::Running),
+            Ok(InvokerStatus::Finished) => {
+                invoker.history.do_(invoker.ongoing.take().unwrap());
+                Ok(InvokerStatus::Finished)
+            }
+            Err(err) => {
+                invoker.ongoing = None;
+                Err(err)
+            }
+        }
+    }
+
+    fn step_catch_err<M: MesadataTrait>(
+        &mut self,
+        invoker: &mut Invoker<M>,
+    ) -> Result<InvokerStatus, InvokerError> {
         match self {
             Execute::Autoroute(autoroute) => match autoroute.step(&mut invoker.autorouter)? {
                 AutorouterStatus::Running => Ok(InvokerStatus::Running),
@@ -58,6 +76,7 @@ impl Execute {
 pub struct Invoker<M: MesadataTrait> {
     autorouter: Autorouter<M>,
     history: History,
+    ongoing: Option<Command>,
 }
 
 impl<M: MesadataTrait> Invoker<M> {
@@ -69,13 +88,15 @@ impl<M: MesadataTrait> Invoker<M> {
         Self {
             autorouter,
             history,
+            ongoing: None,
         }
     }
 
-    pub fn destruct(self) -> (Autorouter<M>, History) {
-        (self.autorouter, self.history)
+    pub fn destruct(self) -> (Autorouter<M>, History, Option<Command>) {
+        (self.autorouter, self.history, self.ongoing)
     }
 
+    #[debug_requires(self.ongoing.is_none())]
     pub fn execute(&mut self, command: Command) -> Result<(), InvokerError> {
         let mut execute = self.execute_walk(command);
 
@@ -92,12 +113,14 @@ impl<M: MesadataTrait> Invoker<M> {
         }
     }
 
+    #[debug_requires(self.ongoing.is_none())]
     pub fn execute_walk(&mut self, command: Command) -> Execute {
         let execute = self.dispatch_command(&command);
-        self.history.do_(command);
+        self.ongoing = Some(command);
         execute
     }
 
+    #[debug_requires(self.ongoing.is_none())]
     fn dispatch_command(&mut self, command: &Command) -> Execute {
         match command {
             Command::Autoroute(selection) => {
@@ -109,6 +132,7 @@ impl<M: MesadataTrait> Invoker<M> {
         }
     }
 
+    #[debug_requires(self.ongoing.is_none())]
     pub fn undo(&mut self) -> Result<(), InvokerError> {
         let command = self.history.last_done()?;
 
@@ -117,9 +141,10 @@ impl<M: MesadataTrait> Invoker<M> {
             Command::PlaceVia(weight) => self.autorouter.undo_place_via(*weight),
         }
 
-        Ok(self.history.undo()?)
+        Ok::<(), InvokerError>(self.history.undo()?)
     }
 
+    //#[debug_requires(self.ongoing.is_none())]
     pub fn redo(&mut self) -> Result<(), InvokerError> {
         let command = self.history.last_undone()?.clone();
         let mut execute = self.dispatch_command(&command);
@@ -136,6 +161,7 @@ impl<M: MesadataTrait> Invoker<M> {
         }
     }
 
+    #[debug_requires(self.ongoing.is_none())]
     pub fn replay(&mut self, history: History) {
         let (done, undone) = history.destructure();
 
