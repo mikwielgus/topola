@@ -109,7 +109,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         }
     }
 
-    #[debug_ensures(ret.is_ok() -> matches!(trace.head, Head::Bare(..)))]
+    #[debug_ensures(ret.is_ok() -> matches!(trace.head, Head::Cane(..)))]
     #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() + 1))]
     #[debug_ensures(ret.is_err() -> trace.path.len() == old(trace.path.len()))]
     pub fn step(

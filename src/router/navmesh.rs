@@ -1,9 +1,11 @@
+use std::collections::HashMap;
+
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
     graph::UnGraph,
     stable_graph::NodeIndex,
-    visit::{IntoNodeIdentifiers, NodeIndexable},
+    visit::{EdgeRef, IntoEdgeReferences, IntoEdges, IntoNodeIdentifiers, NodeIndexable},
 };
 use spade::{HasPosition, InsertionError, Point2};
 use thiserror::Error;
@@ -139,6 +141,9 @@ impl Navmesh {
         let mut source_vertex = None;
         let mut target_vertex = None;
 
+        // `HashMap` is obviously suboptimal here.
+        let mut map = HashMap::new();
+
         for trianvertex in triangulation.node_identifiers() {
             let navvertex = graph.add_node(NavvertexWeight {
                 node: trianvertex.into(),
@@ -149,6 +154,17 @@ impl Navmesh {
             } else if trianvertex == target.into() {
                 target_vertex = Some(navvertex);
             }
+
+            map.insert(trianvertex, navvertex);
+
+            /*// TODO: iterate over triangulation's edges instead of vertices.
+            for edge in triangulation.edges(trianvertex) {
+                graph.add_edge(edge.source(), edge.target(), &edge.weight());
+            }*/
+        }
+
+        for edge in triangulation.edge_references() {
+            graph.add_edge(map[&edge.source()], map[&edge.target()], ());
         }
 
         Ok(Self {
