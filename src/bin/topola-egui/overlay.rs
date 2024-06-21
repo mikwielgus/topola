@@ -52,27 +52,15 @@ impl Overlay {
         if let Some(geom) = geoms.iter().find(|&&geom| match geom.data {
             NodeIndex::Primitive(primitive) => {
                 primitive.primitive(board.layout().drawing()).layer() == self.active_layer
+                    && self.contains_point(board, geom.data, at)
             }
             NodeIndex::Compound(compound) => false,
         }) {
-            if self.toggle_selection_if_contains_point(board, geom.data, at) {
-                return;
-            }
-        }
-
-        for geom in geoms {
-            if self.toggle_selection_if_contains_point(board, geom.data, at) {
-                return;
-            }
+            self.selection.toggle_at_node(board, geom.data);
         }
     }
 
-    fn toggle_selection_if_contains_point(
-        &mut self,
-        board: &Board<impl MesadataTrait>,
-        node: NodeIndex,
-        p: Point,
-    ) -> bool {
+    fn contains_point(&self, board: &Board<impl MesadataTrait>, node: NodeIndex, p: Point) -> bool {
         let shape: Shape = match node {
             NodeIndex::Primitive(primitive) => {
                 primitive.primitive(board.layout().drawing()).shape().into()
@@ -99,11 +87,7 @@ impl Overlay {
             }
         };
 
-        if shape.contains_point(p) {
-            self.selection.toggle_at_node(board, node);
-            return true;
-        }
-        false
+        shape.contains_point(p)
     }
 
     pub fn ratsnest(&self) -> &Ratsnest {
