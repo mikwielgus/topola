@@ -142,13 +142,13 @@ impl<'a, R: RulesTrait> Router<'a, R> {
         let trace = tracer.start(
             self.navmesh.graph(),
             self.navmesh.source(),
-            self.navmesh.source_vertex(),
+            self.navmesh.source_navvertex(),
             width,
         );
 
         let (_cost, _path, band) = astar(
             self.navmesh.graph(),
-            self.navmesh.source_vertex(),
+            self.navmesh.source_navvertex(),
             &mut RouterAstarStrategy::new(tracer, trace, self.navmesh.target()),
         )?;
 

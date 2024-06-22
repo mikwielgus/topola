@@ -127,21 +127,21 @@ impl<M: MesadataTrait> Autorouter<M> {
             .filter(|ratline| {
                 let (source, target) = self.ratsnest.graph().edge_endpoints(*ratline).unwrap();
 
-                let source_vertex = self
+                let source_navvertex = self
                     .ratsnest
                     .graph()
                     .node_weight(source)
                     .unwrap()
                     .node_index();
-                let to_vertex = self
+                let to_navvertex = self
                     .ratsnest
                     .graph()
                     .node_weight(target)
                     .unwrap()
                     .node_index();
 
-                selection.contains_node(&self.board, source_vertex.into())
-                    && selection.contains_node(&self.board, to_vertex.into())
+                selection.contains_node(&self.board, source_navvertex.into())
+                    && selection.contains_node(&self.board, to_navvertex.into())
             })
             .collect()
     }

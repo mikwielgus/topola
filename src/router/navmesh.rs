@@ -81,6 +81,7 @@ impl HasPosition for TrianvertexWeight {
 #[derive(Debug, Clone)]
 pub struct NavvertexWeight {
     pub node: BinavvertexNodeIndex,
+    pub maybe_cw: Option<bool>,
 }
 
 #[derive(Error, Debug, Clone)]
@@ -93,9 +94,9 @@ pub enum NavmeshError {
 pub struct Navmesh {
     graph: UnGraph<NavvertexWeight, (), usize>,
     source: FixedDotIndex,
-    source_vertex: NodeIndex<usize>,
+    source_navvertex: NodeIndex<usize>,
     target: FixedDotIndex,
-    target_vertex: NodeIndex<usize>,
+    target_navvertex: NodeIndex<usize>,
 }
 
 impl Navmesh {
@@ -138,36 +139,62 @@ impl Navmesh {
         }
 
         let mut graph: UnGraph<NavvertexWeight, (), usize> = UnGraph::default();
-        let mut source_vertex = None;
-        let mut target_vertex = None;
+        let mut source_navvertex = None;
+        let mut target_navvertex = None;
 
         // `HashMap` is obviously suboptimal here.
         let mut map = HashMap::new();
 
         for trianvertex in triangulation.node_identifiers() {
-            let navvertex = graph.add_node(NavvertexWeight {
-                node: trianvertex.into(),
-            });
+            let binavvertex = if trianvertex == source.into() {
+                let navvertex = graph.add_node(NavvertexWeight {
+                    node: trianvertex.into(),
+                    maybe_cw: None,
+                });
 
-            if trianvertex == source.into() {
-                source_vertex = Some(navvertex);
+                source_navvertex = Some(navvertex);
+                (navvertex, navvertex)
             } else if trianvertex == target.into() {
-                target_vertex = Some(navvertex);
-            }
+                let navvertex = graph.add_node(NavvertexWeight {
+                    node: trianvertex.into(),
+                    maybe_cw: None,
+                });
 
-            map.insert(trianvertex, navvertex);
+                target_navvertex = Some(navvertex);
+                (navvertex, navvertex)
+            } else {
+                let navvertex1 = graph.add_node(NavvertexWeight {
+                    node: trianvertex.into(),
+                    maybe_cw: Some(false),
+                });
+
+                let navvertex2 = graph.add_node(NavvertexWeight {
+                    node: trianvertex.into(),
+                    maybe_cw: Some(true),
+                });
+
+                (navvertex1, navvertex2)
+            };
+
+            map.insert(trianvertex, binavvertex);
         }
 
         for edge in triangulation.edge_references() {
-            graph.add_edge(map[&edge.source()], map[&edge.target()], ());
+            let (from_navvertex1, from_navvertex2) = map[&edge.source()];
+            let (to_navvertex1, to_navvertex2) = map[&edge.target()];
+
+            graph.update_edge(from_navvertex1, to_navvertex1, ());
+            graph.update_edge(from_navvertex1, to_navvertex2, ());
+            graph.update_edge(from_navvertex2, to_navvertex1, ());
+            graph.update_edge(from_navvertex2, to_navvertex2, ());
         }
 
         Ok(Self {
             graph,
             source,
-            source_vertex: source_vertex.unwrap(),
+            source_navvertex: source_navvertex.unwrap(),
             target,
-            target_vertex: target_vertex.unwrap(),
+            target_navvertex: target_navvertex.unwrap(),
         })
     }
 
@@ -179,15 +206,15 @@ impl Navmesh {
         self.source
     }
 
-    pub fn source_vertex(&self) -> NodeIndex<usize> {
-        self.source_vertex
+    pub fn source_navvertex(&self) -> NodeIndex<usize> {
+        self.source_navvertex
     }
 
     pub fn target(&self) -> FixedDotIndex {
         self.target
     }
 
-    pub fn target_vertex(&self) -> NodeIndex<usize> {
-        self.target_vertex
+    pub fn target_navvertex(&self) -> NodeIndex<usize> {
+        self.target_navvertex
     }
 }

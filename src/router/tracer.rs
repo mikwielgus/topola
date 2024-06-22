@@ -38,11 +38,11 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         &mut self,
         _graph: &UnGraph<NavvertexWeight, (), usize>,
         source: FixedDotIndex,
-        source_vertex: NodeIndex<usize>,
+        source_navvertex: NodeIndex<usize>,
         width: f64,
     ) -> Trace {
         Trace {
-            path: vec![source_vertex],
+            path: vec![source_navvertex],
             head: BareHead { dot: source }.into(),
             width,
         }
@@ -132,13 +132,15 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         around: NodeIndex<usize>,
         width: f64,
     ) -> Result<CaneHead, DrawException> {
+        let cw = self.maybe_cw(graph, around).unwrap();
+
         match self.binavvertex(graph, around) {
             BinavvertexNodeIndex::FixedDot(dot) => {
-                self.wrap_around_fixed_dot(graph, head, dot, width)
+                self.wrap_around_fixed_dot(graph, head, dot, cw, width)
             }
             BinavvertexNodeIndex::FixedBend(_fixed_bend) => todo!(),
             BinavvertexNodeIndex::LooseBend(loose_bend) => {
-                self.wrap_around_loose_bend(graph, head, loose_bend, width)
+                self.wrap_around_loose_bend(graph, head, loose_bend, cw, width)
             }
         }
     }
@@ -148,9 +150,10 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         graph: &UnGraph<NavvertexWeight, (), usize>,
         head: Head,
         around: FixedDotIndex,
+        cw: bool,
         width: f64,
     ) -> Result<CaneHead, DrawException> {
-        let head = Draw::new(self.layout).cane_around_dot(head, around.into(), width)?;
+        let head = Draw::new(self.layout).cane_around_dot(head, around.into(), cw, width)?;
         Ok(head)
     }
 
@@ -159,9 +162,10 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         graph: &UnGraph<NavvertexWeight, (), usize>,
         head: Head,
         around: LooseBendIndex,
+        cw: bool,
         width: f64,
     ) -> Result<CaneHead, DrawException> {
-        let head = Draw::new(self.layout).cane_around_bend(head, around.into(), width)?;
+        let head = Draw::new(self.layout).cane_around_bend(head, around.into(), cw, width)?;
 
         Ok(head)
     }
@@ -177,19 +181,27 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         trace.path.pop();
     }
 
+    fn maybe_cw(
+        &self,
+        graph: &UnGraph<NavvertexWeight, (), usize>,
+        navvertex: NodeIndex<usize>,
+    ) -> Option<bool> {
+        graph.node_weight(navvertex).unwrap().maybe_cw
+    }
+
     fn binavvertex(
         &self,
         graph: &UnGraph<NavvertexWeight, (), usize>,
-        vertex: NodeIndex<usize>,
+        navvertex: NodeIndex<usize>,
     ) -> BinavvertexNodeIndex {
-        graph.node_weight(vertex).unwrap().node
+        graph.node_weight(navvertex).unwrap().node
     }
 
     fn primitive(
         &self,
         graph: &UnGraph<NavvertexWeight, (), usize>,
-        vertex: NodeIndex<usize>,
+        navvertex: NodeIndex<usize>,
     ) -> PrimitiveIndex {
-        self.binavvertex(graph, vertex).into()
+        self.binavvertex(graph, navvertex).into()
     }
 }

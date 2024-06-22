@@ -27,8 +27,7 @@ pub enum DrawException {
     #[error("cannot finish in {0:?}")]
     CannotFinishIn(FixedDotIndex, #[source] LayoutException),
     #[error("cannot wrap around {0:?}")]
-    // neither of the exceptions is the source on its own, might be useful to give them names?
-    CannotWrapAround(WraparoundableIndex, LayoutException, LayoutException),
+    CannotWrapAround(WraparoundableIndex, #[source] LayoutException),
 }
 
 pub struct Draw<'a, R: RulesTrait> {
@@ -98,43 +97,25 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         &mut self,
         head: Head,
         around: FixedDotIndex,
+        cw: bool,
         width: f64,
     ) -> Result<CaneHead, DrawException> {
-        let mut tangents = self
+        let tangent = self
             .guide()
-            .head_around_dot_segments(&head, around.into(), width)?;
+            .head_around_dot_segment(&head, around.into(), cw, width)?;
         let offset = self
             .guide()
             .head_around_dot_offset(&head, around.into(), width);
-        let mut dirs = [true, false];
-
-        if tangents.1.euclidean_length() < tangents.0.euclidean_length() {
-            tangents = (tangents.1, tangents.0);
-            dirs = [false, true];
-        }
-
-        let mut errs = vec![];
-
-        for (i, tangent) in [tangents.0, tangents.1].iter().enumerate() {
-            match self.cane_around(
-                head,
-                around.into(),
-                tangent.start_point(),
-                tangent.end_point(),
-                dirs[i],
-                width,
-                offset,
-            ) {
-                Ok(ok) => return Ok(ok),
-                Err(err) => errs.push(err),
-            }
-        }
-
-        Err(DrawException::CannotWrapAround(
+        self.cane_around(
+            head,
             around.into(),
-            errs[0],
-            errs[1],
-        ))
+            tangent.start_point(),
+            tangent.end_point(),
+            cw,
+            width,
+            offset,
+        )
+        .map_err(|err| DrawException::CannotWrapAround(around.into(), err))
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 4))]
@@ -143,43 +124,26 @@ impl<'a, R: RulesTrait> Draw<'a, R> {
         &mut self,
         head: Head,
         around: BendIndex,
+        cw: bool,
         width: f64,
     ) -> Result<CaneHead, DrawException> {
-        let mut tangents = self
+        let tangent = self
             .guide()
-            .head_around_bend_segments(&head, around.into(), width)?;
+            .head_around_bend_segment(&head, around.into(), cw, width)?;
         let offset = self
             .guide()
             .head_around_bend_offset(&head, around.into(), width);
-        let mut dirs = [true, false];
 
-        if tangents.1.euclidean_length() < tangents.0.euclidean_length() {
-            tangents = (tangents.1, tangents.0);
-            dirs = [false, true];
-        }
-
-        let mut errs = vec![];
-
-        for (i, tangent) in [tangents.0, tangents.1].iter().enumerate() {
-            match self.cane_around(
-                head,
-                around.into(),
-                tangent.start_point(),
-                tangent.end_point(),
-                dirs[i],
-                width,
-                offset,
-            ) {
-                Ok(ok) => return Ok(ok),
-                Err(err) => errs.push(err),
-            }
-        }
-
-        Err(DrawException::CannotWrapAround(
+        self.cane_around(
+            head,
             around.into(),
-            errs[0],
-            errs[1],
-        ))
+            tangent.start_point(),
+            tangent.end_point(),
+            cw,
+            width,
+            offset,
+        )
+        .map_err(|err| DrawException::CannotWrapAround(around.into(), err))
     }
 
     #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 4))]
