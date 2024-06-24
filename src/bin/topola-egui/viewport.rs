@@ -87,7 +87,7 @@ impl Viewport {
                                         to_layer: 0,
                                         circle: Circle {
                                             pos: point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
-                                            r: 10000.0,
+                                            r: 100.0,
                                         },
                                         maybe_net: Some(1234),
                                     }),
