@@ -1,7 +1,7 @@
 use geo::{CoordsIter, Point, Polygon};
 use topola::{
     geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait},
-    math::Circle,
+    math::{self, Circle},
 };
 
 pub struct Painter<'a> {
@@ -31,12 +31,14 @@ impl<'a> Painter<'a> {
                 let delta_to = bend.to - bend.c.pos;
 
                 let angle_from = delta_from.y().atan2(delta_from.x());
-                let angle_to = delta_to.y().atan2(delta_to.x());
+
+                let cross = math::cross_product(delta_from, delta_to);
+                let dot = math::dot_product(delta_from, delta_to);
+                let angle_step = cross.atan2(dot) / 100.0;
+
                 let mut points: Vec<egui::Pos2> = vec![];
 
-                let angle_step = (angle_to - angle_from) / 100.0;
-
-                for i in 0..100 {
+                for i in 0..=100 {
                     let x = bend.c.pos.x() + bend.c.r * (angle_from + i as f64 * angle_step).cos();
                     let y = bend.c.pos.y() + bend.c.r * (angle_from + i as f64 * angle_step).sin();
                     points.push(self.transform.transform_pos([x as f32, -y as f32].into()));
