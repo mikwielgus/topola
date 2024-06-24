@@ -63,7 +63,7 @@ impl<R: RulesTrait> Layout<R> {
         self.drawing.remove_cane(cane, face)
     }
 
-    #[debug_ensures(ret.is_ok() -> self.drawing.node_count() == old(self.drawing.node_count()) + weight.to_layer - weight.from_layer)]
+    #[debug_ensures(ret.is_ok() -> self.drawing.node_count() == old(self.drawing.node_count()) + weight.to_layer - weight.from_layer + 2)]
     #[debug_ensures(ret.is_err() -> self.drawing.node_count() == old(self.drawing.node_count()))]
     pub fn add_via(&mut self, weight: ViaWeight) -> Result<GenericIndex<ViaWeight>, Infringement> {
         let compound = self.drawing.add_compound(weight.into());
