@@ -773,32 +773,51 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         node: PrimitiveIndex,
         maybe_except: Option<&[PrimitiveIndex]>,
     ) -> Option<Infringement> {
+        self.find_infringement(
+            node,
+            self.locate_possible_infringers(node)
+                .filter_map(|n| {
+                    if let GenericNode::Primitive(primitive_node) = n {
+                        Some(primitive_node)
+                    } else {
+                        None
+                    }
+                })
+                .filter(|primitive_node| {
+                    maybe_except.is_some_and(|except| !except.contains(&primitive_node))
+                }),
+        )
+    }
+
+    fn locate_possible_infringers(
+        &self,
+        node: PrimitiveIndex,
+    ) -> impl Iterator<Item = GenericNode<PrimitiveIndex, GenericIndex<CW>>> + '_ {
         let limiting_shape = node.primitive(self).shape().inflate(
             node.primitive(self)
                 .maybe_net()
                 .and_then(|net| Some(self.rules.largest_clearance(Some(net))))
                 .unwrap_or(0.0),
         );
-        let mut inflated_shape = limiting_shape; // Unused temporary value just for initialization.
-        let conditions = node.primitive(self).conditions();
 
         self.geometry_with_rtree
             .rtree()
             .locate_in_envelope_intersecting(
                 &limiting_shape.envelope_3d(0.0, node.primitive(self).layer()),
             )
-            .filter_map(|wrapper| {
-                if let GenericNode::Primitive(primitive_node) = wrapper.data {
-                    Some(primitive_node)
-                } else {
-                    None
-                }
-            })
-            .filter(|primitive_node| {
-                maybe_except.is_some_and(|except| !except.contains(&primitive_node))
-            })
-            .filter(|primitive_node| !self.are_connectable(node, *primitive_node))
-            .filter(|primitive_node| {
+            .map(|wrapper| wrapper.data)
+    }
+
+    fn find_infringement(
+        &self,
+        node: PrimitiveIndex,
+        it: impl Iterator<Item = PrimitiveIndex>,
+    ) -> Option<Infringement> {
+        let mut inflated_shape = node.primitive(self).shape(); // Unused temporary value just for initialization.
+        let conditions = node.primitive(self).conditions();
+
+        it.filter(|primitive_node| !self.are_connectable(node, *primitive_node))
+            .find_map(|primitive_node| {
                 let infringee_conditions = primitive_node.primitive(self).conditions();
 
                 let epsilon = 1.0;
@@ -807,11 +826,10 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
                         .clamp(0.0, f64::INFINITY),
                 );
 
-                inflated_shape.intersects(&primitive_node.primitive(self).shape())
+                inflated_shape
+                    .intersects(&primitive_node.primitive(self).shape())
+                    .then_some(Infringement(inflated_shape, primitive_node))
             })
-            .map(|primitive_node| primitive_node)
-            .next()
-            .and_then(|infringee| Some(Infringement(inflated_shape, infringee)))
     }
 
     fn detect_collision(&self, node: PrimitiveIndex) -> Option<Collision> {
