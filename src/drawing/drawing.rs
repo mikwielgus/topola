@@ -1,4 +1,4 @@
-use contracts::debug_ensures;
+use contracts::{debug_ensures, debug_invariant};
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 
@@ -77,6 +77,7 @@ pub struct Drawing<CW: Copy, R: RulesTrait> {
     rules: R,
 }
 
+#[debug_invariant(self.test_if_looses_dont_infringe_each_other())]
 impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     pub fn new(rules: R, layer_count: usize) -> Self {
         Self {
@@ -183,18 +184,6 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         Ok(dot)
     }
 
-    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
-    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_dot_infringably<W: DotWeightTrait<PrimitiveWeight> + GetLayer>(
-        &mut self,
-        weight: W,
-    ) -> GenericIndex<W>
-    where
-        GenericIndex<W>: Into<PrimitiveIndex> + Copy,
-    {
-        self.geometry_with_rtree.add_dot(weight)
-    }
-
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
@@ -264,18 +253,6 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         self.fail_and_remove_if_infringes_except(seg.into(), infringables)?;
 
         Ok(seg)
-    }
-
-    fn add_seg_infringably<W: SegWeightTrait<PrimitiveWeight> + GetLayer>(
-        &mut self,
-        from: DotIndex,
-        to: DotIndex,
-        weight: W,
-    ) -> GenericIndex<W>
-    where
-        GenericIndex<W>: Into<PrimitiveIndex>,
-    {
-        self.geometry_with_rtree.add_seg(from, to, weight)
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
@@ -658,55 +635,6 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
         Cane::from_dot(dot, self)
     }
 
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() - 1))]
-    fn fail_and_remove_if_infringes_except(
-        &mut self,
-        node: PrimitiveIndex,
-        maybe_except: Option<&[PrimitiveIndex]>,
-    ) -> Result<(), Infringement> {
-        if let Some(infringement) = self.detect_infringement_except(node, maybe_except) {
-            if let Ok(dot) = node.try_into() {
-                self.geometry_with_rtree.remove_dot(dot);
-            } else if let Ok(seg) = node.try_into() {
-                self.geometry_with_rtree.remove_seg(seg);
-            } else if let Ok(bend) = node.try_into() {
-                self.geometry_with_rtree.remove_bend(bend);
-            }
-            return Err(infringement);
-        }
-        Ok(())
-    }
-
-    pub fn primitive_nodes(&self) -> impl Iterator<Item = PrimitiveIndex> + '_ {
-        self.geometry_with_rtree
-            .rtree()
-            .iter()
-            .filter_map(|wrapper| {
-                if let GenericNode::Primitive(primitive_node) = wrapper.data {
-                    Some(primitive_node)
-                } else {
-                    None
-                }
-            })
-    }
-
-    pub fn layer_primitive_nodes(&self, layer: usize) -> impl Iterator<Item = PrimitiveIndex> + '_ {
-        self.geometry_with_rtree
-            .rtree()
-            .locate_in_envelope_intersecting(&AABB::from_corners(
-                [-f64::INFINITY, -f64::INFINITY, layer as f64],
-                [f64::INFINITY, f64::INFINITY, layer as f64],
-            ))
-            .filter_map(|wrapper| {
-                if let GenericNode::Primitive(primitive_node) = wrapper.data {
-                    Some(primitive_node)
-                } else {
-                    None
-                }
-            })
-    }
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), Infringement> {
@@ -765,6 +693,75 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
             return Err(infringement);
         }
 
+        Ok(())
+    }
+
+    fn detect_collision(&self, node: PrimitiveIndex) -> Option<Collision> {
+        let shape = node.primitive(self).shape();
+
+        self.geometry_with_rtree
+            .rtree()
+            .locate_in_envelope_intersecting(&shape.full_height_envelope_3d(0.0, 2))
+            .filter_map(|wrapper| {
+                if let GenericNode::Primitive(primitive_node) = wrapper.data {
+                    Some(primitive_node)
+                } else {
+                    None
+                }
+            })
+            .filter(|primitive_node| !self.are_connectable(node, *primitive_node))
+            .filter(|primitive_node| shape.intersects(&primitive_node.primitive(self).shape()))
+            .map(|primitive_node| primitive_node)
+            .next()
+            .and_then(|collidee| Some(Collision(shape, collidee)))
+    }
+}
+
+impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    fn add_dot_infringably<W: DotWeightTrait<PrimitiveWeight> + GetLayer>(
+        &mut self,
+        weight: W,
+    ) -> GenericIndex<W>
+    where
+        GenericIndex<W>: Into<PrimitiveIndex> + Copy,
+    {
+        self.geometry_with_rtree.add_dot(weight)
+    }
+
+    #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
+    #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 2))]
+    fn add_seg_infringably<W: SegWeightTrait<PrimitiveWeight> + GetLayer>(
+        &mut self,
+        from: DotIndex,
+        to: DotIndex,
+        weight: W,
+    ) -> GenericIndex<W>
+    where
+        GenericIndex<W>: Into<PrimitiveIndex>,
+    {
+        self.geometry_with_rtree.add_seg(from, to, weight)
+    }
+
+    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
+    #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() - 1))]
+    fn fail_and_remove_if_infringes_except(
+        &mut self,
+        node: PrimitiveIndex,
+        maybe_except: Option<&[PrimitiveIndex]>,
+    ) -> Result<(), Infringement> {
+        if let Some(infringement) = self.detect_infringement_except(node, maybe_except) {
+            if let Ok(dot) = node.try_into() {
+                self.geometry_with_rtree.remove_dot(dot);
+            } else if let Ok(seg) = node.try_into() {
+                self.geometry_with_rtree.remove_seg(seg);
+            } else if let Ok(bend) = node.try_into() {
+                self.geometry_with_rtree.remove_bend(bend);
+            }
+            return Err(infringement);
+        }
         Ok(())
     }
 
@@ -832,12 +829,10 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
             })
     }
 
-    fn detect_collision(&self, node: PrimitiveIndex) -> Option<Collision> {
-        let shape = node.primitive(self).shape();
-
+    pub fn primitive_nodes(&self) -> impl Iterator<Item = PrimitiveIndex> + '_ {
         self.geometry_with_rtree
             .rtree()
-            .locate_in_envelope_intersecting(&shape.full_height_envelope_3d(0.0, 2))
+            .iter()
             .filter_map(|wrapper| {
                 if let GenericNode::Primitive(primitive_node) = wrapper.data {
                     Some(primitive_node)
@@ -845,11 +840,22 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
                     None
                 }
             })
-            .filter(|primitive_node| !self.are_connectable(node, *primitive_node))
-            .filter(|primitive_node| shape.intersects(&primitive_node.primitive(self).shape()))
-            .map(|primitive_node| primitive_node)
-            .next()
-            .and_then(|collidee| Some(Collision(shape, collidee)))
+    }
+
+    pub fn layer_primitive_nodes(&self, layer: usize) -> impl Iterator<Item = PrimitiveIndex> + '_ {
+        self.geometry_with_rtree
+            .rtree()
+            .locate_in_envelope_intersecting(&AABB::from_corners(
+                [-f64::INFINITY, -f64::INFINITY, layer as f64],
+                [f64::INFINITY, f64::INFINITY, layer as f64],
+            ))
+            .filter_map(|wrapper| {
+                if let GenericNode::Primitive(primitive_node) = wrapper.data {
+                    Some(primitive_node)
+                } else {
+                    None
+                }
+            })
     }
 
     fn are_connectable(&self, node1: PrimitiveIndex, node2: PrimitiveIndex) -> bool {
@@ -919,6 +925,39 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
 
     pub fn node_count(&self) -> usize {
         self.geometry_with_rtree.graph().node_count()
+    }
+
+    fn test_if_looses_dont_infringe_each_other(&self) -> bool {
+        !self
+            .primitive_nodes()
+            .filter(|node| match node {
+                PrimitiveIndex::LooseDot(..)
+                | PrimitiveIndex::LoneLooseSeg(..)
+                | PrimitiveIndex::SeqLooseSeg(..)
+                | PrimitiveIndex::LooseBend(..) => true,
+                _ => false,
+            })
+            .any(|node| {
+                self.find_infringement(
+                    node,
+                    self.locate_possible_infringers(node)
+                        .filter_map(|n| {
+                            if let GenericNode::Primitive(primitive_node) = n {
+                                Some(primitive_node)
+                            } else {
+                                None
+                            }
+                        })
+                        .filter(|primitive_node| match primitive_node {
+                            PrimitiveIndex::LooseDot(..)
+                            | PrimitiveIndex::LoneLooseSeg(..)
+                            | PrimitiveIndex::SeqLooseSeg(..)
+                            | PrimitiveIndex::LooseBend(..) => true,
+                            _ => false,
+                        }),
+                )
+                .is_some()
+            })
     }
 }
 

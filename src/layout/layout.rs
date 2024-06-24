@@ -46,14 +46,6 @@ impl<R: RulesTrait> Layout<R> {
         Self { drawing }
     }
 
-    pub fn remove_band(&mut self, band: BandFirstSegIndex) {
-        self.drawing.remove_band(band);
-    }
-
-    pub fn remove_cane(&mut self, cane: &Cane, face: LooseDotIndex) {
-        self.drawing.remove_cane(cane, face)
-    }
-
     pub fn insert_cane(
         &mut self,
         from: DotIndex,
@@ -65,6 +57,10 @@ impl<R: RulesTrait> Layout<R> {
     ) -> Result<Cane, LayoutException> {
         self.drawing
             .insert_cane(from, around, dot_weight, seg_weight, bend_weight, cw)
+    }
+
+    pub fn remove_cane(&mut self, cane: &Cane, face: LooseDotIndex) {
+        self.drawing.remove_cane(cane, face)
     }
 
     #[debug_ensures(ret.is_ok() -> self.drawing.node_count() == old(self.drawing.node_count()) + weight.to_layer - weight.from_layer)]
@@ -208,11 +204,8 @@ impl<R: RulesTrait> Layout<R> {
         )
     }
 
-    pub fn zones<W: 'static>(
-        &self,
-        node: GenericIndex<W>,
-    ) -> impl Iterator<Item = GenericIndex<CompoundWeight>> + '_ {
-        self.drawing.compounds(node)
+    pub fn remove_band(&mut self, band: BandFirstSegIndex) {
+        self.drawing.remove_band(band);
     }
 
     pub fn band_length(&self, band: BandFirstSegIndex) -> f64 {
@@ -245,6 +238,13 @@ impl<R: RulesTrait> Layout<R> {
                 length
             }
         }
+    }
+
+    pub fn zones<W: 'static>(
+        &self,
+        node: GenericIndex<W>,
+    ) -> impl Iterator<Item = GenericIndex<CompoundWeight>> + '_ {
+        self.drawing.compounds(node)
     }
 
     pub fn zone_nodes(&self) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
