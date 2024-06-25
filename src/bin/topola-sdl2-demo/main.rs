@@ -11,6 +11,7 @@ macro_rules! dbg_dot {
 
 use geo::point;
 use painter::Painter;
+use petgraph::graph::NodeIndex;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use topola::autorouter::selection::Selection;
 use topola::autorouter::{Autorouter, AutorouterStatus};
@@ -25,7 +26,7 @@ use topola::geometry::shape::ShapeTrait;
 use topola::layout::zone::MakePolyShape;
 use topola::layout::Layout;
 use topola::router::draw::DrawException;
-use topola::router::navmesh::{Navmesh, NavmeshEdgeReference, NavvertexNodeIndex};
+use topola::router::navmesh::Navmesh;
 use topola::router::tracer::{Trace, Tracer};
 use topola::specctra::design::SpecctraDesign;
 use topola::specctra::mesadata::SpecctraMesadata;
@@ -145,7 +146,7 @@ fn main() -> Result<(), anyhow::Error> {
     }));*/
 
     let design = SpecctraDesign::load_from_file(
-        "tests/data/de9_tht_female_to_tht_female/de9_tht_female_to_tht_female.dsn",
+        "tests/single_layer/data/de9_tht_female_to_tht_female/de9_tht_female_to_tht_female.dsn",
     )?;
     //let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
     //dbg!(&design);
@@ -225,7 +226,7 @@ fn render_times(
     mut router_or_layout: RouterOrLayout<impl RulesTrait>,
     _unused: Option<()>,
     mut maybe_navmesh: Option<Navmesh>,
-    path: &[NavvertexNodeIndex],
+    path: &[NodeIndex<usize>],
     ghosts: &[PrimitiveShape],
     highlighteds: &[PrimitiveIndex],
     times: i64,
@@ -334,9 +335,17 @@ fn render_times(
         }
 
         if let Some(ref navmesh) = maybe_navmesh {
-            for edge in navmesh.edge_references() {
-                let from = edge.source().primitive(layout.drawing()).shape().center();
-                let to = edge.target().primitive(layout.drawing()).shape().center();
+            for edge in navmesh.graph().edge_references() {
+                let from =
+                    PrimitiveIndex::from(navmesh.graph().node_weight(edge.source()).unwrap().node)
+                        .primitive(layout.drawing())
+                        .shape()
+                        .center();
+                let to =
+                    PrimitiveIndex::from(navmesh.graph().node_weight(edge.target()).unwrap().node)
+                        .primitive(layout.drawing())
+                        .shape()
+                        .center();
 
                 let color = 'blk: {
                     if let (Some(source_pos), Some(target_pos)) = (
