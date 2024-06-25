@@ -8,12 +8,13 @@ use thiserror::Error;
 use crate::{
     drawing::{
         band::BandFirstSegIndex,
-        dot::FixedDotIndex,
+        dot::{DotIndex, FixedDotIndex},
         graph::{MakePrimitive, PrimitiveIndex},
+        guide::{CaneHead, Head, HeadTrait},
         primitive::MakePrimitiveShape,
         rules::RulesTrait,
     },
-    geometry::shape::ShapeTrait,
+    geometry::{primitive::PrimitiveShapeTrait, shape::ShapeTrait},
     graph::GetPetgraphIndex,
     layout::Layout,
     router::{
@@ -48,6 +49,37 @@ impl<'a, R: RulesTrait> RouterAstarStrategy<'a, R> {
             tracer,
             trace,
             target,
+        }
+    }
+
+    fn bihead_length(&self) -> f64 {
+        self.head_length(&self.trace.head)
+            + match self.trace.head.face() {
+                DotIndex::Fixed(..) => 0.0,
+                DotIndex::Loose(face) => {
+                    self.head_length(&self.tracer.layout.drawing().guide().rear_head(face))
+                }
+            }
+    }
+
+    fn head_length(&self, head: &Head) -> f64 {
+        match head {
+            Head::Bare(..) => 0.0,
+            Head::Cane(cane_head) => {
+                self.tracer
+                    .layout
+                    .drawing()
+                    .primitive(cane_head.cane.seg)
+                    .shape()
+                    .length()
+                    + self
+                        .tracer
+                        .layout
+                        .drawing()
+                        .primitive(cane_head.cane.bend)
+                        .shape()
+                        .length()
+            }
         }
     }
 }
@@ -85,18 +117,18 @@ impl<'a, R: RulesTrait> AstarStrategy<&UnGraph<NavvertexWeight, (), usize>, f64,
             return None;
         }
 
-        let before_probe_length = 0.0; //self.tracer.layout.band_length(self.trace.head.face());
+        let prev_bihead_length = self.bihead_length();
 
         let width = self.trace.width;
         let result = self
             .tracer
             .step(*graph, &mut self.trace, edge.target(), width);
 
-        let probe_length = 0.0; //self.tracer.layout.band_length(self.trace.head.face());
+        let probe_length = self.bihead_length() - prev_bihead_length;
 
         if result.is_ok() {
             self.tracer.undo_step(*graph, &mut self.trace);
-            Some(probe_length - before_probe_length)
+            Some(probe_length)
         } else {
             None
         }

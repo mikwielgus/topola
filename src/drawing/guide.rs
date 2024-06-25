@@ -220,21 +220,21 @@ impl<'a, CW: Copy, R: RulesTrait> Guide<'a, CW, R> {
         }
     }
 
-    pub fn cane_head(&self, dot: LooseDotIndex) -> CaneHead {
+    pub fn cane_head(&self, face: LooseDotIndex) -> CaneHead {
         CaneHead {
-            face: dot,
-            cane: self.drawing.cane(dot),
+            face,
+            cane: self.drawing.cane(face),
         }
     }
 
-    pub fn rear_head(&self, dot: LooseDotIndex) -> Head {
-        self.head(self.rear(self.cane_head(dot)))
+    pub fn rear_head(&self, face: LooseDotIndex) -> Head {
+        self.head(self.rear(self.cane_head(face)))
     }
 
-    pub fn head(&self, dot: DotIndex) -> Head {
-        match dot {
-            DotIndex::Fixed(fixed) => BareHead { dot: fixed }.into(),
-            DotIndex::Loose(loose) => self.cane_head(loose).into(),
+    pub fn head(&self, face: DotIndex) -> Head {
+        match face {
+            DotIndex::Fixed(dot) => BareHead { dot }.into(),
+            DotIndex::Loose(dot) => self.cane_head(dot).into(),
         }
     }
 
