@@ -25,7 +25,6 @@ fn test_unrouted_lm317_breakout() {
         },
         maybe_net: Some(1234),
     }));
-    let result = dbg!(result);
     assert!(matches!(
         result,
         Err(InvokerError::Autorouter(AutorouterError::CouldNotPlaceVia(

@@ -89,7 +89,6 @@ pub fn assert_single_layer_groundless_autoroute(
                 .rules()
                 .layer_layername(target_layer),
         ) {
-            dbg!(source_layername, target_layername);
             assert_eq!(source_layername, target_layername);
 
             if source_layername != layername {
@@ -111,7 +110,6 @@ pub fn assert_single_layer_groundless_autoroute(
             .drawing()
             .primitive(target_dot)
             .maybe_net();
-        dbg!(source_net, target_net);
         assert_eq!(source_net, target_net);
 
         let net = source_net.unwrap();
@@ -119,7 +117,6 @@ pub fn assert_single_layer_groundless_autoroute(
         if let Some(netname) = autorouter.board().layout().rules().net_netname(net) {
             // We don't route ground.
             if netname != "GND" {
-                dbg!(source_dot, target_dot);
                 assert_eq!(
                     unionfind.find(source_dot.petgraph_index()),
                     unionfind.find(target_dot.petgraph_index())
@@ -150,7 +147,6 @@ pub fn assert_band_length(
 ) {
     let band = board.band_between_pins(source, target).unwrap();
     let band_length = board.layout().band_length(band);
-    dbg!(band_length);
     assert!((band_length - length).abs() < epsilon);
 }
 

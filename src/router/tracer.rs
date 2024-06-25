@@ -172,7 +172,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
 
     #[debug_ensures(trace.path.len() == old(trace.path.len() - 1))]
     pub fn undo_step(&mut self, graph: &UnGraph<NavvertexWeight, (), usize>, trace: &mut Trace) {
-        if let Head::Cane(head) = dbg!(trace.head) {
+        if let Head::Cane(head) = trace.head {
             trace.head = Draw::new(self.layout).undo_cane(head).unwrap();
         } else {
             panic!();
