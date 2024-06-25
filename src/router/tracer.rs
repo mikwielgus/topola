@@ -1,5 +1,6 @@
 use contracts::{debug_ensures, debug_requires};
 use petgraph::graph::{NodeIndex, UnGraph};
+use thiserror::Error;
 
 use crate::{
     drawing::{
@@ -16,6 +17,14 @@ use crate::{
         navmesh::{BinavvertexNodeIndex, NavvertexWeight},
     },
 };
+
+#[derive(Error, Debug, Clone, Copy)]
+pub enum TracerException {
+    #[error(transparent)]
+    CannotDraw(#[from] DrawException),
+    #[error("cannot wrap")]
+    CannotWrap,
+}
 
 #[derive(Debug)]
 pub struct Trace {
@@ -54,8 +63,8 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         trace: &mut Trace,
         target: FixedDotIndex,
         width: f64,
-    ) -> Result<BandFirstSegIndex, DrawException> {
-        Draw::new(self.layout).finish_in_dot(trace.head, target, width)
+    ) -> Result<BandFirstSegIndex, TracerException> {
+        Ok(Draw::new(self.layout).finish_in_dot(trace.head, target, width)?)
     }
 
     #[debug_requires(path[0] == trace.path[0])]
@@ -66,7 +75,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         trace: &mut Trace,
         path: &[NodeIndex<usize>],
         width: f64,
-    ) -> Result<(), DrawException> {
+    ) -> Result<(), TracerException> {
         let prefix_length = trace
             .path
             .iter()
@@ -76,7 +85,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
 
         let length = trace.path.len();
         self.undo_path(graph, trace, length - prefix_length);
-        self.path(graph, trace, &path[prefix_length..], width)
+        Ok::<(), TracerException>(self.path(graph, trace, &path[prefix_length..], width)?)
     }
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() + path.len()))]
@@ -86,11 +95,11 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         trace: &mut Trace,
         path: &[NodeIndex<usize>],
         width: f64,
-    ) -> Result<(), DrawException> {
+    ) -> Result<(), TracerException> {
         for (i, vertex) in path.iter().enumerate() {
             if let Err(err) = self.step(graph, trace, *vertex, width) {
                 self.undo_path(graph, trace, i);
-                return Err(err);
+                return Err(err.into());
             }
         }
 
@@ -118,11 +127,11 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         trace: &mut Trace,
         to: NodeIndex<usize>,
         width: f64,
-    ) -> Result<(), DrawException> {
+    ) -> Result<(), TracerException> {
         trace.head = self.wrap(graph, trace.head, to, width)?.into();
         trace.path.push(to);
 
-        Ok::<(), DrawException>(())
+        Ok::<(), TracerException>(())
     }
 
     fn wrap(
@@ -131,8 +140,10 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         head: Head,
         around: NodeIndex<usize>,
         width: f64,
-    ) -> Result<CaneHead, DrawException> {
-        let cw = self.maybe_cw(graph, around).unwrap();
+    ) -> Result<CaneHead, TracerException> {
+        let cw = self
+            .maybe_cw(graph, around)
+            .ok_or(TracerException::CannotWrap)?;
 
         match self.binavvertex(graph, around) {
             BinavvertexNodeIndex::FixedDot(dot) => {
@@ -152,9 +163,8 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         around: FixedDotIndex,
         cw: bool,
         width: f64,
-    ) -> Result<CaneHead, DrawException> {
-        let head = Draw::new(self.layout).cane_around_dot(head, around.into(), cw, width)?;
-        Ok(head)
+    ) -> Result<CaneHead, TracerException> {
+        Ok(Draw::new(self.layout).cane_around_dot(head, around.into(), cw, width)?)
     }
 
     fn wrap_around_loose_bend(
@@ -164,10 +174,8 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         around: LooseBendIndex,
         cw: bool,
         width: f64,
-    ) -> Result<CaneHead, DrawException> {
-        let head = Draw::new(self.layout).cane_around_bend(head, around.into(), cw, width)?;
-
-        Ok(head)
+    ) -> Result<CaneHead, TracerException> {
+        Ok(Draw::new(self.layout).cane_around_bend(head, around.into(), cw, width)?)
     }
 
     #[debug_ensures(trace.path.len() == old(trace.path.len() - 1))]
