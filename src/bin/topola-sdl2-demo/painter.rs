@@ -21,8 +21,8 @@ impl<'a> Painter<'a> {
             PrimitiveShape::Dot(dot) => {
                 let mut path = Path2D::new();
                 path.ellipse(
-                    vec2f(dot.c.pos.x() as f32, -dot.c.pos.y() as f32),
-                    dot.c.r as f32,
+                    vec2f(dot.circle.pos.x() as f32, -dot.circle.pos.y() as f32),
+                    dot.circle.r as f32,
                     0.0,
                     0.0,
                     std::f32::consts::TAU,

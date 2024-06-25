@@ -16,7 +16,7 @@ impl<'a> Painter<'a> {
 
     pub fn paint_primitive(&mut self, shape: &PrimitiveShape, color: egui::epaint::Color32) {
         let epaint_shape = match shape {
-            PrimitiveShape::Dot(dot) => self.dot_shape(dot.c, color),
+            PrimitiveShape::Dot(dot) => self.dot_shape(dot.circle, color),
             PrimitiveShape::Seg(seg) => egui::Shape::line_segment(
                 [
                     self.transform
@@ -27,8 +27,9 @@ impl<'a> Painter<'a> {
                 egui::Stroke::new(seg.width as f32 * self.transform.scale().x, color),
             ),
             PrimitiveShape::Bend(bend) => {
-                let delta_from = bend.from - bend.c.pos;
-                let delta_to = bend.to - bend.c.pos;
+                let circle = bend.circle();
+                let delta_from = bend.from - circle.pos;
+                let delta_to = bend.to - circle.pos;
 
                 let angle_from = delta_from.y().atan2(delta_from.x());
 
@@ -39,8 +40,8 @@ impl<'a> Painter<'a> {
                 let mut points: Vec<egui::Pos2> = vec![];
 
                 for i in 0..=100 {
-                    let x = bend.c.pos.x() + bend.c.r * (angle_from + i as f64 * angle_step).cos();
-                    let y = bend.c.pos.y() + bend.c.r * (angle_from + i as f64 * angle_step).sin();
+                    let x = circle.pos.x() + circle.r * (angle_from + i as f64 * angle_step).cos();
+                    let y = circle.pos.y() + circle.r * (angle_from + i as f64 * angle_step).sin();
                     points.push(self.transform.transform_pos([x as f32, -y as f32].into()));
                 }
 

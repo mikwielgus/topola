@@ -239,7 +239,7 @@ impl<
     pub fn dot_shape(&self, dot: DI) -> PrimitiveShape {
         let weight = self.dot_weight(dot);
         PrimitiveShape::Dot(DotShape {
-            c: Circle {
+            circle: Circle {
                 pos: weight.pos(),
                 r: weight.width() / 2.0,
             },
@@ -261,7 +261,7 @@ impl<
         PrimitiveShape::Bend(BendShape {
             from: self.dot_weight(from).pos(),
             to: self.dot_weight(to).pos(),
-            c: Circle {
+            inner_circle: Circle {
                 pos: core_weight.pos(),
                 r: self.inner_radius(bend),
             },

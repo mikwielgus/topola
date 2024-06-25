@@ -48,16 +48,16 @@ pub enum PrimitiveShape {
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DotShape {
-    pub c: Circle,
+    pub circle: Circle,
 }
 
 impl ShapeTrait for DotShape {
     fn center(&self) -> Point {
-        self.c.pos
+        self.circle.pos
     }
 
     fn contains_point(&self, p: Point) -> bool {
-        p.euclidean_distance(&self.c.pos) <= self.c.r
+        p.euclidean_distance(&self.circle.pos) <= self.circle.r
     }
 }
 
@@ -68,9 +68,9 @@ impl PrimitiveShapeTrait for DotShape {
 
     fn inflate(&self, margin: f64) -> PrimitiveShape {
         PrimitiveShape::Dot(DotShape {
-            c: Circle {
-                pos: self.c.pos,
-                r: self.c.r + margin,
+            circle: Circle {
+                pos: self.circle.pos,
+                r: self.circle.r + margin,
             },
         })
     }
@@ -82,19 +82,20 @@ impl PrimitiveShapeTrait for DotShape {
 
         match other {
             PrimitiveShape::Dot(other) => {
-                self.c.pos.euclidean_distance(&other.c.pos) < self.c.r + other.c.r
+                self.circle.pos.euclidean_distance(&other.circle.pos)
+                    < self.circle.r + other.circle.r
             }
             PrimitiveShape::Seg(other) => {
-                self.c.pos.euclidean_distance(&other.polygon()) < self.c.r
+                self.circle.pos.euclidean_distance(&other.polygon()) < self.circle.r
             }
             PrimitiveShape::Bend(other) => {
-                for point in math::intersect_circles(&self.c, &other.inner_circle()) {
+                for point in math::intersect_circles(&self.circle, &other.inner_circle()) {
                     if other.between_ends(point) {
                         return true;
                     }
                 }
 
-                for point in math::intersect_circles(&self.c, &other.outer_circle()) {
+                for point in math::intersect_circles(&self.circle, &other.outer_circle()) {
                     if other.between_ends(point) {
                         return true;
                     }
@@ -108,18 +109,18 @@ impl PrimitiveShapeTrait for DotShape {
     fn envelope(&self, margin: f64) -> AABB<[f64; 2]> {
         AABB::from_corners(
             [
-                self.c.pos.x() - self.c.r - margin,
-                self.c.pos.y() - self.c.r - margin,
+                self.circle.pos.x() - self.circle.r - margin,
+                self.circle.pos.y() - self.circle.r - margin,
             ],
             [
-                self.c.pos.x() + self.c.r + margin,
-                self.c.pos.y() + self.c.r + margin,
+                self.circle.pos.x() + self.circle.r + margin,
+                self.circle.pos.y() + self.circle.r + margin,
             ],
         )
     }
 
     fn width(&self) -> f64 {
-        self.c.r * 2.0
+        self.circle.r * 2.0
     }
 
     fn length(&self) -> f64 {
@@ -234,46 +235,47 @@ impl PrimitiveShapeTrait for SegShape {
 pub struct BendShape {
     pub from: Point,
     pub to: Point,
-    pub c: Circle,
+    pub inner_circle: Circle,
     pub width: f64,
 }
 
 impl BendShape {
     pub fn inner_circle(&self) -> Circle {
-        self.c
+        self.inner_circle
     }
 
     pub fn circle(&self) -> Circle {
         Circle {
-            pos: self.c.pos,
-            r: self.c.r + self.width / 2.0,
+            pos: self.inner_circle.pos,
+            r: self.inner_circle.r + self.width / 2.0,
         }
     }
 
     pub fn outer_circle(&self) -> Circle {
         Circle {
-            pos: self.c.pos,
-            r: self.c.r + self.width,
+            pos: self.inner_circle.pos,
+            r: self.inner_circle.r + self.width,
         }
     }
 
     pub fn between_ends(&self, point: Point) -> bool {
         math::between_vectors(
-            point - self.c.pos,
-            self.from - self.c.pos,
-            self.to - self.c.pos,
+            point - self.inner_circle.pos,
+            self.from - self.inner_circle.pos,
+            self.to - self.inner_circle.pos,
         )
     }
 }
 
 impl ShapeTrait for BendShape {
     fn center(&self) -> Point {
-        let sum = (self.from - self.c.pos) + (self.to - self.c.pos);
-        self.c.pos + (sum / sum.euclidean_distance(&point! {x: 0.0, y: 0.0})) * self.c.r
+        let sum = (self.from - self.inner_circle.pos) + (self.to - self.inner_circle.pos);
+        self.inner_circle.pos
+            + (sum / sum.euclidean_distance(&point! {x: 0.0, y: 0.0})) * self.inner_circle.r
     }
 
     fn contains_point(&self, p: Point) -> bool {
-        let d = p.euclidean_distance(&self.c.pos);
+        let d = p.euclidean_distance(&self.inner_circle.pos);
         self.between_ends(p) && d >= self.inner_circle().r && d <= self.outer_circle().r
     }
 }
@@ -287,9 +289,9 @@ impl PrimitiveShapeTrait for BendShape {
         PrimitiveShape::Bend(BendShape {
             from: self.from, // TODO: Is not inflated for now.
             to: self.to,     // TODO: Is not inflated for now.
-            c: Circle {
-                pos: self.c.pos,
-                r: self.c.r - margin,
+            inner_circle: Circle {
+                pos: self.inner_circle.pos,
+                r: self.inner_circle.r - margin,
             },
             width: self.width + 2.0 * margin,
         })
@@ -333,10 +335,16 @@ impl PrimitiveShapeTrait for BendShape {
     }
 
     fn envelope(&self, _margin: f64) -> AABB<[f64; 2]> {
-        let halfwidth = self.c.r + self.width;
+        let halfwidth = self.inner_circle.r + self.width;
         AABB::from_corners(
-            [self.c.pos.x() - halfwidth, self.c.pos.y() - halfwidth],
-            [self.c.pos.x() + halfwidth, self.c.pos.y() + halfwidth],
+            [
+                self.inner_circle.pos.x() - halfwidth,
+                self.inner_circle.pos.y() - halfwidth,
+            ],
+            [
+                self.inner_circle.pos.x() + halfwidth,
+                self.inner_circle.pos.y() + halfwidth,
+            ],
         )
     }
 

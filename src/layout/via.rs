@@ -66,6 +66,9 @@ impl GetMaybeNet for ViaWeight {
 
 impl MakePrimitiveShape for ViaWeight {
     fn shape(&self) -> PrimitiveShape {
-        DotShape { c: self.circle }.into()
+        DotShape {
+            circle: self.circle,
+        }
+        .into()
     }
 }
