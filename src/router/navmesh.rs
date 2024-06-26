@@ -5,7 +5,10 @@ use geo::Point;
 use petgraph::{
     graph::UnGraph,
     stable_graph::NodeIndex,
-    visit::{EdgeRef, IntoEdgeReferences, IntoEdges, IntoNodeIdentifiers, NodeIndexable},
+    visit::{
+        self, Data, EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges, IntoNeighbors,
+        IntoNodeIdentifiers, NodeIndexable,
+    },
 };
 use spade::{HasPosition, InsertionError, Point2};
 use thiserror::Error;
@@ -24,6 +27,15 @@ use crate::{
     layout::Layout,
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
+
+#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+pub struct NavvertexIndex(NodeIndex<usize>);
+
+impl GetPetgraphIndex for NavvertexIndex {
+    fn petgraph_index(&self) -> NodeIndex<usize> {
+        self.0
+    }
+}
 
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
@@ -216,5 +228,86 @@ impl Navmesh {
 
     pub fn target_navvertex(&self) -> NodeIndex<usize> {
         self.target_navvertex
+    }
+}
+
+impl GraphBase for Navmesh {
+    type NodeId = NavvertexIndex;
+    type EdgeId = (NavvertexIndex, NavvertexIndex);
+}
+
+impl Data for Navmesh {
+    type NodeWeight = NavvertexWeight;
+    type EdgeWeight = ();
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct NavmeshEdgeReference {
+    from: NavvertexIndex,
+    to: NavvertexIndex,
+}
+
+impl EdgeRef for NavmeshEdgeReference {
+    type NodeId = NavvertexIndex;
+    type EdgeId = (NavvertexIndex, NavvertexIndex);
+    type Weight = ();
+
+    fn source(&self) -> Self::NodeId {
+        self.from
+    }
+
+    fn target(&self) -> Self::NodeId {
+        self.to
+    }
+
+    fn weight(&self) -> &Self::Weight {
+        &()
+    }
+
+    fn id(&self) -> Self::EdgeId {
+        (self.from, self.to)
+    }
+}
+
+impl<'a> IntoNeighbors for &'a Navmesh {
+    type Neighbors = Box<dyn Iterator<Item = NavvertexIndex> + 'a>;
+
+    fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
+        Box::new(
+            self.graph
+                .neighbors(vertex.petgraph_index())
+                .map(|ni| NavvertexIndex(ni)),
+        )
+    }
+}
+
+impl<'a> IntoEdgeReferences for &'a Navmesh {
+    type EdgeRef = NavmeshEdgeReference;
+    type EdgeReferences = Box<dyn Iterator<Item = NavmeshEdgeReference> + 'a>;
+
+    fn edge_references(self) -> Self::EdgeReferences {
+        Box::new(
+            self.graph
+                .edge_references()
+                .map(|edge| NavmeshEdgeReference {
+                    from: NavvertexIndex(edge.source()),
+                    to: NavvertexIndex(edge.target()),
+                }),
+        )
+    }
+}
+
+impl<'a> IntoEdges for &'a Navmesh {
+    type Edges = Box<dyn Iterator<Item = NavmeshEdgeReference> + 'a>;
+
+    fn edges(self, vertex: Self::NodeId) -> Self::Edges {
+        Box::new(
+            self.graph
+                .edges(vertex.petgraph_index())
+                .map(|edge| NavmeshEdgeReference {
+                    from: NavvertexIndex(edge.source()),
+                    to: NavvertexIndex(edge.target()),
+                }),
+        )
     }
 }
