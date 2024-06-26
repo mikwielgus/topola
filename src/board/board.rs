@@ -129,8 +129,8 @@ impl<M: MesadataTrait> Board<M> {
             .unwrap()
             .to_string();
 
-        let mut router = Router::new_from_navmesh(self.layout_mut(), navmesh);
-        let result = router.route_band(100.0);
+        let mut router = Router::new_from_navmesh(navmesh);
+        let result = router.route_band(self.layout_mut(), 100.0);
 
         if let Ok(band) = result {
             self.pinname_pair_to_band

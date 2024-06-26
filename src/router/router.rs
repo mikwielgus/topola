@@ -32,8 +32,7 @@ pub enum RouterError {
     Astar(#[from] AstarError),
 }
 
-pub struct Router<'a, R: RulesTrait> {
-    layout: &'a mut Layout<R>,
+pub struct Router {
     navmesh: Navmesh,
 }
 
@@ -94,9 +93,6 @@ impl<'a, R: RulesTrait> AstarStrategy<&UnGraph<NavvertexWeight, (), usize>, f64,
         tracker: &PathTracker<&UnGraph<NavvertexWeight, (), usize>>,
     ) -> Option<BandFirstSegIndex> {
         let new_path = tracker.reconstruct_path_to(vertex);
-        /*.into_iter()
-        .map(|ni| graph.node_weight(ni).unwrap().node)
-        .collect();*/
         let width = self.trace.width;
 
         self.tracer
@@ -155,22 +151,26 @@ impl<'a, R: RulesTrait> AstarStrategy<&UnGraph<NavvertexWeight, (), usize>, f64,
     }
 }
 
-impl<'a, R: RulesTrait> Router<'a, R> {
+impl Router {
     pub fn new(
-        layout: &'a mut Layout<R>,
+        layout: &Layout<impl RulesTrait>,
         from: FixedDotIndex,
         to: FixedDotIndex,
     ) -> Result<Self, RouterError> {
         let navmesh = { Navmesh::new(layout, from, to)? };
-        Ok(Self::new_from_navmesh(layout, navmesh))
+        Ok(Self::new_from_navmesh(navmesh))
     }
 
-    pub fn new_from_navmesh(layout: &'a mut Layout<R>, navmesh: Navmesh) -> Self {
-        Self { layout, navmesh }
+    pub fn new_from_navmesh(navmesh: Navmesh) -> Self {
+        Self { navmesh }
     }
 
-    pub fn route_band(&mut self, width: f64) -> Result<BandFirstSegIndex, RouterError> {
-        let mut tracer = Tracer::new(self.layout);
+    pub fn route_band(
+        &mut self,
+        layout: &mut Layout<impl RulesTrait>,
+        width: f64,
+    ) -> Result<BandFirstSegIndex, RouterError> {
+        let mut tracer = Tracer::new(layout);
         let trace = tracer.start(
             self.navmesh.graph(),
             self.navmesh.source(),
@@ -202,8 +202,4 @@ impl<'a, R: RulesTrait> Router<'a, R> {
 
         self.route_band(width)
     }*/
-
-    pub fn layout(&mut self) -> &mut Layout<R> {
-        self.layout
-    }
 }
