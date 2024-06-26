@@ -3,6 +3,7 @@ use std::collections::HashMap;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
+    data::DataMap,
     graph::UnGraph,
     stable_graph::NodeIndex,
     visit::{
@@ -106,9 +107,9 @@ pub enum NavmeshError {
 pub struct Navmesh {
     graph: UnGraph<NavvertexWeight, (), usize>,
     source: FixedDotIndex,
-    source_navvertex: NodeIndex<usize>,
+    source_navvertex: NavvertexIndex,
     target: FixedDotIndex,
-    target_navvertex: NodeIndex<usize>,
+    target_navvertex: NavvertexIndex,
 }
 
 impl Navmesh {
@@ -204,9 +205,9 @@ impl Navmesh {
         Ok(Self {
             graph,
             source,
-            source_navvertex: source_navvertex.unwrap(),
+            source_navvertex: NavvertexIndex(source_navvertex.unwrap()),
             target,
-            target_navvertex: target_navvertex.unwrap(),
+            target_navvertex: NavvertexIndex(target_navvertex.unwrap()),
         })
     }
 
@@ -218,7 +219,7 @@ impl Navmesh {
         self.source
     }
 
-    pub fn source_navvertex(&self) -> NodeIndex<usize> {
+    pub fn source_navvertex(&self) -> NavvertexIndex {
         self.source_navvertex
     }
 
@@ -226,7 +227,7 @@ impl Navmesh {
         self.target
     }
 
-    pub fn target_navvertex(&self) -> NodeIndex<usize> {
+    pub fn target_navvertex(&self) -> NavvertexIndex {
         self.target_navvertex
     }
 }
@@ -239,6 +240,16 @@ impl GraphBase for Navmesh {
 impl Data for Navmesh {
     type NodeWeight = NavvertexWeight;
     type EdgeWeight = ();
+}
+
+impl DataMap for Navmesh {
+    fn node_weight(&self, vertex: Self::NodeId) -> Option<&Self::NodeWeight> {
+        self.graph.node_weight(vertex.petgraph_index())
+    }
+
+    fn edge_weight(&self, _edge: Self::EdgeId) -> Option<&Self::EdgeWeight> {
+        None
+    }
 }
 
 #[derive(Debug, Clone, Copy)]

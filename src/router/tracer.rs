@@ -1,5 +1,8 @@
 use contracts::{debug_ensures, debug_requires};
-use petgraph::graph::{NodeIndex, UnGraph};
+use petgraph::{
+    data::DataMap,
+    graph::{NodeIndex, UnGraph},
+};
 use thiserror::Error;
 
 use crate::{
@@ -14,7 +17,7 @@ use crate::{
     layout::Layout,
     router::{
         draw::{Draw, DrawException},
-        navmesh::{BinavvertexNodeIndex, NavvertexWeight},
+        navmesh::{BinavvertexNodeIndex, Navmesh, NavvertexIndex, NavvertexWeight},
     },
 };
 
@@ -28,7 +31,7 @@ pub enum TracerException {
 
 #[derive(Debug)]
 pub struct Trace {
-    pub path: Vec<NodeIndex<usize>>,
+    pub path: Vec<NavvertexIndex>,
     pub head: Head,
     pub width: f64,
 }
@@ -45,9 +48,9 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
 
     pub fn start(
         &mut self,
-        _graph: &UnGraph<NavvertexWeight, (), usize>,
+        _navmesh: &Navmesh,
         source: FixedDotIndex,
-        source_navvertex: NodeIndex<usize>,
+        source_navvertex: NavvertexIndex,
         width: f64,
     ) -> Trace {
         Trace {
@@ -59,7 +62,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
 
     pub fn finish(
         &mut self,
-        graph: &UnGraph<NavvertexWeight, (), usize>,
+        _navmesh: &Navmesh,
         trace: &mut Trace,
         target: FixedDotIndex,
         width: f64,
@@ -71,9 +74,9 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     #[debug_ensures(ret.is_ok() -> trace.path.len() == path.len())]
     pub fn rework_path(
         &mut self,
-        graph: &UnGraph<NavvertexWeight, (), usize>,
+        navmesh: &Navmesh,
         trace: &mut Trace,
-        path: &[NodeIndex<usize>],
+        path: &[NavvertexIndex],
         width: f64,
     ) -> Result<(), TracerException> {
         let prefix_length = trace
@@ -84,21 +87,21 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
             .count();
 
         let length = trace.path.len();
-        self.undo_path(graph, trace, length - prefix_length);
-        Ok::<(), TracerException>(self.path(graph, trace, &path[prefix_length..], width)?)
+        self.undo_path(navmesh, trace, length - prefix_length);
+        Ok::<(), TracerException>(self.path(navmesh, trace, &path[prefix_length..], width)?)
     }
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() + path.len()))]
     pub fn path(
         &mut self,
-        graph: &UnGraph<NavvertexWeight, (), usize>,
+        navmesh: &Navmesh,
         trace: &mut Trace,
-        path: &[NodeIndex<usize>],
+        path: &[NavvertexIndex],
         width: f64,
     ) -> Result<(), TracerException> {
         for (i, vertex) in path.iter().enumerate() {
-            if let Err(err) = self.step(graph, trace, *vertex, width) {
-                self.undo_path(graph, trace, i);
+            if let Err(err) = self.step(navmesh, trace, *vertex, width) {
+                self.undo_path(navmesh, trace, i);
                 return Err(err.into());
             }
         }
@@ -107,14 +110,9 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     }
 
     #[debug_ensures(trace.path.len() == old(trace.path.len() - step_count))]
-    pub fn undo_path(
-        &mut self,
-        graph: &UnGraph<NavvertexWeight, (), usize>,
-        trace: &mut Trace,
-        step_count: usize,
-    ) {
+    pub fn undo_path(&mut self, navmesh: &Navmesh, trace: &mut Trace, step_count: usize) {
         for _ in 0..step_count {
-            self.undo_step(graph, trace);
+            self.undo_step(navmesh, trace);
         }
     }
 
@@ -123,12 +121,12 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     #[debug_ensures(ret.is_err() -> trace.path.len() == old(trace.path.len()))]
     pub fn step(
         &mut self,
-        graph: &UnGraph<NavvertexWeight, (), usize>,
+        navmesh: &Navmesh,
         trace: &mut Trace,
-        to: NodeIndex<usize>,
+        to: NavvertexIndex,
         width: f64,
     ) -> Result<(), TracerException> {
-        trace.head = self.wrap(graph, trace.head, to, width)?.into();
+        trace.head = self.wrap(navmesh, trace.head, to, width)?.into();
         trace.path.push(to);
 
         Ok::<(), TracerException>(())
@@ -136,29 +134,29 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
 
     fn wrap(
         &mut self,
-        graph: &UnGraph<NavvertexWeight, (), usize>,
+        navmesh: &Navmesh,
         head: Head,
-        around: NodeIndex<usize>,
+        around: NavvertexIndex,
         width: f64,
     ) -> Result<CaneHead, TracerException> {
         let cw = self
-            .maybe_cw(graph, around)
+            .maybe_cw(navmesh, around)
             .ok_or(TracerException::CannotWrap)?;
 
-        match self.binavvertex(graph, around) {
+        match self.binavvertex(navmesh, around) {
             BinavvertexNodeIndex::FixedDot(dot) => {
-                self.wrap_around_fixed_dot(graph, head, dot, cw, width)
+                self.wrap_around_fixed_dot(navmesh, head, dot, cw, width)
             }
             BinavvertexNodeIndex::FixedBend(_fixed_bend) => todo!(),
             BinavvertexNodeIndex::LooseBend(loose_bend) => {
-                self.wrap_around_loose_bend(graph, head, loose_bend, cw, width)
+                self.wrap_around_loose_bend(navmesh, head, loose_bend, cw, width)
             }
         }
     }
 
     fn wrap_around_fixed_dot(
         &mut self,
-        graph: &UnGraph<NavvertexWeight, (), usize>,
+        _navmesh: &Navmesh,
         head: Head,
         around: FixedDotIndex,
         cw: bool,
@@ -169,7 +167,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
 
     fn wrap_around_loose_bend(
         &mut self,
-        graph: &UnGraph<NavvertexWeight, (), usize>,
+        _navmesh: &Navmesh,
         head: Head,
         around: LooseBendIndex,
         cw: bool,
@@ -179,7 +177,7 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
     }
 
     #[debug_ensures(trace.path.len() == old(trace.path.len() - 1))]
-    pub fn undo_step(&mut self, graph: &UnGraph<NavvertexWeight, (), usize>, trace: &mut Trace) {
+    pub fn undo_step(&mut self, _navmesh: &Navmesh, trace: &mut Trace) {
         if let Head::Cane(head) = trace.head {
             trace.head = Draw::new(self.layout).undo_cane(head).unwrap();
         } else {
@@ -189,27 +187,15 @@ impl<'a, R: RulesTrait> Tracer<'a, R> {
         trace.path.pop();
     }
 
-    fn maybe_cw(
-        &self,
-        graph: &UnGraph<NavvertexWeight, (), usize>,
-        navvertex: NodeIndex<usize>,
-    ) -> Option<bool> {
-        graph.node_weight(navvertex).unwrap().maybe_cw
+    fn maybe_cw(&self, navmesh: &Navmesh, navvertex: NavvertexIndex) -> Option<bool> {
+        navmesh.node_weight(navvertex).unwrap().maybe_cw
     }
 
-    fn binavvertex(
-        &self,
-        graph: &UnGraph<NavvertexWeight, (), usize>,
-        navvertex: NodeIndex<usize>,
-    ) -> BinavvertexNodeIndex {
-        graph.node_weight(navvertex).unwrap().node
+    fn binavvertex(&self, navmesh: &Navmesh, navvertex: NavvertexIndex) -> BinavvertexNodeIndex {
+        navmesh.node_weight(navvertex).unwrap().node
     }
 
-    fn primitive(
-        &self,
-        graph: &UnGraph<NavvertexWeight, (), usize>,
-        navvertex: NodeIndex<usize>,
-    ) -> PrimitiveIndex {
-        self.binavvertex(graph, navvertex).into()
+    fn primitive(&self, navmesh: &Navmesh, navvertex: NavvertexIndex) -> PrimitiveIndex {
+        self.binavvertex(navmesh, navvertex).into()
     }
 }
