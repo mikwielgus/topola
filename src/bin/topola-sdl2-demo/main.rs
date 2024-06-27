@@ -51,7 +51,7 @@ use std::sync::{Arc, Mutex};
 use std::time::Duration;
 
 use topola::math::Circle;
-use topola::router::Router;
+use topola::router::Route;
 
 struct SimpleRules {
     net_clearances: HashMap<(usize, usize), f64>,
@@ -83,7 +83,7 @@ impl RulesTrait for SimpleRules {
 
 // Clunky enum to work around borrow checker.
 enum RouterOrLayout<'a, R: RulesTrait> {
-    Router(&'a mut Router<'a, R>),
+    Router(&'a mut Route<'a, R>),
     Layout(&'a Layout<R>),
 }
 

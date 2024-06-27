@@ -37,7 +37,7 @@ pub enum RouterError {
     Astar(#[from] AstarError),
 }
 
-pub struct Router {
+pub struct Route {
     astar: Astar<Navmesh, f64>,
     trace: Trace,
 }
@@ -149,7 +149,7 @@ impl<'a, R: RulesTrait> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
     }
 }
 
-impl Router {
+impl Route {
     pub fn new(
         layout: &mut Layout<impl RulesTrait>,
         from: FixedDotIndex,
