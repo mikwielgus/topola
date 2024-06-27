@@ -19,7 +19,7 @@ use crate::{
     graph::GetPetgraphIndex,
     layout::Layout,
     router::{
-        astar::{astar, AstarError, AstarStrategy, PathTracker},
+        astar::{astar, Astar, AstarError, AstarStatus, AstarStrategy, PathTracker},
         draw::DrawException,
         navmesh::{
             BinavvertexNodeIndex, Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex,
@@ -37,17 +37,18 @@ pub enum RouterError {
 }
 
 pub struct Router {
-    navmesh: Navmesh,
+    astar: Astar<Navmesh, f64>,
+    trace: Trace,
 }
 
 struct RouterAstarStrategy<'a, R: RulesTrait> {
-    tracer: Tracer<'a, R>,
-    trace: Trace,
-    target: FixedDotIndex,
+    pub tracer: Tracer<'a, R>,
+    pub trace: &'a mut Trace,
+    pub target: FixedDotIndex,
 }
 
 impl<'a, R: RulesTrait> RouterAstarStrategy<'a, R> {
-    pub fn new(tracer: Tracer<'a, R>, trace: Trace, target: FixedDotIndex) -> Self {
+    pub fn new(tracer: Tracer<'a, R>, trace: &'a mut Trace, target: FixedDotIndex) -> Self {
         Self {
             tracer,
             trace,
@@ -87,14 +88,14 @@ impl<'a, R: RulesTrait> RouterAstarStrategy<'a, R> {
     }
 }
 
-impl<'a, R: RulesTrait> AstarStrategy<&Navmesh, f64, BandFirstSegIndex>
+impl<'a, R: RulesTrait> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
     for RouterAstarStrategy<'a, R>
 {
     fn is_goal(
         &mut self,
-        navmesh: &&Navmesh,
+        navmesh: &Navmesh,
         vertex: NavvertexIndex,
-        tracker: &PathTracker<&Navmesh>,
+        tracker: &PathTracker<Navmesh>,
     ) -> Option<BandFirstSegIndex> {
         let new_path = tracker.reconstruct_path_to(vertex);
         let width = self.trace.width;
@@ -108,7 +109,7 @@ impl<'a, R: RulesTrait> AstarStrategy<&Navmesh, f64, BandFirstSegIndex>
             .ok()
     }
 
-    fn edge_cost(&mut self, navmesh: &&Navmesh, edge: NavmeshEdgeReference) -> Option<f64> {
+    fn edge_cost(&mut self, navmesh: &Navmesh, edge: NavmeshEdgeReference) -> Option<f64> {
         if edge.target().petgraph_index() == self.target.petgraph_index() {
             return None;
         }
@@ -130,7 +131,7 @@ impl<'a, R: RulesTrait> AstarStrategy<&Navmesh, f64, BandFirstSegIndex>
         }
     }
 
-    fn estimate_cost(&mut self, navmesh: &&Navmesh, vertex: NavvertexIndex) -> f64 {
+    fn estimate_cost(&mut self, navmesh: &Navmesh, vertex: NavvertexIndex) -> f64 {
         let start_point = PrimitiveIndex::from(navmesh.node_weight(vertex).unwrap().node)
             .primitive(self.tracer.layout.drawing())
             .shape()
@@ -149,53 +150,51 @@ impl<'a, R: RulesTrait> AstarStrategy<&Navmesh, f64, BandFirstSegIndex>
 
 impl Router {
     pub fn new(
-        layout: &Layout<impl RulesTrait>,
+        layout: &mut Layout<impl RulesTrait>,
         from: FixedDotIndex,
         to: FixedDotIndex,
+        width: f64,
     ) -> Result<Self, RouterError> {
-        let navmesh = { Navmesh::new(layout, from, to)? };
-        Ok(Self::new_from_navmesh(navmesh))
+        let navmesh = Navmesh::new(layout, from, to)?;
+        Ok(Self::new_from_navmesh(layout, navmesh, width))
     }
 
-    pub fn new_from_navmesh(navmesh: Navmesh) -> Self {
-        Self { navmesh }
+    pub fn new_from_navmesh(
+        layout: &mut Layout<impl RulesTrait>,
+        navmesh: Navmesh,
+        width: f64,
+    ) -> Self {
+        let source = navmesh.source();
+        let source_navvertex = navmesh.source_navvertex();
+        let target = navmesh.target();
+
+        let mut tracer = Tracer::new(layout);
+        let mut trace = tracer.start(&navmesh, source, source_navvertex, width);
+
+        let mut strategy = RouterAstarStrategy::new(tracer, &mut trace, target);
+        let astar = Astar::new(navmesh, source_navvertex, &mut strategy);
+
+        Self { astar, trace }
     }
 
     pub fn route_band(
         &mut self,
         layout: &mut Layout<impl RulesTrait>,
-        width: f64,
+        _width: f64,
     ) -> Result<BandFirstSegIndex, RouterError> {
-        let mut tracer = Tracer::new(layout);
-        let trace = tracer.start(
-            &self.navmesh,
-            self.navmesh.source(),
-            self.navmesh.source_navvertex(),
-            width,
-        );
+        let tracer = Tracer::new(layout);
+        let target = self.astar.graph.target();
+        let mut strategy = RouterAstarStrategy::new(tracer, &mut self.trace, target);
 
-        let (_cost, _path, band) = astar(
-            &self.navmesh,
-            self.navmesh.source_navvertex(),
-            &mut RouterAstarStrategy::new(tracer, trace, self.navmesh.target()),
-        )?;
+        loop {
+            let status = match self.astar.step(&mut strategy) {
+                Ok(status) => status,
+                Err(err) => return Err(err.into()),
+            };
 
-        Ok(band)
-    }
-
-    /*pub fn reroute_band(
-        &mut self,
-        band: BandIndex,
-        to: Point,
-        width: f64,
-    ) -> Result<BandIndex, RoutingError> {
-        {
-            let mut layout = self.layout.lock().unwrap();
-
-            layout.remove_band(band);
-            layout.move_dot(self.navmesh.to().into(), to).unwrap(); // TODO: Remove `.unwrap()`.
+            if let AstarStatus::Finished(_cost, _path, band) = status {
+                return Ok(band);
+            }
         }
-
-        self.route_band(width)
-    }*/
+    }
 }
