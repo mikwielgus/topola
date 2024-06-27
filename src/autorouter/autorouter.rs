@@ -60,7 +60,7 @@ impl<M: MesadataTrait> Autorouter<M> {
     }
 
     pub fn autoroute_walk(&mut self, selection: &Selection) -> Result<Autoroute, AutorouterError> {
-        Autoroute::new(self.selected_ratlines(selection), self)
+        Autoroute::new(self, self.selected_ratlines(selection))
     }
 
     pub fn undo_autoroute(&mut self, selection: &Selection) {

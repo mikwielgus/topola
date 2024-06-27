@@ -25,7 +25,8 @@ use crate::{
             BinavvertexNodeIndex, Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex,
             NavvertexWeight,
         },
-        tracer::{Trace, Tracer},
+        trace::Trace,
+        tracer::Tracer,
     },
 };
 
@@ -118,13 +119,13 @@ impl<'a, R: RulesTrait> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
 
         let width = self.trace.width;
         let result = self
-            .tracer
-            .step(navmesh, &mut self.trace, edge.target(), width);
+            .trace
+            .step(&mut self.tracer, navmesh, edge.target(), width);
 
         let probe_length = self.bihead_length() - prev_bihead_length;
 
         if result.is_ok() {
-            self.tracer.undo_step(navmesh, &mut self.trace);
+            self.trace.undo_step(&mut self.tracer);
             Some(probe_length)
         } else {
             None
@@ -169,7 +170,7 @@ impl Router {
         let target = navmesh.target();
 
         let mut tracer = Tracer::new(layout);
-        let mut trace = tracer.start(&navmesh, source, source_navvertex, width);
+        let mut trace = tracer.start(source, source_navvertex, width);
 
         let mut strategy = RouterAstarStrategy::new(tracer, &mut trace, target);
         let astar = Astar::new(navmesh, source_navvertex, &mut strategy);

@@ -14,8 +14,8 @@ pub struct Autoroute {
 
 impl Autoroute {
     pub fn new(
-        ratlines: impl IntoIterator<Item = EdgeIndex<usize>> + 'static,
         autorouter: &mut Autorouter<impl MesadataTrait>,
+        ratlines: impl IntoIterator<Item = EdgeIndex<usize>> + 'static,
     ) -> Result<Self, AutorouterError> {
         let mut ratlines_iter = Box::new(ratlines.into_iter());
 

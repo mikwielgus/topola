@@ -38,12 +38,12 @@ pub enum Head {
 
 #[derive(Debug, Clone, Copy)]
 pub struct BareHead {
-    pub dot: FixedDotIndex,
+    pub face: FixedDotIndex,
 }
 
 impl HeadTrait for BareHead {
     fn face(&self) -> DotIndex {
-        self.dot.into()
+        self.face.into()
     }
 }
 
@@ -233,7 +233,7 @@ impl<'a, CW: Copy, R: RulesTrait> Guide<'a, CW, R> {
 
     pub fn head(&self, face: DotIndex) -> Head {
         match face {
-            DotIndex::Fixed(dot) => BareHead { dot }.into(),
+            DotIndex::Fixed(dot) => BareHead { face: dot }.into(),
             DotIndex::Loose(dot) => self.cane_head(dot).into(),
         }
     }
