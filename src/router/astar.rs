@@ -10,7 +10,7 @@ use std::collections::{BinaryHeap, HashMap};
 use std::hash::Hash;
 
 use petgraph::algo::Measure;
-use petgraph::visit::{EdgeRef, GraphBase, IntoEdges};
+use petgraph::visit::{EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges};
 use thiserror::Error;
 
 use std::cmp::Ordering;
@@ -97,19 +97,25 @@ where
 
 pub trait AstarStrategy<G, K, R>
 where
-    G: IntoEdges,
-    K: Measure + Copy,
+    G: GraphBase,
     G::NodeId: Eq + Hash,
+    for<'a> &'a G: IntoEdges<NodeId = G::NodeId>,
+    K: Measure + Copy,
 {
     fn is_goal(&mut self, graph: &G, node: G::NodeId, tracker: &PathTracker<G>) -> Option<R>;
-    fn edge_cost(&mut self, graph: &G, edge: G::EdgeRef) -> Option<K>;
+    fn edge_cost<'a>(
+        &mut self,
+        graph: &'a G,
+        edge: <&'a G as IntoEdgeReferences>::EdgeRef,
+    ) -> Option<K>;
     fn estimate_cost(&mut self, graph: &G, node: G::NodeId) -> K;
 }
 
 pub struct Astar<G, K>
 where
-    G: IntoEdges,
+    G: GraphBase,
     G::NodeId: Eq + Hash,
+    for<'a> &'a G: IntoEdges<NodeId = G::NodeId>,
     K: Measure + Copy,
 {
     pub graph: G,
@@ -127,8 +133,9 @@ pub enum AstarError {
 
 pub enum AstarStatus<G, K, R>
 where
-    G: IntoEdges,
+    G: GraphBase,
     G::NodeId: Eq + Hash,
+    for<'a> &'a G: IntoEdges<NodeId = G::NodeId>,
     K: Measure + Copy,
 {
     Running,
@@ -137,8 +144,9 @@ where
 
 impl<G, K> Astar<G, K>
 where
-    G: IntoEdges,
+    G: GraphBase,
     G::NodeId: Eq + Hash,
+    for<'a> &'a G: IntoEdges<NodeId = G::NodeId>,
     K: Measure + Copy,
 {
     pub fn new<R>(graph: G, start: G::NodeId, strategy: &mut impl AstarStrategy<G, K, R>) -> Self {
@@ -152,8 +160,10 @@ where
 
         let zero_score = K::default();
         this.scores.insert(start, zero_score);
-        this.visit_next
-            .push(MinScored(strategy.estimate_cost(&&graph, start), start));
+        this.visit_next.push(MinScored(
+            strategy.estimate_cost(&&this.graph, start),
+            start,
+        ));
         this
     }
 
@@ -224,8 +234,9 @@ pub fn astar<G, K, R>(
     strategy: &mut impl AstarStrategy<G, K, R>,
 ) -> Result<(K, Vec<G::NodeId>, R), AstarError>
 where
-    G: IntoEdges,
+    G: GraphBase,
     G::NodeId: Eq + Hash,
+    for<'a> &'a G: IntoEdges<NodeId = G::NodeId>,
     K: Measure + Copy,
 {
     let mut astar = Astar::new(graph, start, strategy);
