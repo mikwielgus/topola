@@ -115,31 +115,6 @@ impl<M: MesadataTrait> Board<M> {
         zone
     }
 
-    pub fn route_band(
-        &mut self,
-        navmesh: Navmesh,
-        width: f64,
-    ) -> Result<BandFirstSegIndex, RouterError> {
-        let source_pinname = self
-            .node_pinname(GenericNode::Primitive(navmesh.source().into()))
-            .unwrap()
-            .to_string();
-        let target_pinname = self
-            .node_pinname(GenericNode::Primitive(navmesh.target().into()))
-            .unwrap()
-            .to_string();
-
-        let mut router = Router::new(self.layout_mut());
-        let result = router.route(navmesh.source(), navmesh.target(), width);
-
-        if let Ok(band) = result {
-            self.pinname_pair_to_band
-                .insert((source_pinname, target_pinname), band);
-        }
-
-        result
-    }
-
     pub fn zone_apex(&mut self, zone: GenericIndex<ZoneWeight>) -> FixedDotIndex {
         if let Some(apex) = self.layout.zone(zone).maybe_apex() {
             apex
@@ -160,6 +135,24 @@ impl<M: MesadataTrait> Board<M> {
 
     pub fn node_pinname(&self, node: NodeIndex) -> Option<&String> {
         self.node_to_pinname.get(&node)
+    }
+
+    pub fn try_set_band_between_nodes(
+        &mut self,
+        source: FixedDotIndex,
+        target: FixedDotIndex,
+        band: BandFirstSegIndex,
+    ) {
+        let source_pinname = self
+            .node_pinname(GenericNode::Primitive(source.into()))
+            .unwrap()
+            .to_string();
+        let target_pinname = self
+            .node_pinname(GenericNode::Primitive(target.into()))
+            .unwrap()
+            .to_string();
+        self.pinname_pair_to_band
+            .insert((source_pinname, target_pinname), band);
     }
 
     pub fn band_between_pins(&self, pinname1: &str, pinname2: &str) -> Option<BandFirstSegIndex> {

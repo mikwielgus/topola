@@ -3,7 +3,7 @@ use petgraph::graph::EdgeIndex;
 use crate::{
     autorouter::{Autorouter, AutorouterError, AutorouterStatus},
     board::mesadata::MesadataTrait,
-    router::navmesh::Navmesh,
+    router::{navmesh::Navmesh, Router},
 };
 
 pub struct Autoroute {
@@ -54,23 +54,24 @@ impl Autoroute {
             (None, None)
         };
 
-        match autorouter.board.route_band(
-            std::mem::replace(&mut self.navmesh, new_navmesh).unwrap(),
-            100.0,
-        ) {
-            Ok(band) => {
-                autorouter
-                    .ratsnest
-                    .assign_band_to_ratline(self.cur_ratline.unwrap(), band);
-                self.cur_ratline = new_ratline;
+        let navmesh = std::mem::replace(&mut self.navmesh, new_navmesh).unwrap();
+        let mut router = Router::new(autorouter.board.layout_mut());
 
-                if self.navmesh.is_some() {
-                    Ok(AutorouterStatus::Running)
-                } else {
-                    Ok(AutorouterStatus::Finished)
-                }
-            }
-            Err(err) => Err(AutorouterError::Router(err)),
+        let band = router.route(navmesh.source(), navmesh.target(), 100.0)?;
+
+        autorouter
+            .ratsnest
+            .assign_band_to_ratline(self.cur_ratline.unwrap(), band);
+        self.cur_ratline = new_ratline;
+
+        autorouter
+            .board
+            .try_set_band_between_nodes(navmesh.source(), navmesh.target(), band);
+
+        if self.navmesh.is_some() {
+            Ok(AutorouterStatus::Running)
+        } else {
+            Ok(AutorouterStatus::Finished)
         }
     }
 
