@@ -34,7 +34,8 @@ use topola::{
     router::{
         draw::DrawException,
         navmesh::{BinavvertexNodeIndex, Navmesh},
-        tracer::{Trace, Tracer},
+        trace::Trace,
+        tracer::Tracer,
     },
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
