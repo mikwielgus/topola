@@ -15,7 +15,7 @@ use crate::{
         Layout, NodeIndex,
     },
     math::Circle,
-    router::{navmesh::Navmesh, Route, RouterError},
+    router::{navmesh::Navmesh, route::Route, Router, RouterError},
 };
 
 #[derive(Debug)]
@@ -129,8 +129,8 @@ impl<M: MesadataTrait> Board<M> {
             .unwrap()
             .to_string();
 
-        let mut router = Route::new_from_navmesh(self.layout_mut(), navmesh, 100.0);
-        let result = router.route_band(self.layout_mut(), 100.0);
+        let mut router = Router::new(self.layout_mut());
+        let result = router.route(navmesh.source(), navmesh.target(), width);
 
         if let Ok(band) = result {
             self.pinname_pair_to_band

@@ -1,0 +1,190 @@
+use geo::EuclideanDistance;
+use petgraph::{data::DataMap, visit::EdgeRef};
+use thiserror::Error;
+
+use crate::{
+    drawing::{
+        band::BandFirstSegIndex,
+        dot::{DotIndex, FixedDotIndex},
+        graph::{MakePrimitive, PrimitiveIndex},
+        guide::{Head, HeadTrait},
+        primitive::MakePrimitiveShape,
+        rules::RulesTrait,
+    },
+    geometry::{primitive::PrimitiveShapeTrait, shape::ShapeTrait},
+    graph::GetPetgraphIndex,
+    layout::Layout,
+    router::{
+        astar::{AstarError, AstarStatus, AstarStrategy, PathTracker},
+        navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
+        route::Route,
+        trace::Trace,
+        tracer::Tracer,
+    },
+};
+
+#[derive(Error, Debug, Clone)]
+#[error("routing failed")]
+pub enum RouterError {
+    Navmesh(#[from] NavmeshError),
+    Astar(#[from] AstarError),
+}
+
+pub enum RouterStatus {
+    Running,
+    Finished(BandFirstSegIndex),
+}
+
+pub struct RouterAstarStrategy<'a, R: RulesTrait> {
+    pub tracer: Tracer<'a, R>,
+    pub trace: &'a mut Trace,
+    pub target: FixedDotIndex,
+}
+
+impl<'a, R: RulesTrait> RouterAstarStrategy<'a, R> {
+    pub fn new(tracer: Tracer<'a, R>, trace: &'a mut Trace, target: FixedDotIndex) -> Self {
+        Self {
+            tracer,
+            trace,
+            target,
+        }
+    }
+
+    fn bihead_length(&self) -> f64 {
+        self.head_length(&self.trace.head)
+            + match self.trace.head.face() {
+                DotIndex::Fixed(..) => 0.0,
+                DotIndex::Loose(face) => {
+                    self.head_length(&self.tracer.layout.drawing().guide().rear_head(face))
+                }
+            }
+    }
+
+    fn head_length(&self, head: &Head) -> f64 {
+        match head {
+            Head::Bare(..) => 0.0,
+            Head::Cane(cane_head) => {
+                self.tracer
+                    .layout
+                    .drawing()
+                    .primitive(cane_head.cane.seg)
+                    .shape()
+                    .length()
+                    + self
+                        .tracer
+                        .layout
+                        .drawing()
+                        .primitive(cane_head.cane.bend)
+                        .shape()
+                        .length()
+            }
+        }
+    }
+}
+
+impl<'a, R: RulesTrait> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
+    for RouterAstarStrategy<'a, R>
+{
+    fn is_goal(
+        &mut self,
+        navmesh: &Navmesh,
+        vertex: NavvertexIndex,
+        tracker: &PathTracker<Navmesh>,
+    ) -> Option<BandFirstSegIndex> {
+        let new_path = tracker.reconstruct_path_to(vertex);
+        let width = self.trace.width;
+
+        self.tracer
+            .rework_path(navmesh, &mut self.trace, &new_path[..], width)
+            .unwrap();
+
+        self.tracer
+            .finish(navmesh, &mut self.trace, self.target, width)
+            .ok()
+    }
+
+    fn edge_cost(&mut self, navmesh: &Navmesh, edge: NavmeshEdgeReference) -> Option<f64> {
+        if edge.target().petgraph_index() == self.target.petgraph_index() {
+            return None;
+        }
+
+        let prev_bihead_length = self.bihead_length();
+
+        let width = self.trace.width;
+        let result = self
+            .trace
+            .step(&mut self.tracer, navmesh, edge.target(), width);
+
+        let probe_length = self.bihead_length() - prev_bihead_length;
+
+        if result.is_ok() {
+            self.trace.undo_step(&mut self.tracer);
+            Some(probe_length)
+        } else {
+            None
+        }
+    }
+
+    fn estimate_cost(&mut self, navmesh: &Navmesh, vertex: NavvertexIndex) -> f64 {
+        let start_point = PrimitiveIndex::from(navmesh.node_weight(vertex).unwrap().node)
+            .primitive(self.tracer.layout.drawing())
+            .shape()
+            .center();
+        let end_point = self
+            .tracer
+            .layout
+            .drawing()
+            .primitive(self.target)
+            .shape()
+            .center();
+
+        end_point.euclidean_distance(&start_point)
+    }
+}
+
+pub struct Router<'a, R: RulesTrait> {
+    layout: &'a mut Layout<R>,
+}
+
+impl<'a, R: RulesTrait> Router<'a, R> {
+    pub fn new(layout: &'a mut Layout<R>) -> Self {
+        Self { layout }
+    }
+
+    pub fn route(
+        &mut self,
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+        width: f64,
+    ) -> Result<BandFirstSegIndex, RouterError> {
+        let mut route = self.route_walk(from, to, width)?;
+
+        loop {
+            let status = match route.step(self) {
+                Ok(status) => status,
+                Err(err) => return Err(err),
+            };
+
+            if let RouterStatus::Finished(band) = status {
+                return Ok(band);
+            }
+        }
+    }
+
+    pub fn route_walk(
+        &mut self,
+        from: FixedDotIndex,
+        to: FixedDotIndex,
+        width: f64,
+    ) -> Result<Route, RouterError> {
+        Route::new(self, from, to, width)
+    }
+
+    pub fn layout_mut(&mut self) -> &mut Layout<R> {
+        &mut self.layout
+    }
+
+    pub fn layout(&self) -> &Layout<R> {
+        &self.layout
+    }
+}
