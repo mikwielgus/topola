@@ -45,16 +45,6 @@ use crate::{
     viewport::Viewport,
 };
 
-#[derive(Debug, Default)]
-pub struct SharedData {
-    pub from: Option<FixedDotIndex>,
-    pub to: Option<FixedDotIndex>,
-    pub navmesh: Option<Navmesh>,
-    pub path: Vec<BinavvertexNodeIndex>,
-    pub ghosts: Vec<PrimitiveShape>,
-    pub highlighteds: Vec<PrimitiveIndex>,
-}
-
 /// Deserialize/Serialize is needed to persist app state between restarts.
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
@@ -63,10 +53,7 @@ pub struct App {
     overlay: Option<Overlay>,
 
     #[serde(skip)]
-    invoker: Option<Arc<Mutex<Invoker<SpecctraMesadata>>>>,
-
-    #[serde(skip)]
-    shared_data: Arc<Mutex<SharedData>>,
+    invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
 
     #[serde(skip)]
     text_channel: (Sender<String>, Receiver<String>),
@@ -88,8 +75,7 @@ impl Default for App {
     fn default() -> Self {
         Self {
             overlay: None,
-            invoker: None,
-            shared_data: Default::default(),
+            invoker: Arc::new(Mutex::new(None)),
             text_channel: channel(),
             viewport: Viewport::new(),
             top: Top::new(),
@@ -125,7 +111,7 @@ impl eframe::App for App {
                 let board = design.make_board();
                 self.overlay = Some(Overlay::new(&board).unwrap());
                 self.layers = Some(Layers::new(&board));
-                self.invoker = Some(Arc::new(Mutex::new(Invoker::new(
+                self.invoker = Arc::new(Mutex::new(Some(Invoker::new(
                     Autorouter::new(board).unwrap(),
                 ))));
             }
@@ -135,7 +121,7 @@ impl eframe::App for App {
                 let board = design.make_board();
                 self.overlay = Some(Overlay::new(&board).unwrap());
                 self.layers = Some(Layers::new(&board));
-                self.invoker = Some(Arc::new(Mutex::new(Invoker::new(
+                self.invoker = Arc::new(Mutex::new(Some(Invoker::new(
                     Autorouter::new(board).unwrap(),
                 ))));
             }
@@ -143,23 +129,21 @@ impl eframe::App for App {
 
         self.top.update(
             ctx,
-            self.shared_data.clone(),
             self.text_channel.0.clone(),
-            &self.invoker,
+            self.invoker.clone(),
             &mut self.overlay,
         );
 
         if let Some(ref mut layers) = self.layers {
-            if let Some(invoker_arc_mutex) = &self.invoker {
-                layers.update(ctx, invoker_arc_mutex.lock().unwrap().autorouter().board());
+            if let Some(invoker) = self.invoker.lock().unwrap().as_ref() {
+                layers.update(ctx, invoker.autorouter().board());
             }
         }
 
         let viewport_rect = self.viewport.update(
             ctx,
             &self.top,
-            self.shared_data.clone(),
-            &self.invoker,
+            &mut self.invoker.lock().unwrap(),
             &mut self.overlay,
             &self.layers,
         );

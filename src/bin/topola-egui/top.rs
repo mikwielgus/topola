@@ -9,7 +9,7 @@ use topola::{
 };
 
 use crate::{
-    app::{channel_text, execute, SharedData},
+    app::{channel_text, execute},
     overlay::Overlay,
 };
 
@@ -31,9 +31,8 @@ impl Top {
     pub fn update(
         &mut self,
         ctx: &egui::Context,
-        shared_data: Arc<Mutex<SharedData>>,
         sender: Sender<String>,
-        maybe_invoker: &Option<Arc<Mutex<Invoker<SpecctraMesadata>>>>,
+        maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
         maybe_overlay: &Option<Overlay>,
     ) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -56,37 +55,51 @@ impl Top {
                     ui.separator();
 
                     if ui.button("Load history").clicked() {
-                        if let Some(invoker_arc_mutex) = &maybe_invoker {
-                            let invoker_arc_mutex = invoker_arc_mutex.clone();
-                            let ctx = ui.ctx().clone();
-                            let task = rfd::AsyncFileDialog::new().pick_file();
+                        let invoker_arc_mutex = maybe_invoker.clone();
+                        let ctx = ui.ctx().clone();
+                        let task = rfd::AsyncFileDialog::new().pick_file();
 
-                            execute(async move {
-                                if let Some(file_handle) = task.await {
-                                    let path = file_handle.path();
-                                    let mut invoker = invoker_arc_mutex.lock().unwrap();
-                                    let mut file = File::open(path).unwrap();
-                                    invoker.replay(serde_json::from_reader(file).unwrap());
-                                }
-                            });
-                        }
+                        execute(async move {
+                            let Some(file_handle) = task.await else {
+                                return;
+                            };
+
+                            let path = file_handle.path();
+                            let Ok(mut file) = File::open(path) else {
+                                return;
+                            };
+
+                            let mut locked_invoker = invoker_arc_mutex.lock().unwrap();
+                            let Some(mut invoker) = locked_invoker.as_mut() else {
+                                return;
+                            };
+
+                            invoker.replay(serde_json::from_reader(file).unwrap());
+                        });
                     }
 
                     if ui.button("Save history").clicked() {
-                        if let Some(invoker_arc_mutex) = &maybe_invoker {
-                            let invoker_arc_mutex = invoker_arc_mutex.clone();
-                            let ctx = ui.ctx().clone();
-                            let task = rfd::AsyncFileDialog::new().save_file();
+                        let invoker_arc_mutex = maybe_invoker.clone();
+                        let ctx = ui.ctx().clone();
+                        let task = rfd::AsyncFileDialog::new().save_file();
 
-                            execute(async move {
-                                if let Some(file_handle) = task.await {
-                                    let path = file_handle.path();
-                                    let mut invoker = invoker_arc_mutex.lock().unwrap();
-                                    let mut file = File::create(path).unwrap();
-                                    serde_json::to_writer_pretty(file, invoker.history());
-                                }
-                            });
-                        }
+                        execute(async move {
+                            let Some(file_handle) = task.await else {
+                                return;
+                            };
+
+                            let path = file_handle.path();
+                            let Ok(mut file) = File::create(path) else {
+                                return;
+                            };
+
+                            let mut locked_invoker = invoker_arc_mutex.lock().unwrap();
+                            let Some(mut invoker) = locked_invoker.as_mut() else {
+                                return;
+                            };
+
+                            serde_json::to_writer_pretty(file, invoker.history());
+                        });
                     }
 
                     ui.separator();
@@ -102,45 +115,39 @@ impl Top {
                 ui.separator();
 
                 if ui.button("Autoroute").clicked() {
-                    if let (Some(invoker_arc_mutex), Some(overlay)) =
-                        (&maybe_invoker, &maybe_overlay)
+                    if let (Some(invoker), Some(ref overlay)) =
+                        (maybe_invoker.lock().unwrap().as_mut(), maybe_overlay)
                     {
-                        let invoker_arc_mutex = invoker_arc_mutex.clone();
-                        let shared_data_arc_mutex = shared_data.clone();
                         let selection = overlay.selection().clone();
+                        let mut execute = invoker.execute_walk(Command::Autoroute(selection));
 
-                        execute(async move {
-                            let mut invoker = invoker_arc_mutex.lock().unwrap();
-                            let mut execute = invoker.execute_walk(Command::Autoroute(selection));
+                        if let Execute::Autoroute(ref mut autoroute) = execute {
+                            let from = autoroute.navmesh().as_ref().unwrap().source();
+                            let to = autoroute.navmesh().as_ref().unwrap().target();
 
-                            if let Execute::Autoroute(ref mut autoroute) = execute {
-                                let from = autoroute.navmesh().as_ref().unwrap().source();
-                                let to = autoroute.navmesh().as_ref().unwrap().target();
+                            /*{
+                                let mut shared_data = shared_data_arc_mutex.lock().unwrap();
+                                shared_data.from = Some(from);
+                                shared_data.to = Some(to);
+                                shared_data.navmesh = autoroute.navmesh().cloned();
+                            }*/
+                        }
 
-                                {
-                                    let mut shared_data = shared_data_arc_mutex.lock().unwrap();
-                                    shared_data.from = Some(from);
-                                    shared_data.to = Some(to);
-                                    shared_data.navmesh = autoroute.navmesh().cloned();
-                                }
+                        let _ = loop {
+                            let status = match execute.step(invoker) {
+                                Ok(status) => status,
+                                Err(err) => return,
+                            };
+
+                            if let InvokerStatus::Finished = status {
+                                break;
                             }
 
-                            let _ = loop {
-                                let status = match execute.step(&mut invoker) {
-                                    Ok(status) => status,
-                                    Err(err) => return,
-                                };
-
-                                if let InvokerStatus::Finished = status {
-                                    break;
-                                }
-
-                                if let Execute::Autoroute(ref mut autoroute) = execute {
-                                    shared_data_arc_mutex.lock().unwrap().navmesh =
-                                        autoroute.navmesh().cloned();
-                                }
-                            };
-                        });
+                            /*if let Execute::Autoroute(ref mut autoroute) = execute {
+                                shared_data_arc_mutex.lock().unwrap().navmesh =
+                                    autoroute.navmesh().cloned();
+                            }*/
+                        };
                     }
                 }
 
@@ -151,22 +158,16 @@ impl Top {
                 if ui.button("Undo").clicked()
                     || ctx.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Z))
                 {
-                    if let Some(invoker_arc_mutex) = &maybe_invoker {
-                        let invoker_arc_mutex = invoker_arc_mutex.clone();
-                        execute(async move {
-                            invoker_arc_mutex.lock().unwrap().undo();
-                        });
+                    if let Some(invoker) = maybe_invoker.lock().unwrap().as_mut() {
+                        invoker.undo();
                     }
                 }
 
                 if ui.button("Redo").clicked()
                     || ctx.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Y))
                 {
-                    if let Some(invoker_arc_mutex) = &maybe_invoker {
-                        let invoker_arc_mutex = invoker_arc_mutex.clone();
-                        execute(async move {
-                            invoker_arc_mutex.lock().unwrap().redo();
-                        });
+                    if let Some(ref mut invoker) = maybe_invoker.lock().unwrap().as_mut() {
+                        invoker.redo();
                     }
                 }
 

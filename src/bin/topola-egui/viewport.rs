@@ -1,5 +1,3 @@
-use std::sync::{Arc, Mutex};
-
 use geo::point;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use topola::{
@@ -15,13 +13,7 @@ use topola::{
     specctra::mesadata::SpecctraMesadata,
 };
 
-use crate::{
-    app::{execute, SharedData},
-    layers::Layers,
-    overlay::Overlay,
-    painter::Painter,
-    top::Top,
-};
+use crate::{app::execute, layers::Layers, overlay::Overlay, painter::Painter, top::Top};
 
 pub struct Viewport {
     pub from_rect: egui::emath::Rect,
@@ -38,8 +30,7 @@ impl Viewport {
         &mut self,
         ctx: &egui::Context,
         top: &Top,
-        shared_data: Arc<Mutex<SharedData>>,
-        maybe_invoker: &Option<Arc<Mutex<Invoker<SpecctraMesadata>>>>,
+        maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
         maybe_overlay: &mut Option<Overlay>,
         maybe_layers: &Option<Layers>,
     ) -> egui::Rect {
@@ -74,27 +65,21 @@ impl Viewport {
                 let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
                 let mut painter = Painter::new(ui, transform);
 
-                if let Some(invoker_arc_mutex) = maybe_invoker {
+                if let Some(ref mut invoker) = maybe_invoker {
                     if ctx.input(|i| i.pointer.any_click()) {
                         if top.is_placing_via {
-                            let invoker_arc_mutex = invoker_arc_mutex.clone();
-
-                            execute(async move {
-                                let mut invoker = invoker_arc_mutex.lock().unwrap();
-                                invoker.execute(
-                                    Command::PlaceVia(ViaWeight {
-                                        from_layer: 0,
-                                        to_layer: 0,
-                                        circle: Circle {
-                                            pos: point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
-                                            r: 100.0,
-                                        },
-                                        maybe_net: Some(1234),
-                                    }),
-                                );
-                            });
+                            invoker.execute(
+                                Command::PlaceVia(ViaWeight {
+                                    from_layer: 0,
+                                    to_layer: 0,
+                                    circle: Circle {
+                                        pos: point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
+                                        r: 100.0,
+                                    },
+                                    maybe_net: Some(1234),
+                                }),
+                            );
                         } else if let Some(overlay) = maybe_overlay {
-                            let invoker = invoker_arc_mutex.lock().unwrap();
                             overlay.click(
                                 invoker.autorouter().board(),
                                 point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
@@ -102,9 +87,8 @@ impl Viewport {
                         }
                     }
 
-                    if let (invoker, shared_data, Some(overlay)) = (
-                        &invoker_arc_mutex.lock().unwrap(),
-                        shared_data.lock().unwrap(),
+                    if let (Some(invoker), Some(overlay)) = (
+                        maybe_invoker,
                         maybe_overlay,
                     ) {
                         let board = invoker.autorouter().board();
@@ -115,7 +99,7 @@ impl Viewport {
                                     for primitive in board.layout().drawing().layer_primitive_nodes(i) {
                                         let shape = primitive.primitive(board.layout().drawing()).shape();
 
-                                        let color = if shared_data.highlighteds.contains(&primitive)
+                                        /*let color = if shared_data.highlighteds.contains(&primitive)
                                             || overlay
                                                 .selection()
                                                 .contains_node(board, GenericNode::Primitive(primitive))
@@ -123,7 +107,8 @@ impl Viewport {
                                             layers.highlight_colors[i]
                                         } else {
                                             layers.colors[i]
-                                        };
+                                        };*/
+                                        let color = layers.colors[i];
 
                                         painter.paint_primitive(&shape, color);
                                     }
@@ -167,7 +152,7 @@ impl Viewport {
                             }
                         }
 
-                        if top.show_navmesh {
+                        /*if top.show_navmesh {
                             if let Some(navmesh) = &shared_data.navmesh {
                                 for edge in navmesh.graph().edge_references() {
                                     let from = PrimitiveIndex::from(navmesh.graph().node_weight(edge.source()).unwrap().node)
@@ -227,7 +212,7 @@ impl Viewport {
                                 },
                                 egui::Color32::from_rgb(255, 255, 100),
                             );
-                        }
+                        }*/
                     }
                 }
 
