@@ -78,4 +78,8 @@ impl Route {
             AstarStatus::Finished(_cost, _path, band) => Ok(RouterStatus::Finished(band)),
         }
     }
+
+    pub fn navmesh(&self) -> &Navmesh {
+        &self.astar.graph
+    }
 }

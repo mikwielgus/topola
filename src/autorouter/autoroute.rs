@@ -3,12 +3,12 @@ use petgraph::graph::EdgeIndex;
 use crate::{
     autorouter::{Autorouter, AutorouterError, AutorouterStatus},
     board::mesadata::MesadataTrait,
-    router::{navmesh::Navmesh, Router},
+    router::{navmesh::Navmesh, route::Route, Router, RouterStatus},
 };
 
 pub struct Autoroute {
     ratlines_iter: Box<dyn Iterator<Item = EdgeIndex<usize>>>,
-    navmesh: Option<Navmesh>, // Useful for debugging.
+    route: Option<Route>,
     cur_ratline: Option<EdgeIndex<usize>>,
 }
 
@@ -24,12 +24,12 @@ impl Autoroute {
         };
 
         let (source, target) = autorouter.ratline_endpoints(cur_ratline);
-        let navmesh = Some(Navmesh::new(autorouter.board.layout(), source, target)?);
+        let mut router = Router::new(autorouter.board.layout_mut());
 
         let this = Self {
             ratlines_iter,
-            navmesh,
             cur_ratline: Some(cur_ratline),
+            route: Some(router.route_walk(source, target, 100.0)?),
         };
 
         Ok(this)
@@ -39,43 +39,45 @@ impl Autoroute {
         &mut self,
         autorouter: &mut Autorouter<M>,
     ) -> Result<AutorouterStatus, AutorouterError> {
-        let (new_navmesh, new_ratline) = if let Some(cur_ratline) = self.ratlines_iter.next() {
-            let (source, target) = autorouter.ratline_endpoints(cur_ratline);
-
-            (
-                Some(
-                    Navmesh::new(autorouter.board.layout(), source, target)
-                        .ok()
-                        .unwrap(),
-                ),
-                Some(cur_ratline),
-            )
-        } else {
-            (None, None)
+        let Some(ref mut route) = self.route else {
+            return Ok(AutorouterStatus::Finished);
         };
 
-        let navmesh = std::mem::replace(&mut self.navmesh, new_navmesh).unwrap();
-        let mut router = Router::new(autorouter.board.layout_mut());
+        let (source, target) = autorouter.ratline_endpoints(self.cur_ratline.unwrap());
 
-        let band = router.route(navmesh.source(), navmesh.target(), 100.0)?;
+        let band = {
+            let mut router = Router::new(autorouter.board.layout_mut());
+
+            let RouterStatus::Finished(band) = route.step(&mut router)? else {
+                return Ok(AutorouterStatus::Running);
+            };
+            band
+        };
 
         autorouter
             .ratsnest
             .assign_band_to_ratline(self.cur_ratline.unwrap(), band);
-        self.cur_ratline = new_ratline;
 
         autorouter
             .board
-            .try_set_band_between_nodes(navmesh.source(), navmesh.target(), band);
+            .try_set_band_between_nodes(source, target, band);
 
-        if self.navmesh.is_some() {
-            Ok(AutorouterStatus::Running)
-        } else {
-            Ok(AutorouterStatus::Finished)
-        }
+        let Some(new_ratline) = self.ratlines_iter.next() else {
+            self.route = None;
+            self.cur_ratline = None;
+            return Ok(AutorouterStatus::Finished);
+        };
+
+        let (source, target) = autorouter.ratline_endpoints(new_ratline);
+        let mut router = Router::new(autorouter.board.layout_mut());
+
+        self.cur_ratline = Some(new_ratline);
+        self.route = Some(router.route_walk(source, target, 100.0)?);
+
+        Ok(AutorouterStatus::Running)
     }
 
-    pub fn navmesh(&self) -> &Option<Navmesh> {
-        &self.navmesh
+    pub fn navmesh(&self) -> Option<&Navmesh> {
+        self.route.as_ref().map(|route| route.navmesh())
     }
 }

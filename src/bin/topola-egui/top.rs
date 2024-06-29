@@ -121,7 +121,7 @@ impl Top {
                                     let mut shared_data = shared_data_arc_mutex.lock().unwrap();
                                     shared_data.from = Some(from);
                                     shared_data.to = Some(to);
-                                    shared_data.navmesh = autoroute.navmesh().clone();
+                                    shared_data.navmesh = autoroute.navmesh().cloned();
                                 }
                             }
 
@@ -137,7 +137,7 @@ impl Top {
 
                                 if let Execute::Autoroute(ref mut autoroute) = execute {
                                     shared_data_arc_mutex.lock().unwrap().navmesh =
-                                        autoroute.navmesh().clone();
+                                        autoroute.navmesh().cloned();
                                 }
                             };
                         });
