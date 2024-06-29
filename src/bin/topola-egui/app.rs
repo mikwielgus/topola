@@ -50,10 +50,13 @@ use crate::{
 #[serde(default)]
 pub struct App {
     #[serde(skip)]
-    overlay: Option<Overlay>,
+    maybe_overlay: Option<Overlay>,
 
     #[serde(skip)]
-    invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
+    arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
+
+    #[serde(skip)]
+    maybe_execute: Option<Execute>,
 
     #[serde(skip)]
     text_channel: (Sender<String>, Receiver<String>),
@@ -68,19 +71,20 @@ pub struct App {
     bottom: Bottom,
 
     #[serde(skip)]
-    layers: Option<Layers>,
+    maybe_layers: Option<Layers>,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
-            overlay: None,
-            invoker: Arc::new(Mutex::new(None)),
+            maybe_overlay: None,
+            arc_mutex_maybe_invoker: Arc::new(Mutex::new(None)),
+            maybe_execute: None,
             text_channel: channel(),
             viewport: Viewport::new(),
             top: Top::new(),
             bottom: Bottom::new(),
-            layers: None,
+            maybe_layers: None,
         }
     }
 }
@@ -95,6 +99,44 @@ impl App {
 
         Default::default()
     }
+
+    fn update_state(&mut self) {
+        if cfg!(target_arch = "wasm32") {
+            if let Ok(file_contents) = self.text_channel.1.try_recv() {
+                let design = SpecctraDesign::load_from_string(file_contents).unwrap();
+                let board = design.make_board();
+                self.maybe_overlay = Some(Overlay::new(&board).unwrap());
+                self.maybe_layers = Some(Layers::new(&board));
+                self.arc_mutex_maybe_invoker = Arc::new(Mutex::new(Some(Invoker::new(
+                    Autorouter::new(board).unwrap(),
+                ))));
+            }
+        } else {
+            if let Ok(path) = self.text_channel.1.try_recv() {
+                let design = SpecctraDesign::load_from_file(&path).unwrap();
+                let board = design.make_board();
+                self.maybe_overlay = Some(Overlay::new(&board).unwrap());
+                self.maybe_layers = Some(Layers::new(&board));
+                self.arc_mutex_maybe_invoker = Arc::new(Mutex::new(Some(Invoker::new(
+                    Autorouter::new(board).unwrap(),
+                ))));
+            }
+        }
+
+        if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
+            if let Some(ref mut execute) = self.maybe_execute {
+                let status = match execute.step(invoker) {
+                    Ok(status) => status,
+                    Err(err) => return,
+                };
+
+                if let InvokerStatus::Finished = status {
+                    self.maybe_execute = None;
+                    return;
+                }
+            }
+        }
+    }
 }
 
 impl eframe::App for App {
@@ -105,37 +147,18 @@ impl eframe::App for App {
 
     /// Called each time the UI has to be repainted.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        if cfg!(target_arch = "wasm32") {
-            if let Ok(file_contents) = self.text_channel.1.try_recv() {
-                let design = SpecctraDesign::load_from_string(file_contents).unwrap();
-                let board = design.make_board();
-                self.overlay = Some(Overlay::new(&board).unwrap());
-                self.layers = Some(Layers::new(&board));
-                self.invoker = Arc::new(Mutex::new(Some(Invoker::new(
-                    Autorouter::new(board).unwrap(),
-                ))));
-            }
-        } else {
-            if let Ok(path) = self.text_channel.1.try_recv() {
-                let design = SpecctraDesign::load_from_file(&path).unwrap();
-                let board = design.make_board();
-                self.overlay = Some(Overlay::new(&board).unwrap());
-                self.layers = Some(Layers::new(&board));
-                self.invoker = Arc::new(Mutex::new(Some(Invoker::new(
-                    Autorouter::new(board).unwrap(),
-                ))));
-            }
-        }
+        self.update_state();
 
         self.top.update(
             ctx,
             self.text_channel.0.clone(),
-            self.invoker.clone(),
-            &mut self.overlay,
+            self.arc_mutex_maybe_invoker.clone(),
+            &mut self.maybe_execute,
+            &mut self.maybe_overlay,
         );
 
-        if let Some(ref mut layers) = self.layers {
-            if let Some(invoker) = self.invoker.lock().unwrap().as_ref() {
+        if let Some(ref mut layers) = self.maybe_layers {
+            if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_ref() {
                 layers.update(ctx, invoker.autorouter().board());
             }
         }
@@ -143,9 +166,9 @@ impl eframe::App for App {
         let viewport_rect = self.viewport.update(
             ctx,
             &self.top,
-            &mut self.invoker.lock().unwrap(),
-            &mut self.overlay,
-            &self.layers,
+            &mut self.arc_mutex_maybe_invoker.lock().unwrap(),
+            &mut self.maybe_overlay,
+            &self.maybe_layers,
         );
 
         self.bottom.update(ctx, &self.viewport, viewport_rect);

@@ -32,7 +32,8 @@ impl Top {
         &mut self,
         ctx: &egui::Context,
         sender: Sender<String>,
-        maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
+        arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
+        maybe_execute: &mut Option<Execute>,
         maybe_overlay: &Option<Overlay>,
     ) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -55,7 +56,7 @@ impl Top {
                     ui.separator();
 
                     if ui.button("Load history").clicked() {
-                        let invoker_arc_mutex = maybe_invoker.clone();
+                        let invoker_arc_mutex = arc_mutex_maybe_invoker.clone();
                         let ctx = ui.ctx().clone();
                         let task = rfd::AsyncFileDialog::new().pick_file();
 
@@ -79,7 +80,7 @@ impl Top {
                     }
 
                     if ui.button("Save history").clicked() {
-                        let invoker_arc_mutex = maybe_invoker.clone();
+                        let invoker_arc_mutex = arc_mutex_maybe_invoker.clone();
                         let ctx = ui.ctx().clone();
                         let task = rfd::AsyncFileDialog::new().save_file();
 
@@ -115,39 +116,15 @@ impl Top {
                 ui.separator();
 
                 if ui.button("Autoroute").clicked() {
-                    if let (Some(invoker), Some(ref overlay)) =
-                        (maybe_invoker.lock().unwrap().as_mut(), maybe_overlay)
-                    {
-                        let selection = overlay.selection().clone();
-                        let mut execute = invoker.execute_walk(Command::Autoroute(selection));
-
-                        if let Execute::Autoroute(ref mut autoroute) = execute {
-                            let from = autoroute.navmesh().as_ref().unwrap().source();
-                            let to = autoroute.navmesh().as_ref().unwrap().target();
-
-                            /*{
-                                let mut shared_data = shared_data_arc_mutex.lock().unwrap();
-                                shared_data.from = Some(from);
-                                shared_data.to = Some(to);
-                                shared_data.navmesh = autoroute.navmesh().cloned();
-                            }*/
+                    if maybe_execute.is_none() {
+                        if let (Some(invoker), Some(ref overlay)) = (
+                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
+                            maybe_overlay,
+                        ) {
+                            let selection = overlay.selection().clone();
+                            maybe_execute
+                                .insert(invoker.execute_walk(Command::Autoroute(selection)));
                         }
-
-                        let _ = loop {
-                            let status = match execute.step(invoker) {
-                                Ok(status) => status,
-                                Err(err) => return,
-                            };
-
-                            if let InvokerStatus::Finished = status {
-                                break;
-                            }
-
-                            /*if let Execute::Autoroute(ref mut autoroute) = execute {
-                                shared_data_arc_mutex.lock().unwrap().navmesh =
-                                    autoroute.navmesh().cloned();
-                            }*/
-                        };
                     }
                 }
 
@@ -158,7 +135,7 @@ impl Top {
                 if ui.button("Undo").clicked()
                     || ctx.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Z))
                 {
-                    if let Some(invoker) = maybe_invoker.lock().unwrap().as_mut() {
+                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
                         invoker.undo();
                     }
                 }
@@ -166,7 +143,8 @@ impl Top {
                 if ui.button("Redo").clicked()
                     || ctx.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Y))
                 {
-                    if let Some(ref mut invoker) = maybe_invoker.lock().unwrap().as_mut() {
+                    if let Some(ref mut invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut()
+                    {
                         invoker.redo();
                     }
                 }
