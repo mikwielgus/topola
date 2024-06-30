@@ -57,6 +57,7 @@ impl<K: PartialOrd, T> Ord for MinScored<K, T> {
     }
 }
 
+#[derive(Debug)]
 pub struct PathTracker<G>
 where
     G: GraphBase,
@@ -111,6 +112,7 @@ where
     fn estimate_cost(&mut self, graph: &G, node: G::NodeId) -> K;
 }
 
+#[derive(Debug)]
 pub struct Astar<G, K>
 where
     G: GraphBase,
@@ -131,6 +133,7 @@ pub enum AstarError {
     NotFound,
 }
 
+#[derive(Debug)]
 pub enum AstarStatus<G, K, R>
 where
     G: GraphBase,

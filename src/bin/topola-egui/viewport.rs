@@ -1,7 +1,7 @@
 use geo::point;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use topola::{
-    autorouter::invoker::{Command, Invoker},
+    autorouter::invoker::{Command, ExecuteWithStatus, GetMaybeNavmesh, Invoker},
     board::mesadata::MesadataTrait,
     drawing::{
         graph::{MakePrimitive, PrimitiveIndex},
@@ -31,6 +31,7 @@ impl Viewport {
         ctx: &egui::Context,
         top: &Top,
         maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
+        maybe_execute: &mut Option<ExecuteWithStatus>,
         maybe_overlay: &mut Option<Overlay>,
         maybe_layers: &Option<Layers>,
     ) -> egui::Rect {
@@ -152,48 +153,50 @@ impl Viewport {
                             }
                         }
 
-                        /*if top.show_navmesh {
-                            if let Some(navmesh) = &shared_data.navmesh {
-                                for edge in navmesh.graph().edge_references() {
-                                    let from = PrimitiveIndex::from(navmesh.graph().node_weight(edge.source()).unwrap().node)
-                                        .primitive(board.layout().drawing())
-                                        .shape()
-                                        .center();
-                                    let to = PrimitiveIndex::from(navmesh.graph().node_weight(edge.target()).unwrap().node)
-                                        .primitive(board.layout().drawing())
-                                        .shape()
-                                        .center();
+                        if top.show_navmesh {
+                            if let Some(execute) = maybe_execute {
+                                if let Some(navmesh) = execute.maybe_navmesh() {
+                                    for edge in navmesh.graph().edge_references() {
+                                        let from = PrimitiveIndex::from(navmesh.graph().node_weight(edge.source()).unwrap().node)
+                                            .primitive(board.layout().drawing())
+                                            .shape()
+                                            .center();
+                                        let to = PrimitiveIndex::from(navmesh.graph().node_weight(edge.target()).unwrap().node)
+                                            .primitive(board.layout().drawing())
+                                            .shape()
+                                            .center();
 
-                                    let stroke = 'blk: {
-                                        if let (Some(source_pos), Some(target_pos)) = (
-                                            shared_data
-                                                .path
-                                                .iter()
-                                                .position(|node| *node == navmesh.graph().node_weight(edge.source()).unwrap().node),
-                                            shared_data
-                                                .path
-                                                .iter()
-                                                .position(|node| *node == navmesh.graph().node_weight(edge.target()).unwrap().node),
-                                        ) {
-                                            if target_pos == source_pos + 1
-                                                || source_pos == target_pos + 1
-                                            {
-                                                break 'blk egui::Stroke::new(
-                                                    5.0,
-                                                    egui::Color32::from_rgb(250, 250, 0),
-                                                );
-                                            }
-                                        }
+                                        let stroke = 'blk: {
+                                            /*if let (Some(source_pos), Some(target_pos)) = (
+                                                shared_data
+                                                    .path
+                                                    .iter()
+                                                    .position(|node| *node == navmesh.graph().node_weight(edge.source()).unwrap().node),
+                                                shared_data
+                                                    .path
+                                                    .iter()
+                                                    .position(|node| *node == navmesh.graph().node_weight(edge.target()).unwrap().node),
+                                            ) {
+                                                if target_pos == source_pos + 1
+                                                    || source_pos == target_pos + 1
+                                                {
+                                                    break 'blk egui::Stroke::new(
+                                                        5.0,
+                                                        egui::Color32::from_rgb(250, 250, 0),
+                                                    );
+                                                }
+                                            }*/
 
-                                        egui::Stroke::new(1.0, egui::Color32::from_rgb(125, 125, 125))
-                                    };
+                                            egui::Stroke::new(1.0, egui::Color32::from_rgb(125, 125, 125))
+                                        };
 
-                                    painter.paint_edge(from, to, stroke);
+                                        painter.paint_edge(from, to, stroke);
+                                    }
                                 }
                             }
                         }
 
-                        for ghost in shared_data.ghosts.iter() {
+                        /*for ghost in shared_data.ghosts.iter() {
                             painter.paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
                         }
 

@@ -1,4 +1,5 @@
 use contracts::debug_requires;
+use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -12,7 +13,13 @@ use crate::{
     },
     board::mesadata::MesadataTrait,
     layout::via::ViaWeight,
+    router::navmesh::Navmesh,
 };
+
+#[enum_dispatch]
+pub trait GetMaybeNavmesh {
+    fn maybe_navmesh(&self) -> Option<&Navmesh>;
+}
 
 #[derive(Error, Debug, Clone)]
 pub enum InvokerError {
@@ -22,6 +29,7 @@ pub enum InvokerError {
     Autorouter(#[from] AutorouterError),
 }
 
+#[derive(Debug, Clone, Copy)]
 pub enum InvokerStatus {
     Running,
     Finished,
@@ -33,6 +41,7 @@ pub enum Command {
     PlaceVia(ViaWeight),
 }
 
+#[enum_dispatch(GetMaybeNavmesh)]
 pub enum Execute {
     Autoroute(Autoroute),
     PlaceVia(PlaceVia),
@@ -46,7 +55,10 @@ impl Execute {
         match self.step_catch_err(invoker) {
             Ok(InvokerStatus::Running) => Ok(InvokerStatus::Running),
             Ok(InvokerStatus::Finished) => {
-                invoker.history.do_(invoker.ongoing_command.take().unwrap());
+                if let Some(command) = invoker.ongoing_command.take() {
+                    invoker.history.do_(command);
+                }
+
                 Ok(InvokerStatus::Finished)
             }
             Err(err) => {
@@ -70,6 +82,39 @@ impl Execute {
                 Ok(InvokerStatus::Finished)
             }
         }
+    }
+}
+
+pub struct ExecuteWithStatus {
+    execute: Execute,
+    maybe_status: Option<InvokerStatus>,
+}
+
+impl ExecuteWithStatus {
+    pub fn new(execute: Execute) -> ExecuteWithStatus {
+        Self {
+            execute,
+            maybe_status: None,
+        }
+    }
+
+    pub fn step<M: MesadataTrait>(
+        &mut self,
+        invoker: &mut Invoker<M>,
+    ) -> Result<InvokerStatus, InvokerError> {
+        let status = self.execute.step(invoker)?;
+        self.maybe_status = Some(status);
+        Ok(status)
+    }
+
+    pub fn maybe_status(&self) -> Option<InvokerStatus> {
+        self.maybe_status
+    }
+}
+
+impl GetMaybeNavmesh for ExecuteWithStatus {
+    fn maybe_navmesh(&self) -> Option<&Navmesh> {
+        self.execute.maybe_navmesh()
     }
 }
 

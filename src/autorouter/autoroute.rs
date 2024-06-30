@@ -1,7 +1,7 @@
 use petgraph::graph::EdgeIndex;
 
 use crate::{
-    autorouter::{Autorouter, AutorouterError, AutorouterStatus},
+    autorouter::{invoker::GetMaybeNavmesh, Autorouter, AutorouterError, AutorouterStatus},
     board::mesadata::MesadataTrait,
     router::{navmesh::Navmesh, route::Route, Router, RouterStatus},
 };
@@ -40,10 +40,15 @@ impl Autoroute {
         autorouter: &mut Autorouter<M>,
     ) -> Result<AutorouterStatus, AutorouterError> {
         let Some(ref mut route) = self.route else {
+            // Shouldn't happen.
             return Ok(AutorouterStatus::Finished);
         };
 
-        let (source, target) = autorouter.ratline_endpoints(self.cur_ratline.unwrap());
+        let Some(cur_ratline) = self.cur_ratline else {
+            return Ok(AutorouterStatus::Finished);
+        };
+
+        let (source, target) = autorouter.ratline_endpoints(cur_ratline);
 
         let band = {
             let mut router = Router::new(autorouter.board.layout_mut());
@@ -63,7 +68,6 @@ impl Autoroute {
             .try_set_band_between_nodes(source, target, band);
 
         let Some(new_ratline) = self.ratlines_iter.next() else {
-            self.route = None;
             self.cur_ratline = None;
             return Ok(AutorouterStatus::Finished);
         };
@@ -78,6 +82,12 @@ impl Autoroute {
     }
 
     pub fn navmesh(&self) -> Option<&Navmesh> {
+        self.route.as_ref().map(|route| route.navmesh())
+    }
+}
+
+impl GetMaybeNavmesh for Autoroute {
+    fn maybe_navmesh(&self) -> Option<&Navmesh> {
         self.route.as_ref().map(|route| route.navmesh())
     }
 }

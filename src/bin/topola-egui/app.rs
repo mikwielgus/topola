@@ -13,7 +13,7 @@ use std::{
 
 use topola::{
     autorouter::{
-        invoker::{Command, Execute, Invoker, InvokerStatus},
+        invoker::{Command, Execute, ExecuteWithStatus, Invoker, InvokerStatus},
         Autorouter,
     },
     drawing::{
@@ -56,7 +56,7 @@ pub struct App {
     arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
 
     #[serde(skip)]
-    maybe_execute: Option<Execute>,
+    maybe_execute: Option<ExecuteWithStatus>,
 
     #[serde(skip)]
     text_channel: (Sender<String>, Receiver<String>),
@@ -129,11 +129,6 @@ impl App {
                     Ok(status) => status,
                     Err(err) => return,
                 };
-
-                if let InvokerStatus::Finished = status {
-                    self.maybe_execute = None;
-                    return;
-                }
             }
         }
     }
@@ -167,6 +162,7 @@ impl eframe::App for App {
             ctx,
             &self.top,
             &mut self.arc_mutex_maybe_invoker.lock().unwrap(),
+            &mut self.maybe_execute,
             &mut self.maybe_overlay,
             &self.maybe_layers,
         );

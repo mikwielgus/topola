@@ -4,7 +4,7 @@ use std::{
 };
 
 use topola::{
-    autorouter::invoker::{Command, Execute, Invoker, InvokerStatus},
+    autorouter::invoker::{Command, Execute, ExecuteWithStatus, Invoker, InvokerStatus},
     specctra::mesadata::SpecctraMesadata,
 };
 
@@ -33,7 +33,7 @@ impl Top {
         ctx: &egui::Context,
         sender: Sender<String>,
         arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
-        maybe_execute: &mut Option<Execute>,
+        maybe_execute: &mut Option<ExecuteWithStatus>,
         maybe_overlay: &Option<Overlay>,
     ) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
@@ -116,14 +116,17 @@ impl Top {
                 ui.separator();
 
                 if ui.button("Autoroute").clicked() {
-                    if maybe_execute.is_none() {
+                    if maybe_execute.as_mut().map_or(true, |execute| {
+                        matches!(execute.maybe_status(), Some(InvokerStatus::Finished))
+                    }) {
                         if let (Some(invoker), Some(ref overlay)) = (
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
                             maybe_overlay,
                         ) {
                             let selection = overlay.selection().clone();
-                            maybe_execute
-                                .insert(invoker.execute_walk(Command::Autoroute(selection)));
+                            maybe_execute.insert(ExecuteWithStatus::new(
+                                invoker.execute_walk(Command::Autoroute(selection)),
+                            ));
                         }
                     }
                 }

@@ -30,11 +30,13 @@ pub enum RouterError {
     Astar(#[from] AstarError),
 }
 
+#[derive(Debug)]
 pub enum RouterStatus {
     Running,
     Finished(BandFirstSegIndex),
 }
 
+#[derive(Debug)]
 pub struct RouterAstarStrategy<'a, R: RulesTrait> {
     pub tracer: Tracer<'a, R>,
     pub trace: &'a mut Trace,
@@ -142,6 +144,7 @@ impl<'a, R: RulesTrait> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
     }
 }
 
+#[derive(Debug)]
 pub struct Router<'a, R: RulesTrait> {
     layout: &'a mut Layout<R>,
 }
