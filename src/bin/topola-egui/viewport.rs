@@ -196,24 +196,28 @@ impl Viewport {
 
                         /*for ghost in shared_data.ghosts.iter() {
                             painter.paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
-                        }
-
-                        if let (Some(from), Some(to)) = (shared_data.from, shared_data.to) {
-                            painter.paint_dot(
-                                Circle {
-                                    pos: board.layout().drawing().primitive(from).shape().center(),
-                                    r: 20.0,
-                                },
-                                egui::Color32::from_rgb(255, 255, 100),
-                            );
-                            painter.paint_dot(
-                                Circle {
-                                    pos: board.layout().drawing().primitive(to).shape().center(),
-                                    r: 20.0,
-                                },
-                                egui::Color32::from_rgb(255, 255, 100),
-                            );
                         }*/
+
+                        if let Some(execute) = maybe_execute {
+                            if let Some(navmesh) = execute.maybe_navmesh() {
+                                if let (from, to) = (navmesh.source(), navmesh.target()) {
+                                    painter.paint_dot(
+                                        Circle {
+                                            pos: board.layout().drawing().primitive(from).shape().center(),
+                                            r: 60.0,
+                                        },
+                                        egui::Color32::from_rgb(255, 255, 100),
+                                    );
+                                    painter.paint_dot(
+                                        Circle {
+                                            pos: board.layout().drawing().primitive(to).shape().center(),
+                                            r: 60.0,
+                                        },
+                                        egui::Color32::from_rgb(255, 255, 100),
+                                    );
+                                }
+                            }
+                        }
                     }
                 }
 
