@@ -158,14 +158,30 @@ impl Viewport {
                             if let Some(execute) = maybe_execute {
                                 if let Some(navmesh) = execute.maybe_navmesh() {
                                     for edge in navmesh.edge_references() {
-                                        let from = PrimitiveIndex::from(navmesh.node_weight(edge.source()).unwrap().node)
+                                        let mut from = PrimitiveIndex::from(navmesh.node_weight(edge.source()).unwrap().node)
                                             .primitive(board.layout().drawing())
                                             .shape()
                                             .center();
-                                        let to = PrimitiveIndex::from(navmesh.node_weight(edge.target()).unwrap().node)
+                                        let mut to = PrimitiveIndex::from(navmesh.node_weight(edge.target()).unwrap().node)
                                             .primitive(board.layout().drawing())
                                             .shape()
                                             .center();
+
+                                        if let Some(from_cw) = navmesh.node_weight(edge.source()).unwrap().maybe_cw {
+                                            if from_cw {
+                                                from -= [0.0, 150.0].into();
+                                            } else {
+                                                from += [0.0, 150.0].into();
+                                            }
+                                        }
+
+                                        if let Some(to_cw) = navmesh.node_weight(edge.target()).unwrap().maybe_cw {
+                                            if to_cw {
+                                                to -= [0.0, 150.0].into();
+                                            } else {
+                                                to += [0.0, 150.0].into();
+                                            }
+                                        }
 
                                         let stroke = 'blk: {
                                             if let (Some(source_pos), Some(target_pos)) = (
@@ -207,14 +223,14 @@ impl Viewport {
                                     painter.paint_dot(
                                         Circle {
                                             pos: board.layout().drawing().primitive(origin).shape().center(),
-                                            r: 60.0,
+                                            r: 150.0,
                                         },
                                         egui::Color32::from_rgb(255, 255, 100),
                                     );
                                     painter.paint_dot(
                                         Circle {
                                             pos: board.layout().drawing().primitive(destination).shape().center(),
-                                            r: 60.0,
+                                            r: 150.0,
                                         },
                                         egui::Color32::from_rgb(255, 255, 100),
                                     );
