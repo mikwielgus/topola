@@ -290,7 +290,6 @@ fn render_times(
             RouterOrLayout::Layout(ref layout) => layout.clone(),
         };
 
-        //let result = panic::catch_unwind(|| {
         for node in layout.drawing().layer_primitive_nodes(1) {
             let color = if highlighteds.contains(&node) {
                 ColorU::new(100, 100, 255, 255)
@@ -362,7 +361,6 @@ fn render_times(
                 painter.paint_edge(from, to, color, view.zoom);
             }
         }
-        //});
 
         let mut scene = SceneProxy::from_scene(
             canvas.into_canvas().into_scene(),

@@ -100,16 +100,14 @@ impl Viewport {
                                     for primitive in board.layout().drawing().layer_primitive_nodes(i) {
                                         let shape = primitive.primitive(board.layout().drawing()).shape();
 
-                                        /*let color = if shared_data.highlighteds.contains(&primitive)
-                                            || overlay
-                                                .selection()
-                                                .contains_node(board, GenericNode::Primitive(primitive))
+                                        let color = if overlay
+                                            .selection()
+                                            .contains_node(board, GenericNode::Primitive(primitive))
                                         {
                                             layers.highlight_colors[i]
                                         } else {
                                             layers.colors[i]
-                                        };*/
-                                        let color = layers.colors[i];
+                                        };
 
                                         painter.paint_primitive(&shape, color);
                                     }

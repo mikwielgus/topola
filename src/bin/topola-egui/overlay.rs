@@ -67,12 +67,6 @@ impl Overlay {
             }
             NodeIndex::Compound(compound) => {
                 match board.layout().drawing().compound_weight(compound) {
-                    /*CompoundWeight::Zone(zone) => Zone::new(
-                        GenericIndex::<ZoneWeight>::new(compound.petgraph_index()),
-                        board.layout(),
-                    )
-                    .shape()
-                    .into(),*/
                     CompoundWeight::Zone(weight) => board
                         .layout()
                         .zone(GenericIndex::<ZoneWeight>::new(compound.petgraph_index()))
