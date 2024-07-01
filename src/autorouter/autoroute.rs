@@ -1,9 +1,12 @@
 use petgraph::graph::EdgeIndex;
 
 use crate::{
-    autorouter::{invoker::GetMaybeNavmesh, Autorouter, AutorouterError, AutorouterStatus},
+    autorouter::{
+        invoker::{GetMaybeNavmesh, GetMaybeTrace},
+        Autorouter, AutorouterError, AutorouterStatus,
+    },
     board::mesadata::MesadataTrait,
-    router::{navmesh::Navmesh, route::Route, Router, RouterStatus},
+    router::{navmesh::Navmesh, route::Route, trace::Trace, Router, RouterStatus},
 };
 
 pub struct Autoroute {
@@ -84,10 +87,20 @@ impl Autoroute {
     pub fn navmesh(&self) -> Option<&Navmesh> {
         self.route.as_ref().map(|route| route.navmesh())
     }
+
+    pub fn trace(&self) -> Option<&Trace> {
+        self.route.as_ref().map(|route| route.trace())
+    }
 }
 
 impl GetMaybeNavmesh for Autoroute {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         self.route.as_ref().map(|route| route.navmesh())
+    }
+}
+
+impl GetMaybeTrace for Autoroute {
+    fn maybe_trace(&self) -> Option<&Trace> {
+        self.route.as_ref().map(|route| route.trace())
     }
 }

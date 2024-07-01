@@ -1,8 +1,11 @@
 use crate::{
-    autorouter::{invoker::GetMaybeNavmesh, Autorouter, AutorouterError},
+    autorouter::{
+        invoker::{GetMaybeNavmesh, GetMaybeTrace},
+        Autorouter, AutorouterError,
+    },
     board::mesadata::MesadataTrait,
     layout::via::ViaWeight,
-    router::navmesh::Navmesh,
+    router::{navmesh::Navmesh, trace::Trace},
 };
 
 #[derive(Debug)]
@@ -25,6 +28,12 @@ impl PlaceVia {
 
 impl GetMaybeNavmesh for PlaceVia {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
+        None
+    }
+}
+
+impl GetMaybeTrace for PlaceVia {
+    fn maybe_trace(&self) -> Option<&Trace> {
         None
     }
 }

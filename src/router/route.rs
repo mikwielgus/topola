@@ -53,9 +53,9 @@ impl Route {
         navmesh: Navmesh,
         width: f64,
     ) -> Self {
-        let source = navmesh.source();
-        let source_navvertex = navmesh.source_navvertex();
-        let target = navmesh.target();
+        let source = navmesh.origin();
+        let source_navvertex = navmesh.origin_navvertex();
+        let target = navmesh.destination();
 
         let mut tracer = Tracer::new(router.layout_mut());
         let mut trace = tracer.start(source, source_navvertex, width);
@@ -71,7 +71,7 @@ impl Route {
         router: &mut Router<impl RulesTrait>,
     ) -> Result<RouterStatus, RouterError> {
         let tracer = Tracer::new(router.layout_mut());
-        let target = self.astar.graph.target();
+        let target = self.astar.graph.destination();
         let mut strategy = RouterAstarStrategy::new(tracer, &mut self.trace, target);
 
         match self.astar.step(&mut strategy)? {
@@ -82,5 +82,9 @@ impl Route {
 
     pub fn navmesh(&self) -> &Navmesh {
         &self.astar.graph
+    }
+
+    pub fn trace(&self) -> &Trace {
+        &self.trace
     }
 }

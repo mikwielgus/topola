@@ -13,12 +13,17 @@ use crate::{
     },
     board::mesadata::MesadataTrait,
     layout::via::ViaWeight,
-    router::navmesh::Navmesh,
+    router::{navmesh::Navmesh, trace::Trace},
 };
 
 #[enum_dispatch]
 pub trait GetMaybeNavmesh {
     fn maybe_navmesh(&self) -> Option<&Navmesh>;
+}
+
+#[enum_dispatch]
+pub trait GetMaybeTrace {
+    fn maybe_trace(&self) -> Option<&Trace>;
 }
 
 #[derive(Error, Debug, Clone)]
@@ -41,7 +46,7 @@ pub enum Command {
     PlaceVia(ViaWeight),
 }
 
-#[enum_dispatch(GetMaybeNavmesh)]
+#[enum_dispatch(GetMaybeNavmesh, GetMaybeTrace)]
 pub enum Execute {
     Autoroute(Autoroute),
     PlaceVia(PlaceVia),
@@ -115,6 +120,12 @@ impl ExecuteWithStatus {
 impl GetMaybeNavmesh for ExecuteWithStatus {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         self.execute.maybe_navmesh()
+    }
+}
+
+impl GetMaybeTrace for ExecuteWithStatus {
+    fn maybe_trace(&self) -> Option<&Trace> {
+        self.execute.maybe_trace()
     }
 }
 

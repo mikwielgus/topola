@@ -1,7 +1,10 @@
 use geo::point;
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
+use petgraph::{
+    data::DataMap,
+    visit::{EdgeRef, IntoEdgeReferences},
+};
 use topola::{
-    autorouter::invoker::{Command, ExecuteWithStatus, GetMaybeNavmesh, Invoker},
+    autorouter::invoker::{Command, ExecuteWithStatus, GetMaybeNavmesh, GetMaybeTrace, Invoker},
     board::mesadata::MesadataTrait,
     drawing::{
         graph::{MakePrimitive, PrimitiveIndex},
@@ -154,26 +157,26 @@ impl Viewport {
                         if top.show_navmesh {
                             if let Some(execute) = maybe_execute {
                                 if let Some(navmesh) = execute.maybe_navmesh() {
-                                    for edge in navmesh.graph().edge_references() {
-                                        let from = PrimitiveIndex::from(navmesh.graph().node_weight(edge.source()).unwrap().node)
+                                    for edge in navmesh.edge_references() {
+                                        let from = PrimitiveIndex::from(navmesh.node_weight(edge.source()).unwrap().node)
                                             .primitive(board.layout().drawing())
                                             .shape()
                                             .center();
-                                        let to = PrimitiveIndex::from(navmesh.graph().node_weight(edge.target()).unwrap().node)
+                                        let to = PrimitiveIndex::from(navmesh.node_weight(edge.target()).unwrap().node)
                                             .primitive(board.layout().drawing())
                                             .shape()
                                             .center();
 
                                         let stroke = 'blk: {
-                                            /*if let (Some(source_pos), Some(target_pos)) = (
-                                                shared_data
-                                                    .path
+                                            if let (Some(source_pos), Some(target_pos)) = (
+                                                execute.maybe_trace().map(|trace|
+                                                    trace.path
                                                     .iter()
-                                                    .position(|node| *node == navmesh.graph().node_weight(edge.source()).unwrap().node),
-                                                shared_data
-                                                    .path
+                                                    .position(|node| *node == edge.source())).flatten(),
+                                                execute.maybe_trace().map(|trace|
+                                                    trace.path
                                                     .iter()
-                                                    .position(|node| *node == navmesh.graph().node_weight(edge.target()).unwrap().node),
+                                                    .position(|node| *node == edge.target())).flatten(),
                                             ) {
                                                 if target_pos == source_pos + 1
                                                     || source_pos == target_pos + 1
@@ -183,7 +186,7 @@ impl Viewport {
                                                         egui::Color32::from_rgb(250, 250, 0),
                                                     );
                                                 }
-                                            }*/
+                                            }
 
                                             egui::Stroke::new(1.0, egui::Color32::from_rgb(125, 125, 125))
                                         };
@@ -200,17 +203,17 @@ impl Viewport {
 
                         if let Some(execute) = maybe_execute {
                             if let Some(navmesh) = execute.maybe_navmesh() {
-                                if let (from, to) = (navmesh.source(), navmesh.target()) {
+                                if let (origin, destination) = (navmesh.origin(), navmesh.destination()) {
                                     painter.paint_dot(
                                         Circle {
-                                            pos: board.layout().drawing().primitive(from).shape().center(),
+                                            pos: board.layout().drawing().primitive(origin).shape().center(),
                                             r: 60.0,
                                         },
                                         egui::Color32::from_rgb(255, 255, 100),
                                     );
                                     painter.paint_dot(
                                         Circle {
-                                            pos: board.layout().drawing().primitive(to).shape().center(),
+                                            pos: board.layout().drawing().primitive(destination).shape().center(),
                                             r: 60.0,
                                         },
                                         egui::Color32::from_rgb(255, 255, 100),

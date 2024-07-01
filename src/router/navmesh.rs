@@ -106,10 +106,10 @@ pub enum NavmeshError {
 #[derive(Debug, Clone)]
 pub struct Navmesh {
     graph: UnGraph<NavvertexWeight, (), usize>,
-    source: FixedDotIndex,
-    source_navvertex: NavvertexIndex,
-    target: FixedDotIndex,
-    target_navvertex: NavvertexIndex,
+    origin: FixedDotIndex,
+    origin_navvertex: NavvertexIndex,
+    destination: FixedDotIndex,
+    destination_navvertex: NavvertexIndex,
 }
 
 impl Navmesh {
@@ -204,10 +204,10 @@ impl Navmesh {
 
         Ok(Self {
             graph,
-            source,
-            source_navvertex: NavvertexIndex(source_navvertex.unwrap()),
-            target,
-            target_navvertex: NavvertexIndex(target_navvertex.unwrap()),
+            origin: source,
+            origin_navvertex: NavvertexIndex(source_navvertex.unwrap()),
+            destination: target,
+            destination_navvertex: NavvertexIndex(target_navvertex.unwrap()),
         })
     }
 
@@ -215,20 +215,20 @@ impl Navmesh {
         &self.graph
     }
 
-    pub fn source(&self) -> FixedDotIndex {
-        self.source
+    pub fn origin(&self) -> FixedDotIndex {
+        self.origin
     }
 
-    pub fn source_navvertex(&self) -> NavvertexIndex {
-        self.source_navvertex
+    pub fn origin_navvertex(&self) -> NavvertexIndex {
+        self.origin_navvertex
     }
 
-    pub fn target(&self) -> FixedDotIndex {
-        self.target
+    pub fn destination(&self) -> FixedDotIndex {
+        self.destination
     }
 
-    pub fn target_navvertex(&self) -> NavvertexIndex {
-        self.target_navvertex
+    pub fn destination_navvertex(&self) -> NavvertexIndex {
+        self.destination_navvertex
     }
 }
 
