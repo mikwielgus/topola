@@ -26,6 +26,7 @@ use crate::{
     geometry::shape::ShapeTrait,
     graph::GetPetgraphIndex,
     layout::Layout,
+    router::astar::MakeEdgeRef,
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
 
@@ -320,5 +321,17 @@ impl<'a> IntoEdges for &'a Navmesh {
                     to: NavvertexIndex(edge.target()),
                 }),
         )
+    }
+}
+
+impl<'a> MakeEdgeRef for &'a Navmesh {
+    fn edge_ref(
+        &self,
+        edge_id: <&'a Navmesh as GraphBase>::EdgeId,
+    ) -> <&'a Navmesh as IntoEdgeReferences>::EdgeRef {
+        NavmeshEdgeReference {
+            from: edge_id.0,
+            to: edge_id.1,
+        }
     }
 }

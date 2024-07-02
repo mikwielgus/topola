@@ -31,7 +31,6 @@ use crate::{
     },
 };
 
-#[derive(Debug)]
 pub struct Route {
     astar: Astar<Navmesh, f64>,
     trace: Trace,
