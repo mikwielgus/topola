@@ -11,7 +11,10 @@ use crate::{
         primitive::MakePrimitiveShape,
         rules::RulesTrait,
     },
-    geometry::{primitive::PrimitiveShapeTrait, shape::ShapeTrait},
+    geometry::{
+        primitive::PrimitiveShapeTrait,
+        shape::{MeasureLength, ShapeTrait},
+    },
     graph::GetPetgraphIndex,
     layout::Layout,
     router::{

@@ -7,12 +7,17 @@ use crate::geometry::{
 };
 
 #[enum_dispatch]
-pub trait ShapeTrait {
+pub trait MeasureLength {
+    fn length(&self) -> f64;
+}
+
+#[enum_dispatch]
+pub trait ShapeTrait: MeasureLength {
     fn center(&self) -> Point;
     fn contains_point(&self, p: Point) -> bool;
 }
 
-#[enum_dispatch(ShapeTrait)]
+#[enum_dispatch(MeasureLength, ShapeTrait)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Shape {
     Dot(DotShape),

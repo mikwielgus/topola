@@ -1,10 +1,22 @@
-use geo::{Centroid, Contains, Point, Polygon};
+use geo::{Centroid, Contains, EuclideanLength, Point, Polygon};
 
-use crate::geometry::shape::ShapeTrait;
+use crate::geometry::shape::{MeasureLength, ShapeTrait};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PolyShape {
     pub polygon: Polygon,
+}
+
+impl MeasureLength for PolyShape {
+    fn length(&self) -> f64 {
+        let mut length = 0.0;
+
+        for line in self.polygon.exterior().lines() {
+            length += line.euclidean_length();
+        }
+
+        length
+    }
 }
 
 impl ShapeTrait for PolyShape {

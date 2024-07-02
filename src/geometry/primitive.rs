@@ -3,7 +3,7 @@ use geo::{point, polygon, Contains, EuclideanDistance, Intersects, Point, Polygo
 use rstar::{RTreeObject, AABB};
 
 use crate::{
-    geometry::shape::ShapeTrait,
+    geometry::shape::{MeasureLength, ShapeTrait},
     math::{self, Circle},
 };
 
@@ -14,7 +14,6 @@ pub trait PrimitiveShapeTrait: ShapeTrait {
     fn intersects(&self, other: &PrimitiveShape) -> bool;
     fn envelope(&self, margin: f64) -> AABB<[f64; 2]>;
     fn width(&self) -> f64;
-    fn length(&self) -> f64;
 
     fn envelope_3d(&self, margin: f64, layer: usize) -> AABB<[f64; 3]> {
         let envelope = self.envelope(margin);
@@ -37,7 +36,7 @@ pub trait PrimitiveShapeTrait: ShapeTrait {
     }
 }
 
-#[enum_dispatch(ShapeTrait, PrimitiveShapeTrait)]
+#[enum_dispatch(MeasureLength, ShapeTrait, PrimitiveShapeTrait)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PrimitiveShape {
     // Intentionally in different order to reorder `self.intersects(...)` properly.
@@ -49,6 +48,12 @@ pub enum PrimitiveShape {
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DotShape {
     pub circle: Circle,
+}
+
+impl MeasureLength for DotShape {
+    fn length(&self) -> f64 {
+        0.0
+    }
 }
 
 impl ShapeTrait for DotShape {
@@ -122,10 +127,6 @@ impl PrimitiveShapeTrait for DotShape {
     fn width(&self) -> f64 {
         self.circle.r * 2.0
     }
-
-    fn length(&self) -> f64 {
-        0.0
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -149,6 +150,12 @@ impl SegShape {
         let p4 = self.to - normal * (self.width / 2.);
 
         polygon![p1.0, p2.0, p3.0, p4.0]
+    }
+}
+
+impl MeasureLength for SegShape {
+    fn length(&self) -> f64 {
+        self.to.euclidean_distance(&self.from)
     }
 }
 
@@ -225,10 +232,6 @@ impl PrimitiveShapeTrait for SegShape {
     fn width(&self) -> f64 {
         self.width
     }
-
-    fn length(&self) -> f64 {
-        self.to.euclidean_distance(&self.from)
-    }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -264,6 +267,22 @@ impl BendShape {
             self.from - self.inner_circle.pos,
             self.to - self.inner_circle.pos,
         )
+    }
+}
+
+impl MeasureLength for BendShape {
+    fn length(&self) -> f64 {
+        // TODO: Not valid for inflated bends, as currently `from` and `to` of these don't lie on
+        // teir circles.
+
+        // We obtain the angle from the law of cosines and multiply with radius to get the length.
+        let d = self.to.euclidean_distance(&self.from);
+
+        if d > 0.0 {
+            (1.0 - d * d / (2.0 * d * d)).acos()
+        } else {
+            0.0
+        }
     }
 }
 
@@ -350,20 +369,6 @@ impl PrimitiveShapeTrait for BendShape {
 
     fn width(&self) -> f64 {
         self.width
-    }
-
-    fn length(&self) -> f64 {
-        // TODO: Not valid for inflated bends, as currently `from` and `to` of these don't lie on
-        // teir circles.
-
-        // We obtain the angle from the law of cosines and multiply with radius to get the length.
-        let d = self.to.euclidean_distance(&self.from);
-
-        if d > 0.0 {
-            (1.0 - d * d / (2.0 * d * d)).acos()
-        } else {
-            0.0
-        }
     }
 }
 
