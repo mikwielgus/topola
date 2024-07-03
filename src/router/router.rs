@@ -47,7 +47,8 @@ pub struct RouterAstarStrategy<'a, R: AccessRules> {
     pub tracer: Tracer<'a, R>,
     pub trace: &'a mut Trace,
     pub target: FixedDotIndex,
-    pub ghosts: Vec<PrimitiveShape>,
+    pub last_ghosts: Vec<PrimitiveShape>,
+    pub last_obstacles: Vec<PrimitiveIndex>,
 }
 
 impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
@@ -56,7 +57,8 @@ impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
             tracer,
             trace,
             target,
-            ghosts: vec![],
+            last_ghosts: vec![],
+            last_obstacles: vec![],
         }
     }
 
@@ -124,7 +126,7 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
                         DrawException::CannotWrapAround(.., layout_err) => layout_err,
                     };
 
-                    let (ghost, ..) = match layout_err {
+                    let (ghost, obstacle) = match layout_err {
                         LayoutException::NoTangents(..) => return None,
                         LayoutException::Infringement(Infringement(ghost, obstacle)) => {
                             (ghost, obstacle)
@@ -133,7 +135,8 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
                         LayoutException::AlreadyConnected(..) => return None,
                     };
 
-                    self.ghosts = vec![ghost];
+                    self.last_ghosts = vec![ghost];
+                    self.last_obstacles = vec![obstacle];
                 }
                 None
             }

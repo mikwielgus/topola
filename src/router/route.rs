@@ -37,6 +37,7 @@ pub struct Route {
     astar: Astar<Navmesh, f64>,
     trace: Trace,
     ghosts: Vec<PrimitiveShape>,
+    obstacles: Vec<PrimitiveIndex>,
 }
 
 impl Route {
@@ -65,11 +66,13 @@ impl Route {
         let mut strategy = RouterAstarStrategy::new(tracer, &mut trace, target);
         let astar = Astar::new(navmesh, source_navvertex, &mut strategy);
         let ghosts = vec![];
+        let obstacles = vec![];
 
         Self {
             astar,
             trace,
             ghosts,
+            obstacles,
         }
     }
 
@@ -86,7 +89,8 @@ impl Route {
             AstarStatus::Finished(_cost, _path, band) => Ok(RouterStatus::Finished(band)),
         };
 
-        self.ghosts = strategy.ghosts;
+        self.ghosts = strategy.last_ghosts;
+        self.obstacles = strategy.last_obstacles;
         result
     }
 
@@ -100,5 +104,9 @@ impl Route {
 
     pub fn ghosts(&self) -> &[PrimitiveShape] {
         &self.ghosts
+    }
+
+    pub fn obstacles(&self) -> &[PrimitiveIndex] {
+        &self.obstacles
     }
 }

@@ -33,6 +33,11 @@ pub trait GetGhosts {
     fn ghosts(&self) -> &[PrimitiveShape];
 }
 
+#[enum_dispatch]
+pub trait GetObstacles {
+    fn obstacles(&self) -> &[PrimitiveIndex];
+}
+
 #[derive(Error, Debug, Clone)]
 pub enum InvokerError {
     #[error(transparent)]
@@ -53,7 +58,7 @@ pub enum Command {
     PlaceVia(ViaWeight),
 }
 
-#[enum_dispatch(GetMaybeNavmesh, GetMaybeTrace, GetGhosts)]
+#[enum_dispatch(GetMaybeNavmesh, GetMaybeTrace, GetGhosts, GetObstacles)]
 pub enum Execute {
     Autoroute(Autoroute),
     PlaceVia(PlaceVia),
@@ -139,6 +144,12 @@ impl GetMaybeTrace for ExecuteWithStatus {
 impl GetGhosts for ExecuteWithStatus {
     fn ghosts(&self) -> &[PrimitiveShape] {
         self.execute.ghosts()
+    }
+}
+
+impl GetObstacles for ExecuteWithStatus {
+    fn obstacles(&self) -> &[PrimitiveIndex] {
+        self.execute.obstacles()
     }
 }
 

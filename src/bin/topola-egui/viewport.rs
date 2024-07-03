@@ -5,7 +5,8 @@ use petgraph::{
 };
 use topola::{
     autorouter::invoker::{
-        Command, ExecuteWithStatus, GetGhosts, GetMaybeNavmesh, GetMaybeTrace, Invoker,
+        Command, ExecuteWithStatus, GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles,
+        Invoker,
     },
     board::mesadata::AccessMesadata,
     drawing::{
@@ -111,7 +112,15 @@ impl Viewport {
                                         {
                                             layers.highlight_colors[i]
                                         } else {
-                                            layers.colors[i]
+                                            if let Some(execute) = maybe_execute {
+                                                if execute.obstacles().contains(&primitive) {
+                                                    layers.highlight_colors[i]
+                                                } else {
+                                                    layers.colors[i]
+                                                }
+                                            } else {
+                                                layers.colors[i]
+                                            }
                                         };
 
                                         painter.paint_primitive(&shape, color);

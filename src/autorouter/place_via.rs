@@ -7,7 +7,7 @@ use crate::{
 };
 
 use super::{
-    invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace},
+    invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles},
     Autorouter, AutorouterError,
 };
 
@@ -43,6 +43,12 @@ impl GetMaybeTrace for PlaceVia {
 
 impl GetGhosts for PlaceVia {
     fn ghosts(&self) -> &[PrimitiveShape] {
+        &[]
+    }
+}
+
+impl GetObstacles for PlaceVia {
+    fn obstacles(&self) -> &[PrimitiveIndex] {
         &[]
     }
 }
