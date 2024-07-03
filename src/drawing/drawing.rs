@@ -35,6 +35,8 @@ use crate::geometry::{
 use crate::graph::{GenericIndex, GetPetgraphIndex};
 use crate::math::NoTangents;
 
+use super::head::{Head, HeadRef};
+
 #[enum_dispatch]
 #[derive(Error, Debug, Clone, Copy)]
 pub enum LayoutException {
@@ -917,6 +919,10 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
 
     pub fn loose(&self, index: LooseIndex) -> Loose<CW, R> {
         Loose::new(index, self)
+    }
+
+    pub fn head_ref(&self, head: Head) -> HeadRef<'_, CW, R> {
+        HeadRef::new(head, self)
     }
 
     pub fn layer_count(&self) -> usize {

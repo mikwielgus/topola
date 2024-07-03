@@ -1,0 +1,84 @@
+use enum_dispatch::enum_dispatch;
+
+use crate::geometry::shape::MeasureLength;
+
+use super::{
+    cane::Cane,
+    dot::{DotIndex, FixedDotIndex, LooseDotIndex},
+    primitive::MakePrimitiveShape,
+    rules::RulesTrait,
+    Drawing,
+};
+
+#[enum_dispatch]
+pub trait HeadTrait {
+    fn face(&self) -> DotIndex;
+}
+
+#[enum_dispatch(HeadTrait)]
+#[derive(Debug, Clone, Copy)]
+pub enum Head {
+    Bare(BareHead),
+    Cane(CaneHead),
+}
+
+impl Head {
+    pub fn ref_<'a, CW: Copy, R: RulesTrait>(
+        &self,
+        drawing: &'a Drawing<CW, R>,
+    ) -> HeadRef<'a, CW, R> {
+        HeadRef::new(*self, drawing)
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct BareHead {
+    pub face: FixedDotIndex,
+}
+
+impl HeadTrait for BareHead {
+    fn face(&self) -> DotIndex {
+        self.face.into()
+    }
+}
+
+#[derive(Debug, Clone, Copy)]
+pub struct CaneHead {
+    pub face: LooseDotIndex,
+    pub cane: Cane,
+}
+
+impl HeadTrait for CaneHead {
+    fn face(&self) -> DotIndex {
+        self.face.into()
+    }
+}
+
+pub struct HeadRef<'a, CW: Copy, R: RulesTrait> {
+    head: Head,
+    drawing: &'a Drawing<CW, R>,
+}
+
+impl<'a, CW: Copy, R: RulesTrait> HeadRef<'a, CW, R> {
+    pub fn new(head: Head, drawing: &'a Drawing<CW, R>) -> Self {
+        Self { drawing, head }
+    }
+}
+
+impl<'a, CW: Copy, R: RulesTrait> HeadTrait for HeadRef<'a, CW, R> {
+    fn face(&self) -> DotIndex {
+        self.head.face()
+    }
+}
+
+impl<'a, CW: Copy, R: RulesTrait> MeasureLength for HeadRef<'a, CW, R> {
+    fn length(&self) -> f64 {
+        match self.head {
+            Head::Bare(..) => 0.0,
+            Head::Cane(cane_head) => {
+                self.drawing.primitive(cane_head.cane.seg).shape().length()
+                    + self.drawing.primitive(cane_head.cane.bend).shape().length()
+            }
+        }
+    }
+}

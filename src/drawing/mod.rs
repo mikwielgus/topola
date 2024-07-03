@@ -7,6 +7,7 @@ pub mod collect;
 pub mod dot;
 mod drawing;
 pub mod guide;
+pub mod head;
 pub mod loose;
 pub mod primitive;
 pub mod rules;

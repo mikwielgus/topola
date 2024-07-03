@@ -7,11 +7,7 @@ use thiserror::Error;
 
 use crate::{
     drawing::{
-        band::BandFirstSegIndex,
-        bend::LooseBendIndex,
-        dot::FixedDotIndex,
-        graph::PrimitiveIndex,
-        guide::{BareHead, CaneHead, Head},
+        band::BandFirstSegIndex, bend::LooseBendIndex, dot::FixedDotIndex, graph::PrimitiveIndex,
         rules::RulesTrait,
     },
     layout::Layout,

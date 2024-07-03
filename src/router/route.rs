@@ -11,7 +11,6 @@ use crate::{
         band::BandFirstSegIndex,
         dot::{DotIndex, FixedDotIndex},
         graph::{MakePrimitive, PrimitiveIndex},
-        guide::{CaneHead, Head, HeadTrait},
         primitive::MakePrimitiveShape,
         rules::RulesTrait,
     },

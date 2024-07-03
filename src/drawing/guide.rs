@@ -1,15 +1,6 @@
-use enum_dispatch::enum_dispatch;
 use geo::Line;
 
 use crate::{
-    drawing::{
-        bend::BendIndex,
-        dot::{DotIndex, FixedDotIndex, LooseDotIndex},
-        graph::MakePrimitive,
-        primitive::{GetCore, GetInnerOuter, GetOtherJoint, GetWeight, MakePrimitiveShape},
-        rules::GetConditions,
-        Drawing,
-    },
     geometry::{
         primitive::{PrimitiveShape, PrimitiveShapeTrait},
         shape::ShapeTrait,
@@ -18,46 +9,14 @@ use crate::{
 };
 
 use super::{
-    cane::Cane,
-    graph::PrimitiveIndex,
-    primitive::GetJoints,
-    rules::{Conditions, RulesTrait},
+    bend::BendIndex,
+    dot::{DotIndex, FixedDotIndex, LooseDotIndex},
+    graph::{MakePrimitive, PrimitiveIndex},
+    head::{BareHead, CaneHead, Head, HeadTrait},
+    primitive::{GetCore, GetInnerOuter, GetJoints, GetOtherJoint, GetWeight, MakePrimitiveShape},
+    rules::{Conditions, GetConditions, RulesTrait},
+    Drawing,
 };
-
-#[enum_dispatch]
-pub trait HeadTrait {
-    fn face(&self) -> DotIndex;
-}
-
-#[enum_dispatch(HeadTrait)]
-#[derive(Debug, Clone, Copy)]
-pub enum Head {
-    Bare(BareHead),
-    Cane(CaneHead),
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct BareHead {
-    pub face: FixedDotIndex,
-}
-
-impl HeadTrait for BareHead {
-    fn face(&self) -> DotIndex {
-        self.face.into()
-    }
-}
-
-#[derive(Debug, Clone, Copy)]
-pub struct CaneHead {
-    pub face: LooseDotIndex,
-    pub cane: Cane,
-}
-
-impl HeadTrait for CaneHead {
-    fn face(&self) -> DotIndex {
-        self.face.into()
-    }
-}
 
 pub struct Guide<'a, CW: Copy, R: RulesTrait> {
     drawing: &'a Drawing<CW, R>,

@@ -7,7 +7,7 @@ use crate::{
         band::BandFirstSegIndex,
         dot::{DotIndex, FixedDotIndex},
         graph::{MakePrimitive, PrimitiveIndex},
-        guide::{Head, HeadTrait},
+        head::{Head, HeadTrait},
         primitive::MakePrimitiveShape,
         rules::RulesTrait,
     },
@@ -56,34 +56,18 @@ impl<'a, R: RulesTrait> RouterAstarStrategy<'a, R> {
     }
 
     fn bihead_length(&self) -> f64 {
-        self.head_length(&self.trace.head)
+        self.trace.head.ref_(self.tracer.layout.drawing()).length()
             + match self.trace.head.face() {
                 DotIndex::Fixed(..) => 0.0,
-                DotIndex::Loose(face) => {
-                    self.head_length(&self.tracer.layout.drawing().guide().rear_head(face))
-                }
-            }
-    }
-
-    fn head_length(&self, head: &Head) -> f64 {
-        match head {
-            Head::Bare(..) => 0.0,
-            Head::Cane(cane_head) => {
-                self.tracer
+                DotIndex::Loose(face) => self
+                    .tracer
                     .layout
                     .drawing()
-                    .primitive(cane_head.cane.seg)
-                    .shape()
-                    .length()
-                    + self
-                        .tracer
-                        .layout
-                        .drawing()
-                        .primitive(cane_head.cane.bend)
-                        .shape()
-                        .length()
+                    .guide()
+                    .rear_head(face)
+                    .ref_(self.tracer.layout.drawing())
+                    .length(),
             }
-        }
     }
 }
 

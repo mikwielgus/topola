@@ -6,7 +6,7 @@ use crate::{
         bend::LooseBendIndex,
         dot::FixedDotIndex,
         graph::PrimitiveIndex,
-        guide::{BareHead, CaneHead, Head},
+        head::{BareHead, CaneHead, Head},
         rules::RulesTrait,
     },
     router::{
