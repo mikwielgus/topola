@@ -71,7 +71,7 @@ impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
+impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, (), (), BandFirstSegIndex>
     for RouterAstarStrategy<'a, R>
 {
     fn is_goal(
@@ -92,9 +92,9 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
             .ok()
     }
 
-    fn edge_cost(&mut self, navmesh: &Navmesh, edge: NavmeshEdgeReference) -> Option<f64> {
+    fn probe(&mut self, navmesh: &Navmesh, edge: NavmeshEdgeReference) -> Result<(f64, ()), ()> {
         if edge.target().petgraph_index() == self.target.petgraph_index() {
-            return None;
+            return Err(());
         }
 
         let prev_bihead_length = self.bihead_length();
@@ -108,9 +108,9 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
 
         if result.is_ok() {
             self.trace.undo_step(&mut self.tracer);
-            Some(probe_length)
+            Ok((probe_length, ()))
         } else {
-            None
+            Err(())
         }
     }
 
