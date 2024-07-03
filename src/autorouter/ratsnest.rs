@@ -16,9 +16,9 @@ use crate::{
         dot::FixedDotIndex,
         graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
-        rules::RulesTrait,
+        rules::AccessRules,
     },
-    geometry::{compound::CompoundManagerTrait, shape::ShapeTrait},
+    geometry::{compound::ManageCompounds, shape::AccessShape},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
         zone::{MakePolyShape, ZoneWeight},
@@ -72,7 +72,7 @@ pub struct Ratsnest {
 }
 
 impl Ratsnest {
-    pub fn new(layout: &Layout<impl RulesTrait>) -> Result<Self, InsertionError> {
+    pub fn new(layout: &Layout<impl AccessRules>) -> Result<Self, InsertionError> {
         let mut unionfind = UnionFind::new(layout.drawing().geometry().graph().node_bound());
 
         for edge in layout.drawing().geometry().graph().edge_references() {

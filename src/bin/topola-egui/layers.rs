@@ -1,4 +1,4 @@
-use topola::board::{mesadata::MesadataTrait, Board};
+use topola::board::{mesadata::AccessMesadata, Board};
 
 pub struct Layers {
     // TODO:
@@ -10,7 +10,7 @@ pub struct Layers {
 }
 
 impl Layers {
-    pub fn new(board: &Board<impl MesadataTrait>) -> Self {
+    pub fn new(board: &Board<impl AccessMesadata>) -> Self {
         let layer_count = board.layout().drawing().layer_count();
         let visible = std::iter::repeat(true)
             .take(layer_count)
@@ -65,7 +65,7 @@ impl Layers {
         }
     }
 
-    pub fn update(&mut self, ctx: &egui::Context, board: &Board<impl MesadataTrait>) {
+    pub fn update(&mut self, ctx: &egui::Context, board: &Board<impl AccessMesadata>) {
         egui::SidePanel::right("right_side_panel").show(ctx, |ui| {
             ui.label("Layers");
 

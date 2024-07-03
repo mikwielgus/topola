@@ -7,7 +7,7 @@ use topola::{
         invoker::{Invoker, InvokerError},
         Autorouter,
     },
-    board::{mesadata::MesadataTrait, Board},
+    board::{mesadata::AccessMesadata, Board},
     drawing::graph::{GetLayer, GetMaybeNet},
     graph::GetPetgraphIndex,
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
@@ -56,7 +56,7 @@ pub fn replay_and_assert(invoker: &mut Invoker<SpecctraMesadata>, filename: &str
 }
 
 pub fn assert_single_layer_groundless_autoroute(
-    autorouter: &mut Autorouter<impl MesadataTrait>,
+    autorouter: &mut Autorouter<impl AccessMesadata>,
     layername: &str,
 ) {
     let unionfind = unionfind(autorouter);
@@ -139,7 +139,7 @@ pub fn assert_single_layer_groundless_autoroute(
 }*/
 
 pub fn assert_band_length(
-    board: &Board<impl MesadataTrait>,
+    board: &Board<impl AccessMesadata>,
     source: &str,
     target: &str,
     length: f64,
@@ -150,7 +150,7 @@ pub fn assert_band_length(
     assert!((band_length - length).abs() < epsilon);
 }
 
-fn unionfind(autorouter: &mut Autorouter<impl MesadataTrait>) -> UnionFind<NodeIndex<usize>> {
+fn unionfind(autorouter: &mut Autorouter<impl AccessMesadata>) -> UnionFind<NodeIndex<usize>> {
     for ratline in autorouter.ratsnest().graph().edge_indices() {
         // Accessing endpoints may create new dots because apex construction is lazy, so we access
         // tem all before starting unionfind, as it requires a constant index bound.

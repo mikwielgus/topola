@@ -1,6 +1,6 @@
 use geo::{CoordsIter, Point, Polygon};
 use topola::{
-    geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait},
+    geometry::primitive::{AccessPrimitiveShape, PrimitiveShape},
     math::{self, Circle},
 };
 
@@ -54,7 +54,7 @@ impl<'a> Painter<'a> {
 
         self.ui.painter().add(epaint_shape);
 
-        let envelope = PrimitiveShapeTrait::envelope(shape, 0.0);
+        let envelope = AccessPrimitiveShape::envelope(shape, 0.0);
         let rect = egui::epaint::Rect {
             min: [envelope.lower()[0] as f32, -envelope.upper()[1] as f32].into(),
             max: [envelope.upper()[0] as f32, -envelope.lower()[1] as f32].into(),

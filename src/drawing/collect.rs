@@ -2,17 +2,17 @@ use crate::drawing::{
     bend::LooseBendIndex,
     graph::PrimitiveIndex,
     primitive::{GetInnerOuter, GetJoints},
-    rules::RulesTrait,
+    rules::AccessRules,
     wraparoundable::{GetWraparound, WraparoundableIndex},
     Drawing,
 };
 
 #[derive(Debug)]
-pub struct Collect<'a, CW: Copy, R: RulesTrait> {
+pub struct Collect<'a, CW: Copy, R: AccessRules> {
     drawing: &'a Drawing<CW, R>,
 }
 
-impl<'a, CW: Copy, R: RulesTrait> Collect<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
     pub fn new(drawing: &'a Drawing<CW, R>) -> Self {
         Self { drawing }
     }

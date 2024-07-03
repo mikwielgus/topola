@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    drawing::{graph::GetMaybeNet, primitive::MakePrimitiveShape, rules::RulesTrait},
+    drawing::{graph::GetMaybeNet, primitive::MakePrimitiveShape, rules::AccessRules},
     geometry::{
-        compound::CompoundManagerTrait,
+        compound::ManageCompounds,
         primitive::{DotShape, PrimitiveShape},
     },
     graph::{GenericIndex, GetPetgraphIndex},
@@ -12,18 +12,18 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct Via<'a, R: RulesTrait> {
+pub struct Via<'a, R: AccessRules> {
     pub index: GenericIndex<ViaWeight>,
     layout: &'a Layout<R>,
 }
 
-impl<'a, R: RulesTrait> Via<'a, R> {
+impl<'a, R: AccessRules> Via<'a, R> {
     pub fn new(index: GenericIndex<ViaWeight>, layout: &'a Layout<R>) -> Self {
         Self { index, layout }
     }
 }
 
-impl<'a, R: RulesTrait> GetMaybeNet for Via<'a, R> {
+impl<'a, R: AccessRules> GetMaybeNet for Via<'a, R> {
     fn maybe_net(&self) -> Option<usize> {
         self.layout
             .drawing()
@@ -32,7 +32,7 @@ impl<'a, R: RulesTrait> GetMaybeNet for Via<'a, R> {
     }
 }
 
-impl<'a, R: RulesTrait> MakePrimitiveShape for Via<'a, R> {
+impl<'a, R: AccessRules> MakePrimitiveShape for Via<'a, R> {
     fn shape(&self) -> PrimitiveShape {
         if let CompoundWeight::Via(weight) =
             self.layout.drawing().compound_weight(self.index.into())

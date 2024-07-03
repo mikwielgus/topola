@@ -4,10 +4,10 @@ use crate::{
     drawing::{
         graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight, Retag},
         primitive::{GenericPrimitive, Primitive},
-        rules::RulesTrait,
+        rules::AccessRules,
         Drawing,
     },
-    geometry::{BendWeightTrait, GetOffset, GetWidth, SetOffset},
+    geometry::{AccessBendWeight, GetOffset, GetWidth, SetOffset},
     graph::{GenericIndex, GetPetgraphIndex},
 };
 
@@ -69,7 +69,7 @@ impl TryFrom<PrimitiveWeight> for BendWeight {
     }
 }
 
-impl BendWeightTrait<PrimitiveWeight> for BendWeight {}
+impl AccessBendWeight<PrimitiveWeight> for BendWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedBendWeight {
@@ -80,7 +80,7 @@ pub struct FixedBendWeight {
 }
 
 impl_fixed_weight!(FixedBendWeight, FixedBend, FixedBendIndex);
-impl BendWeightTrait<PrimitiveWeight> for FixedBendWeight {}
+impl AccessBendWeight<PrimitiveWeight> for FixedBendWeight {}
 
 impl GetOffset for FixedBendWeight {
     fn offset(&self) -> f64 {
@@ -127,4 +127,4 @@ impl GetWidth for LooseBendWeight {
 }
 
 impl_loose_weight!(LooseBendWeight, LooseBend, LooseBendIndex);
-impl BendWeightTrait<PrimitiveWeight> for LooseBendWeight {}
+impl AccessBendWeight<PrimitiveWeight> for LooseBendWeight {}

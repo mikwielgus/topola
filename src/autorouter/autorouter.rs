@@ -9,7 +9,7 @@ use crate::{
         ratsnest::{Ratsnest, RatvertexIndex},
         selection::Selection,
     },
-    board::{mesadata::MesadataTrait, Board},
+    board::{mesadata::AccessMesadata, Board},
     drawing::{dot::FixedDotIndex, Infringement},
     layout::via::ViaWeight,
     router::{navmesh::NavmeshError, RouterError},
@@ -33,12 +33,12 @@ pub enum AutorouterStatus {
     Finished,
 }
 
-pub struct Autorouter<M: MesadataTrait> {
+pub struct Autorouter<M: AccessMesadata> {
     pub(super) board: Board<M>,
     pub(super) ratsnest: Ratsnest,
 }
 
-impl<M: MesadataTrait> Autorouter<M> {
+impl<M: AccessMesadata> Autorouter<M> {
     pub fn new(board: Board<M>) -> Result<Self, InsertionError> {
         let ratsnest = Ratsnest::new(board.layout())?;
         Ok(Self { board, ratsnest })

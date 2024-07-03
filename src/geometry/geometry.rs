@@ -14,11 +14,11 @@ use crate::{
         dot::DotWeight,
         graph::{PrimitiveWeight, Retag},
         primitive::Primitive,
-        rules::RulesTrait,
+        rules::AccessRules,
         seg::SegWeight,
     },
     geometry::{
-        compound::CompoundManagerTrait,
+        compound::ManageCompounds,
         primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
     },
     graph::{GenericIndex, GetPetgraphIndex},
@@ -64,16 +64,16 @@ pub enum GenericNode<P, C> {
     Compound(C),
 }
 
-pub trait DotWeightTrait<CW>: GetPos + SetPos + GetWidth + Into<CW> + Copy {}
-pub trait SegWeightTrait<CW>: GetWidth + Into<CW> + Copy {}
-pub trait BendWeightTrait<CW>: GetOffset + SetOffset + GetWidth + Into<CW> + Copy {}
+pub trait AccessDotWeight<CW>: GetPos + SetPos + GetWidth + Into<CW> + Copy {}
+pub trait AccessSegWeight<CW>: GetWidth + Into<CW> + Copy {}
+pub trait AccessBendWeight<CW>: GetOffset + SetOffset + GetWidth + Into<CW> + Copy {}
 
 #[derive(Debug)]
 pub struct Geometry<
     PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-    DW: DotWeightTrait<PW>,
-    SW: SegWeightTrait<PW>,
-    BW: BendWeightTrait<PW>,
+    DW: AccessDotWeight<PW>,
+    SW: AccessSegWeight<PW>,
+    BW: AccessBendWeight<PW>,
     CW: Copy,
     PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
     DI: GetPetgraphIndex + Into<PI> + Copy,
@@ -94,9 +94,9 @@ pub struct Geometry<
 
 impl<
         PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: DotWeightTrait<PW>,
-        SW: SegWeightTrait<PW>,
-        BW: BendWeightTrait<PW>,
+        DW: AccessDotWeight<PW>,
+        SW: AccessSegWeight<PW>,
+        BW: AccessBendWeight<PW>,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,
@@ -119,11 +119,11 @@ impl<
         }
     }
 
-    pub fn add_dot<W: DotWeightTrait<PW>>(&mut self, weight: W) -> GenericIndex<W> {
+    pub fn add_dot<W: AccessDotWeight<PW>>(&mut self, weight: W) -> GenericIndex<W> {
         GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())))
     }
 
-    pub fn add_seg<W: SegWeightTrait<PW>>(
+    pub fn add_seg<W: AccessSegWeight<PW>>(
         &mut self,
         from: DI,
         to: DI,
@@ -146,7 +146,7 @@ impl<
         seg
     }
 
-    pub fn add_bend<W: BendWeightTrait<PW>>(
+    pub fn add_bend<W: AccessBendWeight<PW>>(
         &mut self,
         from: DI,
         to: DI,
@@ -500,15 +500,15 @@ impl<
 
 impl<
         PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: DotWeightTrait<PW>,
-        SW: SegWeightTrait<PW>,
-        BW: BendWeightTrait<PW>,
+        DW: AccessDotWeight<PW>,
+        SW: AccessSegWeight<PW>,
+        BW: AccessBendWeight<PW>,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,
         SI: GetPetgraphIndex + Into<PI> + Copy,
         BI: GetPetgraphIndex + Into<PI> + Copy,
-    > CompoundManagerTrait<CW, GenericIndex<CW>> for Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>
+    > ManageCompounds<CW, GenericIndex<CW>> for Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
     fn add_compound(&mut self, weight: CW) -> GenericIndex<CW> {
         GenericIndex::<CW>::new(self.graph.add_node(GenericNode::Compound(weight)))

@@ -11,7 +11,7 @@ use crate::{
         selection::Selection,
         Autorouter, AutorouterError, AutorouterStatus,
     },
-    board::mesadata::MesadataTrait,
+    board::mesadata::AccessMesadata,
     layout::via::ViaWeight,
     router::{navmesh::Navmesh, trace::Trace},
 };
@@ -53,7 +53,7 @@ pub enum Execute {
 }
 
 impl Execute {
-    pub fn step<M: MesadataTrait>(
+    pub fn step<M: AccessMesadata>(
         &mut self,
         invoker: &mut Invoker<M>,
     ) -> Result<InvokerStatus, InvokerError> {
@@ -73,7 +73,7 @@ impl Execute {
         }
     }
 
-    fn step_catch_err<M: MesadataTrait>(
+    fn step_catch_err<M: AccessMesadata>(
         &mut self,
         invoker: &mut Invoker<M>,
     ) -> Result<InvokerStatus, InvokerError> {
@@ -103,7 +103,7 @@ impl ExecuteWithStatus {
         }
     }
 
-    pub fn step<M: MesadataTrait>(
+    pub fn step<M: AccessMesadata>(
         &mut self,
         invoker: &mut Invoker<M>,
     ) -> Result<InvokerStatus, InvokerError> {
@@ -129,13 +129,13 @@ impl GetMaybeTrace for ExecuteWithStatus {
     }
 }
 
-pub struct Invoker<M: MesadataTrait> {
+pub struct Invoker<M: AccessMesadata> {
     autorouter: Autorouter<M>,
     history: History,
     ongoing_command: Option<Command>,
 }
 
-impl<M: MesadataTrait> Invoker<M> {
+impl<M: AccessMesadata> Invoker<M> {
     pub fn new(autorouter: Autorouter<M>) -> Self {
         Self::new_with_history(autorouter, History::new())
     }

@@ -7,10 +7,10 @@ use crate::{
     drawing::{
         graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight, Retag},
         primitive::{GenericPrimitive, Primitive},
-        rules::RulesTrait,
+        rules::AccessRules,
         Drawing,
     },
-    geometry::{DotWeightTrait, GetPos, GetWidth, SetPos},
+    geometry::{AccessDotWeight, GetPos, GetWidth, SetPos},
     graph::{GenericIndex, GetPetgraphIndex},
     math::Circle,
 };
@@ -71,7 +71,7 @@ impl TryFrom<PrimitiveWeight> for DotWeight {
     }
 }
 
-impl DotWeightTrait<PrimitiveWeight> for DotWeight {}
+impl AccessDotWeight<PrimitiveWeight> for DotWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedDotWeight {
@@ -81,7 +81,7 @@ pub struct FixedDotWeight {
 }
 
 impl_fixed_weight!(FixedDotWeight, FixedDot, FixedDotIndex);
-impl DotWeightTrait<PrimitiveWeight> for FixedDotWeight {}
+impl AccessDotWeight<PrimitiveWeight> for FixedDotWeight {}
 
 impl GetPos for FixedDotWeight {
     fn pos(&self) -> Point {
@@ -109,7 +109,7 @@ pub struct LooseDotWeight {
 }
 
 impl_loose_weight!(LooseDotWeight, LooseDot, LooseDotIndex);
-impl DotWeightTrait<PrimitiveWeight> for LooseDotWeight {}
+impl AccessDotWeight<PrimitiveWeight> for LooseDotWeight {}
 
 impl GetPos for LooseDotWeight {
     fn pos(&self) -> Point {

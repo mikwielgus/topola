@@ -5,12 +5,12 @@ use petgraph::{
 };
 use topola::{
     autorouter::invoker::{Command, ExecuteWithStatus, GetMaybeNavmesh, GetMaybeTrace, Invoker},
-    board::mesadata::MesadataTrait,
+    board::mesadata::AccessMesadata,
     drawing::{
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
     },
-    geometry::{shape::ShapeTrait, GenericNode},
+    geometry::{shape::AccessShape, GenericNode},
     layout::{via::ViaWeight, zone::MakePolyShape},
     math::Circle,
     specctra::mesadata::SpecctraMesadata,

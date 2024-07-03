@@ -4,7 +4,7 @@ use geo::{point, Point, Rotate};
 use thiserror::Error;
 
 use crate::{
-    board::{mesadata::MesadataTrait, Board},
+    board::{mesadata::AccessMesadata, Board},
     drawing::{dot::FixedDotWeight, seg::FixedSegWeight, Drawing},
     layout::{zone::SolidZoneWeight, Layout},
     math::Circle,

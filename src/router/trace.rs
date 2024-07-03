@@ -7,7 +7,7 @@ use crate::{
         dot::FixedDotIndex,
         graph::PrimitiveIndex,
         head::{BareHead, CaneHead, Head},
-        rules::RulesTrait,
+        rules::AccessRules,
     },
     router::{
         draw::Draw,
@@ -37,7 +37,7 @@ impl Trace {
     #[debug_ensures(ret.is_err() -> self.path.len() == old(self.path.len()))]
     pub fn step(
         &mut self,
-        tracer: &mut Tracer<impl RulesTrait>,
+        tracer: &mut Tracer<impl AccessRules>,
         navmesh: &Navmesh,
         to: NavvertexIndex,
         width: f64,
@@ -49,7 +49,7 @@ impl Trace {
     }
 
     #[debug_ensures(self.path.len() == old(self.path.len() - 1))]
-    pub fn undo_step(&mut self, tracer: &mut Tracer<impl RulesTrait>) {
+    pub fn undo_step(&mut self, tracer: &mut Tracer<impl AccessRules>) {
         if let Head::Cane(head) = self.head {
             self.head = Draw::new(tracer.layout).undo_cane(head).unwrap();
         } else {
@@ -61,7 +61,7 @@ impl Trace {
 
     fn wrap(
         &mut self,
-        tracer: &mut Tracer<impl RulesTrait>,
+        tracer: &mut Tracer<impl AccessRules>,
         navmesh: &Navmesh,
         head: Head,
         around: NavvertexIndex,
@@ -84,7 +84,7 @@ impl Trace {
 
     fn wrap_around_fixed_dot(
         &mut self,
-        tracer: &mut Tracer<impl RulesTrait>,
+        tracer: &mut Tracer<impl AccessRules>,
         head: Head,
         around: FixedDotIndex,
         cw: bool,
@@ -95,7 +95,7 @@ impl Trace {
 
     fn wrap_around_loose_bend(
         &mut self,
-        tracer: &mut Tracer<impl RulesTrait>,
+        tracer: &mut Tracer<impl AccessRules>,
         head: Head,
         around: LooseBendIndex,
         cw: bool,

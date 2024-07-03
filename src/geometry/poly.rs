@@ -1,6 +1,6 @@
 use geo::{Centroid, Contains, EuclideanLength, Point, Polygon};
 
-use crate::geometry::shape::{MeasureLength, ShapeTrait};
+use crate::geometry::shape::{AccessShape, MeasureLength};
 
 #[derive(Debug, Clone, PartialEq)]
 pub struct PolyShape {
@@ -19,7 +19,7 @@ impl MeasureLength for PolyShape {
     }
 }
 
-impl ShapeTrait for PolyShape {
+impl AccessShape for PolyShape {
     fn center(&self) -> Point {
         self.polygon.centroid().unwrap()
     }

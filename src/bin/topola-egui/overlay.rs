@@ -6,14 +6,14 @@ use spade::InsertionError;
 
 use topola::{
     autorouter::{ratsnest::Ratsnest, selection::Selection},
-    board::{mesadata::MesadataTrait, Board},
+    board::{mesadata::AccessMesadata, Board},
     drawing::{
         graph::{GetLayer, MakePrimitive},
         primitive::MakePrimitiveShape,
     },
     geometry::{
-        compound::CompoundManagerTrait,
-        shape::{Shape, ShapeTrait},
+        compound::ManageCompounds,
+        shape::{AccessShape, Shape},
     },
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
@@ -30,7 +30,7 @@ pub struct Overlay {
 }
 
 impl Overlay {
-    pub fn new(board: &Board<impl MesadataTrait>) -> Result<Self, InsertionError> {
+    pub fn new(board: &Board<impl AccessMesadata>) -> Result<Self, InsertionError> {
         Ok(Self {
             ratsnest: Ratsnest::new(board.layout())?,
             selection: Selection::new(),
@@ -38,7 +38,7 @@ impl Overlay {
         })
     }
 
-    pub fn click(&mut self, board: &Board<impl MesadataTrait>, at: Point) {
+    pub fn click(&mut self, board: &Board<impl AccessMesadata>, at: Point) {
         let geoms: Vec<_> = board
             .layout()
             .drawing()
@@ -60,7 +60,12 @@ impl Overlay {
         }
     }
 
-    fn contains_point(&self, board: &Board<impl MesadataTrait>, node: NodeIndex, p: Point) -> bool {
+    fn contains_point(
+        &self,
+        board: &Board<impl AccessMesadata>,
+        node: NodeIndex,
+        p: Point,
+    ) -> bool {
         let shape: Shape = match node {
             NodeIndex::Primitive(primitive) => {
                 primitive.primitive(board.layout().drawing()).shape().into()

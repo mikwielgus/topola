@@ -18,7 +18,7 @@ use crate::drawing::{
         GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetLimbs, GetOtherJoint,
         MakePrimitiveShape,
     },
-    rules::{GetConditions, RulesTrait},
+    rules::{AccessRules, GetConditions},
     seg::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex, SegWeight,
         SeqLooseSegIndex, SeqLooseSegWeight,
@@ -26,11 +26,11 @@ use crate::drawing::{
     wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex},
 };
 use crate::geometry::{
-    compound::CompoundManagerTrait,
-    primitive::{PrimitiveShape, PrimitiveShapeTrait},
+    compound::ManageCompounds,
+    primitive::{AccessPrimitiveShape, PrimitiveShape},
     with_rtree::{BboxedIndex, GeometryWithRtree},
-    BendWeightTrait, DotWeightTrait, GenericNode, Geometry, GeometryLabel, GetOffset, GetPos,
-    GetWidth, SegWeightTrait,
+    AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
+    GetOffset, GetPos, GetWidth,
 };
 use crate::graph::{GenericIndex, GetPetgraphIndex};
 use crate::math::NoTangents;
@@ -64,7 +64,7 @@ pub struct Collision(pub PrimitiveShape, pub PrimitiveIndex);
 pub struct AlreadyConnected(pub usize, pub PrimitiveIndex);
 
 #[derive(Debug)]
-pub struct Drawing<CW: Copy, R: RulesTrait> {
+pub struct Drawing<CW: Copy, R: AccessRules> {
     geometry_with_rtree: GeometryWithRtree<
         PrimitiveWeight,
         DotWeight,
@@ -80,7 +80,7 @@ pub struct Drawing<CW: Copy, R: RulesTrait> {
 }
 
 #[debug_invariant(self.test_if_looses_dont_infringe_each_other())]
-impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
+impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     pub fn new(rules: R, layer_count: usize) -> Self {
         Self {
             geometry_with_rtree: GeometryWithRtree::new(layer_count),
@@ -172,7 +172,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
-    fn add_dot_with_infringables<W: DotWeightTrait<PrimitiveWeight> + GetLayer>(
+    fn add_dot_with_infringables<W: AccessDotWeight<PrimitiveWeight> + GetLayer>(
         &mut self,
         weight: W,
         infringables: Option<&[PrimitiveIndex]>,
@@ -241,7 +241,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() >= old(self.geometry_with_rtree.graph().edge_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_seg_with_infringables<W: SegWeightTrait<PrimitiveWeight> + GetLayer>(
+    fn add_seg_with_infringables<W: AccessSegWeight<PrimitiveWeight> + GetLayer>(
         &mut self,
         from: DotIndex,
         to: DotIndex,
@@ -305,7 +305,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 3))]
     #[debug_ensures(ret.is_err() -> self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_core_bend_with_infringables<W: BendWeightTrait<PrimitiveWeight> + GetLayer>(
+    fn add_core_bend_with_infringables<W: AccessBendWeight<PrimitiveWeight> + GetLayer>(
         &mut self,
         from: DotIndex,
         to: DotIndex,
@@ -719,10 +719,10 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     }
 }
 
-impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
+impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
-    fn add_dot_infringably<W: DotWeightTrait<PrimitiveWeight> + GetLayer>(
+    fn add_dot_infringably<W: AccessDotWeight<PrimitiveWeight> + GetLayer>(
         &mut self,
         weight: W,
     ) -> GenericIndex<W>
@@ -734,7 +734,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count() + 2))]
-    fn add_seg_infringably<W: SegWeightTrait<PrimitiveWeight> + GetLayer>(
+    fn add_seg_infringably<W: AccessSegWeight<PrimitiveWeight> + GetLayer>(
         &mut self,
         from: DotIndex,
         to: DotIndex,
@@ -967,7 +967,7 @@ impl<CW: Copy, R: RulesTrait> Drawing<CW, R> {
     }
 }
 
-impl<CW: Copy, R: RulesTrait> CompoundManagerTrait<CW, GenericIndex<CW>> for Drawing<CW, R> {
+impl<CW: Copy, R: AccessRules> ManageCompounds<CW, GenericIndex<CW>> for Drawing<CW, R> {
     fn add_compound(&mut self, weight: CW) -> GenericIndex<CW> {
         self.geometry_with_rtree.add_compound(weight)
     }

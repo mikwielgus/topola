@@ -9,9 +9,9 @@ use crate::{
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
         graph::{GetLayer, GetMaybeNet, MakePrimitive},
         guide::Guide,
-        head::{CaneHead, Head, HeadTrait},
+        head::{CaneHead, GetFace, Head},
         primitive::GetOtherJoint,
-        rules::RulesTrait,
+        rules::AccessRules,
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
         wraparoundable::WraparoundableIndex,
         Infringement, LayoutException,
@@ -31,11 +31,11 @@ pub enum DrawException {
     CannotWrapAround(WraparoundableIndex, #[source] LayoutException),
 }
 
-pub struct Draw<'a, R: RulesTrait> {
+pub struct Draw<'a, R: AccessRules> {
     layout: &'a mut Layout<R>,
 }
 
-impl<'a, R: RulesTrait> Draw<'a, R> {
+impl<'a, R: AccessRules> Draw<'a, R> {
     pub fn new(layout: &'a mut Layout<R>) -> Self {
         Self { layout }
     }

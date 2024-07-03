@@ -6,16 +6,16 @@ use super::{
     cane::Cane,
     dot::{DotIndex, FixedDotIndex, LooseDotIndex},
     primitive::MakePrimitiveShape,
-    rules::RulesTrait,
+    rules::AccessRules,
     Drawing,
 };
 
 #[enum_dispatch]
-pub trait HeadTrait {
+pub trait GetFace {
     fn face(&self) -> DotIndex;
 }
 
-#[enum_dispatch(HeadTrait)]
+#[enum_dispatch(GetFace)]
 #[derive(Debug, Clone, Copy)]
 pub enum Head {
     Bare(BareHead),
@@ -23,7 +23,7 @@ pub enum Head {
 }
 
 impl Head {
-    pub fn ref_<'a, CW: Copy, R: RulesTrait>(
+    pub fn ref_<'a, CW: Copy, R: AccessRules>(
         &self,
         drawing: &'a Drawing<CW, R>,
     ) -> HeadRef<'a, CW, R> {
@@ -36,7 +36,7 @@ pub struct BareHead {
     pub face: FixedDotIndex,
 }
 
-impl HeadTrait for BareHead {
+impl GetFace for BareHead {
     fn face(&self) -> DotIndex {
         self.face.into()
     }
@@ -48,30 +48,30 @@ pub struct CaneHead {
     pub cane: Cane,
 }
 
-impl HeadTrait for CaneHead {
+impl GetFace for CaneHead {
     fn face(&self) -> DotIndex {
         self.face.into()
     }
 }
 
-pub struct HeadRef<'a, CW: Copy, R: RulesTrait> {
+pub struct HeadRef<'a, CW: Copy, R: AccessRules> {
     head: Head,
     drawing: &'a Drawing<CW, R>,
 }
 
-impl<'a, CW: Copy, R: RulesTrait> HeadRef<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> HeadRef<'a, CW, R> {
     pub fn new(head: Head, drawing: &'a Drawing<CW, R>) -> Self {
         Self { drawing, head }
     }
 }
 
-impl<'a, CW: Copy, R: RulesTrait> HeadTrait for HeadRef<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> GetFace for HeadRef<'a, CW, R> {
     fn face(&self) -> DotIndex {
         self.head.face()
     }
 }
 
-impl<'a, CW: Copy, R: RulesTrait> MeasureLength for HeadRef<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> MeasureLength for HeadRef<'a, CW, R> {
     fn length(&self) -> f64 {
         match self.head {
             Head::Bare(..) => 0.0,

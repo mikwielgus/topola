@@ -3,8 +3,8 @@ use std::collections::HashMap;
 use bimap::BiHashMap;
 
 use crate::{
-    board::mesadata::MesadataTrait,
-    drawing::rules::{Conditions, RulesTrait},
+    board::mesadata::AccessMesadata,
+    drawing::rules::{AccessRules, Conditions},
     specctra::structure::Pcb,
 };
 
@@ -92,7 +92,7 @@ impl SpecctraMesadata {
     }
 }
 
-impl RulesTrait for SpecctraMesadata {
+impl AccessRules for SpecctraMesadata {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64 {
         let (Some(net1), Some(net2)) = (conditions1.maybe_net, conditions2.maybe_net) else {
             return 0.0;
@@ -121,7 +121,7 @@ impl RulesTrait for SpecctraMesadata {
     }
 }
 
-impl MesadataTrait for SpecctraMesadata {
+impl AccessMesadata for SpecctraMesadata {
     fn bename_layer(&mut self, layer: usize, layername: String) {
         self.layer_layername.insert(layer, layername);
     }

@@ -2,8 +2,8 @@ use geo::Line;
 
 use crate::{
     geometry::{
-        primitive::{PrimitiveShape, PrimitiveShapeTrait},
-        shape::ShapeTrait,
+        primitive::{AccessPrimitiveShape, PrimitiveShape},
+        shape::AccessShape,
     },
     math::{self, Circle, NoTangents},
 };
@@ -12,17 +12,17 @@ use super::{
     bend::BendIndex,
     dot::{DotIndex, FixedDotIndex, LooseDotIndex},
     graph::{MakePrimitive, PrimitiveIndex},
-    head::{BareHead, CaneHead, Head, HeadTrait},
+    head::{BareHead, CaneHead, GetFace, Head},
     primitive::{GetCore, GetInnerOuter, GetJoints, GetOtherJoint, GetWeight, MakePrimitiveShape},
-    rules::{Conditions, GetConditions, RulesTrait},
+    rules::{AccessRules, Conditions, GetConditions},
     Drawing,
 };
 
-pub struct Guide<'a, CW: Copy, R: RulesTrait> {
+pub struct Guide<'a, CW: Copy, R: AccessRules> {
     drawing: &'a Drawing<CW, R>,
 }
 
-impl<'a, CW: Copy, R: RulesTrait> Guide<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> Guide<'a, CW, R> {
     pub fn new(drawing: &'a Drawing<CW, R>) -> Self {
         Self { drawing }
     }

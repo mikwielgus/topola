@@ -7,10 +7,10 @@ use crate::{
         dot::FixedDotIndex,
         graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex},
         primitive::GetLimbs,
-        rules::RulesTrait,
+        rules::AccessRules,
         seg::SegIndex,
     },
-    geometry::{compound::CompoundManagerTrait, poly::PolyShape, GetPos},
+    geometry::{compound::ManageCompounds, poly::PolyShape, GetPos},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{CompoundWeight, Layout},
 };
@@ -26,12 +26,12 @@ pub trait GetMaybeApex {
 }
 
 #[derive(Debug)]
-pub struct Zone<'a, R: RulesTrait> {
+pub struct Zone<'a, R: AccessRules> {
     pub index: GenericIndex<ZoneWeight>,
     layout: &'a Layout<R>,
 }
 
-impl<'a, R: RulesTrait> Zone<'a, R> {
+impl<'a, R: AccessRules> Zone<'a, R> {
     pub fn new(index: GenericIndex<ZoneWeight>, layout: &'a Layout<R>) -> Self {
         Self { index, layout }
     }
@@ -48,7 +48,7 @@ impl<'a, R: RulesTrait> Zone<'a, R> {
     }
 }
 
-impl<'a, R: RulesTrait> GetLayer for Zone<'a, R> {
+impl<'a, R: AccessRules> GetLayer for Zone<'a, R> {
     fn layer(&self) -> usize {
         if let CompoundWeight::Zone(weight) =
             self.layout.drawing().compound_weight(self.index.into())
@@ -60,7 +60,7 @@ impl<'a, R: RulesTrait> GetLayer for Zone<'a, R> {
     }
 }
 
-impl<'a, R: RulesTrait> GetMaybeNet for Zone<'a, R> {
+impl<'a, R: AccessRules> GetMaybeNet for Zone<'a, R> {
     fn maybe_net(&self) -> Option<usize> {
         self.layout
             .drawing()
@@ -69,7 +69,7 @@ impl<'a, R: RulesTrait> GetMaybeNet for Zone<'a, R> {
     }
 }
 
-impl<'a, R: RulesTrait> MakePolyShape for Zone<'a, R> {
+impl<'a, R: AccessRules> MakePolyShape for Zone<'a, R> {
     fn shape(&self) -> PolyShape {
         PolyShape {
             polygon: Polygon::new(
@@ -103,7 +103,7 @@ impl<'a, R: RulesTrait> MakePolyShape for Zone<'a, R> {
     }
 }
 
-impl<'a, R: RulesTrait> GetMaybeApex for Zone<'a, R> {
+impl<'a, R: AccessRules> GetMaybeApex for Zone<'a, R> {
     fn maybe_apex(&self) -> Option<FixedDotIndex> {
         self.layout
             .drawing()

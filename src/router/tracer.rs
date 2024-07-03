@@ -8,7 +8,7 @@ use thiserror::Error;
 use crate::{
     drawing::{
         band::BandFirstSegIndex, bend::LooseBendIndex, dot::FixedDotIndex, graph::PrimitiveIndex,
-        rules::RulesTrait,
+        rules::AccessRules,
     },
     layout::Layout,
     router::{
@@ -27,11 +27,11 @@ pub enum TracerException {
 }
 
 #[derive(Debug)]
-pub struct Tracer<'a, R: RulesTrait> {
+pub struct Tracer<'a, R: AccessRules> {
     pub layout: &'a mut Layout<R>,
 }
 
-impl<'a, R: RulesTrait> Tracer<'a, R> {
+impl<'a, R: AccessRules> Tracer<'a, R> {
     pub fn new(layout: &mut Layout<R>) -> Tracer<R> {
         Tracer { layout }
     }

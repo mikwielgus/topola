@@ -8,7 +8,7 @@ use super::{
     bend::{FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
     dot::{FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
     primitive::Primitive,
-    rules::RulesTrait,
+    rules::AccessRules,
     seg::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
         SeqLooseSegWeight,
@@ -32,7 +32,7 @@ pub trait GetMaybeNet {
 
 #[enum_dispatch]
 pub trait MakePrimitive {
-    fn primitive<'a, CW: Copy, R: RulesTrait>(
+    fn primitive<'a, CW: Copy, R: AccessRules>(
         &self,
         drawing: &'a Drawing<CW, R>,
     ) -> Primitive<'a, CW, R>;
@@ -61,7 +61,7 @@ macro_rules! impl_weight {
         pub type $index_struct = GenericIndex<$weight_struct>;
 
         impl MakePrimitive for $index_struct {
-            fn primitive<'a, CW: Copy, R: RulesTrait>(
+            fn primitive<'a, CW: Copy, R: AccessRules>(
                 &self,
                 drawing: &'a Drawing<CW, R>,
             ) -> Primitive<'a, CW, R> {

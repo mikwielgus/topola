@@ -12,9 +12,9 @@ use crate::{
         dot::{DotIndex, FixedDotIndex},
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
-        rules::RulesTrait,
+        rules::AccessRules,
     },
-    geometry::{primitive::PrimitiveShapeTrait, shape::ShapeTrait},
+    geometry::{primitive::AccessPrimitiveShape, shape::AccessShape},
     graph::GetPetgraphIndex,
     layout::Layout,
     router::{
@@ -37,7 +37,7 @@ pub struct Route {
 
 impl Route {
     pub fn new(
-        router: &mut Router<impl RulesTrait>,
+        router: &mut Router<impl AccessRules>,
         from: FixedDotIndex,
         to: FixedDotIndex,
         width: f64,
@@ -47,7 +47,7 @@ impl Route {
     }
 
     pub fn new_from_navmesh(
-        router: &mut Router<impl RulesTrait>,
+        router: &mut Router<impl AccessRules>,
         navmesh: Navmesh,
         width: f64,
     ) -> Self {
@@ -66,7 +66,7 @@ impl Route {
 
     pub fn step(
         &mut self,
-        router: &mut Router<impl RulesTrait>,
+        router: &mut Router<impl AccessRules>,
     ) -> Result<RouterStatus, RouterError> {
         let tracer = Tracer::new(router.layout_mut());
         let target = self.astar.graph.destination();

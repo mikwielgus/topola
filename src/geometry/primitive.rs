@@ -3,12 +3,12 @@ use geo::{point, polygon, Contains, EuclideanDistance, Intersects, Point, Polygo
 use rstar::{RTreeObject, AABB};
 
 use crate::{
-    geometry::shape::{MeasureLength, ShapeTrait},
+    geometry::shape::{AccessShape, MeasureLength},
     math::{self, Circle},
 };
 
 #[enum_dispatch]
-pub trait PrimitiveShapeTrait: ShapeTrait {
+pub trait AccessPrimitiveShape: AccessShape {
     fn priority(&self) -> usize;
     fn inflate(&self, margin: f64) -> PrimitiveShape;
     fn intersects(&self, other: &PrimitiveShape) -> bool;
@@ -36,7 +36,7 @@ pub trait PrimitiveShapeTrait: ShapeTrait {
     }
 }
 
-#[enum_dispatch(MeasureLength, ShapeTrait, PrimitiveShapeTrait)]
+#[enum_dispatch(MeasureLength, AccessShape, AccessPrimitiveShape)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PrimitiveShape {
     // Intentionally in different order to reorder `self.intersects(...)` properly.
@@ -56,7 +56,7 @@ impl MeasureLength for DotShape {
     }
 }
 
-impl ShapeTrait for DotShape {
+impl AccessShape for DotShape {
     fn center(&self) -> Point {
         self.circle.pos
     }
@@ -66,7 +66,7 @@ impl ShapeTrait for DotShape {
     }
 }
 
-impl PrimitiveShapeTrait for DotShape {
+impl AccessPrimitiveShape for DotShape {
     fn priority(&self) -> usize {
         3
     }
@@ -159,7 +159,7 @@ impl MeasureLength for SegShape {
     }
 }
 
-impl ShapeTrait for SegShape {
+impl AccessShape for SegShape {
     fn center(&self) -> Point {
         (self.from + self.to) / 2.0
     }
@@ -169,7 +169,7 @@ impl ShapeTrait for SegShape {
     }
 }
 
-impl PrimitiveShapeTrait for SegShape {
+impl AccessPrimitiveShape for SegShape {
     fn priority(&self) -> usize {
         2
     }
@@ -286,7 +286,7 @@ impl MeasureLength for BendShape {
     }
 }
 
-impl ShapeTrait for BendShape {
+impl AccessShape for BendShape {
     fn center(&self) -> Point {
         let sum = (self.from - self.inner_circle.pos) + (self.to - self.inner_circle.pos);
         self.inner_circle.pos
@@ -299,7 +299,7 @@ impl ShapeTrait for BendShape {
     }
 }
 
-impl PrimitiveShapeTrait for BendShape {
+impl AccessPrimitiveShape for BendShape {
     fn priority(&self) -> usize {
         1
     }
@@ -375,6 +375,6 @@ impl PrimitiveShapeTrait for BendShape {
 impl RTreeObject for PrimitiveShape {
     type Envelope = AABB<[f64; 2]>;
     fn envelope(&self) -> Self::Envelope {
-        PrimitiveShapeTrait::envelope(self, 0.0)
+        AccessPrimitiveShape::envelope(self, 0.0)
     }
 }

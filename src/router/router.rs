@@ -7,13 +7,13 @@ use crate::{
         band::BandFirstSegIndex,
         dot::{DotIndex, FixedDotIndex},
         graph::{MakePrimitive, PrimitiveIndex},
-        head::{Head, HeadTrait},
+        head::{GetFace, Head},
         primitive::MakePrimitiveShape,
-        rules::RulesTrait,
+        rules::AccessRules,
     },
     geometry::{
-        primitive::PrimitiveShapeTrait,
-        shape::{MeasureLength, ShapeTrait},
+        primitive::AccessPrimitiveShape,
+        shape::{AccessShape, MeasureLength},
     },
     graph::GetPetgraphIndex,
     layout::Layout,
@@ -40,13 +40,13 @@ pub enum RouterStatus {
 }
 
 #[derive(Debug)]
-pub struct RouterAstarStrategy<'a, R: RulesTrait> {
+pub struct RouterAstarStrategy<'a, R: AccessRules> {
     pub tracer: Tracer<'a, R>,
     pub trace: &'a mut Trace,
     pub target: FixedDotIndex,
 }
 
-impl<'a, R: RulesTrait> RouterAstarStrategy<'a, R> {
+impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
     pub fn new(tracer: Tracer<'a, R>, trace: &'a mut Trace, target: FixedDotIndex) -> Self {
         Self {
             tracer,
@@ -71,7 +71,7 @@ impl<'a, R: RulesTrait> RouterAstarStrategy<'a, R> {
     }
 }
 
-impl<'a, R: RulesTrait> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
+impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
     for RouterAstarStrategy<'a, R>
 {
     fn is_goal(
@@ -132,11 +132,11 @@ impl<'a, R: RulesTrait> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
 }
 
 #[derive(Debug)]
-pub struct Router<'a, R: RulesTrait> {
+pub struct Router<'a, R: AccessRules> {
     layout: &'a mut Layout<R>,
 }
 
-impl<'a, R: RulesTrait> Router<'a, R> {
+impl<'a, R: AccessRules> Router<'a, R> {
     pub fn new(layout: &'a mut Layout<R>) -> Self {
         Self { layout }
     }

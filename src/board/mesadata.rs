@@ -1,6 +1,6 @@
-use crate::drawing::rules::RulesTrait;
+use crate::drawing::rules::AccessRules;
 
-pub trait MesadataTrait: RulesTrait {
+pub trait AccessMesadata: AccessRules {
     fn bename_layer(&mut self, layer: usize, layername: String);
     fn layer_layername(&self, layer: usize) -> Option<&str>;
     fn layername_layer(&self, layername: &str) -> Option<usize>;

@@ -8,10 +8,10 @@ use rstar::{primitives::GeomWithData, Envelope, RTree, RTreeObject, AABB};
 use crate::{
     drawing::graph::{GetLayer, Retag},
     geometry::{
-        compound::CompoundManagerTrait,
-        primitive::{PrimitiveShape, PrimitiveShapeTrait},
-        BendWeightTrait, DotWeightTrait, GenericNode, Geometry, GeometryLabel, GetWidth,
-        SegWeightTrait,
+        compound::ManageCompounds,
+        primitive::{AccessPrimitiveShape, PrimitiveShape},
+        AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
+        GetWidth,
     },
     graph::{GenericIndex, GetPetgraphIndex},
 };
@@ -39,9 +39,9 @@ pub type BboxedIndex<I> = GeomWithData<Bbox, I>;
 #[derive(Debug)]
 pub struct GeometryWithRtree<
     PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-    DW: DotWeightTrait<PW> + GetLayer,
-    SW: SegWeightTrait<PW> + GetLayer,
-    BW: BendWeightTrait<PW> + GetLayer,
+    DW: AccessDotWeight<PW> + GetLayer,
+    SW: AccessSegWeight<PW> + GetLayer,
+    BW: AccessBendWeight<PW> + GetLayer,
     CW: Copy,
     PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
     DI: GetPetgraphIndex + Into<PI> + Copy,
@@ -65,9 +65,9 @@ pub struct GeometryWithRtree<
 #[debug_invariant(self.geometry.graph().node_count() == self.rtree.size())]
 impl<
         PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: DotWeightTrait<PW> + GetLayer,
-        SW: SegWeightTrait<PW> + GetLayer,
-        BW: BendWeightTrait<PW> + GetLayer,
+        DW: AccessDotWeight<PW> + GetLayer,
+        SW: AccessSegWeight<PW> + GetLayer,
+        BW: AccessBendWeight<PW> + GetLayer,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,
@@ -91,7 +91,7 @@ impl<
         }
     }
 
-    pub fn add_dot<W: DotWeightTrait<PW> + GetLayer>(&mut self, weight: W) -> GenericIndex<W>
+    pub fn add_dot<W: AccessDotWeight<PW> + GetLayer>(&mut self, weight: W) -> GenericIndex<W>
     where
         GenericIndex<W>: Into<PI>,
     {
@@ -107,7 +107,7 @@ impl<
         dot
     }
 
-    pub fn add_seg<W: SegWeightTrait<PW> + GetLayer>(
+    pub fn add_seg<W: AccessSegWeight<PW> + GetLayer>(
         &mut self,
         from: DI,
         to: DI,
@@ -128,7 +128,7 @@ impl<
         seg
     }
 
-    pub fn add_bend<W: BendWeightTrait<PW> + GetLayer>(
+    pub fn add_bend<W: AccessBendWeight<PW> + GetLayer>(
         &mut self,
         from: DI,
         to: DI,
@@ -255,9 +255,9 @@ impl<
 
 impl<
         PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: DotWeightTrait<PW> + GetLayer,
-        SW: SegWeightTrait<PW> + GetLayer,
-        BW: BendWeightTrait<PW> + GetLayer,
+        DW: AccessDotWeight<PW> + GetLayer,
+        SW: AccessSegWeight<PW> + GetLayer,
+        BW: AccessBendWeight<PW> + GetLayer,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,
@@ -386,15 +386,15 @@ impl<
 
 impl<
         PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: DotWeightTrait<PW> + GetLayer,
-        SW: SegWeightTrait<PW> + GetLayer,
-        BW: BendWeightTrait<PW> + GetLayer,
+        DW: AccessDotWeight<PW> + GetLayer,
+        SW: AccessSegWeight<PW> + GetLayer,
+        BW: AccessBendWeight<PW> + GetLayer,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,
         SI: GetPetgraphIndex + Into<PI> + Copy,
         BI: GetPetgraphIndex + Into<PI> + Copy,
-    > CompoundManagerTrait<CW, GenericIndex<CW>>
+    > ManageCompounds<CW, GenericIndex<CW>>
     for GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
     fn add_compound(&mut self, weight: CW) -> GenericIndex<CW> {

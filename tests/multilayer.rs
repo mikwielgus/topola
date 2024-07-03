@@ -3,7 +3,7 @@ use topola::{
         invoker::{Command, InvokerError},
         AutorouterError,
     },
-    board::mesadata::MesadataTrait,
+    board::mesadata::AccessMesadata,
     layout::via::ViaWeight,
     math::Circle,
 };

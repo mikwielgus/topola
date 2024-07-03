@@ -2,7 +2,7 @@ use geo::{CoordsIter, Point, Polygon};
 use pathfinder_canvas::{
     vec2f, ArcDirection, Canvas, CanvasRenderingContext2D, ColorU, FillRule, Path2D, RectF,
 };
-use topola::geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait};
+use topola::geometry::primitive::{AccessPrimitiveShape, PrimitiveShape};
 
 pub struct Painter<'a> {
     canvas: &'a mut CanvasRenderingContext2D,
@@ -56,7 +56,7 @@ impl<'a> Painter<'a> {
             }
         }
 
-        let envelope = PrimitiveShapeTrait::envelope(shape, 0.0);
+        let envelope = AccessPrimitiveShape::envelope(shape, 0.0);
         // XXX: points represented as arrays can't be conveniently converted to vector types
         let topleft = vec2f(envelope.lower()[0] as f32, -envelope.upper()[1] as f32);
         let bottomright = vec2f(envelope.upper()[0] as f32, -envelope.lower()[1] as f32);

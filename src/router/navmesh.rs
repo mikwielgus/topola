@@ -20,10 +20,10 @@ use crate::{
         dot::FixedDotIndex,
         graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex},
         primitive::{MakePrimitiveShape, Primitive},
-        rules::RulesTrait,
+        rules::AccessRules,
         Drawing,
     },
-    geometry::shape::ShapeTrait,
+    geometry::shape::AccessShape,
     graph::GetPetgraphIndex,
     layout::Layout,
     router::astar::MakeEdgeRef,
@@ -115,7 +115,7 @@ pub struct Navmesh {
 
 impl Navmesh {
     pub fn new(
-        layout: &Layout<impl RulesTrait>,
+        layout: &Layout<impl AccessRules>,
         source: FixedDotIndex,
         target: FixedDotIndex,
     ) -> Result<Self, NavmeshError> {

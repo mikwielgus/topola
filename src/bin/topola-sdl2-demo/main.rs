@@ -18,11 +18,11 @@ use topola::autorouter::{Autorouter, AutorouterStatus};
 use topola::drawing::dot::FixedDotWeight;
 use topola::drawing::graph::{MakePrimitive, PrimitiveIndex};
 use topola::drawing::primitive::MakePrimitiveShape;
-use topola::drawing::rules::{Conditions, RulesTrait};
+use topola::drawing::rules::{AccessRules, Conditions};
 use topola::drawing::seg::FixedSegWeight;
 use topola::drawing::{Infringement, LayoutException};
-use topola::geometry::primitive::{PrimitiveShape, PrimitiveShapeTrait};
-use topola::geometry::shape::ShapeTrait;
+use topola::geometry::primitive::{AccessPrimitiveShape, PrimitiveShape};
+use topola::geometry::shape::AccessShape;
 use topola::layout::zone::MakePolyShape;
 use topola::layout::Layout;
 use topola::router::draw::DrawException;
@@ -56,7 +56,7 @@ struct SimpleRules {
     net_clearances: HashMap<(usize, usize), f64>,
 }
 
-impl RulesTrait for SimpleRules {
+impl AccessRules for SimpleRules {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64 {
         if let (Some(net1), Some(net2)) = (conditions1.maybe_net, conditions2.maybe_net) {
             *self.net_clearances.get(&(net1, net2)).unwrap_or(&10.0)
@@ -81,7 +81,7 @@ impl RulesTrait for SimpleRules {
 }
 
 // Clunky enum to work around borrow checker.
-enum RouterOrLayout<'a, R: RulesTrait> {
+enum RouterOrLayout<'a, R: AccessRules> {
     Router(&'a mut Route<'a, R>),
     Layout(&'a Layout<R>),
 }
@@ -222,7 +222,7 @@ fn render_times(
     renderer: &mut Renderer<GLDevice>,
     font_context: &CanvasFontContext,
     view: &mut View,
-    mut router_or_layout: RouterOrLayout<impl RulesTrait>,
+    mut router_or_layout: RouterOrLayout<impl AccessRules>,
     _unused: Option<()>,
     mut maybe_navmesh: Option<Navmesh>,
     path: &[NodeIndex<usize>],

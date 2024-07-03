@@ -3,7 +3,7 @@ use crate::{
         invoker::{GetMaybeNavmesh, GetMaybeTrace},
         Autorouter, AutorouterError,
     },
-    board::mesadata::MesadataTrait,
+    board::mesadata::AccessMesadata,
     layout::via::ViaWeight,
     router::{navmesh::Navmesh, trace::Trace},
 };
@@ -20,7 +20,7 @@ impl PlaceVia {
 
     pub fn doit(
         &mut self,
-        autorouter: &mut Autorouter<impl MesadataTrait>,
+        autorouter: &mut Autorouter<impl AccessMesadata>,
     ) -> Result<(), AutorouterError> {
         autorouter.place_via(self.weight)
     }

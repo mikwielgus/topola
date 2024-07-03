@@ -7,7 +7,7 @@ use crate::{
         dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::{FixedBend, FixedDot, GetFirstRail, GetInnerOuter, LooseBend, Primitive},
-        rules::RulesTrait,
+        rules::AccessRules,
         Drawing,
     },
     graph::GetPetgraphIndex,
@@ -46,13 +46,13 @@ impl From<BendIndex> for WraparoundableIndex {
 }
 
 #[enum_dispatch(GetWraparound, GetDrawing, GetPetgraphIndex)]
-pub enum Wraparoundable<'a, CW: Copy, R: RulesTrait> {
+pub enum Wraparoundable<'a, CW: Copy, R: AccessRules> {
     FixedDot(FixedDot<'a, CW, R>),
     FixedBend(FixedBend<'a, CW, R>),
     LooseBend(LooseBend<'a, CW, R>),
 }
 
-impl<'a, CW: Copy, R: RulesTrait> Wraparoundable<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> Wraparoundable<'a, CW, R> {
     pub fn new(index: WraparoundableIndex, drawing: &'a Drawing<CW, R>) -> Self {
         match index {
             WraparoundableIndex::FixedDot(dot) => drawing.primitive(dot).into(),
@@ -62,19 +62,19 @@ impl<'a, CW: Copy, R: RulesTrait> Wraparoundable<'a, CW, R> {
     }
 }
 
-impl<'a, CW: Copy, R: RulesTrait> GetWraparound for FixedDot<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> GetWraparound for FixedDot<'a, CW, R> {
     fn wraparound(&self) -> Option<LooseBendIndex> {
         self.first_rail()
     }
 }
 
-impl<'a, CW: Copy, R: RulesTrait> GetWraparound for LooseBend<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> GetWraparound for LooseBend<'a, CW, R> {
     fn wraparound(&self) -> Option<LooseBendIndex> {
         self.outer()
     }
 }
 
-impl<'a, CW: Copy, R: RulesTrait> GetWraparound for FixedBend<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> GetWraparound for FixedBend<'a, CW, R> {
     fn wraparound(&self) -> Option<LooseBendIndex> {
         self.first_rail()
     }

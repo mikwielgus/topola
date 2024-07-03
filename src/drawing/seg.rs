@@ -4,10 +4,10 @@ use crate::{
     drawing::{
         graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight, Retag},
         primitive::{GenericPrimitive, Primitive},
-        rules::RulesTrait,
+        rules::AccessRules,
         Drawing,
     },
-    geometry::{GetWidth, SegWeightTrait},
+    geometry::{AccessSegWeight, GetWidth},
     graph::{GenericIndex, GetPetgraphIndex},
 };
 
@@ -75,7 +75,7 @@ impl TryFrom<PrimitiveWeight> for SegWeight {
     }
 }
 
-impl SegWeightTrait<PrimitiveWeight> for SegWeight {}
+impl AccessSegWeight<PrimitiveWeight> for SegWeight {}
 
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedSegWeight {
@@ -85,7 +85,7 @@ pub struct FixedSegWeight {
 }
 
 impl_fixed_weight!(FixedSegWeight, FixedSeg, FixedSegIndex);
-impl SegWeightTrait<PrimitiveWeight> for FixedSegWeight {}
+impl AccessSegWeight<PrimitiveWeight> for FixedSegWeight {}
 
 impl GetWidth for FixedSegWeight {
     fn width(&self) -> f64 {
@@ -101,7 +101,7 @@ pub struct LoneLooseSegWeight {
 }
 
 impl_loose_weight!(LoneLooseSegWeight, LoneLooseSeg, LoneLooseSegIndex);
-impl SegWeightTrait<PrimitiveWeight> for LoneLooseSegWeight {}
+impl AccessSegWeight<PrimitiveWeight> for LoneLooseSegWeight {}
 
 impl GetWidth for LoneLooseSegWeight {
     fn width(&self) -> f64 {
@@ -117,7 +117,7 @@ pub struct SeqLooseSegWeight {
 }
 
 impl_loose_weight!(SeqLooseSegWeight, SeqLooseSeg, SeqLooseSegIndex);
-impl SegWeightTrait<PrimitiveWeight> for SeqLooseSegWeight {}
+impl AccessSegWeight<PrimitiveWeight> for SeqLooseSegWeight {}
 
 impl GetWidth for SeqLooseSegWeight {
     fn width(&self) -> f64 {

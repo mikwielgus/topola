@@ -3,9 +3,9 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    board::{mesadata::MesadataTrait, Board},
+    board::{mesadata::AccessMesadata, Board},
     drawing::graph::{GetLayer, MakePrimitive},
-    geometry::compound::CompoundManagerTrait,
+    geometry::compound::ManageCompounds,
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{zone::ZoneWeight, CompoundWeight, NodeIndex},
 };
@@ -28,7 +28,7 @@ impl Selection {
         }
     }
 
-    pub fn toggle_at_node(&mut self, board: &Board<impl MesadataTrait>, node: NodeIndex) {
+    pub fn toggle_at_node(&mut self, board: &Board<impl AccessMesadata>, node: NodeIndex) {
         let Some(selector) = self.node_selector(board, node) else {
             return;
         };
@@ -40,15 +40,15 @@ impl Selection {
         }
     }
 
-    fn select(&mut self, board: &Board<impl MesadataTrait>, selector: Selector) {
+    fn select(&mut self, board: &Board<impl AccessMesadata>, selector: Selector) {
         self.selectors.insert(selector);
     }
 
-    fn deselect(&mut self, board: &Board<impl MesadataTrait>, selector: &Selector) {
+    fn deselect(&mut self, board: &Board<impl AccessMesadata>, selector: &Selector) {
         self.selectors.remove(selector);
     }
 
-    pub fn contains_node(&self, board: &Board<impl MesadataTrait>, node: NodeIndex) -> bool {
+    pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
         let Some(selector) = self.node_selector(board, node) else {
             return false;
         };
@@ -58,7 +58,7 @@ impl Selection {
 
     fn node_selector(
         &self,
-        board: &Board<impl MesadataTrait>,
+        board: &Board<impl AccessMesadata>,
         node: NodeIndex,
     ) -> Option<Selector> {
         let layer = match node {

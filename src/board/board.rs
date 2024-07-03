@@ -1,14 +1,14 @@
 use std::collections::HashMap;
 
 use crate::{
-    board::mesadata::MesadataTrait,
+    board::mesadata::AccessMesadata,
     drawing::{
         band::BandFirstSegIndex,
         dot::{FixedDotIndex, FixedDotWeight},
         graph::{GetLayer, GetMaybeNet},
         seg::{FixedSegIndex, FixedSegWeight},
     },
-    geometry::{shape::ShapeTrait, GenericNode},
+    geometry::{shape::AccessShape, GenericNode},
     graph::GenericIndex,
     layout::{
         zone::{GetMaybeApex, MakePolyShape, ZoneWeight},
@@ -19,13 +19,13 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct Board<M: MesadataTrait> {
+pub struct Board<M: AccessMesadata> {
     layout: Layout<M>,
     node_to_pinname: HashMap<NodeIndex, String>,
     pinname_pair_to_band: HashMap<(String, String), BandFirstSegIndex>,
 }
 
-impl<M: MesadataTrait> Board<M> {
+impl<M: AccessMesadata> Board<M> {
     pub fn new(layout: Layout<M>) -> Self {
         Self {
             layout,

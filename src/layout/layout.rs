@@ -11,7 +11,7 @@ use crate::{
         dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         graph::{GetMaybeNet, PrimitiveIndex},
         primitive::{GetJoints, GetOtherJoint},
-        rules::RulesTrait,
+        rules::AccessRules,
         seg::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
             SeqLooseSegWeight,
@@ -20,7 +20,7 @@ use crate::{
         Drawing, Infringement, LayoutException,
     },
     geometry::{
-        compound::CompoundManagerTrait, primitive::PrimitiveShapeTrait, shape::MeasureLength,
+        compound::ManageCompounds, primitive::AccessPrimitiveShape, shape::MeasureLength,
         GenericNode,
     },
     graph::{GenericIndex, GetPetgraphIndex},
@@ -40,11 +40,11 @@ pub enum CompoundWeight {
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<CompoundWeight>>;
 
 #[derive(Debug)]
-pub struct Layout<R: RulesTrait> {
+pub struct Layout<R: AccessRules> {
     drawing: Drawing<CompoundWeight, R>,
 }
 
-impl<R: RulesTrait> Layout<R> {
+impl<R: AccessRules> Layout<R> {
     pub fn new(drawing: Drawing<CompoundWeight, R>) -> Self {
         Self { drawing }
     }

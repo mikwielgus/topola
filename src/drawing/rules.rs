@@ -14,7 +14,7 @@ pub struct Conditions {
     pub maybe_layer: Option<String>,
 }
 
-pub trait RulesTrait {
+pub trait AccessRules {
     fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64;
     fn largest_clearance(&self, net: Option<usize>) -> f64;
 }

@@ -5,7 +5,7 @@ use crate::{
         invoker::{GetMaybeNavmesh, GetMaybeTrace},
         Autorouter, AutorouterError, AutorouterStatus,
     },
-    board::mesadata::MesadataTrait,
+    board::mesadata::AccessMesadata,
     router::{navmesh::Navmesh, route::Route, trace::Trace, Router, RouterStatus},
 };
 
@@ -17,7 +17,7 @@ pub struct Autoroute {
 
 impl Autoroute {
     pub fn new(
-        autorouter: &mut Autorouter<impl MesadataTrait>,
+        autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: impl IntoIterator<Item = EdgeIndex<usize>> + 'static,
     ) -> Result<Self, AutorouterError> {
         let mut ratlines_iter = Box::new(ratlines.into_iter());
@@ -38,7 +38,7 @@ impl Autoroute {
         Ok(this)
     }
 
-    pub fn step<M: MesadataTrait>(
+    pub fn step<M: AccessMesadata>(
         &mut self,
         autorouter: &mut Autorouter<M>,
     ) -> Result<AutorouterStatus, AutorouterError> {

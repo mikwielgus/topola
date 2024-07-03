@@ -12,12 +12,12 @@ pub trait MeasureLength {
 }
 
 #[enum_dispatch]
-pub trait ShapeTrait: MeasureLength {
+pub trait AccessShape: MeasureLength {
     fn center(&self) -> Point;
     fn contains_point(&self, p: Point) -> bool;
 }
 
-#[enum_dispatch(MeasureLength, ShapeTrait)]
+#[enum_dispatch(MeasureLength, AccessShape)]
 #[derive(Debug, Clone, PartialEq)]
 pub enum Shape {
     Dot(DotShape),
