@@ -72,6 +72,9 @@ pub struct App {
 
     #[serde(skip)]
     maybe_layers: Option<Layers>,
+
+    #[serde(skip)]
+    update_counter: f32,
 }
 
 impl Default for App {
@@ -85,6 +88,7 @@ impl Default for App {
             top: Top::new(),
             bottom: Bottom::new(),
             maybe_layers: None,
+            update_counter: 0.0,
         }
     }
 }
@@ -100,7 +104,15 @@ impl App {
         Default::default()
     }
 
-    fn update_state(&mut self) {
+    fn update_state(&mut self, dt: f32) {
+        self.update_counter += dt;
+
+        if self.update_counter <= 0.1 {
+            return;
+        }
+
+        self.update_counter = 0.0;
+
         if cfg!(target_arch = "wasm32") {
             if let Ok(file_contents) = self.text_channel.1.try_recv() {
                 let design = SpecctraDesign::load_from_string(file_contents).unwrap();
@@ -142,7 +154,7 @@ impl eframe::App for App {
 
     /// Called each time the UI has to be repainted.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.update_state();
+        self.update_state(ctx.input(|i| i.stable_dt));
 
         self.top.update(
             ctx,
