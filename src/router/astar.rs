@@ -96,7 +96,7 @@ where
     }
 }
 
-pub trait AstarStrategy<G, K, PS, PE, R>
+pub trait AstarStrategy<G, K, R>
 where
     G: GraphBase,
     G::NodeId: Eq + Hash,
@@ -108,7 +108,7 @@ where
         &mut self,
         graph: &'a G,
         edge: <&'a G as IntoEdgeReferences>::EdgeRef,
-    ) -> Result<(K, PS), PE>;
+    ) -> Option<K>;
     fn estimate_cost(&mut self, graph: &G, node: G::NodeId) -> K;
 }
 
@@ -140,14 +140,14 @@ pub enum AstarError {
 }
 
 #[derive(Debug)]
-pub enum AstarStatus<G, K, PS, PE, R>
+pub enum AstarStatus<G, K, R>
 where
     G: GraphBase,
     G::NodeId: Eq + Hash,
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
     K: Measure + Copy,
 {
-    Probed(Result<PS, PE>),
+    Probed,
     Visited,
     Finished(K, Vec<G::NodeId>, R),
 }
@@ -159,11 +159,7 @@ where
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
     K: Measure + Copy,
 {
-    pub fn new<PS, PE, R>(
-        graph: G,
-        start: G::NodeId,
-        strategy: &mut impl AstarStrategy<G, K, PS, PE, R>,
-    ) -> Self {
+    pub fn new<R>(graph: G, start: G::NodeId, strategy: &mut impl AstarStrategy<G, K, R>) -> Self {
         let mut this = Self {
             graph,
             visit_next: BinaryHeap::new(),
@@ -183,10 +179,10 @@ where
         this
     }
 
-    pub fn step<PS, PE, R>(
+    pub fn step<R>(
         &mut self,
-        strategy: &mut impl AstarStrategy<G, K, PS, PE, R>,
-    ) -> Result<AstarStatus<G, K, PS, PE, R>, AstarError> {
+        strategy: &mut impl AstarStrategy<G, K, R>,
+    ) -> Result<AstarStatus<G, K, R>, AstarError> {
         if let Some(curr_node) = self.maybe_curr_node {
             if let Some(edge_id) = self.edge_ids.pop_front() {
                 // This lookup can be unwrapped without fear of panic since the node was
@@ -194,37 +190,34 @@ where
                 let node_score = self.scores[&curr_node];
                 let edge = (&self.graph).edge_ref(edge_id);
 
-                match strategy.probe(&self.graph, edge) {
-                    Ok((edge_cost, probe_status)) => {
-                        let next = edge.target();
-                        let next_score = node_score + edge_cost;
+                if let Some(edge_cost) = strategy.probe(&self.graph, edge) {
+                    let next = edge.target();
+                    let next_score = node_score + edge_cost;
 
-                        match self.scores.entry(next) {
-                            Occupied(mut entry) => {
-                                // No need to add neighbors that we have already reached through a
-                                // shorter path than now.
-                                if *entry.get() <= next_score {
-                                    return Ok(AstarStatus::Probed(Ok(probe_status)));
-                                }
-                                entry.insert(next_score);
+                    match self.scores.entry(next) {
+                        Occupied(mut entry) => {
+                            // No need to add neighbors that we have already reached through a
+                            // shorter path than now.
+                            if *entry.get() <= next_score {
+                                return Ok(AstarStatus::Probed);
                             }
-                            Vacant(entry) => {
-                                entry.insert(next_score);
-                            }
+                            entry.insert(next_score);
                         }
-
-                        self.path_tracker.set_predecessor(next, curr_node);
-                        let next_estimate_score =
-                            next_score + strategy.estimate_cost(&self.graph, next);
-                        self.visit_next.push(MinScored(next_estimate_score, next));
-
-                        return Ok(AstarStatus::Probed(Ok(probe_status)));
+                        Vacant(entry) => {
+                            entry.insert(next_score);
+                        }
                     }
-                    Err(probe_err) => return Ok(AstarStatus::Probed(Err(probe_err))),
+
+                    self.path_tracker.set_predecessor(next, curr_node);
+                    let next_estimate_score =
+                        next_score + strategy.estimate_cost(&self.graph, next);
+                    self.visit_next.push(MinScored(next_estimate_score, next));
                 }
-            } else {
-                self.maybe_curr_node = None;
+
+                return Ok(AstarStatus::Probed);
             }
+
+            self.maybe_curr_node = None;
         }
 
         let Some(MinScored(estimate_score, node)) = self.visit_next.pop() else {
@@ -258,10 +251,10 @@ where
     }
 }
 
-pub fn astar<G, K, PS, PE, R>(
+pub fn astar<G, K, R>(
     graph: G,
     start: G::NodeId,
-    strategy: &mut impl AstarStrategy<G, K, PS, PE, R>,
+    strategy: &mut impl AstarStrategy<G, K, R>,
 ) -> Result<(K, Vec<G::NodeId>, R), AstarError>
 where
     G: GraphBase,

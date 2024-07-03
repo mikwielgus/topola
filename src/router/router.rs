@@ -10,20 +10,23 @@ use crate::{
         head::{GetFace, Head},
         primitive::MakePrimitiveShape,
         rules::AccessRules,
+        Collision, Infringement, LayoutException,
     },
     geometry::{
-        primitive::AccessPrimitiveShape,
+        primitive::{AccessPrimitiveShape, PrimitiveShape},
         shape::{AccessShape, MeasureLength},
     },
     graph::GetPetgraphIndex,
     layout::Layout,
-    router::{
-        astar::{AstarError, AstarStatus, AstarStrategy, PathTracker},
-        navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
-        route::Route,
-        trace::Trace,
-        tracer::Tracer,
-    },
+};
+
+use super::{
+    astar::{AstarError, AstarStrategy, PathTracker},
+    draw::DrawException,
+    navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
+    route::Route,
+    trace::Trace,
+    tracer::{Tracer, TracerException},
 };
 
 #[derive(Error, Debug, Clone)]
@@ -44,6 +47,7 @@ pub struct RouterAstarStrategy<'a, R: AccessRules> {
     pub tracer: Tracer<'a, R>,
     pub trace: &'a mut Trace,
     pub target: FixedDotIndex,
+    pub ghosts: Vec<PrimitiveShape>,
 }
 
 impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
@@ -52,6 +56,7 @@ impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
             tracer,
             trace,
             target,
+            ghosts: vec![],
         }
     }
 
@@ -71,7 +76,7 @@ impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, (), (), BandFirstSegIndex>
+impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
     for RouterAstarStrategy<'a, R>
 {
     fn is_goal(
@@ -92,9 +97,9 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, (), (), BandFirstSegIndex>
             .ok()
     }
 
-    fn probe(&mut self, navmesh: &Navmesh, edge: NavmeshEdgeReference) -> Result<(f64, ()), ()> {
+    fn probe(&mut self, navmesh: &Navmesh, edge: NavmeshEdgeReference) -> Option<f64> {
         if edge.target().petgraph_index() == self.target.petgraph_index() {
-            return Err(());
+            return None;
         }
 
         let prev_bihead_length = self.bihead_length();
@@ -106,11 +111,32 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, (), (), BandFirstSegIndex>
 
         let probe_length = self.bihead_length() - prev_bihead_length;
 
-        if result.is_ok() {
-            self.trace.undo_step(&mut self.tracer);
-            Ok((probe_length, ()))
-        } else {
-            Err(())
+        match result {
+            Ok(..) => {
+                self.trace.undo_step(&mut self.tracer);
+                Some(probe_length)
+            }
+            Err(err) => {
+                if let TracerException::CannotDraw(draw_err) = err {
+                    let layout_err = match draw_err {
+                        DrawException::NoTangents(..) => return None,
+                        DrawException::CannotFinishIn(.., layout_err) => layout_err,
+                        DrawException::CannotWrapAround(.., layout_err) => layout_err,
+                    };
+
+                    let (ghost, ..) = match layout_err {
+                        LayoutException::NoTangents(..) => return None,
+                        LayoutException::Infringement(Infringement(ghost, obstacle)) => {
+                            (ghost, obstacle)
+                        }
+                        LayoutException::Collision(Collision(ghost, obstacle)) => (ghost, obstacle),
+                        LayoutException::AlreadyConnected(..) => return None,
+                    };
+
+                    self.ghosts = vec![ghost];
+                }
+                None
+            }
         }
     }
 

@@ -12,6 +12,8 @@ use crate::{
         Autorouter, AutorouterError, AutorouterStatus,
     },
     board::mesadata::AccessMesadata,
+    drawing::graph::PrimitiveIndex,
+    geometry::primitive::PrimitiveShape,
     layout::via::ViaWeight,
     router::{navmesh::Navmesh, trace::Trace},
 };
@@ -24,6 +26,11 @@ pub trait GetMaybeNavmesh {
 #[enum_dispatch]
 pub trait GetMaybeTrace {
     fn maybe_trace(&self) -> Option<&Trace>;
+}
+
+#[enum_dispatch]
+pub trait GetGhosts {
+    fn ghosts(&self) -> &[PrimitiveShape];
 }
 
 #[derive(Error, Debug, Clone)]
@@ -46,7 +53,7 @@ pub enum Command {
     PlaceVia(ViaWeight),
 }
 
-#[enum_dispatch(GetMaybeNavmesh, GetMaybeTrace)]
+#[enum_dispatch(GetMaybeNavmesh, GetMaybeTrace, GetGhosts)]
 pub enum Execute {
     Autoroute(Autoroute),
     PlaceVia(PlaceVia),
@@ -126,6 +133,12 @@ impl GetMaybeNavmesh for ExecuteWithStatus {
 impl GetMaybeTrace for ExecuteWithStatus {
     fn maybe_trace(&self) -> Option<&Trace> {
         self.execute.maybe_trace()
+    }
+}
+
+impl GetGhosts for ExecuteWithStatus {
+    fn ghosts(&self) -> &[PrimitiveShape] {
+        self.execute.ghosts()
     }
 }
 

@@ -14,7 +14,10 @@ use crate::{
         primitive::MakePrimitiveShape,
         rules::AccessRules,
     },
-    geometry::{primitive::AccessPrimitiveShape, shape::AccessShape},
+    geometry::{
+        primitive::{AccessPrimitiveShape, PrimitiveShape},
+        shape::AccessShape,
+    },
     graph::GetPetgraphIndex,
     layout::Layout,
     router::{
@@ -33,6 +36,7 @@ use crate::{
 pub struct Route {
     astar: Astar<Navmesh, f64>,
     trace: Trace,
+    ghosts: Vec<PrimitiveShape>,
 }
 
 impl Route {
@@ -60,8 +64,13 @@ impl Route {
 
         let mut strategy = RouterAstarStrategy::new(tracer, &mut trace, target);
         let astar = Astar::new(navmesh, source_navvertex, &mut strategy);
+        let ghosts = vec![];
 
-        Self { astar, trace }
+        Self {
+            astar,
+            trace,
+            ghosts,
+        }
     }
 
     pub fn step(
@@ -72,10 +81,13 @@ impl Route {
         let target = self.astar.graph.destination();
         let mut strategy = RouterAstarStrategy::new(tracer, &mut self.trace, target);
 
-        match self.astar.step(&mut strategy)? {
-            AstarStatus::Probed(..) | AstarStatus::Visited => Ok(RouterStatus::Running),
+        let result = match self.astar.step(&mut strategy)? {
+            AstarStatus::Probed | AstarStatus::Visited => Ok(RouterStatus::Running),
             AstarStatus::Finished(_cost, _path, band) => Ok(RouterStatus::Finished(band)),
-        }
+        };
+
+        self.ghosts = strategy.ghosts;
+        result
     }
 
     pub fn navmesh(&self) -> &Navmesh {
@@ -84,5 +96,9 @@ impl Route {
 
     pub fn trace(&self) -> &Trace {
         &self.trace
+    }
+
+    pub fn ghosts(&self) -> &[PrimitiveShape] {
+        &self.ghosts
     }
 }

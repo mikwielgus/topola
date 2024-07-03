@@ -4,7 +4,9 @@ use petgraph::{
     visit::{EdgeRef, IntoEdgeReferences},
 };
 use topola::{
-    autorouter::invoker::{Command, ExecuteWithStatus, GetMaybeNavmesh, GetMaybeTrace, Invoker},
+    autorouter::invoker::{
+        Command, ExecuteWithStatus, GetGhosts, GetMaybeNavmesh, GetMaybeTrace, Invoker,
+    },
     board::mesadata::AccessMesadata,
     drawing::{
         graph::{MakePrimitive, PrimitiveIndex},
@@ -213,11 +215,11 @@ impl Viewport {
                             }
                         }
 
-                        /*for ghost in shared_data.ghosts.iter() {
-                            painter.paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
-                        }*/
-
                         if let Some(execute) = maybe_execute {
+                            for ghost in execute.ghosts().iter() {
+                                painter.paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
+                            }
+
                             if let Some(navmesh) = execute.maybe_navmesh() {
                                 if let (origin, destination) = (navmesh.origin(), navmesh.destination()) {
                                     painter.paint_dot(

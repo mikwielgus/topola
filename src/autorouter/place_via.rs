@@ -1,11 +1,14 @@
 use crate::{
-    autorouter::{
-        invoker::{GetMaybeNavmesh, GetMaybeTrace},
-        Autorouter, AutorouterError,
-    },
     board::mesadata::AccessMesadata,
+    drawing::graph::PrimitiveIndex,
+    geometry::primitive::PrimitiveShape,
     layout::via::ViaWeight,
     router::{navmesh::Navmesh, trace::Trace},
+};
+
+use super::{
+    invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace},
+    Autorouter, AutorouterError,
 };
 
 #[derive(Debug)]
@@ -35,5 +38,11 @@ impl GetMaybeNavmesh for PlaceVia {
 impl GetMaybeTrace for PlaceVia {
     fn maybe_trace(&self) -> Option<&Trace> {
         None
+    }
+}
+
+impl GetGhosts for PlaceVia {
+    fn ghosts(&self) -> &[PrimitiveShape] {
+        &[]
     }
 }
