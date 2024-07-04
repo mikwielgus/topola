@@ -115,7 +115,7 @@ impl App {
 
         if cfg!(target_arch = "wasm32") {
             if let Ok(file_contents) = self.text_channel.1.try_recv() {
-                let design = SpecctraDesign::load_from_string(file_contents).unwrap();
+                let design = SpecctraDesign::load(file_contents.as_bytes()).unwrap();
                 let board = design.make_board();
                 self.maybe_overlay = Some(Overlay::new(&board).unwrap());
                 self.maybe_layers = Some(Layers::new(&board));
@@ -125,7 +125,10 @@ impl App {
             }
         } else {
             if let Ok(path) = self.text_channel.1.try_recv() {
-                let design = SpecctraDesign::load_from_file(&path).unwrap();
+                let design = SpecctraDesign::load(&mut std::io::BufReader::new(
+                    std::fs::File::open(path).unwrap(),
+                ))
+                .unwrap();
                 let board = design.make_board();
                 self.maybe_overlay = Some(Overlay::new(&board).unwrap());
                 self.maybe_layers = Some(Layers::new(&board));

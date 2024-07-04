@@ -29,84 +29,8 @@ pub struct SpecctraDesign {
 }
 
 impl SpecctraDesign {
-    pub fn load_from_file(filename: &str) -> Result<Self, LoadingError> {
-        let file = std::fs::File::open(filename)?;
-        let reader = std::io::BufReader::new(file);
-        let mut list_reader = read::ListTokenizer::new(reader);
-        let dsn = list_reader.read_value::<DsnFile>()?;
-
-        Ok(Self { pcb: dsn.pcb })
-
-        //use super::structure::*;
-
-        // (this entire if let block does not belong here)
-
-        /*let ses_name = filename.replace(".dsn", ".ses");
-        let file2 = std::fs::File::create(ses_name).unwrap();
-        let writer = std::io::BufWriter::new(file2);
-        let mut list_writer = super::write::ListWriter::new(writer);
-
-        let mut net_outs = HashMap::<String, NetOut>::new();
-        for mut wire in dsn.pcb.wiring.wires {
-            // move wires to double check that importing the resulting file into KiCad does something
-            for point in &mut wire.path.coords {
-                point.x += 1000.0;
-            }
-
-            if let Some(net) = net_outs.get_mut(&wire.net) {
-                net.wire.push(wire);
-            } else {
-                net_outs.insert(
-                    wire.net.clone(),
-                    NetOut {
-                        name: wire.net.clone(),
-                        wire: vec![wire],
-                        via: Vec::new(),
-                    },
-                );
-            }
-        }
-        for via in dsn.pcb.wiring.vias {
-            if let Some(net) = net_outs.get_mut(&via.net) {
-                net.via.push(via);
-            } else {
-                net_outs.insert(
-                    via.net.clone(),
-                    NetOut {
-                        name: via.net.clone(),
-                        wire: Vec::new(),
-                        via: vec![via],
-                    },
-                );
-            }
-        }
-
-        // build a basic .ses file from what was loaded
-        let ses = SesFile {
-            session: Session {
-                id: "ID".to_string(),
-                routes: Routes {
-                    resolution: Resolution {
-                        unit: "um".into(),
-                        // TODO: why does resolution need to be adjusted from what was imported?
-                        value: 1.0,
-                    },
-                    library_out: Library {
-                        images: Vec::new(),
-                        padstacks: dsn.pcb.library.padstacks,
-                    },
-                    network_out: NetworkOut {
-                        net: net_outs.into_values().collect(),
-                    },
-                },
-            },
-        };*/
-
-        //println!("{:?}", list_writer.write_value(&ses));
-    }
-
-    pub fn load_from_string(contents: String) -> Result<Self, LoadingError> {
-        let mut list_reader = ListTokenizer::new(contents.as_bytes());
+    pub fn load(reader: impl std::io::BufRead) -> Result<SpecctraDesign, LoadingError> {
+        let mut list_reader = ListTokenizer::new(reader);
         let dsn = list_reader.read_value::<DsnFile>()?;
 
         Ok(Self { pcb: dsn.pcb })
