@@ -104,11 +104,12 @@ where
     K: Measure + Copy,
 {
     fn is_goal(&mut self, graph: &G, node: G::NodeId, tracker: &PathTracker<G>) -> Option<R>;
-    fn probe<'a>(
+    fn place_probe<'a>(
         &mut self,
         graph: &'a G,
         edge: <&'a G as IntoEdgeReferences>::EdgeRef,
     ) -> Option<K>;
+    fn remove_probe<'a>(&mut self, graph: &'a G);
     fn estimate_cost(&mut self, graph: &G, node: G::NodeId) -> K;
 }
 
@@ -131,6 +132,8 @@ where
     pub maybe_curr_node: Option<G::NodeId>,
     // FIXME: To work around edge references borrowing from the graph we collect then reiterate over tem.
     pub edge_ids: VecDeque<G::EdgeId>,
+    // TODO: Rewrite this to be a well-designed state machine.
+    pub is_probing: bool,
 }
 
 #[derive(Error, Debug, Clone)]
@@ -147,6 +150,7 @@ where
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
     K: Measure + Copy,
 {
+    Probing,
     Probed,
     Visited,
     Finished(K, Vec<G::NodeId>, R),
@@ -168,6 +172,7 @@ where
             path_tracker: PathTracker::<G>::new(),
             maybe_curr_node: None,
             edge_ids: VecDeque::new(),
+            is_probing: false,
         };
 
         let zero_score = K::default();
@@ -184,13 +189,18 @@ where
         strategy: &mut impl AstarStrategy<G, K, R>,
     ) -> Result<AstarStatus<G, K, R>, AstarError> {
         if let Some(curr_node) = self.maybe_curr_node {
+            if self.is_probing {
+                strategy.remove_probe(&self.graph);
+                self.is_probing = false;
+            }
+
             if let Some(edge_id) = self.edge_ids.pop_front() {
                 // This lookup can be unwrapped without fear of panic since the node was
                 // necessarily scored before adding it to `visit_next`.
                 let node_score = self.scores[&curr_node];
                 let edge = (&self.graph).edge_ref(edge_id);
 
-                if let Some(edge_cost) = strategy.probe(&self.graph, edge) {
+                if let Some(edge_cost) = strategy.place_probe(&self.graph, edge) {
                     let next = edge.target();
                     let next_score = node_score + edge_cost;
 
@@ -212,6 +222,9 @@ where
                     let next_estimate_score =
                         next_score + strategy.estimate_cost(&self.graph, next);
                     self.visit_next.push(MinScored(next_estimate_score, next));
+
+                    self.is_probing = true;
+                    return Ok(AstarStatus::Probing);
                 }
 
                 return Ok(AstarStatus::Probed);

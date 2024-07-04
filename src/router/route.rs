@@ -85,12 +85,14 @@ impl Route {
         let mut strategy = RouterAstarStrategy::new(tracer, &mut self.trace, target);
 
         let result = match self.astar.step(&mut strategy)? {
-            AstarStatus::Probed | AstarStatus::Visited => Ok(RouterStatus::Running),
+            AstarStatus::Probing | AstarStatus::Probed | AstarStatus::Visited => {
+                Ok(RouterStatus::Running)
+            }
             AstarStatus::Finished(_cost, _path, band) => Ok(RouterStatus::Finished(band)),
         };
 
-        self.ghosts = strategy.last_ghosts;
-        self.obstacles = strategy.last_obstacles;
+        self.ghosts = strategy.probe_ghosts;
+        self.obstacles = strategy.probe_obstacles;
         result
     }
 

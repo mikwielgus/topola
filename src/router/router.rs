@@ -47,8 +47,8 @@ pub struct RouterAstarStrategy<'a, R: AccessRules> {
     pub tracer: Tracer<'a, R>,
     pub trace: &'a mut Trace,
     pub target: FixedDotIndex,
-    pub last_ghosts: Vec<PrimitiveShape>,
-    pub last_obstacles: Vec<PrimitiveIndex>,
+    pub probe_ghosts: Vec<PrimitiveShape>,
+    pub probe_obstacles: Vec<PrimitiveIndex>,
 }
 
 impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
@@ -57,8 +57,8 @@ impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
             tracer,
             trace,
             target,
-            last_ghosts: vec![],
-            last_obstacles: vec![],
+            probe_ghosts: vec![],
+            probe_obstacles: vec![],
         }
     }
 
@@ -99,7 +99,7 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
             .ok()
     }
 
-    fn probe(&mut self, navmesh: &Navmesh, edge: NavmeshEdgeReference) -> Option<f64> {
+    fn place_probe(&mut self, navmesh: &Navmesh, edge: NavmeshEdgeReference) -> Option<f64> {
         if edge.target().petgraph_index() == self.target.petgraph_index() {
             return None;
         }
@@ -114,10 +114,7 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
         let probe_length = self.bihead_length() - prev_bihead_length;
 
         match result {
-            Ok(..) => {
-                self.trace.undo_step(&mut self.tracer);
-                Some(probe_length)
-            }
+            Ok(..) => Some(probe_length),
             Err(err) => {
                 if let TracerException::CannotDraw(draw_err) = err {
                     let layout_err = match draw_err {
@@ -135,12 +132,16 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
                         LayoutException::AlreadyConnected(..) => return None,
                     };
 
-                    self.last_ghosts = vec![ghost];
-                    self.last_obstacles = vec![obstacle];
+                    self.probe_ghosts = vec![ghost];
+                    self.probe_obstacles = vec![obstacle];
                 }
                 None
             }
         }
+    }
+
+    fn remove_probe(&mut self, _navmesh: &Navmesh) {
+        self.trace.undo_step(&mut self.tracer);
     }
 
     fn estimate_cost(&mut self, navmesh: &Navmesh, vertex: NavvertexIndex) -> f64 {
