@@ -1,4 +1,4 @@
-use std::io::BufReader;
+use std::io::{BufReader, Cursor};
 use std::sync::mpsc::{Receiver, TryRecvError};
 
 pub struct FileReceiver<'a> {
@@ -18,7 +18,7 @@ impl<'a> FileReceiver<'a> {
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn try_recv(&mut self) -> Result<&[u8], TryRecvError> {
-        self.receiver.try_recv().unwrap().as_bytes()
+    pub fn try_recv(&mut self) -> Result<Cursor<Vec<u8>>, TryRecvError> {
+        Ok(Cursor::new(self.receiver.try_recv().unwrap().into()))
     }
 }

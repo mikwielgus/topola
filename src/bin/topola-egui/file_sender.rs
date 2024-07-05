@@ -19,7 +19,7 @@ impl FileSender {
     }
 
     #[cfg(target_arch = "wasm32")]
-    async fn handle_text(&self, file_handle: &rfd::FileHandle) {
+    async fn handle_text(&self, file_handle: &rfd::FileHandle) -> String {
         std::str::from_utf8(&file_handle.read().await)
             .unwrap()
             .to_string()

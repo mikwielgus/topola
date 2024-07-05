@@ -32,7 +32,8 @@ impl Top {
     pub fn update(
         &mut self,
         ctx: &egui::Context,
-        sender: Sender<String>,
+        content_sender: Sender<String>,
+        history_sender: Sender<String>,
         arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
         maybe_execute: &mut Option<ExecuteWithStatus>,
         maybe_overlay: &Option<Overlay>,
@@ -48,7 +49,7 @@ impl Top {
 
                         execute(async move {
                             if let Some(file_handle) = task.await {
-                                let file_sender = FileSender::new(sender);
+                                let file_sender = FileSender::new(content_sender);
                                 file_sender.send(file_handle).await;
                                 ctx.request_repaint();
                             }
@@ -63,45 +64,23 @@ impl Top {
                         let task = rfd::AsyncFileDialog::new().pick_file();
 
                         execute(async move {
-                            let Some(file_handle) = task.await else {
-                                return;
-                            };
-
-                            let path = file_handle.path();
-                            let Ok(mut file) = File::open(path) else {
-                                return;
-                            };
-
-                            let mut locked_invoker = invoker_arc_mutex.lock().unwrap();
-                            let Some(mut invoker) = locked_invoker.as_mut() else {
-                                return;
-                            };
-
-                            invoker.replay(serde_json::from_reader(file).unwrap());
+                            if let Some(file_handle) = task.await {
+                                let file_sender = FileSender::new(history_sender);
+                                file_sender.send(file_handle).await;
+                                ctx.request_repaint();
+                            }
                         });
-                    }
-
-                    if ui.button("Save history").clicked() {
+                    } else if ui.button("Save history").clicked() {
                         let invoker_arc_mutex = arc_mutex_maybe_invoker.clone();
                         let ctx = ui.ctx().clone();
                         let task = rfd::AsyncFileDialog::new().save_file();
 
                         execute(async move {
-                            let Some(file_handle) = task.await else {
-                                return;
-                            };
-
-                            let path = file_handle.path();
-                            let Ok(mut file) = File::create(path) else {
-                                return;
-                            };
-
-                            let mut locked_invoker = invoker_arc_mutex.lock().unwrap();
-                            let Some(mut invoker) = locked_invoker.as_mut() else {
-                                return;
-                            };
-
-                            serde_json::to_writer_pretty(file, invoker.history());
+                            if let Some(file_handle) = task.await {
+                                let file_sender = FileSender::new(history_sender);
+                                file_sender.send(file_handle).await;
+                                ctx.request_repaint();
+                            }
                         });
                     }
 

@@ -62,6 +62,9 @@ pub struct App {
     content_channel: (Sender<String>, Receiver<String>),
 
     #[serde(skip)]
+    history_channel: (Sender<String>, Receiver<String>),
+
+    #[serde(skip)]
     viewport: Viewport,
 
     #[serde(skip)]
@@ -84,6 +87,7 @@ impl Default for App {
             arc_mutex_maybe_invoker: Arc::new(Mutex::new(None)),
             maybe_execute: None,
             content_channel: channel(),
+            history_channel: channel(),
             viewport: Viewport::new(),
             top: Top::new(),
             bottom: Bottom::new(),
@@ -113,9 +117,9 @@ impl App {
 
         self.update_counter = 0.0;
 
-        let mut file_receiver = FileReceiver::new(&self.content_channel.1);
+        let mut content_file_receiver = FileReceiver::new(&self.content_channel.1);
 
-        if let Ok(bufread) = file_receiver.try_recv() {
+        if let Ok(bufread) = content_file_receiver.try_recv() {
             let design = SpecctraDesign::load(bufread).unwrap();
             let board = design.make_board();
             self.maybe_overlay = Some(Overlay::new(&board).unwrap());
@@ -126,6 +130,14 @@ impl App {
         }
 
         if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
+            let mut history_file_receiver = FileReceiver::new(&self.history_channel.1);
+
+            if let Ok(bufread) = history_file_receiver.try_recv() {
+                invoker.replay(serde_json::from_reader(bufread).unwrap())
+            }
+
+            // TODO: Make Save History work too.
+
             if let Some(ref mut execute) = self.maybe_execute {
                 let status = match execute.step(invoker) {
                     Ok(status) => status,
@@ -149,6 +161,7 @@ impl eframe::App for App {
         self.top.update(
             ctx,
             self.content_channel.0.clone(),
+            self.history_channel.0.clone(),
             self.arc_mutex_maybe_invoker.clone(),
             &mut self.maybe_execute,
             &mut self.maybe_overlay,
