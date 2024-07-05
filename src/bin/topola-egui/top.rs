@@ -10,6 +10,7 @@ use topola::{
 
 use crate::{
     app::{channel_text, execute},
+    file_sender::FileSender,
     overlay::Overlay,
 };
 
@@ -47,7 +48,8 @@ impl Top {
 
                         execute(async move {
                             if let Some(file_handle) = task.await {
-                                sender.send(channel_text(file_handle).await);
+                                let file_sender = FileSender::new(sender);
+                                file_sender.send(file_handle).await;
                                 ctx.request_repaint();
                             }
                         });

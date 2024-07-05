@@ -2,6 +2,8 @@
 
 mod app;
 mod bottom;
+mod file_receiver;
+mod file_sender;
 mod layers;
 mod overlay;
 mod painter;

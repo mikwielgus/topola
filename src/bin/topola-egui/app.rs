@@ -41,8 +41,8 @@ use topola::{
 };
 
 use crate::{
-    bottom::Bottom, layers::Layers, overlay::Overlay, painter::Painter, top::Top,
-    viewport::Viewport,
+    bottom::Bottom, file_receiver::FileReceiver, layers::Layers, overlay::Overlay,
+    painter::Painter, top::Top, viewport::Viewport,
 };
 
 /// Deserialize/Serialize is needed to persist app state between restarts.
@@ -59,7 +59,7 @@ pub struct App {
     maybe_execute: Option<ExecuteWithStatus>,
 
     #[serde(skip)]
-    text_channel: (Sender<String>, Receiver<String>),
+    content_channel: (Sender<String>, Receiver<String>),
 
     #[serde(skip)]
     viewport: Viewport,
@@ -83,7 +83,7 @@ impl Default for App {
             maybe_overlay: None,
             arc_mutex_maybe_invoker: Arc::new(Mutex::new(None)),
             maybe_execute: None,
-            text_channel: channel(),
+            content_channel: channel(),
             viewport: Viewport::new(),
             top: Top::new(),
             bottom: Bottom::new(),
@@ -113,29 +113,16 @@ impl App {
 
         self.update_counter = 0.0;
 
-        if cfg!(target_arch = "wasm32") {
-            if let Ok(file_contents) = self.text_channel.1.try_recv() {
-                let design = SpecctraDesign::load(file_contents.as_bytes()).unwrap();
-                let board = design.make_board();
-                self.maybe_overlay = Some(Overlay::new(&board).unwrap());
-                self.maybe_layers = Some(Layers::new(&board));
-                self.arc_mutex_maybe_invoker = Arc::new(Mutex::new(Some(Invoker::new(
-                    Autorouter::new(board).unwrap(),
-                ))));
-            }
-        } else {
-            if let Ok(path) = self.text_channel.1.try_recv() {
-                let design = SpecctraDesign::load(&mut std::io::BufReader::new(
-                    std::fs::File::open(path).unwrap(),
-                ))
-                .unwrap();
-                let board = design.make_board();
-                self.maybe_overlay = Some(Overlay::new(&board).unwrap());
-                self.maybe_layers = Some(Layers::new(&board));
-                self.arc_mutex_maybe_invoker = Arc::new(Mutex::new(Some(Invoker::new(
-                    Autorouter::new(board).unwrap(),
-                ))));
-            }
+        let mut file_receiver = FileReceiver::new(&self.content_channel.1);
+
+        if let Ok(bufread) = file_receiver.try_recv() {
+            let design = SpecctraDesign::load(bufread).unwrap();
+            let board = design.make_board();
+            self.maybe_overlay = Some(Overlay::new(&board).unwrap());
+            self.maybe_layers = Some(Layers::new(&board));
+            self.arc_mutex_maybe_invoker = Arc::new(Mutex::new(Some(Invoker::new(
+                Autorouter::new(board).unwrap(),
+            ))))
         }
 
         if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
@@ -161,7 +148,7 @@ impl eframe::App for App {
 
         self.top.update(
             ctx,
-            self.text_channel.0.clone(),
+            self.content_channel.0.clone(),
             self.arc_mutex_maybe_invoker.clone(),
             &mut self.maybe_execute,
             &mut self.maybe_overlay,
