@@ -59,7 +59,6 @@ impl Top {
                     ui.separator();
 
                     if ui.button("Load history").clicked() {
-                        let invoker_arc_mutex = arc_mutex_maybe_invoker.clone();
                         let ctx = ui.ctx().clone();
                         let task = rfd::AsyncFileDialog::new().pick_file();
 
@@ -71,17 +70,23 @@ impl Top {
                             }
                         });
                     } else if ui.button("Save history").clicked() {
-                        let invoker_arc_mutex = arc_mutex_maybe_invoker.clone();
-                        let ctx = ui.ctx().clone();
-                        let task = rfd::AsyncFileDialog::new().save_file();
+                        if let Some(invoker) =
+                            arc_mutex_maybe_invoker.clone().lock().unwrap().as_ref()
+                        {
+                            let ctx = ui.ctx().clone();
+                            let task = rfd::AsyncFileDialog::new().save_file();
 
-                        execute(async move {
-                            if let Some(file_handle) = task.await {
-                                let file_sender = FileSender::new(history_sender);
-                                file_sender.send(file_handle).await;
-                                ctx.request_repaint();
-                            }
-                        });
+                            // FIXME: I don't think we should be buffering everything in a `Vec<u8>`.
+                            let mut writebuf = vec![];
+                            serde_json::to_writer_pretty(&mut writebuf, invoker.history());
+
+                            execute(async move {
+                                if let Some(file_handle) = task.await {
+                                    dbg!(file_handle.write(&writebuf).await);
+                                    ctx.request_repaint();
+                                }
+                            });
+                        }
                     }
 
                     ui.separator();
