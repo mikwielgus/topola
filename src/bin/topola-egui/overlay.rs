@@ -38,6 +38,10 @@ impl Overlay {
         })
     }
 
+    pub fn clear_selection(&mut self) {
+        self.selection = Selection::new();
+    }
+
     pub fn click(&mut self, board: &Board<impl AccessMesadata>, at: Point) {
         let geoms: Vec<_> = board
             .layout()

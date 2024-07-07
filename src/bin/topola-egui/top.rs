@@ -36,7 +36,7 @@ impl Top {
         history_sender: Sender<String>,
         arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
         maybe_execute: &mut Option<ExecuteWithStatus>,
-        maybe_overlay: &Option<Overlay>,
+        maybe_overlay: &mut Option<Overlay>,
     ) {
         egui::TopBottomPanel::top("top_panel").show(ctx, |ui| {
             egui::menu::bar(ui, |ui| {
@@ -105,11 +105,12 @@ impl Top {
                     if maybe_execute.as_mut().map_or(true, |execute| {
                         matches!(execute.maybe_status(), Some(InvokerStatus::Finished))
                     }) {
-                        if let (Some(invoker), Some(ref overlay)) = (
+                        if let (Some(invoker), Some(ref mut overlay)) = (
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
                             maybe_overlay,
                         ) {
                             let selection = overlay.selection().clone();
+                            overlay.clear_selection();
                             maybe_execute.insert(ExecuteWithStatus::new(
                                 invoker.execute_walk(Command::Autoroute(selection)),
                             ));
