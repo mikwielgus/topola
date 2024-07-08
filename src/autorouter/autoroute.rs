@@ -15,7 +15,7 @@ use super::{
 pub struct Autoroute {
     ratlines_iter: Box<dyn Iterator<Item = EdgeIndex<usize>>>,
     route: Option<Route>,
-    cur_ratline: Option<EdgeIndex<usize>>,
+    curr_ratline: Option<EdgeIndex<usize>>,
 }
 
 impl Autoroute {
@@ -25,16 +25,16 @@ impl Autoroute {
     ) -> Result<Self, AutorouterError> {
         let mut ratlines_iter = Box::new(ratlines.into_iter());
 
-        let Some(cur_ratline) = ratlines_iter.next() else {
+        let Some(curr_ratline) = ratlines_iter.next() else {
             return Err(AutorouterError::NothingToRoute);
         };
 
-        let (source, target) = autorouter.ratline_endpoints(cur_ratline);
+        let (source, target) = autorouter.ratline_endpoints(curr_ratline);
         let mut router = Router::new(autorouter.board.layout_mut());
 
         let this = Self {
             ratlines_iter,
-            cur_ratline: Some(cur_ratline),
+            curr_ratline: Some(curr_ratline),
             route: Some(router.route_walk(source, target, 100.0)?),
         };
 
@@ -50,11 +50,11 @@ impl Autoroute {
             return Ok(AutorouterStatus::Finished);
         };
 
-        let Some(cur_ratline) = self.cur_ratline else {
+        let Some(curr_ratline) = self.curr_ratline else {
             return Ok(AutorouterStatus::Finished);
         };
 
-        let (source, target) = autorouter.ratline_endpoints(cur_ratline);
+        let (source, target) = autorouter.ratline_endpoints(curr_ratline);
 
         let band = {
             let mut router = Router::new(autorouter.board.layout_mut());
@@ -67,21 +67,21 @@ impl Autoroute {
 
         autorouter
             .ratsnest
-            .assign_band_to_ratline(self.cur_ratline.unwrap(), band);
+            .assign_band_to_ratline(self.curr_ratline.unwrap(), band);
 
         autorouter
             .board
             .try_set_band_between_nodes(source, target, band);
 
         let Some(new_ratline) = self.ratlines_iter.next() else {
-            self.cur_ratline = None;
+            self.curr_ratline = None;
             return Ok(AutorouterStatus::Finished);
         };
 
         let (source, target) = autorouter.ratline_endpoints(new_ratline);
         let mut router = Router::new(autorouter.board.layout_mut());
 
-        self.cur_ratline = Some(new_ratline);
+        self.curr_ratline = Some(new_ratline);
         self.route = Some(router.route_walk(source, target, 100.0)?);
 
         Ok(AutorouterStatus::Running)

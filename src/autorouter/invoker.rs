@@ -176,9 +176,9 @@ impl<M: AccessMesadata> Invoker<M> {
         (self.autorouter, self.history, self.ongoing_command)
     }
 
-    #[debug_requires(self.ongoing_command.is_none())]
+    //#[debug_requires(self.ongoing_command.is_none())]
     pub fn execute(&mut self, command: Command) -> Result<(), InvokerError> {
-        let mut execute = self.execute_walk(command);
+        let mut execute = self.execute_walk(command)?;
 
         loop {
             let status = match execute.step(self) {
@@ -194,21 +194,21 @@ impl<M: AccessMesadata> Invoker<M> {
     }
 
     #[debug_requires(self.ongoing_command.is_none())]
-    pub fn execute_walk(&mut self, command: Command) -> Execute {
+    pub fn execute_walk(&mut self, command: Command) -> Result<Execute, InvokerError> {
         let execute = self.dispatch_command(&command);
         self.ongoing_command = Some(command);
         execute
     }
 
     #[debug_requires(self.ongoing_command.is_none())]
-    fn dispatch_command(&mut self, command: &Command) -> Execute {
+    fn dispatch_command(&mut self, command: &Command) -> Result<Execute, InvokerError> {
         match command {
-            Command::Autoroute(selection) => {
-                Execute::Autoroute(self.autorouter.autoroute_walk(selection).unwrap())
-            }
-            Command::PlaceVia(weight) => {
-                Execute::PlaceVia(self.autorouter.place_via_walk(*weight).unwrap())
-            }
+            Command::Autoroute(selection) => Ok::<Execute, InvokerError>(Execute::Autoroute(
+                self.autorouter.autoroute_walk(selection)?,
+            )),
+            Command::PlaceVia(weight) => Ok::<Execute, InvokerError>(Execute::PlaceVia(
+                self.autorouter.place_via_walk(*weight)?,
+            )),
         }
     }
 
@@ -227,7 +227,7 @@ impl<M: AccessMesadata> Invoker<M> {
     //#[debug_requires(self.ongoing.is_none())]
     pub fn redo(&mut self) -> Result<(), InvokerError> {
         let command = self.history.last_undone()?.clone();
-        let mut execute = self.execute_walk(command);
+        let mut execute = self.execute_walk(command)?;
 
         loop {
             let status = match execute.step(self) {
