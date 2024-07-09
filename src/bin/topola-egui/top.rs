@@ -11,6 +11,7 @@ use topola::{
 };
 
 use crate::{
+    action::{Action, Switch, Trigger},
     app::{channel_text, execute},
     file_sender::FileSender,
     overlay::Overlay,
@@ -40,123 +41,143 @@ impl Top {
         maybe_execute: &mut Option<ExecuteWithStatus>,
         maybe_overlay: &mut Option<Overlay>,
     ) -> Result<(), InvokerError> {
-        Ok::<(), InvokerError>(
-            egui::TopBottomPanel::top("top_panel")
-                .show(ctx, |ui| {
-                    egui::menu::bar(ui, |ui| {
-                        ui.menu_button("File", |ui| {
-                            if ui.button("Open").clicked() {
-                                // `Context` is cheap to clone as it's wrapped in an `Arc`.
-                                let ctx = ui.ctx().clone();
-                                // NOTE: On Linux, this requires Zenity to be installed on your system.
-                                let task = rfd::AsyncFileDialog::new().pick_file();
+        let mut open_design =
+            Trigger::new(Action::new("Open", egui::Modifiers::CTRL, egui::Key::O));
+        let mut import_history = Trigger::new(Action::new(
+            "Import history",
+            egui::Modifiers::CTRL,
+            egui::Key::I,
+        ));
+        let mut export_history = Trigger::new(Action::new(
+            "Export history",
+            egui::Modifiers::CTRL,
+            egui::Key::E,
+        ));
+        let mut quit = Trigger::new(Action::new("Quit", egui::Modifiers::CTRL, egui::Key::V));
+        let mut autoroute = Trigger::new(Action::new(
+            "Autoroute",
+            egui::Modifiers::CTRL,
+            egui::Key::A,
+        ));
+        let mut place_via = Switch::new(Action::new(
+            "Place Via",
+            egui::Modifiers::CTRL,
+            egui::Key::P,
+        ));
+        let mut undo = Trigger::new(Action::new("Undo", egui::Modifiers::CTRL, egui::Key::Z));
+        let mut redo = Trigger::new(Action::new("Redo", egui::Modifiers::CTRL, egui::Key::Y));
 
-                                execute(async move {
-                                    if let Some(file_handle) = task.await {
-                                        let file_sender = FileSender::new(content_sender);
-                                        file_sender.send(file_handle).await;
-                                        ctx.request_repaint();
-                                    }
-                                });
-                            }
+        egui::TopBottomPanel::top("top_panel")
+            .show(ctx, |ui| {
+                egui::menu::bar(ui, |ui| {
+                    ui.menu_button("File", |ui| {
+                        open_design.button(ctx, ui);
 
-                            ui.separator();
+                        ui.separator();
 
-                            if ui.button("Load history").clicked() {
-                                let ctx = ui.ctx().clone();
-                                let task = rfd::AsyncFileDialog::new().pick_file();
+                        import_history.button(ctx, ui);
+                        export_history.button(ctx, ui);
 
-                                execute(async move {
-                                    if let Some(file_handle) = task.await {
-                                        let file_sender = FileSender::new(history_sender);
-                                        file_sender.send(file_handle).await;
-                                        ctx.request_repaint();
-                                    }
-                                });
-                            } else if ui.button("Save history").clicked() {
-                                if let Some(invoker) =
-                                    arc_mutex_maybe_invoker.clone().lock().unwrap().as_ref()
-                                {
-                                    let ctx = ui.ctx().clone();
-                                    let task = rfd::AsyncFileDialog::new().save_file();
+                        ui.separator();
 
-                                    // FIXME: I don't think we should be buffering everything in a `Vec<u8>`.
-                                    let mut writebuf = vec![];
-                                    serde_json::to_writer_pretty(&mut writebuf, invoker.history());
+                        // "Quit" button wouldn't work on a Web page.
+                        if !cfg!(target_arch = "wasm32") {
+                            quit.button(ctx, ui);
+                        }
+                    });
 
-                                    execute(async move {
-                                        if let Some(file_handle) = task.await {
-                                            dbg!(file_handle.write(&writebuf).await);
-                                            ctx.request_repaint();
-                                        }
-                                    });
-                                }
-                            }
+                    ui.separator();
 
-                            ui.separator();
+                    autoroute.button(ctx, ui);
 
-                            // "Quit" button wouldn't work on a Web page.
-                            if !cfg!(target_arch = "wasm32") {
-                                if ui.button("Quit").clicked() {
-                                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                                }
+                    place_via.toggle_widget(ctx, ui, &mut self.is_placing_via);
+
+                    ui.separator();
+
+                    undo.button(ctx, ui);
+                    redo.button(ctx, ui);
+
+                    ui.separator();
+
+                    ui.toggle_value(&mut self.show_ratsnest, "Show Ratsnest");
+                    ui.toggle_value(&mut self.show_navmesh, "Show Navmesh");
+
+                    ui.separator();
+
+                    egui::widgets::global_dark_light_mode_buttons(ui);
+                });
+
+                if open_design.consume_key_triggered(ctx, ui) {
+                    // NOTE: On Linux, this requires Zenity to be installed on your system.
+                    let ctx = ctx.clone();
+                    let task = rfd::AsyncFileDialog::new().pick_file();
+
+                    execute(async move {
+                        if let Some(file_handle) = task.await {
+                            let file_sender = FileSender::new(content_sender);
+                            file_sender.send(file_handle).await;
+                            ctx.request_repaint();
+                        }
+                    });
+                } else if import_history.consume_key_triggered(ctx, ui) {
+                    let ctx = ctx.clone();
+                    let task = rfd::AsyncFileDialog::new().pick_file();
+
+                    execute(async move {
+                        if let Some(file_handle) = task.await {
+                            let file_sender = FileSender::new(history_sender);
+                            file_sender.send(file_handle).await;
+                            ctx.request_repaint();
+                        }
+                    });
+                } else if export_history.consume_key_triggered(ctx, ui) {
+                    if let Some(invoker) = arc_mutex_maybe_invoker.clone().lock().unwrap().as_ref()
+                    {
+                        let ctx = ctx.clone();
+                        let task = rfd::AsyncFileDialog::new().save_file();
+
+                        // FIXME: I don't think we should be buffering everything in a `Vec<u8>`.
+                        let mut writebuf = vec![];
+                        serde_json::to_writer_pretty(&mut writebuf, invoker.history());
+
+                        execute(async move {
+                            if let Some(file_handle) = task.await {
+                                file_handle.write(&writebuf).await;
+                                ctx.request_repaint();
                             }
                         });
-
-                        ui.separator();
-
-                        if ui.button("Autoroute").clicked() {
-                            if maybe_execute.as_mut().map_or(true, |execute| {
-                                matches!(execute.maybe_status(), Some(InvokerStatus::Finished))
-                            }) {
-                                if let (Some(invoker), Some(ref mut overlay)) = (
-                                    arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
-                                    maybe_overlay,
-                                ) {
-                                    let selection = overlay.selection().clone();
-                                    overlay.clear_selection();
-                                    maybe_execute.insert(ExecuteWithStatus::new(
-                                        invoker.execute_walk(Command::Autoroute(selection))?,
-                                    ));
-                                }
-                            }
+                    }
+                } else if quit.consume_key_triggered(ctx, ui) {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                } else if autoroute.consume_key_triggered(ctx, ui) {
+                    if maybe_execute.as_mut().map_or(true, |execute| {
+                        matches!(execute.maybe_status(), Some(InvokerStatus::Finished))
+                    }) {
+                        if let (Some(invoker), Some(ref mut overlay)) = (
+                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
+                            maybe_overlay,
+                        ) {
+                            let selection = overlay.selection().clone();
+                            overlay.clear_selection();
+                            maybe_execute.insert(ExecuteWithStatus::new(
+                                invoker.execute_walk(Command::Autoroute(selection))?,
+                            ));
                         }
+                    }
+                } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
+                } else if undo.consume_key_triggered(ctx, ui) {
+                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
+                        invoker.undo();
+                    }
+                } else if redo.consume_key_triggered(ctx, ui) {
+                    if let Some(ref mut invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut()
+                    {
+                        invoker.redo();
+                    }
+                }
 
-                        ui.toggle_value(&mut self.is_placing_via, "Place Via");
-
-                        ui.separator();
-
-                        if ui.button("Undo").clicked()
-                            || ctx.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Z))
-                        {
-                            if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut()
-                            {
-                                invoker.undo();
-                            }
-                        }
-
-                        if ui.button("Redo").clicked()
-                            || ctx.input_mut(|i| i.consume_key(egui::Modifiers::CTRL, egui::Key::Y))
-                        {
-                            if let Some(ref mut invoker) =
-                                arc_mutex_maybe_invoker.lock().unwrap().as_mut()
-                            {
-                                invoker.redo();
-                            }
-                        }
-
-                        ui.separator();
-
-                        ui.toggle_value(&mut self.show_ratsnest, "Show Ratsnest");
-                        ui.toggle_value(&mut self.show_navmesh, "Show Navmesh");
-
-                        ui.separator();
-
-                        egui::widgets::global_dark_light_mode_buttons(ui);
-                        Ok::<(), InvokerError>(())
-                    });
-                })
-                .inner,
-        )
+                Ok::<(), InvokerError>(())
+            })
+            .inner
     }
 }
