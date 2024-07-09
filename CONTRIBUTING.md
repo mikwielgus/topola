@@ -28,7 +28,7 @@ reportable bugs.
 ## Writing code
 
 We welcome code from anyone regardless of skill or experience level.
-We're friendly to newcomers. We will help you with your contribution if
+We are friendly to newcomers. We will help you with your contribution if
 there are any problems.
 
 Topola accepts contributions via pull requests. For a step-by-step guide
@@ -110,8 +110,8 @@ slightly enchanced assertions.
 Unfortunately, the
 [contracts](https://docs.rs/contracts/latest/contracts/) library which
 we have been using enforces post-conditions via closures, which have
-numerous limitations. To bypass these we have forked and modified it to
-use `try` blocks instead. The fork is vendored in the
+deal-breaking limitations. To bypass these we have forked and modified it
+to use `try` blocks instead. The fork is vendored in the
 [vendored/contracts/](vendored/contracts/) directory.
 
 However, `try` blocks aren't present in stable Rust versions yet, so to
