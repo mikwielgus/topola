@@ -398,8 +398,15 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         cw: bool,
     ) -> Result<Cane, LayoutException> {
         let maybe_wraparound = self.wraparoundable(around).wraparound();
-
-        let cane = self.add_cane(from, around, dot_weight, seg_weight, bend_weight, cw)?;
+        let cane = self.add_cane_with_infringables(
+            from,
+            around,
+            dot_weight,
+            seg_weight,
+            bend_weight,
+            cw,
+            Some(&[]),
+        )?;
 
         if let Some(wraparound) = maybe_wraparound {
             self.reattach_bend(wraparound, Some(cane.bend));
@@ -549,7 +556,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
             seg_weight,
             bend_weight,
             cw,
-            Some(&self.collect().wraparounded_bows(around)),
+            Some(&[]),
         )
     }
 
