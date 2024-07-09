@@ -27,7 +27,7 @@ use topola::layout::zone::MakePolyShape;
 use topola::layout::Layout;
 use topola::router::draw::DrawException;
 use topola::router::navmesh::Navmesh;
-use topola::router::tracer::{Trace, Tracer};
+use topola::router::tracer::Tracer;
 use topola::specctra::design::SpecctraDesign;
 use topola::specctra::mesadata::SpecctraMesadata;
 
@@ -47,10 +47,12 @@ use pathfinder_renderer::options::BuildOptions;
 use pathfinder_resources::embedded::EmbeddedResourceLoader;
 
 use std::collections::HashMap;
+use std::fs::File;
+use std::io::BufReader;
 use std::time::Duration;
 
 use topola::math::Circle;
-use topola::router::Route;
+use topola::router::Router;
 
 struct SimpleRules {
     net_clearances: HashMap<(usize, usize), f64>,
@@ -82,7 +84,7 @@ impl AccessRules for SimpleRules {
 
 // Clunky enum to work around borrow checker.
 enum RouterOrLayout<'a, R: AccessRules> {
-    Router(&'a mut Route<'a, R>),
+    Router(&'a mut Router<'a, R>),
     Layout(&'a Layout<R>),
 }
 
@@ -144,13 +146,13 @@ fn main() -> Result<(), anyhow::Error> {
         ]),
     }));*/
 
-    let design = SpecctraDesign::load_from_file(
+    let design_file = File::open(
         "tests/single_layer/data/de9_tht_female_to_tht_female/de9_tht_female_to_tht_female.dsn",
-    )?;
-    //let design = DsnDesign::load_from_file("tests/data/test/test.dsn")?;
-    //dbg!(&design);
+    )
+    .unwrap();
+    let design_bufread = BufReader::new(design_file);
+    let design = SpecctraDesign::load(design_bufread)?;
     let board = design.make_board();
-    //let mut router = Router::new(layout);
 
     let mut view = View {
         pan: vec2f(-80000.0, -60000.0),
