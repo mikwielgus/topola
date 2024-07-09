@@ -26,13 +26,13 @@ pub trait GetMaybeApex {
 }
 
 #[derive(Debug)]
-pub struct Zone<'a, R: AccessRules> {
-    pub index: GenericIndex<ZoneWeight>,
+pub struct Poly<'a, R: AccessRules> {
+    pub index: GenericIndex<PolyWeight>,
     layout: &'a Layout<R>,
 }
 
-impl<'a, R: AccessRules> Zone<'a, R> {
-    pub fn new(index: GenericIndex<ZoneWeight>, layout: &'a Layout<R>) -> Self {
+impl<'a, R: AccessRules> Poly<'a, R> {
+    pub fn new(index: GenericIndex<PolyWeight>, layout: &'a Layout<R>) -> Self {
         Self { index, layout }
     }
 
@@ -48,9 +48,9 @@ impl<'a, R: AccessRules> Zone<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> GetLayer for Zone<'a, R> {
+impl<'a, R: AccessRules> GetLayer for Poly<'a, R> {
     fn layer(&self) -> usize {
-        if let CompoundWeight::Zone(weight) =
+        if let CompoundWeight::Poly(weight) =
             self.layout.drawing().compound_weight(self.index.into())
         {
             weight.layer()
@@ -60,7 +60,7 @@ impl<'a, R: AccessRules> GetLayer for Zone<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> GetMaybeNet for Zone<'a, R> {
+impl<'a, R: AccessRules> GetMaybeNet for Poly<'a, R> {
     fn maybe_net(&self) -> Option<usize> {
         self.layout
             .drawing()
@@ -69,7 +69,7 @@ impl<'a, R: AccessRules> GetMaybeNet for Zone<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> MakePolyShape for Zone<'a, R> {
+impl<'a, R: AccessRules> MakePolyShape for Poly<'a, R> {
     fn shape(&self) -> PolyShape {
         PolyShape {
             polygon: Polygon::new(
@@ -103,7 +103,7 @@ impl<'a, R: AccessRules> MakePolyShape for Zone<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> GetMaybeApex for Zone<'a, R> {
+impl<'a, R: AccessRules> GetMaybeApex for Poly<'a, R> {
     fn maybe_apex(&self) -> Option<FixedDotIndex> {
         self.layout
             .drawing()
@@ -123,61 +123,61 @@ impl<'a, R: AccessRules> GetMaybeApex for Zone<'a, R> {
 
 #[enum_dispatch(GetLayer, GetMaybeNet)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum ZoneWeight {
-    Solid(SolidZoneWeight),
-    Pour(PourZoneWeight),
+pub enum PolyWeight {
+    Solid(SolidPolyWeight),
+    Pour(PourPolyWeight),
 }
 
-impl From<GenericIndex<ZoneWeight>> for GenericIndex<CompoundWeight> {
-    fn from(zone: GenericIndex<ZoneWeight>) -> Self {
-        GenericIndex::<CompoundWeight>::new(zone.petgraph_index())
+impl From<GenericIndex<PolyWeight>> for GenericIndex<CompoundWeight> {
+    fn from(poly: GenericIndex<PolyWeight>) -> Self {
+        GenericIndex::<CompoundWeight>::new(poly.petgraph_index())
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct SolidZoneWeight {
+pub struct SolidPolyWeight {
     pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 
-impl GetLayer for SolidZoneWeight {
+impl GetLayer for SolidPolyWeight {
     fn layer(&self) -> usize {
         self.layer
     }
 }
 
-impl GetMaybeNet for SolidZoneWeight {
+impl GetMaybeNet for SolidPolyWeight {
     fn maybe_net(&self) -> Option<usize> {
         self.maybe_net
     }
 }
 
-impl From<GenericIndex<SolidZoneWeight>> for GenericIndex<CompoundWeight> {
-    fn from(zone: GenericIndex<SolidZoneWeight>) -> Self {
-        GenericIndex::<CompoundWeight>::new(zone.petgraph_index())
+impl From<GenericIndex<SolidPolyWeight>> for GenericIndex<CompoundWeight> {
+    fn from(poly: GenericIndex<SolidPolyWeight>) -> Self {
+        GenericIndex::<CompoundWeight>::new(poly.petgraph_index())
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct PourZoneWeight {
+pub struct PourPolyWeight {
     pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 
-impl<'a> GetLayer for PourZoneWeight {
+impl<'a> GetLayer for PourPolyWeight {
     fn layer(&self) -> usize {
         self.layer
     }
 }
 
-impl<'a> GetMaybeNet for PourZoneWeight {
+impl<'a> GetMaybeNet for PourPolyWeight {
     fn maybe_net(&self) -> Option<usize> {
         self.maybe_net
     }
 }
 
-impl From<GenericIndex<PourZoneWeight>> for GenericIndex<CompoundWeight> {
-    fn from(zone: GenericIndex<PourZoneWeight>) -> Self {
-        GenericIndex::<CompoundWeight>::new(zone.petgraph_index())
+impl From<GenericIndex<PourPolyWeight>> for GenericIndex<CompoundWeight> {
+    fn from(poly: GenericIndex<PourPolyWeight>) -> Self {
+        GenericIndex::<CompoundWeight>::new(poly.petgraph_index())
     }
 }

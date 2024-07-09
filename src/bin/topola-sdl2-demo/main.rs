@@ -23,7 +23,7 @@ use topola::drawing::seg::FixedSegWeight;
 use topola::drawing::{Infringement, LayoutException};
 use topola::geometry::primitive::{AccessPrimitiveShape, PrimitiveShape};
 use topola::geometry::shape::AccessShape;
-use topola::layout::zone::MakePolyShape;
+use topola::layout::poly::MakePolyShape;
 use topola::layout::Layout;
 use topola::router::draw::DrawException;
 use topola::router::navmesh::Navmesh;
@@ -303,9 +303,9 @@ fn render_times(
             painter.paint_primitive(&shape, color, view.zoom);
         }
 
-        for zone in layout.layer_zone_nodes(1) {
+        for poly in layout.layer_poly_nodes(1) {
             painter.paint_polygon(
-                &layout.zone(zone).shape().polygon,
+                &layout.poly(poly).shape().polygon,
                 ColorU::new(52, 52, 200, 255),
                 view.zoom,
             );
@@ -322,9 +322,9 @@ fn render_times(
             painter.paint_primitive(&shape, color, view.zoom);
         }
 
-        for zone in layout.layer_zone_nodes(0) {
+        for poly in layout.layer_poly_nodes(0) {
             painter.paint_polygon(
-                &layout.zone(zone).shape().polygon,
+                &layout.poly(poly).shape().polygon,
                 ColorU::new(200, 52, 52, 255),
                 view.zoom,
             );

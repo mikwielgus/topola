@@ -17,8 +17,8 @@ use topola::{
     },
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
+        poly::{MakePolyShape, Poly, PolyWeight},
         via::ViaWeight,
-        zone::{MakePolyShape, Zone, ZoneWeight},
         CompoundWeight, Layout, NodeIndex,
     },
 };
@@ -76,9 +76,9 @@ impl Overlay {
             }
             NodeIndex::Compound(compound) => {
                 match board.layout().drawing().compound_weight(compound) {
-                    CompoundWeight::Zone(weight) => board
+                    CompoundWeight::Poly(weight) => board
                         .layout()
-                        .zone(GenericIndex::<ZoneWeight>::new(compound.petgraph_index()))
+                        .poly(GenericIndex::<PolyWeight>::new(compound.petgraph_index()))
                         .shape()
                         .into(),
                     CompoundWeight::Via(weight) => board

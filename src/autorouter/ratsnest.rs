@@ -21,7 +21,7 @@ use crate::{
     geometry::{compound::ManageCompounds, shape::AccessShape},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
-        zone::{MakePolyShape, ZoneWeight},
+        poly::{MakePolyShape, PolyWeight},
         Layout,
     },
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
@@ -31,14 +31,14 @@ use crate::{
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RatvertexIndex {
     FixedDot(FixedDotIndex),
-    Zone(GenericIndex<ZoneWeight>),
+    Poly(GenericIndex<PolyWeight>),
 }
 
 impl From<RatvertexIndex> for crate::layout::NodeIndex {
     fn from(vertex: RatvertexIndex) -> crate::layout::NodeIndex {
         match vertex {
             RatvertexIndex::FixedDot(dot) => crate::layout::NodeIndex::Primitive(dot.into()),
-            RatvertexIndex::Zone(zone) => crate::layout::NodeIndex::Compound(zone.into()),
+            RatvertexIndex::Poly(poly) => crate::layout::NodeIndex::Compound(poly.into()),
         }
     }
 }
@@ -89,7 +89,7 @@ impl Ratsnest {
             for node in layout.drawing().layer_primitive_nodes(layer) {
                 match node {
                     PrimitiveIndex::FixedDot(dot) => {
-                        if layout.zones(dot).next().is_none() {
+                        if layout.polys(dot).next().is_none() {
                             if let Some(net) = layout.drawing().primitive(dot).maybe_net() {
                                 if !triangulations.contains_key(&(layer, net)) {
                                     triangulations.insert(
@@ -113,8 +113,8 @@ impl Ratsnest {
                 }
             }
 
-            for zone in layout.layer_zone_nodes(layer) {
-                if let Some(net) = layout.drawing().compound_weight(zone.into()).maybe_net() {
+            for poly in layout.layer_poly_nodes(layer) {
+                if let Some(net) = layout.drawing().compound_weight(poly.into()).maybe_net() {
                     if !triangulations.contains_key(&(layer, net)) {
                         triangulations.insert(
                             (layer, net),
@@ -126,8 +126,8 @@ impl Ratsnest {
                         .get_mut(&(layer, net))
                         .unwrap()
                         .add_vertex(RatvertexWeight {
-                            vertex: RatvertexIndex::Zone(zone),
-                            pos: layout.zone(zone).shape().center(),
+                            vertex: RatvertexIndex::Poly(poly),
+                            pos: layout.poly(poly).shape().center(),
                         })?
                 }
             }

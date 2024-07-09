@@ -25,15 +25,15 @@ use crate::{
     },
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
+        poly::{Poly, PolyWeight},
         via::{Via, ViaWeight},
-        zone::{Zone, ZoneWeight},
     },
 };
 
 #[derive(Debug, Clone, Copy)]
 #[enum_dispatch(GetMaybeNet)]
 pub enum CompoundWeight {
-    Zone(ZoneWeight),
+    Poly(PolyWeight),
     Via(ViaWeight),
 }
 
@@ -107,27 +107,27 @@ impl<R: AccessRules> Layout<R> {
         self.drawing.add_fixed_dot_infringably(weight)
     }
 
-    pub fn add_zone_fixed_dot(
+    pub fn add_poly_fixed_dot(
         &mut self,
         weight: FixedDotWeight,
-        zone: GenericIndex<ZoneWeight>,
+        poly: GenericIndex<PolyWeight>,
     ) -> Result<FixedDotIndex, Infringement> {
         let maybe_dot = self.drawing.add_fixed_dot(weight);
 
         if let Ok(dot) = maybe_dot {
-            self.drawing.add_to_compound(dot, zone.into());
+            self.drawing.add_to_compound(dot, poly.into());
         }
 
         maybe_dot
     }
 
-    pub fn add_zone_fixed_dot_infringably(
+    pub fn add_poly_fixed_dot_infringably(
         &mut self,
         weight: FixedDotWeight,
-        zone: GenericIndex<ZoneWeight>,
+        poly: GenericIndex<PolyWeight>,
     ) -> FixedDotIndex {
         let dot = self.drawing.add_fixed_dot_infringably(weight);
-        self.drawing.add_to_compound(dot, zone.into());
+        self.drawing.add_to_compound(dot, poly.into());
         dot
     }
 
@@ -149,31 +149,31 @@ impl<R: AccessRules> Layout<R> {
         self.drawing.add_fixed_seg_infringably(from, to, weight)
     }
 
-    pub fn add_zone_fixed_seg(
+    pub fn add_poly_fixed_seg(
         &mut self,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
-        zone: GenericIndex<ZoneWeight>,
+        poly: GenericIndex<PolyWeight>,
     ) -> Result<FixedSegIndex, Infringement> {
         let maybe_seg = self.add_fixed_seg(from, to, weight);
 
         if let Ok(seg) = maybe_seg {
-            self.drawing.add_to_compound(seg, zone.into());
+            self.drawing.add_to_compound(seg, poly.into());
         }
 
         maybe_seg
     }
 
-    pub fn add_zone_fixed_seg_infringably(
+    pub fn add_poly_fixed_seg_infringably(
         &mut self,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
-        zone: GenericIndex<ZoneWeight>,
+        poly: GenericIndex<PolyWeight>,
     ) -> FixedSegIndex {
         let seg = self.add_fixed_seg_infringably(from, to, weight);
-        self.drawing.add_to_compound(seg, zone.into());
+        self.drawing.add_to_compound(seg, poly.into());
         seg
     }
 
@@ -199,10 +199,10 @@ impl<R: AccessRules> Layout<R> {
         self.drawing.move_dot(dot, to)
     }
 
-    pub fn add_zone(&mut self, weight: ZoneWeight) -> GenericIndex<ZoneWeight> {
-        GenericIndex::<ZoneWeight>::new(
+    pub fn add_poly(&mut self, weight: PolyWeight) -> GenericIndex<PolyWeight> {
+        GenericIndex::<PolyWeight>::new(
             self.drawing
-                .add_compound(CompoundWeight::Zone(weight))
+                .add_compound(CompoundWeight::Poly(weight))
                 .petgraph_index(),
         )
     }
@@ -243,18 +243,18 @@ impl<R: AccessRules> Layout<R> {
         }
     }
 
-    pub fn zones<W: 'static>(
+    pub fn polys<W: 'static>(
         &self,
         node: GenericIndex<W>,
     ) -> impl Iterator<Item = GenericIndex<CompoundWeight>> + '_ {
         self.drawing.compounds(node)
     }
 
-    pub fn zone_nodes(&self) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
+    pub fn poly_nodes(&self) -> impl Iterator<Item = GenericIndex<PolyWeight>> + '_ {
         self.drawing.rtree().iter().filter_map(|wrapper| {
             if let NodeIndex::Compound(compound) = wrapper.data {
-                if let CompoundWeight::Zone(..) = self.drawing.compound_weight(compound) {
-                    return Some(GenericIndex::<ZoneWeight>::new(compound.petgraph_index()));
+                if let CompoundWeight::Poly(..) = self.drawing.compound_weight(compound) {
+                    return Some(GenericIndex::<PolyWeight>::new(compound.petgraph_index()));
                 }
             }
 
@@ -262,10 +262,10 @@ impl<R: AccessRules> Layout<R> {
         })
     }
 
-    pub fn layer_zone_nodes(
+    pub fn layer_poly_nodes(
         &self,
         layer: usize,
-    ) -> impl Iterator<Item = GenericIndex<ZoneWeight>> + '_ {
+    ) -> impl Iterator<Item = GenericIndex<PolyWeight>> + '_ {
         self.drawing
             .rtree()
             .locate_in_envelope_intersecting(&AABB::from_corners(
@@ -274,8 +274,8 @@ impl<R: AccessRules> Layout<R> {
             ))
             .filter_map(|wrapper| {
                 if let NodeIndex::Compound(compound) = wrapper.data {
-                    if let CompoundWeight::Zone(..) = self.drawing.compound_weight(compound) {
-                        return Some(GenericIndex::<ZoneWeight>::new(compound.petgraph_index()));
+                    if let CompoundWeight::Poly(..) = self.drawing.compound_weight(compound) {
+                        return Some(GenericIndex::<PolyWeight>::new(compound.petgraph_index()));
                     }
                 }
 
@@ -283,13 +283,13 @@ impl<R: AccessRules> Layout<R> {
             })
     }
 
-    pub fn zone_members(
+    pub fn poly_members(
         &self,
-        zone: GenericIndex<ZoneWeight>,
+        poly: GenericIndex<PolyWeight>,
     ) -> impl Iterator<Item = PrimitiveIndex> + '_ {
         self.drawing
             .geometry()
-            .compound_members(GenericIndex::new(zone.petgraph_index()))
+            .compound_members(GenericIndex::new(poly.petgraph_index()))
     }
 
     pub fn drawing(&self) -> &Drawing<CompoundWeight, R> {
@@ -304,8 +304,8 @@ impl<R: AccessRules> Layout<R> {
         self.drawing.rules_mut()
     }
 
-    pub fn zone(&self, index: GenericIndex<ZoneWeight>) -> Zone<R> {
-        Zone::new(index, self)
+    pub fn poly(&self, index: GenericIndex<PolyWeight>) -> Poly<R> {
+        Poly::new(index, self)
     }
 
     pub fn via(&self, index: GenericIndex<ViaWeight>) -> Via<R> {

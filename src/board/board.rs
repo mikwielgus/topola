@@ -11,7 +11,7 @@ use crate::{
     geometry::{shape::AccessShape, GenericNode},
     graph::GenericIndex,
     layout::{
-        zone::{GetMaybeApex, MakePolyShape, ZoneWeight},
+        poly::{GetMaybeApex, MakePolyShape, PolyWeight},
         Layout, NodeIndex,
     },
     math::Circle,
@@ -49,14 +49,14 @@ impl<M: AccessMesadata> Board<M> {
         dot
     }
 
-    pub fn add_zone_fixed_dot_infringably(
+    pub fn add_poly_fixed_dot_infringably(
         &mut self,
         weight: FixedDotWeight,
-        zone: GenericIndex<ZoneWeight>,
+        poly: GenericIndex<PolyWeight>,
     ) -> FixedDotIndex {
-        let dot = self.layout.add_zone_fixed_dot_infringably(weight, zone);
+        let dot = self.layout.add_poly_fixed_dot_infringably(weight, poly);
 
-        if let Some(pin) = self.node_pinname(GenericNode::Compound(zone.into())) {
+        if let Some(pin) = self.node_pinname(GenericNode::Compound(poly.into())) {
             self.node_to_pinname
                 .insert(GenericNode::Primitive(dot.into()), pin.to_string());
         }
@@ -81,18 +81,18 @@ impl<M: AccessMesadata> Board<M> {
         seg
     }
 
-    pub fn add_zone_fixed_seg_infringably(
+    pub fn add_poly_fixed_seg_infringably(
         &mut self,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
-        zone: GenericIndex<ZoneWeight>,
+        poly: GenericIndex<PolyWeight>,
     ) -> FixedSegIndex {
         let seg = self
             .layout
-            .add_zone_fixed_seg_infringably(from, to, weight, zone);
+            .add_poly_fixed_seg_infringably(from, to, weight, poly);
 
-        if let Some(pin) = self.node_pinname(GenericNode::Compound(zone.into())) {
+        if let Some(pin) = self.node_pinname(GenericNode::Compound(poly.into())) {
             self.node_to_pinname
                 .insert(GenericNode::Primitive(seg.into()), pin.to_string());
         }
@@ -100,35 +100,35 @@ impl<M: AccessMesadata> Board<M> {
         seg
     }
 
-    pub fn add_zone(
+    pub fn add_poly(
         &mut self,
-        weight: ZoneWeight,
+        weight: PolyWeight,
         maybe_pin: Option<String>,
-    ) -> GenericIndex<ZoneWeight> {
-        let zone = self.layout.add_zone(weight);
+    ) -> GenericIndex<PolyWeight> {
+        let poly = self.layout.add_poly(weight);
 
         if let Some(pin) = maybe_pin {
             self.node_to_pinname
-                .insert(GenericNode::Compound(zone.into()), pin.to_string());
+                .insert(GenericNode::Compound(poly.into()), pin.to_string());
         }
 
-        zone
+        poly
     }
 
-    pub fn zone_apex(&mut self, zone: GenericIndex<ZoneWeight>) -> FixedDotIndex {
-        if let Some(apex) = self.layout.zone(zone).maybe_apex() {
+    pub fn poly_apex(&mut self, poly: GenericIndex<PolyWeight>) -> FixedDotIndex {
+        if let Some(apex) = self.layout.poly(poly).maybe_apex() {
             apex
         } else {
-            self.add_zone_fixed_dot_infringably(
+            self.add_poly_fixed_dot_infringably(
                 FixedDotWeight {
                     circle: Circle {
-                        pos: self.layout.zone(zone).shape().center(),
+                        pos: self.layout.poly(poly).shape().center(),
                         r: 100.0,
                     },
-                    layer: self.layout.zone(zone).layer(),
-                    maybe_net: self.layout.zone(zone).maybe_net(),
+                    layer: self.layout.poly(poly).layer(),
+                    maybe_net: self.layout.poly(poly).maybe_net(),
                 },
-                zone,
+                poly,
             )
         }
     }

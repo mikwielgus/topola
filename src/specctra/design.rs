@@ -6,7 +6,7 @@ use thiserror::Error;
 use crate::{
     board::{mesadata::AccessMesadata, Board},
     drawing::{dot::FixedDotWeight, seg::FixedSegWeight, Drawing},
-    layout::{zone::SolidZoneWeight, Layout},
+    layout::{poly::SolidPolyWeight, Layout},
     math::Circle,
     specctra::{
         mesadata::SpecctraMesadata,
@@ -389,8 +389,8 @@ impl SpecctraDesign {
         net: usize,
         maybe_pin: Option<String>,
     ) {
-        let zone = board.add_zone(
-            SolidZoneWeight {
+        let poly = board.add_poly(
+            SolidPolyWeight {
                 layer,
                 maybe_net: Some(net),
             }
@@ -399,7 +399,7 @@ impl SpecctraDesign {
         );
 
         // Corners.
-        let dot_1_1 = board.add_zone_fixed_dot_infringably(
+        let dot_1_1 = board.add_poly_fixed_dot_infringably(
             FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y1),
@@ -408,9 +408,9 @@ impl SpecctraDesign {
                 layer,
                 maybe_net: Some(net),
             },
-            zone,
+            poly,
         );
-        let dot_2_1 = board.add_zone_fixed_dot_infringably(
+        let dot_2_1 = board.add_poly_fixed_dot_infringably(
             FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y1),
@@ -419,9 +419,9 @@ impl SpecctraDesign {
                 layer,
                 maybe_net: Some(net),
             },
-            zone,
+            poly,
         );
-        let dot_2_2 = board.add_zone_fixed_dot_infringably(
+        let dot_2_2 = board.add_poly_fixed_dot_infringably(
             FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y2),
@@ -430,9 +430,9 @@ impl SpecctraDesign {
                 layer,
                 maybe_net: Some(net),
             },
-            zone,
+            poly,
         );
-        let dot_1_2 = board.add_zone_fixed_dot_infringably(
+        let dot_1_2 = board.add_poly_fixed_dot_infringably(
             FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y2),
@@ -441,10 +441,10 @@ impl SpecctraDesign {
                 layer,
                 maybe_net: Some(net),
             },
-            zone,
+            poly,
         );
         // Sides.
-        board.add_zone_fixed_seg_infringably(
+        board.add_poly_fixed_seg_infringably(
             dot_1_1,
             dot_2_1,
             FixedSegWeight {
@@ -452,9 +452,9 @@ impl SpecctraDesign {
                 layer,
                 maybe_net: Some(net),
             },
-            zone,
+            poly,
         );
-        board.add_zone_fixed_seg_infringably(
+        board.add_poly_fixed_seg_infringably(
             dot_2_1,
             dot_2_2,
             FixedSegWeight {
@@ -462,9 +462,9 @@ impl SpecctraDesign {
                 layer,
                 maybe_net: Some(net),
             },
-            zone,
+            poly,
         );
-        board.add_zone_fixed_seg_infringably(
+        board.add_poly_fixed_seg_infringably(
             dot_2_2,
             dot_1_2,
             FixedSegWeight {
@@ -472,9 +472,9 @@ impl SpecctraDesign {
                 layer,
                 maybe_net: Some(net),
             },
-            zone,
+            poly,
         );
-        board.add_zone_fixed_seg_infringably(
+        board.add_poly_fixed_seg_infringably(
             dot_1_2,
             dot_1_1,
             FixedSegWeight {
@@ -482,7 +482,7 @@ impl SpecctraDesign {
                 layer,
                 maybe_net: Some(net),
             },
-            zone,
+            poly,
         );
     }
 
@@ -568,8 +568,8 @@ impl SpecctraDesign {
         net: usize,
         maybe_pin: Option<String>,
     ) {
-        let zone = board.add_zone(
-            SolidZoneWeight {
+        let poly = board.add_poly(
+            SolidPolyWeight {
                 layer,
                 maybe_net: Some(net),
             }
@@ -578,7 +578,7 @@ impl SpecctraDesign {
         );
 
         // add the first coordinate in the wire path as a dot and save its index
-        let mut prev_index = board.add_zone_fixed_dot_infringably(
+        let mut prev_index = board.add_poly_fixed_dot_infringably(
             FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(
@@ -595,13 +595,13 @@ impl SpecctraDesign {
                 maybe_net: Some(net),
             },
             // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
-            //GenericIndex::new(zone.petgraph_index()).into(),
-            zone,
+            //GenericIndex::new(poly.petgraph_index()).into(),
+            poly,
         );
 
         // iterate through path coords starting from the second
         for coord in coords.iter().skip(1) {
-            let index = board.add_zone_fixed_dot_infringably(
+            let index = board.add_poly_fixed_dot_infringably(
                 FixedDotWeight {
                     circle: Circle {
                         pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, coord.x, coord.y)
@@ -612,11 +612,11 @@ impl SpecctraDesign {
                     maybe_net: Some(net),
                 },
                 // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
-                zone,
+                poly,
             );
 
             // add a seg between the current and previous coords
-            let _ = board.add_zone_fixed_seg_infringably(
+            let _ = board.add_poly_fixed_seg_infringably(
                 prev_index,
                 index,
                 FixedSegWeight {
@@ -625,7 +625,7 @@ impl SpecctraDesign {
                     maybe_net: Some(net),
                 },
                 // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
-                zone,
+                poly,
             );
 
             prev_index = index;

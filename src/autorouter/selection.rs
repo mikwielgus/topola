@@ -7,7 +7,7 @@ use crate::{
     drawing::graph::{GetLayer, MakePrimitive},
     geometry::compound::ManageCompounds,
     graph::{GenericIndex, GetPetgraphIndex},
-    layout::{zone::ZoneWeight, CompoundWeight, NodeIndex},
+    layout::{poly::PolyWeight, CompoundWeight, NodeIndex},
 };
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
@@ -66,11 +66,11 @@ impl Selection {
                 primitive.primitive(board.layout().drawing()).layer()
             }
             NodeIndex::Compound(compound) => {
-                if let CompoundWeight::Zone(..) = board.layout().drawing().compound_weight(compound)
+                if let CompoundWeight::Poly(..) = board.layout().drawing().compound_weight(compound)
                 {
                     board
                         .layout()
-                        .zone(GenericIndex::<ZoneWeight>::new(compound.petgraph_index()))
+                        .poly(GenericIndex::<PolyWeight>::new(compound.petgraph_index()))
                         .layer()
                 } else {
                     unreachable!()

@@ -14,7 +14,7 @@ use topola::{
         primitive::MakePrimitiveShape,
     },
     geometry::{shape::AccessShape, GenericNode},
-    layout::{via::ViaWeight, zone::MakePolyShape},
+    layout::{poly::MakePolyShape, via::ViaWeight},
     math::Circle,
     specctra::mesadata::SpecctraMesadata,
 };
@@ -126,17 +126,17 @@ impl Viewport {
                                         painter.paint_primitive(&shape, color);
                                     }
 
-                                    for zone in board.layout().layer_zone_nodes(i) {
+                                    for poly in board.layout().layer_poly_nodes(i) {
                                         let color = if overlay
                                             .selection()
-                                            .contains_node(board, GenericNode::Compound(zone.into()))
+                                            .contains_node(board, GenericNode::Compound(poly.into()))
                                         {
                                             layers.highlight_colors[i]
                                         } else {
                                             layers.colors[i]
                                         };
 
-                                        painter.paint_polygon(&board.layout().zone(zone).shape().polygon, color)
+                                        painter.paint_polygon(&board.layout().poly(poly).shape().polygon, color)
                                     }
                                 }
                             }

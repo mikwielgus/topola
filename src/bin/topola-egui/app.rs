@@ -29,7 +29,7 @@ use topola::{
         shape::AccessShape,
         GenericNode,
     },
-    layout::{via::ViaWeight, zone::MakePolyShape, Layout},
+    layout::{poly::MakePolyShape, via::ViaWeight, Layout},
     math::Circle,
     router::{
         draw::DrawException,

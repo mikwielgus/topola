@@ -103,7 +103,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Zone(zone) => self.board.zone_apex(zone),
+            RatvertexIndex::Poly(poly) => self.board.poly_apex(poly),
         };
 
         let target_dot = match self
@@ -114,7 +114,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Zone(zone) => self.board.zone_apex(zone),
+            RatvertexIndex::Poly(poly) => self.board.poly_apex(poly),
         };
 
         (source_dot, target_dot)
