@@ -1,4 +1,4 @@
-use std::fs::File;
+use std::{fs::File, io::BufReader};
 
 use petgraph::{stable_graph::NodeIndex, unionfind::UnionFind, visit::NodeIndexable};
 use topola::{
@@ -14,7 +14,9 @@ use topola::{
 };
 
 pub fn load_design_and_assert(filename: &str) -> Invoker<SpecctraMesadata> {
-    let design = SpecctraDesign::load_from_file(filename).unwrap();
+    let design_file = File::open(filename).unwrap();
+    let design_bufread = BufReader::new(design_file);
+    let design = SpecctraDesign::load(design_bufread).unwrap();
     let mut invoker = Invoker::new(Autorouter::new(design.make_board()).unwrap());
 
     assert!(matches!(
