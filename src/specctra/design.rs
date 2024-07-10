@@ -5,12 +5,23 @@ use thiserror::Error;
 
 use crate::{
     board::{mesadata::AccessMesadata, Board},
-    drawing::{dot::FixedDotWeight, seg::FixedSegWeight, Drawing},
+    drawing::{
+        dot::FixedDotWeight,
+        seg::FixedSegWeight,
+        Drawing,
+        graph::{GetMaybeNet, GetLayer, MakePrimitive},
+        primitive::MakePrimitiveShape
+    },
+    geometry::{
+        primitive::{PrimitiveShape},
+        GetWidth,
+    },
     layout::{poly::SolidPolyWeight, Layout},
     math::Circle,
     specctra::{
         mesadata::SpecctraMesadata,
         read::{self, ListTokenizer},
+        write::{self, ListWriter},
         structure::{self, DsnFile, Layer, Pcb, Shape},
     },
 };
@@ -34,6 +45,80 @@ impl SpecctraDesign {
         let dsn = list_reader.read_value::<DsnFile>()?;
 
         Ok(Self { pcb: dsn.pcb })
+    }
+
+    pub fn get_name(&self) -> &str {
+        &self.pcb.name
+    }
+
+    pub fn write_ses(
+        &self,
+        board: &Board<SpecctraMesadata>,
+        writer: impl std::io::Write,
+    ) -> Result<(), std::io::Error> {
+        let mesadata = board.mesadata();
+        let drawing = board.layout().drawing();
+        //dbg!(&geometry);
+
+        let mut net_outs = HashMap::<usize, structure::NetOut>::new();
+        for index in drawing.primitive_nodes() {
+            let primitive = index.primitive(drawing);
+            match primitive.shape() {
+                PrimitiveShape::Seg(seg) => {
+                    if let Some(net) = primitive.maybe_net() {
+                        let net_name = mesadata.net_netname(net).unwrap().to_owned();
+
+                        let wire = structure::Wire {
+                            path: structure::Path {
+                                layer: mesadata.layer_layername(primitive.layer()).unwrap().to_owned(),
+                                width: primitive.width(),
+                                coords: vec![
+                                    structure::Point { x: seg.from.x(), y: seg.from.y() },
+                                    structure::Point { x: seg.to.x(), y: seg.to.y() },
+                                ],
+                            },
+                            net: net_name.clone(),
+                            r#type: "route".to_owned(),
+                        };
+
+                        if let Some(net) = net_outs.get_mut(&net) {
+                            net.wire.push(wire);
+                        } else {
+                            net_outs.insert(
+                                net,
+                                structure::NetOut {
+                                    name: net_name.clone(),
+                                    wire: vec![wire],
+                                    via: Vec::new(),
+                                },
+                            );
+                        }
+                    }
+                },
+                _ => (),
+            }
+        }
+
+        let ses = structure::SesFile {
+            session: structure::Session {
+                id: "ID".to_string(),
+                routes: structure::Routes {
+                    resolution: structure::Resolution {
+                        unit: "um".into(),
+                        value: 1.0,
+                    },
+                    library_out: structure::Library {
+                        images: Vec::new(),
+                        padstacks: Vec::new(),
+                    },
+                    network_out: structure::NetworkOut {
+                        net: net_outs.into_values().collect(),
+                    },
+                },
+            },
+        };
+
+        ListWriter::new(writer).write_value(&ses)
     }
 
     pub fn make_board(&self) -> Board<SpecctraMesadata> {

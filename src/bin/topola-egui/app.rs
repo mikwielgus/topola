@@ -77,6 +77,9 @@ pub struct App {
     maybe_layers: Option<Layers>,
 
     #[serde(skip)]
+    maybe_design: Option<SpecctraDesign>,
+
+    #[serde(skip)]
     update_counter: f32,
 }
 
@@ -92,6 +95,7 @@ impl Default for App {
             top: Top::new(),
             bottom: Bottom::new(),
             maybe_layers: None,
+            maybe_design: None,
             update_counter: 0.0,
         }
     }
@@ -124,6 +128,7 @@ impl App {
             let board = design.make_board();
             self.maybe_overlay = Some(Overlay::new(&board).unwrap());
             self.maybe_layers = Some(Layers::new(&board));
+            self.maybe_design = Some(design);
             self.arc_mutex_maybe_invoker = Arc::new(Mutex::new(Some(Invoker::new(
                 Autorouter::new(board).unwrap(),
             ))))
@@ -165,6 +170,7 @@ impl eframe::App for App {
             self.arc_mutex_maybe_invoker.clone(),
             &mut self.maybe_execute,
             &mut self.maybe_overlay,
+            &self.maybe_design,
         );
 
         if let Some(ref mut layers) = self.maybe_layers {

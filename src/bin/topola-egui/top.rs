@@ -1,13 +1,14 @@
 use std::{
     fs::File,
     sync::{mpsc::Sender, Arc, Mutex},
+    path::Path,
 };
 
 use topola::{
     autorouter::invoker::{
         Command, Execute, ExecuteWithStatus, Invoker, InvokerError, InvokerStatus,
     },
-    specctra::mesadata::SpecctraMesadata,
+    specctra::{mesadata::SpecctraMesadata, design::SpecctraDesign},
 };
 
 use crate::{
@@ -40,9 +41,12 @@ impl Top {
         arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
         maybe_execute: &mut Option<ExecuteWithStatus>,
         maybe_overlay: &mut Option<Overlay>,
+        maybe_design: &Option<SpecctraDesign>,
     ) -> Result<(), InvokerError> {
         let mut open_design =
             Trigger::new(Action::new("Open", egui::Modifiers::CTRL, egui::Key::O));
+        let mut export_session =
+            Trigger::new(Action::new("Export session file", egui::Modifiers::CTRL, egui::Key::S));
         let mut import_history = Trigger::new(Action::new(
             "Import history",
             egui::Modifiers::CTRL,
@@ -72,6 +76,7 @@ impl Top {
                 egui::menu::bar(ui, |ui| {
                     ui.menu_button("File", |ui| {
                         open_design.button(ctx, ui);
+                        export_session.button(ctx, ui);
 
                         ui.separator();
 
@@ -119,6 +124,37 @@ impl Top {
                             ctx.request_repaint();
                         }
                     });
+                } else if export_session.consume_key_triggered(ctx, ui) {
+                    if let Some(design) = maybe_design {
+                        if let Some(invoker) =
+                            arc_mutex_maybe_invoker.clone().lock().unwrap().as_ref()
+                        {
+                            let ctx = ui.ctx().clone();
+                            let board = invoker.autorouter().board();
+
+                            // FIXME: I don't know how to avoid buffering the entire exported file
+                            let mut writebuf = vec![];
+
+                            design.write_ses(board, &mut writebuf);
+
+                            let mut dialog = rfd::AsyncFileDialog::new();
+                            if let Some(filename) = Path::new(design.get_name()).file_stem() {
+                                if let Some(filename) = filename.to_str() {
+                                    dialog = dialog.set_file_name(filename);
+                                }
+                            }
+                            let task = dialog
+                                .add_filter("Specctra session file", &["ses"])
+                                .save_file();
+
+                            execute(async move {
+                                if let Some(file_handle) = task.await {
+                                    file_handle.write(&writebuf).await;
+                                    ctx.request_repaint();
+                                }
+                            });
+                        }
+                    }
                 } else if import_history.consume_key_triggered(ctx, ui) {
                     let ctx = ctx.clone();
                     let task = rfd::AsyncFileDialog::new().pick_file();
