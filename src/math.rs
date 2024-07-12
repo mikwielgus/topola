@@ -230,6 +230,20 @@ pub fn between_vectors(p: Point, from: Point, to: Point) -> bool {
     }
 }
 
+/// Computes the (directed) angle between the positive X axis and the vector.
+///
+/// The result is measured counterclockwise and normalized into range (-pi, pi] (like atan2).
+pub fn vector_angle(vector: Point) -> f64 {
+    vector.y().atan2(vector.x())
+}
+
+/// Computes the (directed) angle between two vectors.
+///
+/// The result is measured counterclockwise and normalized into range (-pi, pi] (like atan2).
+pub fn angle_between(v1: Point, v2: Point) -> f64 {
+    cross_product(v1, v2).atan2(dot_product(v1, v2))
+}
+
 pub fn seq_cross_product(start: Point, stop: Point, reference: Point) -> f64 {
     let dx1 = stop.x() - start.x();
     let dy1 = stop.y() - start.y();

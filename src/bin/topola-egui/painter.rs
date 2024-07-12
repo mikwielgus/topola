@@ -28,14 +28,9 @@ impl<'a> Painter<'a> {
             ),
             PrimitiveShape::Bend(bend) => {
                 let circle = bend.circle();
-                let delta_from = bend.from - circle.pos;
-                let delta_to = bend.to - circle.pos;
 
-                let angle_from = delta_from.y().atan2(delta_from.x());
-
-                let cross = math::cross_product(delta_from, delta_to);
-                let dot = math::dot_product(delta_from, delta_to);
-                let angle_step = cross.atan2(dot) / 100.0;
+                let angle_from = bend.start_angle();
+                let angle_step = bend.spanned_angle() / 100.0;
 
                 let mut points: Vec<egui::Pos2> = vec![];
 

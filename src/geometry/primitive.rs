@@ -1,3 +1,5 @@
+use std::f64::consts::TAU;
+
 use enum_dispatch::enum_dispatch;
 use geo::{point, polygon, Contains, EuclideanDistance, Intersects, Point, Polygon, Rotate};
 use rstar::{RTreeObject, AABB};
@@ -243,6 +245,10 @@ pub struct BendShape {
 }
 
 impl BendShape {
+    pub fn radius(&self) -> f64 {
+        self.inner_circle.r + self.width / 2.0
+    }
+
     pub fn inner_circle(&self) -> Circle {
         self.inner_circle
     }
@@ -250,7 +256,7 @@ impl BendShape {
     pub fn circle(&self) -> Circle {
         Circle {
             pos: self.inner_circle.pos,
-            r: self.inner_circle.r + self.width / 2.0,
+            r: self.radius(),
         }
     }
 
@@ -268,21 +274,33 @@ impl BendShape {
             self.to - self.inner_circle.pos,
         )
     }
+
+    pub fn start_angle(&self) -> f64 {
+        let r = self.from - self.inner_circle.pos;
+        math::vector_angle(r)
+    }
+
+    pub fn spanned_angle(&self) -> f64 {
+        let r1 = self.from - self.inner_circle.pos;
+        let r2 = self.to - self.inner_circle.pos;
+
+        // bends always go counterclockwise from `from` to `to`
+        // (this is the usual convention, no adjustment needed)
+        let angle = math::angle_between(r1, r2);
+
+        // atan2 returns values normalized into the range (-pi, pi]
+        // so for angles below 0 we add 1 winding to get a nonnegative angle
+        if angle < 0.0 {
+            angle + TAU
+        } else {
+            angle
+        }
+    }
 }
 
 impl MeasureLength for BendShape {
     fn length(&self) -> f64 {
-        // TODO: Not valid for inflated bends, as currently `from` and `to` of these don't lie on
-        // teir circles.
-
-        // We obtain the angle from the law of cosines and multiply with radius to get the length.
-        let d = self.to.euclidean_distance(&self.from);
-
-        if d > 0.0 {
-            (1.0 - d * d / (2.0 * d * d)).acos()
-        } else {
-            0.0
-        }
+        self.spanned_angle() * self.radius()
     }
 }
 
