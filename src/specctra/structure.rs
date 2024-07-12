@@ -39,7 +39,7 @@ pub struct NetOut {
     #[anon]
     pub name: String,
     #[vec("wire")]
-    pub wire: Vec<Wire>,
+    pub wire: Vec<WireOut>,
     #[vec("via")]
     pub via: Vec<Via>,
 }
@@ -301,6 +301,11 @@ pub struct Wire {
     pub path: Path,
     pub net: String,
     pub r#type: String,
+}
+
+#[derive(ReadDsn, WriteSes, Debug)]
+pub struct WireOut {
+    pub path: Path,
 }
 
 ////////////////////////////////////////////

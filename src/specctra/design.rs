@@ -63,39 +63,64 @@ impl SpecctraDesign {
         let mut net_outs = HashMap::<usize, structure::NetOut>::new();
         for index in drawing.primitive_nodes() {
             let primitive = index.primitive(drawing);
-            match primitive.shape() {
-                PrimitiveShape::Seg(seg) => {
-                    if let Some(net) = primitive.maybe_net() {
-                        let net_name = mesadata.net_netname(net).unwrap().to_owned();
 
-                        let wire = structure::Wire {
-                            path: structure::Path {
-                                layer: mesadata.layer_layername(primitive.layer()).unwrap().to_owned(),
-                                width: primitive.width(),
-                                coords: vec![
-                                    structure::Point { x: seg.from.x(), y: seg.from.y() },
-                                    structure::Point { x: seg.to.x(), y: seg.to.y() },
-                                ],
-                            },
-                            net: net_name.clone(),
-                            r#type: "route".to_owned(),
-                        };
+            if let Some(net) = primitive.maybe_net() {
+                let coords = match primitive.shape() {
+                    PrimitiveShape::Seg(seg) => {
+                        vec![
+                            structure::Point { x: seg.from.x(), y: seg.from.y() },
+                            structure::Point { x: seg.to.x(), y: seg.to.y() },
+                        ]
+                    },
 
-                        if let Some(net) = net_outs.get_mut(&net) {
-                            net.wire.push(wire);
-                        } else {
-                            net_outs.insert(
-                                net,
-                                structure::NetOut {
-                                    name: net_name.clone(),
-                                    wire: vec![wire],
-                                    via: Vec::new(),
-                                },
-                            );
+                    PrimitiveShape::Bend(bend) => {
+                        // Since general circle arcs don't seem to be supported
+                        // we're downgrading each one to a chain of straight
+                        // line segments.
+                        // TODO: make this configurable? pick a smarter value?
+                        let segment_count: usize = 100;
+
+                        let circle = bend.circle();
+                        let angle_from = bend.start_angle();
+                        let angle_step = bend.spanned_angle() / segment_count as f64;
+
+                        let mut points = Vec::new();
+                        for i in 0..=segment_count {
+                            let x = circle.pos.x() + circle.r * (angle_from + i as f64 * angle_step).cos();
+                            let y = circle.pos.y() + circle.r * (angle_from + i as f64 * angle_step).sin();
+                            points.push(structure::Point { x, y });
                         }
-                    }
-                },
-                _ => (),
+                        points
+                    },
+
+                    // Intentionally skipped for now.
+                    // Topola stores trace segments and dots joining them
+                    // as separate objects, but the Specctra formats and KiCad
+                    // appear to consider them implicit.
+                    // TODO: Vias
+                    PrimitiveShape::Dot(_) => continue,
+                };
+
+                let wire = structure::WireOut {
+                    path: structure::Path {
+                        layer: mesadata.layer_layername(primitive.layer()).unwrap().to_owned(),
+                        width: primitive.width(),
+                        coords,
+                    },
+                };
+
+                if let Some(net) = net_outs.get_mut(&net) {
+                    net.wire.push(wire);
+                } else {
+                    net_outs.insert(
+                        net,
+                        structure::NetOut {
+                            name: mesadata.net_netname(net).unwrap().to_owned(),
+                            wire: vec![wire],
+                            via: Vec::new(),
+                        },
+                    );
+                }
             }
         }
 
