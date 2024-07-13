@@ -3,7 +3,8 @@ use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
 
-#[derive(Parser)]
+#[derive(Parser, Debug, Default)]
+#[command(about, version)]
 struct Cli {
     input: std::path::PathBuf,
     output: std::path::PathBuf,
