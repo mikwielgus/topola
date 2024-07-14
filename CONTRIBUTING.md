@@ -64,11 +64,11 @@ Change your working directory to your clone of Topola's repository:
 
 Build the project with
 
-    cargo build --features "egui,disable_contracts" --bin topola-egui
+    cargo build --features egui --bin topola-egui
 
 Finally, run Topola by executing
 
-    cargo run --features "egui,disable_contracts" --bin topola-egui
+    cargo run --features egui --bin topola-egui
 
 ##### Running Topola in a Web browser
 
@@ -87,18 +87,17 @@ To build and open Topola in your browser, run
 Optionally, for shorter build times you may build the SDL2 demo instead
 of the Egui port:
 
-    cargo build --features sdl2 --bin topola-sdl2-demo	
+    cargo build --features sdl2 --bin topola-sdl2-demo
     cargo run --features sdl2 --bin topola-sdl2-demo
 
 The downside is that the SDL2 demo's user interface is highly incomplete.
-
 
 #### Automated tests
 
 Topola has automated tests to make sure its basic functionalities work.
 To execute these, run
 
-    cargo test --features disable_contracts
+    cargo test
 
 #### Contracts
 
@@ -130,7 +129,13 @@ You can go back to stable with
 
 ##### Enabling contracts
 
-To enable contracts, simply remove the `disable_contracts` feature from
-commands. For example, to build tests with contracts, simply run
+To enable contracts, simply add a `--no-default-features` switch. This
+switches off a default feature that prevents contracts from executing.
+For example, to build tests with contracts, simply run
 
-    cargo test
+    cargo test --no-default-features
+
+Of course, you can enable contracts for any build target. For example,
+the following command will build the Egui port with contracts enabled:
+
+    cargo build --features egui --bin topola-egui --no-default-features
