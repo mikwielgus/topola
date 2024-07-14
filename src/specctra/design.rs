@@ -7,22 +7,19 @@ use crate::{
     board::{mesadata::AccessMesadata, Board},
     drawing::{
         dot::FixedDotWeight,
+        graph::{GetLayer, GetMaybeNet, MakePrimitive},
+        primitive::MakePrimitiveShape,
         seg::FixedSegWeight,
         Drawing,
-        graph::{GetMaybeNet, GetLayer, MakePrimitive},
-        primitive::MakePrimitiveShape
     },
-    geometry::{
-        primitive::{PrimitiveShape},
-        GetWidth,
-    },
+    geometry::{primitive::PrimitiveShape, GetWidth},
     layout::{poly::SolidPolyWeight, Layout},
     math::Circle,
     specctra::{
         mesadata::SpecctraMesadata,
         read::{self, ListTokenizer},
-        write::{self, ListWriter},
         structure::{self, DsnFile, Layer, Pcb, Shape},
+        write::{self, ListWriter},
     },
 };
 
@@ -58,7 +55,6 @@ impl SpecctraDesign {
     ) -> Result<(), std::io::Error> {
         let mesadata = board.mesadata();
         let drawing = board.layout().drawing();
-        //dbg!(&geometry);
 
         let mut net_outs = HashMap::<usize, structure::NetOut>::new();
         for index in drawing.primitive_nodes() {
@@ -68,10 +64,16 @@ impl SpecctraDesign {
                 let coords = match primitive.shape() {
                     PrimitiveShape::Seg(seg) => {
                         vec![
-                            structure::Point { x: seg.from.x(), y: seg.from.y() },
-                            structure::Point { x: seg.to.x(), y: seg.to.y() },
+                            structure::Point {
+                                x: seg.from.x(),
+                                y: seg.from.y(),
+                            },
+                            structure::Point {
+                                x: seg.to.x(),
+                                y: seg.to.y(),
+                            },
                         ]
-                    },
+                    }
 
                     PrimitiveShape::Bend(bend) => {
                         // Since general circle arcs don't seem to be supported
@@ -86,12 +88,14 @@ impl SpecctraDesign {
 
                         let mut points = Vec::new();
                         for i in 0..=segment_count {
-                            let x = circle.pos.x() + circle.r * (angle_from + i as f64 * angle_step).cos();
-                            let y = circle.pos.y() + circle.r * (angle_from + i as f64 * angle_step).sin();
+                            let x = circle.pos.x()
+                                + circle.r * (angle_from + i as f64 * angle_step).cos();
+                            let y = circle.pos.y()
+                                + circle.r * (angle_from + i as f64 * angle_step).sin();
                             points.push(structure::Point { x, y });
                         }
                         points
-                    },
+                    }
 
                     // Intentionally skipped for now.
                     // Topola stores trace segments and dots joining them
@@ -103,7 +107,10 @@ impl SpecctraDesign {
 
                 let wire = structure::WireOut {
                     path: structure::Path {
-                        layer: mesadata.layer_layername(primitive.layer()).unwrap().to_owned(),
+                        layer: mesadata
+                            .layer_layername(primitive.layer())
+                            .unwrap()
+                            .to_owned(),
                         width: primitive.width(),
                         coords,
                     },

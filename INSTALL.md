@@ -44,16 +44,6 @@ To build and open Topola in your browser, run
 
     trunk serve
 
-### SDL2 demo
-
-Optionally, for shorter build times you may build the SDL2 demo instead
-of the Egui port:
-
-    cargo build --features sdl2 --bin topola-sdl2-demo
-    cargo run --features sdl2 --bin topola-sdl2-demo
-
-The downside is that the SDL2 demo's user interface is highly incomplete.
-
 ### Automated tests
 
 Topola has automated tests to make sure its basic functionalities work.

@@ -16,15 +16,10 @@ required-features = ["cli"]
 name = "topola-egui"
 required-features = ["egui"]
 
-[[bin]]
-name = "topola-sdl2-demo"
-required-features = ["sdl2"]
-
 [features]
 default = ["disable_contracts"]
 cli = ["dep:clap"]
 egui = ["dep:eframe", "dep:egui", "dep:rfd", "dep:futures"]
-sdl2 = ["dep:sdl2", "dep:gl", "dep:pathfinder_canvas", "dep:pathfinder_geometry", "dep:pathfinder_gl", "dep:pathfinder_renderer", "dep:pathfinder_resources"]
 disable_contracts = ["contracts/disable_contracts"]
 
 [dependencies]
@@ -74,12 +69,6 @@ version = "0.14.0"
 [dependencies.futures]
 optional = true
 version = "0.3.30"
-
-[dependencies.sdl2]
-optional = true
-version = "0.35.2"
-default-features = false
-features = ["bundled"]
 
 [dependencies.gl]
 optional = true

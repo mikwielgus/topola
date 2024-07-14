@@ -1,14 +1,14 @@
 use std::{
     fs::File,
-    sync::{mpsc::Sender, Arc, Mutex},
     path::Path,
+    sync::{mpsc::Sender, Arc, Mutex},
 };
 
 use topola::{
     autorouter::invoker::{
         Command, Execute, ExecuteWithStatus, Invoker, InvokerError, InvokerStatus,
     },
-    specctra::{mesadata::SpecctraMesadata, design::SpecctraDesign},
+    specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
 
 use crate::{
@@ -45,8 +45,11 @@ impl Top {
     ) -> Result<(), InvokerError> {
         let mut open_design =
             Trigger::new(Action::new("Open", egui::Modifiers::CTRL, egui::Key::O));
-        let mut export_session =
-            Trigger::new(Action::new("Export session file", egui::Modifiers::CTRL, egui::Key::S));
+        let mut export_session = Trigger::new(Action::new(
+            "Export session file",
+            egui::Modifiers::CTRL,
+            egui::Key::S,
+        ));
         let mut import_history = Trigger::new(Action::new(
             "Import history",
             egui::Modifiers::CTRL,
