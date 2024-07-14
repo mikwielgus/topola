@@ -16,6 +16,10 @@ channel](https://webchat.oftc.net/?channels=#topola) to talk with the
 developers. Both chatrooms are bridged, so it does not matter which one
 you join.
 
+## Installation
+
+To install Topola, follow our [Installation guide](INSTALL.md).
+
 ## Contributing
 
 *Anyone* can contribute to Topola, including you. If you want to help us
@@ -34,7 +38,7 @@ Topola is licensed under the [MIT licence](LICENSE).
 ![Animation. There's a rubber band-like trace following cursor,
 navigating a very simple maze. The maze and the trace are red, the
 background is solid black but also very slightly white and dark
-blue](./assets/interactive_routing.gif)
+blue.](./assets/interactive_routing.gif)
 
 ![Animation showing a trace, behaving like a rubber band, routed around
 obstacles step by step. Attempted alternative paths and a guiding mesh
