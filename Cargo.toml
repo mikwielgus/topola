@@ -3,13 +3,13 @@ name = "topola"
 description = "Topological PCB router"
 version = "0.1.0"
 edition = "2021"
-default-run = "topola-egui"
+default-run = "topola"
 
 [lib]
 name = "topola"
 
 [[bin]]
-name = "topola-cli"
+name = "topola"
 required-features = ["cli"]
 
 [[bin]]
