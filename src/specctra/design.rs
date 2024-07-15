@@ -19,7 +19,7 @@ use crate::{
         mesadata::SpecctraMesadata,
         read::{self, ListTokenizer},
         structure::{self, DsnFile, Layer, Pcb, Shape},
-        write::{self, ListWriter},
+        write::ListWriter,
     },
 };
 

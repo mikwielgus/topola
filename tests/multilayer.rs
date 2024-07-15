@@ -35,7 +35,7 @@ fn test_unrouted_lm317_breakout() {
 
 #[test]
 fn test_signal_integrity_test() {
-    let mut invoker = common::load_design_and_assert(
+    let invoker = common::load_design_and_assert(
         "tests/multilayer/data/signal_integrity_test/signal_integrity_test.dsn",
     );
 

@@ -1,32 +1,9 @@
-use geo::EuclideanDistance;
-use petgraph::{
-    data::DataMap,
-    graph::{EdgeReference, NodeIndex, UnGraph},
-    visit::EdgeRef,
-};
-use thiserror::Error;
-
 use crate::{
-    drawing::{
-        band::BandFirstSegIndex,
-        dot::{DotIndex, FixedDotIndex},
-        graph::{MakePrimitive, PrimitiveIndex},
-        primitive::MakePrimitiveShape,
-        rules::AccessRules,
-    },
-    geometry::{
-        primitive::{AccessPrimitiveShape, PrimitiveShape},
-        shape::AccessShape,
-    },
-    graph::GetPetgraphIndex,
-    layout::Layout,
+    drawing::{dot::FixedDotIndex, graph::PrimitiveIndex, rules::AccessRules},
+    geometry::primitive::PrimitiveShape,
     router::{
-        astar::{astar, Astar, AstarError, AstarStatus, AstarStrategy, PathTracker},
-        draw::DrawException,
-        navmesh::{
-            BinavvertexNodeIndex, Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex,
-            NavvertexWeight,
-        },
+        astar::{Astar, AstarStatus},
+        navmesh::Navmesh,
         trace::Trace,
         tracer::Tracer,
         Router, RouterAstarStrategy, RouterError, RouterStatus,

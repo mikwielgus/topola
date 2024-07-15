@@ -24,7 +24,7 @@ Change your working directory to your clone of Topola's repository:
 
 ### Command-line application
 
-Run the following to build and install Topola's command-line
+Run the following command to build and install Topola's command-line
 application:
 
     cargo install --locked --path . --features cli

@@ -15,7 +15,6 @@ use crate::{
         Layout, NodeIndex,
     },
     math::Circle,
-    router::{navmesh::Navmesh, route::Route, Router, RouterError},
 };
 
 #[derive(Debug)]

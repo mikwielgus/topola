@@ -7,7 +7,7 @@ use crate::{
         band::BandFirstSegIndex,
         dot::{DotIndex, FixedDotIndex},
         graph::{MakePrimitive, PrimitiveIndex},
-        head::{GetFace, Head},
+        head::GetFace,
         primitive::MakePrimitiveShape,
         rules::AccessRules,
         Collision, Infringement, LayoutException,

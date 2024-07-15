@@ -7,7 +7,7 @@ use petgraph::{
     graph::UnGraph,
     stable_graph::NodeIndex,
     visit::{
-        self, Data, EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges, IntoNeighbors,
+        Data, EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges, IntoNeighbors,
         IntoNodeIdentifiers, NodeIndexable,
     },
 };

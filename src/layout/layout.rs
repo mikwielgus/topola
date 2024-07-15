@@ -19,10 +19,7 @@ use crate::{
         wraparoundable::WraparoundableIndex,
         Drawing, Infringement, LayoutException,
     },
-    geometry::{
-        compound::ManageCompounds, primitive::AccessPrimitiveShape, shape::MeasureLength,
-        GenericNode,
-    },
+    geometry::{compound::ManageCompounds, shape::MeasureLength, GenericNode},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
         poly::{Poly, PolyWeight},

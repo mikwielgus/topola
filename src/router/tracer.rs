@@ -1,19 +1,12 @@
 use contracts::{debug_ensures, debug_requires};
-use petgraph::{
-    data::DataMap,
-    graph::{NodeIndex, UnGraph},
-};
 use thiserror::Error;
 
 use crate::{
-    drawing::{
-        band::BandFirstSegIndex, bend::LooseBendIndex, dot::FixedDotIndex, graph::PrimitiveIndex,
-        rules::AccessRules,
-    },
+    drawing::{band::BandFirstSegIndex, dot::FixedDotIndex, rules::AccessRules},
     layout::Layout,
     router::{
         draw::{Draw, DrawException},
-        navmesh::{BinavvertexNodeIndex, Navmesh, NavvertexIndex, NavvertexWeight},
+        navmesh::{Navmesh, NavvertexIndex},
         trace::Trace,
     },
 };

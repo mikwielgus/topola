@@ -1,5 +1,5 @@
 use contracts::debug_ensures;
-use geo::{EuclideanLength, Point};
+use geo::Point;
 use thiserror::Error;
 
 use crate::{
