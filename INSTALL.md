@@ -31,9 +31,33 @@ application:
 
 The application will now be invokable from your terminal as `topola`.
 
+#### Autorouting example
+
+The following example will autoroute a KiCad project of a simple THT
+diode bridge rectifier.
+
+```
+cd tests/single_layer/data/tht_diode_bridge_rectifier/
+topola tht_diode_bridge_rectifier.dsn tht_diode_bridge_rectifier.ses autoroute_all.cmd
+```
+
+##### Viewing the results
+
+You can view the results of the autorouting in KiCad if you have it
+installed. First, open the layout in the KiCad PCB Editor:
+
+```
+pcbnew tht_diode_bridge_rectifier.kicad_pcb
+```
+
+Then choose *File > Import > Specctra Session...*** from the menu bar.
+In the newly opened file dialog choose the file named
+*tht__diode_bridge_rectifier.ses*. This will load the autorouted traces.
+
 ### Egui GUI application
 
-The following command will build and install Topola's Egui application 
+The following command will build and install Topola's Egui graphical
+user interface application:
 
     cargo install --locked --path . --features egui --bin egui
 
