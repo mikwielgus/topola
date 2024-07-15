@@ -1,6 +1,6 @@
 # Installing Topola
 
-## Building Topola from Source
+## Installing Topola from Source
 
 ### Prerequisites
 
@@ -22,19 +22,30 @@ Change your working directory to your clone of Topola's repository:
 
     cd topola
 
-### Egui port
+### Command-line application
 
-Build the project with
+Run the following to build and install Topola's command-line
+application:
 
-    cargo build --features egui --bin topola-egui
+    cargo install --locked --path . --features cli
 
-Finally, run Topola by executing
+The application will now be invokable from your terminal as `topola`.
 
-    cargo run --features egui --bin topola-egui
+### Egui GUI application
+
+The following command will build and install Topola's Egui application 
+
+    cargo install --locked --path . --features egui --bin egui
+
+You can then invoke the application from your terminal by running
+
+```
+topola-egui
+```
 
 #### Running Topola in a Web browser
 
-Topola's Egui port can be built to run in a Web browser using
+Topola's Egui application can be built to run in a Web browser using
 [Trunk](https://trunkrs.dev/), which will be installed with the
 following command:
 
@@ -88,6 +99,7 @@ For example, to build tests with contracts, simply run
     cargo test --no-default-features
 
 Of course, you can enable contracts for any build target. For example,
-the following command will build the Egui port with contracts enabled:
+the following command will build the Egui application with debug profile
+and contracts enabled:
 
     cargo build --features egui --bin topola-egui --no-default-features
