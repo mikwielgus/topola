@@ -5,7 +5,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     board::{mesadata::AccessMesadata, Board},
     drawing::graph::{GetLayer, MakePrimitive},
-    geometry::compound::ManageCompounds,
+    geometry::{compound::ManageCompounds, GenericNode},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{poly::PolyWeight, CompoundWeight, NodeIndex},
 };
@@ -22,10 +22,24 @@ pub struct Selection {
 }
 
 impl Selection {
-    pub fn new() -> Selection {
+    pub fn new() -> Self {
         Self {
             selectors: HashSet::new(),
         }
+    }
+
+    pub fn new_select_all(board: &Board<impl AccessMesadata>) -> Self {
+        let mut this = Self::new();
+
+        for node in board.layout().drawing().primitive_nodes() {
+            if let Some(selector) = this.node_selector(board, GenericNode::Primitive(node)) {
+                if !this.contains_node(board, GenericNode::Primitive(node)) {
+                    this.select(board, selector);
+                }
+            }
+        }
+
+        this
     }
 
     pub fn toggle_at_node(&mut self, board: &Board<impl AccessMesadata>, node: NodeIndex) {
@@ -40,11 +54,11 @@ impl Selection {
         }
     }
 
-    fn select(&mut self, board: &Board<impl AccessMesadata>, selector: Selector) {
+    fn select(&mut self, _board: &Board<impl AccessMesadata>, selector: Selector) {
         self.selectors.insert(selector);
     }
 
-    fn deselect(&mut self, board: &Board<impl AccessMesadata>, selector: &Selector) {
+    fn deselect(&mut self, _board: &Board<impl AccessMesadata>, selector: &Selector) {
         self.selectors.remove(selector);
     }
 

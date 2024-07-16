@@ -47,7 +47,7 @@ simple THT diode bridge rectifier:
 
 ```
 cd tests/single_layer/data/tht_diode_bridge_rectifier/
-topola tht_diode_bridge_rectifier.dsn tht_diode_bridge_rectifier.ses autoroute_all.cmd
+topola tht_diode_bridge_rectifier.dsn tht_diode_bridge_rectifier.ses
 ```
 
 ##### Viewing the results
@@ -72,7 +72,7 @@ then as follows:
 
 ```
 cd tests/single_layer/data/tht_diode_bridge_rectifier/
-cargo run --features cli -- tht_diode_bridge_rectifier.dsn tht_diode_bridge_rectifier.ses autoroute_all.cmd
+cargo run --features cli -- tht_diode_bridge_rectifier.dsn tht_diode_bridge_rectifier.ses
 ```
 
 Viewing the results is obviously the same.

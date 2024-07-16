@@ -243,7 +243,7 @@ impl<M: AccessMesadata> Invoker<M> {
 
     #[debug_requires(self.ongoing_command.is_none())]
     pub fn replay(&mut self, history: History) {
-        let (done, undone) = history.destructure();
+        let (done, undone) = history.destruct();
 
         for command in done {
             self.execute(command);

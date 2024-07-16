@@ -25,7 +25,7 @@ impl History {
         }
     }
 
-    pub fn destructure(self) -> (Vec<Command>, Vec<Command>) {
+    pub fn destruct(self) -> (Vec<Command>, Vec<Command>) {
         (self.done, self.undone)
     }
 
