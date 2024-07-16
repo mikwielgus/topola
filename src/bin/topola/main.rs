@@ -35,7 +35,7 @@ fn main() -> Result<(), std::io::Error> {
         serde_json::from_reader(commands_bufread)?
     } else {
         let mut history = History::new();
-        history.do_(Command::Autoroute(Selection::new_select_all(&board)));
+        history.do_(Command::Autoroute(Selection::new_select_layer(&board, 0)));
         history
     };
 

@@ -42,6 +42,20 @@ impl Selection {
         this
     }
 
+    pub fn new_select_layer(board: &Board<impl AccessMesadata>, layer: usize) -> Self {
+        let mut this = Self::new();
+
+        for node in board.layout().drawing().layer_primitive_nodes(layer) {
+            if let Some(selector) = this.node_selector(board, GenericNode::Primitive(node)) {
+                if !this.contains_node(board, GenericNode::Primitive(node)) {
+                    this.select(board, selector);
+                }
+            }
+        }
+
+        this
+    }
+
     pub fn toggle_at_node(&mut self, board: &Board<impl AccessMesadata>, node: NodeIndex) {
         let Some(selector) = self.node_selector(board, node) else {
             return;
