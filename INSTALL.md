@@ -42,13 +42,16 @@ The application will now be invokable from your terminal as `topola`.
 
 #### Autorouting example
 
-As an example, running the following commands will autoroute a KiCad project of a
-simple THT diode bridge rectifier:
+As an example, running the following commands will autoroute a KiCad
+project of a simple THT diode bridge rectifier:
 
 ```
 cd tests/single_layer/data/tht_diode_bridge_rectifier/
-topola tht_diode_bridge_rectifier.dsn tht_diode_bridge_rectifier.ses
+topola tht_diode_bridge_rectifier.dsn
 ```
+
+By default, the output filename is the input filename with extension
+changed to `ses`: `tht_diode_bridge_rectifier.ses`.
 
 ##### Viewing the results
 
@@ -72,7 +75,7 @@ then as follows:
 
 ```
 cd tests/single_layer/data/tht_diode_bridge_rectifier/
-cargo run --features cli -- tht_diode_bridge_rectifier.dsn tht_diode_bridge_rectifier.ses
+cargo run --features cli -- tht_diode_bridge_rectifier.dsn
 ```
 
 Viewing the results is obviously the same.

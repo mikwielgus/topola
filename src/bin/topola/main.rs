@@ -14,7 +14,8 @@ use topola::specctra::design::SpecctraDesign;
 #[command(about, version)]
 struct Cli {
     input: PathBuf,
-    output: PathBuf,
+    #[arg(short, long, value_name = "FILE")]
+    output: Option<PathBuf>,
     #[arg(short, long, value_name = "FILE")]
     commands: Option<PathBuf>,
 }
@@ -22,7 +23,7 @@ struct Cli {
 fn main() -> Result<(), std::io::Error> {
     let args = Cli::parse();
 
-    let design_file = File::open(args.input)?;
+    let design_file = File::open(&args.input)?;
     let mut design_bufread = BufReader::new(design_file);
 
     let design = SpecctraDesign::load(design_bufread).unwrap();
@@ -41,7 +42,10 @@ fn main() -> Result<(), std::io::Error> {
     let mut invoker = Invoker::new(Autorouter::new(board).unwrap());
     invoker.replay(history);
 
-    let mut file = File::create(args.output).unwrap();
+    let output_filename = args
+        .output
+        .unwrap_or_else(|| args.input.clone().with_extension("ses"));
+    let mut file = File::create(output_filename).unwrap();
     design.write_ses(invoker.autorouter().board(), &mut file);
 
     Ok(())
