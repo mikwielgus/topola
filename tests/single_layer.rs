@@ -12,10 +12,10 @@ mod common;
 #[test]
 fn test_0603_breakout() {
     let mut invoker =
-        common::load_design_and_assert("tests/single_layer/data/0603_breakout/0603_breakout.dsn");
+        common::load_design_and_assert("tests/single_layer/0603_breakout/0603_breakout.dsn");
     common::replay_and_assert(
         &mut invoker,
-        "tests/single_layer/data/0603_breakout/autoroute_all.cmd",
+        "tests/single_layer/0603_breakout/autoroute_all.cmd",
     );
 
     let (mut autorouter, ..) = invoker.destruct();
@@ -27,11 +27,11 @@ fn test_0603_breakout() {
 #[test]
 fn test_tht_diode_bridge_rectifier() {
     let mut invoker = common::load_design_and_assert(
-        "tests/single_layer/data/tht_diode_bridge_rectifier/tht_diode_bridge_rectifier.dsn",
+        "tests/single_layer/tht_diode_bridge_rectifier/tht_diode_bridge_rectifier.dsn",
     );
     common::replay_and_assert(
         &mut invoker,
-        "tests/single_layer/data/tht_diode_bridge_rectifier/autoroute_all.cmd",
+        "tests/single_layer/tht_diode_bridge_rectifier/autoroute_all.cmd",
     );
 
     let (mut autorouter, ..) = invoker.destruct();
@@ -61,11 +61,11 @@ fn test_tht_diode_bridge_rectifier() {
 #[test]
 fn test_four_3rd_order_smd_lc_filters() {
     let mut invoker = common::load_design_and_assert(
-        "tests/single_layer/data/four_3rd_order_smd_lc_filters/four_3rd_order_smd_lc_filters.dsn",
+        "tests/single_layer/four_3rd_order_smd_lc_filters/four_3rd_order_smd_lc_filters.dsn",
     );
     common::replay_and_assert(
         &mut invoker,
-        "tests/single_layer/data/four_3rd_order_smd_lc_filters/autoroute_signals.cmd",
+        "tests/single_layer/four_3rd_order_smd_lc_filters/autoroute_signals.cmd",
     );
 
     let (mut autorouter, ..) = invoker.destruct();
@@ -78,11 +78,11 @@ fn test_four_3rd_order_smd_lc_filters() {
 #[test]
 fn test_3pin_xlr_tht_female_to_tht_female() {
     let mut invoker = common::load_design_and_assert(
-        "tests/single_layer/data/3pin_xlr_tht_female_to_tht_female/3pin_xlr_tht_female_to_tht_female.dsn",
+        "tests/single_layer/3pin_xlr_tht_female_to_tht_female/3pin_xlr_tht_female_to_tht_female.dsn",
     );
     common::replay_and_assert(
         &mut invoker,
-        "tests/single_layer/data/3pin_xlr_tht_female_to_tht_female/autoroute_all.cmd",
+        "tests/single_layer/3pin_xlr_tht_female_to_tht_female/autoroute_all.cmd",
     );
 
     let (mut autorouter, ..) = invoker.destruct();

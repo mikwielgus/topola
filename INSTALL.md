@@ -4,9 +4,9 @@
 
 Note that running any of the below commands that start with `cargo
 install` will install a Topola binary on your system. We assume this is
-what people usually want. If you want to build and run Topola without
-installing it, skip these particular commands and follow the subsections
-named *Building and running without installing*.
+what most people coming here want. If you want to build and run Topola
+without installing it, skip these particular commands and follow the
+subsections named *Building and running without installing*.
 
 By default, the installed version will have a `release` profile, whereas
 without installing the `debug` profile will be used by default.
@@ -46,7 +46,7 @@ As an example, running the following commands will autoroute a KiCad
 project of a simple THT diode bridge rectifier:
 
 ```
-cd tests/single_layer/data/tht_diode_bridge_rectifier/
+cd tests/single_layer/tht_diode_bridge_rectifier/
 topola tht_diode_bridge_rectifier.dsn
 ```
 
@@ -74,13 +74,13 @@ and run it without installing by replacing the `topola` command with
 then as follows:
 
 ```
-cd tests/single_layer/data/tht_diode_bridge_rectifier/
+cd tests/single_layer/tht_diode_bridge_rectifier/
 cargo run --features cli -- tht_diode_bridge_rectifier.dsn
 ```
 
 Viewing the results is obviously the same.
 
-### Egui GUI application
+### Egui graphical user interface application
 
 Topola has a graphical user interface (GUI) application written using
 the [egui](https://github.com/emilk/egui/) library and its paired

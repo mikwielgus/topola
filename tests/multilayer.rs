@@ -13,7 +13,7 @@ mod common;
 #[test]
 fn test_unrouted_lm317_breakout() {
     let mut invoker = common::load_design_and_assert(
-        "tests/multilayer/data/prerouted_lm317_breakout/unrouted_lm317_breakout.dsn",
+        "tests/multilayer/prerouted_lm317_breakout/unrouted_lm317_breakout.dsn",
     );
 
     let result = invoker.execute(Command::PlaceVia(ViaWeight {
@@ -36,7 +36,7 @@ fn test_unrouted_lm317_breakout() {
 #[test]
 fn test_signal_integrity_test() {
     let invoker = common::load_design_and_assert(
-        "tests/multilayer/data/signal_integrity_test/signal_integrity_test.dsn",
+        "tests/multilayer/signal_integrity_test/signal_integrity_test.dsn",
     );
 
     assert_eq!(
