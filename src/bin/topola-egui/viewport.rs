@@ -70,7 +70,7 @@ impl Viewport {
                     .translate(ctx.input(|i| -i.raw_scroll_delta / new_scale));
 
                 let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
-                let mut painter = Painter::new(ui, transform);
+                let mut painter = Painter::new(ui, transform, top.show_bboxes);
 
                 if let Some(ref mut invoker) = maybe_invoker {
                     if ctx.input(|i| i.pointer.any_click()) {

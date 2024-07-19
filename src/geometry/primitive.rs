@@ -14,11 +14,11 @@ pub trait AccessPrimitiveShape: AccessShape {
     fn priority(&self) -> usize;
     fn inflate(&self, margin: f64) -> PrimitiveShape;
     fn intersects(&self, other: &PrimitiveShape) -> bool;
-    fn envelope(&self, margin: f64) -> AABB<[f64; 2]>;
+    fn bbox(&self, margin: f64) -> AABB<[f64; 2]>;
     fn width(&self) -> f64;
 
     fn envelope_3d(&self, margin: f64, layer: usize) -> AABB<[f64; 3]> {
-        let envelope = self.envelope(margin);
+        let envelope = self.bbox(margin);
         AABB::from_corners(
             [envelope.lower()[0], envelope.lower()[1], layer as f64],
             [envelope.upper()[0], envelope.upper()[1], layer as f64],
@@ -26,7 +26,7 @@ pub trait AccessPrimitiveShape: AccessShape {
     }
 
     fn full_height_envelope_3d(&self, margin: f64, layer_count: usize) -> AABB<[f64; 3]> {
-        let envelope = self.envelope(margin);
+        let envelope = self.bbox(margin);
         AABB::from_corners(
             [envelope.lower()[0], envelope.lower()[1], 0.0],
             [
@@ -113,7 +113,7 @@ impl AccessPrimitiveShape for DotShape {
         }
     }
 
-    fn envelope(&self, margin: f64) -> AABB<[f64; 2]> {
+    fn bbox(&self, margin: f64) -> AABB<[f64; 2]> {
         AABB::from_corners(
             [
                 self.circle.pos.x() - self.circle.r - margin,
@@ -215,7 +215,7 @@ impl AccessPrimitiveShape for SegShape {
         }
     }
 
-    fn envelope(&self, margin: f64) -> AABB<[f64; 2]> {
+    fn bbox(&self, margin: f64) -> AABB<[f64; 2]> {
         let points: Vec<[f64; 2]> = self
             .polygon()
             .exterior()
@@ -371,7 +371,7 @@ impl AccessPrimitiveShape for BendShape {
         }
     }
 
-    fn envelope(&self, _margin: f64) -> AABB<[f64; 2]> {
+    fn bbox(&self, _margin: f64) -> AABB<[f64; 2]> {
         let halfwidth = self.inner_circle.r + self.width;
         AABB::from_corners(
             [
@@ -393,6 +393,6 @@ impl AccessPrimitiveShape for BendShape {
 impl RTreeObject for PrimitiveShape {
     type Envelope = AABB<[f64; 2]>;
     fn envelope(&self) -> Self::Envelope {
-        AccessPrimitiveShape::envelope(self, 0.0)
+        AccessPrimitiveShape::bbox(self, 0.0)
     }
 }

@@ -22,6 +22,7 @@ pub struct Top {
     pub is_placing_via: bool,
     pub show_ratsnest: bool,
     pub show_navmesh: bool,
+    pub show_bboxes: bool,
 }
 
 impl Top {
@@ -30,6 +31,7 @@ impl Top {
             is_placing_via: false,
             show_ratsnest: false,
             show_navmesh: false,
+            show_bboxes: false,
         }
     }
 
@@ -109,6 +111,7 @@ impl Top {
 
                     ui.toggle_value(&mut self.show_ratsnest, "Show Ratsnest");
                     ui.toggle_value(&mut self.show_navmesh, "Show Navmesh");
+                    ui.toggle_value(&mut self.show_bboxes, "Show Bboxes");
 
                     ui.separator();
 

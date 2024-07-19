@@ -7,11 +7,20 @@ use topola::{
 pub struct Painter<'a> {
     ui: &'a mut egui::Ui,
     transform: egui::emath::RectTransform,
+    paint_bboxes: bool,
 }
 
 impl<'a> Painter<'a> {
-    pub fn new(ui: &'a mut egui::Ui, transform: egui::emath::RectTransform) -> Self {
-        Self { ui, transform }
+    pub fn new(
+        ui: &'a mut egui::Ui,
+        transform: egui::emath::RectTransform,
+        paint_bboxes: bool,
+    ) -> Self {
+        Self {
+            ui,
+            transform,
+            paint_bboxes,
+        }
     }
 
     pub fn paint_primitive(&mut self, shape: &PrimitiveShape, color: egui::epaint::Color32) {
@@ -49,16 +58,18 @@ impl<'a> Painter<'a> {
 
         self.ui.painter().add(epaint_shape);
 
-        let envelope = AccessPrimitiveShape::envelope(shape, 0.0);
-        let rect = egui::epaint::Rect {
-            min: [envelope.lower()[0] as f32, -envelope.upper()[1] as f32].into(),
-            max: [envelope.upper()[0] as f32, -envelope.lower()[1] as f32].into(),
-        };
-        self.ui.painter().add(egui::Shape::rect_stroke(
-            self.transform.transform_rect(rect),
-            egui::Rounding::ZERO,
-            egui::Stroke::new(1.0, egui::Color32::GRAY),
-        ));
+        if self.paint_bboxes {
+            let bbox = AccessPrimitiveShape::bbox(shape, 0.0);
+            let rect = egui::epaint::Rect {
+                min: [bbox.lower()[0] as f32, -bbox.upper()[1] as f32].into(),
+                max: [bbox.upper()[0] as f32, -bbox.lower()[1] as f32].into(),
+            };
+            self.ui.painter().add(egui::Shape::rect_stroke(
+                self.transform.transform_rect(rect),
+                egui::Rounding::ZERO,
+                egui::Stroke::new(1.0, egui::Color32::GRAY),
+            ));
+        }
     }
 
     pub fn paint_dot(&mut self, circle: Circle, color: egui::epaint::Color32) {
