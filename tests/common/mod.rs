@@ -9,7 +9,8 @@ use topola::{
     },
     board::{mesadata::AccessMesadata, Board},
     drawing::graph::{GetLayer, GetMaybeNet},
-    graph::GetPetgraphIndex,
+    geometry::shape::MeasureLength,
+    graph::{GetPetgraphIndex, MakeRef},
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
 
@@ -148,7 +149,7 @@ pub fn assert_band_length(
     epsilon: f64,
 ) {
     let band = board.band_between_pins(source, target).unwrap();
-    let band_length = board.layout().band_length(band);
+    let band_length = band.ref_(board.layout().drawing()).length();
     assert!((band_length - length).abs() < epsilon);
 }
 

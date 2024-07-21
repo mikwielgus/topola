@@ -208,38 +208,6 @@ impl<R: AccessRules> Layout<R> {
         self.drawing.remove_band(band);
     }
 
-    pub fn band_length(&self, band: BandFirstSegIndex) -> f64 {
-        match band {
-            BandFirstSegIndex::Straight(seg) => {
-                self.drawing.geometry().seg_shape(seg.into()).length()
-            }
-            BandFirstSegIndex::Bended(start_seg) => {
-                let mut length = self.drawing.geometry().seg_shape(start_seg.into()).length();
-                let start_dot = self.drawing.primitive(start_seg).joints().1;
-
-                let bend = self.drawing.primitive(start_dot).bend();
-                length += self.drawing.geometry().bend_shape(bend.into()).length();
-
-                let mut prev_dot = self.drawing.primitive(bend).other_joint(start_dot.into());
-                let mut seg = self.drawing.primitive(prev_dot).seg().unwrap();
-                length += self.drawing.geometry().seg_shape(seg.into()).length();
-
-                while let DotIndex::Loose(dot) =
-                    self.drawing.primitive(seg).other_joint(prev_dot.into())
-                {
-                    let bend = self.drawing.primitive(dot).bend();
-                    length += self.drawing.geometry().bend_shape(bend.into()).length();
-
-                    prev_dot = self.drawing.primitive(bend).other_joint(dot);
-                    seg = self.drawing.primitive(prev_dot).seg().unwrap();
-                    length += self.drawing.geometry().seg_shape(seg.into()).length();
-                }
-
-                length
-            }
-        }
-    }
-
     pub fn polys<W: 'static>(
         &self,
         node: GenericIndex<W>,
