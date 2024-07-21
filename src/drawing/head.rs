@@ -1,6 +1,6 @@
 use enum_dispatch::enum_dispatch;
 
-use crate::geometry::shape::MeasureLength;
+use crate::{geometry::shape::MeasureLength, graph::MakeRef};
 
 use super::{
     cane::Cane,
@@ -22,11 +22,8 @@ pub enum Head {
     Cane(CaneHead),
 }
 
-impl Head {
-    pub fn ref_<'a, CW: Copy, R: AccessRules>(
-        &self,
-        drawing: &'a Drawing<CW, R>,
-    ) -> HeadRef<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> MakeRef<'a, HeadRef<'a, CW, R>, Drawing<CW, R>> for Head {
+    fn ref_(&self, drawing: &'a Drawing<CW, R>) -> HeadRef<'a, CW, R> {
         HeadRef::new(*self, drawing)
     }
 }

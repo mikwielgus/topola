@@ -16,7 +16,7 @@ use crate::{
         primitive::{AccessPrimitiveShape, PrimitiveShape},
         shape::{AccessShape, MeasureLength},
     },
-    graph::GetPetgraphIndex,
+    graph::{GetPetgraphIndex, MakeRef},
     layout::Layout,
 };
 

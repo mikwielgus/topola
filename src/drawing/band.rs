@@ -5,3 +5,5 @@ pub enum BandFirstSegIndex {
     Straight(LoneLooseSegIndex),
     Bended(SeqLooseSegIndex),
 }
+
+pub struct BandRef {}

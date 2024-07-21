@@ -6,7 +6,9 @@ use std::{
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
-// Due to apparent limitations of enum_dispatch we're forced to import some types backwards.
+pub trait MakeRef<'a, R: 'a, C> {
+    fn ref_(&self, context: &'a C) -> R;
+}
 
 #[enum_dispatch]
 pub trait GetPetgraphIndex {
