@@ -15,6 +15,12 @@ Cargo.lock
 *.pdb
 
 # ---> KiCad
+# Autoarchive files
 *-backups
 *.zip
+
+# Lockfiles
 *.lck
+
+# ---> Topola
+*.ses
