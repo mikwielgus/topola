@@ -230,21 +230,23 @@ impl Viewport {
                             }
 
                             if let Some(navmesh) = execute.maybe_navmesh() {
-                                if let (origin, destination) = (navmesh.origin(), navmesh.destination()) {
-                                    painter.paint_dot(
-                                        Circle {
-                                            pos: board.layout().drawing().primitive(origin).shape().center(),
-                                            r: 150.0,
-                                        },
-                                        egui::Color32::from_rgb(255, 255, 100),
-                                    );
-                                    painter.paint_dot(
-                                        Circle {
-                                            pos: board.layout().drawing().primitive(destination).shape().center(),
-                                            r: 150.0,
-                                        },
-                                        egui::Color32::from_rgb(255, 255, 100),
-                                    );
+                                if top.show_origin_destination {
+                                    if let (origin, destination) = (navmesh.origin(), navmesh.destination()) {
+                                        painter.paint_dot(
+                                            Circle {
+                                                pos: board.layout().drawing().primitive(origin).shape().center(),
+                                                r: 150.0,
+                                            },
+                                            egui::Color32::from_rgb(255, 255, 100),
+                                        );
+                                        painter.paint_dot(
+                                            Circle {
+                                                pos: board.layout().drawing().primitive(destination).shape().center(),
+                                                r: 150.0,
+                                            },
+                                            egui::Color32::from_rgb(255, 255, 100),
+                                        );
+                                    }
                                 }
                             }
                         }

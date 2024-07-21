@@ -23,6 +23,7 @@ pub struct Top {
     pub show_ratsnest: bool,
     pub show_navmesh: bool,
     pub show_bboxes: bool,
+    pub show_origin_destination: bool,
 }
 
 impl Top {
@@ -32,6 +33,7 @@ impl Top {
             show_ratsnest: false,
             show_navmesh: false,
             show_bboxes: false,
+            show_origin_destination: false,
         }
     }
 
@@ -109,9 +111,12 @@ impl Top {
 
                     ui.separator();
 
-                    ui.toggle_value(&mut self.show_ratsnest, "Show Ratsnest");
-                    ui.toggle_value(&mut self.show_navmesh, "Show Navmesh");
-                    ui.toggle_value(&mut self.show_bboxes, "Show Bboxes");
+                    ui.menu_button("Debug", |ui| {
+                        ui.checkbox(&mut self.show_ratsnest, "Show Ratsnest");
+                        ui.checkbox(&mut self.show_navmesh, "Show Navmesh");
+                        ui.checkbox(&mut self.show_bboxes, "Show BBoxes");
+                        ui.checkbox(&mut self.show_origin_destination, "Show Origin–Destination");
+                    });
 
                     ui.separator();
 
