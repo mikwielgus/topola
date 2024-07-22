@@ -1,13 +1,11 @@
-use crate::{
-    drawing::seg::{LoneLooseSegIndex, SeqLooseSegIndex},
-    geometry::shape::MeasureLength,
-    graph::MakeRef,
-};
+use crate::{geometry::shape::MeasureLength, graph::MakeRef};
 
 use super::{
-    dot::DotIndex,
-    primitive::{GetJoints, GetOtherJoint},
+    graph::MakePrimitive,
+    loose::{GetNextLoose, LooseIndex},
+    primitive::{GetJoints, GetOtherJoint, MakePrimitiveShape},
     rules::AccessRules,
+    seg::{LoneLooseSegIndex, SeqLooseSegIndex},
     Drawing,
 };
 
@@ -42,26 +40,17 @@ impl<'a, CW: Copy, R: AccessRules> MeasureLength for BandRef<'a, CW, R> {
             BandFirstSegIndex::Straight(seg) => {
                 self.drawing.geometry().seg_shape(seg.into()).length()
             }
-            BandFirstSegIndex::Bended(start_seg) => {
-                let mut length = self.drawing.geometry().seg_shape(start_seg.into()).length();
-                let start_dot = self.drawing.primitive(start_seg).joints().1;
+            BandFirstSegIndex::Bended(first_loose_seg) => {
+                let mut maybe_loose: Option<LooseIndex> = Some(first_loose_seg.into());
+                let mut prev = None;
+                let mut length = 0.0;
 
-                let bend = self.drawing.primitive(start_dot).bend();
-                length += self.drawing.geometry().bend_shape(bend.into()).length();
+                while let Some(loose) = maybe_loose {
+                    length += loose.primitive(self.drawing).shape().length();
 
-                let mut prev_dot = self.drawing.primitive(bend).other_joint(start_dot.into());
-                let mut seg = self.drawing.primitive(prev_dot).seg().unwrap();
-                length += self.drawing.geometry().seg_shape(seg.into()).length();
-
-                while let DotIndex::Loose(dot) =
-                    self.drawing.primitive(seg).other_joint(prev_dot.into())
-                {
-                    let bend = self.drawing.primitive(dot).bend();
-                    length += self.drawing.geometry().bend_shape(bend.into()).length();
-
-                    prev_dot = self.drawing.primitive(bend).other_joint(dot);
-                    seg = self.drawing.primitive(prev_dot).seg().unwrap();
-                    length += self.drawing.geometry().seg_shape(seg.into()).length();
+                    let prev_prev = prev;
+                    prev = maybe_loose;
+                    maybe_loose = self.drawing.loose(loose).next_loose(prev_prev);
                 }
 
                 length
