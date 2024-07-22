@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::{
     drawing::{
-        band::BandFirstSegIndex,
+        band::BandTerminatingSegIndex,
         dot::{DotIndex, FixedDotIndex},
         graph::{MakePrimitive, PrimitiveIndex},
         head::GetFace,
@@ -39,7 +39,7 @@ pub enum RouterError {
 #[derive(Debug)]
 pub enum RouterStatus {
     Running,
-    Finished(BandFirstSegIndex),
+    Finished(BandTerminatingSegIndex),
 }
 
 #[derive(Debug)]
@@ -78,7 +78,7 @@ impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
+impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTerminatingSegIndex>
     for RouterAstarStrategy<'a, R>
 {
     fn is_goal(
@@ -86,7 +86,7 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandFirstSegIndex>
         navmesh: &Navmesh,
         vertex: NavvertexIndex,
         tracker: &PathTracker<Navmesh>,
-    ) -> Option<BandFirstSegIndex> {
+    ) -> Option<BandTerminatingSegIndex> {
         let new_path = tracker.reconstruct_path_to(vertex);
         let width = self.trace.width;
 
@@ -176,7 +176,7 @@ impl<'a, R: AccessRules> Router<'a, R> {
         from: FixedDotIndex,
         to: FixedDotIndex,
         width: f64,
-    ) -> Result<BandFirstSegIndex, RouterError> {
+    ) -> Result<BandTerminatingSegIndex, RouterError> {
         let mut route = self.route_walk(from, to, width)?;
 
         loop {

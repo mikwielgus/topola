@@ -16,8 +16,16 @@ use crate::{
 use super::rules::AccessRules;
 
 #[enum_dispatch]
-pub trait GetNextLoose {
+pub trait GetPrevNextLoose {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex>;
+
+    fn prev_loose(&self, maybe_next: Option<LooseIndex>) -> Option<LooseIndex> {
+        if maybe_next.is_some() {
+            self.next_loose(maybe_next)
+        } else {
+            self.next_loose(self.next_loose(None))
+        }
+    }
 }
 
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
@@ -40,7 +48,7 @@ impl From<LooseIndex> for PrimitiveIndex {
     }
 }
 
-#[enum_dispatch(GetNextLoose, GetDrawing, GetPetgraphIndex)]
+#[enum_dispatch(GetPrevNextLoose, GetDrawing, GetPetgraphIndex)]
 pub enum Loose<'a, CW: Copy, R: AccessRules> {
     Dot(LooseDot<'a, CW, R>),
     LoneSeg(LoneLooseSeg<'a, CW, R>),
@@ -59,7 +67,7 @@ impl<'a, CW: Copy, R: AccessRules> Loose<'a, CW, R> {
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetNextLoose for LooseDot<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for LooseDot<'a, CW, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let bend = self.bend();
         let Some(prev) = maybe_prev else {
@@ -74,41 +82,41 @@ impl<'a, CW: Copy, R: AccessRules> GetNextLoose for LooseDot<'a, CW, R> {
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetNextLoose for LoneLooseSeg<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for LoneLooseSeg<'a, CW, R> {
     fn next_loose(&self, _maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         None
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetNextLoose for SeqLooseSeg<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for SeqLooseSeg<'a, CW, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
-        let ends = self.joints();
+        let joints = self.joints();
         let Some(prev) = maybe_prev else {
-            return Some(ends.1.into());
+            return Some(joints.1.into());
         };
 
-        if ends.0.petgraph_index() != prev.petgraph_index() {
-            match ends.0 {
+        if joints.0.petgraph_index() != prev.petgraph_index() {
+            match joints.0 {
                 DotIndex::Fixed(..) => None,
                 DotIndex::Loose(dot) => Some(dot.into()),
             }
         } else {
-            Some(ends.1.into())
+            Some(joints.1.into())
         }
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetNextLoose for LooseBend<'a, CW, R> {
+impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for LooseBend<'a, CW, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
-        let ends = self.joints();
+        let joints = self.joints();
         let Some(prev) = maybe_prev else {
             unreachable!();
         };
 
-        if ends.0.petgraph_index() != prev.petgraph_index() {
-            Some(ends.0.into())
+        if joints.0.petgraph_index() != prev.petgraph_index() {
+            Some(joints.0.into())
         } else {
-            Some(ends.1.into())
+            Some(joints.1.into())
         }
     }
 }

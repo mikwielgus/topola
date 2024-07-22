@@ -5,7 +5,7 @@ use rstar::AABB;
 
 use crate::{
     drawing::{
-        band::BandFirstSegIndex,
+        band::BandTerminatingSegIndex,
         bend::LooseBendWeight,
         cane::Cane,
         dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
@@ -204,7 +204,7 @@ impl<R: AccessRules> Layout<R> {
         )
     }
 
-    pub fn remove_band(&mut self, band: BandFirstSegIndex) {
+    pub fn remove_band(&mut self, band: BandTerminatingSegIndex) {
         self.drawing.remove_band(band);
     }
 

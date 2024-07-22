@@ -59,11 +59,11 @@ pub trait GetOtherJoint<F: GetPetgraphIndex, T: GetPetgraphIndex + Into<F>>:
     GetJoints<F, T>
 {
     fn other_joint(&self, end: F) -> F {
-        let ends = self.joints();
-        if ends.0.petgraph_index() != end.petgraph_index() {
-            ends.0
+        let joints = self.joints();
+        if joints.0.petgraph_index() != end.petgraph_index() {
+            joints.0
         } else {
-            ends.1.into()
+            joints.1.into()
         }
     }
 }

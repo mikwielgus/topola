@@ -3,7 +3,7 @@ use std::collections::HashMap;
 use crate::{
     board::mesadata::AccessMesadata,
     drawing::{
-        band::BandFirstSegIndex,
+        band::BandTerminatingSegIndex,
         dot::{FixedDotIndex, FixedDotWeight},
         graph::{GetLayer, GetMaybeNet},
         seg::{FixedSegIndex, FixedSegWeight},
@@ -21,7 +21,7 @@ use crate::{
 pub struct Board<M: AccessMesadata> {
     layout: Layout<M>,
     node_to_pinname: HashMap<NodeIndex, String>,
-    pinname_pair_to_band: HashMap<(String, String), BandFirstSegIndex>,
+    pinname_pair_to_band: HashMap<(String, String), BandTerminatingSegIndex>,
 }
 
 impl<M: AccessMesadata> Board<M> {
@@ -140,7 +140,7 @@ impl<M: AccessMesadata> Board<M> {
         &mut self,
         source: FixedDotIndex,
         target: FixedDotIndex,
-        band: BandFirstSegIndex,
+        band: BandTerminatingSegIndex,
     ) {
         let source_pinname = self
             .node_pinname(GenericNode::Primitive(source.into()))
@@ -154,7 +154,11 @@ impl<M: AccessMesadata> Board<M> {
             .insert((source_pinname, target_pinname), band);
     }
 
-    pub fn band_between_pins(&self, pinname1: &str, pinname2: &str) -> Option<BandFirstSegIndex> {
+    pub fn band_between_pins(
+        &self,
+        pinname1: &str,
+        pinname2: &str,
+    ) -> Option<BandTerminatingSegIndex> {
         if let Some(band) = self
             .pinname_pair_to_band
             .get(&(pinname1.to_string(), pinname2.to_string()))
