@@ -53,12 +53,30 @@ impl Overlay {
             ))
             .collect();
 
-        if let Some(geom) = geoms.iter().find(|&&geom| match geom.data {
-            NodeIndex::Primitive(primitive) => {
-                primitive.primitive(board.layout().drawing()).layer() == self.active_layer
-                    && self.contains_point(board, geom.data, at)
-            }
-            NodeIndex::Compound(compound) => false,
+        if let Some(geom) = geoms.iter().find(|&&geom| {
+            self.contains_point(board, geom.data, at)
+                && match geom.data {
+                    NodeIndex::Primitive(primitive) => {
+                        primitive.primitive(board.layout().drawing()).layer() == self.active_layer
+                    }
+                    NodeIndex::Compound(compound) => {
+                        match board.layout().drawing().compound_weight(compound) {
+                            CompoundWeight::Poly(weight) => {
+                                board
+                                    .layout()
+                                    .poly(GenericIndex::<PolyWeight>::new(
+                                        compound.petgraph_index(),
+                                    ))
+                                    .layer()
+                                    == self.active_layer
+                            }
+                            CompoundWeight::Via(weight) => {
+                                weight.from_layer >= self.active_layer
+                                    && weight.to_layer <= self.active_layer
+                            }
+                        }
+                    }
+                }
         }) {
             self.selection.toggle_at_node(board, geom.data);
         }
