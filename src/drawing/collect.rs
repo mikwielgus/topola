@@ -29,6 +29,10 @@ impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
     }
 
     fn loose_band_first_seg(&self, start_loose: LooseIndex) -> BandTerminatingSegIndex {
+        if let LooseIndex::LoneSeg(seg) = start_loose {
+            return BandTerminatingSegIndex::Straight(seg);
+        }
+
         let mut loose = start_loose;
         let mut prev = None;
 
@@ -43,6 +47,10 @@ impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
     }
 
     fn loose_band_last_seg(&self, start_loose: LooseIndex) -> BandTerminatingSegIndex {
+        if let LooseIndex::LoneSeg(seg) = start_loose {
+            return BandTerminatingSegIndex::Straight(seg);
+        }
+
         let mut loose = start_loose;
         let mut next = None;
 

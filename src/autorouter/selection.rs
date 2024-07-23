@@ -4,7 +4,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     board::{mesadata::AccessMesadata, Board},
-    drawing::graph::{GetLayer, MakePrimitive},
+    drawing::{
+        band::BandUid,
+        graph::{GetLayer, MakePrimitive, PrimitiveIndex},
+    },
     geometry::{compound::ManageCompounds, GenericNode},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{poly::PolyWeight, CompoundWeight, NodeIndex},
@@ -19,12 +22,15 @@ pub struct Selector {
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub struct Selection {
     selectors: HashSet<Selector>,
+    #[serde(skip)]
+    selected_bands: HashSet<BandUid>,
 }
 
 impl Selection {
     pub fn new() -> Self {
         Self {
             selectors: HashSet::new(),
+            selected_bands: HashSet::new(),
         }
     }
 
@@ -57,14 +63,18 @@ impl Selection {
     }
 
     pub fn toggle_at_node(&mut self, board: &Board<impl AccessMesadata>, node: NodeIndex) {
-        let Some(selector) = self.node_selector(board, node) else {
-            return;
-        };
-
-        if self.contains_node(board, node) {
-            self.deselect(board, &selector);
-        } else {
-            self.select(board, selector);
+        if let Some(selector) = self.node_selector(board, node) {
+            if self.contains_node(board, node) {
+                self.deselect(board, &selector);
+            } else {
+                self.select(board, selector);
+            }
+        } else if let Some(band) = self.node_band(board, node) {
+            if self.contains_node(board, node) {
+                self.deselect_band(board, band);
+            } else {
+                self.select_band(board, band);
+            }
         }
     }
 
@@ -76,12 +86,38 @@ impl Selection {
         self.selectors.remove(selector);
     }
 
+    fn select_band(&mut self, board: &Board<impl AccessMesadata>, band: BandUid) {
+        self.selected_bands.insert(band);
+    }
+
+    fn deselect_band(&mut self, board: &Board<impl AccessMesadata>, band: BandUid) {
+        self.selected_bands.remove(&band);
+    }
+
     pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
-        let Some(selector) = self.node_selector(board, node) else {
-            return false;
+        if let Some(selector) = self.node_selector(board, node) {
+            self.selectors.contains(&selector)
+        } else if let Some(band) = self.node_band(board, node) {
+            self.selected_bands.contains(&band)
+        } else {
+            false
+        }
+    }
+
+    fn node_band(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> Option<BandUid> {
+        let NodeIndex::Primitive(primitive) = node else {
+            return None;
         };
 
-        self.selectors.contains(&selector)
+        let loose = match primitive {
+            PrimitiveIndex::LooseDot(dot) => dot.into(),
+            PrimitiveIndex::LoneLooseSeg(seg) => seg.into(),
+            PrimitiveIndex::SeqLooseSeg(seg) => seg.into(),
+            PrimitiveIndex::LooseBend(bend) => bend.into(),
+            _ => return None,
+        };
+
+        Some(board.layout().drawing().collect().loose_band_uid(loose))
     }
 
     fn node_selector(

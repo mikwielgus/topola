@@ -28,6 +28,15 @@ impl BandUid {
     }
 }
 
+impl PartialEq for BandUid {
+    fn eq(&self, other: &Self) -> bool {
+        self.0.petgraph_index() == other.0.petgraph_index()
+            && self.1.petgraph_index() == other.1.petgraph_index()
+    }
+}
+
+impl Eq for BandUid {}
+
 #[enum_dispatch(GetPetgraphIndex)]
 #[derive(Debug, Hash, Clone, Copy)]
 pub enum BandTerminatingSegIndex {

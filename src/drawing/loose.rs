@@ -70,14 +70,15 @@ impl<'a, CW: Copy, R: AccessRules> Loose<'a, CW, R> {
 impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for LooseDot<'a, CW, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let bend = self.bend();
-        let Some(prev) = maybe_prev else {
-            unreachable!();
-        };
 
-        if bend.petgraph_index() != prev.petgraph_index() {
-            Some(bend.into())
+        if let Some(prev) = maybe_prev {
+            if bend.petgraph_index() != prev.petgraph_index() {
+                Some(bend.into())
+            } else {
+                self.seg().map(Into::into)
+            }
         } else {
-            self.seg().map(Into::into)
+            Some(bend.into())
         }
     }
 }
@@ -109,14 +110,15 @@ impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for SeqLooseSeg<'a, CW, R> {
 impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for LooseBend<'a, CW, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let joints = self.joints();
-        let Some(prev) = maybe_prev else {
-            unreachable!();
-        };
 
-        if joints.0.petgraph_index() != prev.petgraph_index() {
-            Some(joints.0.into())
+        if let Some(prev) = maybe_prev {
+            if joints.0.petgraph_index() != prev.petgraph_index() {
+                Some(joints.0.into())
+            } else {
+                Some(joints.1.into())
+            }
         } else {
-            Some(joints.1.into())
+            Some(joints.0.into())
         }
     }
 }
