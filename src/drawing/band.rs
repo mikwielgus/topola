@@ -16,10 +16,10 @@ use super::{
 };
 
 #[derive(Debug, Hash, Clone, Copy)]
-pub struct BandUid(BandTerminatingSegIndex, BandTerminatingSegIndex);
+pub struct BandUid(BandTermsegIndex, BandTermsegIndex);
 
 impl BandUid {
-    pub fn new(first_seg1: BandTerminatingSegIndex, first_seg2: BandTerminatingSegIndex) -> Self {
+    pub fn new(first_seg1: BandTermsegIndex, first_seg2: BandTermsegIndex) -> Self {
         if first_seg1.petgraph_index() <= first_seg2.petgraph_index() {
             BandUid(first_seg1, first_seg2)
         } else {
@@ -39,13 +39,22 @@ impl Eq for BandUid {}
 
 #[enum_dispatch(GetPetgraphIndex)]
 #[derive(Debug, Hash, Clone, Copy)]
-pub enum BandTerminatingSegIndex {
+pub enum BandTermsegIndex {
     Straight(LoneLooseSegIndex),
     Bended(SeqLooseSegIndex),
 }
 
+impl From<BandTermsegIndex> for LooseIndex {
+    fn from(terminating_seg: BandTermsegIndex) -> Self {
+        match terminating_seg {
+            BandTermsegIndex::Straight(seg) => LooseIndex::LoneSeg(seg),
+            BandTermsegIndex::Bended(seg) => LooseIndex::SeqSeg(seg),
+        }
+    }
+}
+
 impl<'a, CW: Copy, R: AccessRules> MakeRef<'a, BandRef<'a, CW, R>, Drawing<CW, R>>
-    for BandTerminatingSegIndex
+    for BandTermsegIndex
 {
     fn ref_(&self, drawing: &'a Drawing<CW, R>) -> BandRef<'a, CW, R> {
         BandRef::new(*self, drawing)
@@ -53,15 +62,12 @@ impl<'a, CW: Copy, R: AccessRules> MakeRef<'a, BandRef<'a, CW, R>, Drawing<CW, R
 }
 
 pub struct BandRef<'a, CW: Copy, R: AccessRules> {
-    first_seg: BandTerminatingSegIndex,
+    first_seg: BandTermsegIndex,
     drawing: &'a Drawing<CW, R>,
 }
 
 impl<'a, CW: Copy, R: AccessRules> BandRef<'a, CW, R> {
-    pub fn new(
-        first_seg: BandTerminatingSegIndex,
-        drawing: &'a Drawing<CW, R>,
-    ) -> BandRef<'a, CW, R> {
+    pub fn new(first_seg: BandTermsegIndex, drawing: &'a Drawing<CW, R>) -> BandRef<'a, CW, R> {
         Self { first_seg, drawing }
     }
 }
@@ -69,10 +75,10 @@ impl<'a, CW: Copy, R: AccessRules> BandRef<'a, CW, R> {
 impl<'a, CW: Copy, R: AccessRules> MeasureLength for BandRef<'a, CW, R> {
     fn length(&self) -> f64 {
         match self.first_seg {
-            BandTerminatingSegIndex::Straight(seg) => {
+            BandTermsegIndex::Straight(seg) => {
                 self.drawing.geometry().seg_shape(seg.into()).length()
             }
-            BandTerminatingSegIndex::Bended(first_loose_seg) => {
+            BandTermsegIndex::Bended(first_loose_seg) => {
                 let mut maybe_loose: Option<LooseIndex> = Some(first_loose_seg.into());
                 let mut prev = None;
                 let mut length = 0.0;

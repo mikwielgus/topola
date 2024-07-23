@@ -1,7 +1,7 @@
 use crate::graph::{GenericIndex, GetPetgraphIndex};
 
 use super::{
-    band::{BandTerminatingSegIndex, BandUid},
+    band::{BandTermsegIndex, BandUid},
     bend::LooseBendIndex,
     graph::PrimitiveIndex,
     loose::{GetPrevNextLoose, LooseIndex},
@@ -28,9 +28,9 @@ impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
         )
     }
 
-    fn loose_band_first_seg(&self, start_loose: LooseIndex) -> BandTerminatingSegIndex {
+    fn loose_band_first_seg(&self, start_loose: LooseIndex) -> BandTermsegIndex {
         if let LooseIndex::LoneSeg(seg) = start_loose {
-            return BandTerminatingSegIndex::Straight(seg);
+            return BandTermsegIndex::Straight(seg);
         }
 
         let mut loose = start_loose;
@@ -41,14 +41,14 @@ impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
                 prev = Some(loose);
                 loose = next_loose;
             } else {
-                return BandTerminatingSegIndex::Bended(GenericIndex::new(loose.petgraph_index()));
+                return BandTermsegIndex::Bended(GenericIndex::new(loose.petgraph_index()));
             }
         }
     }
 
-    fn loose_band_last_seg(&self, start_loose: LooseIndex) -> BandTerminatingSegIndex {
+    fn loose_band_last_seg(&self, start_loose: LooseIndex) -> BandTermsegIndex {
         if let LooseIndex::LoneSeg(seg) = start_loose {
-            return BandTerminatingSegIndex::Straight(seg);
+            return BandTermsegIndex::Straight(seg);
         }
 
         let mut loose = start_loose;
@@ -59,7 +59,7 @@ impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
                 next = Some(loose);
                 loose = prev_loose;
             } else {
-                return BandTerminatingSegIndex::Bended(GenericIndex::new(loose.petgraph_index()));
+                return BandTermsegIndex::Bended(GenericIndex::new(loose.petgraph_index()));
             }
         }
     }

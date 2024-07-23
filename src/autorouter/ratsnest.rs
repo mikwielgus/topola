@@ -12,7 +12,7 @@ use spade::{HasPosition, InsertionError, Point2};
 
 use crate::{
     drawing::{
-        band::BandTerminatingSegIndex,
+        band::BandTermsegIndex,
         dot::FixedDotIndex,
         graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
@@ -64,7 +64,7 @@ impl HasPosition for RatvertexWeight {
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RatlineWeight {
-    pub band: Option<BandTerminatingSegIndex>,
+    pub band_termseg: Option<BandTermsegIndex>,
 }
 
 pub struct Ratsnest {
@@ -165,12 +165,12 @@ impl Ratsnest {
         Ok(this)
     }
 
-    pub fn assign_band_to_ratline(
+    pub fn assign_band_termseg_to_ratline(
         &mut self,
         ratline: EdgeIndex<usize>,
-        band: BandTerminatingSegIndex,
+        termseg: BandTermsegIndex,
     ) {
-        self.graph.edge_weight_mut(ratline).unwrap().band = Some(band);
+        self.graph.edge_weight_mut(ratline).unwrap().band_termseg = Some(termseg);
     }
 
     pub fn graph(&self) -> &UnGraph<RatvertexWeight, RatlineWeight, usize> {

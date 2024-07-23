@@ -6,7 +6,7 @@ use rstar::{RTree, AABB};
 use thiserror::Error;
 
 use crate::drawing::{
-    band::BandTerminatingSegIndex,
+    band::BandTermsegIndex,
     bend::{BendIndex, BendWeight, FixedBendIndex, LooseBendIndex, LooseBendWeight},
     cane::Cane,
     collect::Collect,
@@ -88,12 +88,12 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         }
     }
 
-    pub fn remove_band(&mut self, band: BandTerminatingSegIndex) {
+    pub fn remove_band(&mut self, band: BandTermsegIndex) {
         match band {
-            BandTerminatingSegIndex::Straight(seg) => {
+            BandTermsegIndex::Straight(seg) => {
                 self.geometry_with_rtree.remove_seg(seg.into());
             }
-            BandTerminatingSegIndex::Bended(first_loose_seg) => {
+            BandTermsegIndex::Bended(first_loose_seg) => {
                 let mut dots = vec![];
                 let mut segs = vec![];
                 let mut bends = vec![];

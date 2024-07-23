@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::{
     drawing::{
-        band::BandTerminatingSegIndex,
+        band::BandTermsegIndex,
         bend::{BendIndex, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
         graph::{GetLayer, GetMaybeNet, MakePrimitive},
@@ -51,7 +51,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         head: Head,
         into: FixedDotIndex,
         width: f64,
-    ) -> Result<BandTerminatingSegIndex, DrawException> {
+    ) -> Result<BandTermsegIndex, DrawException> {
         let tangent = self
             .guide()
             .head_into_dot_segment(&head, into, width)
@@ -62,8 +62,8 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         let layer = head.face().primitive(self.layout.drawing()).layer();
         let maybe_net = head.face().primitive(self.layout.drawing()).maybe_net();
 
-        Ok::<BandTerminatingSegIndex, DrawException>(match head.face() {
-            DotIndex::Fixed(dot) => BandTerminatingSegIndex::Straight(
+        Ok::<BandTermsegIndex, DrawException>(match head.face() {
+            DotIndex::Fixed(dot) => BandTermsegIndex::Straight(
                 self.layout
                     .add_lone_loose_seg(
                         dot,
@@ -76,7 +76,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
                     )
                     .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?,
             ),
-            DotIndex::Loose(dot) => BandTerminatingSegIndex::Bended(
+            DotIndex::Loose(dot) => BandTermsegIndex::Bended(
                 self.layout
                     .add_seq_loose_seg(
                         into.into(),

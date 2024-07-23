@@ -70,7 +70,7 @@ impl<M: AccessMesadata> Autorouter<M> {
                 .graph()
                 .edge_weight(*ratline)
                 .unwrap()
-                .band
+                .band_termseg
                 .unwrap();
             self.board.layout_mut().remove_band(band);
         }

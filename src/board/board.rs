@@ -1,9 +1,11 @@
-use std::collections::HashMap;
+use std::{cmp::Ordering, collections::HashMap};
+
+use bimap::BiHashMap;
 
 use crate::{
     board::mesadata::AccessMesadata,
     drawing::{
-        band::BandTerminatingSegIndex,
+        band::{BandTermsegIndex, BandUid},
         dot::{FixedDotIndex, FixedDotWeight},
         graph::{GetLayer, GetMaybeNet},
         seg::{FixedSegIndex, FixedSegWeight},
@@ -17,11 +19,24 @@ use crate::{
     math::Circle,
 };
 
+#[derive(Debug, Hash, Clone, PartialEq, Eq)]
+pub struct BandName(String, String);
+
+impl BandName {
+    pub fn new(pinname1: String, pinname2: String) -> Self {
+        if pinname1.cmp(&pinname2) == Ordering::Greater {
+            BandName(pinname2, pinname1)
+        } else {
+            BandName(pinname1, pinname2)
+        }
+    }
+}
+
 #[derive(Debug)]
 pub struct Board<M: AccessMesadata> {
     layout: Layout<M>,
     node_to_pinname: HashMap<NodeIndex, String>,
-    pinname_pair_to_band: HashMap<(String, String), BandTerminatingSegIndex>,
+    band_bandname: BiHashMap<BandUid, BandName>,
 }
 
 impl<M: AccessMesadata> Board<M> {
@@ -29,7 +44,7 @@ impl<M: AccessMesadata> Board<M> {
         Self {
             layout,
             node_to_pinname: HashMap::new(),
-            pinname_pair_to_band: HashMap::new(),
+            band_bandname: BiHashMap::new(),
         }
     }
 
@@ -140,7 +155,7 @@ impl<M: AccessMesadata> Board<M> {
         &mut self,
         source: FixedDotIndex,
         target: FixedDotIndex,
-        band: BandTerminatingSegIndex,
+        band: BandUid,
     ) {
         let source_pinname = self
             .node_pinname(GenericNode::Primitive(source.into()))
@@ -150,23 +165,19 @@ impl<M: AccessMesadata> Board<M> {
             .node_pinname(GenericNode::Primitive(target.into()))
             .unwrap()
             .to_string();
-        self.pinname_pair_to_band
-            .insert((source_pinname, target_pinname), band);
+        self.band_bandname
+            .insert(band, BandName::new(source_pinname, target_pinname));
     }
 
-    pub fn band_between_pins(
-        &self,
-        pinname1: &str,
-        pinname2: &str,
-    ) -> Option<BandTerminatingSegIndex> {
+    pub fn band_between_pins(&self, pinname1: &str, pinname2: &str) -> Option<BandUid> {
         if let Some(band) = self
-            .pinname_pair_to_band
-            .get(&(pinname1.to_string(), pinname2.to_string()))
+            .band_bandname
+            .get_by_right(&BandName::new(pinname1.to_string(), pinname2.to_string()))
         {
             Some(*band)
         } else if let Some(band) = self
-            .pinname_pair_to_band
-            .get(&(pinname2.to_string(), pinname1.to_string()))
+            .band_bandname
+            .get_by_right(&BandName::new(pinname2.to_string(), pinname1.to_string()))
         {
             Some(*band)
         } else {

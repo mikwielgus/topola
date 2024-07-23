@@ -56,18 +56,25 @@ impl Autoroute {
 
         let (source, target) = autorouter.ratline_endpoints(curr_ratline);
 
-        let band = {
+        let band_last_seg = {
             let mut router = Router::new(autorouter.board.layout_mut());
 
-            let RouterStatus::Finished(band) = route.step(&mut router)? else {
+            let RouterStatus::Finished(band_last_seg) = route.step(&mut router)? else {
                 return Ok(AutorouterStatus::Running);
             };
-            band
+            band_last_seg
         };
+
+        let band = autorouter
+            .board
+            .layout()
+            .drawing()
+            .collect()
+            .loose_band_uid(band_last_seg.into());
 
         autorouter
             .ratsnest
-            .assign_band_to_ratline(self.curr_ratline.unwrap(), band);
+            .assign_band_termseg_to_ratline(self.curr_ratline.unwrap(), band_last_seg);
 
         autorouter
             .board

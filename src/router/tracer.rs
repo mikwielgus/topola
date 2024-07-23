@@ -2,7 +2,7 @@ use contracts::{debug_ensures, debug_requires};
 use thiserror::Error;
 
 use crate::{
-    drawing::{band::BandTerminatingSegIndex, dot::FixedDotIndex, rules::AccessRules},
+    drawing::{band::BandTermsegIndex, dot::FixedDotIndex, rules::AccessRules},
     layout::Layout,
     router::{
         draw::{Draw, DrawException},
@@ -44,7 +44,7 @@ impl<'a, R: AccessRules> Tracer<'a, R> {
         trace: &mut Trace,
         target: FixedDotIndex,
         width: f64,
-    ) -> Result<BandTerminatingSegIndex, TracerException> {
+    ) -> Result<BandTermsegIndex, TracerException> {
         Ok(Draw::new(self.layout).finish_in_dot(trace.head, target, width)?)
     }
 
