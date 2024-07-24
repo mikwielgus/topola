@@ -14,6 +14,7 @@ use super::{
     autoroute::Autoroute,
     place_via::PlaceVia,
     ratsnest::{Ratsnest, RatvertexIndex},
+    remove_bands::RemoveBands,
     selection::{BandSelection, PinSelection},
 };
 
@@ -89,7 +90,27 @@ impl<M: AccessMesadata> Autorouter<M> {
         PlaceVia::new(weight)
     }
 
-    pub fn undo_place_via(&mut self, weight: ViaWeight) {
+    pub fn undo_place_via(&mut self, _weight: ViaWeight) {
+        todo!();
+    }
+
+    pub fn remove_bands(&mut self, selection: &BandSelection) -> Result<(), AutorouterError> {
+        for selector in selection.selectors() {
+            let band = self.board.bandname_band(selector.band.clone()).unwrap().0;
+            self.board.layout_mut().remove_band(band);
+        }
+
+        Ok(())
+    }
+
+    pub fn remove_bands_walk(
+        &self,
+        selection: &BandSelection,
+    ) -> Result<RemoveBands, AutorouterError> {
+        RemoveBands::new(selection)
+    }
+
+    pub fn undo_remove_bands(&mut self, _selection: &BandSelection) {
         todo!();
     }
 

@@ -75,6 +75,11 @@ impl Top {
             egui::Modifiers::CTRL,
             egui::Key::P,
         ));
+        let mut remove_bands = Trigger::new(Action::new(
+            "Remove Selected Bands",
+            egui::Modifiers::NONE,
+            egui::Key::Delete,
+        ));
         let mut undo = Trigger::new(Action::new("Undo", egui::Modifiers::CTRL, egui::Key::Z));
         let mut redo = Trigger::new(Action::new("Redo", egui::Modifiers::CTRL, egui::Key::Y));
 
@@ -103,6 +108,8 @@ impl Top {
                     autoroute.button(ctx, ui);
 
                     place_via.toggle_widget(ctx, ui, &mut self.is_placing_via);
+
+                    remove_bands.button(ctx, ui);
 
                     ui.separator();
 
@@ -213,6 +220,22 @@ impl Top {
                         }
                     }
                 } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
+                } else if remove_bands.consume_key_triggered(ctx, ui) {
+                    if maybe_execute.as_mut().map_or(true, |execute| {
+                        matches!(execute.maybe_status(), Some(InvokerStatus::Finished))
+                    }) {
+                        if let (Some(invoker), Some(ref mut overlay)) = (
+                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
+                            maybe_overlay,
+                        ) {
+                            let selection = overlay.selection().clone();
+                            overlay.clear_selection();
+                            maybe_execute
+                                .insert(ExecuteWithStatus::new(invoker.execute_walk(
+                                    Command::RemoveBands(selection.band_selection),
+                                )?));
+                        }
+                    }
                 } else if undo.consume_key_triggered(ctx, ui) {
                     if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
                         invoker.undo();

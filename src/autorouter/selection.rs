@@ -15,8 +15,8 @@ use crate::{
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct PinSelector {
-    pin: String,
-    layer: String,
+    pub pin: String,
+    pub layer: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -78,11 +78,15 @@ impl PinSelection {
         self.node_selector(board, node)
             .map_or(false, |selector| self.selectors.contains(&selector))
     }
+
+    pub fn selectors(&self) -> impl Iterator<Item = &PinSelector> {
+        self.selectors.iter()
+    }
 }
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
 pub struct BandSelector {
-    band: BandName,
+    pub band: BandName,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -132,6 +136,10 @@ impl BandSelection {
     pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
         self.node_selector(board, node)
             .map_or(false, |selector| self.selectors.contains(&selector))
+    }
+
+    pub fn selectors(&self) -> impl Iterator<Item = &BandSelector> {
+        self.selectors.iter()
     }
 }
 

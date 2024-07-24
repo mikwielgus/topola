@@ -156,6 +156,10 @@ impl<M: AccessMesadata> Board<M> {
         self.band_bandname.get_by_left(&band)
     }
 
+    pub fn bandname_band(&self, bandname: BandName) -> Option<&BandUid> {
+        self.band_bandname.get_by_right(&bandname)
+    }
+
     pub fn try_set_band_between_nodes(
         &mut self,
         source: FixedDotIndex,

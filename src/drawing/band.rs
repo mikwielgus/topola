@@ -16,7 +16,7 @@ use super::{
 };
 
 #[derive(Debug, Hash, Clone, Copy)]
-pub struct BandUid(BandTermsegIndex, BandTermsegIndex);
+pub struct BandUid(pub BandTermsegIndex, pub BandTermsegIndex);
 
 impl BandUid {
     pub fn new(first_seg1: BandTermsegIndex, first_seg2: BandTermsegIndex) -> Self {

@@ -2,25 +2,25 @@ use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
-    layout::via::ViaWeight,
     router::{navmesh::Navmesh, trace::Trace},
 };
 
 use super::{
     invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles},
+    selection::BandSelection,
     Autorouter, AutorouterError,
 };
 
 #[derive(Debug)]
-pub struct PlaceVia {
-    weight: ViaWeight,
+pub struct RemoveBands {
+    selection: BandSelection,
     done: bool,
 }
 
-impl PlaceVia {
-    pub fn new(weight: ViaWeight) -> Result<Self, AutorouterError> {
+impl RemoveBands {
+    pub fn new(selection: &BandSelection) -> Result<Self, AutorouterError> {
         Ok(Self {
-            weight,
+            selection: selection.clone(),
             done: false,
         })
     }
@@ -31,32 +31,32 @@ impl PlaceVia {
     ) -> Result<(), AutorouterError> {
         if !self.done {
             self.done = true;
-            autorouter.place_via(self.weight)
+            autorouter.remove_bands(&self.selection)
         } else {
             Ok(())
         }
     }
 }
 
-impl GetMaybeNavmesh for PlaceVia {
+impl GetMaybeNavmesh for RemoveBands {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         None
     }
 }
 
-impl GetMaybeTrace for PlaceVia {
+impl GetMaybeTrace for RemoveBands {
     fn maybe_trace(&self) -> Option<&Trace> {
         None
     }
 }
 
-impl GetGhosts for PlaceVia {
+impl GetGhosts for RemoveBands {
     fn ghosts(&self) -> &[PrimitiveShape] {
         &[]
     }
 }
 
-impl GetObstacles for PlaceVia {
+impl GetObstacles for RemoveBands {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         &[]
     }

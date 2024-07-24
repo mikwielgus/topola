@@ -15,6 +15,7 @@ use super::{
     autoroute::Autoroute,
     history::{History, HistoryError},
     place_via::PlaceVia,
+    remove_bands::RemoveBands,
     selection::{BandSelection, PinSelection},
     Autorouter, AutorouterError, AutorouterStatus,
 };
@@ -57,12 +58,14 @@ pub enum InvokerStatus {
 pub enum Command {
     Autoroute(PinSelection),
     PlaceVia(ViaWeight),
+    RemoveBands(BandSelection),
 }
 
 #[enum_dispatch(GetMaybeNavmesh, GetMaybeTrace, GetGhosts, GetObstacles)]
 pub enum Execute {
     Autoroute(Autoroute),
     PlaceVia(PlaceVia),
+    RemoveBands(RemoveBands),
 }
 
 impl Execute {
@@ -97,6 +100,10 @@ impl Execute {
             },
             Execute::PlaceVia(place_via) => {
                 place_via.doit(&mut invoker.autorouter)?;
+                Ok(InvokerStatus::Finished)
+            }
+            Execute::RemoveBands(remove_bands) => {
+                remove_bands.doit(&mut invoker.autorouter)?;
                 Ok(InvokerStatus::Finished)
             }
         }
@@ -210,6 +217,9 @@ impl<M: AccessMesadata> Invoker<M> {
             Command::PlaceVia(weight) => Ok::<Execute, InvokerError>(Execute::PlaceVia(
                 self.autorouter.place_via_walk(*weight)?,
             )),
+            Command::RemoveBands(selection) => Ok::<Execute, InvokerError>(Execute::RemoveBands(
+                self.autorouter.remove_bands_walk(selection)?,
+            )),
         }
     }
 
@@ -220,6 +230,7 @@ impl<M: AccessMesadata> Invoker<M> {
         match command {
             Command::Autoroute(ref selection) => self.autorouter.undo_autoroute(selection),
             Command::PlaceVia(weight) => self.autorouter.undo_place_via(*weight),
+            Command::RemoveBands(ref selection) => self.autorouter.undo_remove_bands(selection),
         }
 
         Ok::<(), InvokerError>(self.history.undo()?)
