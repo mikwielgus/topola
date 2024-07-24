@@ -3,17 +3,18 @@ use spade::InsertionError;
 use thiserror::Error;
 
 use crate::{
-    autorouter::{
-        autoroute::Autoroute,
-        place_via::PlaceVia,
-        ratsnest::{Ratsnest, RatvertexIndex},
-        selection::Selection,
-    },
     board::{mesadata::AccessMesadata, Board},
     drawing::{dot::FixedDotIndex, Infringement},
     layout::via::ViaWeight,
     router::{navmesh::NavmeshError, RouterError},
     triangulation::GetTrianvertexNodeIndex,
+};
+
+use super::{
+    autoroute::Autoroute,
+    place_via::PlaceVia,
+    ratsnest::{Ratsnest, RatvertexIndex},
+    selection::{BandSelection, PinSelection},
 };
 
 #[derive(Error, Debug, Clone)]
@@ -44,7 +45,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         Ok(Self { board, ratsnest })
     }
 
-    pub fn autoroute(&mut self, selection: &Selection) -> Result<(), AutorouterError> {
+    pub fn autoroute(&mut self, selection: &PinSelection) -> Result<(), AutorouterError> {
         let mut autoroute = self.autoroute_walk(selection)?;
 
         loop {
@@ -59,11 +60,14 @@ impl<M: AccessMesadata> Autorouter<M> {
         }
     }
 
-    pub fn autoroute_walk(&mut self, selection: &Selection) -> Result<Autoroute, AutorouterError> {
+    pub fn autoroute_walk(
+        &mut self,
+        selection: &PinSelection,
+    ) -> Result<Autoroute, AutorouterError> {
         Autoroute::new(self, self.selected_ratlines(selection))
     }
 
-    pub fn undo_autoroute(&mut self, selection: &Selection) {
+    pub fn undo_autoroute(&mut self, selection: &PinSelection) {
         for ratline in self.selected_ratlines(selection).iter() {
             let band = self
                 .ratsnest
@@ -120,7 +124,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         (source_dot, target_dot)
     }
 
-    fn selected_ratlines(&self, selection: &Selection) -> Vec<EdgeIndex<usize>> {
+    fn selected_ratlines(&self, selection: &PinSelection) -> Vec<EdgeIndex<usize>> {
         self.ratsnest
             .graph()
             .edge_indices()

@@ -4,18 +4,19 @@ use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
-    autorouter::{
-        autoroute::Autoroute,
-        history::{History, HistoryError},
-        place_via::PlaceVia,
-        selection::Selection,
-        Autorouter, AutorouterError, AutorouterStatus,
-    },
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     layout::via::ViaWeight,
     router::{navmesh::Navmesh, trace::Trace},
+};
+
+use super::{
+    autoroute::Autoroute,
+    history::{History, HistoryError},
+    place_via::PlaceVia,
+    selection::{BandSelection, PinSelection},
+    Autorouter, AutorouterError, AutorouterStatus,
 };
 
 #[enum_dispatch]
@@ -54,7 +55,7 @@ pub enum InvokerStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
-    Autoroute(Selection),
+    Autoroute(PinSelection),
     PlaceVia(ViaWeight),
 }
 

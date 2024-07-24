@@ -3,7 +3,7 @@ use std::collections::HashSet;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    board::{mesadata::AccessMesadata, Board},
+    board::{mesadata::AccessMesadata, BandName, Board},
     drawing::{
         band::BandUid,
         graph::{GetLayer, MakePrimitive, PrimitiveIndex},
@@ -14,117 +14,28 @@ use crate::{
 };
 
 #[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
-pub struct Selector {
+pub struct PinSelector {
     pin: String,
     layer: String,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
-pub struct Selection {
-    selectors: HashSet<Selector>,
-    #[serde(skip)]
-    selected_bands: HashSet<BandUid>,
+pub struct PinSelection {
+    selectors: HashSet<PinSelector>,
 }
 
-impl Selection {
+impl PinSelection {
     pub fn new() -> Self {
         Self {
             selectors: HashSet::new(),
-            selected_bands: HashSet::new(),
         }
-    }
-
-    pub fn new_select_all(board: &Board<impl AccessMesadata>) -> Self {
-        let mut this = Self::new();
-
-        for node in board.layout().drawing().primitive_nodes() {
-            if let Some(selector) = this.node_selector(board, GenericNode::Primitive(node)) {
-                if !this.contains_node(board, GenericNode::Primitive(node)) {
-                    this.select(board, selector);
-                }
-            }
-        }
-
-        this
-    }
-
-    pub fn new_select_layer(board: &Board<impl AccessMesadata>, layer: usize) -> Self {
-        let mut this = Self::new();
-
-        for node in board.layout().drawing().layer_primitive_nodes(layer) {
-            if let Some(selector) = this.node_selector(board, GenericNode::Primitive(node)) {
-                if !this.contains_node(board, GenericNode::Primitive(node)) {
-                    this.select(board, selector);
-                }
-            }
-        }
-
-        this
-    }
-
-    pub fn toggle_at_node(&mut self, board: &Board<impl AccessMesadata>, node: NodeIndex) {
-        if let Some(selector) = self.node_selector(board, node) {
-            if self.contains_node(board, node) {
-                self.deselect(board, &selector);
-            } else {
-                self.select(board, selector);
-            }
-        } else if let Some(band) = self.node_band(board, node) {
-            if self.contains_node(board, node) {
-                self.deselect_band(board, band);
-            } else {
-                self.select_band(board, band);
-            }
-        }
-    }
-
-    fn select(&mut self, _board: &Board<impl AccessMesadata>, selector: Selector) {
-        self.selectors.insert(selector);
-    }
-
-    fn deselect(&mut self, _board: &Board<impl AccessMesadata>, selector: &Selector) {
-        self.selectors.remove(selector);
-    }
-
-    fn select_band(&mut self, board: &Board<impl AccessMesadata>, band: BandUid) {
-        self.selected_bands.insert(band);
-    }
-
-    fn deselect_band(&mut self, board: &Board<impl AccessMesadata>, band: BandUid) {
-        self.selected_bands.remove(&band);
-    }
-
-    pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
-        if let Some(selector) = self.node_selector(board, node) {
-            self.selectors.contains(&selector)
-        } else if let Some(band) = self.node_band(board, node) {
-            self.selected_bands.contains(&band)
-        } else {
-            false
-        }
-    }
-
-    fn node_band(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> Option<BandUid> {
-        let NodeIndex::Primitive(primitive) = node else {
-            return None;
-        };
-
-        let loose = match primitive {
-            PrimitiveIndex::LooseDot(dot) => dot.into(),
-            PrimitiveIndex::LoneLooseSeg(seg) => seg.into(),
-            PrimitiveIndex::SeqLooseSeg(seg) => seg.into(),
-            PrimitiveIndex::LooseBend(bend) => bend.into(),
-            _ => return None,
-        };
-
-        Some(board.layout().drawing().collect().loose_band_uid(loose))
     }
 
     fn node_selector(
         &self,
         board: &Board<impl AccessMesadata>,
         node: NodeIndex,
-    ) -> Option<Selector> {
+    ) -> Option<PinSelector> {
         let layer = match node {
             NodeIndex::Primitive(primitive) => {
                 primitive.primitive(board.layout().drawing()).layer()
@@ -146,12 +57,116 @@ impl Selection {
             board.node_pinname(node),
             board.layout().rules().layer_layername(layer),
         ) {
-            Some(Selector {
+            Some(PinSelector {
                 pin: pinname.to_string(),
                 layer: layername.to_string(),
             })
         } else {
             None
         }
+    }
+
+    fn select(&mut self, selector: PinSelector) {
+        self.selectors.insert(selector);
+    }
+
+    fn deselect(&mut self, selector: &PinSelector) {
+        self.selectors.remove(selector);
+    }
+
+    pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
+        self.node_selector(board, node)
+            .map_or(false, |selector| self.selectors.contains(&selector))
+    }
+}
+
+#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+pub struct BandSelector {
+    band: BandName,
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct BandSelection {
+    selectors: HashSet<BandSelector>,
+}
+
+impl BandSelection {
+    pub fn new() -> Self {
+        Self {
+            selectors: HashSet::new(),
+        }
+    }
+
+    fn node_selector(
+        &self,
+        board: &Board<impl AccessMesadata>,
+        node: NodeIndex,
+    ) -> Option<BandSelector> {
+        let NodeIndex::Primitive(primitive) = node else {
+            return None;
+        };
+
+        let loose = match primitive {
+            PrimitiveIndex::LooseDot(dot) => dot.into(),
+            PrimitiveIndex::LoneLooseSeg(seg) => seg.into(),
+            PrimitiveIndex::SeqLooseSeg(seg) => seg.into(),
+            PrimitiveIndex::LooseBend(bend) => bend.into(),
+            _ => return None,
+        };
+
+        Some(BandSelector {
+            band: board
+                .band_bandname(board.layout().drawing().collect().loose_band_uid(loose))?
+                .clone(),
+        })
+    }
+
+    fn select(&mut self, selector: BandSelector) {
+        self.selectors.insert(selector);
+    }
+
+    fn deselect(&mut self, selector: &BandSelector) {
+        self.selectors.remove(&selector);
+    }
+
+    pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
+        self.node_selector(board, node)
+            .map_or(false, |selector| self.selectors.contains(&selector))
+    }
+}
+
+#[derive(Debug, Clone, Serialize, Deserialize)]
+pub struct Selection {
+    pub pin_selection: PinSelection,
+    pub band_selection: BandSelection,
+}
+
+impl Selection {
+    pub fn new() -> Self {
+        Self {
+            pin_selection: PinSelection::new(),
+            band_selection: BandSelection::new(),
+        }
+    }
+
+    pub fn toggle_at_node(&mut self, board: &Board<impl AccessMesadata>, node: NodeIndex) {
+        if let Some(selector) = self.pin_selection.node_selector(board, node) {
+            if self.pin_selection.contains_node(board, node) {
+                self.pin_selection.deselect(&selector);
+            } else {
+                self.pin_selection.select(selector);
+            }
+        } else if let Some(selector) = self.band_selection.node_selector(board, node) {
+            if self.band_selection.contains_node(board, node) {
+                self.band_selection.deselect(&selector);
+            } else {
+                self.band_selection.select(selector);
+            }
+        }
+    }
+
+    pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
+        self.pin_selection.contains_node(board, node)
+            || self.band_selection.contains_node(board, node)
     }
 }

@@ -1,6 +1,7 @@
 use std::{cmp::Ordering, collections::HashMap};
 
 use bimap::BiHashMap;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     board::mesadata::AccessMesadata,
@@ -19,7 +20,7 @@ use crate::{
     math::Circle,
 };
 
-#[derive(Debug, Hash, Clone, PartialEq, Eq)]
+#[derive(Debug, Hash, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BandName(String, String);
 
 impl BandName {
@@ -149,6 +150,10 @@ impl<M: AccessMesadata> Board<M> {
 
     pub fn node_pinname(&self, node: NodeIndex) -> Option<&String> {
         self.node_to_pinname.get(&node)
+    }
+
+    pub fn band_bandname(&self, band: BandUid) -> Option<&BandName> {
+        self.band_bandname.get_by_left(&band)
     }
 
     pub fn try_set_band_between_nodes(

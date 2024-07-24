@@ -207,7 +207,8 @@ impl Top {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
                             maybe_execute.insert(ExecuteWithStatus::new(
-                                invoker.execute_walk(Command::Autoroute(selection))?,
+                                invoker
+                                    .execute_walk(Command::Autoroute(selection.pin_selection))?,
                             ));
                         }
                     }
