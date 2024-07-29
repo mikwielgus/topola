@@ -1,8 +1,9 @@
 # Topola
 
-Work-in-progress interactive topological router in Rust.
+[Topola](https://topola.dev) is a work-in-progress interactive
+topological router in Rust.
 
-The project is funded by the [NLnet Foundation](https://nlnet.nl/) via
+The project is funded by the [NLnet Foundation](https://nlnet.nl/) from
 the [NGI0 Entrust](https://nlnet.nl/entrust/) fund.
 
 <img src="./assets/nlnet_banner.png" alt="NLnet Foundation banner" width="200"/>
