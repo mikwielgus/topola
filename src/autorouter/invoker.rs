@@ -96,6 +96,7 @@ impl Execute {
         match self {
             Execute::Autoroute(autoroute) => match autoroute.step(&mut invoker.autorouter)? {
                 AutorouterStatus::Running => Ok(InvokerStatus::Running),
+                AutorouterStatus::Routed(..) => Ok(InvokerStatus::Running),
                 AutorouterStatus::Finished => Ok(InvokerStatus::Finished),
             },
             Execute::PlaceVia(place_via) => {

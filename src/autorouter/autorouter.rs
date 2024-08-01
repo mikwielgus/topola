@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::{
     board::{mesadata::AccessMesadata, Board},
-    drawing::{dot::FixedDotIndex, Infringement},
+    drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
     layout::via::ViaWeight,
     router::{navmesh::NavmeshError, RouterError},
     triangulation::GetTrianvertexNodeIndex,
@@ -32,6 +32,7 @@ pub enum AutorouterError {
 
 pub enum AutorouterStatus {
     Running,
+    Routed(BandTermsegIndex),
     Finished,
 }
 
