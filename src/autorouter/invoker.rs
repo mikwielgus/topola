@@ -9,6 +9,7 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     layout::via::ViaWeight,
     router::{navmesh::Navmesh, trace::Trace},
+    step::{IsFinished, Step},
 };
 
 use super::{
@@ -54,6 +55,12 @@ pub enum InvokerStatus {
     Finished,
 }
 
+impl IsFinished for InvokerStatus {
+    fn finished(&self) -> bool {
+        matches!(self, InvokerStatus::Finished)
+    }
+}
+
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     Autoroute(PinSelection),
@@ -69,26 +76,6 @@ pub enum Execute {
 }
 
 impl Execute {
-    pub fn step<M: AccessMesadata>(
-        &mut self,
-        invoker: &mut Invoker<M>,
-    ) -> Result<InvokerStatus, InvokerError> {
-        match self.step_catch_err(invoker) {
-            Ok(InvokerStatus::Running) => Ok(InvokerStatus::Running),
-            Ok(InvokerStatus::Finished) => {
-                if let Some(command) = invoker.ongoing_command.take() {
-                    invoker.history.do_(command);
-                }
-
-                Ok(InvokerStatus::Finished)
-            }
-            Err(err) => {
-                invoker.ongoing_command = None;
-                Err(err)
-            }
-        }
-    }
-
     fn step_catch_err<M: AccessMesadata>(
         &mut self,
         invoker: &mut Invoker<M>,
@@ -106,6 +93,25 @@ impl Execute {
             Execute::RemoveBands(remove_bands) => {
                 remove_bands.doit(&mut invoker.autorouter)?;
                 Ok(InvokerStatus::Finished)
+            }
+        }
+    }
+}
+
+impl<M: AccessMesadata> Step<Invoker<M>, InvokerStatus, InvokerError> for Execute {
+    fn step(&mut self, invoker: &mut Invoker<M>) -> Result<InvokerStatus, InvokerError> {
+        match self.step_catch_err(invoker) {
+            Ok(InvokerStatus::Running) => Ok(InvokerStatus::Running),
+            Ok(InvokerStatus::Finished) => {
+                if let Some(command) = invoker.ongoing_command.take() {
+                    invoker.history.do_(command);
+                }
+
+                Ok(InvokerStatus::Finished)
+            }
+            Err(err) => {
+                invoker.ongoing_command = None;
+                Err(err)
             }
         }
     }

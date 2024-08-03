@@ -5,6 +5,7 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     router::{navmesh::Navmesh, route::Route, trace::Trace, Router, RouterStatus},
+    step::Step,
 };
 
 use super::{
@@ -40,10 +41,12 @@ impl Autoroute {
 
         Ok(this)
     }
+}
 
-    pub fn step(
+impl<M: AccessMesadata> Step<Autorouter<M>, AutorouterStatus, AutorouterError> for Autoroute {
+    fn step(
         &mut self,
-        autorouter: &mut Autorouter<impl AccessMesadata>,
+        autorouter: &mut Autorouter<M>,
     ) -> Result<AutorouterStatus, AutorouterError> {
         let Some(ref mut route) = self.route else {
             // Shouldn't happen.

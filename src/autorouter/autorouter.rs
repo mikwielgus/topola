@@ -7,6 +7,7 @@ use crate::{
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
     layout::via::ViaWeight,
     router::{navmesh::NavmeshError, RouterError},
+    step::{IsFinished, Step},
     triangulation::GetTrianvertexNodeIndex,
 };
 
@@ -34,6 +35,12 @@ pub enum AutorouterStatus {
     Running,
     Routed(BandTermsegIndex),
     Finished,
+}
+
+impl IsFinished for AutorouterStatus {
+    fn finished(&self) -> bool {
+        matches!(self, AutorouterStatus::Finished)
+    }
 }
 
 pub struct Autorouter<M: AccessMesadata> {
