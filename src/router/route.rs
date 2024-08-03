@@ -8,6 +8,7 @@ use crate::{
         tracer::Tracer,
         Router, RouterAstarStrategy, RouterError, RouterStatus,
     },
+    step::Step,
 };
 
 pub struct Route {
@@ -53,26 +54,6 @@ impl Route {
         }
     }
 
-    pub fn step(
-        &mut self,
-        router: &mut Router<impl AccessRules>,
-    ) -> Result<RouterStatus, RouterError> {
-        let tracer = Tracer::new(router.layout_mut());
-        let target = self.astar.graph.destination();
-        let mut strategy = RouterAstarStrategy::new(tracer, &mut self.trace, target);
-
-        let result = match self.astar.step(&mut strategy)? {
-            AstarStatus::Probing | AstarStatus::Probed | AstarStatus::Visited => {
-                Ok(RouterStatus::Running)
-            }
-            AstarStatus::Finished(_cost, _path, band) => Ok(RouterStatus::Finished(band)),
-        };
-
-        self.ghosts = strategy.probe_ghosts;
-        self.obstacles = strategy.probe_obstacles;
-        result
-    }
-
     pub fn navmesh(&self) -> &Navmesh {
         &self.astar.graph
     }
@@ -87,5 +68,24 @@ impl Route {
 
     pub fn obstacles(&self) -> &[PrimitiveIndex] {
         &self.obstacles
+    }
+}
+
+impl<'a, R: AccessRules> Step<Router<'a, R>, RouterStatus, RouterError> for Route {
+    fn step(&mut self, router: &mut Router<R>) -> Result<RouterStatus, RouterError> {
+        let tracer = Tracer::new(router.layout_mut());
+        let target = self.astar.graph.destination();
+        let mut strategy = RouterAstarStrategy::new(tracer, &mut self.trace, target);
+
+        let result = match self.astar.step(&mut strategy)? {
+            AstarStatus::Probing | AstarStatus::Probed | AstarStatus::Visited => {
+                Ok(RouterStatus::Running)
+            }
+            AstarStatus::Finished(_cost, _path, band) => Ok(RouterStatus::Finished(band)),
+        };
+
+        self.ghosts = strategy.probe_ghosts;
+        self.obstacles = strategy.probe_obstacles;
+        result
     }
 }

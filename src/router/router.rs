@@ -18,6 +18,7 @@ use crate::{
     },
     graph::{GetPetgraphIndex, MakeRef},
     layout::Layout,
+    step::{IsFinished, Step, StepBack},
 };
 
 use super::{
@@ -25,7 +26,7 @@ use super::{
     draw::DrawException,
     navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
     route::Route,
-    trace::Trace,
+    trace::{Trace, TraceStepInput},
     tracer::{Tracer, TracerException},
 };
 
@@ -40,6 +41,12 @@ pub enum RouterError {
 pub enum RouterStatus {
     Running,
     Finished(BandTermsegIndex),
+}
+
+impl IsFinished for RouterStatus {
+    fn finished(&self) -> bool {
+        matches!(self, RouterStatus::Finished(..))
+    }
 }
 
 #[derive(Debug)]
@@ -107,9 +114,12 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
         let prev_bihead_length = self.bihead_length();
 
         let width = self.trace.width;
-        let result = self
-            .trace
-            .step(&mut self.tracer, navmesh, edge.target(), width);
+        let result = self.trace.step(&mut TraceStepInput {
+            tracer: &mut self.tracer,
+            navmesh,
+            to: edge.target(),
+            width,
+        });
 
         let probe_length = self.bihead_length() - prev_bihead_length;
 
@@ -141,7 +151,7 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
     }
 
     fn remove_probe(&mut self, _navmesh: &Navmesh) {
-        self.trace.undo_step(&mut self.tracer);
+        self.trace.step_back(&mut self.tracer);
     }
 
     fn estimate_cost(&mut self, navmesh: &Navmesh, vertex: NavvertexIndex) -> f64 {

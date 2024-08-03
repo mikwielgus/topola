@@ -9,11 +9,14 @@ use crate::{
         head::{BareHead, CaneHead, Head},
         rules::AccessRules,
     },
-    router::{
-        draw::Draw,
-        navmesh::{BinavvertexNodeIndex, Navmesh, NavvertexIndex},
-        tracer::{Tracer, TracerException},
-    },
+    step::{Step, StepBack},
+};
+
+use super::{
+    draw::Draw,
+    navmesh::{BinavvertexNodeIndex, Navmesh, NavvertexIndex},
+    tracer::TracerStatus,
+    tracer::{Tracer, TracerException},
 };
 
 #[derive(Debug)]
@@ -30,33 +33,6 @@ impl Trace {
             head: BareHead { face: source }.into(),
             width,
         }
-    }
-
-    #[debug_ensures(ret.is_ok() -> matches!(self.head, Head::Cane(..)))]
-    #[debug_ensures(ret.is_ok() -> self.path.len() == old(self.path.len() + 1))]
-    #[debug_ensures(ret.is_err() -> self.path.len() == old(self.path.len()))]
-    pub fn step(
-        &mut self,
-        tracer: &mut Tracer<impl AccessRules>,
-        navmesh: &Navmesh,
-        to: NavvertexIndex,
-        width: f64,
-    ) -> Result<(), TracerException> {
-        self.head = self.wrap(tracer, navmesh, self.head, to, width)?.into();
-        self.path.push(to);
-
-        Ok::<(), TracerException>(())
-    }
-
-    #[debug_ensures(self.path.len() == old(self.path.len() - 1))]
-    pub fn undo_step(&mut self, tracer: &mut Tracer<impl AccessRules>) {
-        if let Head::Cane(head) = self.head {
-            self.head = Draw::new(tracer.layout).undo_cane(head).unwrap();
-        } else {
-            panic!();
-        }
-
-        self.path.pop();
     }
 
     fn wrap(
@@ -114,5 +90,51 @@ impl Trace {
 
     fn maybe_cw(&self, navmesh: &Navmesh, navvertex: NavvertexIndex) -> Option<bool> {
         navmesh.node_weight(navvertex).unwrap().maybe_cw
+    }
+}
+
+pub struct TraceStepInput<'a: 'b, 'b, R: AccessRules> {
+    pub tracer: &'b mut Tracer<'a, R>,
+    pub navmesh: &'b Navmesh,
+    pub to: NavvertexIndex,
+    pub width: f64,
+}
+
+impl<'a, 'b, R: AccessRules> Step<TraceStepInput<'a, 'b, R>, TracerStatus, TracerException>
+    for Trace
+{
+    #[debug_ensures(ret.is_ok() -> matches!(self.head, Head::Cane(..)))]
+    #[debug_ensures(ret.is_ok() -> self.path.len() == old(self.path.len() + 1))]
+    #[debug_ensures(ret.is_err() -> self.path.len() == old(self.path.len()))]
+    fn step(
+        &mut self,
+        input: &mut TraceStepInput<'a, 'b, R>,
+    ) -> Result<TracerStatus, TracerException> {
+        self.head = self
+            .wrap(
+                input.tracer,
+                input.navmesh,
+                self.head,
+                input.to,
+                input.width,
+            )?
+            .into();
+        self.path.push(input.to);
+
+        Ok(TracerStatus::Running)
+    }
+}
+
+impl<'a, R: AccessRules> StepBack<Tracer<'a, R>, TracerStatus, TracerException> for Trace {
+    #[debug_ensures(self.path.len() == old(self.path.len() - 1))]
+    fn step_back(&mut self, tracer: &mut Tracer<'a, R>) -> Result<TracerStatus, TracerException> {
+        if let Head::Cane(head) = self.head {
+            self.head = Draw::new(tracer.layout).undo_cane(head).unwrap();
+        } else {
+            panic!();
+        }
+
+        self.path.pop();
+        Ok(TracerStatus::Running)
     }
 }

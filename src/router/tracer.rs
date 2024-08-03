@@ -4,11 +4,13 @@ use thiserror::Error;
 use crate::{
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, rules::AccessRules},
     layout::Layout,
-    router::{
-        draw::{Draw, DrawException},
-        navmesh::{Navmesh, NavvertexIndex},
-        trace::Trace,
-    },
+    step::{IsFinished, Step, StepBack},
+};
+
+use super::{
+    draw::{Draw, DrawException},
+    navmesh::{Navmesh, NavvertexIndex},
+    trace::{Trace, TraceStepInput},
 };
 
 #[derive(Error, Debug, Clone, Copy)]
@@ -17,6 +19,17 @@ pub enum TracerException {
     CannotDraw(#[from] DrawException),
     #[error("cannot wrap")]
     CannotWrap,
+}
+
+pub enum TracerStatus {
+    Running,
+    Finished,
+}
+
+impl IsFinished for TracerStatus {
+    fn finished(&self) -> bool {
+        matches!(self, TracerStatus::Finished)
+    }
 }
 
 #[derive(Debug)]
@@ -78,7 +91,12 @@ impl<'a, R: AccessRules> Tracer<'a, R> {
         width: f64,
     ) -> Result<(), TracerException> {
         for (i, vertex) in path.iter().enumerate() {
-            if let Err(err) = trace.step(self, navmesh, *vertex, width) {
+            if let Err(err) = trace.step(&mut TraceStepInput {
+                tracer: self,
+                navmesh,
+                to: *vertex,
+                width,
+            }) {
                 self.undo_path(trace, i);
                 return Err(err.into());
             }
@@ -90,7 +108,7 @@ impl<'a, R: AccessRules> Tracer<'a, R> {
     #[debug_ensures(trace.path.len() == old(trace.path.len() - step_count))]
     pub fn undo_path(&mut self, trace: &mut Trace, step_count: usize) {
         for _ in 0..step_count {
-            trace.undo_step(self);
+            let _ = trace.step_back(self);
         }
     }
 }
