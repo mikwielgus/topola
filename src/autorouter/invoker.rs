@@ -9,7 +9,7 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     layout::via::ViaWeight,
     router::{navmesh::Navmesh, trace::Trace},
-    step::{IsFinished, Step},
+    step::{GetMaybeOutcome, Step},
 };
 
 use super::{
@@ -55,9 +55,9 @@ pub enum InvokerStatus {
     Finished,
 }
 
-impl IsFinished for InvokerStatus {
-    fn finished(&self) -> bool {
-        matches!(self, InvokerStatus::Finished)
+impl GetMaybeOutcome<()> for InvokerStatus {
+    fn maybe_outcome(&self) -> Option<()> {
+        matches!(self, InvokerStatus::Finished).then(|| ())
     }
 }
 
@@ -98,7 +98,7 @@ impl Execute {
     }
 }
 
-impl<M: AccessMesadata> Step<Invoker<M>, InvokerStatus, InvokerError> for Execute {
+impl<M: AccessMesadata> Step<Invoker<M>, InvokerStatus, InvokerError, ()> for Execute {
     fn step(&mut self, invoker: &mut Invoker<M>) -> Result<InvokerStatus, InvokerError> {
         match self.step_catch_err(invoker) {
             Ok(InvokerStatus::Running) => Ok(InvokerStatus::Running),
@@ -219,13 +219,13 @@ impl<M: AccessMesadata> Invoker<M> {
     fn dispatch_command(&mut self, command: &Command) -> Result<Execute, InvokerError> {
         match command {
             Command::Autoroute(selection) => Ok::<Execute, InvokerError>(Execute::Autoroute(
-                self.autorouter.autoroute_walk(selection)?,
+                self.autorouter.autoroute(selection)?,
             )),
-            Command::PlaceVia(weight) => Ok::<Execute, InvokerError>(Execute::PlaceVia(
-                self.autorouter.place_via_walk(*weight)?,
-            )),
+            Command::PlaceVia(weight) => {
+                Ok::<Execute, InvokerError>(Execute::PlaceVia(self.autorouter.place_via(*weight)?))
+            }
             Command::RemoveBands(selection) => Ok::<Execute, InvokerError>(Execute::RemoveBands(
-                self.autorouter.remove_bands_walk(selection)?,
+                self.autorouter.remove_bands(selection)?,
             )),
         }
     }

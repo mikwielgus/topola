@@ -31,7 +31,16 @@ impl RemoveBands {
     ) -> Result<(), AutorouterError> {
         if !self.done {
             self.done = true;
-            autorouter.remove_bands(&self.selection)
+
+            for selector in self.selection.selectors() {
+                let band = autorouter
+                    .board
+                    .bandname_band(selector.band.clone())
+                    .unwrap()
+                    .0;
+                autorouter.board.layout_mut().remove_band(band);
+            }
+            Ok(())
         } else {
             Ok(())
         }

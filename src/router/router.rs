@@ -18,7 +18,7 @@ use crate::{
     },
     graph::{GetPetgraphIndex, MakeRef},
     layout::Layout,
-    step::{IsFinished, Step, StepBack},
+    step::{GetMaybeOutcome, Step, StepBack},
 };
 
 use super::{
@@ -43,9 +43,9 @@ pub enum RouterStatus {
     Finished(BandTermsegIndex),
 }
 
-impl IsFinished for RouterStatus {
-    fn finished(&self) -> bool {
-        matches!(self, RouterStatus::Finished(..))
+impl GetMaybeOutcome<()> for RouterStatus {
+    fn maybe_outcome(&self) -> Option<()> {
+        matches!(self, RouterStatus::Finished(..)).then(|| ())
     }
 }
 
@@ -182,26 +182,6 @@ impl<'a, R: AccessRules> Router<'a, R> {
     }
 
     pub fn route(
-        &mut self,
-        from: FixedDotIndex,
-        to: FixedDotIndex,
-        width: f64,
-    ) -> Result<BandTermsegIndex, RouterError> {
-        let mut route = self.route_walk(from, to, width)?;
-
-        loop {
-            let status = match route.step(self) {
-                Ok(status) => status,
-                Err(err) => return Err(err),
-            };
-
-            if let RouterStatus::Finished(band) = status {
-                return Ok(band);
-            }
-        }
-    }
-
-    pub fn route_walk(
         &mut self,
         from: FixedDotIndex,
         to: FixedDotIndex,

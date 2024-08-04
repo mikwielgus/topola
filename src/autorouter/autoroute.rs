@@ -2,7 +2,7 @@ use petgraph::graph::EdgeIndex;
 
 use crate::{
     board::mesadata::AccessMesadata,
-    drawing::graph::PrimitiveIndex,
+    drawing::{band::BandTermsegIndex, graph::PrimitiveIndex},
     geometry::primitive::PrimitiveShape,
     router::{navmesh::Navmesh, route::Route, trace::Trace, Router, RouterStatus},
     step::Step,
@@ -36,14 +36,14 @@ impl Autoroute {
         let this = Self {
             ratlines_iter,
             curr_ratline: Some(curr_ratline),
-            route: Some(router.route_walk(source, target, 100.0)?),
+            route: Some(router.route(source, target, 100.0)?),
         };
 
         Ok(this)
     }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, AutorouterStatus, AutorouterError> for Autoroute {
+impl<M: AccessMesadata> Step<Autorouter<M>, AutorouterStatus, AutorouterError, ()> for Autoroute {
     fn step(
         &mut self,
         autorouter: &mut Autorouter<M>,
@@ -92,7 +92,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, AutorouterStatus, AutorouterError> f
         let mut router = Router::new(autorouter.board.layout_mut());
 
         self.curr_ratline = Some(new_ratline);
-        self.route = Some(router.route_walk(source, target, 100.0)?);
+        self.route = Some(router.route(source, target, 100.0)?);
 
         Ok(AutorouterStatus::Routed(band_termseg))
     }

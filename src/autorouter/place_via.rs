@@ -31,7 +31,8 @@ impl PlaceVia {
     ) -> Result<(), AutorouterError> {
         if !self.done {
             self.done = true;
-            autorouter.place_via(self.weight)
+            autorouter.board.layout_mut().add_via(self.weight)?;
+            Ok(())
         } else {
             Ok(())
         }

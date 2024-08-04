@@ -7,7 +7,7 @@ use crate::{
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
     layout::via::ViaWeight,
     router::{navmesh::NavmeshError, RouterError},
-    step::{IsFinished, Step},
+    step::{GetMaybeOutcome, Step},
     triangulation::GetTrianvertexNodeIndex,
 };
 
@@ -37,9 +37,9 @@ pub enum AutorouterStatus {
     Finished,
 }
 
-impl IsFinished for AutorouterStatus {
-    fn finished(&self) -> bool {
-        matches!(self, AutorouterStatus::Finished)
+impl GetMaybeOutcome<()> for AutorouterStatus {
+    fn maybe_outcome(&self) -> Option<()> {
+        matches!(self, AutorouterStatus::Finished).then(|| ())
     }
 }
 
@@ -54,25 +54,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         Ok(Self { board, ratsnest })
     }
 
-    pub fn autoroute(&mut self, selection: &PinSelection) -> Result<(), AutorouterError> {
-        let mut autoroute = self.autoroute_walk(selection)?;
-
-        loop {
-            let status = match autoroute.step(self) {
-                Ok(status) => status,
-                Err(err) => return Err(err),
-            };
-
-            if let AutorouterStatus::Finished = status {
-                return Ok(());
-            }
-        }
-    }
-
-    pub fn autoroute_walk(
-        &mut self,
-        selection: &PinSelection,
-    ) -> Result<Autoroute, AutorouterError> {
+    pub fn autoroute(&mut self, selection: &PinSelection) -> Result<Autoroute, AutorouterError> {
         Autoroute::new(self, self.selected_ratlines(selection))
     }
 
@@ -89,12 +71,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         }
     }
 
-    pub fn place_via(&mut self, weight: ViaWeight) -> Result<(), AutorouterError> {
-        self.board.layout_mut().add_via(weight)?;
-        Ok(())
-    }
-
-    pub fn place_via_walk(&self, weight: ViaWeight) -> Result<PlaceVia, AutorouterError> {
+    pub fn place_via(&self, weight: ViaWeight) -> Result<PlaceVia, AutorouterError> {
         PlaceVia::new(weight)
     }
 
@@ -102,19 +79,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         todo!();
     }
 
-    pub fn remove_bands(&mut self, selection: &BandSelection) -> Result<(), AutorouterError> {
-        for selector in selection.selectors() {
-            let band = self.board.bandname_band(selector.band.clone()).unwrap().0;
-            self.board.layout_mut().remove_band(band);
-        }
-
-        Ok(())
-    }
-
-    pub fn remove_bands_walk(
-        &self,
-        selection: &BandSelection,
-    ) -> Result<RemoveBands, AutorouterError> {
+    pub fn remove_bands(&self, selection: &BandSelection) -> Result<RemoveBands, AutorouterError> {
         RemoveBands::new(selection)
     }
 

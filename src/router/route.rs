@@ -71,7 +71,7 @@ impl Route {
     }
 }
 
-impl<'a, R: AccessRules> Step<Router<'a, R>, RouterStatus, RouterError> for Route {
+impl<'a, R: AccessRules> Step<Router<'a, R>, RouterStatus, RouterError, ()> for Route {
     fn step(&mut self, router: &mut Router<R>) -> Result<RouterStatus, RouterError> {
         let tracer = Tracer::new(router.layout_mut());
         let target = self.astar.graph.destination();

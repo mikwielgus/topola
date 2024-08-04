@@ -4,7 +4,7 @@ use thiserror::Error;
 use crate::{
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, rules::AccessRules},
     layout::Layout,
-    step::{IsFinished, Step, StepBack},
+    step::{GetMaybeOutcome, Step, StepBack},
 };
 
 use super::{
@@ -26,9 +26,9 @@ pub enum TracerStatus {
     Finished,
 }
 
-impl IsFinished for TracerStatus {
-    fn finished(&self) -> bool {
-        matches!(self, TracerStatus::Finished)
+impl GetMaybeOutcome<()> for TracerStatus {
+    fn maybe_outcome(&self) -> Option<()> {
+        matches!(self, TracerStatus::Finished).then(|| ())
     }
 }
 

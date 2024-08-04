@@ -100,7 +100,7 @@ pub struct TraceStepInput<'a: 'b, 'b, R: AccessRules> {
     pub width: f64,
 }
 
-impl<'a, 'b, R: AccessRules> Step<TraceStepInput<'a, 'b, R>, TracerStatus, TracerException>
+impl<'a, 'b, R: AccessRules> Step<TraceStepInput<'a, 'b, R>, TracerStatus, TracerException, ()>
     for Trace
 {
     #[debug_ensures(ret.is_ok() -> matches!(self.head, Head::Cane(..)))]
@@ -125,7 +125,7 @@ impl<'a, 'b, R: AccessRules> Step<TraceStepInput<'a, 'b, R>, TracerStatus, Trace
     }
 }
 
-impl<'a, R: AccessRules> StepBack<Tracer<'a, R>, TracerStatus, TracerException> for Trace {
+impl<'a, R: AccessRules> StepBack<Tracer<'a, R>, TracerStatus, TracerException, ()> for Trace {
     #[debug_ensures(self.path.len() == old(self.path.len() - 1))]
     fn step_back(&mut self, tracer: &mut Tracer<'a, R>) -> Result<TracerStatus, TracerException> {
         if let Head::Cane(head) = self.head {
