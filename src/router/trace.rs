@@ -93,14 +93,14 @@ impl Trace {
     }
 }
 
-pub struct TraceStepInput<'a: 'b, 'b, R: AccessRules> {
+pub struct TraceStepContext<'a: 'b, 'b, R: AccessRules> {
     pub tracer: &'b mut Tracer<'a, R>,
     pub navmesh: &'b Navmesh,
     pub to: NavvertexIndex,
     pub width: f64,
 }
 
-impl<'a, 'b, R: AccessRules> Step<TraceStepInput<'a, 'b, R>, TracerStatus, TracerException, ()>
+impl<'a, 'b, R: AccessRules> Step<TraceStepContext<'a, 'b, R>, TracerStatus, TracerException, ()>
     for Trace
 {
     #[debug_ensures(ret.is_ok() -> matches!(self.head, Head::Cane(..)))]
@@ -108,7 +108,7 @@ impl<'a, 'b, R: AccessRules> Step<TraceStepInput<'a, 'b, R>, TracerStatus, Trace
     #[debug_ensures(ret.is_err() -> self.path.len() == old(self.path.len()))]
     fn step(
         &mut self,
-        input: &mut TraceStepInput<'a, 'b, R>,
+        input: &mut TraceStepContext<'a, 'b, R>,
     ) -> Result<TracerStatus, TracerException> {
         self.head = self
             .wrap(

@@ -7,7 +7,6 @@ use crate::{
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
     layout::via::ViaWeight,
     router::{navmesh::NavmeshError, RouterError},
-    step::{GetMaybeOutcome, Step},
     triangulation::GetTrianvertexNodeIndex,
 };
 
@@ -37,9 +36,14 @@ pub enum AutorouterStatus {
     Finished,
 }
 
-impl GetMaybeOutcome<()> for AutorouterStatus {
-    fn maybe_outcome(&self) -> Option<()> {
-        matches!(self, AutorouterStatus::Finished).then(|| ())
+impl TryInto<()> for AutorouterStatus {
+    type Error = ();
+    fn try_into(self) -> Result<(), ()> {
+        match self {
+            AutorouterStatus::Running => Err(()),
+            AutorouterStatus::Routed(..) => Err(()),
+            AutorouterStatus::Finished => Ok(()),
+        }
     }
 }
 

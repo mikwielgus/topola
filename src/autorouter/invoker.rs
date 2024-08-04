@@ -9,7 +9,7 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     layout::via::ViaWeight,
     router::{navmesh::Navmesh, trace::Trace},
-    step::{GetMaybeOutcome, Step},
+    step::Step,
 };
 
 use super::{
@@ -55,9 +55,13 @@ pub enum InvokerStatus {
     Finished,
 }
 
-impl GetMaybeOutcome<()> for InvokerStatus {
-    fn maybe_outcome(&self) -> Option<()> {
-        matches!(self, InvokerStatus::Finished).then(|| ())
+impl TryInto<()> for InvokerStatus {
+    type Error = ();
+    fn try_into(self) -> Result<(), ()> {
+        match self {
+            InvokerStatus::Running => Err(()),
+            InvokerStatus::Finished => Ok(()),
+        }
     }
 }
 

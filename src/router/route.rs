@@ -1,5 +1,7 @@
 use crate::{
-    drawing::{dot::FixedDotIndex, graph::PrimitiveIndex, rules::AccessRules},
+    drawing::{
+        band::BandTermsegIndex, dot::FixedDotIndex, graph::PrimitiveIndex, rules::AccessRules,
+    },
     geometry::primitive::PrimitiveShape,
     router::{
         astar::{Astar, AstarStatus},
@@ -71,7 +73,9 @@ impl Route {
     }
 }
 
-impl<'a, R: AccessRules> Step<Router<'a, R>, RouterStatus, RouterError, ()> for Route {
+impl<'a, R: AccessRules> Step<Router<'a, R>, RouterStatus, RouterError, BandTermsegIndex>
+    for Route
+{
     fn step(&mut self, router: &mut Router<R>) -> Result<RouterStatus, RouterError> {
         let tracer = Tracer::new(router.layout_mut());
         let target = self.astar.graph.destination();

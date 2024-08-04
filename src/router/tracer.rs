@@ -4,13 +4,13 @@ use thiserror::Error;
 use crate::{
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, rules::AccessRules},
     layout::Layout,
-    step::{GetMaybeOutcome, Step, StepBack},
+    step::{Step, StepBack},
 };
 
 use super::{
     draw::{Draw, DrawException},
     navmesh::{Navmesh, NavvertexIndex},
-    trace::{Trace, TraceStepInput},
+    trace::{Trace, TraceStepContext},
 };
 
 #[derive(Error, Debug, Clone, Copy)]
@@ -26,9 +26,13 @@ pub enum TracerStatus {
     Finished,
 }
 
-impl GetMaybeOutcome<()> for TracerStatus {
-    fn maybe_outcome(&self) -> Option<()> {
-        matches!(self, TracerStatus::Finished).then(|| ())
+impl TryInto<()> for TracerStatus {
+    type Error = ();
+    fn try_into(self) -> Result<(), ()> {
+        match self {
+            TracerStatus::Running => Err(()),
+            TracerStatus::Finished => Ok(()),
+        }
     }
 }
 
@@ -91,7 +95,7 @@ impl<'a, R: AccessRules> Tracer<'a, R> {
         width: f64,
     ) -> Result<(), TracerException> {
         for (i, vertex) in path.iter().enumerate() {
-            if let Err(err) = trace.step(&mut TraceStepInput {
+            if let Err(err) = trace.step(&mut TraceStepContext {
                 tracer: self,
                 navmesh,
                 to: *vertex,

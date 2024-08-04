@@ -15,6 +15,8 @@ use thiserror::Error;
 
 use std::cmp::Ordering;
 
+use crate::step::Step;
+
 #[derive(Copy, Clone, Debug)]
 pub struct MinScored<K, T>(pub K, pub T);
 
@@ -156,6 +158,24 @@ where
     Finished(K, Vec<G::NodeId>, R),
 }
 
+impl<G, K, R> TryInto<(K, Vec<G::NodeId>, R)> for AstarStatus<G, K, R>
+where
+    G: GraphBase,
+    G::NodeId: Eq + Hash,
+    for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
+    K: Measure + Copy,
+{
+    type Error = ();
+    fn try_into(self) -> Result<(K, Vec<G::NodeId>, R), ()> {
+        match self {
+            AstarStatus::Probing => Err(()),
+            AstarStatus::Probed => Err(()),
+            AstarStatus::Visited => Err(()),
+            AstarStatus::Finished(cost, path, result) => Ok((cost, path, result)),
+        }
+    }
+}
+
 impl<G, K> Astar<G, K>
 where
     G: GraphBase,
@@ -183,11 +203,17 @@ where
         ));
         this
     }
+}
 
-    pub fn step<R>(
-        &mut self,
-        strategy: &mut impl AstarStrategy<G, K, R>,
-    ) -> Result<AstarStatus<G, K, R>, AstarError> {
+impl<G, K, R, S: AstarStrategy<G, K, R>>
+    Step<S, AstarStatus<G, K, R>, AstarError, (K, Vec<G::NodeId>, R)> for Astar<G, K>
+where
+    G: GraphBase,
+    G::NodeId: Eq + Hash,
+    for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
+    K: Measure + Copy,
+{
+    fn step(&mut self, strategy: &mut S) -> Result<AstarStatus<G, K, R>, AstarError> {
         if let Some(curr_node) = self.maybe_curr_node {
             if self.is_probing {
                 strategy.remove_probe(&self.graph);
@@ -261,30 +287,5 @@ where
         self.edge_ids = self.graph.edges(node).map(|edge| edge.id()).collect();
 
         Ok(AstarStatus::Visited)
-    }
-}
-
-pub fn astar<G, K, R>(
-    graph: G,
-    start: G::NodeId,
-    strategy: &mut impl AstarStrategy<G, K, R>,
-) -> Result<(K, Vec<G::NodeId>, R), AstarError>
-where
-    G: GraphBase,
-    G::NodeId: Eq + Hash,
-    for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
-    K: Measure + Copy,
-{
-    let mut astar = Astar::new(graph, start, strategy);
-
-    loop {
-        let status = match astar.step(strategy) {
-            Ok(status) => status,
-            Err(err) => return Err(err),
-        };
-
-        if let AstarStatus::Finished(cost, path, band) = status {
-            return Ok((cost, path, band));
-        }
     }
 }

@@ -1,3 +1,5 @@
+use std::convert::Infallible;
+
 use geo::EuclideanDistance;
 use petgraph::{data::DataMap, visit::EdgeRef};
 use thiserror::Error;
@@ -18,7 +20,7 @@ use crate::{
     },
     graph::{GetPetgraphIndex, MakeRef},
     layout::Layout,
-    step::{GetMaybeOutcome, Step, StepBack},
+    step::{Step, StepBack},
 };
 
 use super::{
@@ -26,7 +28,7 @@ use super::{
     draw::DrawException,
     navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
     route::Route,
-    trace::{Trace, TraceStepInput},
+    trace::{Trace, TraceStepContext},
     tracer::{Tracer, TracerException},
 };
 
@@ -43,9 +45,13 @@ pub enum RouterStatus {
     Finished(BandTermsegIndex),
 }
 
-impl GetMaybeOutcome<()> for RouterStatus {
-    fn maybe_outcome(&self) -> Option<()> {
-        matches!(self, RouterStatus::Finished(..)).then(|| ())
+impl TryInto<BandTermsegIndex> for RouterStatus {
+    type Error = ();
+    fn try_into(self) -> Result<BandTermsegIndex, ()> {
+        match self {
+            RouterStatus::Running => Err(()),
+            RouterStatus::Finished(band_termseg) => Ok(band_termseg),
+        }
     }
 }
 
@@ -114,7 +120,7 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
         let prev_bihead_length = self.bihead_length();
 
         let width = self.trace.width;
-        let result = self.trace.step(&mut TraceStepInput {
+        let result = self.trace.step(&mut TraceStepContext {
             tracer: &mut self.tracer,
             navmesh,
             to: edge.target(),
