@@ -80,6 +80,11 @@ impl Top {
             egui::Modifiers::NONE,
             egui::Key::Delete,
         ));
+        let mut compare_detours = Trigger::new(Action::new(
+            "Compare Detours",
+            egui::Modifiers::NONE,
+            egui::Key::Minus,
+        ));
         let mut undo = Trigger::new(Action::new("Undo", egui::Modifiers::CTRL, egui::Key::Z));
         let mut redo = Trigger::new(Action::new("Redo", egui::Modifiers::CTRL, egui::Key::Y));
 
@@ -123,6 +128,9 @@ impl Top {
                         ui.checkbox(&mut self.show_navmesh, "Show Navmesh");
                         ui.checkbox(&mut self.show_bboxes, "Show BBoxes");
                         ui.checkbox(&mut self.show_origin_destination, "Show Origin–Destination");
+
+                        ui.separator();
+                        compare_detours.button(ctx, ui);
                     });
 
                     ui.separator();
@@ -240,9 +248,23 @@ impl Top {
                         invoker.undo();
                     }
                 } else if redo.consume_key_triggered(ctx, ui) {
-                    if let Some(ref mut invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut()
-                    {
+                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
                         invoker.redo();
+                    }
+                } else if compare_detours.consume_key_triggered(ctx, ui) {
+                    if maybe_execute.as_mut().map_or(true, |execute| {
+                        matches!(execute.maybe_status(), Some(InvokerStatus::Finished))
+                    }) {
+                        if let (Some(invoker), Some(ref mut overlay)) = (
+                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
+                            maybe_overlay,
+                        ) {
+                            let selection = overlay.selection().clone();
+                            overlay.clear_selection();
+                            maybe_execute.insert(ExecuteWithStatus::new(invoker.execute_stepper(
+                                Command::CompareDetours(selection.pin_selection),
+                            )?));
+                        }
                     }
                 }
 

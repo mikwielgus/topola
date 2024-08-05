@@ -15,22 +15,22 @@ use super::{
     Autorouter, AutorouterError,
 };
 
-pub enum CompareStatus {
+pub enum CompareDetoursStatus {
     Running,
     Finished(f64),
 }
 
-impl TryInto<f64> for CompareStatus {
+impl TryInto<f64> for CompareDetoursStatus {
     type Error = ();
     fn try_into(self) -> Result<f64, ()> {
         match self {
-            CompareStatus::Running => Err(()),
-            CompareStatus::Finished(delta) => Ok(delta),
+            CompareDetoursStatus::Running => Err(()),
+            CompareDetoursStatus::Finished(delta) => Ok(delta),
         }
     }
 }
 
-pub struct Compare {
+pub struct CompareDetours {
     autoroute: Autoroute,
     next_autoroute: Option<Autoroute>,
     ratline1: EdgeIndex<usize>,
@@ -39,7 +39,7 @@ pub struct Compare {
     total_length2: Option<f64>,
 }
 
-impl Compare {
+impl CompareDetours {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratline1: EdgeIndex<usize>,
@@ -58,10 +58,15 @@ impl Compare {
 
 // XXX: Do we really need this to be a stepper? We don't use at the moment, as sorting functions
 // aren't steppable either. It may be useful for debugging later on tho.
-impl<M: AccessMesadata> Step<Autorouter<M>, CompareStatus, AutorouterError, f64> for Compare {
-    fn step(&mut self, autorouter: &mut Autorouter<M>) -> Result<CompareStatus, AutorouterError> {
+impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterError, f64>
+    for CompareDetours
+{
+    fn step(
+        &mut self,
+        autorouter: &mut Autorouter<M>,
+    ) -> Result<CompareDetoursStatus, AutorouterError> {
         match self.autoroute.step(autorouter)? {
-            AutorouteStatus::Running => Ok(CompareStatus::Running),
+            AutorouteStatus::Running => Ok(CompareDetoursStatus::Running),
             AutorouteStatus::Routed(band_termseg) => {
                 let length = band_termseg
                     .ref_(autorouter.board.layout().drawing())
@@ -75,18 +80,18 @@ impl<M: AccessMesadata> Step<Autorouter<M>, CompareStatus, AutorouterError, f64>
                     panic!();
                 }
 
-                Ok(CompareStatus::Running)
+                Ok(CompareDetoursStatus::Running)
             }
             AutorouteStatus::Finished => {
                 if let Some(next_autoroute) = self.next_autoroute.take() {
                     autorouter.undo_autoroute_ratlines(vec![self.ratline1, self.ratline2]);
                     self.autoroute = next_autoroute;
 
-                    Ok(CompareStatus::Running)
+                    Ok(CompareDetoursStatus::Running)
                 } else {
                     autorouter.undo_autoroute_ratlines(vec![self.ratline2, self.ratline1]);
 
-                    Ok(CompareStatus::Finished(
+                    Ok(CompareDetoursStatus::Finished(
                         self.total_length1.unwrap() - self.total_length2.unwrap(),
                     ))
                 }
@@ -95,25 +100,25 @@ impl<M: AccessMesadata> Step<Autorouter<M>, CompareStatus, AutorouterError, f64>
     }
 }
 
-impl GetMaybeNavmesh for Compare {
+impl GetMaybeNavmesh for CompareDetours {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         self.autoroute.maybe_navmesh()
     }
 }
 
-impl GetMaybeTrace for Compare {
+impl GetMaybeTrace for CompareDetours {
     fn maybe_trace(&self) -> Option<&Trace> {
         self.autoroute.maybe_trace()
     }
 }
 
-impl GetGhosts for Compare {
+impl GetGhosts for CompareDetours {
     fn ghosts(&self) -> &[PrimitiveShape] {
         self.autoroute.ghosts()
     }
 }
 
-impl GetObstacles for Compare {
+impl GetObstacles for CompareDetours {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.autoroute.obstacles()
     }

@@ -12,7 +12,7 @@ use crate::{
 
 use super::{
     autoroute::Autoroute,
-    compare::Compare,
+    compare_detours::CompareDetours,
     place_via::PlaceVia,
     ratsnest::{Ratsnest, RatvertexIndex},
     remove_bands::RemoveBands,
@@ -88,21 +88,21 @@ impl<M: AccessMesadata> Autorouter<M> {
         todo!();
     }
 
-    pub fn compare(&mut self, selection: &PinSelection) -> Result<Compare, AutorouterError> {
+    pub fn compare(&mut self, selection: &PinSelection) -> Result<CompareDetours, AutorouterError> {
         self.compare_ratlines(self.selected_ratlines(selection))
     }
 
     fn compare_ratlines(
         &mut self,
         ratlines: Vec<EdgeIndex<usize>>,
-    ) -> Result<Compare, AutorouterError> {
+    ) -> Result<CompareDetours, AutorouterError> {
         let ratline1 = *ratlines
             .get(0)
             .ok_or(AutorouterError::NeedExactlyTwoRatlines)?;
         let ratline2 = *ratlines
             .get(1)
             .ok_or(AutorouterError::NeedExactlyTwoRatlines)?;
-        Compare::new(self, ratline1, ratline2)
+        CompareDetours::new(self, ratline1, ratline2)
     }
 
     pub fn ratline_endpoints(

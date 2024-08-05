@@ -14,7 +14,7 @@ use crate::{
 
 use super::{
     autoroute::{Autoroute, AutorouteStatus},
-    compare::{Compare, CompareStatus},
+    compare_detours::{CompareDetours, CompareDetoursStatus},
     history::{History, HistoryError},
     place_via::PlaceVia,
     remove_bands::RemoveBands,
@@ -71,7 +71,7 @@ pub enum Command {
     Autoroute(PinSelection),
     PlaceVia(ViaWeight),
     RemoveBands(BandSelection),
-    Compare(PinSelection),
+    CompareDetours(PinSelection),
 }
 
 #[enum_dispatch(GetMaybeNavmesh, GetMaybeTrace, GetGhosts, GetObstacles)]
@@ -79,7 +79,7 @@ pub enum Execute {
     Autoroute(Autoroute),
     PlaceVia(PlaceVia),
     RemoveBands(RemoveBands),
-    Compare(Compare),
+    CompareDetours(CompareDetours),
 }
 
 impl Execute {
@@ -101,9 +101,9 @@ impl Execute {
                 remove_bands.doit(&mut invoker.autorouter)?;
                 Ok(InvokerStatus::Finished)
             }
-            Execute::Compare(compare) => match compare.step(&mut invoker.autorouter)? {
-                CompareStatus::Running => Ok(InvokerStatus::Running),
-                CompareStatus::Finished(delta) => Ok(InvokerStatus::Finished),
+            Execute::CompareDetours(compare) => match compare.step(&mut invoker.autorouter)? {
+                CompareDetoursStatus::Running => Ok(InvokerStatus::Running),
+                CompareDetoursStatus::Finished(delta) => Ok(InvokerStatus::Finished),
             },
         }
     }
@@ -238,9 +238,9 @@ impl<M: AccessMesadata> Invoker<M> {
             Command::RemoveBands(selection) => Ok::<Execute, InvokerError>(Execute::RemoveBands(
                 self.autorouter.remove_bands(selection)?,
             )),
-            Command::Compare(selection) => {
-                Ok::<Execute, InvokerError>(Execute::Compare(self.autorouter.compare(selection)?))
-            }
+            Command::CompareDetours(selection) => Ok::<Execute, InvokerError>(
+                Execute::CompareDetours(self.autorouter.compare(selection)?),
+            ),
         }
     }
 
@@ -252,7 +252,7 @@ impl<M: AccessMesadata> Invoker<M> {
             Command::Autoroute(ref selection) => self.autorouter.undo_autoroute(selection),
             Command::PlaceVia(weight) => self.autorouter.undo_place_via(*weight),
             Command::RemoveBands(ref selection) => self.autorouter.undo_remove_bands(selection),
-            Command::Compare(..) => (),
+            Command::CompareDetours(..) => (),
         }
 
         Ok::<(), InvokerError>(self.history.undo()?)
