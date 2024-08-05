@@ -13,12 +13,13 @@ use crate::{
 };
 
 use super::{
-    autoroute::Autoroute,
+    autoroute::{Autoroute, AutorouteStatus},
+    compare::{Compare, CompareStatus},
     history::{History, HistoryError},
     place_via::PlaceVia,
     remove_bands::RemoveBands,
     selection::{BandSelection, PinSelection},
-    Autorouter, AutorouterError, AutorouterStatus,
+    Autorouter, AutorouterError,
 };
 
 #[enum_dispatch]
@@ -70,6 +71,7 @@ pub enum Command {
     Autoroute(PinSelection),
     PlaceVia(ViaWeight),
     RemoveBands(BandSelection),
+    Compare(PinSelection),
 }
 
 #[enum_dispatch(GetMaybeNavmesh, GetMaybeTrace, GetGhosts, GetObstacles)]
@@ -77,6 +79,7 @@ pub enum Execute {
     Autoroute(Autoroute),
     PlaceVia(PlaceVia),
     RemoveBands(RemoveBands),
+    Compare(Compare),
 }
 
 impl Execute {
@@ -86,9 +89,9 @@ impl Execute {
     ) -> Result<InvokerStatus, InvokerError> {
         match self {
             Execute::Autoroute(autoroute) => match autoroute.step(&mut invoker.autorouter)? {
-                AutorouterStatus::Running => Ok(InvokerStatus::Running),
-                AutorouterStatus::Routed(..) => Ok(InvokerStatus::Running),
-                AutorouterStatus::Finished => Ok(InvokerStatus::Finished),
+                AutorouteStatus::Running => Ok(InvokerStatus::Running),
+                AutorouteStatus::Routed(..) => Ok(InvokerStatus::Running),
+                AutorouteStatus::Finished => Ok(InvokerStatus::Finished),
             },
             Execute::PlaceVia(place_via) => {
                 place_via.doit(&mut invoker.autorouter)?;
@@ -98,6 +101,10 @@ impl Execute {
                 remove_bands.doit(&mut invoker.autorouter)?;
                 Ok(InvokerStatus::Finished)
             }
+            Execute::Compare(compare) => match compare.step(&mut invoker.autorouter)? {
+                CompareStatus::Running => Ok(InvokerStatus::Running),
+                CompareStatus::Finished(delta) => Ok(InvokerStatus::Finished),
+            },
         }
     }
 }
@@ -197,7 +204,7 @@ impl<M: AccessMesadata> Invoker<M> {
 
     //#[debug_requires(self.ongoing_command.is_none())]
     pub fn execute(&mut self, command: Command) -> Result<(), InvokerError> {
-        let mut execute = self.execute_walk(command)?;
+        let mut execute = self.execute_stepper(command)?;
 
         loop {
             let status = match execute.step(self) {
@@ -213,7 +220,7 @@ impl<M: AccessMesadata> Invoker<M> {
     }
 
     #[debug_requires(self.ongoing_command.is_none())]
-    pub fn execute_walk(&mut self, command: Command) -> Result<Execute, InvokerError> {
+    pub fn execute_stepper(&mut self, command: Command) -> Result<Execute, InvokerError> {
         let execute = self.dispatch_command(&command);
         self.ongoing_command = Some(command);
         execute
@@ -231,6 +238,9 @@ impl<M: AccessMesadata> Invoker<M> {
             Command::RemoveBands(selection) => Ok::<Execute, InvokerError>(Execute::RemoveBands(
                 self.autorouter.remove_bands(selection)?,
             )),
+            Command::Compare(selection) => {
+                Ok::<Execute, InvokerError>(Execute::Compare(self.autorouter.compare(selection)?))
+            }
         }
     }
 
@@ -242,6 +252,7 @@ impl<M: AccessMesadata> Invoker<M> {
             Command::Autoroute(ref selection) => self.autorouter.undo_autoroute(selection),
             Command::PlaceVia(weight) => self.autorouter.undo_place_via(*weight),
             Command::RemoveBands(ref selection) => self.autorouter.undo_remove_bands(selection),
+            Command::Compare(..) => (),
         }
 
         Ok::<(), InvokerError>(self.history.undo()?)
@@ -250,7 +261,7 @@ impl<M: AccessMesadata> Invoker<M> {
     //#[debug_requires(self.ongoing.is_none())]
     pub fn redo(&mut self) -> Result<(), InvokerError> {
         let command = self.history.last_undone()?.clone();
-        let mut execute = self.execute_walk(command)?;
+        let mut execute = self.execute_stepper(command)?;
 
         loop {
             let status = match execute.step(self) {

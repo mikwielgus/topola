@@ -213,10 +213,10 @@ impl Top {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_execute.insert(ExecuteWithStatus::new(
-                                invoker
-                                    .execute_walk(Command::Autoroute(selection.pin_selection))?,
-                            ));
+                            maybe_execute
+                                .insert(ExecuteWithStatus::new(invoker.execute_stepper(
+                                    Command::Autoroute(selection.pin_selection),
+                                )?));
                         }
                     }
                 } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
@@ -230,10 +230,9 @@ impl Top {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_execute
-                                .insert(ExecuteWithStatus::new(invoker.execute_walk(
-                                    Command::RemoveBands(selection.band_selection),
-                                )?));
+                            maybe_execute.insert(ExecuteWithStatus::new(invoker.execute_stepper(
+                                Command::RemoveBands(selection.band_selection),
+                            )?));
                         }
                     }
                 } else if undo.consume_key_triggered(ctx, ui) {

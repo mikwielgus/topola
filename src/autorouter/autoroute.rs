@@ -10,8 +10,25 @@ use crate::{
 
 use super::{
     invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles},
-    Autorouter, AutorouterError, AutorouterStatus,
+    Autorouter, AutorouterError,
 };
+
+pub enum AutorouteStatus {
+    Running,
+    Routed(BandTermsegIndex),
+    Finished,
+}
+
+impl TryInto<()> for AutorouteStatus {
+    type Error = ();
+    fn try_into(self) -> Result<(), ()> {
+        match self {
+            AutorouteStatus::Running => Err(()),
+            AutorouteStatus::Routed(..) => Err(()),
+            AutorouteStatus::Finished => Ok(()),
+        }
+    }
+}
 
 pub struct Autoroute {
     ratlines_iter: Box<dyn Iterator<Item = EdgeIndex<usize>>>,
@@ -43,18 +60,15 @@ impl Autoroute {
     }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, AutorouterStatus, AutorouterError, ()> for Autoroute {
-    fn step(
-        &mut self,
-        autorouter: &mut Autorouter<M>,
-    ) -> Result<AutorouterStatus, AutorouterError> {
+impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, AutorouterError, ()> for Autoroute {
+    fn step(&mut self, autorouter: &mut Autorouter<M>) -> Result<AutorouteStatus, AutorouterError> {
         let Some(ref mut route) = self.route else {
             // Shouldn't happen.
-            return Ok(AutorouterStatus::Finished);
+            return Ok(AutorouteStatus::Finished);
         };
 
         let Some(curr_ratline) = self.curr_ratline else {
-            return Ok(AutorouterStatus::Finished);
+            return Ok(AutorouteStatus::Finished);
         };
 
         let (source, target) = autorouter.ratline_endpoints(curr_ratline);
@@ -63,7 +77,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, AutorouterStatus, AutorouterError, (
             let mut router = Router::new(autorouter.board.layout_mut());
 
             let RouterStatus::Finished(band_termseg) = route.step(&mut router)? else {
-                return Ok(AutorouterStatus::Running);
+                return Ok(AutorouteStatus::Running);
             };
             band_termseg
         };
@@ -85,7 +99,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, AutorouterStatus, AutorouterError, (
 
         let Some(new_ratline) = self.ratlines_iter.next() else {
             self.curr_ratline = None;
-            return Ok(AutorouterStatus::Finished);
+            return Ok(AutorouteStatus::Finished);
         };
 
         let (source, target) = autorouter.ratline_endpoints(new_ratline);
@@ -94,7 +108,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, AutorouterStatus, AutorouterError, (
         self.curr_ratline = Some(new_ratline);
         self.route = Some(router.route(source, target, 100.0)?);
 
-        Ok(AutorouterStatus::Routed(band_termseg))
+        Ok(AutorouteStatus::Routed(band_termseg))
     }
 }
 

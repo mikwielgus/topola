@@ -4,7 +4,7 @@ use thiserror::Error;
 
 use crate::{
     board::{mesadata::AccessMesadata, Board},
-    drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
+    drawing::{dot::FixedDotIndex, Infringement},
     layout::via::ViaWeight,
     router::{navmesh::NavmeshError, RouterError},
     triangulation::GetTrianvertexNodeIndex,
@@ -12,6 +12,7 @@ use crate::{
 
 use super::{
     autoroute::Autoroute,
+    compare::Compare,
     place_via::PlaceVia,
     ratsnest::{Ratsnest, RatvertexIndex},
     remove_bands::RemoveBands,
@@ -28,23 +29,8 @@ pub enum AutorouterError {
     Router(#[from] RouterError),
     #[error("could not place via")]
     CouldNotPlaceVia(#[from] Infringement),
-}
-
-pub enum AutorouterStatus {
-    Running,
-    Routed(BandTermsegIndex),
-    Finished,
-}
-
-impl TryInto<()> for AutorouterStatus {
-    type Error = ();
-    fn try_into(self) -> Result<(), ()> {
-        match self {
-            AutorouterStatus::Running => Err(()),
-            AutorouterStatus::Routed(..) => Err(()),
-            AutorouterStatus::Finished => Ok(()),
-        }
-    }
+    #[error("need exactly two ratlines")]
+    NeedExactlyTwoRatlines,
 }
 
 pub struct Autorouter<M: AccessMesadata> {
@@ -59,11 +45,22 @@ impl<M: AccessMesadata> Autorouter<M> {
     }
 
     pub fn autoroute(&mut self, selection: &PinSelection) -> Result<Autoroute, AutorouterError> {
-        Autoroute::new(self, self.selected_ratlines(selection))
+        self.autoroute_ratlines(self.selected_ratlines(selection))
+    }
+
+    pub(super) fn autoroute_ratlines(
+        &mut self,
+        ratlines: Vec<EdgeIndex<usize>>,
+    ) -> Result<Autoroute, AutorouterError> {
+        Autoroute::new(self, ratlines)
     }
 
     pub fn undo_autoroute(&mut self, selection: &PinSelection) {
-        for ratline in self.selected_ratlines(selection).iter() {
+        self.undo_autoroute_ratlines(self.selected_ratlines(selection))
+    }
+
+    pub(super) fn undo_autoroute_ratlines(&mut self, ratlines: Vec<EdgeIndex<usize>>) {
+        for ratline in ratlines.iter() {
             let band = self
                 .ratsnest
                 .graph()
@@ -89,6 +86,23 @@ impl<M: AccessMesadata> Autorouter<M> {
 
     pub fn undo_remove_bands(&mut self, _selection: &BandSelection) {
         todo!();
+    }
+
+    pub fn compare(&mut self, selection: &PinSelection) -> Result<Compare, AutorouterError> {
+        self.compare_ratlines(self.selected_ratlines(selection))
+    }
+
+    fn compare_ratlines(
+        &mut self,
+        ratlines: Vec<EdgeIndex<usize>>,
+    ) -> Result<Compare, AutorouterError> {
+        let ratline1 = *ratlines
+            .get(0)
+            .ok_or(AutorouterError::NeedExactlyTwoRatlines)?;
+        let ratline2 = *ratlines
+            .get(1)
+            .ok_or(AutorouterError::NeedExactlyTwoRatlines)?;
+        Compare::new(self, ratline1, ratline2)
     }
 
     pub fn ratline_endpoints(
