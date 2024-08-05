@@ -37,6 +37,7 @@ pub struct CompareDetours {
     ratline2: EdgeIndex<usize>,
     total_length1: Option<f64>,
     total_length2: Option<f64>,
+    done: bool,
 }
 
 impl CompareDetours {
@@ -52,6 +53,7 @@ impl CompareDetours {
             ratline2,
             total_length1: None,
             total_length2: None,
+            done: false,
         })
     }
 }
@@ -65,6 +67,12 @@ impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterErro
         &mut self,
         autorouter: &mut Autorouter<M>,
     ) -> Result<CompareDetoursStatus, AutorouterError> {
+        if self.done {
+            return Ok(CompareDetoursStatus::Finished(
+                self.total_length1.unwrap() - self.total_length2.unwrap(),
+            ));
+        }
+
         match self.autoroute.step(autorouter)? {
             AutorouteStatus::Running => Ok(CompareDetoursStatus::Running),
             AutorouteStatus::Routed(band_termseg) => {
@@ -89,6 +97,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterErro
 
                     Ok(CompareDetoursStatus::Running)
                 } else {
+                    self.done = true;
                     autorouter.undo_autoroute_ratlines(vec![self.ratline2, self.ratline1]);
 
                     Ok(CompareDetoursStatus::Finished(
