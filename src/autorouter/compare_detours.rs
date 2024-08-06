@@ -17,15 +17,17 @@ use super::{
 
 pub enum CompareDetoursStatus {
     Running,
-    Finished(f64),
+    Finished(f64, f64),
 }
 
-impl TryInto<f64> for CompareDetoursStatus {
+impl TryInto<(f64, f64)> for CompareDetoursStatus {
     type Error = ();
-    fn try_into(self) -> Result<f64, ()> {
+    fn try_into(self) -> Result<(f64, f64), ()> {
         match self {
             CompareDetoursStatus::Running => Err(()),
-            CompareDetoursStatus::Finished(delta) => Ok(delta),
+            CompareDetoursStatus::Finished(total_length1, total_length2) => {
+                Ok((total_length1, total_length2))
+            }
         }
     }
 }
@@ -60,7 +62,7 @@ impl CompareDetours {
 
 // XXX: Do we really need this to be a stepper? We don't use at the moment, as sorting functions
 // aren't steppable either. It may be useful for debugging later on tho.
-impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterError, f64>
+impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterError, (f64, f64)>
     for CompareDetours
 {
     fn step(
@@ -69,7 +71,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterErro
     ) -> Result<CompareDetoursStatus, AutorouterError> {
         if self.done {
             return Ok(CompareDetoursStatus::Finished(
-                self.total_length1.unwrap() - self.total_length2.unwrap(),
+                self.total_length1.unwrap(),
+                self.total_length2.unwrap(),
             ));
         }
 
@@ -101,7 +104,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterErro
                     autorouter.undo_autoroute_ratlines(vec![self.ratline2, self.ratline1]);
 
                     Ok(CompareDetoursStatus::Finished(
-                        self.total_length1.unwrap() - self.total_length2.unwrap(),
+                        self.total_length1.unwrap(),
+                        self.total_length2.unwrap(),
                     ))
                 }
             }

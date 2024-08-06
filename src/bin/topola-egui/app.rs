@@ -188,7 +188,8 @@ impl eframe::App for App {
             &self.maybe_layers,
         );
 
-        self.bottom.update(ctx, &self.viewport, viewport_rect);
+        self.bottom
+            .update(ctx, &self.viewport, viewport_rect, &self.maybe_execute);
 
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);

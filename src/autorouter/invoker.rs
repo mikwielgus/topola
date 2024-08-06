@@ -50,10 +50,10 @@ pub enum InvokerError {
     Autorouter(#[from] AutorouterError),
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub enum InvokerStatus {
     Running,
-    Finished,
+    Finished(String),
 }
 
 impl TryInto<()> for InvokerStatus {
@@ -61,7 +61,7 @@ impl TryInto<()> for InvokerStatus {
     fn try_into(self) -> Result<(), ()> {
         match self {
             InvokerStatus::Running => Err(()),
-            InvokerStatus::Finished => Ok(()),
+            InvokerStatus::Finished(..) => Ok(()),
         }
     }
 }
@@ -91,19 +91,30 @@ impl Execute {
             Execute::Autoroute(autoroute) => match autoroute.step(&mut invoker.autorouter)? {
                 AutorouteStatus::Running => Ok(InvokerStatus::Running),
                 AutorouteStatus::Routed(..) => Ok(InvokerStatus::Running),
-                AutorouteStatus::Finished => Ok(InvokerStatus::Finished),
+                AutorouteStatus::Finished => Ok(InvokerStatus::Finished(String::from(
+                    "finished autorouting",
+                ))),
             },
             Execute::PlaceVia(place_via) => {
                 place_via.doit(&mut invoker.autorouter)?;
-                Ok(InvokerStatus::Finished)
+                Ok(InvokerStatus::Finished(String::from(
+                    "finished placing via",
+                )))
             }
             Execute::RemoveBands(remove_bands) => {
                 remove_bands.doit(&mut invoker.autorouter)?;
-                Ok(InvokerStatus::Finished)
+                Ok(InvokerStatus::Finished(String::from(
+                    "finished removing bands",
+                )))
             }
             Execute::CompareDetours(compare) => match compare.step(&mut invoker.autorouter)? {
                 CompareDetoursStatus::Running => Ok(InvokerStatus::Running),
-                CompareDetoursStatus::Finished(delta) => Ok(InvokerStatus::Finished),
+                CompareDetoursStatus::Finished(total_length1, total_length2) => {
+                    Ok(InvokerStatus::Finished(String::from(format!(
+                        "total detour lengths are {} and {}",
+                        total_length1, total_length2
+                    ))))
+                }
             },
         }
     }
@@ -113,12 +124,12 @@ impl<M: AccessMesadata> Step<Invoker<M>, InvokerStatus, InvokerError, ()> for Ex
     fn step(&mut self, invoker: &mut Invoker<M>) -> Result<InvokerStatus, InvokerError> {
         match self.step_catch_err(invoker) {
             Ok(InvokerStatus::Running) => Ok(InvokerStatus::Running),
-            Ok(InvokerStatus::Finished) => {
+            Ok(InvokerStatus::Finished(msg)) => {
                 if let Some(command) = invoker.ongoing_command.take() {
                     invoker.history.do_(command);
                 }
 
-                Ok(InvokerStatus::Finished)
+                Ok(InvokerStatus::Finished(msg))
             }
             Err(err) => {
                 invoker.ongoing_command = None;
@@ -146,12 +157,12 @@ impl ExecuteWithStatus {
         invoker: &mut Invoker<M>,
     ) -> Result<InvokerStatus, InvokerError> {
         let status = self.execute.step(invoker)?;
-        self.maybe_status = Some(status);
+        self.maybe_status = Some(status.clone());
         Ok(status)
     }
 
     pub fn maybe_status(&self) -> Option<InvokerStatus> {
-        self.maybe_status
+        self.maybe_status.clone()
     }
 }
 
@@ -212,7 +223,7 @@ impl<M: AccessMesadata> Invoker<M> {
                 Err(err) => return Err(err),
             };
 
-            if let InvokerStatus::Finished = status {
+            if let InvokerStatus::Finished(..) = status {
                 self.history.set_undone(std::iter::empty());
                 return Ok(());
             }
@@ -269,7 +280,7 @@ impl<M: AccessMesadata> Invoker<M> {
                 Err(err) => return Err(err),
             };
 
-            if let InvokerStatus::Finished = status {
+            if let InvokerStatus::Finished(..) = status {
                 return Ok(self.history.redo()?);
             }
         }
