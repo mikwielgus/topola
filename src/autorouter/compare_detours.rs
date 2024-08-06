@@ -37,8 +37,8 @@ pub struct CompareDetours {
     next_autoroute: Option<Autoroute>,
     ratline1: EdgeIndex<usize>,
     ratline2: EdgeIndex<usize>,
-    total_length1: Option<f64>,
-    total_length2: Option<f64>,
+    total_length1: f64,
+    total_length2: f64,
     done: bool,
 }
 
@@ -53,8 +53,8 @@ impl CompareDetours {
             next_autoroute: Some(autorouter.autoroute_ratlines(vec![ratline2, ratline1])?),
             ratline1,
             ratline2,
-            total_length1: None,
-            total_length2: None,
+            total_length1: 0.0,
+            total_length2: 0.0,
             done: false,
         })
     }
@@ -71,8 +71,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterErro
     ) -> Result<CompareDetoursStatus, AutorouterError> {
         if self.done {
             return Ok(CompareDetoursStatus::Finished(
-                self.total_length1.unwrap(),
-                self.total_length2.unwrap(),
+                self.total_length1,
+                self.total_length2,
             ));
         }
 
@@ -83,12 +83,10 @@ impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterErro
                     .ref_(autorouter.board.layout().drawing())
                     .length();
 
-                if self.total_length1.is_none() {
-                    self.total_length1 = Some(length);
-                } else if self.total_length2.is_none() {
-                    self.total_length2 = Some(length);
+                if self.next_autoroute.is_some() {
+                    self.total_length1 += length;
                 } else {
-                    panic!();
+                    self.total_length2 += length;
                 }
 
                 Ok(CompareDetoursStatus::Running)
@@ -104,8 +102,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterErro
                     autorouter.undo_autoroute_ratlines(vec![self.ratline2, self.ratline1]);
 
                     Ok(CompareDetoursStatus::Finished(
-                        self.total_length1.unwrap(),
-                        self.total_length2.unwrap(),
+                        self.total_length1,
+                        self.total_length2,
                     ))
                 }
             }

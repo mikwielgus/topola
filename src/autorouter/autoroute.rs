@@ -62,12 +62,12 @@ impl Autoroute {
 
 impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, AutorouterError, ()> for Autoroute {
     fn step(&mut self, autorouter: &mut Autorouter<M>) -> Result<AutorouteStatus, AutorouterError> {
-        let Some(ref mut route) = self.route else {
-            // Shouldn't happen.
+        let Some(curr_ratline) = self.curr_ratline else {
             return Ok(AutorouteStatus::Finished);
         };
 
-        let Some(curr_ratline) = self.curr_ratline else {
+        let Some(ref mut route) = self.route else {
+            // Shouldn't happen.
             return Ok(AutorouteStatus::Finished);
         };
 
@@ -97,16 +97,16 @@ impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, AutorouterError, ()
             .board
             .try_set_band_between_nodes(source, target, band);
 
-        let Some(new_ratline) = self.ratlines_iter.next() else {
+        if let Some(new_ratline) = self.ratlines_iter.next() {
+            let (source, target) = autorouter.ratline_endpoints(new_ratline);
+            let mut router = Router::new(autorouter.board.layout_mut());
+
+            self.curr_ratline = Some(new_ratline);
+            self.route = Some(router.route(source, target, 100.0)?);
+        } else {
             self.curr_ratline = None;
-            return Ok(AutorouteStatus::Finished);
-        };
-
-        let (source, target) = autorouter.ratline_endpoints(new_ratline);
-        let mut router = Router::new(autorouter.board.layout_mut());
-
-        self.curr_ratline = Some(new_ratline);
-        self.route = Some(router.route(source, target, 100.0)?);
+            //return Ok(AutorouteStatus::Finished);
+        }
 
         Ok(AutorouteStatus::Routed(band_termseg))
     }
