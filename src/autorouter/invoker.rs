@@ -240,9 +240,18 @@ impl<M: AccessMesadata> Invoker<M> {
     #[debug_requires(self.ongoing_command.is_none())]
     fn dispatch_command(&mut self, command: &Command) -> Result<Execute, InvokerError> {
         match command {
-            Command::Autoroute(selection) => Ok::<Execute, InvokerError>(Execute::Autoroute(
-                self.autorouter.autoroute(selection)?,
-            )),
+            Command::Autoroute(selection) => {
+                let mut ratlines = self.autorouter.selected_ratlines(selection);
+                ratlines.sort_unstable_by(|a, b| {
+                    let mut compare_detours =
+                        self.autorouter.compare_detours_ratlines(*a, *b).unwrap();
+                    let (al, bl) = compare_detours.finish(&mut self.autorouter).unwrap();
+                    PartialOrd::partial_cmp(&al, &bl).unwrap()
+                });
+                Ok::<Execute, InvokerError>(Execute::Autoroute(
+                    self.autorouter.autoroute_ratlines(ratlines)?,
+                ))
+            }
             Command::PlaceVia(weight) => {
                 Ok::<Execute, InvokerError>(Execute::PlaceVia(self.autorouter.place_via(*weight)?))
             }
@@ -250,7 +259,7 @@ impl<M: AccessMesadata> Invoker<M> {
                 self.autorouter.remove_bands(selection)?,
             )),
             Command::CompareDetours(selection) => Ok::<Execute, InvokerError>(
-                Execute::CompareDetours(self.autorouter.compare(selection)?),
+                Execute::CompareDetours(self.autorouter.compare_detours(selection)?),
             ),
         }
     }

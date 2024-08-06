@@ -88,20 +88,25 @@ impl<M: AccessMesadata> Autorouter<M> {
         todo!();
     }
 
-    pub fn compare(&mut self, selection: &PinSelection) -> Result<CompareDetours, AutorouterError> {
-        self.compare_ratlines(self.selected_ratlines(selection))
-    }
-
-    fn compare_ratlines(
+    pub fn compare_detours(
         &mut self,
-        ratlines: Vec<EdgeIndex<usize>>,
+        selection: &PinSelection,
     ) -> Result<CompareDetours, AutorouterError> {
+        let ratlines = self.selected_ratlines(selection);
         let ratline1 = *ratlines
             .get(0)
             .ok_or(AutorouterError::NeedExactlyTwoRatlines)?;
         let ratline2 = *ratlines
             .get(1)
             .ok_or(AutorouterError::NeedExactlyTwoRatlines)?;
+        self.compare_detours_ratlines(ratline1, ratline2)
+    }
+
+    pub(super) fn compare_detours_ratlines(
+        &mut self,
+        ratline1: EdgeIndex<usize>,
+        ratline2: EdgeIndex<usize>,
+    ) -> Result<CompareDetours, AutorouterError> {
         CompareDetours::new(self, ratline1, ratline2)
     }
 
@@ -136,7 +141,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         (source_dot, target_dot)
     }
 
-    fn selected_ratlines(&self, selection: &PinSelection) -> Vec<EdgeIndex<usize>> {
+    pub(super) fn selected_ratlines(&self, selection: &PinSelection) -> Vec<EdgeIndex<usize>> {
         self.ratsnest
             .graph()
             .edge_indices()
