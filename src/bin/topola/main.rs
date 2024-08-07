@@ -1,4 +1,5 @@
 use clap::{Error, Parser};
+use fluent_templates::static_loader;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
@@ -9,6 +10,14 @@ use topola::autorouter::invoker::Invoker;
 use topola::autorouter::selection::Selection;
 use topola::autorouter::Autorouter;
 use topola::specctra::design::SpecctraDesign;
+
+static_loader! {
+    static LOCALES = {
+        locales: "./locales",
+        fallback_language: "en-US",
+        core_locales: "./locales/core.ftl",
+    };
+}
 
 #[derive(Parser, Debug, Default)]
 #[command(about, version)]

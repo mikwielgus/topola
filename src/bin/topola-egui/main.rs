@@ -11,6 +11,15 @@ mod painter;
 mod top;
 mod viewport;
 use app::App;
+use fluent_templates::static_loader;
+
+static_loader! {
+    static LOCALES = {
+        locales: "./locales",
+        fallback_language: "en-US",
+        core_locales: "./locales/core.ftl",
+    };
+}
 
 // Build to native.
 #[cfg(not(target_arch = "wasm32"))]
