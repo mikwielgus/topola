@@ -7,7 +7,7 @@ use std::path::PathBuf;
 use topola::autorouter::history::History;
 use topola::autorouter::invoker::Command;
 use topola::autorouter::invoker::Invoker;
-use topola::autorouter::selection::Selection;
+use topola::autorouter::selection::PinSelection;
 use topola::autorouter::Autorouter;
 use topola::specctra::design::SpecctraDesign;
 
@@ -44,7 +44,9 @@ fn main() -> Result<(), std::io::Error> {
         serde_json::from_reader(commands_bufread)?
     } else {
         let mut history = History::new();
-        history.do_(Command::Autoroute(Selection::new_select_layer(&board, 0)));
+        history.do_(Command::Autoroute(PinSelection::new_select_layer(
+            &board, 0,
+        )));
         history
     };
 

@@ -31,6 +31,20 @@ impl PinSelection {
         }
     }
 
+    pub fn new_select_layer(board: &Board<impl AccessMesadata>, layer: usize) -> Self {
+        let mut this = Self::new();
+
+        for node in board.layout().drawing().layer_primitive_nodes(layer) {
+            if let Some(selector) = this.node_selector(board, GenericNode::Primitive(node)) {
+                if !this.contains_node(board, GenericNode::Primitive(node)) {
+                    this.select(selector);
+                }
+            }
+        }
+
+        this
+    }
+
     fn node_selector(
         &self,
         board: &Board<impl AccessMesadata>,
