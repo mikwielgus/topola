@@ -11,14 +11,6 @@ use topola::autorouter::selection::PinSelection;
 use topola::autorouter::Autorouter;
 use topola::specctra::design::SpecctraDesign;
 
-static_loader! {
-    static LOCALES = {
-        locales: "./locales",
-        fallback_language: "en-US",
-        core_locales: "./locales/core.ftl",
-    };
-}
-
 #[derive(Parser, Debug, Default)]
 #[command(about, version)]
 struct Cli {

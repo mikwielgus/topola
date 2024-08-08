@@ -10,6 +10,7 @@ use std::{
         Arc, Mutex,
     },
 };
+use unic_langid::{langid, LanguageIdentifier};
 
 use topola::{
     autorouter::{
@@ -49,6 +50,8 @@ use crate::{
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct App {
+    langid: LanguageIdentifier,
+
     #[serde(skip)]
     maybe_overlay: Option<Overlay>,
 
@@ -86,6 +89,7 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
+            langid: langid!("en-US"),
             maybe_overlay: None,
             arc_mutex_maybe_invoker: Arc::new(Mutex::new(None)),
             maybe_execute: None,
@@ -103,13 +107,20 @@ impl Default for App {
 
 impl App {
     /// Called once on start.
-    pub fn new(cc: &eframe::CreationContext<'_>) -> Self {
+    pub fn new(cc: &eframe::CreationContext<'_>, langid: LanguageIdentifier) -> Self {
         // Load previous app state if one exists.
         if let Some(storage) = cc.storage {
-            return eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default();
+            let this = Self {
+                langid,
+                ..eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
+            };
+            return this;
         }
 
-        Default::default()
+        Self {
+            langid,
+            ..Default::default()
+        }
     }
 
     fn update_state(&mut self, dt: f32) {
