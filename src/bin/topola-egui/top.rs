@@ -16,6 +16,7 @@ use crate::{
     app::{channel_text, execute},
     file_sender::FileSender,
     overlay::Overlay,
+    translator::Translator,
 };
 
 pub struct Top {
@@ -40,6 +41,7 @@ impl Top {
     pub fn update(
         &mut self,
         ctx: &egui::Context,
+        tr: &Translator,
         content_sender: Sender<String>,
         history_sender: Sender<String>,
         arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
@@ -47,51 +49,66 @@ impl Top {
         maybe_overlay: &mut Option<Overlay>,
         maybe_design: &Option<SpecctraDesign>,
     ) -> Result<(), InvokerError> {
-        let mut open_design =
-            Trigger::new(Action::new("Open", egui::Modifiers::CTRL, egui::Key::O));
+        let mut open_design = Trigger::new(Action::new(
+            tr.text("action-open-dsn"),
+            egui::Modifiers::CTRL,
+            egui::Key::O,
+        ));
         let mut export_session = Trigger::new(Action::new(
-            "Export session file",
+            tr.text("action-export-ses"),
             egui::Modifiers::CTRL,
             egui::Key::S,
         ));
         let mut import_history = Trigger::new(Action::new(
-            "Import history",
+            tr.text("action-import-cmd"),
             egui::Modifiers::CTRL,
             egui::Key::I,
         ));
         let mut export_history = Trigger::new(Action::new(
-            "Export history",
+            tr.text("action-export-cmd"),
             egui::Modifiers::CTRL,
             egui::Key::E,
         ));
-        let mut quit = Trigger::new(Action::new("Quit", egui::Modifiers::CTRL, egui::Key::V));
+        let mut quit = Trigger::new(Action::new(
+            tr.text("action-quit"),
+            egui::Modifiers::CTRL,
+            egui::Key::V,
+        ));
         let mut autoroute = Trigger::new(Action::new(
-            "Autoroute",
+            tr.text("action-autoroute"),
             egui::Modifiers::CTRL,
             egui::Key::A,
         ));
         let mut place_via = Switch::new(Action::new(
-            "Place Via",
+            tr.text("action-place-via"),
             egui::Modifiers::CTRL,
             egui::Key::P,
         ));
         let mut remove_bands = Trigger::new(Action::new(
-            "Remove Selected Bands",
+            tr.text("action-remove-bands"),
             egui::Modifiers::NONE,
             egui::Key::Delete,
         ));
         let mut compare_detours = Trigger::new(Action::new(
-            "Compare Detours",
+            tr.text("action-compare-detours"),
             egui::Modifiers::NONE,
             egui::Key::Minus,
         ));
-        let mut undo = Trigger::new(Action::new("Undo", egui::Modifiers::CTRL, egui::Key::Z));
-        let mut redo = Trigger::new(Action::new("Redo", egui::Modifiers::CTRL, egui::Key::Y));
+        let mut undo = Trigger::new(Action::new(
+            tr.text("action-undo"),
+            egui::Modifiers::CTRL,
+            egui::Key::Z,
+        ));
+        let mut redo = Trigger::new(Action::new(
+            tr.text("action-redo"),
+            egui::Modifiers::CTRL,
+            egui::Key::Y,
+        ));
 
         egui::TopBottomPanel::top("top_panel")
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
-                    ui.menu_button("File", |ui| {
+                    ui.menu_button(tr.text("menu-file"), |ui| {
                         open_design.button(ctx, ui);
                         export_session.button(ctx, ui);
 
@@ -123,11 +140,14 @@ impl Top {
 
                     ui.separator();
 
-                    ui.menu_button("Debug", |ui| {
-                        ui.checkbox(&mut self.show_ratsnest, "Show Ratsnest");
-                        ui.checkbox(&mut self.show_navmesh, "Show Navmesh");
-                        ui.checkbox(&mut self.show_bboxes, "Show BBoxes");
-                        ui.checkbox(&mut self.show_origin_destination, "Show Origin–Destination");
+                    ui.menu_button(tr.text("menu-debug"), |ui| {
+                        ui.checkbox(&mut self.show_ratsnest, tr.text("show-ratsnest"));
+                        ui.checkbox(&mut self.show_navmesh, tr.text("show-navmesh"));
+                        ui.checkbox(&mut self.show_bboxes, tr.text("show-bboxes"));
+                        ui.checkbox(
+                            &mut self.show_origin_destination,
+                            tr.text("show-origin-destination"),
+                        );
 
                         ui.separator();
                         compare_detours.button(ctx, ui);
@@ -170,7 +190,7 @@ impl Top {
                                 }
                             }
                             let task = dialog
-                                .add_filter("Specctra session file", &["ses"])
+                                .add_filter(tr.text("specctra-session-file"), &["ses"])
                                 .save_file();
 
                             execute(async move {

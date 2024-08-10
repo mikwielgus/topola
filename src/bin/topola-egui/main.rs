@@ -9,18 +9,13 @@ mod layers;
 mod overlay;
 mod painter;
 mod top;
+mod translator;
 mod viewport;
+
 use app::App;
 use fluent_templates::static_loader;
 use sys_locale::get_locale;
 use unic_langid::{langid, LanguageIdentifier};
-
-static_loader! {
-    static LOCALES = {
-        locales: "./locales",
-        fallback_language: "en-US",
-    };
-}
 
 // Build to native.
 #[cfg(not(target_arch = "wasm32"))]

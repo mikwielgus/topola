@@ -1,6 +1,6 @@
 use topola::autorouter::invoker::{Execute, ExecuteWithStatus, InvokerStatus};
 
-use crate::viewport::Viewport;
+use crate::{translator::Translator, viewport::Viewport};
 
 pub struct Bottom {}
 
@@ -12,6 +12,7 @@ impl Bottom {
     pub fn update(
         &mut self,
         ctx: &egui::Context,
+        tr: &Translator,
         viewport: &Viewport,
         viewport_rect: egui::Rect,
         maybe_execute: &Option<ExecuteWithStatus>,

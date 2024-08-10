@@ -4,9 +4,9 @@ pub struct Action {
 }
 
 impl Action {
-    pub fn new(name: &str, modifiers: egui::Modifiers, key: egui::Key) -> Self {
+    pub fn new(name: String, modifiers: egui::Modifiers, key: egui::Key) -> Self {
         Self {
-            name: String::from(name),
+            name,
             shortcut: egui::KeyboardShortcut::new(modifiers, key),
         }
     }

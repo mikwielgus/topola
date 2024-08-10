@@ -43,14 +43,14 @@ use topola::{
 
 use crate::{
     bottom::Bottom, file_receiver::FileReceiver, layers::Layers, overlay::Overlay,
-    painter::Painter, top::Top, viewport::Viewport,
+    painter::Painter, top::Top, translator::Translator, viewport::Viewport,
 };
 
 /// Deserialize/Serialize is needed to persist app state between restarts.
 #[derive(Serialize, Deserialize)]
 #[serde(default)]
 pub struct App {
-    langid: LanguageIdentifier,
+    translator: Translator,
 
     #[serde(skip)]
     maybe_overlay: Option<Overlay>,
@@ -89,7 +89,7 @@ pub struct App {
 impl Default for App {
     fn default() -> Self {
         Self {
-            langid: langid!("en-US"),
+            translator: Translator::new(langid!("en-US")),
             maybe_overlay: None,
             arc_mutex_maybe_invoker: Arc::new(Mutex::new(None)),
             maybe_execute: None,
@@ -111,14 +111,14 @@ impl App {
         // Load previous app state if one exists.
         if let Some(storage) = cc.storage {
             let this = Self {
-                langid,
+                translator: Translator::new(langid),
                 ..eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
             };
             return this;
         }
 
         Self {
-            langid,
+            translator: Translator::new(langid),
             ..Default::default()
         }
     }
@@ -176,6 +176,7 @@ impl eframe::App for App {
 
         self.top.update(
             ctx,
+            &self.translator,
             self.content_channel.0.clone(),
             self.history_channel.0.clone(),
             self.arc_mutex_maybe_invoker.clone(),
@@ -199,8 +200,13 @@ impl eframe::App for App {
             &self.maybe_layers,
         );
 
-        self.bottom
-            .update(ctx, &self.viewport, viewport_rect, &self.maybe_execute);
+        self.bottom.update(
+            ctx,
+            &self.translator,
+            &self.viewport,
+            viewport_rect,
+            &self.maybe_execute,
+        );
 
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);

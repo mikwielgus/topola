@@ -1,5 +1,4 @@
 use clap::{Error, Parser};
-use fluent_templates::static_loader;
 use std::fs::File;
 use std::io::prelude::*;
 use std::io::BufReader;
