@@ -111,10 +111,16 @@ instead of the above `topola-egui` command.
 #### Running Topola in a Web browser
 
 Topola's GUI application can be built to and run in a Web browser using
-[Trunk](https://trunkrs.dev/), which will be installed with the
-following command:
+[Trunk](https://trunkrs.dev/). For to obtain Trunk's binary you can use 
+`cargo-binstall`:
 
     cargo binstall trunk
+
+or you can build it from the source via:
+
+
+    cargo install trunk
+
 
 To build and open Topola in your browser, run
 
