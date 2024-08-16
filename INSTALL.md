@@ -89,7 +89,7 @@ framework.
 
 The following command will build and install Topola's GUI application:
 
-    cargo install --locked --path . --features egui --bin egui
+    cargo install --locked --path . --features egui --bin topola-egui
 
 You can then invoke the application from your terminal by running
 
