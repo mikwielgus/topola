@@ -26,9 +26,10 @@ To install Topola, follow our [Installation guide](INSTALL.md).
 *Anyone* can contribute to Topola, including you. If you want to help us
 out, please follow our [Contribution guide](CONTRIBUTING.md).
 
-Our official repository is on
-[Codeberg](https://codeberg.org/topola/topola). We also have a mirror
-repository on [GitHub](https://github.com/mikwielgus/topola).
+Our official repository is on [Codeberg](https://codeberg.org/topola/topola). We also have a mirror repository on [GitHub](https://github.com/mikwielgus/topola).
+
+You can also help us by translating Topola into your language on [Weblate](https://translate.codeberg.org/engage/topola/).
+![](https://translate.codeberg.org/widget/topola/topola/multi-auto.svg)
 
 ## Licence
 
