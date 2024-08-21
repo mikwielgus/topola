@@ -37,7 +37,7 @@ log = "0.4"
 utf8-chars = "3.0.2"
 
 [dependencies.specctra_derive]
-path = "macro/specctra_derive"
+path = "macros/specctra_derive"
 
 [dependencies.geo]
 version = "0.25.1"
