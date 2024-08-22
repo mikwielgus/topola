@@ -149,7 +149,7 @@ pub fn assert_band_length(
     epsilon: f64,
 ) {
     let band = board.band_between_pins(source, target).unwrap();
-    let band_length = band.ref_(board.layout().drawing()).length();
+    let band_length = band.0.ref_(board.layout().drawing()).length();
     assert!((band_length - length).abs() < epsilon);
 }
 
