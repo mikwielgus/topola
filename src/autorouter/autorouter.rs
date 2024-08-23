@@ -13,6 +13,7 @@ use crate::{
 use super::{
     autoroute::Autoroute,
     compare_detours::CompareDetours,
+    measure_length::MeasureLength,
     place_via::PlaceVia,
     ratsnest::{Ratsnest, RatvertexIndex},
     remove_bands::RemoveBands,
@@ -108,6 +109,13 @@ impl<M: AccessMesadata> Autorouter<M> {
         ratline2: EdgeIndex<usize>,
     ) -> Result<CompareDetours, AutorouterError> {
         CompareDetours::new(self, ratline1, ratline2)
+    }
+
+    pub fn measure_length(
+        &mut self,
+        selection: &BandSelection,
+    ) -> Result<MeasureLength, AutorouterError> {
+        MeasureLength::new(selection)
     }
 
     pub fn ratline_endpoints(

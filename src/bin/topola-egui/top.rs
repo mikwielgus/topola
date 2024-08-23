@@ -94,6 +94,11 @@ impl Top {
             egui::Modifiers::NONE,
             egui::Key::Minus,
         ));
+        let mut measure_length = Trigger::new(Action::new(
+            tr.text("action-measure-length"),
+            egui::Modifiers::NONE,
+            egui::Key::Plus,
+        ));
         let mut undo = Trigger::new(Action::new(
             tr.text("action-undo"),
             egui::Modifiers::CTRL,
@@ -132,6 +137,7 @@ impl Top {
                     place_via.toggle_widget(ctx, ui, &mut self.is_placing_via);
 
                     remove_bands.button(ctx, ui);
+                    measure_length.button(ctx, ui);
 
                     ui.separator();
 
@@ -151,6 +157,7 @@ impl Top {
 
                         ui.separator();
                         compare_detours.button(ctx, ui);
+                        measure_length.button(ctx, ui);
                     });
 
                     ui.separator();
@@ -260,6 +267,21 @@ impl Top {
                             overlay.clear_selection();
                             maybe_execute.insert(ExecuteWithStatus::new(invoker.execute_stepper(
                                 Command::RemoveBands(selection.band_selection),
+                            )?));
+                        }
+                    }
+                } else if measure_length.consume_key_triggered(ctx, ui) {
+                    if maybe_execute.as_mut().map_or(true, |execute| {
+                        matches!(execute.maybe_status(), Some(InvokerStatus::Finished(..)))
+                    }) {
+                        if let (Some(invoker), Some(ref mut overlay)) = (
+                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
+                            maybe_overlay,
+                        ) {
+                            let selection = overlay.selection().clone();
+                            overlay.clear_selection();
+                            maybe_execute.insert(ExecuteWithStatus::new(invoker.execute_stepper(
+                                Command::MeasureLength(selection.band_selection),
                             )?));
                         }
                     }

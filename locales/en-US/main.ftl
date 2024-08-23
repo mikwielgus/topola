@@ -11,6 +11,7 @@ action-autoroute = Autoroute
 action-place-via = Place Via
 action-remove-bands = Remove Bands
 action-compare-detours = Compare Detours
+action-measure-length = Measure Length
 
 action-undo = Undo
 action-redo = Redo

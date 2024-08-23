@@ -16,6 +16,7 @@ use super::{
     autoroute::{Autoroute, AutorouteStatus},
     compare_detours::{CompareDetours, CompareDetoursStatus},
     history::{History, HistoryError},
+    measure_length::MeasureLength,
     place_via::PlaceVia,
     remove_bands::RemoveBands,
     selection::{BandSelection, PinSelection},
@@ -72,6 +73,7 @@ pub enum Command {
     PlaceVia(ViaWeight),
     RemoveBands(BandSelection),
     CompareDetours(PinSelection),
+    MeasureLength(BandSelection),
 }
 
 #[enum_dispatch(GetMaybeNavmesh, GetMaybeTrace, GetGhosts, GetObstacles)]
@@ -80,6 +82,7 @@ pub enum Execute {
     PlaceVia(PlaceVia),
     RemoveBands(RemoveBands),
     CompareDetours(CompareDetours),
+    MeasureLength(MeasureLength),
 }
 
 impl Execute {
@@ -107,15 +110,24 @@ impl Execute {
                     "finished removing bands",
                 )))
             }
-            Execute::CompareDetours(compare) => match compare.step(&mut invoker.autorouter)? {
-                CompareDetoursStatus::Running => Ok(InvokerStatus::Running),
-                CompareDetoursStatus::Finished(total_length1, total_length2) => {
-                    Ok(InvokerStatus::Finished(String::from(format!(
-                        "total detour lengths are {} and {}",
-                        total_length1, total_length2
-                    ))))
+            Execute::CompareDetours(compare_detours) => {
+                match compare_detours.step(&mut invoker.autorouter)? {
+                    CompareDetoursStatus::Running => Ok(InvokerStatus::Running),
+                    CompareDetoursStatus::Finished(total_length1, total_length2) => {
+                        Ok(InvokerStatus::Finished(String::from(format!(
+                            "total detour lengths are {} and {}",
+                            total_length1, total_length2
+                        ))))
+                    }
                 }
-            },
+            }
+            Execute::MeasureLength(measure_length) => {
+                let length = measure_length.doit(&mut invoker.autorouter)?;
+                Ok(InvokerStatus::Finished(format!(
+                    "Total length of selected bands: {}",
+                    length
+                )))
+            }
         }
     }
 }
@@ -261,6 +273,9 @@ impl<M: AccessMesadata> Invoker<M> {
             Command::CompareDetours(selection) => Ok::<Execute, InvokerError>(
                 Execute::CompareDetours(self.autorouter.compare_detours(selection)?),
             ),
+            Command::MeasureLength(selection) => Ok::<Execute, InvokerError>(
+                Execute::MeasureLength(self.autorouter.measure_length(selection)?),
+            ),
         }
     }
 
@@ -273,6 +288,7 @@ impl<M: AccessMesadata> Invoker<M> {
             Command::PlaceVia(weight) => self.autorouter.undo_place_via(*weight),
             Command::RemoveBands(ref selection) => self.autorouter.undo_remove_bands(selection),
             Command::CompareDetours(..) => (),
+            Command::MeasureLength(..) => (),
         }
 
         Ok::<(), InvokerError>(self.history.undo()?)
