@@ -1,8 +1,6 @@
-use clap::{Error, Parser};
+use clap::Parser;
 use std::fs::File;
-use std::io::prelude::*;
 use std::io::BufReader;
-use std::path::PathBuf;
 use topola::autorouter::history::History;
 use topola::autorouter::invoker::Command;
 use topola::autorouter::invoker::Invoker;
@@ -10,19 +8,11 @@ use topola::autorouter::selection::PinSelection;
 use topola::autorouter::Autorouter;
 use topola::specctra::design::SpecctraDesign;
 
-#[derive(Parser, Debug, Default)]
-#[command(about, version)]
-struct Cli {
-    input: PathBuf,
-    #[arg(short, long, value_name = "FILE")]
-    output: Option<PathBuf>,
-    #[arg(short, long, value_name = "FILE")]
-    commands: Option<PathBuf>,
-}
+pub mod cli;
+use cli::Cli;
 
 fn main() -> Result<(), std::io::Error> {
     let args = Cli::parse();
-
     let design_file = File::open(&args.input)?;
     let mut design_bufread = BufReader::new(design_file);
 

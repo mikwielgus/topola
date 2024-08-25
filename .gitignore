@@ -24,3 +24,7 @@ Cargo.lock
 
 # ---> Topola
 *.ses
+dist/
+
+# ignore manpages
+topola.1

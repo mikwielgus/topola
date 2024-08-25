@@ -1,6 +1,6 @@
 [package]
 name = "topola"
-description = "Topological PCB router"
+description = "Work-in-progress free and open-source topological (rubberband) router and autorouter for printed circuit boards (PCBs)"
 version = "0.1.0"
 edition = "2021"
 default-run = "topola"
@@ -122,3 +122,7 @@ opt-level = 2
 
 [patch.crates-io]
 contracts = { path = "vendored/contracts" }
+
+[build-dependencies]
+clap_mangen = "0.2.23"
+clap = {version="4.5.8", features = ["derive"] }
