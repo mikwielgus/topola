@@ -1,3 +1,5 @@
+use std::cmp::Ordering;
+
 use contracts::debug_requires;
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
@@ -257,8 +259,11 @@ impl<M: AccessMesadata> Invoker<M> {
                 ratlines.sort_unstable_by(|a, b| {
                     let mut compare_detours =
                         self.autorouter.compare_detours_ratlines(*a, *b).unwrap();
-                    let (al, bl) = compare_detours.finish(&mut self.autorouter).unwrap();
-                    PartialOrd::partial_cmp(&al, &bl).unwrap()
+                    if let Ok((al, bl)) = compare_detours.finish(&mut self.autorouter) {
+                        PartialOrd::partial_cmp(&al, &bl).unwrap()
+                    } else {
+                        Ordering::Equal
+                    }
                 });
                 Ok::<Execute, InvokerError>(Execute::Autoroute(
                     self.autorouter.autoroute_ratlines(ratlines)?,
