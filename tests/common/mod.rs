@@ -145,12 +145,18 @@ pub fn assert_band_length(
     board: &Board<impl AccessMesadata>,
     source: &str,
     target: &str,
-    length: f64,
-    epsilon: f64,
+    expected_length: f64,
+    rel_err: f64,
 ) {
     let band = board.band_between_pins(source, target).unwrap();
     let band_length = band.0.ref_(board.layout().drawing()).length();
-    assert!((band_length - length).abs() < epsilon);
+    assert!(
+        (band_length - expected_length).abs() < expected_length * rel_err,
+        "band_length = {}, expected_length = {}, epsilon = {}",
+        band_length,
+        expected_length,
+        rel_err
+    );
 }
 
 fn unionfind(autorouter: &mut Autorouter<impl AccessMesadata>) -> UnionFind<NodeIndex<usize>> {
