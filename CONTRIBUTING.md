@@ -48,7 +48,7 @@ Topola accepts contributions via pull requests. For a step-by-step guide
 on how to use these, refer to Codeberg's
 [documentation](https://docs.codeberg.org/collaborating/pull-requests-and-git-flow/).
 
-### Receiving money for code contributions
+### Working on paid tasks
 
 Topola's development is sponsored by [NLnet](https://nlnet.nl/). The
 tasks which NLnet pays for are tracked in issues labeled
@@ -60,23 +60,26 @@ Before you start working on a paid task, remember to tell us that you
 are claiming it and make sure we agree, so that any collision with
 someone else's work is prevented.
 
+#### Receiving money after task completion
+
 Once you have finished the task, we will contact you via email to add
 you as a party to the *memorandum of understanding* (MoU) we have signed
-with NLnet. This will require you to provide your domestic address to
-NLnet. NLnet will not send your domestic address to anyone else, not
-even us (Topola project members).
+with NLnet. This will require you to send your domicile address (i.e.
+physical address) to NLnet via a specified email address. NLnet will not
+send your domicile address to anyone else, not even to Topola project
+members, so we will not see it.
 
 You will also have to provide your legal name. You may optionally
 provide a pseudonym, which will prevent Topola project members from
 seeing your legal name as well in our communication with NLnet.
 
-After all neccessary information is supplied, NLnet will amend the MoU.
-This may take a few weeks. Afterwards, you will receive a link to submit
-a *request for payment* (RfP). Once the RfP is submitted and validated
-by the Topola project, you will receive the payment in up to three
-weeks. You will be able to re-use this link to request further payments
-from then on for completing other tasks funded from the same grant
-without having to amend the MoU again.
+After all neccessary information is supplied, NLnet will amend the MoU
+to add you as a party. This may take a few weeks. Afterwards, you will
+receive a link to submit a *request for payment* (RfP). Once the RfP is
+submitted and validated by the Topola project, you will receive the
+payment in up to three weeks. You will be able to re-use this link to
+request further payments from then on for completing other tasks funded
+from the same grant without having to amend the MoU again.
 
 Note that if you receive any money from NLnet, it is your responsibility
 to comply with any local tax laws.
