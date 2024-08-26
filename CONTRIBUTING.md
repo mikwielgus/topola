@@ -8,9 +8,12 @@ implementations, pull requests, helping to manage issues, etc.. Many of
 these tasks do not require specialized programming knowledge, or any
 programming at all.
 
+You may contribute to Topola under any identity you want. There is no
+requirement to use any legal or real name.
+
 ## Chat
 
-You are encouraged to join our [Matrix
+You are invited to join our [Matrix
 chatroom](https://matrix.to/#/%23topola:tchncs.de) or [IRC
 channel](https://webchat.oftc.net/?channels=#topola) to talk with us
 before you contribute. Both chatrooms are bridged, so it does not matter
@@ -18,12 +21,19 @@ which one you join.
 
 ## Reporting issues
 
-If you believe you have found a defect in Topola or its documentation,
-please report it on our [issue
+If you believe that you have found a defect in Topola or its
+documentation, please report it on our [issue
 tracker](https://codeberg.org/topola/topola/issues).
 
 Under normal operation, crashes and panics are always considered
 reportable bugs.
+
+## Translation
+
+If you know any language other than English, you can help by translating
+Topola on [Weblate](https://translate.codeberg.org/engage/topola/).
+
+![](https://translate.codeberg.org/widget/topola/topola/multi-auto.svg)
 
 ## Writing code
 
@@ -37,3 +47,36 @@ guide](INSTALL.md).
 Topola accepts contributions via pull requests. For a step-by-step guide
 on how to use these, refer to Codeberg's
 [documentation](https://docs.codeberg.org/collaborating/pull-requests-and-git-flow/).
+
+### Receiving money for code contributions
+
+Topola's development is sponsored by [NLnet](https://nlnet.nl/). The
+tasks which NLnet pays for are tracked in issues labeled
+[Paid](https://codeberg.org/topola/topola/issues?q=&type=all&state=open&labels=245942&milestone=0&assignee=0&poster=0&fuzzy=false).
+Anyone, including newcomers, can seek to work on paid tasks and will
+receive the allocated funds upon completion.
+
+Before you start working on a paid task, remember to tell us that you
+are claiming it and make sure we agree, so that any collision with
+someone else's work is prevented.
+
+Once you have finished the task, we will contact you via email to add
+you as a party to the *memorandum of understanding* (MoU) we have signed
+with NLnet. This will require you to provide your domestic address to
+NLnet. NLnet will not send your domestic address to anyone else, not
+even us (Topola project members).
+
+You will also have to provide your legal name. You may optionally
+provide a pseudonym, which will prevent Topola project members from
+seeing your legal name as well in our communication with NLnet.
+
+After all neccessary information is supplied, NLnet will amend the MoU.
+This may take a few weeks. Afterwards, you will receive a link to submit
+a *request for payment* (RfP). Once the RfP is submitted and validated
+by the Topola project, you will receive the payment in up to three
+weeks. You will be able to re-use this link to request further payments
+from then on for completing other tasks funded from the same grant
+without having to amend the MoU again.
+
+Note that if you receive any money from NLnet, it is your responsibility
+to comply with any local tax laws.
