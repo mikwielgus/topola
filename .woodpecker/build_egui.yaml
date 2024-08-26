@@ -8,7 +8,7 @@ matrix:
 steps:
   build_egui:
     image: rust
-    environment: [CARGO_TERM_COLOR=always]
+    environment: [RUST_BACKTRACE=1,CARGO_TERM_COLOR=always]
     commands:
       - rustup default "$CHANNEL"
       - cargo build --features "$FEATURES" --bin "topola-egui"
