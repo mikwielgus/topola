@@ -16,3 +16,4 @@ action-import-cmd = Geschiedenis importeren
 show-ratsnest = Toon Rattennest
 show-origin-destination = Toon Herkomst-Bestemming
 specctra-session-file = Specctra-sessiebestand
+action-measure-length = Lengte meten
