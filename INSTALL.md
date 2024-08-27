@@ -103,7 +103,7 @@ If you chose not to install the GUI application, you can build and run
 it without installing by running
 
 ```
-cargo run --features egui --bin topola-egui`
+cargo run --features egui --bin topola-egui
 ```
 
 instead of the above `topola-egui` command.
@@ -112,17 +112,15 @@ instead of the above `topola-egui` command.
 
 Topola's GUI application can be built to and run in a Web browser using
 [Trunk](https://trunkrs.dev/). If you have [cargo-binstall](https://github.com/cargo-bins/cargo-binstall) 
-on your system, you can install Trunk from binary with:
+on your system, you can install Trunk from binary with
 
     cargo binstall trunk
 
-or you can build it from the source via:
-
+Alternatively, you can build Trunk from source by running
 
     cargo install trunk
 
-
-To build and open Topola in your browser, run:
+To build and open Topola in your browser, run
 
     trunk serve
 
@@ -141,7 +139,8 @@ Automated tests are run in `debug` profile.
 ### Contracts
 
 The feature described in this section works only in `debug` profile. If
-you are not interested in debugging, you can skip it altogether.
+you are not interested in debugging, you can skip this section
+altogether.
 
 When trying to locate the source of a bug, it may be helpful to enable
 [contracts](https://en.wikipedia.org/wiki/Design_by_contract) (yes, this
