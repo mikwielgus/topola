@@ -116,21 +116,21 @@ pub struct Navmesh {
 impl Navmesh {
     pub fn new(
         layout: &Layout<impl AccessRules>,
-        source: FixedDotIndex,
-        target: FixedDotIndex,
+        origin: FixedDotIndex,
+        destination: FixedDotIndex,
     ) -> Result<Self, NavmeshError> {
         let mut triangulation: Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()> =
             Triangulation::new(layout.drawing().geometry().graph().node_bound());
 
-        let layer = layout.drawing().primitive(source).layer();
-        let maybe_net = layout.drawing().primitive(source).maybe_net();
+        let layer = layout.drawing().primitive(origin).layer();
+        let maybe_net = layout.drawing().primitive(origin).maybe_net();
 
         for node in layout.drawing().layer_primitive_nodes(layer) {
             let primitive = node.primitive(layout.drawing());
 
             if let Some(primitive_net) = primitive.maybe_net() {
-                if node == source.into()
-                    || node == target.into()
+                if node == origin.into()
+                    || node == destination.into()
                     || Some(primitive_net) != maybe_net
                 {
                     match node {
@@ -152,30 +152,38 @@ impl Navmesh {
             }
         }
 
+        Self::new_from_triangulation(triangulation, origin, destination)
+    }
+
+    fn new_from_triangulation(
+        triangulation: Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()>,
+        origin: FixedDotIndex,
+        destination: FixedDotIndex,
+    ) -> Result<Self, NavmeshError> {
         let mut graph: UnGraph<NavvertexWeight, (), usize> = UnGraph::default();
-        let mut source_navvertex = None;
-        let mut target_navvertex = None;
+        let mut origin_navvertex = None;
+        let mut destination_navvertex = None;
 
         // `HashMap` is obviously suboptimal here.
         let mut map = HashMap::new();
 
         for trianvertex in triangulation.node_identifiers() {
-            let binavvertex = if trianvertex == source.into() {
+            let binavvertex = if trianvertex == origin.into() {
                 let navvertex = graph.add_node(NavvertexWeight {
                     node: trianvertex.into(),
                     maybe_cw: None,
                 });
 
-                source_navvertex = Some(navvertex);
-                (navvertex, navvertex)
-            } else if trianvertex == target.into() {
+                origin_navvertex = Some(navvertex);
+                vec![(navvertex, navvertex)]
+            } else if trianvertex == destination.into() {
                 let navvertex = graph.add_node(NavvertexWeight {
                     node: trianvertex.into(),
                     maybe_cw: None,
                 });
 
-                target_navvertex = Some(navvertex);
-                (navvertex, navvertex)
+                destination_navvertex = Some(navvertex);
+                vec![(navvertex, navvertex)]
             } else {
                 let navvertex1 = graph.add_node(NavvertexWeight {
                     node: trianvertex.into(),
@@ -187,28 +195,29 @@ impl Navmesh {
                     maybe_cw: Some(true),
                 });
 
-                (navvertex1, navvertex2)
+                vec![(navvertex1, navvertex2)]
             };
 
             map.insert(trianvertex, binavvertex);
         }
 
         for edge in triangulation.edge_references() {
-            let (from_navvertex1, from_navvertex2) = map[&edge.source()];
-            let (to_navvertex1, to_navvertex2) = map[&edge.target()];
-
-            graph.update_edge(from_navvertex1, to_navvertex1, ());
-            graph.update_edge(from_navvertex1, to_navvertex2, ());
-            graph.update_edge(from_navvertex2, to_navvertex1, ());
-            graph.update_edge(from_navvertex2, to_navvertex2, ());
+            for (from_navvertex1, from_navvertex2) in map[&edge.source()].iter() {
+                for (to_navvertex1, to_navvertex2) in map[&edge.target()].iter() {
+                    graph.update_edge(*from_navvertex1, *to_navvertex1, ());
+                    graph.update_edge(*from_navvertex1, *to_navvertex2, ());
+                    graph.update_edge(*from_navvertex2, *to_navvertex1, ());
+                    graph.update_edge(*from_navvertex2, *to_navvertex2, ());
+                }
+            }
         }
 
         Ok(Self {
             graph,
-            origin: source,
-            origin_navvertex: NavvertexIndex(source_navvertex.unwrap()),
-            destination: target,
-            destination_navvertex: NavvertexIndex(target_navvertex.unwrap()),
+            origin,
+            origin_navvertex: NavvertexIndex(origin_navvertex.unwrap()),
+            destination,
+            destination_navvertex: NavvertexIndex(destination_navvertex.unwrap()),
         })
     }
 
