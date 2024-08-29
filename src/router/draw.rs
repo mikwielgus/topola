@@ -7,13 +7,13 @@ use crate::{
         band::BandTermsegIndex,
         bend::{BendIndex, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
+        gear::GearIndex,
         graph::{GetLayer, GetMaybeNet, MakePrimitive},
         guide::Guide,
         head::{CaneHead, GetFace, Head},
         primitive::GetOtherJoint,
         rules::AccessRules,
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
-        wraparoundable::WraparoundableIndex,
         Infringement, LayoutException,
     },
     layout::Layout,
@@ -28,7 +28,7 @@ pub enum DrawException {
     #[error("cannot finish in {0:?}")]
     CannotFinishIn(FixedDotIndex, #[source] LayoutException),
     #[error("cannot wrap around {0:?}")]
-    CannotWrapAround(WraparoundableIndex, #[source] LayoutException),
+    CannotWrapAround(GearIndex, #[source] LayoutException),
 }
 
 pub struct Draw<'a, R: AccessRules> {
@@ -152,7 +152,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
     fn cane_around(
         &mut self,
         head: Head,
-        around: WraparoundableIndex,
+        around: GearIndex,
         from: Point,
         to: Point,
         cw: bool,
@@ -178,7 +178,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
     fn cane(
         &mut self,
         head: Head,
-        around: WraparoundableIndex,
+        around: GearIndex,
         to: Point,
         cw: bool,
         width: f64,

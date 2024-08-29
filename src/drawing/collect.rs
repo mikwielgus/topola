@@ -1,13 +1,13 @@
-use crate::graph::{GenericIndex, GetPetgraphIndex};
+use crate::graph::{GenericIndex, GetPetgraphIndex, MakeRef};
 
 use super::{
     band::{BandTermsegIndex, BandUid},
     bend::LooseBendIndex,
+    gear::{GearIndex, GetNextGear},
     graph::PrimitiveIndex,
     loose::{GetPrevNextLoose, LooseIndex},
     primitive::{GetInnerOuter, GetJoints},
     rules::AccessRules,
-    wraparoundable::{GetWraparound, WraparoundableIndex},
     Drawing,
 };
 
@@ -85,21 +85,21 @@ impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
 
     pub fn bend_outer_bows(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex> {
         let mut v = vec![];
-        let mut rail = bend;
+        let mut gear = bend;
 
-        while let Some(outer) = self.drawing.primitive(rail).outer() {
+        while let Some(outer) = self.drawing.primitive(gear).outer() {
             v.append(&mut self.bend_bow(outer.into()));
-            rail = outer;
+            gear = outer;
         }
 
         v
     }
 
-    pub fn wraparounded_bows(&self, around: WraparoundableIndex) -> Vec<PrimitiveIndex> {
+    pub fn wraparounded_bows(&self, around: GearIndex) -> Vec<PrimitiveIndex> {
         let mut v = vec![];
-        let mut rail = around.into();
+        let mut gear = around;
 
-        while let Some(outer) = self.drawing.wraparoundable(rail).wraparound() {
+        while let Some(outer) = gear.ref_(self.drawing).next_gear() {
             let primitive = self.drawing.primitive(outer);
 
             v.push(outer.into());
@@ -111,7 +111,7 @@ impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
             v.push(self.drawing.primitive(joints.0).seg().unwrap().into());
             v.push(self.drawing.primitive(joints.1).seg().unwrap().into());
 
-            rail = outer.into();
+            gear = outer.into();
         }
 
         v

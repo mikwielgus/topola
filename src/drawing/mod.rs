@@ -6,12 +6,12 @@ pub mod cane;
 pub mod collect;
 pub mod dot;
 mod drawing;
+pub mod gear;
 pub mod guide;
 pub mod head;
 pub mod loose;
 pub mod primitive;
 pub mod rules;
 pub mod seg;
-pub mod wraparoundable;
 
 pub use drawing::*;

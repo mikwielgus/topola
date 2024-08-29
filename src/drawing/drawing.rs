@@ -5,26 +5,6 @@ use geo::Point;
 use rstar::{RTree, AABB};
 use thiserror::Error;
 
-use crate::drawing::{
-    band::BandTermsegIndex,
-    bend::{BendIndex, BendWeight, FixedBendIndex, LooseBendIndex, LooseBendWeight},
-    cane::Cane,
-    collect::Collect,
-    dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
-    guide::Guide,
-    loose::{GetPrevNextLoose, Loose, LooseIndex},
-    primitive::{
-        GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetLimbs, GetOtherJoint,
-        MakePrimitiveShape,
-    },
-    rules::{AccessRules, GetConditions},
-    seg::{
-        FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex, SegWeight,
-        SeqLooseSegIndex, SeqLooseSegWeight,
-    },
-    wraparoundable::{GetWraparound, Wraparoundable, WraparoundableIndex},
-};
 use crate::geometry::{
     compound::ManageCompounds,
     primitive::{AccessPrimitiveShape, PrimitiveShape},
@@ -34,6 +14,29 @@ use crate::geometry::{
 };
 use crate::graph::{GenericIndex, GetPetgraphIndex};
 use crate::math::NoTangents;
+use crate::{
+    drawing::{
+        band::BandTermsegIndex,
+        bend::{BendIndex, BendWeight, FixedBendIndex, LooseBendIndex, LooseBendWeight},
+        cane::Cane,
+        collect::Collect,
+        dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+        gear::{GearIndex, GearRef, GetNextGear},
+        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+        guide::Guide,
+        loose::{GetPrevNextLoose, Loose, LooseIndex},
+        primitive::{
+            GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetLimbs, GetOtherJoint,
+            MakePrimitiveShape,
+        },
+        rules::{AccessRules, GetConditions},
+        seg::{
+            FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
+            SegWeight, SeqLooseSegIndex, SeqLooseSegWeight,
+        },
+    },
+    graph::MakeRef,
+};
 
 use super::head::{Head, HeadRef};
 
@@ -266,7 +269,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         &mut self,
         from: LooseDotIndex,
         to: LooseDotIndex,
-        around: WraparoundableIndex,
+        around: GearIndex,
         weight: LooseBendWeight,
         infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<LooseBendIndex, LayoutException> {
@@ -279,23 +282,23 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                 }
             }
             //
-            if let Some(wraparound) = self.wraparoundable(around).wraparound() {
-                if let Some(wraparound_net) = wraparound.primitive(self).maybe_net() {
+            if let Some(next_gear) = around.ref_(self).next_gear() {
+                if let Some(wraparound_net) = next_gear.primitive(self).maybe_net() {
                     if net == wraparound_net {
-                        return Err(AlreadyConnected(net, wraparound.into()).into());
+                        return Err(AlreadyConnected(net, next_gear.into()).into());
                     }
                 }
             }
         }
 
         match around {
-            WraparoundableIndex::FixedDot(core) => self
+            GearIndex::FixedDot(core) => self
                 .add_core_bend_with_infringables(from.into(), to.into(), core, weight, infringables)
                 .map_err(Into::into),
-            WraparoundableIndex::FixedBend(around) => self
+            GearIndex::FixedBend(around) => self
                 .add_outer_bend_with_infringables(from, to, around.into(), weight, infringables)
                 .map_err(Into::into),
-            WraparoundableIndex::LooseBend(around) => self
+            GearIndex::LooseBend(around) => self
                 .add_outer_bend_with_infringables(from, to, around.into(), weight, infringables)
                 .map_err(Into::into),
         }
@@ -391,13 +394,13 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     pub fn insert_cane(
         &mut self,
         from: DotIndex,
-        around: WraparoundableIndex,
+        around: GearIndex,
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         cw: bool,
     ) -> Result<Cane, LayoutException> {
-        let maybe_wraparound = self.wraparoundable(around).wraparound();
+        let maybe_next_gear = around.ref_(self).next_gear();
         let cane = self.add_cane_with_infringables(
             from,
             around,
@@ -408,8 +411,8 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
             Some(&[]),
         )?;
 
-        if let Some(wraparound) = maybe_wraparound {
-            self.reattach_bend(wraparound, Some(cane.bend));
+        if let Some(next_gear) = maybe_next_gear {
+            self.reattach_bend(next_gear, Some(cane.bend));
         }
 
         if let Some(outer) = self.primitive(cane.bend).outer() {
@@ -543,7 +546,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     pub fn add_cane(
         &mut self,
         from: DotIndex,
-        around: WraparoundableIndex,
+        around: GearIndex,
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
@@ -567,7 +570,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     fn add_cane_with_infringables(
         &mut self,
         from: DotIndex,
-        around: WraparoundableIndex,
+        around: GearIndex,
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
@@ -911,16 +914,8 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         GenericPrimitive::new(index, self)
     }
 
-    pub fn wraparoundable(&self, index: WraparoundableIndex) -> Wraparoundable<CW, R> {
-        Wraparoundable::new(index, self)
-    }
-
     pub fn loose(&self, index: LooseIndex) -> Loose<CW, R> {
         Loose::new(index, self)
-    }
-
-    pub fn head_ref(&self, head: Head) -> HeadRef<'_, CW, R> {
-        HeadRef::new(head, self)
     }
 
     pub fn layer_count(&self) -> usize {

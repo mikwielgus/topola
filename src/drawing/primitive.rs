@@ -72,8 +72,8 @@ pub trait GetJoints<F, T> {
     fn joints(&self) -> (F, T);
 }
 
-pub trait GetFirstRail<'a, R: AccessRules>: GetDrawing<'a, R> + GetPetgraphIndex {
-    fn first_rail(&self) -> Option<LooseBendIndex> {
+pub trait GetFirstGear<'a, R: AccessRules>: GetDrawing<'a, R> + GetPetgraphIndex {
+    fn first_gear(&self) -> Option<LooseBendIndex> {
         self.drawing()
             .geometry()
             .first_rail(self.petgraph_index())
@@ -268,7 +268,7 @@ impl<'a, CW: Copy, R: AccessRules> GetLimbs for FixedDot<'a, CW, R> {
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetFirstRail<'a, R> for FixedDot<'a, CW, R> {}
+impl<'a, CW: Copy, R: AccessRules> GetFirstGear<'a, R> for FixedDot<'a, CW, R> {}
 
 pub type LooseDot<'a, CW, R> = GenericPrimitive<'a, LooseDotWeight, CW, R>;
 impl_loose_primitive!(LooseDot, LooseDotWeight);
@@ -437,7 +437,7 @@ impl<'a, CW: Copy, R: AccessRules> GetOtherJoint<FixedDotIndex, FixedDotIndex>
     for FixedBend<'a, CW, R>
 {
 }
-impl<'a, CW: Copy, R: AccessRules> GetFirstRail<'a, R> for FixedBend<'a, CW, R> {}
+impl<'a, CW: Copy, R: AccessRules> GetFirstGear<'a, R> for FixedBend<'a, CW, R> {}
 impl<'a, CW: Copy, R: AccessRules> GetCore<'a, R> for FixedBend<'a, CW, R> {} // TODO: Fixed bends don't have cores actually.
                                                                               //impl<'a, R: QueryRules> GetInnerOuter for FixedBend<'a, CW, R> {}
 
