@@ -94,13 +94,13 @@ impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterErro
             }
             AutorouteStatus::Finished => {
                 if let Some(next_autoroute) = self.next_autoroute.take() {
-                    autorouter.undo_autoroute_ratlines(vec![self.ratline1, self.ratline2]);
+                    autorouter.undo_autoroute_ratlines(vec![self.ratline1, self.ratline2])?;
                     self.autoroute = next_autoroute;
 
                     Ok(CompareDetoursStatus::Running)
                 } else {
                     self.done = true;
-                    autorouter.undo_autoroute_ratlines(vec![self.ratline2, self.ratline1]);
+                    autorouter.undo_autoroute_ratlines(vec![self.ratline2, self.ratline1])?;
 
                     Ok(CompareDetoursStatus::Finished(
                         self.total_length1,

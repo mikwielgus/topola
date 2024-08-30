@@ -149,7 +149,6 @@ impl Top {
                     place_via.toggle_widget(ctx, ui, &mut self.is_placing_via);
 
                     remove_bands.button(ctx, ui);
-                    measure_length.button(ctx, ui);
 
                     ui.separator();
 

@@ -18,13 +18,14 @@ use crate::{
     drawing::{
         bend::{FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
+        gear::{GearIndex, GetNextGear},
         graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex},
         primitive::{MakePrimitiveShape, Primitive},
         rules::AccessRules,
         Drawing,
     },
     geometry::shape::AccessShape,
-    graph::GetPetgraphIndex,
+    graph::{GetPetgraphIndex, MakeRef},
     layout::Layout,
     router::astar::MakeEdgeRef,
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
@@ -53,6 +54,16 @@ impl From<BinavvertexNodeIndex> for PrimitiveIndex {
             BinavvertexNodeIndex::FixedDot(dot) => PrimitiveIndex::FixedDot(dot),
             BinavvertexNodeIndex::FixedBend(bend) => PrimitiveIndex::FixedBend(bend),
             BinavvertexNodeIndex::LooseBend(bend) => PrimitiveIndex::LooseBend(bend),
+        }
+    }
+}
+
+impl From<BinavvertexNodeIndex> for GearIndex {
+    fn from(vertex: BinavvertexNodeIndex) -> Self {
+        match vertex {
+            BinavvertexNodeIndex::FixedDot(dot) => GearIndex::FixedDot(dot),
+            BinavvertexNodeIndex::FixedBend(bend) => GearIndex::FixedBend(bend),
+            BinavvertexNodeIndex::LooseBend(bend) => GearIndex::LooseBend(bend),
         }
     }
 }
@@ -152,10 +163,11 @@ impl Navmesh {
             }
         }
 
-        Self::new_from_triangulation(triangulation, origin, destination)
+        Self::new_from_triangulation(layout, triangulation, origin, destination)
     }
 
     fn new_from_triangulation(
+        layout: &Layout<impl AccessRules>,
         triangulation: Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()>,
         origin: FixedDotIndex,
         destination: FixedDotIndex,
@@ -168,14 +180,14 @@ impl Navmesh {
         let mut map = HashMap::new();
 
         for trianvertex in triangulation.node_identifiers() {
-            let binavvertex = if trianvertex == origin.into() {
+            if trianvertex == origin.into() {
                 let navvertex = graph.add_node(NavvertexWeight {
                     node: trianvertex.into(),
                     maybe_cw: None,
                 });
 
                 origin_navvertex = Some(navvertex);
-                vec![(navvertex, navvertex)]
+                map.insert(trianvertex, vec![(navvertex, navvertex)]);
             } else if trianvertex == destination.into() {
                 let navvertex = graph.add_node(NavvertexWeight {
                     node: trianvertex.into(),
@@ -183,22 +195,29 @@ impl Navmesh {
                 });
 
                 destination_navvertex = Some(navvertex);
-                vec![(navvertex, navvertex)]
+                map.insert(trianvertex, vec![(navvertex, navvertex)]);
             } else {
-                let navvertex1 = graph.add_node(NavvertexWeight {
-                    node: trianvertex.into(),
-                    maybe_cw: Some(false),
-                });
+                map.insert(trianvertex, vec![]);
+                Self::add_node_to_graph_and_map_as_binavvertex(
+                    &mut graph,
+                    &mut map,
+                    trianvertex,
+                    trianvertex.into(),
+                );
 
-                let navvertex2 = graph.add_node(NavvertexWeight {
-                    node: trianvertex.into(),
-                    maybe_cw: Some(true),
-                });
+                let mut gear =
+                    Into::<GearIndex>::into(Into::<BinavvertexNodeIndex>::into(trianvertex));
 
-                vec![(navvertex1, navvertex2)]
+                while let Some(bend) = gear.ref_(layout.drawing()).next_gear() {
+                    Self::add_node_to_graph_and_map_as_binavvertex(
+                        &mut graph,
+                        &mut map,
+                        trianvertex,
+                        bend.into(),
+                    );
+                    gear = bend.into();
+                }
             };
-
-            map.insert(trianvertex, binavvertex);
         }
 
         for edge in triangulation.edge_references() {
@@ -219,6 +238,27 @@ impl Navmesh {
             destination,
             destination_navvertex: NavvertexIndex(destination_navvertex.unwrap()),
         })
+    }
+
+    fn add_node_to_graph_and_map_as_binavvertex(
+        graph: &mut UnGraph<NavvertexWeight, (), usize>,
+        map: &mut HashMap<TrianvertexNodeIndex, Vec<(NodeIndex<usize>, NodeIndex<usize>)>>,
+        trianvertex: TrianvertexNodeIndex,
+        node: BinavvertexNodeIndex,
+    ) {
+        let navvertex1 = graph.add_node(NavvertexWeight {
+            node,
+            maybe_cw: Some(false),
+        });
+
+        let navvertex2 = graph.add_node(NavvertexWeight {
+            node,
+            maybe_cw: Some(true),
+        });
+
+        map.get_mut(&trianvertex)
+            .unwrap()
+            .push((navvertex1, navvertex2));
     }
 
     pub fn graph(&self) -> &UnGraph<NavvertexWeight, (), usize> {

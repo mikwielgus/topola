@@ -285,8 +285,8 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
             }
             //
             if let Some(next_gear) = around.ref_(self).next_gear() {
-                if let Some(wraparound_net) = next_gear.primitive(self).maybe_net() {
-                    if net == wraparound_net {
+                if let Some(next_gear_net) = next_gear.primitive(self).maybe_net() {
+                    if net == next_gear_net {
                         return Err(AlreadyConnected(net, next_gear.into()).into());
                     }
                 }

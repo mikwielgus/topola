@@ -99,10 +99,10 @@ impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
         let mut v = vec![];
         let mut gear = around;
 
-        while let Some(outer) = gear.ref_(self.drawing).next_gear() {
-            let primitive = self.drawing.primitive(outer);
+        while let Some(bend) = gear.ref_(self.drawing).next_gear() {
+            let primitive = self.drawing.primitive(bend);
 
-            v.push(outer.into());
+            v.push(bend.into());
 
             let joints = primitive.joints();
             v.push(joints.0.into());
@@ -111,7 +111,7 @@ impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
             v.push(self.drawing.primitive(joints.0).seg().unwrap().into());
             v.push(self.drawing.primitive(joints.1).seg().unwrap().into());
 
-            gear = outer.into();
+            gear = bend.into();
         }
 
         v
