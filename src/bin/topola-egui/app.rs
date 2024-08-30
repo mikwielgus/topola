@@ -22,7 +22,7 @@ use topola::{
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
         rules::AccessRules,
-        Drawing, Infringement, LayoutException,
+        Drawing, DrawingException, Infringement,
     },
     geometry::{
         compound::ManageCompounds,
@@ -151,8 +151,6 @@ impl App {
             if let Ok(bufread) = history_file_receiver.try_recv() {
                 invoker.replay(serde_json::from_reader(bufread).unwrap())
             }
-
-            // TODO: Make Save History work too.
 
             if let Some(ref mut execute) = self.maybe_execute {
                 let status = match execute.step(invoker) {

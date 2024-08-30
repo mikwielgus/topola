@@ -289,11 +289,17 @@ impl<M: AccessMesadata> Invoker<M> {
         let command = self.history.last_done()?;
 
         match command {
-            Command::Autoroute(ref selection) => self.autorouter.undo_autoroute(selection),
-            Command::PlaceVia(weight) => self.autorouter.undo_place_via(*weight),
-            Command::RemoveBands(ref selection) => self.autorouter.undo_remove_bands(selection),
-            Command::CompareDetours(..) => (),
-            Command::MeasureLength(..) => (),
+            Command::Autoroute(ref selection) => {
+                self.autorouter.undo_autoroute(selection);
+            }
+            Command::PlaceVia(weight) => {
+                self.autorouter.undo_place_via(*weight);
+            }
+            Command::RemoveBands(ref selection) => {
+                self.autorouter.undo_remove_bands(selection);
+            }
+            Command::CompareDetours(..) => {}
+            Command::MeasureLength(..) => {}
         }
 
         Ok::<(), InvokerError>(self.history.undo()?)

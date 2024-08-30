@@ -4,7 +4,11 @@ use thiserror::Error;
 
 use crate::{
     board::{mesadata::AccessMesadata, Board},
-    drawing::{dot::FixedDotIndex, Infringement},
+    drawing::{
+        band::{BandTermsegIndex, BandUid},
+        dot::FixedDotIndex,
+        Infringement,
+    },
     layout::via::ViaWeight,
     router::{navmesh::NavmeshError, RouterError},
     triangulation::GetTrianvertexNodeIndex,
@@ -30,6 +34,8 @@ pub enum AutorouterError {
     Router(#[from] RouterError),
     #[error("could not place via")]
     CouldNotPlaceVia(#[from] Infringement),
+    #[error("could not remove band")]
+    CouldNotRemoveBand(BandTermsegIndex),
     #[error("need exactly two ratlines")]
     NeedExactlyTwoRatlines,
 }
@@ -56,11 +62,14 @@ impl<M: AccessMesadata> Autorouter<M> {
         Autoroute::new(self, ratlines)
     }
 
-    pub fn undo_autoroute(&mut self, selection: &PinSelection) {
+    pub fn undo_autoroute(&mut self, selection: &PinSelection) -> Result<(), AutorouterError> {
         self.undo_autoroute_ratlines(self.selected_ratlines(selection))
     }
 
-    pub(super) fn undo_autoroute_ratlines(&mut self, ratlines: Vec<EdgeIndex<usize>>) {
+    pub(super) fn undo_autoroute_ratlines(
+        &mut self,
+        ratlines: Vec<EdgeIndex<usize>>,
+    ) -> Result<(), AutorouterError> {
         for ratline in ratlines.iter() {
             let band = self
                 .ratsnest
@@ -69,8 +78,13 @@ impl<M: AccessMesadata> Autorouter<M> {
                 .unwrap()
                 .band_termseg
                 .unwrap();
-            self.board.layout_mut().remove_band(band);
+            self.board
+                .layout_mut()
+                .remove_band(band)
+                .map_err(|_| AutorouterError::CouldNotRemoveBand(band))?;
         }
+
+        Ok(())
     }
 
     pub fn place_via(&self, weight: ViaWeight) -> Result<PlaceVia, AutorouterError> {

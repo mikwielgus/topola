@@ -17,7 +17,7 @@ use crate::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
             SeqLooseSegWeight,
         },
-        Drawing, Infringement, LayoutException,
+        Drawing, DrawingException, Infringement,
     },
     geometry::{compound::ManageCompounds, shape::MeasureLength, GenericNode},
     graph::{GenericIndex, GetPetgraphIndex},
@@ -54,7 +54,7 @@ impl<R: AccessRules> Layout<R> {
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         cw: bool,
-    ) -> Result<Cane, LayoutException> {
+    ) -> Result<Cane, DrawingException> {
         self.drawing
             .insert_cane(from, around, dot_weight, seg_weight, bend_weight, cw)
     }
@@ -204,8 +204,8 @@ impl<R: AccessRules> Layout<R> {
         )
     }
 
-    pub fn remove_band(&mut self, band: BandTermsegIndex) {
-        self.drawing.remove_band(band);
+    pub fn remove_band(&mut self, band: BandTermsegIndex) -> Result<(), DrawingException> {
+        self.drawing.remove_band(band)
     }
 
     pub fn polys<W: 'static>(

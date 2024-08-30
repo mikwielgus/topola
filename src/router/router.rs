@@ -12,7 +12,7 @@ use crate::{
         head::GetFace,
         primitive::MakePrimitiveShape,
         rules::AccessRules,
-        Collision, Infringement, LayoutException,
+        Collision, DrawingException, Infringement,
     },
     geometry::{
         primitive::{AccessPrimitiveShape, PrimitiveShape},
@@ -140,12 +140,14 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
                     };
 
                     let (ghost, obstacle) = match layout_err {
-                        LayoutException::NoTangents(..) => return None,
-                        LayoutException::Infringement(Infringement(ghost, obstacle)) => {
+                        DrawingException::NoTangents(..) => return None,
+                        DrawingException::Infringement(Infringement(ghost, obstacle)) => {
                             (ghost, obstacle)
                         }
-                        LayoutException::Collision(Collision(ghost, obstacle)) => (ghost, obstacle),
-                        LayoutException::AlreadyConnected(..) => return None,
+                        DrawingException::Collision(Collision(ghost, obstacle)) => {
+                            (ghost, obstacle)
+                        }
+                        DrawingException::AlreadyConnected(..) => return None,
                     };
 
                     self.probe_ghosts = vec![ghost];

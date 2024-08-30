@@ -42,7 +42,7 @@ use super::head::{Head, HeadRef};
 
 #[enum_dispatch]
 #[derive(Error, Debug, Clone, Copy)]
-pub enum LayoutException {
+pub enum DrawingException {
     #[error(transparent)]
     NoTangents(#[from] NoTangents),
     #[error(transparent)]
@@ -91,7 +91,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         }
     }
 
-    pub fn remove_band(&mut self, band: BandTermsegIndex) {
+    pub fn remove_band(&mut self, band: BandTermsegIndex) -> Result<(), DrawingException> {
         match band {
             BandTermsegIndex::Straight(seg) => {
                 self.geometry_with_rtree.remove_seg(seg.into());
@@ -148,10 +148,12 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                 }
 
                 for outer in outers {
-                    self.update_this_and_outward_bows(outer).unwrap(); // Must never fail.
+                    self.update_this_and_outward_bows(outer)?;
                 }
             }
         }
+
+        Ok(())
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 1))]
@@ -272,7 +274,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         around: GearIndex,
         weight: LooseBendWeight,
         infringables: Option<&[PrimitiveIndex]>,
-    ) -> Result<LooseBendIndex, LayoutException> {
+    ) -> Result<LooseBendIndex, DrawingException> {
         // It makes no sense to wrap something around or under one of its connectables.
         //
         if let Some(net) = weight.maybe_net {
@@ -399,7 +401,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         cw: bool,
-    ) -> Result<Cane, LayoutException> {
+    ) -> Result<Cane, DrawingException> {
         let maybe_next_gear = around.ref_(self).next_gear();
         let cane = self.add_cane_with_infringables(
             from,
@@ -430,7 +432,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
             return Err(collision.into());
         }
 
-        Ok::<Cane, LayoutException>(cane)
+        Ok::<Cane, DrawingException>(cane)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
@@ -438,7 +440,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     fn update_this_and_outward_bows(
         &mut self,
         around: LooseBendIndex,
-    ) -> Result<(), LayoutException> {
+    ) -> Result<(), DrawingException> {
         // FIXME: Fail gracefully on infringement.
         let mut maybe_rail = Some(around);
 
@@ -536,7 +538,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
             maybe_rail = self.primitive(rail).outer();
         }
 
-        Ok::<(), LayoutException>(())
+        Ok::<(), DrawingException>(())
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 4))]
@@ -551,7 +553,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         cw: bool,
-    ) -> Result<Cane, LayoutException> {
+    ) -> Result<Cane, DrawingException> {
         self.add_cane_with_infringables(
             from,
             around,
@@ -576,7 +578,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         bend_weight: LooseBendWeight,
         cw: bool,
         infringables: Option<&[PrimitiveIndex]>,
-    ) -> Result<Cane, LayoutException> {
+    ) -> Result<Cane, DrawingException> {
         let seg_to = self.add_dot_with_infringables(dot_weight, infringables)?;
         let seg = self
             .add_seg_with_infringables(from, seg_to.into(), seg_weight, infringables)
@@ -604,7 +606,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                 err
             })?;
 
-        Ok::<Cane, LayoutException>(Cane {
+        Ok::<Cane, DrawingException>(Cane {
             seg,
             dot: seg_to,
             bend,

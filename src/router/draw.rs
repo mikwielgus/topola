@@ -14,7 +14,7 @@ use crate::{
         primitive::GetOtherJoint,
         rules::AccessRules,
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
-        Infringement, LayoutException,
+        DrawingException, Infringement,
     },
     layout::Layout,
     math::{Circle, NoTangents},
@@ -26,9 +26,9 @@ pub enum DrawException {
     NoTangents(#[from] NoTangents),
     // TODO add real error messages + these should eventually use Display
     #[error("cannot finish in {0:?}")]
-    CannotFinishIn(FixedDotIndex, #[source] LayoutException),
+    CannotFinishIn(FixedDotIndex, #[source] DrawingException),
     #[error("cannot wrap around {0:?}")]
-    CannotWrapAround(GearIndex, #[source] LayoutException),
+    CannotWrapAround(GearIndex, #[source] DrawingException),
 }
 
 pub struct Draw<'a, R: AccessRules> {
@@ -158,7 +158,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         cw: bool,
         width: f64,
         offset: f64,
-    ) -> Result<CaneHead, LayoutException> {
+    ) -> Result<CaneHead, DrawingException> {
         let head = self.extend_head(head, from)?;
         self.cane(head, around, to, cw, width, offset)
     }
@@ -183,7 +183,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         cw: bool,
         width: f64,
         offset: f64,
-    ) -> Result<CaneHead, LayoutException> {
+    ) -> Result<CaneHead, DrawingException> {
         let layer = head.face().primitive(self.layout.drawing()).layer();
         let maybe_net = head.face().primitive(self.layout.drawing()).maybe_net();
         let cane = self.layout.insert_cane(
@@ -210,7 +210,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
             },
             cw,
         )?;
-        Ok::<CaneHead, LayoutException>(CaneHead {
+        Ok::<CaneHead, DrawingException>(CaneHead {
             face: self
                 .layout
                 .drawing()
