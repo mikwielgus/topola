@@ -22,7 +22,7 @@ use super::{
     place_via::PlaceVia,
     remove_bands::RemoveBands,
     selection::{BandSelection, PinSelection},
-    Autorouter, AutorouterError,
+    Autorouter, AutorouterError, AutorouterOptions,
 };
 
 #[enum_dispatch]
@@ -71,10 +71,10 @@ impl TryInto<()> for InvokerStatus {
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
-    Autoroute(PinSelection),
+    Autoroute(PinSelection, AutorouterOptions),
     PlaceVia(ViaWeight),
     RemoveBands(BandSelection),
-    CompareDetours(PinSelection),
+    CompareDetours(PinSelection, AutorouterOptions),
     MeasureLength(BandSelection),
 }
 
@@ -254,19 +254,25 @@ impl<M: AccessMesadata> Invoker<M> {
     #[debug_requires(self.ongoing_command.is_none())]
     fn dispatch_command(&mut self, command: &Command) -> Result<Execute, InvokerError> {
         match command {
-            Command::Autoroute(selection) => {
+            Command::Autoroute(selection, options) => {
                 let mut ratlines = self.autorouter.selected_ratlines(selection);
-                ratlines.sort_unstable_by(|a, b| {
-                    let mut compare_detours =
-                        self.autorouter.compare_detours_ratlines(*a, *b).unwrap();
-                    if let Ok((al, bl)) = compare_detours.finish(&mut self.autorouter) {
-                        PartialOrd::partial_cmp(&al, &bl).unwrap()
-                    } else {
-                        Ordering::Equal
-                    }
-                });
+
+                if options.presort_by_pairwise_detours {
+                    ratlines.sort_unstable_by(|a, b| {
+                        let mut compare_detours = self
+                            .autorouter
+                            .compare_detours_ratlines(*a, *b, *options)
+                            .unwrap();
+                        if let Ok((al, bl)) = compare_detours.finish(&mut self.autorouter) {
+                            PartialOrd::partial_cmp(&al, &bl).unwrap()
+                        } else {
+                            Ordering::Equal
+                        }
+                    });
+                }
+
                 Ok::<Execute, InvokerError>(Execute::Autoroute(
-                    self.autorouter.autoroute_ratlines(ratlines)?,
+                    self.autorouter.autoroute_ratlines(ratlines, *options)?,
                 ))
             }
             Command::PlaceVia(weight) => {
@@ -275,8 +281,8 @@ impl<M: AccessMesadata> Invoker<M> {
             Command::RemoveBands(selection) => Ok::<Execute, InvokerError>(Execute::RemoveBands(
                 self.autorouter.remove_bands(selection)?,
             )),
-            Command::CompareDetours(selection) => Ok::<Execute, InvokerError>(
-                Execute::CompareDetours(self.autorouter.compare_detours(selection)?),
+            Command::CompareDetours(selection, options) => Ok::<Execute, InvokerError>(
+                Execute::CompareDetours(self.autorouter.compare_detours(selection, *options)?),
             ),
             Command::MeasureLength(selection) => Ok::<Execute, InvokerError>(
                 Execute::MeasureLength(self.autorouter.measure_length(selection)?),
@@ -289,8 +295,8 @@ impl<M: AccessMesadata> Invoker<M> {
         let command = self.history.last_done()?;
 
         match command {
-            Command::Autoroute(ref selection) => {
-                self.autorouter.undo_autoroute(selection);
+            Command::Autoroute(ref selection, ..) => {
+                self.autorouter.undo_autoroute(selection)?;
             }
             Command::PlaceVia(weight) => {
                 self.autorouter.undo_place_via(*weight);

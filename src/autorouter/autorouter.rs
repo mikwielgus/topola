@@ -1,4 +1,5 @@
 use petgraph::graph::EdgeIndex;
+use serde::{Deserialize, Serialize};
 use spade::InsertionError;
 use thiserror::Error;
 
@@ -23,6 +24,23 @@ use super::{
     remove_bands::RemoveBands,
     selection::{BandSelection, PinSelection},
 };
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct AutorouterOptions {
+    pub presort_by_pairwise_detours: bool,
+    //pub wrap_around_bands: bool,
+    //pub squeeze_under_bands: bool,
+}
+
+impl AutorouterOptions {
+    pub fn new() -> Self {
+        Self {
+            presort_by_pairwise_detours: false,
+            //wrap_around_bands: true,
+            //squeeze_under_bands: true,
+        }
+    }
+}
 
 #[derive(Error, Debug, Clone)]
 pub enum AutorouterError {
@@ -51,15 +69,20 @@ impl<M: AccessMesadata> Autorouter<M> {
         Ok(Self { board, ratsnest })
     }
 
-    pub fn autoroute(&mut self, selection: &PinSelection) -> Result<Autoroute, AutorouterError> {
-        self.autoroute_ratlines(self.selected_ratlines(selection))
+    pub fn autoroute(
+        &mut self,
+        selection: &PinSelection,
+        options: AutorouterOptions,
+    ) -> Result<Autoroute, AutorouterError> {
+        self.autoroute_ratlines(self.selected_ratlines(selection), options)
     }
 
     pub(super) fn autoroute_ratlines(
         &mut self,
         ratlines: Vec<EdgeIndex<usize>>,
+        options: AutorouterOptions,
     ) -> Result<Autoroute, AutorouterError> {
-        Autoroute::new(self, ratlines)
+        Autoroute::new(self, ratlines, options)
     }
 
     pub fn undo_autoroute(&mut self, selection: &PinSelection) -> Result<(), AutorouterError> {
@@ -106,6 +129,7 @@ impl<M: AccessMesadata> Autorouter<M> {
     pub fn compare_detours(
         &mut self,
         selection: &PinSelection,
+        options: AutorouterOptions,
     ) -> Result<CompareDetours, AutorouterError> {
         let ratlines = self.selected_ratlines(selection);
         let ratline1 = *ratlines
@@ -114,15 +138,16 @@ impl<M: AccessMesadata> Autorouter<M> {
         let ratline2 = *ratlines
             .get(1)
             .ok_or(AutorouterError::NeedExactlyTwoRatlines)?;
-        self.compare_detours_ratlines(ratline1, ratline2)
+        self.compare_detours_ratlines(ratline1, ratline2, options)
     }
 
     pub(super) fn compare_detours_ratlines(
         &mut self,
         ratline1: EdgeIndex<usize>,
         ratline2: EdgeIndex<usize>,
+        options: AutorouterOptions,
     ) -> Result<CompareDetours, AutorouterError> {
-        CompareDetours::new(self, ratline1, ratline2)
+        CompareDetours::new(self, ratline1, ratline2, options)
     }
 
     pub fn measure_length(

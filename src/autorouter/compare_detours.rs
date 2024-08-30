@@ -12,7 +12,7 @@ use crate::{
 use super::{
     autoroute::{Autoroute, AutorouteStatus},
     invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles},
-    Autorouter, AutorouterError,
+    Autorouter, AutorouterError, AutorouterOptions,
 };
 
 pub enum CompareDetoursStatus {
@@ -47,10 +47,11 @@ impl CompareDetours {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratline1: EdgeIndex<usize>,
         ratline2: EdgeIndex<usize>,
+        options: AutorouterOptions,
     ) -> Result<Self, AutorouterError> {
         Ok(Self {
-            autoroute: autorouter.autoroute_ratlines(vec![ratline1, ratline2])?,
-            next_autoroute: Some(autorouter.autoroute_ratlines(vec![ratline2, ratline1])?),
+            autoroute: autorouter.autoroute_ratlines(vec![ratline1, ratline2], options)?,
+            next_autoroute: Some(autorouter.autoroute_ratlines(vec![ratline2, ratline1], options)?),
             ratline1,
             ratline2,
             total_length1: 0.0,

@@ -10,7 +10,7 @@ use crate::{
 
 use super::{
     invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles},
-    Autorouter, AutorouterError,
+    Autorouter, AutorouterError, AutorouterOptions,
 };
 
 pub enum AutorouteStatus {
@@ -32,6 +32,7 @@ impl TryInto<()> for AutorouteStatus {
 
 pub struct Autoroute {
     ratlines_iter: Box<dyn Iterator<Item = EdgeIndex<usize>>>,
+    options: AutorouterOptions,
     route: Option<Route>,
     curr_ratline: Option<EdgeIndex<usize>>,
 }
@@ -40,6 +41,7 @@ impl Autoroute {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: impl IntoIterator<Item = EdgeIndex<usize>> + 'static,
+        options: AutorouterOptions,
     ) -> Result<Self, AutorouterError> {
         let mut ratlines_iter = Box::new(ratlines.into_iter());
 
@@ -52,8 +54,9 @@ impl Autoroute {
 
         let this = Self {
             ratlines_iter,
-            curr_ratline: Some(curr_ratline),
+            options,
             route: Some(router.route(source, target, 100.0)?),
+            curr_ratline: Some(curr_ratline),
         };
 
         Ok(this)

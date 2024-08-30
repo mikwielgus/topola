@@ -5,8 +5,9 @@ use std::{
 };
 
 use topola::{
-    autorouter::invoker::{
-        Command, Execute, ExecuteWithStatus, Invoker, InvokerError, InvokerStatus,
+    autorouter::{
+        invoker::{Command, Execute, ExecuteWithStatus, Invoker, InvokerError, InvokerStatus},
+        AutorouterOptions,
     },
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
@@ -248,10 +249,12 @@ impl Top {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_execute
-                                .insert(ExecuteWithStatus::new(invoker.execute_stepper(
-                                    Command::Autoroute(selection.pin_selection),
-                                )?));
+                            maybe_execute.insert(ExecuteWithStatus::new(invoker.execute_stepper(
+                                Command::Autoroute(
+                                    selection.pin_selection,
+                                    AutorouterOptions::new(),
+                                ),
+                            )?));
                         }
                     }
                 } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
@@ -304,7 +307,10 @@ impl Top {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
                             maybe_execute.insert(ExecuteWithStatus::new(invoker.execute_stepper(
-                                Command::CompareDetours(selection.pin_selection),
+                                Command::CompareDetours(
+                                    selection.pin_selection,
+                                    AutorouterOptions::new(),
+                                ),
                             )?));
                         }
                     }
