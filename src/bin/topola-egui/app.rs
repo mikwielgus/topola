@@ -170,8 +170,6 @@ impl eframe::App for App {
 
     /// Called each time the UI has to be repainted.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.update_state(ctx.input(|i| i.stable_dt));
-
         self.top.update(
             ctx,
             &self.translator,
@@ -182,6 +180,8 @@ impl eframe::App for App {
             &mut self.maybe_overlay,
             &self.maybe_design,
         );
+
+        self.update_state(ctx.input(|i| i.stable_dt));
 
         if let Some(ref mut layers) = self.maybe_layers {
             if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_ref() {

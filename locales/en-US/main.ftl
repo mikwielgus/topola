@@ -1,4 +1,5 @@
 menu-file = File
+menu-options = Options
 menu-debug = Debug
 
 action-open-dsn = Open
@@ -15,6 +16,8 @@ action-measure-length = Measure Length
 
 action-undo = Undo
 action-redo = Redo
+
+presort-by-pairwise-detours = Presort by pairwise detours
 
 show-ratsnest = Show Ratsnest
 show-navmesh = Show Navmesh

@@ -21,6 +21,7 @@ use crate::{
 };
 
 pub struct Top {
+    pub autorouter_options: AutorouterOptions,
     pub is_placing_via: bool,
     pub show_ratsnest: bool,
     pub show_navmesh: bool,
@@ -31,6 +32,7 @@ pub struct Top {
 impl Top {
     pub fn new() -> Self {
         Self {
+            autorouter_options: AutorouterOptions::new(),
             is_placing_via: false,
             show_ratsnest: false,
             show_navmesh: false,
@@ -134,6 +136,15 @@ impl Top {
                     ui.separator();
 
                     autoroute.button(ctx, ui);
+
+                    ui.menu_button(tr.text("menu-options"), |ui| {
+                        ui.checkbox(
+                            &mut self.autorouter_options.presort_by_pairwise_detours,
+                            tr.text("presort-by-pairwise-detours"),
+                        );
+                    });
+
+                    ui.separator();
 
                     place_via.toggle_widget(ctx, ui, &mut self.is_placing_via);
 
@@ -252,7 +263,7 @@ impl Top {
                             maybe_execute.insert(ExecuteWithStatus::new(invoker.execute_stepper(
                                 Command::Autoroute(
                                     selection.pin_selection,
-                                    AutorouterOptions::new(),
+                                    self.autorouter_options,
                                 ),
                             )?));
                         }
@@ -309,7 +320,7 @@ impl Top {
                             maybe_execute.insert(ExecuteWithStatus::new(invoker.execute_stepper(
                                 Command::CompareDetours(
                                     selection.pin_selection,
-                                    AutorouterOptions::new(),
+                                    self.autorouter_options,
                                 ),
                             )?));
                         }
