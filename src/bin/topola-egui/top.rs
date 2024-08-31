@@ -9,6 +9,7 @@ use topola::{
         invoker::{Command, Execute, ExecuteWithStatus, Invoker, InvokerError, InvokerStatus},
         AutorouterOptions,
     },
+    router::RouterOptions,
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
 
@@ -32,7 +33,13 @@ pub struct Top {
 impl Top {
     pub fn new() -> Self {
         Self {
-            autorouter_options: AutorouterOptions::new(),
+            autorouter_options: AutorouterOptions {
+                presort_by_pairwise_detours: false,
+                router_options: RouterOptions {
+                    wrap_around_bands: true,
+                    squeeze_under_bands: true,
+                },
+            },
             is_placing_via: false,
             show_ratsnest: false,
             show_navmesh: false,
@@ -141,6 +148,10 @@ impl Top {
                         ui.checkbox(
                             &mut self.autorouter_options.presort_by_pairwise_detours,
                             tr.text("presort-by-pairwise-detours"),
+                        );
+                        ui.checkbox(
+                            &mut self.autorouter_options.router_options.squeeze_under_bands,
+                            tr.text("squeeze-under-bands"),
                         );
                         ui.checkbox(
                             &mut self.autorouter_options.router_options.wrap_around_bands,

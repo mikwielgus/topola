@@ -202,26 +202,50 @@ impl Navmesh {
                 map.insert(trianvertex, vec![(navvertex, navvertex)]);
             } else {
                 map.insert(trianvertex, vec![]);
-                Self::add_node_to_graph_and_map_as_binavvertex(
-                    &mut graph,
-                    &mut map,
-                    trianvertex,
-                    trianvertex.into(),
-                );
 
-                if options.wrap_around_bands {
-                    let mut gear =
-                        Into::<GearIndex>::into(Into::<BinavvertexNodeIndex>::into(trianvertex));
+                let mut gear =
+                    Into::<GearIndex>::into(Into::<BinavvertexNodeIndex>::into(trianvertex));
 
-                    while let Some(bend) = gear.ref_(layout.drawing()).next_gear() {
-                        Self::add_node_to_graph_and_map_as_binavvertex(
-                            &mut graph,
-                            &mut map,
-                            trianvertex,
-                            bend.into(),
-                        );
+                if options.squeeze_under_bands {
+                    Self::add_node_to_graph_and_map_as_binavvertex(
+                        &mut graph,
+                        &mut map,
+                        trianvertex,
+                        trianvertex.into(),
+                    );
+
+                    if options.wrap_around_bands {
+                        while let Some(bend) = gear.ref_(layout.drawing()).next_gear() {
+                            Self::add_node_to_graph_and_map_as_binavvertex(
+                                &mut graph,
+                                &mut map,
+                                trianvertex,
+                                bend.into(),
+                            );
+                            gear = bend.into();
+                        }
+                    }
+                } else if let Some(first_bend) = gear.ref_(layout.drawing()).next_gear() {
+                    let mut bend = first_bend;
+
+                    while let Some(next_bend) = gear.ref_(layout.drawing()).next_gear() {
+                        bend = next_bend;
                         gear = bend.into();
                     }
+
+                    Self::add_node_to_graph_and_map_as_binavvertex(
+                        &mut graph,
+                        &mut map,
+                        trianvertex,
+                        bend.into(),
+                    );
+                } else {
+                    Self::add_node_to_graph_and_map_as_binavvertex(
+                        &mut graph,
+                        &mut map,
+                        trianvertex,
+                        trianvertex.into(),
+                    );
                 }
             };
         }

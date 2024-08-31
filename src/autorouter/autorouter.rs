@@ -31,15 +31,6 @@ pub struct AutorouterOptions {
     pub router_options: RouterOptions,
 }
 
-impl AutorouterOptions {
-    pub fn new() -> Self {
-        Self {
-            presort_by_pairwise_detours: false,
-            router_options: RouterOptions::new(),
-        }
-    }
-}
-
 #[derive(Error, Debug, Clone)]
 pub enum AutorouterError {
     #[error("nothing to route")]
