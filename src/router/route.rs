@@ -27,7 +27,7 @@ impl Route {
         to: FixedDotIndex,
         width: f64,
     ) -> Result<Self, RouterError> {
-        let navmesh = Navmesh::new(router.layout(), from, to)?;
+        let navmesh = Navmesh::new(router.layout(), from, to, router.options())?;
         Ok(Self::new_from_navmesh(router, navmesh, width))
     }
 

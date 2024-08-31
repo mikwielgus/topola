@@ -31,6 +31,8 @@ use crate::{
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
 
+use super::RouterOptions;
+
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
 pub struct NavvertexIndex(NodeIndex<usize>);
 
@@ -129,6 +131,7 @@ impl Navmesh {
         layout: &Layout<impl AccessRules>,
         origin: FixedDotIndex,
         destination: FixedDotIndex,
+        options: RouterOptions,
     ) -> Result<Self, NavmeshError> {
         let mut triangulation: Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()> =
             Triangulation::new(layout.drawing().geometry().graph().node_bound());
@@ -163,7 +166,7 @@ impl Navmesh {
             }
         }
 
-        Self::new_from_triangulation(layout, triangulation, origin, destination)
+        Self::new_from_triangulation(layout, triangulation, origin, destination, options)
     }
 
     fn new_from_triangulation(
@@ -171,6 +174,7 @@ impl Navmesh {
         triangulation: Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()>,
         origin: FixedDotIndex,
         destination: FixedDotIndex,
+        options: RouterOptions,
     ) -> Result<Self, NavmeshError> {
         let mut graph: UnGraph<NavvertexWeight, (), usize> = UnGraph::default();
         let mut origin_navvertex = None;
@@ -205,17 +209,19 @@ impl Navmesh {
                     trianvertex.into(),
                 );
 
-                let mut gear =
-                    Into::<GearIndex>::into(Into::<BinavvertexNodeIndex>::into(trianvertex));
+                if options.wrap_around_bands {
+                    let mut gear =
+                        Into::<GearIndex>::into(Into::<BinavvertexNodeIndex>::into(trianvertex));
 
-                while let Some(bend) = gear.ref_(layout.drawing()).next_gear() {
-                    Self::add_node_to_graph_and_map_as_binavvertex(
-                        &mut graph,
-                        &mut map,
-                        trianvertex,
-                        bend.into(),
-                    );
-                    gear = bend.into();
+                    while let Some(bend) = gear.ref_(layout.drawing()).next_gear() {
+                        Self::add_node_to_graph_and_map_as_binavvertex(
+                            &mut graph,
+                            &mut map,
+                            trianvertex,
+                            bend.into(),
+                        );
+                        gear = bend.into();
+                    }
                 }
             };
         }

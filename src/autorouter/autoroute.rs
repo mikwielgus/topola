@@ -50,7 +50,7 @@ impl Autoroute {
         };
 
         let (source, target) = autorouter.ratline_endpoints(curr_ratline);
-        let mut router = Router::new(autorouter.board.layout_mut());
+        let mut router = Router::new(autorouter.board.layout_mut(), options.router_options);
 
         let this = Self {
             ratlines_iter,
@@ -77,7 +77,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, AutorouterError, ()
         let (source, target) = autorouter.ratline_endpoints(curr_ratline);
 
         let band_termseg = {
-            let mut router = Router::new(autorouter.board.layout_mut());
+            let mut router =
+                Router::new(autorouter.board.layout_mut(), self.options.router_options);
 
             let RouterStatus::Finished(band_termseg) = route.step(&mut router)? else {
                 return Ok(AutorouteStatus::Running);
@@ -102,7 +103,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, AutorouterError, ()
 
         if let Some(new_ratline) = self.ratlines_iter.next() {
             let (source, target) = autorouter.ratline_endpoints(new_ratline);
-            let mut router = Router::new(autorouter.board.layout_mut());
+            let mut router =
+                Router::new(autorouter.board.layout_mut(), self.options.router_options);
 
             self.curr_ratline = Some(new_ratline);
             self.route = Some(router.route(source, target, 100.0)?);

@@ -2,6 +2,7 @@ use std::convert::Infallible;
 
 use geo::EuclideanDistance;
 use petgraph::{data::DataMap, visit::EdgeRef};
+use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
@@ -31,6 +32,20 @@ use super::{
     trace::{Trace, TraceStepContext},
     tracer::{Tracer, TracerException},
 };
+
+#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+pub struct RouterOptions {
+    pub wrap_around_bands: bool,
+    //pub squeeze_under_bands: bool,
+}
+
+impl RouterOptions {
+    pub fn new() -> Self {
+        Self {
+            wrap_around_bands: true,
+        }
+    }
+}
 
 #[derive(Error, Debug, Clone)]
 #[error("routing failed")]
@@ -182,11 +197,12 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
 #[derive(Debug)]
 pub struct Router<'a, R: AccessRules> {
     layout: &'a mut Layout<R>,
+    options: RouterOptions,
 }
 
 impl<'a, R: AccessRules> Router<'a, R> {
-    pub fn new(layout: &'a mut Layout<R>) -> Self {
-        Self { layout }
+    pub fn new(layout: &'a mut Layout<R>, options: RouterOptions) -> Self {
+        Self { layout, options }
     }
 
     pub fn route(
@@ -204,5 +220,9 @@ impl<'a, R: AccessRules> Router<'a, R> {
 
     pub fn layout(&self) -> &Layout<R> {
         &self.layout
+    }
+
+    pub fn options(&self) -> RouterOptions {
+        self.options
     }
 }

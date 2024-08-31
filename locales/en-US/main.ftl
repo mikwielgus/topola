@@ -18,6 +18,7 @@ action-undo = Undo
 action-redo = Redo
 
 presort-by-pairwise-detours = Presort by pairwise detours
+wrap-around-bands = Wrap around bands
 
 show-ratsnest = Show Ratsnest
 show-navmesh = Show Navmesh

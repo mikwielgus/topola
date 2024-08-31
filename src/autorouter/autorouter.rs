@@ -11,7 +11,7 @@ use crate::{
         Infringement,
     },
     layout::via::ViaWeight,
-    router::{navmesh::NavmeshError, RouterError},
+    router::{navmesh::NavmeshError, RouterError, RouterOptions},
     triangulation::GetTrianvertexNodeIndex,
 };
 
@@ -28,16 +28,14 @@ use super::{
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct AutorouterOptions {
     pub presort_by_pairwise_detours: bool,
-    //pub wrap_around_bands: bool,
-    //pub squeeze_under_bands: bool,
+    pub router_options: RouterOptions,
 }
 
 impl AutorouterOptions {
     pub fn new() -> Self {
         Self {
             presort_by_pairwise_detours: false,
-            //wrap_around_bands: true,
-            //squeeze_under_bands: true,
+            router_options: RouterOptions::new(),
         }
     }
 }

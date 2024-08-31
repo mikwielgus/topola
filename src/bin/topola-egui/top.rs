@@ -142,6 +142,10 @@ impl Top {
                             &mut self.autorouter_options.presort_by_pairwise_detours,
                             tr.text("presort-by-pairwise-detours"),
                         );
+                        ui.checkbox(
+                            &mut self.autorouter_options.router_options.wrap_around_bands,
+                            tr.text("wrap-around-bands"),
+                        );
                     });
 
                     ui.separator();
