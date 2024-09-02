@@ -18,3 +18,5 @@ show-navmesh = Pokaż siatkę nawigacyjną
 show-bboxes = Pokaż obwiednie
 show-origin-destination = Pokaż pochodzenie i destynację
 menu-options = Opcje
+wrap-around-bands = Owiń wokół taśm
+squeeze-under-bands = Ściśnij pod taśmami
