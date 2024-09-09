@@ -1,4 +1,10 @@
 menu-file = File
+menu-edit = Edit
+menu-view = View
+menu-place = Place
+menu-route = Route
+menu-inspect = Inspect
+
 menu-options = Options
 menu-debug = Debug
 

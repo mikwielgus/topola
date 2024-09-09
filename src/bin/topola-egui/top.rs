@@ -140,39 +140,15 @@ impl Top {
                         }
                     });
 
-                    ui.separator();
+                    ui.menu_button(tr.text("menu-edit"), |ui| {
+                        undo.button(ctx, ui);
+                        redo.button(ctx, ui);
 
-                    autoroute.button(ctx, ui);
-
-                    ui.menu_button(tr.text("menu-options"), |ui| {
-                        ui.checkbox(
-                            &mut self.autorouter_options.presort_by_pairwise_detours,
-                            tr.text("presort-by-pairwise-detours"),
-                        );
-                        ui.checkbox(
-                            &mut self.autorouter_options.router_options.squeeze_under_bands,
-                            tr.text("squeeze-under-bands"),
-                        );
-                        ui.checkbox(
-                            &mut self.autorouter_options.router_options.wrap_around_bands,
-                            tr.text("wrap-around-bands"),
-                        );
+                        ui.separator();
+                        remove_bands.button(ctx, ui);
                     });
 
-                    ui.separator();
-
-                    place_via.toggle_widget(ctx, ui, &mut self.is_placing_via);
-
-                    remove_bands.button(ctx, ui);
-
-                    ui.separator();
-
-                    undo.button(ctx, ui);
-                    redo.button(ctx, ui);
-
-                    ui.separator();
-
-                    ui.menu_button(tr.text("menu-debug"), |ui| {
+                    ui.menu_button(tr.text("menu-view"), |ui| {
                         ui.checkbox(&mut self.show_ratsnest, tr.text("show-ratsnest"));
                         ui.checkbox(&mut self.show_navmesh, tr.text("show-navmesh"));
                         ui.checkbox(&mut self.show_bboxes, tr.text("show-bboxes"));
@@ -180,8 +156,33 @@ impl Top {
                             &mut self.show_origin_destination,
                             tr.text("show-origin-destination"),
                         );
+                    });
 
+                    ui.menu_button(tr.text("menu-place"), |ui| {
+                        place_via.toggle_widget(ctx, ui, &mut self.is_placing_via);
+                    });
+
+                    ui.menu_button(tr.text("menu-route"), |ui| {
+                        autoroute.button(ctx, ui);
                         ui.separator();
+
+                        ui.menu_button(tr.text("menu-options"), |ui| {
+                            ui.checkbox(
+                                &mut self.autorouter_options.presort_by_pairwise_detours,
+                                tr.text("presort-by-pairwise-detours"),
+                            );
+                            ui.checkbox(
+                                &mut self.autorouter_options.router_options.squeeze_under_bands,
+                                tr.text("squeeze-under-bands"),
+                            );
+                            ui.checkbox(
+                                &mut self.autorouter_options.router_options.wrap_around_bands,
+                                tr.text("wrap-around-bands"),
+                            );
+                        });
+                    });
+
+                    ui.menu_button(tr.text("menu-inspect"), |ui| {
                         compare_detours.button(ctx, ui);
                         measure_length.button(ctx, ui);
                     });
