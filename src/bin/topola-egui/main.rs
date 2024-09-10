@@ -21,6 +21,7 @@ use unic_langid::{langid, LanguageIdentifier};
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result<()> {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+
     let langid = if let Some(langname) = get_locale() {
         langname.parse().unwrap_or(langid!("en-US"))
     } else {
@@ -36,7 +37,7 @@ fn main() -> eframe::Result<()> {
     eframe::run_native(
         "topola-egui",
         native_options,
-        Box::new(|cc| Box::new(App::new(cc, langid))),
+        Box::new(|cc| Ok(Box::new(App::new(cc, langid)))),
     )
 }
 
