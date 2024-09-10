@@ -6,6 +6,8 @@ use topola::autorouter::invoker::Command;
 use topola::autorouter::invoker::Invoker;
 use topola::autorouter::selection::PinSelection;
 use topola::autorouter::Autorouter;
+use topola::autorouter::AutorouterOptions;
+use topola::router::RouterOptions;
 use topola::specctra::design::SpecctraDesign;
 
 pub mod cli;
@@ -25,9 +27,16 @@ fn main() -> Result<(), std::io::Error> {
         serde_json::from_reader(commands_bufread)?
     } else {
         let mut history = History::new();
-        history.do_(Command::Autoroute(PinSelection::new_select_layer(
-            &board, 0,
-        )));
+        history.do_(Command::Autoroute(
+            PinSelection::new_select_layer(&board, 0),
+            AutorouterOptions {
+                presort_by_pairwise_detours: false,
+                router_options: RouterOptions {
+                    wrap_around_bands: true,
+                    squeeze_under_bands: false,
+                },
+            },
+        ));
         history
     };
 
