@@ -6,14 +6,14 @@ use topola::{
 
 pub struct Painter<'a> {
     ui: &'a mut egui::Ui,
-    transform: egui::emath::RectTransform,
+    transform: egui::emath::TSTransform,
     paint_bboxes: bool,
 }
 
 impl<'a> Painter<'a> {
     pub fn new(
         ui: &'a mut egui::Ui,
-        transform: egui::emath::RectTransform,
+        transform: egui::emath::TSTransform,
         paint_bboxes: bool,
     ) -> Self {
         Self {
@@ -29,11 +29,11 @@ impl<'a> Painter<'a> {
             PrimitiveShape::Seg(seg) => egui::Shape::line_segment(
                 [
                     self.transform
-                        .transform_pos([seg.from.x() as f32, -seg.from.y() as f32].into()),
+                        .mul_pos([seg.from.x() as f32, -seg.from.y() as f32].into()),
                     self.transform
-                        .transform_pos([seg.to.x() as f32, -seg.to.y() as f32].into()),
+                        .mul_pos([seg.to.x() as f32, -seg.to.y() as f32].into()),
                 ],
-                egui::Stroke::new(seg.width as f32 * self.transform.scale().x, color),
+                egui::Stroke::new(seg.width as f32 * self.transform.scaling, color),
             ),
             PrimitiveShape::Bend(bend) => {
                 let circle = bend.circle();
@@ -46,12 +46,12 @@ impl<'a> Painter<'a> {
                 for i in 0..=100 {
                     let x = circle.pos.x() + circle.r * (angle_from + i as f64 * angle_step).cos();
                     let y = circle.pos.y() + circle.r * (angle_from + i as f64 * angle_step).sin();
-                    points.push(self.transform.transform_pos([x as f32, -y as f32].into()));
+                    points.push(self.transform.mul_pos([x as f32, -y as f32].into()));
                 }
 
                 egui::Shape::line(
                     points,
-                    egui::Stroke::new(bend.width as f32 * self.transform.scale().x, color),
+                    egui::Stroke::new(bend.width as f32 * self.transform.scaling, color),
                 )
             }
         };
@@ -65,7 +65,7 @@ impl<'a> Painter<'a> {
                 max: [bbox.upper()[0] as f32, -bbox.lower()[1] as f32].into(),
             };
             self.ui.painter().add(egui::Shape::rect_stroke(
-                self.transform.transform_rect(rect),
+                self.transform.mul_rect(rect),
                 egui::Rounding::ZERO,
                 egui::Stroke::new(1.0, egui::Color32::GRAY),
             ));
@@ -80,8 +80,8 @@ impl<'a> Painter<'a> {
     fn dot_shape(&mut self, circle: Circle, color: egui::epaint::Color32) -> egui::Shape {
         egui::Shape::circle_filled(
             self.transform
-                .transform_pos([circle.pos.x() as f32, -circle.pos.y() as f32].into()),
-            circle.r as f32 * self.transform.scale().x,
+                .mul_pos([circle.pos.x() as f32, -circle.pos.y() as f32].into()),
+            circle.r as f32 * self.transform.scaling,
             color,
         )
     }
@@ -92,7 +92,7 @@ impl<'a> Painter<'a> {
                 .exterior_coords_iter()
                 .map(|coords| {
                     self.transform
-                        .transform_pos([coords.x as f32, -coords.y as f32].into())
+                        .mul_pos([coords.x as f32, -coords.y as f32].into())
                 })
                 .collect(),
             color,
@@ -104,9 +104,9 @@ impl<'a> Painter<'a> {
         self.ui.painter().add(egui::Shape::line_segment(
             [
                 self.transform
-                    .transform_pos([from.x() as f32, -from.y() as f32].into()),
+                    .mul_pos([from.x() as f32, -from.y() as f32].into()),
                 self.transform
-                    .transform_pos([to.x() as f32, -to.y() as f32].into()),
+                    .mul_pos([to.x() as f32, -to.y() as f32].into()),
             ],
             stroke,
         ));

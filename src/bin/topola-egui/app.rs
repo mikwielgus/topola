@@ -202,7 +202,7 @@ impl eframe::App for App {
             ctx,
             &self.translator,
             &self.viewport,
-            viewport_rect,
+            &viewport_rect,
             &self.maybe_execute,
         );
 

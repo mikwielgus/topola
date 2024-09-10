@@ -22,13 +22,14 @@ use topola::{
 use crate::{app::execute, layers::Layers, overlay::Overlay, painter::Painter, top::Top};
 
 pub struct Viewport {
-    pub from_rect: egui::emath::Rect,
+    pub transform: egui::emath::TSTransform,
 }
 
 impl Viewport {
     pub fn new() -> Self {
         Self {
-            from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
+            //from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
+            transform: egui::emath::TSTransform::new([0.0, 0.0].into(), 0.01),
         }
     }
 
@@ -45,32 +46,16 @@ impl Viewport {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
                 ui.ctx().request_repaint();
 
-                let desired_size = ui.available_width() * egui::vec2(1.0, 0.5);
-                let (_id, viewport_rect) = ui.allocate_space(desired_size);
+                let (_id, viewport_rect) = ui.allocate_space(ui.available_size());
+                let latest_pos = self.transform.inverse() * (ctx.input(|i| i.pointer.latest_pos().unwrap_or_default()));
 
-                let old_transform =
-                    egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
-                let latest_pos = old_transform
-                    .inverse()
-                    .transform_pos(ctx.input(|i| i.pointer.latest_pos().unwrap_or_default()));
+                let old_scaling = self.transform.scaling;
+                self.transform.scaling *= ctx.input(|i| i.zoom_delta());
 
-                let old_scale = old_transform.scale().x;
-                self.from_rect = self.from_rect / ctx.input(|i| i.zoom_delta());
+                self.transform.translation += latest_pos.to_vec2() * (old_scaling - self.transform.scaling);
+                self.transform.translation += ctx.input(|i| i.smooth_scroll_delta);
 
-                let new_scale = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect)
-                    .scale()
-                    .x;
-
-                self.from_rect = self.from_rect.translate(
-                    ctx.input(|i| latest_pos.to_vec2() * (new_scale - old_scale) / new_scale),
-                );
-
-                self.from_rect = self
-                    .from_rect
-                    .translate(ctx.input(|i| -i.raw_scroll_delta / new_scale));
-
-                let transform = egui::emath::RectTransform::from_to(self.from_rect, viewport_rect);
-                let mut painter = Painter::new(ui, transform, top.show_bboxes);
+                let mut painter = Painter::new(ui, self.transform, top.show_bboxes);
 
                 if let Some(ref mut invoker) = maybe_invoker {
                     if ctx.input(|i| i.pointer.any_click()) {

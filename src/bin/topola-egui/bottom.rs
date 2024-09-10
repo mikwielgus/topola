@@ -14,14 +14,13 @@ impl Bottom {
         ctx: &egui::Context,
         tr: &Translator,
         viewport: &Viewport,
-        viewport_rect: egui::Rect,
+        viewport_rect: &egui::Rect,
         maybe_execute: &Option<ExecuteWithStatus>,
     ) {
         egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
-            let transform = egui::emath::RectTransform::from_to(viewport.from_rect, viewport_rect);
-            let latest_pos = transform
-                .inverse()
-                .transform_pos(ctx.input(|i| i.pointer.latest_pos().unwrap_or_default()));
+            let latest_pos = viewport.transform.inverse()
+                * ctx.input(|i| i.pointer.latest_pos().unwrap_or_default())
+                - viewport_rect.size() / 2.0;
 
             let mut message = String::from("");
 

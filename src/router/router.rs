@@ -1,5 +1,3 @@
-use std::convert::Infallible;
-
 use geo::EuclideanDistance;
 use petgraph::{data::DataMap, visit::EdgeRef};
 use serde::{Deserialize, Serialize};
@@ -16,7 +14,7 @@ use crate::{
         Collision, DrawingException, Infringement,
     },
     geometry::{
-        primitive::{AccessPrimitiveShape, PrimitiveShape},
+        primitive::PrimitiveShape,
         shape::{AccessShape, MeasureLength},
     },
     graph::{GetPetgraphIndex, MakeRef},
