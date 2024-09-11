@@ -5,8 +5,6 @@ menu-place = Place
 menu-route = Route
 menu-inspect = Inspect
 
-menu-view-zoom-to-fit = Zoom to Fit
-
 menu-options = Options
 menu-debug = Debug
 
@@ -29,9 +27,13 @@ presort-by-pairwise-detours = Presort by pairwise detours
 squeeze-under-bands = Squeeze under bands
 wrap-around-bands = Wrap around bands
 
+zoom-to-fit = Zoom to Fit
+
 show-ratsnest = Show Ratsnest
 show-navmesh = Show Navmesh
 show-bboxes = Show BBoxes
 show-origin-destination = Show Origin–Destination
+
+show-layer-manager = Show Layer Manager
 
 specctra-session-file = Specctra session file

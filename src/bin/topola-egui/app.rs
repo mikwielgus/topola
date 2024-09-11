@@ -187,9 +187,11 @@ impl eframe::App for App {
         self.bottom
             .update(ctx, &self.translator, &self.viewport, &self.maybe_execute);
 
-        if let Some(ref mut layers) = self.maybe_layers {
-            if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_ref() {
-                layers.update(ctx, invoker.autorouter().board());
+        if self.top.show_layer_manager {
+            if let Some(ref mut layers) = self.maybe_layers {
+                if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_ref() {
+                    layers.update(ctx, invoker.autorouter().board());
+                }
             }
         }
 

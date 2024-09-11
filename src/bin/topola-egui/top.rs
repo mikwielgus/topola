@@ -29,6 +29,7 @@ pub struct Top {
     pub show_navmesh: bool,
     pub show_bboxes: bool,
     pub show_origin_destination: bool,
+    pub show_layer_manager: bool,
 }
 
 impl Top {
@@ -46,6 +47,7 @@ impl Top {
             show_navmesh: false,
             show_bboxes: false,
             show_origin_destination: false,
+            show_layer_manager: true,
         }
     }
 
@@ -166,6 +168,10 @@ impl Top {
                             &mut self.show_origin_destination,
                             tr.text("show-origin-destination"),
                         );
+
+                        ui.separator();
+
+                        ui.checkbox(&mut self.show_layer_manager, tr.text("show-layer-manager"));
                     });
 
                     ui.menu_button(tr.text("menu-place"), |ui| {
