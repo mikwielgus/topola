@@ -1,4 +1,5 @@
 use geo::{CoordsIter, Point, Polygon};
+use rstar::AABB;
 use topola::{
     geometry::primitive::{AccessPrimitiveShape, PrimitiveShape},
     math::{self, Circle},
@@ -59,17 +60,20 @@ impl<'a> Painter<'a> {
         self.ui.painter().add(epaint_shape);
 
         if self.paint_bboxes {
-            let bbox = AccessPrimitiveShape::bbox(shape, 0.0);
-            let rect = egui::epaint::Rect {
-                min: [bbox.lower()[0] as f32, -bbox.upper()[1] as f32].into(),
-                max: [bbox.upper()[0] as f32, -bbox.lower()[1] as f32].into(),
-            };
-            self.ui.painter().add(egui::Shape::rect_stroke(
-                self.transform.mul_rect(rect),
-                egui::Rounding::ZERO,
-                egui::Stroke::new(1.0, egui::Color32::GRAY),
-            ));
+            self.paint_bbox(AccessPrimitiveShape::bbox(shape, 0.0));
         }
+    }
+
+    pub fn paint_bbox(&mut self, bbox: AABB<[f64; 2]>) {
+        let rect = egui::epaint::Rect {
+            min: [bbox.lower()[0] as f32, -bbox.upper()[1] as f32].into(),
+            max: [bbox.upper()[0] as f32, -bbox.lower()[1] as f32].into(),
+        };
+        self.ui.painter().add(egui::Shape::rect_stroke(
+            self.transform * rect,
+            egui::Rounding::ZERO,
+            egui::Stroke::new(1.0, egui::Color32::GRAY),
+        ));
     }
 
     pub fn paint_dot(&mut self, circle: Circle, color: egui::epaint::Color32) {

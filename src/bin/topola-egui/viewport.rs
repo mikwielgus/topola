@@ -3,6 +3,7 @@ use petgraph::{
     data::DataMap,
     visit::{EdgeRef, IntoEdgeReferences},
 };
+use rstar::AABB;
 use topola::{
     autorouter::invoker::{
         Command, ExecuteWithStatus, GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles,
@@ -207,6 +208,13 @@ impl Viewport {
                                     }
                                 }
                             }
+                        }
+
+                        if top.show_bboxes {
+                            let root_bbox3d = board.layout().drawing().rtree().root().envelope();
+
+                            let root_bbox = AABB::<[f64; 2]>::from_corners([root_bbox3d.lower()[0], root_bbox3d.lower()[1]].into(), [root_bbox3d.upper()[0], root_bbox3d.upper()[1]].into());
+                            painter.paint_bbox(root_bbox);
                         }
 
                         if let Some(execute) = maybe_execute {
