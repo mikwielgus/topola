@@ -3,7 +3,7 @@ use petgraph::{
     data::DataMap,
     visit::{EdgeRef, IntoEdgeReferences},
 };
-use rstar::AABB;
+use rstar::{Envelope, AABB};
 use topola::{
     autorouter::invoker::{
         Command, ExecuteWithStatus, GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles,
@@ -24,17 +24,43 @@ use crate::{app::execute, layers::Layers, overlay::Overlay, painter::Painter, to
 
 pub struct Viewport {
     pub transform: egui::emath::TSTransform,
+    pub scheduled_zoom_to_fit: bool,
 }
 
 impl Viewport {
     pub fn new() -> Self {
         Self {
-            //from_rect: egui::Rect::from_x_y_ranges(0.0..=1000000.0, 0.0..=500000.0),
             transform: egui::emath::TSTransform::new([0.0, 0.0].into(), 0.01),
+            scheduled_zoom_to_fit: false,
         }
     }
 
     pub fn update(
+        &mut self,
+        ctx: &egui::Context,
+        top: &Top,
+        maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
+        maybe_execute: &mut Option<ExecuteWithStatus>,
+        maybe_overlay: &mut Option<Overlay>,
+        maybe_layers: &Option<Layers>,
+    ) -> egui::Rect {
+        let viewport_rect = self.paint(
+            ctx,
+            top,
+            maybe_invoker,
+            maybe_execute,
+            maybe_overlay,
+            maybe_layers,
+        );
+
+        if self.scheduled_zoom_to_fit {
+            self.zoom_to_fit(maybe_invoker, &viewport_rect);
+        }
+
+        viewport_rect
+    }
+
+    pub fn paint(
         &mut self,
         ctx: &egui::Context,
         top: &Top,
@@ -249,5 +275,44 @@ impl Viewport {
                 viewport_rect
             })
         }).inner.inner
+    }
+
+    fn zoom_to_fit(
+        &mut self,
+        maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
+        viewport_rect: &egui::Rect,
+    ) {
+        if self.scheduled_zoom_to_fit {
+            if let Some(invoker) = maybe_invoker {
+                let root_bbox = invoker
+                    .autorouter()
+                    .board()
+                    .layout()
+                    .drawing()
+                    .rtree()
+                    .root()
+                    .envelope();
+
+                let root_bbox_width = root_bbox.upper()[0] - root_bbox.lower()[0];
+                let root_bbox_height = root_bbox.upper()[1] - root_bbox.lower()[1];
+
+                if root_bbox_width / root_bbox_height
+                    >= (viewport_rect.width() as f64) / (viewport_rect.height() as f64)
+                {
+                    self.transform.scaling = viewport_rect.width() / root_bbox_width as f32;
+                } else {
+                    self.transform.scaling = viewport_rect.height() / root_bbox_height as f32;
+                }
+
+                self.transform.translation = egui::Vec2::new(
+                    viewport_rect.center()[0] as f32,
+                    viewport_rect.center()[1] as f32,
+                ) - (self.transform.scaling
+                    * egui::Pos2::new(root_bbox.center()[0] as f32, -root_bbox.center()[1] as f32))
+                .to_vec2();
+            }
+        }
+
+        self.scheduled_zoom_to_fit = false;
     }
 }

@@ -177,11 +177,15 @@ impl eframe::App for App {
             self.history_channel.0.clone(),
             self.arc_mutex_maybe_invoker.clone(),
             &mut self.maybe_execute,
+            &mut self.viewport,
             &mut self.maybe_overlay,
             &self.maybe_design,
         );
 
         self.update_state(ctx.input(|i| i.stable_dt));
+
+        self.bottom
+            .update(ctx, &self.translator, &self.viewport, &self.maybe_execute);
 
         if let Some(ref mut layers) = self.maybe_layers {
             if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_ref() {
@@ -196,14 +200,6 @@ impl eframe::App for App {
             &mut self.maybe_execute,
             &mut self.maybe_overlay,
             &self.maybe_layers,
-        );
-
-        self.bottom.update(
-            ctx,
-            &self.translator,
-            &self.viewport,
-            &viewport_rect,
-            &self.maybe_execute,
         );
 
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {

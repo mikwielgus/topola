@@ -19,6 +19,7 @@ use crate::{
     file_sender::FileSender,
     overlay::Overlay,
     translator::Translator,
+    viewport::Viewport,
 };
 
 pub struct Top {
@@ -56,6 +57,7 @@ impl Top {
         history_sender: Sender<String>,
         arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
         maybe_execute: &mut Option<ExecuteWithStatus>,
+        viewport: &mut Viewport,
         maybe_overlay: &mut Option<Overlay>,
         maybe_design: &Option<SpecctraDesign>,
     ) -> Result<(), InvokerError> {
@@ -145,10 +147,18 @@ impl Top {
                         redo.button(ctx, ui);
 
                         ui.separator();
+
                         remove_bands.button(ctx, ui);
                     });
 
                     ui.menu_button(tr.text("menu-view"), |ui| {
+                        ui.toggle_value(
+                            &mut viewport.scheduled_zoom_to_fit,
+                            tr.text("zoom-to-fit"),
+                        );
+
+                        ui.separator();
+
                         ui.checkbox(&mut self.show_ratsnest, tr.text("show-ratsnest"));
                         ui.checkbox(&mut self.show_navmesh, tr.text("show-navmesh"));
                         ui.checkbox(&mut self.show_bboxes, tr.text("show-bboxes"));
