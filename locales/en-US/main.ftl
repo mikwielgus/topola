@@ -5,13 +5,15 @@ menu-place = Place
 menu-route = Route
 menu-inspect = Inspect
 
+menu-view-zoom-to-fit = Zoom to Fit
+
 menu-options = Options
 menu-debug = Debug
 
 action-open-dsn = Open
-action-export-ses = Export session file
-action-import-cmd = Import history
-action-export-cmd = Export history
+action-export-ses = Export Fession File
+action-import-cmd = Import History
+action-export-cmd = Export History
 
 action-quit = Quit
 action-autoroute = Autoroute
