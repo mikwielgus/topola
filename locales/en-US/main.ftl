@@ -9,7 +9,7 @@ menu-options = Options
 menu-debug = Debug
 
 action-open-dsn = Open
-action-export-ses = Export Fession File
+action-export-ses = Export Session File
 action-import-cmd = Import History
 action-export-cmd = Export History
 
@@ -23,9 +23,9 @@ action-measure-length = Measure Length
 action-undo = Undo
 action-redo = Redo
 
-presort-by-pairwise-detours = Presort by pairwise detours
-squeeze-under-bands = Squeeze under bands
-wrap-around-bands = Wrap around bands
+presort-by-pairwise-detours = Presort by Pairwise Detours
+squeeze-under-bands = Squeeze under Bands
+wrap-around-bands = Wrap around Bands
 
 zoom-to-fit = Zoom to Fit
 
