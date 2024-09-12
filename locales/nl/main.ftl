@@ -21,3 +21,4 @@ menu-options = Opties
 menu-view = Bekijken
 menu-route = Route
 menu-edit = Bewerken
+menu-inspect = Inspecteren
