@@ -17,3 +17,7 @@ show-ratsnest = Toon Rattennest
 show-origin-destination = Toon Herkomst-Bestemming
 specctra-session-file = Specctra-sessiebestand
 action-measure-length = Lengte meten
+menu-options = Opties
+menu-view = Bekijken
+menu-route = Route
+menu-edit = Bewerken
