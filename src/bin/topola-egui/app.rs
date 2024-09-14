@@ -142,7 +142,8 @@ impl App {
             self.maybe_design = Some(design);
             self.arc_mutex_maybe_invoker = Arc::new(Mutex::new(Some(Invoker::new(
                 Autorouter::new(board).unwrap(),
-            ))))
+            ))));
+            self.viewport.scheduled_zoom_to_fit = true;
         }
 
         if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
