@@ -299,9 +299,9 @@ impl Viewport {
                 if root_bbox_width / root_bbox_height
                     >= (viewport_rect.width() as f64) / (viewport_rect.height() as f64)
                 {
-                    self.transform.scaling = viewport_rect.width() / root_bbox_width as f32;
+                    self.transform.scaling = 0.8 * viewport_rect.width() / root_bbox_width as f32;
                 } else {
-                    self.transform.scaling = viewport_rect.height() / root_bbox_height as f32;
+                    self.transform.scaling = 0.8 * viewport_rect.height() / root_bbox_height as f32;
                 }
 
                 self.transform.translation = egui::Vec2::new(
