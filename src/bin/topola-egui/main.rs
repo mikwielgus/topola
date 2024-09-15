@@ -48,14 +48,13 @@ fn main() {
     eframe::WebLogger::init(log::LevelFilter::Debug).ok();
 
     let web_options = eframe::WebOptions::default();
-    let langid: LanguageIdentifier = "en-US".parse();
 
     wasm_bindgen_futures::spawn_local(async {
         eframe::WebRunner::new()
             .start(
                 "topola-egui",
                 web_options,
-                Box::new(|cc| Box::new(App::new(cc, langid))),
+                Box::new(|cc| Ok(Box::new(App::new(cc, langid!("en-US"))))),
             )
             .await
             .expect("failed to start eframe");
