@@ -19,6 +19,6 @@ impl<'a> FileReceiver<'a> {
 
     #[cfg(target_arch = "wasm32")]
     pub fn try_recv(&mut self) -> Result<Cursor<Vec<u8>>, TryRecvError> {
-        Ok(Cursor::new(self.receiver.try_recv().unwrap().into()))
+        Ok(Cursor::new(self.receiver.try_recv()?.into()))
     }
 }
