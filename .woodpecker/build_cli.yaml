@@ -1,0 +1,14 @@
+matrix:
+  include:
+    - CHANNEL: stable
+      FEATURES: cli,disable_contracts
+    - CHANNEL: nightly
+      FEATURES: cli
+
+steps:
+  build_cli:
+    image: rust
+    environment: [RUST_BACKTRACE=1,CARGO_TERM_COLOR=always]
+    commands:
+      - rustup default "$CHANNEL"
+      - cargo build --features "$FEATURES" --bin "cli"
