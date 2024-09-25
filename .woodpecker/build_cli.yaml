@@ -1,7 +1,7 @@
 matrix:
   include:
     - CHANNEL: stable
-      FEATURES: cli,disable_contracts
+      FEATURES: cli
     - CHANNEL: nightly
       FEATURES: cli
 
@@ -11,4 +11,4 @@ steps:
     environment: [RUST_BACKTRACE=1,CARGO_TERM_COLOR=always]
     commands:
       - rustup default "$CHANNEL"
-      - cargo build --features "$FEATURES" --bin "cli"
+      - cargo build --features "$FEATURES" --
