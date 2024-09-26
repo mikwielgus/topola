@@ -1,4 +1,4 @@
-(pcb /home/mikolaj/proj/topola/tests/data/four_3rd_order_smd_lc_filters/four_3rd_order_smd_lc_filters.dsn
+(pcb /home/mikolaj/proj/topola/tests/data/4x_3rd_order_smd_lc_filters/4x_3rd_order_smd_lc_filters.dsn
   (parser
     (string_quote ")
     (space_in_quoted_tokens on)

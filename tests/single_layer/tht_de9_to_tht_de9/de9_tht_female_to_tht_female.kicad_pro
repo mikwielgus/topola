@@ -430,7 +430,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "3pin_xlr_tht_female_to_tht_female.kicad_pro",
+    "filename": "tht_de9_to_tht_de9.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -467,7 +467,7 @@
       "netlist": "",
       "plot": "",
       "pos_files": "",
-      "specctra_dsn": "3pin_xlr_tht_female_to_tht_female.dsn",
+      "specctra_dsn": "tht_de9_to_tht_de9.dsn",
       "step": "",
       "svg": "",
       "vrml": ""
@@ -574,7 +574,7 @@
   },
   "sheets": [
     [
-      "0646d4f9-f4a3-41e8-bc8c-3abcc24e43a6",
+      "e3e5797e-752b-4633-8c10-5bf78b070097",
       "Root"
     ]
   ],

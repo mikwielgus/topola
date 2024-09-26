@@ -76,13 +76,13 @@ fn test_four_3rd_order_smd_lc_filters() {
 
 // FIXME: This test fails indeterministically.
 #[test]
-fn test_3pin_xlr_tht_female_to_tht_female() {
+fn test_tht_3pin_xlr_to_tht_3pin_xlr() {
     let mut invoker = common::load_design_and_assert(
-        "tests/single_layer/3pin_xlr_tht_female_to_tht_female/3pin_xlr_tht_female_to_tht_female.dsn",
+        "tests/single_layer/tht_3pin_xlr_to_tht_3pin_xlr/tht_3pin_xlr_to_tht_3pin_xlr.dsn",
     );
     common::replay_and_assert(
         &mut invoker,
-        "tests/single_layer/3pin_xlr_tht_female_to_tht_female/autoroute_all.cmd",
+        "tests/single_layer/tht_3pin_xlr_to_tht_3pin_xlr/autoroute_all.cmd",
     );
 
     let (mut autorouter, ..) = invoker.destruct();

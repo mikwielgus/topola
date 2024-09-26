@@ -430,7 +430,7 @@
     "pinned_symbol_libs": []
   },
   "meta": {
-    "filename": "four_3rd_order_smd_lc_filters.kicad_pro",
+    "filename": "4x_3rd_order_smd_lc_filters.kicad_pro",
     "version": 1
   },
   "net_settings": {
@@ -467,7 +467,7 @@
       "netlist": "",
       "plot": "",
       "pos_files": "",
-      "specctra_dsn": "four_3rd_order_smd_lc_filters.dsn",
+      "specctra_dsn": "4x_3rd_order_smd_lc_filters.dsn",
       "step": "",
       "svg": "",
       "vrml": ""

@@ -1,4 +1,4 @@
-(pcb /home/mikolaj/proj/topola/tests/single_layer/data/3pin_xlr_tht_female_to_tht_female/3pin_xlr_tht_female_to_tht_female.dsn
+(pcb /home/mikolaj/proj/topola/tests/single_layer/data/tht_3pin_xlr_to_tht_3pin_xlr/tht_3pin_xlr_to_tht_3pin_xlr.dsn
   (parser
     (string_quote ")
     (space_in_quoted_tokens on)

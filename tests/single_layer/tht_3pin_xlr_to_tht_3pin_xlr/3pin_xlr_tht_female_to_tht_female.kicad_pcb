@@ -150,7 +150,7 @@
 		(property ki_fp_filters "Jack*XLR*")
 		(path "/abb3bbf4-9cdd-419d-a500-8d8941186a87")
 		(sheetname "Root")
-		(sheetfile "3pin_xlr_tht_female_to_tht_female.kicad_sch")
+		(sheetfile "tht_3pin_xlr_to_tht_3pin_xlr.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start -6.92 -4.31)
@@ -626,7 +626,7 @@
 		(property ki_fp_filters "Jack*XLR*")
 		(path "/d09ca717-a3b0-47e7-bde7-5f73e3b9b038")
 		(sheetname "Root")
-		(sheetfile "3pin_xlr_tht_female_to_tht_female.kicad_sch")
+		(sheetfile "tht_3pin_xlr_to_tht_3pin_xlr.kicad_sch")
 		(attr through_hole)
 		(fp_line
 			(start 15.52 -7.31)
