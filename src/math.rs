@@ -20,14 +20,29 @@ pub struct Circle {
     pub r: f64,
 }
 
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct PointWithRotation {
+    pub pos: Point,
+    pub rot: f64,
+}
+
 impl Sub for Circle {
     type Output = Self;
 
     fn sub(self, other: Self) -> Self {
-        return Self {
+        Self {
             pos: self.pos - other.pos,
             r: self.r,
-        };
+        }
+    }
+}
+
+impl Default for PointWithRotation {
+    fn default() -> Self {
+        Self {
+            pos: (0.0, 0.0).into(),
+            rot: 0.0,
+        }
     }
 }
 

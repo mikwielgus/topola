@@ -3,6 +3,7 @@ use super::read::ReadDsn;
 use super::read::{ListTokenizer, ParseError};
 use super::write::ListWriter;
 use super::write::WriteSes;
+use crate::math::PointWithRotation;
 use specctra_derive::ReadDsn;
 use specctra_derive::WriteSes;
 
@@ -151,6 +152,15 @@ pub struct Place {
     pub PN: Option<String>,
 }
 
+impl Place {
+    pub fn point_with_rotation(&self) -> PointWithRotation {
+        PointWithRotation {
+            pos: (self.x, self.y).into(),
+            rot: self.rotation,
+        }
+    }
+}
+
 #[derive(ReadDsn, WriteSes, Debug)]
 pub struct Library {
     #[vec("image")]
@@ -187,6 +197,15 @@ pub struct Pin {
     pub x: f64,
     #[anon]
     pub y: f64,
+}
+
+impl Pin {
+    pub fn point_with_rotation(&self) -> PointWithRotation {
+        PointWithRotation {
+            pos: (self.x, self.y).into(),
+            rot: self.rotate.unwrap_or(0.0),
+        }
+    }
 }
 
 #[derive(ReadDsn, WriteSes, Debug)]
