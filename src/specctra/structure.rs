@@ -169,6 +169,12 @@ pub struct Library {
     pub padstacks: Vec<Padstack>,
 }
 
+impl Library {
+    pub fn find_padstack_by_name(&self, name: &str) -> Option<&Padstack> {
+        self.padstacks.iter().find(|padstack| &padstack.name == name)
+    }
+}
+
 #[derive(ReadDsn, WriteSes, Debug)]
 pub struct Image {
     #[anon]

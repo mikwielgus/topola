@@ -242,12 +242,10 @@ impl SpecctraDesign {
                     let pinname = format!("{}-{}", place.name, pin.id);
                     let net = pin_nets.get(&pinname).unwrap();
 
-                    let padstack = &self
+                    let padstack = self
                         .pcb
                         .library
-                        .padstacks
-                        .iter()
-                        .find(|padstack| padstack.name == pin.name)
+                        .find_padstack_by_name(&pin.name)
                         .unwrap();
 
                     for shape in padstack.shapes.iter() {
@@ -319,13 +317,10 @@ impl SpecctraDesign {
                 .netname_net(&via.net)
                 .unwrap();
 
-            // find the padstack referenced by this via placement
-            let padstack = &self
+            let padstack = self
                 .pcb
                 .library
-                .padstacks
-                .iter()
-                .find(|padstack| padstack.name == via.name)
+                .find_padstack_by_name(&via.name)
                 .unwrap();
 
             let get_layer = |board: &Board<SpecctraMesadata>, name: &str|
