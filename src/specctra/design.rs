@@ -411,26 +411,6 @@ impl SpecctraDesign {
             );
         }
 
-        // The clones here are bad, we'll have something better later on.
-
-        let layername_to_layer = &board.layout().drawing().rules().layer_layername.clone();
-
-        for (layer, layername) in layername_to_layer.iter() {
-            board
-                .layout_mut()
-                .rules_mut()
-                .bename_layer(*layer, layername.to_string());
-        }
-
-        let netname_to_net = &board.layout().drawing().rules().net_netname.clone();
-
-        for (net, netname) in netname_to_net.iter() {
-            board
-                .layout_mut()
-                .rules_mut()
-                .bename_net(*net, netname.to_string());
-        }
-
         board
     }
 
