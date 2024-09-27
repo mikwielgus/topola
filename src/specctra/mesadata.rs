@@ -9,8 +9,18 @@ use crate::{
 };
 
 #[derive(Debug)]
+/// [`SpecctraRule`] represents the basic routing constraints used by an auto-router, such as
+/// the Specctra auto-router, in a PCB design process. This struct defines two key design
+/// rules: the width of the trace and the minimum clearance between electrical features.
 pub struct SpecctraRule {
+    /// Specifies the width of the trace (or conductor) in millimeters. 
+    /// This value ensures that the traces meet electrical
+    /// and mechanical requirements, such as current-carrying capacity or signal integrity.
     pub width: f64,
+    /// Defines the minimum clearance (spacing) between traces, pads,
+    /// or other conductive features on the PCB. Adequate clearance is important for
+    /// preventing electrical shorts or interference between signals, and is often
+    /// dictated by manufacturing constraints or voltage considerations.
     pub clearance: f64,
 }
 
@@ -24,22 +34,43 @@ impl SpecctraRule {
 }
 
 #[derive(Debug)]
+/// [`SpecctraMesadata`] holds the metadata required by the Specctra auto-router to
+/// understand and enforce design rules across various net classes and layers in a PCB layout.
+/// This struct encapsulates information about rules for individual nets, net classes,
+/// layers, and their corresponding relationships.
 pub struct SpecctraMesadata {
+    
+    /// The default routing rule applied globally if no specific net class rule is defined.
     structure_rule: SpecctraRule,
+    
     // net class name -> rule
+    /// A map from net class names to their specific `SpecctraRule` constraints.
+    /// These rules are applied to all nets belonging to the respective net clas
     class_rules: HashMap<String, SpecctraRule>,
 
     // layername <-> layer for Layout
+    /// A bidirectional map between layer indices and layer names, allowing translation
+    /// between index-based layers in the layout and user-defined layer names.
     pub layer_layername: BiHashMap<usize, String>,
 
     // netname <-> net for Layout
+    /// A bidirectional map between network indices and network names in the PCB layout,
+    /// providing an easy way to reference nets by name or index.
     pub net_netname: BiHashMap<usize, String>,
 
     // net -> netclass
+    /// A map that associates network indices with their respective net class names.
+    /// This is used to apply net class-specific routing rules to each net.
     net_netclass: HashMap<usize, String>,
 }
 
+
 impl SpecctraMesadata {
+    /// Creates a [`SpecctraMesadata`] instance from a given `Pcb` reference.
+    /// 
+    /// This function extracts the necessary metadata from the `Pcb` struct, such as
+    /// layer-to-layer name mappings, net-to-net name mappings, and net class rules.
+    ///
     pub fn from_pcb(pcb: &Pcb) -> Self {
         let layer_layername = BiHashMap::from_iter(
             pcb.structure
@@ -81,6 +112,13 @@ impl SpecctraMesadata {
         }
     }
 
+    /// Retrieves the Specctra routing rule associated with a specified net ID.
+    ///
+    /// This function looks up the routing rule for a given net ID. It first checks if the net is 
+    /// associated with a net class. If a net class is found, it retrieves the corresponding rule 
+    /// from the class rules. If no class is associated, or if the class does not have a defined rule, 
+    /// it defaults to the general structure rule.
+    ///
     pub fn get_rule(&self, net: usize) -> &SpecctraRule {
         if let Some(netclass) = self.net_netclass.get(&net) {
             self.class_rules

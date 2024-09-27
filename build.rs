@@ -2,7 +2,7 @@ include!("src/bin/topola/cli.rs");
 use clap::CommandFactory;
 use clap_mangen::Man;
 use std::fs::{create_dir_all, File};
-// https://rust-cli.github.io/book/in-depth/docs.html
+
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     let cmd = Cli::command();
     let man = Man::new(cmd);

@@ -24,19 +24,35 @@ use crate::{
 };
 
 #[derive(Error, Debug)]
+
+/// Errors raised by [`SpecctraDesign::load`]
 pub enum LoadingError {
+    /// I/O file reading error from [`std::io::Error`]
     #[error(transparent)]
     Io(#[from] std::io::Error),
+    /// File parsing errors containing information about unexpected end of file,
+    /// or any other parsing issues with provided DSN file
     #[error(transparent)]
     Parse(#[from] read::ParseError),
 }
 
+
+/// This struct is responsible for managing the various Specctra components of a PCB design,
+/// including parsing the DSN file, handling the resolution, unit of measurement,
+/// and organizing the PCB's structure, placement, library, network, and wiring.
+/// It provides functionality for reading from a DSN file and writing Specctra's .SES session files.
 #[derive(Debug)]
 pub struct SpecctraDesign {
     pcb: Pcb,
 }
 
 impl SpecctraDesign {
+    /// Loads a [`SpecctraDesign`] structure instance from a buffered reader.
+    ///
+    /// This function reads the Specctra Design data from an input stream.
+    /// Later the data is parsed and loaded into a [`SpecctraDesign`] structure,
+    /// allowing further operations such as rule validation, routing, or netlist management.
+    ///
     pub fn load(reader: impl std::io::BufRead) -> Result<SpecctraDesign, LoadingError> {
         let mut list_reader = ListTokenizer::new(reader);
         let dsn = list_reader.read_value::<DsnFile>()?;
@@ -44,14 +60,23 @@ impl SpecctraDesign {
         Ok(Self { pcb: dsn.pcb })
     }
 
+    /// Function to get name of the DSN file
+    ///
+    /// This function returns the name of the `Pcb` objects
     pub fn get_name(&self) -> &str {
         &self.pcb.name
     }
-
-    pub fn write_ses(
+    
+    /// Writes the Specctra Session (.ses) file format using the current board layout and mesadata.
+    ///
+    /// This function generates a Specctra SES session file that represents the board's net routing and
+    /// writes it to the provided output stream. The session data includes routed nets, wires, 
+    /// layers, and other essential information for routing management.
+    ///
+    pub fn write_ses( 
         &self,
         board: &Board<SpecctraMesadata>,
-        writer: impl std::io::Write,
+	writer: impl std::io::Write,
     ) -> Result<(), std::io::Error> {
         let mesadata = board.mesadata();
         let drawing = board.layout().drawing();
@@ -124,8 +149,8 @@ impl SpecctraDesign {
                         structure::NetOut {
                             name: mesadata.net_netname(net).unwrap().to_owned(),
                             wire: vec![wire],
-                            via: Vec::new(),
-                        },
+                            via: Vec::new()
+			},
                     );
                 }
             }
@@ -152,7 +177,14 @@ impl SpecctraDesign {
 
         ListWriter::new(writer).write_value(&ses)
     }
-
+    
+   /// Generates a [`Board<SpecctraMesadata>`] from the current PCB data.
+    ///
+    /// This function takes the internal `Pcb` structure and transforms it into a [`Board`] object,
+    /// which is used for layout and routing operations. The board is initialized with [`SpecctraMesadata`],
+    /// which includes layer and net mappings, and is populated with components, pins, vias, and wires
+    /// from the PCB definition.
+    ///
     pub fn make_board(&self) -> Board<SpecctraMesadata> {
         let mesadata = SpecctraMesadata::from_pcb(&self.pcb);
         let mut board = Board::new(Layout::new(Drawing::new(

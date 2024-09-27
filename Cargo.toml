@@ -126,3 +126,6 @@ contracts = { path = "vendored/contracts" }
 [build-dependencies]
 clap_mangen = "0.2.23"
 clap = {version="4.5.8", features = ["derive"] }
+
+[package.metadata.docs.rs]
+cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
