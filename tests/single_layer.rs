@@ -59,13 +59,13 @@ fn test_tht_diode_bridge_rectifier() {
 }
 
 #[test]
-fn test_four_3rd_order_smd_lc_filters() {
+fn test_4x_3rd_order_smd_lc_filters() {
     let mut invoker = common::load_design_and_assert(
-        "tests/single_layer/four_3rd_order_smd_lc_filters/four_3rd_order_smd_lc_filters.dsn",
+        "tests/single_layer/4x_3rd_order_smd_lc_filters/4x_3rd_order_smd_lc_filters.dsn",
     );
     common::replay_and_assert(
         &mut invoker,
-        "tests/single_layer/four_3rd_order_smd_lc_filters/autoroute_signals.cmd",
+        "tests/single_layer/4x_3rd_order_smd_lc_filters/autoroute_signals.cmd",
     );
 
     let (mut autorouter, ..) = invoker.destruct();
