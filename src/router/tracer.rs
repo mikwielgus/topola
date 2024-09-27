@@ -83,7 +83,7 @@ impl<'a, R: AccessRules> Tracer<'a, R> {
 
         let length = trace.path.len();
         self.undo_path(trace, length - prefix_length);
-        Ok::<(), TracerException>(self.path(navmesh, trace, &path[prefix_length..], width)?)
+        self.path(navmesh, trace, &path[prefix_length..], width)
     }
 
     #[debug_ensures(ret.is_ok() -> trace.path.len() == old(trace.path.len() + path.len()))]

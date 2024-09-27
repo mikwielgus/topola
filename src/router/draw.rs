@@ -62,7 +62,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         let layer = head.face().primitive(self.layout.drawing()).layer();
         let maybe_net = head.face().primitive(self.layout.drawing()).maybe_net();
 
-        Ok::<BandTermsegIndex, DrawException>(match head.face() {
+        Ok(match head.face() {
             DotIndex::Fixed(dot) => BandTermsegIndex::Straight(
                 self.layout
                     .add_lone_loose_seg(
@@ -210,7 +210,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
             },
             cw,
         )?;
-        Ok::<CaneHead, DrawingException>(CaneHead {
+        Ok(CaneHead {
             face: self
                 .layout
                 .drawing()

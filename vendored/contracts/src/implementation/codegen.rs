@@ -345,7 +345,10 @@ pub(crate) fn generate(
                 syn::visit::visit_block(&mut try_detector, &mut block);
 
                 if try_detector.found_try {
-                    break 'blk quote::quote! { let ret: #return_type = 'run: { try { #block? } }; };
+                    break 'blk quote::quote! { let ret: #return_type = 'run: { try {
+                        let ret2: #return_type = #block;
+                        ret2?
+                    } }; };
                 } else {
                     break 'blk quote::quote! { let ret: #return_type = 'run: #block; };
                 }

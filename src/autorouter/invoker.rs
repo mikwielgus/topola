@@ -253,7 +253,7 @@ impl<M: AccessMesadata> Invoker<M> {
 
     #[debug_requires(self.ongoing_command.is_none())]
     fn dispatch_command(&mut self, command: &Command) -> Result<Execute, InvokerError> {
-        match command {
+        Ok(match command {
             Command::Autoroute(selection, options) => {
                 let mut ratlines = self.autorouter.selected_ratlines(selection);
 
@@ -271,23 +271,23 @@ impl<M: AccessMesadata> Invoker<M> {
                     });
                 }
 
-                Ok::<Execute, InvokerError>(Execute::Autoroute(
+                Execute::Autoroute(
                     self.autorouter.autoroute_ratlines(ratlines, *options)?,
-                ))
+                )
             }
-            Command::PlaceVia(weight) => {
-                Ok::<Execute, InvokerError>(Execute::PlaceVia(self.autorouter.place_via(*weight)?))
-            }
-            Command::RemoveBands(selection) => Ok::<Execute, InvokerError>(Execute::RemoveBands(
+            Command::PlaceVia(weight) => Execute::PlaceVia(
+                self.autorouter.place_via(*weight)?
+            ),
+            Command::RemoveBands(selection) => Execute::RemoveBands(
                 self.autorouter.remove_bands(selection)?,
-            )),
-            Command::CompareDetours(selection, options) => Ok::<Execute, InvokerError>(
-                Execute::CompareDetours(self.autorouter.compare_detours(selection, *options)?),
             ),
-            Command::MeasureLength(selection) => Ok::<Execute, InvokerError>(
-                Execute::MeasureLength(self.autorouter.measure_length(selection)?),
+            Command::CompareDetours(selection, options) => Execute::CompareDetours(
+                self.autorouter.compare_detours(selection, *options)?,
             ),
-        }
+            Command::MeasureLength(selection) => Execute::MeasureLength(
+                self.autorouter.measure_length(selection)?,
+            ),
+        })
     }
 
     #[debug_requires(self.ongoing_command.is_none())]
@@ -308,7 +308,7 @@ impl<M: AccessMesadata> Invoker<M> {
             Command::MeasureLength(..) => {}
         }
 
-        Ok::<(), InvokerError>(self.history.undo()?)
+        Ok(self.history.undo()?)
     }
 
     //#[debug_requires(self.ongoing.is_none())]

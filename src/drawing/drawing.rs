@@ -432,7 +432,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
             return Err(collision.into());
         }
 
-        Ok::<Cane, DrawingException>(cane)
+        Ok(cane)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
@@ -538,7 +538,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
             maybe_rail = self.primitive(rail).outer();
         }
 
-        Ok::<(), DrawingException>(())
+        Ok(())
     }
 
     #[debug_ensures(ret.is_ok() -> self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count() + 4))]
@@ -606,7 +606,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                 err
             })?;
 
-        Ok::<Cane, DrawingException>(Cane {
+        Ok(Cane {
             seg,
             dot: seg_to,
             bend,
