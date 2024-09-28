@@ -39,3 +39,7 @@ show-layer-manager = Show Layer Manager
 frame-timestep = Frame Timestep
 
 specctra-session-file = Specctra session file
+
+title-error-messages = Error Messages
+reset-error-messages = Reset Messages
+discard-item = Discard

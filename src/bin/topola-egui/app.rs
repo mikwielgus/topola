@@ -40,6 +40,7 @@ use topola::{
 use crate::{
     activity::{ActivityStatus, ActivityWithStatus},
     bottom::Bottom,
+    error_dialog::ErrorDialog,
     file_receiver::FileReceiver,
     layers::Layers,
     overlay::Overlay,
@@ -80,6 +81,9 @@ pub struct App {
     bottom: Bottom,
 
     #[serde(skip)]
+    error_dialog: ErrorDialog,
+
+    #[serde(skip)]
     maybe_layers: Option<Layers>,
 
     #[serde(skip)]
@@ -101,6 +105,7 @@ impl Default for App {
             viewport: Viewport::new(),
             top: Top::new(),
             bottom: Bottom::new(),
+            error_dialog: ErrorDialog::new(),
             maybe_layers: None,
             maybe_design: None,
             update_counter: 0.0,
@@ -205,6 +210,9 @@ impl eframe::App for App {
                 }
             }
         }
+
+        self.error_dialog
+            .update(ctx, &self.translator, &self.viewport);
 
         let viewport_rect = self.viewport.update(
             ctx,

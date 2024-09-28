@@ -4,6 +4,7 @@ mod action;
 mod activity;
 mod app;
 mod bottom;
+mod error_dialog;
 mod file_receiver;
 mod file_sender;
 mod layers;
