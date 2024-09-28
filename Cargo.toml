@@ -87,26 +87,6 @@ version = "0.3.30"
 optional = true
 version = "0.14.0"
 
-[dependencies.pathfinder_canvas]
-optional = true
-git = "https://github.com/servo/pathfinder"
-
-[dependencies.pathfinder_geometry]
-optional = true
-git = "https://github.com/servo/pathfinder"
-
-[dependencies.pathfinder_gl]
-optional = true
-git = "https://github.com/servo/pathfinder"
-
-[dependencies.pathfinder_renderer]
-optional = true
-git = "https://github.com/servo/pathfinder"
-
-[dependencies.pathfinder_resources]
-optional = true
-git = "https://github.com/servo/pathfinder"
-
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 env_logger = "0.10"
 
