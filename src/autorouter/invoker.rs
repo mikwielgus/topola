@@ -2,27 +2,25 @@ use std::cmp::Ordering;
 
 use contracts::debug_requires;
 use enum_dispatch::enum_dispatch;
-use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
 use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
-    layout::via::ViaWeight,
     router::{navmesh::Navmesh, trace::Trace},
     step::Step,
 };
 
 use super::{
-    autoroute::{Autoroute, AutorouteStatus},
-    compare_detours::{CompareDetours, CompareDetoursStatus},
+    autoroute::Autoroute,
+    compare_detours::CompareDetours,
+    execute::{Command, Execute},
     history::{History, HistoryError},
     measure_length::MeasureLength,
     place_via::PlaceVia,
     remove_bands::RemoveBands,
-    selection::{BandSelection, PinSelection},
-    Autorouter, AutorouterError, AutorouterOptions,
+    Autorouter, AutorouterError,
 };
 
 #[enum_dispatch]
@@ -69,145 +67,10 @@ impl TryInto<()> for InvokerStatus {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
-pub enum Command {
-    Autoroute(PinSelection, AutorouterOptions),
-    PlaceVia(ViaWeight),
-    RemoveBands(BandSelection),
-    CompareDetours(PinSelection, AutorouterOptions),
-    MeasureLength(BandSelection),
-}
-
-#[enum_dispatch(GetMaybeNavmesh, GetMaybeTrace, GetGhosts, GetObstacles)]
-pub enum Execute {
-    Autoroute(Autoroute),
-    PlaceVia(PlaceVia),
-    RemoveBands(RemoveBands),
-    CompareDetours(CompareDetours),
-    MeasureLength(MeasureLength),
-}
-
-impl Execute {
-    fn step_catch_err<M: AccessMesadata>(
-        &mut self,
-        invoker: &mut Invoker<M>,
-    ) -> Result<InvokerStatus, InvokerError> {
-        match self {
-            Execute::Autoroute(autoroute) => match autoroute.step(&mut invoker.autorouter)? {
-                AutorouteStatus::Running => Ok(InvokerStatus::Running),
-                AutorouteStatus::Routed(..) => Ok(InvokerStatus::Running),
-                AutorouteStatus::Finished => Ok(InvokerStatus::Finished(String::from(
-                    "finished autorouting",
-                ))),
-            },
-            Execute::PlaceVia(place_via) => {
-                place_via.doit(&mut invoker.autorouter)?;
-                Ok(InvokerStatus::Finished(String::from(
-                    "finished placing via",
-                )))
-            }
-            Execute::RemoveBands(remove_bands) => {
-                remove_bands.doit(&mut invoker.autorouter)?;
-                Ok(InvokerStatus::Finished(String::from(
-                    "finished removing bands",
-                )))
-            }
-            Execute::CompareDetours(compare_detours) => {
-                match compare_detours.step(&mut invoker.autorouter)? {
-                    CompareDetoursStatus::Running => Ok(InvokerStatus::Running),
-                    CompareDetoursStatus::Finished(total_length1, total_length2) => {
-                        Ok(InvokerStatus::Finished(String::from(format!(
-                            "total detour lengths are {} and {}",
-                            total_length1, total_length2
-                        ))))
-                    }
-                }
-            }
-            Execute::MeasureLength(measure_length) => {
-                let length = measure_length.doit(&mut invoker.autorouter)?;
-                Ok(InvokerStatus::Finished(format!(
-                    "Total length of selected bands: {}",
-                    length
-                )))
-            }
-        }
-    }
-}
-
-impl<M: AccessMesadata> Step<Invoker<M>, InvokerStatus, InvokerError, ()> for Execute {
-    fn step(&mut self, invoker: &mut Invoker<M>) -> Result<InvokerStatus, InvokerError> {
-        match self.step_catch_err(invoker) {
-            Ok(InvokerStatus::Running) => Ok(InvokerStatus::Running),
-            Ok(InvokerStatus::Finished(msg)) => {
-                if let Some(command) = invoker.ongoing_command.take() {
-                    invoker.history.do_(command);
-                }
-
-                Ok(InvokerStatus::Finished(msg))
-            }
-            Err(err) => {
-                invoker.ongoing_command = None;
-                Err(err)
-            }
-        }
-    }
-}
-
-pub struct ExecuteWithStatus {
-    execute: Execute,
-    maybe_status: Option<InvokerStatus>,
-}
-
-impl ExecuteWithStatus {
-    pub fn new(execute: Execute) -> ExecuteWithStatus {
-        Self {
-            execute,
-            maybe_status: None,
-        }
-    }
-
-    pub fn step<M: AccessMesadata>(
-        &mut self,
-        invoker: &mut Invoker<M>,
-    ) -> Result<InvokerStatus, InvokerError> {
-        let status = self.execute.step(invoker)?;
-        self.maybe_status = Some(status.clone());
-        Ok(status)
-    }
-
-    pub fn maybe_status(&self) -> Option<InvokerStatus> {
-        self.maybe_status.clone()
-    }
-}
-
-impl GetMaybeNavmesh for ExecuteWithStatus {
-    fn maybe_navmesh(&self) -> Option<&Navmesh> {
-        self.execute.maybe_navmesh()
-    }
-}
-
-impl GetMaybeTrace for ExecuteWithStatus {
-    fn maybe_trace(&self) -> Option<&Trace> {
-        self.execute.maybe_trace()
-    }
-}
-
-impl GetGhosts for ExecuteWithStatus {
-    fn ghosts(&self) -> &[PrimitiveShape] {
-        self.execute.ghosts()
-    }
-}
-
-impl GetObstacles for ExecuteWithStatus {
-    fn obstacles(&self) -> &[PrimitiveIndex] {
-        self.execute.obstacles()
-    }
-}
-
 pub struct Invoker<M: AccessMesadata> {
-    autorouter: Autorouter<M>,
-    history: History,
-    ongoing_command: Option<Command>,
+    pub(super) autorouter: Autorouter<M>,
+    pub(super) history: History,
+    pub(super) ongoing_command: Option<Command>,
 }
 
 impl<M: AccessMesadata> Invoker<M> {
@@ -271,22 +134,18 @@ impl<M: AccessMesadata> Invoker<M> {
                     });
                 }
 
-                Execute::Autoroute(
-                    self.autorouter.autoroute_ratlines(ratlines, *options)?,
-                )
+                Execute::Autoroute(self.autorouter.autoroute_ratlines(ratlines, *options)?)
             }
-            Command::PlaceVia(weight) => Execute::PlaceVia(
-                self.autorouter.place_via(*weight)?
-            ),
-            Command::RemoveBands(selection) => Execute::RemoveBands(
-                self.autorouter.remove_bands(selection)?,
-            ),
-            Command::CompareDetours(selection, options) => Execute::CompareDetours(
-                self.autorouter.compare_detours(selection, *options)?,
-            ),
-            Command::MeasureLength(selection) => Execute::MeasureLength(
-                self.autorouter.measure_length(selection)?,
-            ),
+            Command::PlaceVia(weight) => Execute::PlaceVia(self.autorouter.place_via(*weight)?),
+            Command::RemoveBands(selection) => {
+                Execute::RemoveBands(self.autorouter.remove_bands(selection)?)
+            }
+            Command::CompareDetours(selection, options) => {
+                Execute::CompareDetours(self.autorouter.compare_detours(selection, *options)?)
+            }
+            Command::MeasureLength(selection) => {
+                Execute::MeasureLength(self.autorouter.measure_length(selection)?)
+            }
         })
     }
 

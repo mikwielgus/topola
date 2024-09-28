@@ -1,8 +1,5 @@
 use topola::{
-    autorouter::{
-        invoker::{Command, InvokerError},
-        AutorouterError,
-    },
+    autorouter::{execute::Command, invoker::InvokerError, AutorouterError},
     board::mesadata::AccessMesadata,
     layout::via::ViaWeight,
     math::Circle,

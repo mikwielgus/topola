@@ -14,7 +14,8 @@ use unic_langid::{langid, LanguageIdentifier};
 
 use topola::{
     autorouter::{
-        invoker::{Command, Execute, ExecuteWithStatus, Invoker, InvokerStatus},
+        execute::ExecuteWithStatus,
+        invoker::{Invoker, InvokerStatus},
         Autorouter,
     },
     drawing::{
