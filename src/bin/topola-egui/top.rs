@@ -234,7 +234,7 @@ impl Top {
                 } else if export_session.consume_key_triggered(ctx, ui) {
                     if let Some(design) = maybe_design {
                         if let Some(invoker) =
-                            arc_mutex_maybe_invoker.clone().lock().unwrap().as_ref()
+                            arc_mutex_maybe_invoker.lock().unwrap().as_ref()
                         {
                             let ctx = ui.ctx().clone();
                             let board = invoker.autorouter().board();
@@ -274,7 +274,7 @@ impl Top {
                         }
                     });
                 } else if export_history.consume_key_triggered(ctx, ui) {
-                    if let Some(invoker) = arc_mutex_maybe_invoker.clone().lock().unwrap().as_ref()
+                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_ref()
                     {
                         let ctx = ctx.clone();
                         let task = rfd::AsyncFileDialog::new().save_file();
