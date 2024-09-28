@@ -94,6 +94,10 @@ pub struct Structure {
     // (in class rules it outputs a single rule with all clearances like KiCad)
     #[vec("rule")]
     pub rules: Vec<StructureRule>,
+    // EasyEDA outputs these last...
+    // this is a horrible hack to see what else causes trouble
+    #[vec("layer")]
+    pub layers_easyeda: Vec<Layer>,
 }
 
 #[derive(ReadDsn, WriteSes, Debug)]
@@ -101,7 +105,7 @@ pub struct Layer {
     #[anon]
     pub name: String,
     pub r#type: String,
-    pub property: Property,
+    pub property: Option<Property>,
 }
 
 #[derive(ReadDsn, WriteSes, Debug)]
@@ -224,7 +228,7 @@ pub struct Padstack {
     pub name: String,
     #[vec("shape")]
     pub shapes: Vec<Shape>,
-    pub attach: bool,
+    pub attach: Option<bool>,
 }
 
 // TODO: derive for enums if more than this single one is needed

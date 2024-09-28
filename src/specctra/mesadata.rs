@@ -72,12 +72,17 @@ impl SpecctraMesadata {
     /// layer-to-layer name mappings, net-to-net name mappings, and net class rules.
     ///
     pub fn from_pcb(pcb: &Pcb) -> Self {
-        let layer_layername = BiHashMap::from_iter(
-            pcb.structure
-                .layers
-                .iter()
-                .map(|layer| (layer.property.index, layer.name.clone())),
-        );
+        let mut highest_layer: usize = 0;
+        let mut layer_layername = BiHashMap::new();
+
+        for layer in &pcb.structure.layers {
+            let index = if layer.property.is_some() {
+                layer.property.as_ref().unwrap().index
+            } else {
+                layer.name.parse().unwrap()
+            };
+            layer_layername.insert(index, layer.name.clone());
+        }
 
         // keeping this as a separate iter pass because it might be moved into a different struct later?
         let net_netname = BiHashMap::from_iter(

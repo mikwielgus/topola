@@ -55,7 +55,8 @@ impl SpecctraDesign {
     ///
     pub fn load(reader: impl std::io::BufRead) -> Result<SpecctraDesign, LoadingError> {
         let mut list_reader = ListTokenizer::new(reader);
-        let dsn = list_reader.read_value::<DsnFile>()?;
+        let mut dsn = list_reader.read_value::<DsnFile>()?;
+        dsn.pcb.structure.layers.append(&mut dsn.pcb.structure.layers_easyeda); // temporary hack
 
         Ok(Self { pcb: dsn.pcb })
     }
