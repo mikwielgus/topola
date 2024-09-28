@@ -74,7 +74,7 @@ impl Layers {
                     .layout()
                     .drawing()
                     .rules()
-                    .layer_layername(layer.try_into().unwrap() /* FIXME */)
+                    .layer_layername(layer)
                     .unwrap_or("Unnamed layer");
 
                 ui.checkbox(visible, layername);
