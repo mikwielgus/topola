@@ -15,7 +15,7 @@ use topola::{
 
 use crate::{
     action::{Action, Switch, Trigger},
-    app::{channel_text, execute},
+    app::execute,
     file_sender::FileSender,
     overlay::Overlay,
     translator::Translator,
