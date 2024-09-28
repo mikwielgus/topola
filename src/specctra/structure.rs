@@ -80,7 +80,7 @@ pub struct Resolution {
     pub value: f32,
 }
 
-#[derive(ReadDsn, WriteSes, Debug)]
+#[derive(WriteSes, Debug)]
 pub struct Structure {
     #[vec("layer")]
     pub layers: Vec<Layer>,
@@ -95,10 +95,26 @@ pub struct Structure {
     // (in class rules it outputs a single rule with all clearances like KiCad)
     #[vec("rule")]
     pub rules: Vec<StructureRule>,
-    // EasyEDA outputs these last...
-    // this is a horrible hack to see what else causes trouble
-    #[vec("layer")]
-    pub layers_easyeda: Vec<Layer>,
+}
+
+// custom impl to handle layers appearing late
+impl<R: std::io::BufRead> ReadDsn<R> for Structure {
+    fn read_dsn(
+        tokenizer: &mut ListTokenizer<R>,
+    ) -> Result<Self, ParseErrorContext> {
+        let mut value = Self {
+            layers: tokenizer.read_named_array("layer")?,
+            boundary: tokenizer.read_named("boundary")?,
+            planes: tokenizer.read_named_array("plane")?,
+            via: tokenizer.read_named("via")?,
+            grids: tokenizer.read_named_array("grid")?,
+            rules: tokenizer.read_named_array("rule")?,
+        };
+
+        value.layers.append(&mut tokenizer.read_named_array("layer")?);
+
+        Ok(value)
+    }
 }
 
 #[derive(ReadDsn, WriteSes, Debug)]
