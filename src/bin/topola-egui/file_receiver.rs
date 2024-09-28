@@ -1,5 +1,5 @@
 use std::io::{BufReader, Cursor};
-use std::sync::mpsc::{Receiver, TryRecvError};
+use std::sync::mpsc::Receiver;
 
 pub struct FileReceiver<'a> {
     receiver: &'a Receiver<String>,
@@ -11,14 +11,12 @@ impl<'a> FileReceiver<'a> {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
-    pub fn try_recv(&mut self) -> Result<BufReader<std::fs::File>, TryRecvError> {
-        Ok(std::io::BufReader::new(
-            std::fs::File::open(self.receiver.try_recv()?).unwrap(),
-        ))
+    pub fn try_recv(&mut self) -> Option<Result<BufReader<std::fs::File>, std::io::Error>> {
+        Some(std::fs::File::open(self.receiver.try_recv().ok()?).map(std::io::BufReader::new))
     }
 
     #[cfg(target_arch = "wasm32")]
-    pub fn try_recv(&mut self) -> Result<Cursor<Vec<u8>>, TryRecvError> {
-        Ok(Cursor::new(self.receiver.try_recv()?.into()))
+    pub fn try_recv(&mut self) -> Option<Result<Cursor<Vec<u8>>, std::io::Error>> {
+        Some(Ok(Cursor::new(self.receiver.try_recv().ok()?.into())))
     }
 }

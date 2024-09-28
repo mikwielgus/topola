@@ -6,8 +6,13 @@ use std::sync::Arc;
 use crate::{translator::Translator, viewport::Viewport};
 
 pub struct ErrorDialog {
-    pub messages: Vec<(&'static str, String)>,
-    pub window_open: bool,
+    /// messages is a list of error messages to display.
+    ///
+    /// first field is the emitting component (as a translator ID),
+    /// second field is the error message
+    messages: Vec<(&'static str, String)>,
+
+    window_open: bool,
 }
 
 impl ErrorDialog {

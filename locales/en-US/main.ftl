@@ -43,3 +43,13 @@ specctra-session-file = Specctra session file
 title-error-messages = Error Messages
 reset-error-messages = Reset Messages
 discard-item = Discard
+
+specctra-dsn-loader = Specctra DSN file loader
+history-loader = History file loader
+invoker = Invoker
+
+error-file-load = unable to read file
+error-file-specctra-dsn-parse = file failed to parse as Specctra DSN
+error-file-history-parse = file failed to parse as History JSON
+error-overlay-init = unable to initialize overlay
+error-autorouter-init = unable to initialize autorouter

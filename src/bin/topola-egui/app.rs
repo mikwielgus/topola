@@ -146,35 +146,74 @@ impl App {
     fn update_state(&mut self) -> bool {
         let mut content_file_receiver = FileReceiver::new(&self.content_channel.1);
 
-        if let Ok(bufread) = content_file_receiver.try_recv() {
-            let design = SpecctraDesign::load(bufread).unwrap();
-            let board = design.make_board();
-            self.maybe_overlay = Some(Overlay::new(&board).unwrap());
-            self.maybe_layers = Some(Layers::new(&board));
-            self.maybe_design = Some(design);
-            self.arc_mutex_maybe_invoker = Arc::new(Mutex::new(Some(Invoker::new(
-                Autorouter::new(board).unwrap(),
-            ))));
-            self.viewport.scheduled_zoom_to_fit = true;
+        if let Some(input) = content_file_receiver.try_recv() {
+            match self.load_specctra_dsn(input) {
+                Ok(()) => {}
+                Err(err) => {
+                    self.error_dialog.push_error("specctra-dsn-loader", err);
+                }
+            }
         }
 
         if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
             let mut history_file_receiver = FileReceiver::new(&self.history_channel.1);
 
-            if let Ok(bufread) = history_file_receiver.try_recv() {
-                invoker.replay(serde_json::from_reader(bufread).unwrap())
+            if let Some(input) = history_file_receiver.try_recv() {
+                let tr = &self.translator;
+                match input {
+                    Ok(bufread) => match serde_json::from_reader(bufread) {
+                        Ok(res) => invoker.replay(res),
+                        Err(err) => {
+                            self.error_dialog.push_error(
+                                "history-loader",
+                                format!("{}; {}", tr.text("error-file-history-parse"), err),
+                            );
+                        }
+                    },
+                    Err(err) => {
+                        self.error_dialog.push_error(
+                            "history-loader",
+                            format!("{}; {}", tr.text("error-file-load"), err),
+                        );
+                    }
+                }
             }
 
             if let Some(ref mut activity) = self.maybe_activity {
-                match activity.step(invoker) {
-                    Ok(ActivityStatus::Running) => return true,
-                    Ok(ActivityStatus::Finished(..)) => return false,
-                    Err(err) => return false,
-                }
+                return match activity.step(invoker) {
+                    Ok(ActivityStatus::Running) => true,
+                    Ok(ActivityStatus::Finished(..)) => false,
+                    Err(err) => {
+                        self.error_dialog.push_error("invoker", format!("{}", err));
+                        false
+                    }
+                };
             }
         }
 
         false
+    }
+
+    fn load_specctra_dsn(
+        &mut self,
+        input: std::io::Result<std::io::BufReader<std::fs::File>>,
+    ) -> Result<(), String> {
+        let tr = &self.translator;
+        let bufread = input.map_err(|err| format!("{}; {}", tr.text("error-file-load"), err))?;
+        let design = SpecctraDesign::load(bufread)
+            .map_err(|err| format!("{}; {}", tr.text("error-file-specctra-dsn-parse"), err))?;
+        let board = design.make_board();
+        let overlay = Overlay::new(&board)
+            .map_err(|err| format!("{}; {}", tr.text("error-overlay-init"), err))?;
+        let layers = Layers::new(&board);
+        let autorouter = Autorouter::new(board)
+            .map_err(|err| format!("{}; {}", tr.text("error-autorouter-init"), err))?;
+        self.maybe_overlay = Some(overlay);
+        self.maybe_layers = Some(layers);
+        self.maybe_design = Some(design);
+        self.arc_mutex_maybe_invoker = Arc::new(Mutex::new(Some(Invoker::new(autorouter))));
+        self.viewport.scheduled_zoom_to_fit = true;
+        Ok(())
     }
 }
 
