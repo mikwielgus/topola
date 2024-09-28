@@ -53,9 +53,9 @@ pub struct DsnFile {
 pub struct Pcb {
     #[anon]
     pub name: String,
-    pub parser: Parser,
+    pub parser: Option<Parser>,
     pub resolution: Resolution,
-    pub unit: String,
+    pub unit: Option<String>,
     pub structure: Structure,
     pub placement: Placement,
     pub library: Library,
@@ -87,7 +87,13 @@ pub struct Structure {
     #[vec("plane")]
     pub planes: Vec<Plane>,
     pub via: ViaNames,
-    pub rule: Rule,
+    #[vec("grid")]
+    pub grids: Vec<Grid>,
+    // this is a vec of special structs because EasyEDA uses different syntax
+    // it outputs a sequence of rules containing a clearance each
+    // (in class rules it outputs a single rule with all clearances like KiCad)
+    #[vec("rule")]
+    pub rules: Vec<StructureRule>,
 }
 
 #[derive(ReadDsn, WriteSes, Debug)]
@@ -119,6 +125,21 @@ pub struct Plane {
 pub struct ViaNames {
     #[anon_vec]
     pub names: Vec<String>,
+}
+
+#[derive(ReadDsn, WriteSes, Debug)]
+pub struct Grid {
+    #[anon]
+    pub kind: String,
+    #[anon]
+    pub value: f64,
+}
+
+#[derive(ReadDsn, WriteSes, Debug)]
+pub struct StructureRule {
+    pub width: Option<f32>,
+    #[vec("clearance")]
+    pub clearances: Vec<Clearance>,
 }
 
 #[derive(ReadDsn, WriteSes, Debug)]
@@ -428,7 +449,7 @@ pub struct Rule {
     pub clearances: Vec<Clearance>,
 }
 
-#[derive(ReadDsn, WriteSes, Debug)]
+#[derive(ReadDsn, WriteSes, Clone, Debug)]
 pub struct Clearance {
     #[anon]
     pub value: f32,

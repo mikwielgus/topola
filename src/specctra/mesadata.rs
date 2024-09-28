@@ -103,8 +103,21 @@ impl SpecctraMesadata {
                 .map(|class| (class.name.clone(), SpecctraRule::from_dsn(&class.rule))),
         );
 
+        let mut structure_rule = super::structure::Rule {
+            width: 0.0,
+            clearances: Vec::new(),
+        };
+        // workaround for differing syntax
+        // collapse multiple rule entries into a single one
+        for rule in &pcb.structure.rules {
+            if rule.width.is_some() {
+                structure_rule.width = rule.width.unwrap()
+            }
+            structure_rule.clearances.extend_from_slice(&rule.clearances);
+        }
+
         Self {
-            structure_rule: SpecctraRule::from_dsn(&pcb.structure.rule),
+            structure_rule: SpecctraRule::from_dsn(&structure_rule),
             class_rules,
             layer_layername,
             net_netname,
