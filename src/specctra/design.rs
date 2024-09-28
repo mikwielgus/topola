@@ -1,3 +1,6 @@
+//! Module for managing the various Specctra PCB design, including loading the
+//! Design DSN file, creating the [`Board`] object from the file, as well as
+//! exporting the session file
 use std::collections::HashMap;
 
 use geo::{point, Point, Rotate};
@@ -52,7 +55,6 @@ impl SpecctraDesign {
     /// This function reads the Specctra Design data from an input stream.
     /// Later the data is parsed and loaded into a [`SpecctraDesign`] structure,
     /// allowing further operations such as rule validation, routing, or netlist management.
-    ///
     pub fn load(reader: impl std::io::BufRead) -> Result<SpecctraDesign, LoadingError> {
         let mut list_reader = ListTokenizer::new(reader);
         let dsn = list_reader.read_value::<DsnFile>()?;
@@ -72,7 +74,6 @@ impl SpecctraDesign {
     /// This function generates a Specctra SES session file that represents the board's net routing and
     /// writes it to the provided output stream. The session data includes routed nets, wires, 
     /// layers, and other essential information for routing management.
-    ///
     pub fn write_ses( 
         &self,
         board: &Board<SpecctraMesadata>,
@@ -184,7 +185,6 @@ impl SpecctraDesign {
     /// which is used for layout and routing operations. The board is initialized with [`SpecctraMesadata`],
     /// which includes layer and net mappings, and is populated with components, pins, vias, and wires
     /// from the PCB definition.
-    ///
     pub fn make_board(&self) -> Board<SpecctraMesadata> {
         let mesadata = SpecctraMesadata::from_pcb(&self.pcb);
         let mut board = Board::new(Layout::new(Drawing::new(

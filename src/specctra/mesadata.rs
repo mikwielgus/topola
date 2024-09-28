@@ -1,3 +1,6 @@
+//! Module for handling Specctra's mesadata - design rules, as well as layers
+//! or net properties 
+
 use std::collections::HashMap;
 
 use bimap::BiHashMap;
@@ -10,7 +13,7 @@ use crate::{
 
 #[derive(Debug)]
 /// [`SpecctraRule`] represents the basic routing constraints used by an auto-router, such as
-/// the Specctra auto-router, in a PCB design process. This struct defines two key design
+/// the Topola auto-router, in a PCB design process. This struct defines two key design
 /// rules: the width of the trace and the minimum clearance between electrical features.
 pub struct SpecctraRule {
     /// Specifies the width of the trace (or conductor) in millimeters. 
@@ -70,7 +73,6 @@ impl SpecctraMesadata {
     /// 
     /// This function extracts the necessary metadata from the `Pcb` struct, such as
     /// layer-to-layer name mappings, net-to-net name mappings, and net class rules.
-    ///
     pub fn from_pcb(pcb: &Pcb) -> Self {
         let mut layer_layername = BiHashMap::from_iter(
             pcb.structure.layers
