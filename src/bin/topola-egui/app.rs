@@ -220,15 +220,3 @@ pub fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
 pub fn execute<F: Future<Output = ()> + 'static>(f: F) {
     wasm_bindgen_futures::spawn_local(f);
 }
-
-#[cfg(not(target_arch = "wasm32"))]
-pub async fn channel_text(file_handle: rfd::FileHandle) -> String {
-    file_handle.path().to_str().unwrap().to_string()
-}
-
-#[cfg(target_arch = "wasm32")]
-pub async fn channel_text(file_handle: rfd::FileHandle) -> String {
-    std::str::from_utf8(&file_handle.read().await)
-        .unwrap()
-        .to_string()
-}

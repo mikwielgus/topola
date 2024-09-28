@@ -14,7 +14,7 @@ use crate::{
     },
     geometry::{primitive::PrimitiveShape, GetWidth},
     layout::{poly::SolidPolyWeight, Layout},
-    math::Circle,
+    math::{Circle, PointWithRotation},
     specctra::{
         mesadata::SpecctraMesadata,
         read::{self, ListTokenizer},
@@ -231,33 +231,32 @@ impl SpecctraDesign {
                     .find(|image| image.name == component.name)
                     .unwrap();
 
+                let place_side_is_front = place.side == "front";
+                let get_layer = |board: &Board<SpecctraMesadata>, name: &str| Self::layer(
+                    board,
+                    &self.pcb.structure.layers,
+                    name,
+                    place_side_is_front,
+                );
+
                 for pin in &image.pins {
                     let pinname = format!("{}-{}", place.name, pin.id);
                     let net = pin_nets.get(&pinname).unwrap();
 
-                    let padstack = &self
+                    let padstack = self
                         .pcb
                         .library
-                        .padstacks
-                        .iter()
-                        .find(|padstack| padstack.name == pin.name)
+                        .find_padstack_by_name(&pin.name)
                         .unwrap();
 
                     for shape in padstack.shapes.iter() {
                         match shape {
                             Shape::Circle(circle) => {
-                                let layer = Self::layer(
-                                    &mut board,
-                                    &self.pcb.structure.layers,
-                                    &circle.layer,
-                                    place.side == "front",
-                                );
+                                let layer = get_layer(&board, &circle.layer);
                                 Self::add_circle(
                                     &mut board,
-                                    (place.x, place.y).into(),
-                                    place.rotation,
-                                    (pin.x, pin.y).into(),
-                                    pin.rotate.unwrap_or(0.0),
+                                    place.point_with_rotation(),
+                                    pin.point_with_rotation(),
                                     circle.diameter / 2.0,
                                     layer,
                                     *net,
@@ -265,18 +264,11 @@ impl SpecctraDesign {
                                 )
                             }
                             Shape::Rect(rect) => {
-                                let layer = Self::layer(
-                                    &mut board,
-                                    &self.pcb.structure.layers,
-                                    &rect.layer,
-                                    place.side == "front",
-                                );
+                                let layer = get_layer(&board, &rect.layer);
                                 Self::add_rect(
                                     &mut board,
-                                    (place.x, place.y).into(),
-                                    place.rotation,
-                                    (pin.x, pin.y).into(),
-                                    pin.rotate.unwrap_or(0.0),
+                                    place.point_with_rotation(),
+                                    pin.point_with_rotation(),
                                     rect.x1,
                                     rect.y1,
                                     rect.x2,
@@ -287,18 +279,11 @@ impl SpecctraDesign {
                                 )
                             }
                             Shape::Path(path) => {
-                                let layer = Self::layer(
-                                    &mut board,
-                                    &self.pcb.structure.layers,
-                                    &path.layer,
-                                    place.side == "front",
-                                );
+                                let layer = get_layer(&board, &path.layer);
                                 Self::add_path(
                                     &mut board,
-                                    (place.x, place.y).into(),
-                                    place.rotation,
-                                    (pin.x, pin.y).into(),
-                                    pin.rotate.unwrap_or(0.0),
+                                    place.point_with_rotation(),
+                                    pin.point_with_rotation(),
                                     &path.coords,
                                     path.width,
                                     layer,
@@ -307,18 +292,11 @@ impl SpecctraDesign {
                                 )
                             }
                             Shape::Polygon(polygon) => {
-                                let layer = Self::layer(
-                                    &mut board,
-                                    &self.pcb.structure.layers,
-                                    &polygon.layer,
-                                    place.side == "front",
-                                );
+                                let layer = get_layer(&board, &polygon.layer);
                                 Self::add_polygon(
                                     &mut board,
-                                    (place.x, place.y).into(),
-                                    place.rotation,
-                                    (pin.x, pin.y).into(),
-                                    pin.rotate.unwrap_or(0.0),
+                                    place.point_with_rotation(),
+                                    pin.point_with_rotation(),
                                     &polygon.coords,
                                     polygon.width,
                                     layer,
@@ -340,30 +318,23 @@ impl SpecctraDesign {
                 .netname_net(&via.net)
                 .unwrap();
 
-            // find the padstack referenced by this via placement
-            let padstack = &self
+            let padstack = self
                 .pcb
                 .library
-                .padstacks
-                .iter()
-                .find(|padstack| padstack.name == via.name)
+                .find_padstack_by_name(&via.name)
                 .unwrap();
+
+            let get_layer = |board: &Board<SpecctraMesadata>, name: &str|
+                Self::layer(board, &self.pcb.structure.layers, name, true);
 
             for shape in &padstack.shapes {
                 match shape {
                     Shape::Circle(circle) => {
-                        let layer = Self::layer(
-                            &mut board,
-                            &self.pcb.structure.layers,
-                            &circle.layer,
-                            true,
-                        );
+                        let layer = get_layer(&board, &circle.layer);
                         Self::add_circle(
                             &mut board,
-                            (0.0, 0.0).into(),
-                            0.0,
-                            (0.0, 0.0).into(),
-                            0.0,
+                            PointWithRotation::default(),
+                            PointWithRotation::default(),
                             circle.diameter / 2.0,
                             layer,
                             net,
@@ -371,14 +342,11 @@ impl SpecctraDesign {
                         )
                     }
                     Shape::Rect(rect) => {
-                        let layer =
-                            Self::layer(&mut board, &self.pcb.structure.layers, &rect.layer, true);
+                        let layer = get_layer(&board, &rect.layer);
                         Self::add_rect(
                             &mut board,
-                            (0.0, 0.0).into(),
-                            0.0,
-                            (0.0, 0.0).into(),
-                            0.0,
+                            PointWithRotation::default(),
+                            PointWithRotation::default(),
                             rect.x1,
                             rect.y1,
                             rect.x2,
@@ -389,14 +357,11 @@ impl SpecctraDesign {
                         )
                     }
                     Shape::Path(path) => {
-                        let layer =
-                            Self::layer(&mut board, &self.pcb.structure.layers, &path.layer, true);
+                        let layer = get_layer(&board, &path.layer);
                         Self::add_path(
                             &mut board,
-                            (0.0, 0.0).into(),
-                            0.0,
-                            (0.0, 0.0).into(),
-                            0.0,
+                            PointWithRotation::default(),
+                            PointWithRotation::default(),
                             &path.coords,
                             path.width,
                             layer,
@@ -405,18 +370,11 @@ impl SpecctraDesign {
                         )
                     }
                     Shape::Polygon(polygon) => {
-                        let layer = Self::layer(
-                            &mut board,
-                            &self.pcb.structure.layers,
-                            &polygon.layer,
-                            true,
-                        );
+                        let layer = get_layer(&board, &polygon.layer);
                         Self::add_polygon(
                             &mut board,
-                            (0.0, 0.0).into(),
-                            0.0,
-                            (0.0, 0.0).into(),
-                            0.0,
+                            PointWithRotation::default(),
+                            PointWithRotation::default(),
                             &polygon.coords,
                             polygon.width,
                             layer,
@@ -444,36 +402,14 @@ impl SpecctraDesign {
 
             Self::add_path(
                 &mut board,
-                (0.0, 0.0).into(),
-                0.0,
-                (0.0, 0.0).into(),
-                0.0,
+                PointWithRotation::default(),
+                PointWithRotation::default(),
                 &wire.path.coords,
                 wire.path.width,
                 layer,
                 net,
                 None,
             );
-        }
-
-        // The clones here are bad, we'll have something better later on.
-
-        let layername_to_layer = &board.layout().drawing().rules().layer_layername.clone();
-
-        for (layer, layername) in layername_to_layer.iter() {
-            board
-                .layout_mut()
-                .rules_mut()
-                .bename_layer(*layer, layername.to_string());
-        }
-
-        let netname_to_net = &board.layout().drawing().rules().net_netname.clone();
-
-        for (net, netname) in netname_to_net.iter() {
-            board
-                .layout_mut()
-                .rules_mut()
-                .bename_net(*net, netname.to_string());
         }
 
         board
@@ -501,17 +437,15 @@ impl SpecctraDesign {
 
     fn add_circle(
         board: &mut Board<SpecctraMesadata>,
-        place_pos: Point,
-        place_rot: f64,
-        pin_pos: Point,
-        pin_rot: f64,
+        place: PointWithRotation,
+        pin: PointWithRotation,
         r: f64,
         layer: usize,
         net: usize,
         maybe_pin: Option<String>,
     ) {
         let circle = Circle {
-            pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, 0.0, 0.0),
+            pos: Self::pos(place, pin, 0.0, 0.0),
             r,
         };
 
@@ -527,10 +461,8 @@ impl SpecctraDesign {
 
     fn add_rect(
         board: &mut Board<SpecctraMesadata>,
-        place_pos: Point,
-        place_rot: f64,
-        pin_pos: Point,
-        pin_rot: f64,
+        place: PointWithRotation,
+        pin: PointWithRotation,
         x1: f64,
         y1: f64,
         x2: f64,
@@ -552,7 +484,7 @@ impl SpecctraDesign {
         let dot_1_1 = board.add_poly_fixed_dot_infringably(
             FixedDotWeight {
                 circle: Circle {
-                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y1),
+                    pos: Self::pos(place, pin, x1, y1),
                     r: 0.5,
                 },
                 layer,
@@ -563,7 +495,7 @@ impl SpecctraDesign {
         let dot_2_1 = board.add_poly_fixed_dot_infringably(
             FixedDotWeight {
                 circle: Circle {
-                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y1),
+                    pos: Self::pos(place, pin, x2, y1),
                     r: 0.5,
                 },
                 layer,
@@ -574,7 +506,7 @@ impl SpecctraDesign {
         let dot_2_2 = board.add_poly_fixed_dot_infringably(
             FixedDotWeight {
                 circle: Circle {
-                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x2, y2),
+                    pos: Self::pos(place, pin, x2, y2),
                     r: 0.5,
                 },
                 layer,
@@ -585,7 +517,7 @@ impl SpecctraDesign {
         let dot_1_2 = board.add_poly_fixed_dot_infringably(
             FixedDotWeight {
                 circle: Circle {
-                    pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, x1, y2),
+                    pos: Self::pos(place, pin, x1, y2),
                     r: 0.5,
                 },
                 layer,
@@ -638,10 +570,8 @@ impl SpecctraDesign {
 
     fn add_path(
         board: &mut Board<SpecctraMesadata>,
-        place_pos: Point,
-        place_rot: f64,
-        pin_pos: Point,
-        pin_rot: f64,
+        place: PointWithRotation,
+        pin: PointWithRotation,
         coords: &Vec<structure::Point>,
         width: f64,
         layer: usize,
@@ -649,14 +579,7 @@ impl SpecctraDesign {
         maybe_pin: Option<String>,
     ) {
         // add the first coordinate in the wire path as a dot and save its index
-        let mut prev_pos = Self::pos(
-            place_pos,
-            place_rot,
-            pin_pos,
-            pin_rot,
-            coords[0].x,
-            coords[0].y,
-        );
+        let mut prev_pos = Self::pos(place, pin, coords[0].x, coords[0].y);
         let mut prev_index = board.add_fixed_dot_infringably(
             FixedDotWeight {
                 circle: Circle {
@@ -671,7 +594,7 @@ impl SpecctraDesign {
 
         // iterate through path coords starting from the second
         for coord in coords.iter().skip(1) {
-            let pos = Self::pos(place_pos, place_rot, pin_pos, pin_rot, coord.x, coord.y);
+            let pos = Self::pos(place, pin, coord.x, coord.y);
 
             if pos == prev_pos {
                 continue;
@@ -708,10 +631,8 @@ impl SpecctraDesign {
 
     fn add_polygon(
         board: &mut Board<SpecctraMesadata>,
-        place_pos: Point,
-        place_rot: f64,
-        pin_pos: Point,
-        pin_rot: f64,
+        place: PointWithRotation,
+        pin: PointWithRotation,
         coords: &Vec<structure::Point>,
         width: f64,
         layer: usize,
@@ -731,14 +652,7 @@ impl SpecctraDesign {
         let mut prev_index = board.add_poly_fixed_dot_infringably(
             FixedDotWeight {
                 circle: Circle {
-                    pos: Self::pos(
-                        place_pos,
-                        place_rot,
-                        pin_pos,
-                        pin_rot,
-                        coords[0].x,
-                        coords[0].y,
-                    ),
+                    pos: Self::pos(place, pin, coords[0].x, coords[0].y),
                     r: width / 2.0,
                 },
                 layer,
@@ -754,8 +668,7 @@ impl SpecctraDesign {
             let index = board.add_poly_fixed_dot_infringably(
                 FixedDotWeight {
                     circle: Circle {
-                        pos: Self::pos(place_pos, place_rot, pin_pos, pin_rot, coord.x, coord.y)
-                            .into(),
+                        pos: Self::pos(place, pin, coord.x, coord.y).into(),
                         r: width / 2.0,
                     },
                     layer,
@@ -783,14 +696,12 @@ impl SpecctraDesign {
     }
 
     fn pos(
-        place_pos: Point,
-        place_rot: f64,
-        pin_pos: Point,
-        pin_rot: f64,
+        place: PointWithRotation,
+        pin: PointWithRotation,
         x: f64,
         y: f64,
     ) -> Point {
-        let pos = (point! {x: x, y: y} + pin_pos).rotate_around_point(pin_rot, pin_pos);
-        (pos + place_pos).rotate_around_point(place_rot, place_pos)
+        let pos = (point! {x: x, y: y} + pin.pos).rotate_around_point(pin.rot, pin.pos);
+        (pos + place.pos).rotate_around_point(place.rot, place.pos)
     }
 }

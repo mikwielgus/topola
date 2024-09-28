@@ -3,6 +3,7 @@ use super::read::ReadDsn;
 use super::read::{ListTokenizer, ParseError, ParseErrorContext};
 use super::write::ListWriter;
 use super::write::WriteSes;
+use crate::math::PointWithRotation;
 use specctra_derive::ReadDsn;
 use specctra_derive::WriteSes;
 
@@ -176,12 +177,27 @@ pub struct Place {
     pub PN: Option<String>,
 }
 
+impl Place {
+    pub fn point_with_rotation(&self) -> PointWithRotation {
+        PointWithRotation {
+            pos: (self.x, self.y).into(),
+            rot: self.rotation,
+        }
+    }
+}
+
 #[derive(ReadDsn, WriteSes, Debug)]
 pub struct Library {
     #[vec("image")]
     pub images: Vec<Image>,
     #[vec("padstack")]
     pub padstacks: Vec<Padstack>,
+}
+
+impl Library {
+    pub fn find_padstack_by_name(&self, name: &str) -> Option<&Padstack> {
+        self.padstacks.iter().find(|padstack| &padstack.name == name)
+    }
 }
 
 #[derive(ReadDsn, WriteSes, Debug)]
@@ -212,6 +228,15 @@ pub struct Pin {
     pub x: f64,
     #[anon]
     pub y: f64,
+}
+
+impl Pin {
+    pub fn point_with_rotation(&self) -> PointWithRotation {
+        PointWithRotation {
+            pos: (self.x, self.y).into(),
+            rot: self.rotate.unwrap_or(0.0),
+        }
+    }
 }
 
 #[derive(ReadDsn, WriteSes, Debug)]
