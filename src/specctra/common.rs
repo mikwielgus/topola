@@ -9,7 +9,7 @@ pub enum ListToken {
 impl ListToken {
     pub fn expect_start(self, name: &'static str) -> Result<(), ParseError> {
         if let Self::Start { name: actual_name } = self {
-            if name == actual_name {
+            if name.eq_ignore_ascii_case(&actual_name) {
                 Ok(())
             } else {
                 Err(ParseError::ExpectedStartOfList(name))
@@ -21,7 +21,7 @@ impl ListToken {
 
     pub fn expect_any_start(self) -> Result<String, ParseError> {
         if let Self::Start { name } = self {
-            Ok(name)
+            Ok(name.to_ascii_lowercase())
         } else {
             Err(ParseError::ExpectedStartOfList(""))
         }
