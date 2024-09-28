@@ -15,12 +15,58 @@ pub enum ParseError {
     ExpectedStartOfList(&'static str),
 }
 
+impl ParseError {
+    pub fn add_context(self, context: (usize, usize)) -> ParseErrorContext {
+        ParseErrorContext {
+            error: self,
+            context,
+        }
+    }
+}
+
+#[derive(Error, Debug)]
+#[error("line {}, column {}: {error}", .context.0, .context.1)]
+pub struct ParseErrorContext {
+    error: ParseError,
+    context: (usize, usize),
+}
+
+pub struct InputToken {
+    pub token: ListToken,
+    context: (usize, usize),
+}
+
+impl InputToken {
+    pub fn new(token: ListToken, context: (usize, usize)) -> Self {
+        Self {
+            token,
+            context,
+        }
+    }
+
+    pub fn expect_start(self, name: &'static str) -> Result<(), ParseErrorContext> {
+        self.token.expect_start(name).map_err(|err| err.add_context(self.context))
+    }
+
+    pub fn expect_any_start(self) -> Result<String, ParseErrorContext> {
+        self.token.expect_any_start().map_err(|err| err.add_context(self.context))
+    }
+
+    pub fn expect_leaf(self) -> Result<String, ParseErrorContext> {
+        self.token.expect_leaf().map_err(|err| err.add_context(self.context))
+    }
+
+    pub fn expect_end(self) -> Result<(), ParseErrorContext> {
+        self.token.expect_end().map_err(|err| err.add_context(self.context))
+    }
+}
+
 pub trait ReadDsn<R: std::io::BufRead>: Sized {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError>;
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext>;
 }
 // custom impl feeding the read values back into the tokenizer
 impl<R: std::io::BufRead> ReadDsn<R> for Parser {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         Ok(Self {
             string_quote: tokenizer
                 .read_optional("string_quote")?
@@ -35,86 +81,86 @@ impl<R: std::io::BufRead> ReadDsn<R> for Parser {
 }
 
 impl<R: std::io::BufRead> ReadDsn<R> for String {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         Ok(tokenizer.consume_token()?.expect_leaf()?)
     }
 }
 
 impl<R: std::io::BufRead> ReadDsn<R> for char {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         let string = tokenizer.consume_token()?.expect_leaf()?;
         if string.chars().count() == 1 {
             Ok(string.chars().next().unwrap())
         } else {
-            Err(ParseError::Expected("a single character"))
+            Err(tokenizer.add_context(ParseError::Expected("a single character")))
         }
     }
 }
 
 impl<R: std::io::BufRead> ReadDsn<R> for bool {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         match tokenizer.consume_token()?.expect_leaf()?.as_str() {
             "on" => Ok(true),
             "off" => Ok(false),
-            _ => Err(ParseError::Expected("boolean")),
+            _ => Err(tokenizer.add_context(ParseError::Expected("boolean"))),
         }
     }
 }
 
 impl<R: std::io::BufRead> ReadDsn<R> for i32 {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         Ok(tokenizer
             .consume_token()?
             .expect_leaf()?
             .parse()
-            .map_err(|_| ParseError::Expected("i32"))?)
+            .map_err(|_| tokenizer.add_context(ParseError::Expected("i32")))?)
     }
 }
 
 impl<R: std::io::BufRead> ReadDsn<R> for u32 {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         Ok(tokenizer
             .consume_token()?
             .expect_leaf()?
             .parse()
-            .map_err(|_| ParseError::Expected("u32"))?)
+            .map_err(|_| tokenizer.add_context(ParseError::Expected("u32")))?)
     }
 }
 
 impl<R: std::io::BufRead> ReadDsn<R> for usize {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         Ok(tokenizer
             .consume_token()?
             .expect_leaf()?
             .parse()
-            .map_err(|_| ParseError::Expected("usize"))?)
+            .map_err(|_| tokenizer.add_context(ParseError::Expected("usize")))?)
     }
 }
 
 impl<R: std::io::BufRead> ReadDsn<R> for f32 {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         Ok(tokenizer
             .consume_token()?
             .expect_leaf()?
             .parse()
-            .map_err(|_| ParseError::Expected("f32"))?)
+            .map_err(|_| tokenizer.add_context(ParseError::Expected("f32")))?)
     }
 }
 
 impl<R: std::io::BufRead> ReadDsn<R> for f64 {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         Ok(tokenizer
             .consume_token()?
             .expect_leaf()?
             .parse()
-            .map_err(|_| ParseError::Expected("f64"))?)
+            .map_err(|_| tokenizer.add_context(ParseError::Expected("f64")))?)
     }
 }
 
 pub struct ListTokenizer<R: std::io::BufRead> {
     reader: R,
     peeked_char: Option<char>,
-    cached_token: Option<ListToken>,
+    cached_token: Option<InputToken>,
     space_in_quoted: bool,
     quote_char: Option<char>,
     line: usize,
@@ -134,12 +180,33 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         }
     }
 
-    fn next_char(&mut self) -> Result<char, ParseError> {
+    pub fn context(&self) -> (usize, usize) {
+        (self.line, self.column)
+    }
+
+    fn add_context(&self, error: ParseError) -> ParseErrorContext {
+        ParseErrorContext {
+            error,
+            context: (self.line, self.column),
+        }
+    }
+
+    fn map_context<T>(&self, result: Result<T, ParseError>)
+         -> Result<T, ParseErrorContext>
+    {
+        result.map_err(|err| self.add_context(err))
+    }
+
+    fn next_char(&mut self) -> Result<char, ParseErrorContext> {
         let return_chr = if let Some(chr) = self.peeked_char {
             self.peeked_char = None;
             chr
         } else {
-            self.reader.chars().next().ok_or(ParseError::Eof)??
+            self.reader
+                .chars()
+                .next()
+                .ok_or(self.add_context(ParseError::Eof))?
+                .map_err(|err| self.add_context(err.into()))?
         };
 
         if return_chr == '\n' {
@@ -152,17 +219,21 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         Ok(return_chr)
     }
 
-    fn peek_char(&mut self) -> Result<char, ParseError> {
+    fn peek_char(&mut self) -> Result<char, ParseErrorContext> {
         if let Some(chr) = self.peeked_char {
             Ok(chr)
         } else {
-            let chr = self.reader.chars().next().ok_or(ParseError::Eof)??;
+            let chr = self.reader
+                .chars()
+                .next()
+                .ok_or(self.add_context(ParseError::Eof))?
+                .map_err(|err| self.add_context(err.into()))?;
             self.peeked_char = Some(chr);
             Ok(chr)
         }
     }
 
-    fn skip_whitespace(&mut self) -> Result<(), ParseError> {
+    fn skip_whitespace(&mut self) -> Result<(), ParseErrorContext> {
         loop {
             let chr = self.peek_char()?;
             if chr == ' ' || chr == '\r' || chr == '\n' {
@@ -173,7 +244,7 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         }
     }
 
-    fn read_string(&mut self) -> Result<String, ParseError> {
+    fn read_string(&mut self) -> Result<String, ParseErrorContext> {
         if let Some(chr) = self.quote_char {
             if chr == self.peek_char()? {
                 return self.read_quoted();
@@ -182,7 +253,7 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         self.read_unquoted()
     }
 
-    fn read_unquoted(&mut self) -> Result<String, ParseError> {
+    fn read_unquoted(&mut self) -> Result<String, ParseErrorContext> {
         let mut string = String::new();
 
         loop {
@@ -194,13 +265,13 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         }
 
         if string.is_empty() {
-            Err(ParseError::Expected("string (unquoted)"))
+            Err(self.add_context(ParseError::Expected("string (unquoted)")))
         } else {
             Ok(string)
         }
     }
 
-    fn read_quoted(&mut self) -> Result<String, ParseError> {
+    fn read_quoted(&mut self) -> Result<String, ParseErrorContext> {
         let mut string = String::new();
 
         if self.next_char().unwrap() != self.quote_char.unwrap() {
@@ -225,7 +296,7 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
     // the following two methods effectively allow 1 token of lookahead
 
     // returns next token, either a cached one returned earlier or a newly read one
-    pub fn consume_token(&mut self) -> Result<ListToken, ParseError> {
+    pub fn consume_token(&mut self) -> Result<InputToken, ParseErrorContext> {
         // move out of cache if not empty, otherwise consume input
         // always leaves cache empty
         if let Some(token) = self.cached_token.take() {
@@ -237,34 +308,39 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
     }
 
     // puts a token back into cache, to be consumed by something else
-    pub fn return_token(&mut self, token: ListToken) {
+    pub fn return_token(&mut self, token: InputToken) {
         self.cached_token = Some(token);
     }
 
-    fn read_token(&mut self) -> Result<ListToken, ParseError> {
+    fn read_token(&mut self) -> Result<InputToken, ParseErrorContext> {
         self.skip_whitespace()?;
+        let context = self.context();
+
         let chr = self.peek_char()?;
-        Ok(if chr == '(' {
-            self.next_char().unwrap();
-            self.skip_whitespace()?;
-            ListToken::Start {
-                name: self.read_string()?,
-            }
-        } else if chr == ')' {
-            self.next_char().unwrap();
-            ListToken::End
-        } else {
-            ListToken::Leaf {
-                value: self.read_string()?,
-            }
-        })
+        Ok(InputToken::new(
+            if chr == '(' {
+                self.next_char().unwrap();
+                self.skip_whitespace()?;
+                ListToken::Start {
+                    name: self.read_string()?,
+                }
+            } else if chr == ')' {
+                self.next_char().unwrap();
+                ListToken::End
+            } else {
+                ListToken::Leaf {
+                    value: self.read_string()?,
+                }
+            },
+            context,
+        ))
     }
 
-    pub fn read_value<T: ReadDsn<R>>(&mut self) -> Result<T, ParseError> {
+    pub fn read_value<T: ReadDsn<R>>(&mut self) -> Result<T, ParseErrorContext> {
         T::read_dsn(self)
     }
 
-    pub fn read_named<T: ReadDsn<R>>(&mut self, name: &'static str) -> Result<T, ParseError> {
+    pub fn read_named<T: ReadDsn<R>>(&mut self, name: &'static str) -> Result<T, ParseErrorContext> {
         self.consume_token()?.expect_start(name)?;
         let value = self.read_value::<T>()?;
         self.consume_token()?.expect_end()?;
@@ -274,35 +350,35 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
     pub fn read_optional<T: ReadDsn<R>>(
         &mut self,
         name: &'static str,
-    ) -> Result<Option<T>, ParseError> {
-        let token = self.consume_token()?;
+    ) -> Result<Option<T>, ParseErrorContext> {
+        let input = self.consume_token()?;
         if let ListToken::Start {
             name: ref actual_name,
-        } = token
+        } = input.token
         {
             if actual_name == name {
                 let value = self.read_value::<T>()?;
                 self.consume_token()?.expect_end()?;
                 Ok(Some(value))
             } else {
-                self.return_token(token);
+                self.return_token(input);
                 Ok(None)
             }
         } else {
-            self.return_token(token);
+            self.return_token(input);
             Ok(None)
         }
     }
 
-    pub fn read_array<T: ReadDsn<R>>(&mut self) -> Result<Vec<T>, ParseError> {
+    pub fn read_array<T: ReadDsn<R>>(&mut self) -> Result<Vec<T>, ParseErrorContext> {
         let mut array = Vec::<T>::new();
         loop {
-            let token = self.consume_token()?;
-            if let ListToken::Leaf { .. } = token {
-                self.return_token(token);
+            let input = self.consume_token()?;
+            if let ListToken::Leaf { .. } = input.token {
+                self.return_token(input);
                 array.push(self.read_value::<T>()?);
             } else {
-                self.return_token(token);
+                self.return_token(input);
                 break;
             }
         }
@@ -312,24 +388,24 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
     pub fn read_named_array<T: ReadDsn<R>>(
         &mut self,
         name: &'static str,
-    ) -> Result<Vec<T>, ParseError> {
+    ) -> Result<Vec<T>, ParseErrorContext> {
         let mut array = Vec::<T>::new();
         loop {
-            let token = self.consume_token()?;
+            let input = self.consume_token()?;
             if let ListToken::Start {
                 name: ref actual_name,
-            } = token
+            } = input.token
             {
                 if actual_name == name {
                     let value = self.read_value::<T>()?;
                     self.consume_token()?.expect_end()?;
                     array.push(value);
                 } else {
-                    self.return_token(token);
+                    self.return_token(input);
                     break;
                 }
             } else {
-                self.return_token(token);
+                self.return_token(input);
                 break;
             }
         }

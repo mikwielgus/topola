@@ -14,7 +14,7 @@ pub fn impl_read(input: &DeriveInput) -> TokenStream {
     quote! {
         impl<R: std::io::BufRead> ReadDsn<R> for #name {
             fn read_dsn(tokenizer: &mut ListTokenizer<R>)
-                 -> Result<Self, ParseError>
+                 -> Result<Self, ParseErrorContext>
             {
                 #body
             }

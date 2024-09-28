@@ -1,6 +1,6 @@
 use super::common::ListToken;
 use super::read::ReadDsn;
-use super::read::{ListTokenizer, ParseError};
+use super::read::{ListTokenizer, ParseError, ParseErrorContext};
 use super::write::ListWriter;
 use super::write::WriteSes;
 use specctra_derive::ReadDsn;
@@ -237,14 +237,15 @@ pub enum Shape {
 }
 
 impl<R: std::io::BufRead> ReadDsn<R> for Shape {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
+        let ctx = tokenizer.context();
         let name = tokenizer.consume_token()?.expect_any_start()?;
         let value = match name.as_str() {
             "circle" => Ok(Shape::Circle(tokenizer.read_value()?)),
             "rect" => Ok(Shape::Rect(tokenizer.read_value()?)),
             "path" => Ok(Shape::Path(tokenizer.read_value()?)),
             "polygon" => Ok(Shape::Polygon(tokenizer.read_value()?)),
-            _ => Err(ParseError::Expected("a different keyword")),
+            _ => Err(ParseError::Expected("a different keyword").add_context(ctx)),
         };
         tokenizer.consume_token()?.expect_end()?;
         value
@@ -345,16 +346,16 @@ pub struct Point {
 
 // Custom impl for the case described above
 impl<R: std::io::BufRead> ReadDsn<R> for Vec<Point> {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         let mut array = Vec::<Point>::new();
         loop {
-            let token = tokenizer.consume_token()?;
-            if let ListToken::Leaf { value: ref x } = token {
+            let input = tokenizer.consume_token()?;
+            if let ListToken::Leaf { value: ref x } = input.token {
                 let x = x.parse::<f64>().unwrap();
                 let y = tokenizer.read_value::<f64>()?;
                 array.push(Point { x, y });
             } else {
-                tokenizer.return_token(token);
+                tokenizer.return_token(input);
                 break;
             }
         }
@@ -363,14 +364,14 @@ impl<R: std::io::BufRead> ReadDsn<R> for Vec<Point> {
 }
 
 impl<R: std::io::BufRead> ReadDsn<R> for Option<Point> {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseError> {
-        let token = tokenizer.consume_token()?;
-        if let ListToken::Leaf { value: ref x } = token {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
+        let input = tokenizer.consume_token()?;
+        if let ListToken::Leaf { value: ref x } = input.token {
             let x = x.parse::<f64>().unwrap();
             let y = tokenizer.read_value::<f64>()?;
             Ok(Some(Point { x, y }))
         } else {
-            tokenizer.return_token(token);
+            tokenizer.return_token(input);
             Ok(None)
         }
     }

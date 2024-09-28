@@ -33,7 +33,7 @@ pub enum LoadingError {
     /// File parsing errors containing information about unexpected end of file,
     /// or any other parsing issues with provided DSN file
     #[error(transparent)]
-    Parse(#[from] read::ParseError),
+    Parse(#[from] read::ParseErrorContext),
 }
 
 
