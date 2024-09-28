@@ -89,7 +89,7 @@ impl Top {
         let mut quit = Trigger::new(Action::new(
             tr.text("action-quit"),
             egui::Modifiers::CTRL,
-            egui::Key::V,
+            egui::Key::Q,
         ));
         let mut autoroute = Trigger::new(Action::new(
             tr.text("action-autoroute"),
