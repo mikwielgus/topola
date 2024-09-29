@@ -179,10 +179,10 @@ impl Top {
                         ui.separator();
 
                         ui.label(tr.text("frame-timestep"));
-                        ui.add(egui::widgets::Slider::new(
-                            &mut self.frame_timestep,
-                            0.0..=3.0,
-                        ));
+                        ui.add(
+                            egui::widgets::Slider::new(&mut self.frame_timestep, 0.0..=3.0)
+                                .suffix(" s"),
+                        );
                     });
 
                     ui.menu_button(tr.text("menu-place"), |ui| {
