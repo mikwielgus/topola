@@ -18,7 +18,7 @@ use crate::{
     activity::{ActivityStatus, ActivityStepperWithStatus},
     config::Config,
     error_dialog::ErrorDialog,
-    file_receiver::FileReceiver,
+    file_handler::FileHandlerData,
     layers::Layers,
     menu_bar::MenuBar,
     overlay::Overlay,
@@ -37,8 +37,14 @@ pub struct App {
 
     maybe_activity: Option<ActivityStepperWithStatus>,
 
-    content_channel: (Sender<String>, Receiver<String>),
-    history_channel: (Sender<String>, Receiver<String>),
+    content_channel: (
+        Sender<std::io::Result<FileHandlerData>>,
+        Receiver<std::io::Result<FileHandlerData>>,
+    ),
+    history_channel: (
+        Sender<std::io::Result<FileHandlerData>>,
+        Receiver<std::io::Result<FileHandlerData>>,
+    ),
 
     viewport: Viewport,
 
@@ -101,21 +107,25 @@ impl App {
     }
 
     fn update_state(&mut self) -> bool {
-        let mut content_file_receiver = FileReceiver::new(&self.content_channel.1);
-
-        if let Some(input) = content_file_receiver.try_recv() {
-            match self.load_specctra_dsn(input) {
-                Ok(()) => {}
+        if let Ok(data) = self.content_channel.1.try_recv() {
+            match data {
+                Ok(data) => match self.load_specctra_dsn(data) {
+                    Ok(()) => {}
+                    Err(err) => {
+                        self.error_dialog.push_error("tr-module-specctra-dsn-file-loader", err);
+                    }
+                },
                 Err(err) => {
-                    self.error_dialog.push_error("tr-module-specctra-dsn-file-loader", err);
+                    self.error_dialog.push_error(
+                        "tr-module-specctra-dsn-file-loader",
+                        format!("{}; {}", self.translator.text("tr-error_unable-to-read-file"), err),
+                    );
                 }
             }
         }
 
         if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
-            let mut history_file_receiver = FileReceiver::new(&self.history_channel.1);
-
-            if let Some(input) = history_file_receiver.try_recv() {
+            if let Ok(input) = self.history_channel.1.try_recv() {
                 let tr = &self.translator;
                 match input {
                     Ok(bufread) => match serde_json::from_reader(bufread) {
@@ -151,12 +161,8 @@ impl App {
         false
     }
 
-    fn load_specctra_dsn<I: std::io::BufRead>(
-        &mut self,
-        input: std::io::Result<I>,
-    ) -> Result<(), String> {
+    fn load_specctra_dsn(&mut self, bufread: FileHandlerData) -> Result<(), String> {
         let tr = &self.translator;
-        let bufread = input.map_err(|err| format!("{}; {}", tr.text("tr-error_unable-to-read-file"), err))?;
         let design = SpecctraDesign::load(bufread)
             .map_err(|err| format!("{}; {}", tr.text("tr-error_failed-to-parse-as-specctra-dsn"), err))?;
         let board = design.make_board();

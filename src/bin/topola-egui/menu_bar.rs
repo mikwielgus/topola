@@ -18,7 +18,7 @@ use crate::{
     action::{Action, Switch, Trigger},
     activity::{ActivityStatus, ActivityStepperWithStatus},
     app::execute,
-    file_sender::FileSender,
+    file_handler::{push_file_to_read, FileHandlerData},
     overlay::Overlay,
     translator::Translator,
     viewport::Viewport,
@@ -59,8 +59,8 @@ impl MenuBar {
         &mut self,
         ctx: &egui::Context,
         tr: &Translator,
-        content_sender: Sender<String>,
-        history_sender: Sender<String>,
+        content_sender: Sender<std::io::Result<FileHandlerData>>,
+        history_sender: Sender<std::io::Result<FileHandlerData>>,
         arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
         maybe_activity: &mut Option<ActivityStepperWithStatus>,
         viewport: &mut Viewport,
@@ -239,8 +239,7 @@ impl MenuBar {
 
                     execute(async move {
                         if let Some(file_handle) = task.await {
-                            let file_sender = FileSender::new(content_sender);
-                            file_sender.send(file_handle).await;
+                            push_file_to_read(&file_handle, content_sender).await;
                             ctx.request_repaint();
                         }
                     });
@@ -279,8 +278,7 @@ impl MenuBar {
 
                     execute(async move {
                         if let Some(file_handle) = task.await {
-                            let file_sender = FileSender::new(history_sender);
-                            file_sender.send(file_handle).await;
+                            push_file_to_read(&file_handle, history_sender).await;
                             ctx.request_repaint();
                         }
                     });
