@@ -31,6 +31,7 @@ pub struct Top {
     pub show_bboxes: bool,
     pub show_origin_destination: bool,
     pub show_layer_manager: bool,
+    pub frame_timestep: f32,
 }
 
 impl Top {
@@ -49,6 +50,7 @@ impl Top {
             show_bboxes: false,
             show_origin_destination: false,
             show_layer_manager: true,
+            frame_timestep: 0.1,
         }
     }
 
@@ -173,6 +175,14 @@ impl Top {
                         ui.separator();
 
                         ui.checkbox(&mut self.show_layer_manager, tr.text("show-layer-manager"));
+
+                        ui.separator();
+
+                        ui.label(tr.text("frame-timestep"));
+                        ui.add(egui::widgets::Slider::new(
+                            &mut self.frame_timestep,
+                            0.0..=3.0,
+                        ));
                     });
 
                     ui.menu_button(tr.text("menu-place"), |ui| {

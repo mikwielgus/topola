@@ -36,4 +36,6 @@ show-origin-destination = Show Origin–Destination
 
 show-layer-manager = Show Layer Manager
 
+frame-timestep = Frame Timestep
+
 specctra-session-file = Specctra session file

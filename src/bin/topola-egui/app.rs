@@ -124,15 +124,19 @@ impl App {
         }
     }
 
-    fn update_state(&mut self, dt: f32) {
+    fn advance_state_by_dt(&mut self, dt: f32) {
         self.update_counter += dt;
 
-        if self.update_counter <= 0.1 {
-            return;
+        while self.update_counter >= self.top.frame_timestep {
+            self.update_counter -= self.top.frame_timestep;
+
+            if !self.update_state() {
+                return;
+            }
         }
+    }
 
-        self.update_counter = 0.0;
-
+    fn update_state(&mut self) -> bool {
         let mut content_file_receiver = FileReceiver::new(&self.content_channel.1);
 
         if let Ok(bufread) = content_file_receiver.try_recv() {
@@ -155,12 +159,15 @@ impl App {
             }
 
             if let Some(ref mut execute) = self.maybe_execute {
-                let status = match execute.step(invoker) {
-                    Ok(status) => status,
-                    Err(err) => return,
-                };
+                match execute.step(invoker) {
+                    Ok(InvokerStatus::Running) => return true,
+                    Ok(InvokerStatus::Finished(..)) => return false,
+                    Err(err) => return false,
+                }
             }
         }
+
+        false
     }
 }
 
@@ -184,7 +191,7 @@ impl eframe::App for App {
             &self.maybe_design,
         );
 
-        self.update_state(ctx.input(|i| i.stable_dt));
+        self.advance_state_by_dt(ctx.input(|i| i.stable_dt));
 
         self.bottom
             .update(ctx, &self.translator, &self.viewport, &self.maybe_execute);
