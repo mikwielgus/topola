@@ -1,10 +1,28 @@
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
-use crate::{board::mesadata::AccessMesadata, drawing::graph::PrimitiveIndex, geometry::primitive::PrimitiveShape, layout::via::ViaWeight, router::{navmesh::Navmesh, trace::Trace}, step::Step};
+use crate::{
+    board::mesadata::AccessMesadata,
+    drawing::graph::PrimitiveIndex,
+    geometry::primitive::PrimitiveShape,
+    layout::via::ViaWeight,
+    router::{navmesh::Navmesh, trace::Trace},
+    step::Step,
+};
 
-use super::{autoroute::{Autoroute, AutorouteStatus}, compare_detours::{CompareDetours, CompareDetoursStatus}, invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles, Invoker, InvokerError, InvokerStatus}, measure_length::MeasureLength, place_via::PlaceVia, remove_bands::RemoveBands, selection::{BandSelection, PinSelection}, AutorouterOptions};
-
+use super::{
+    autoroute::{Autoroute, AutorouteStatus},
+    compare_detours::{CompareDetours, CompareDetoursStatus},
+    invoker::{
+        GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles, Invoker, InvokerError,
+        InvokerStatus,
+    },
+    measure_length::MeasureLength,
+    place_via::PlaceVia,
+    remove_bands::RemoveBands,
+    selection::{BandSelection, PinSelection},
+    AutorouterOptions,
+};
 
 type Type = PinSelection;
 
@@ -89,56 +107,5 @@ impl<M: AccessMesadata> Step<Invoker<M>, InvokerStatus, InvokerError, ()> for Ex
                 Err(err)
             }
         }
-    }
-}
-
-pub struct ExecuteWithStatus {
-    execute: Execute,
-    maybe_status: Option<InvokerStatus>,
-}
-
-impl ExecuteWithStatus {
-    pub fn new(execute: Execute) -> ExecuteWithStatus {
-        Self {
-            execute,
-            maybe_status: None,
-        }
-    }
-
-    pub fn step<M: AccessMesadata>(
-        &mut self,
-        invoker: &mut Invoker<M>,
-    ) -> Result<InvokerStatus, InvokerError> {
-        let status = self.execute.step(invoker)?;
-        self.maybe_status = Some(status.clone());
-        Ok(status)
-    }
-
-    pub fn maybe_status(&self) -> Option<InvokerStatus> {
-        self.maybe_status.clone()
-    }
-}
-
-impl GetMaybeNavmesh for ExecuteWithStatus {
-    fn maybe_navmesh(&self) -> Option<&Navmesh> {
-        self.execute.maybe_navmesh()
-    }
-}
-
-impl GetMaybeTrace for ExecuteWithStatus {
-    fn maybe_trace(&self) -> Option<&Trace> {
-        self.execute.maybe_trace()
-    }
-}
-
-impl GetGhosts for ExecuteWithStatus {
-    fn ghosts(&self) -> &[PrimitiveShape] {
-        self.execute.ghosts()
-    }
-}
-
-impl GetObstacles for ExecuteWithStatus {
-    fn obstacles(&self) -> &[PrimitiveIndex] {
-        self.execute.obstacles()
     }
 }

@@ -14,7 +14,6 @@ use unic_langid::{langid, LanguageIdentifier};
 
 use topola::{
     autorouter::{
-        execute::ExecuteWithStatus,
         invoker::{Invoker, InvokerStatus},
         Autorouter,
     },
@@ -43,8 +42,8 @@ use topola::{
 };
 
 use crate::{
-    bottom::Bottom, file_receiver::FileReceiver, layers::Layers, overlay::Overlay,
-    painter::Painter, top::Top, translator::Translator, viewport::Viewport,
+    activity::ActivityWithStatus, bottom::Bottom, file_receiver::FileReceiver, layers::Layers,
+    overlay::Overlay, painter::Painter, top::Top, translator::Translator, viewport::Viewport,
 };
 
 /// Deserialize/Serialize is needed to persist app state between restarts.
@@ -60,7 +59,7 @@ pub struct App {
     arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
 
     #[serde(skip)]
-    maybe_execute: Option<ExecuteWithStatus>,
+    maybe_activity: Option<ActivityWithStatus>,
 
     #[serde(skip)]
     content_channel: (Sender<String>, Receiver<String>),
@@ -93,7 +92,7 @@ impl Default for App {
             translator: Translator::new(langid!("en-US")),
             maybe_overlay: None,
             arc_mutex_maybe_invoker: Arc::new(Mutex::new(None)),
-            maybe_execute: None,
+            maybe_activity: None,
             content_channel: channel(),
             history_channel: channel(),
             viewport: Viewport::new(),
@@ -158,8 +157,8 @@ impl App {
                 invoker.replay(serde_json::from_reader(bufread).unwrap())
             }
 
-            if let Some(ref mut execute) = self.maybe_execute {
-                match execute.step(invoker) {
+            if let Some(ref mut activity) = self.maybe_activity {
+                match activity.step(invoker) {
                     Ok(InvokerStatus::Running) => return true,
                     Ok(InvokerStatus::Finished(..)) => return false,
                     Err(err) => return false,
@@ -185,7 +184,7 @@ impl eframe::App for App {
             self.content_channel.0.clone(),
             self.history_channel.0.clone(),
             self.arc_mutex_maybe_invoker.clone(),
-            &mut self.maybe_execute,
+            &mut self.maybe_activity,
             &mut self.viewport,
             &mut self.maybe_overlay,
             &self.maybe_design,
@@ -194,7 +193,7 @@ impl eframe::App for App {
         self.advance_state_by_dt(ctx.input(|i| i.stable_dt));
 
         self.bottom
-            .update(ctx, &self.translator, &self.viewport, &self.maybe_execute);
+            .update(ctx, &self.translator, &self.viewport, &self.maybe_activity);
 
         if self.top.show_layer_manager {
             if let Some(ref mut layers) = self.maybe_layers {
@@ -208,7 +207,7 @@ impl eframe::App for App {
             ctx,
             &self.top,
             &mut self.arc_mutex_maybe_invoker.lock().unwrap(),
-            &mut self.maybe_execute,
+            &mut self.maybe_activity,
             &mut self.maybe_overlay,
             &self.maybe_layers,
         );

@@ -1,6 +1,6 @@
-use topola::autorouter::{execute::ExecuteWithStatus, invoker::InvokerStatus};
+use topola::autorouter::invoker::InvokerStatus;
 
-use crate::{translator::Translator, viewport::Viewport};
+use crate::{activity::ActivityWithStatus, translator::Translator, viewport::Viewport};
 
 pub struct Bottom {}
 
@@ -14,7 +14,7 @@ impl Bottom {
         ctx: &egui::Context,
         tr: &Translator,
         viewport: &Viewport,
-        maybe_execute: &Option<ExecuteWithStatus>,
+        maybe_activity: &Option<ActivityWithStatus>,
     ) {
         egui::TopBottomPanel::bottom("bottom_panel").show(ctx, |ui| {
             let latest_pos = viewport.transform.inverse()
@@ -22,8 +22,8 @@ impl Bottom {
 
             let mut message = String::from("");
 
-            if let Some(execute) = maybe_execute {
-                if let Some(InvokerStatus::Finished(msg)) = execute.maybe_status() {
+            if let Some(activity) = maybe_activity {
+                if let Some(InvokerStatus::Finished(msg)) = activity.maybe_status() {
                     message = msg;
                 }
             }

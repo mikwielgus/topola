@@ -6,7 +6,7 @@ use petgraph::{
 use rstar::{Envelope, AABB};
 use topola::{
     autorouter::{
-        execute::{Command, ExecuteWithStatus},
+        execute::Command,
         invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles, Invoker},
     },
     board::mesadata::AccessMesadata,
@@ -20,7 +20,10 @@ use topola::{
     specctra::mesadata::SpecctraMesadata,
 };
 
-use crate::{app::execute, layers::Layers, overlay::Overlay, painter::Painter, top::Top};
+use crate::{
+    activity::ActivityWithStatus, app::execute, layers::Layers, overlay::Overlay, painter::Painter,
+    top::Top,
+};
 
 pub struct Viewport {
     pub transform: egui::emath::TSTransform,
@@ -40,7 +43,7 @@ impl Viewport {
         ctx: &egui::Context,
         top: &Top,
         maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
-        maybe_execute: &mut Option<ExecuteWithStatus>,
+        maybe_activity: &mut Option<ActivityWithStatus>,
         maybe_overlay: &mut Option<Overlay>,
         maybe_layers: &Option<Layers>,
     ) -> egui::Rect {
@@ -48,7 +51,7 @@ impl Viewport {
             ctx,
             top,
             maybe_invoker,
-            maybe_execute,
+            maybe_activity,
             maybe_overlay,
             maybe_layers,
         );
@@ -65,7 +68,7 @@ impl Viewport {
         ctx: &egui::Context,
         top: &Top,
         maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
-        maybe_execute: &mut Option<ExecuteWithStatus>,
+        maybe_activity: &mut Option<ActivityWithStatus>,
         maybe_overlay: &mut Option<Overlay>,
         maybe_layers: &Option<Layers>,
     ) -> egui::Rect {
@@ -124,8 +127,8 @@ impl Viewport {
                                         {
                                             layers.highlight_colors[i]
                                         } else {
-                                            if let Some(execute) = maybe_execute {
-                                                if execute.obstacles().contains(&primitive) {
+                                            if let Some(activity) = maybe_activity {
+                                                if activity.obstacles().contains(&primitive) {
                                                     layers.highlight_colors[i]
                                                 } else {
                                                     layers.colors[i]
@@ -178,8 +181,8 @@ impl Viewport {
                         }
 
                         if top.show_navmesh {
-                            if let Some(execute) = maybe_execute {
-                                if let Some(navmesh) = execute.maybe_navmesh() {
+                            if let Some(activity) = maybe_activity {
+                                if let Some(navmesh) = activity.maybe_navmesh() {
                                     for edge in navmesh.edge_references() {
                                         let mut from = PrimitiveIndex::from(navmesh.node_weight(edge.source()).unwrap().node)
                                             .primitive(board.layout().drawing())
@@ -208,11 +211,11 @@ impl Viewport {
 
                                         let stroke = 'blk: {
                                             if let (Some(source_pos), Some(target_pos)) = (
-                                                execute.maybe_trace().map(|trace|
+                                                activity.maybe_trace().map(|trace|
                                                     trace.path
                                                     .iter()
                                                     .position(|node| *node == edge.source())).flatten(),
-                                                execute.maybe_trace().map(|trace|
+                                                activity.maybe_trace().map(|trace|
                                                     trace.path
                                                     .iter()
                                                     .position(|node| *node == edge.target())).flatten(),
@@ -243,12 +246,12 @@ impl Viewport {
                             painter.paint_bbox(root_bbox);
                         }
 
-                        if let Some(execute) = maybe_execute {
-                            for ghost in execute.ghosts().iter() {
+                        if let Some(activity) = maybe_activity {
+                            for ghost in activity.ghosts().iter() {
                                 painter.paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
                             }
 
-                            if let Some(navmesh) = execute.maybe_navmesh() {
+                            if let Some(navmesh) = activity.maybe_navmesh() {
                                 if top.show_origin_destination {
                                     if let (origin, destination) = (navmesh.origin(), navmesh.destination()) {
                                         painter.paint_dot(

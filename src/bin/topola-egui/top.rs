@@ -6,7 +6,7 @@ use std::{
 
 use topola::{
     autorouter::{
-        execute::{Command, ExecuteWithStatus},
+        execute::Command,
         invoker::{Invoker, InvokerError, InvokerStatus},
         AutorouterOptions,
     },
@@ -16,6 +16,7 @@ use topola::{
 
 use crate::{
     action::{Action, Switch, Trigger},
+    activity::ActivityWithStatus,
     app::execute,
     file_sender::FileSender,
     overlay::Overlay,
@@ -61,7 +62,7 @@ impl Top {
         content_sender: Sender<String>,
         history_sender: Sender<String>,
         arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
-        maybe_execute: &mut Option<ExecuteWithStatus>,
+        maybe_activity: &mut Option<ActivityWithStatus>,
         viewport: &mut Viewport,
         maybe_overlay: &mut Option<Overlay>,
         maybe_design: &Option<SpecctraDesign>,
@@ -233,9 +234,7 @@ impl Top {
                     });
                 } else if export_session.consume_key_triggered(ctx, ui) {
                     if let Some(design) = maybe_design {
-                        if let Some(invoker) =
-                            arc_mutex_maybe_invoker.lock().unwrap().as_ref()
-                        {
+                        if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_ref() {
                             let ctx = ui.ctx().clone();
                             let board = invoker.autorouter().board();
 
@@ -274,8 +273,7 @@ impl Top {
                         }
                     });
                 } else if export_history.consume_key_triggered(ctx, ui) {
-                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_ref()
-                    {
+                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_ref() {
                         let ctx = ctx.clone();
                         let task = rfd::AsyncFileDialog::new().save_file();
 
@@ -293,8 +291,8 @@ impl Top {
                 } else if quit.consume_key_triggered(ctx, ui) {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 } else if autoroute.consume_key_triggered(ctx, ui) {
-                    if maybe_execute.as_mut().map_or(true, |execute| {
-                        matches!(execute.maybe_status(), Some(InvokerStatus::Finished(..)))
+                    if maybe_activity.as_mut().map_or(true, |activity| {
+                        matches!(activity.maybe_status(), Some(InvokerStatus::Finished(..)))
                     }) {
                         if let (Some(invoker), Some(ref mut overlay)) = (
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
@@ -302,18 +300,18 @@ impl Top {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_execute.insert(ExecuteWithStatus::new(invoker.execute_stepper(
-                                Command::Autoroute(
+                            maybe_activity.insert(ActivityWithStatus::new_execute(
+                                invoker.execute_stepper(Command::Autoroute(
                                     selection.pin_selection,
                                     self.autorouter_options,
-                                ),
-                            )?));
+                                ))?,
+                            ));
                         }
                     }
                 } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
                 } else if remove_bands.consume_key_triggered(ctx, ui) {
-                    if maybe_execute.as_mut().map_or(true, |execute| {
-                        matches!(execute.maybe_status(), Some(InvokerStatus::Finished(..)))
+                    if maybe_activity.as_mut().map_or(true, |activity| {
+                        matches!(activity.maybe_status(), Some(InvokerStatus::Finished(..)))
                     }) {
                         if let (Some(invoker), Some(ref mut overlay)) = (
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
@@ -321,14 +319,16 @@ impl Top {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_execute.insert(ExecuteWithStatus::new(invoker.execute_stepper(
-                                Command::RemoveBands(selection.band_selection),
-                            )?));
+                            maybe_activity.insert(ActivityWithStatus::new_execute(
+                                invoker.execute_stepper(Command::RemoveBands(
+                                    selection.band_selection,
+                                ))?,
+                            ));
                         }
                     }
                 } else if measure_length.consume_key_triggered(ctx, ui) {
-                    if maybe_execute.as_mut().map_or(true, |execute| {
-                        matches!(execute.maybe_status(), Some(InvokerStatus::Finished(..)))
+                    if maybe_activity.as_mut().map_or(true, |activity| {
+                        matches!(activity.maybe_status(), Some(InvokerStatus::Finished(..)))
                     }) {
                         if let (Some(invoker), Some(ref mut overlay)) = (
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
@@ -336,9 +336,11 @@ impl Top {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_execute.insert(ExecuteWithStatus::new(invoker.execute_stepper(
-                                Command::MeasureLength(selection.band_selection),
-                            )?));
+                            maybe_activity.insert(ActivityWithStatus::new_execute(
+                                invoker.execute_stepper(Command::MeasureLength(
+                                    selection.band_selection,
+                                ))?,
+                            ));
                         }
                     }
                 } else if undo.consume_key_triggered(ctx, ui) {
@@ -350,8 +352,8 @@ impl Top {
                         invoker.redo();
                     }
                 } else if compare_detours.consume_key_triggered(ctx, ui) {
-                    if maybe_execute.as_mut().map_or(true, |execute| {
-                        matches!(execute.maybe_status(), Some(InvokerStatus::Finished(..)))
+                    if maybe_activity.as_mut().map_or(true, |activity| {
+                        matches!(activity.maybe_status(), Some(InvokerStatus::Finished(..)))
                     }) {
                         if let (Some(invoker), Some(ref mut overlay)) = (
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
@@ -359,12 +361,12 @@ impl Top {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_execute.insert(ExecuteWithStatus::new(invoker.execute_stepper(
-                                Command::CompareDetours(
+                            maybe_activity.insert(ActivityWithStatus::new_execute(
+                                invoker.execute_stepper(Command::CompareDetours(
                                     selection.pin_selection,
                                     self.autorouter_options,
-                                ),
-                            )?));
+                                ))?,
+                            ));
                         }
                     }
                 }
