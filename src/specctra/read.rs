@@ -198,16 +198,8 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
     }
 
     fn next_char(&mut self) -> Result<char, ParseErrorContext> {
-        let return_chr = if let Some(chr) = self.peeked_char {
-            self.peeked_char = None;
-            chr
-        } else {
-            self.reader
-                .chars()
-                .next()
-                .ok_or(self.add_context(ParseError::Eof))?
-                .map_err(|err| self.add_context(err.into()))?
-        };
+        let return_chr = self.peek_char()?;
+        self.peeked_char = None;
 
         if return_chr == '\n' {
             self.line += 1;
@@ -220,17 +212,17 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
     }
 
     fn peek_char(&mut self) -> Result<char, ParseErrorContext> {
-        if let Some(chr) = self.peeked_char {
-            Ok(chr)
+        Ok(if let Some(chr) = self.peeked_char {
+            chr
         } else {
             let chr = self.reader
-                .chars()
-                .next()
+                .read_char()
+                .transpose()
                 .ok_or(self.add_context(ParseError::Eof))?
                 .map_err(|err| self.add_context(err.into()))?;
             self.peeked_char = Some(chr);
-            Ok(chr)
-        }
+            chr
+        })
     }
 
     fn skip_whitespace(&mut self) -> Result<(), ParseErrorContext> {
