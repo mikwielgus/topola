@@ -13,10 +13,7 @@ use std::{
 use unic_langid::{langid, LanguageIdentifier};
 
 use topola::{
-    autorouter::{
-        invoker::{Invoker, InvokerStatus},
-        Autorouter,
-    },
+    autorouter::{invoker::Invoker, Autorouter},
     drawing::{
         dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
@@ -42,8 +39,15 @@ use topola::{
 };
 
 use crate::{
-    activity::ActivityWithStatus, bottom::Bottom, file_receiver::FileReceiver, layers::Layers,
-    overlay::Overlay, painter::Painter, top::Top, translator::Translator, viewport::Viewport,
+    activity::{ActivityStatus, ActivityWithStatus},
+    bottom::Bottom,
+    file_receiver::FileReceiver,
+    layers::Layers,
+    overlay::Overlay,
+    painter::Painter,
+    top::Top,
+    translator::Translator,
+    viewport::Viewport,
 };
 
 /// Deserialize/Serialize is needed to persist app state between restarts.
@@ -159,8 +163,8 @@ impl App {
 
             if let Some(ref mut activity) = self.maybe_activity {
                 match activity.step(invoker) {
-                    Ok(InvokerStatus::Running) => return true,
-                    Ok(InvokerStatus::Finished(..)) => return false,
+                    Ok(ActivityStatus::Running) => return true,
+                    Ok(ActivityStatus::Finished(..)) => return false,
                     Err(err) => return false,
                 }
             }

@@ -1,22 +1,12 @@
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    board::mesadata::AccessMesadata,
-    drawing::graph::PrimitiveIndex,
-    geometry::primitive::PrimitiveShape,
-    layout::via::ViaWeight,
-    router::{navmesh::Navmesh, trace::Trace},
-    step::Step,
-};
+use crate::{board::mesadata::AccessMesadata, layout::via::ViaWeight, step::Step};
 
 use super::{
     autoroute::{Autoroute, AutorouteStatus},
     compare_detours::{CompareDetours, CompareDetoursStatus},
-    invoker::{
-        GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles, Invoker, InvokerError,
-        InvokerStatus,
-    },
+    invoker::{Invoker, InvokerError, InvokerStatus},
     measure_length::MeasureLength,
     place_via::PlaceVia,
     remove_bands::RemoveBands,

@@ -16,7 +16,7 @@ use topola::{
 
 use crate::{
     action::{Action, Switch, Trigger},
-    activity::ActivityWithStatus,
+    activity::{ActivityStatus, ActivityWithStatus},
     app::execute,
     file_sender::FileSender,
     overlay::Overlay,
@@ -292,7 +292,7 @@ impl Top {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 } else if autoroute.consume_key_triggered(ctx, ui) {
                     if maybe_activity.as_mut().map_or(true, |activity| {
-                        matches!(activity.maybe_status(), Some(InvokerStatus::Finished(..)))
+                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
                     }) {
                         if let (Some(invoker), Some(ref mut overlay)) = (
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
@@ -311,7 +311,7 @@ impl Top {
                 } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
                 } else if remove_bands.consume_key_triggered(ctx, ui) {
                     if maybe_activity.as_mut().map_or(true, |activity| {
-                        matches!(activity.maybe_status(), Some(InvokerStatus::Finished(..)))
+                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
                     }) {
                         if let (Some(invoker), Some(ref mut overlay)) = (
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
@@ -328,7 +328,7 @@ impl Top {
                     }
                 } else if measure_length.consume_key_triggered(ctx, ui) {
                     if maybe_activity.as_mut().map_or(true, |activity| {
-                        matches!(activity.maybe_status(), Some(InvokerStatus::Finished(..)))
+                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
                     }) {
                         if let (Some(invoker), Some(ref mut overlay)) = (
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
@@ -353,7 +353,7 @@ impl Top {
                     }
                 } else if compare_detours.consume_key_triggered(ctx, ui) {
                     if maybe_activity.as_mut().map_or(true, |activity| {
-                        matches!(activity.maybe_status(), Some(InvokerStatus::Finished(..)))
+                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
                     }) {
                         if let (Some(invoker), Some(ref mut overlay)) = (
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),

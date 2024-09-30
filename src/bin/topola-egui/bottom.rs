@@ -1,6 +1,10 @@
 use topola::autorouter::invoker::InvokerStatus;
 
-use crate::{activity::ActivityWithStatus, translator::Translator, viewport::Viewport};
+use crate::{
+    activity::{ActivityStatus, ActivityWithStatus},
+    translator::Translator,
+    viewport::Viewport,
+};
 
 pub struct Bottom {}
 
@@ -23,7 +27,7 @@ impl Bottom {
             let mut message = String::from("");
 
             if let Some(activity) = maybe_activity {
-                if let Some(InvokerStatus::Finished(msg)) = activity.maybe_status() {
+                if let Some(ActivityStatus::Finished(msg)) = activity.maybe_status() {
                     message = msg;
                 }
             }
