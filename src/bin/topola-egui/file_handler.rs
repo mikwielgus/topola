@@ -46,19 +46,28 @@ impl io::BufRead for FileHandlerData {
     fhd_forward!(fn consume(&mut self, amt: usize));
 }
 
-pub async fn push_file_to_read(
+#[inline]
+pub async fn push_file_to_read<R, E, C>(
     file_handle: &rfd::FileHandle,
-    sender: Sender<std::io::Result<FileHandlerData>>,
-) {
-    let _ = sender.send(handle_text(&file_handle).await);
+    sender: Sender<Result<R, E>>,
+    callback: C,
+) where
+    E: From<std::io::Error>,
+    C: FnOnce(FileHandlerData) -> Result<R, E>,
+{
+    let _ = sender.send(handle_text(&file_handle, callback).await);
 }
 
-async fn handle_text(file_handle: &rfd::FileHandle) -> std::io::Result<FileHandlerData> {
+async fn handle_text<R, E, C>(file_handle: &rfd::FileHandle, callback: C) -> Result<R, E>
+where
+    E: From<std::io::Error>,
+    C: FnOnce(FileHandlerData) -> Result<R, E>,
+{
     #[cfg(not(target_arch = "wasm32"))]
     let res = FileHandlerData::File(io::BufReader::new(std::fs::File::open(file_handle.path())?));
 
     #[cfg(target_arch = "wasm32")]
     let res = FileHandlerData::Contents(io::Cursor::new(file_handle.read().await));
 
-    Ok(res)
+    callback(res)
 }

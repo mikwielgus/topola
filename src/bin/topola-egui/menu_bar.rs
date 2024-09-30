@@ -6,11 +6,15 @@ use std::{
 use topola::{
     autorouter::{
         command::Command,
+        history::History,
         invoker::{Invoker, InvokerError},
         AutorouterOptions,
     },
     router::RouterOptions,
-    specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
+    specctra::{
+        design::{LoadingError as SpecctraLoadingError, SpecctraDesign},
+        mesadata::SpecctraMesadata,
+    },
     stepper::Abort,
 };
 
@@ -59,8 +63,8 @@ impl MenuBar {
         &mut self,
         ctx: &egui::Context,
         tr: &Translator,
-        content_sender: Sender<std::io::Result<FileHandlerData>>,
-        history_sender: Sender<std::io::Result<FileHandlerData>>,
+        content_sender: Sender<Result<SpecctraDesign, SpecctraLoadingError>>,
+        history_sender: Sender<std::io::Result<Result<History, serde_json::Error>>>,
         arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
         maybe_activity: &mut Option<ActivityStepperWithStatus>,
         viewport: &mut Viewport,
@@ -239,7 +243,10 @@ impl MenuBar {
 
                     execute(async move {
                         if let Some(file_handle) = task.await {
-                            push_file_to_read(&file_handle, content_sender).await;
+                            push_file_to_read(&file_handle, content_sender, |data| {
+                                SpecctraDesign::load(data)
+                            })
+                            .await;
                             ctx.request_repaint();
                         }
                     });
@@ -278,7 +285,14 @@ impl MenuBar {
 
                     execute(async move {
                         if let Some(file_handle) = task.await {
-                            push_file_to_read(&file_handle, history_sender).await;
+                            push_file_to_read(&file_handle, history_sender, |data| {
+                                match serde_json::from_reader(data) {
+                                    Ok(history) => Ok(Ok(history)),
+                                    Err(err) if err.is_io() => Err(err.into()),
+                                    Err(err) => Ok(Err(err)),
+                                }
+                            })
+                            .await;
                             ctx.request_repaint();
                         }
                     });

@@ -26,9 +26,10 @@ use crate::{
     },
 };
 
-#[derive(Error, Debug)]
+pub use read::ParseErrorContext;
 
 /// Errors raised by [`SpecctraDesign::load`]
+#[derive(Error, Debug)]
 pub enum LoadingError {
     /// I/O file reading error from [`std::io::Error`]
     #[error(transparent)]

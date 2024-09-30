@@ -9,8 +9,11 @@ use std::{
 use unic_langid::{langid, LanguageIdentifier};
 
 use topola::{
-    autorouter::{invoker::Invoker, Autorouter},
-    specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
+    autorouter::{history::History, invoker::Invoker, Autorouter},
+    specctra::{
+        design::{LoadingError as SpecctraLoadingError, SpecctraDesign},
+        mesadata::SpecctraMesadata,
+    },
     stepper::Step,
 };
 
@@ -38,12 +41,12 @@ pub struct App {
     maybe_activity: Option<ActivityStepperWithStatus>,
 
     content_channel: (
-        Sender<std::io::Result<FileHandlerData>>,
-        Receiver<std::io::Result<FileHandlerData>>,
+        Sender<Result<SpecctraDesign, SpecctraLoadingError>>,
+        Receiver<Result<SpecctraDesign, SpecctraLoadingError>>,
     ),
     history_channel: (
-        Sender<std::io::Result<FileHandlerData>>,
-        Receiver<std::io::Result<FileHandlerData>>,
+        Sender<std::io::Result<Result<History, serde_json::Error>>>,
+        Receiver<std::io::Result<Result<History, serde_json::Error>>>,
     ),
 
     viewport: Viewport,
@@ -109,13 +112,23 @@ impl App {
     fn update_state(&mut self) -> bool {
         if let Ok(data) = self.content_channel.1.try_recv() {
             match data {
-                Ok(data) => match self.load_specctra_dsn(data) {
+                Ok(design) => match self.load_specctra_dsn(design) {
                     Ok(()) => {}
                     Err(err) => {
                         self.error_dialog.push_error("tr-module-specctra-dsn-file-loader", err);
                     }
                 },
-                Err(err) => {
+                Err(SpecctraLoadingError::Parse(err)) => {
+                    self.error_dialog.push_error(
+                        "tr-module-specctra-dsn-file-loader",
+                        format!(
+                            "{}; {}",
+                            self.translator.text("tr-error_failed-to-parse-as-specctra-dsn"),
+                            err
+                        ),
+                    );
+                }
+                Err(SpecctraLoadingError::Io(err)) => {
                     self.error_dialog.push_error(
                         "tr-module-specctra-dsn-file-loader",
                         format!("{}; {}", self.translator.text("tr-error_unable-to-read-file"), err),
@@ -125,18 +138,18 @@ impl App {
         }
 
         if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
-            if let Ok(input) = self.history_channel.1.try_recv() {
+            if let Ok(data) = self.history_channel.1.try_recv() {
                 let tr = &self.translator;
-                match input {
-                    Ok(bufread) => match serde_json::from_reader(bufread) {
-                        Ok(res) => invoker.replay(res),
-                        Err(err) => {
-                            self.error_dialog.push_error(
-                                "tr-module-history-file-loader",
-                                format!("{}; {}", tr.text("tr-error_failed-to-parse-as-history-json"), err),
-                            );
-                        }
-                    },
+                match data {
+                    Ok(Ok(data)) => {
+                        invoker.replay(data);
+                    }
+                    Ok(Err(err)) => {
+                        self.error_dialog.push_error(
+                            "tr-module-history-file-loader",
+                            format!("{}; {}", tr.text("tr-error_failed-to-parse-as-history-json"), err),
+                        );
+                    }
                     Err(err) => {
                         self.error_dialog.push_error(
                             "tr-module-history-file-loader",
@@ -161,10 +174,8 @@ impl App {
         false
     }
 
-    fn load_specctra_dsn(&mut self, bufread: FileHandlerData) -> Result<(), String> {
+    fn load_specctra_dsn(&mut self, design: SpecctraDesign) -> Result<(), String> {
         let tr = &self.translator;
-        let design = SpecctraDesign::load(bufread)
-            .map_err(|err| format!("{}; {}", tr.text("tr-error_failed-to-parse-as-specctra-dsn"), err))?;
         let board = design.make_board();
         let overlay = Overlay::new(&board)
             .map_err(|err| format!("{}; {}", tr.text("tr-error_unable-to-initialize-overlay"), err))?;
