@@ -12,3 +12,5 @@ steps:
     commands:
       - rustup default "$CHANNEL"
       - cargo test --verbose --features "$FEATURES"
+    when:
+      event: [pr, push, tag]

@@ -12,3 +12,5 @@ steps:
     commands:
       - rustup default "$CHANNEL"
       - cargo build --features "$FEATURES" --bin "topola-egui"
+    when:
+      event: [pr, push, tag]
