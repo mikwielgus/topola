@@ -223,7 +223,7 @@ impl eframe::App for App {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
-    std::thread::spawn(move || futures_executor::block_on(f));
+    std::thread::spawn(move || futures_lite::future::block_on(f));
 }
 
 #[cfg(target_arch = "wasm32")]

@@ -19,7 +19,16 @@ required-features = ["egui"]
 [features]
 default = ["disable_contracts"]
 cli = ["dep:clap"]
-egui = ["dep:sys-locale", "dep:unic-langid", "dep:fluent-templates", "dep:eframe", "dep:egui", "dep:rfd", "dep:futures-executor"]
+egui = [
+    "dep:eframe",
+    "dep:egui",
+    "dep:env_logger",
+    "dep:fluent-templates",
+    "dep:futures-lite",
+    "dep:rfd",
+    "dep:sys-locale",
+    "dep:unic-langid"
+]
 disable_contracts = ["contracts/disable_contracts"]
 
 [dependencies]
@@ -77,12 +86,15 @@ version = "0.28.1"
 optional = true
 version = "0.14.0"
 
-[dependencies.futures-executor]
-optional = true
-version = "0.3.30"
-
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-env_logger = "0.10"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies.futures-lite]
+optional = true
+version = "2.3"
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies.env_logger]
+optional = true
+version = "0.11"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
 wasm-bindgen-futures = "0.4"
