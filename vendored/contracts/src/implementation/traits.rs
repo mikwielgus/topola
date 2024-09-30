@@ -6,7 +6,7 @@ use crate::implementation::ContractType;
 use proc_macro2::TokenStream;
 use quote::ToTokens;
 use syn::{
-    FnArg, ImplItem, ItemImpl, ItemTrait, Pat, TraitItem, TraitItemMethod,
+    FnArg, ImplItem, ItemImpl, ItemTrait, Pat, TraitItem, TraitItemFn,
 };
 
 /// Name used for the "re-routed" method.
@@ -20,8 +20,8 @@ pub(crate) fn contract_trait_item_trait(
     mut trait_: ItemTrait,
 ) -> TokenStream {
     /// Just rename the method to have an internal, generated name.
-    fn create_method_rename(method: &TraitItemMethod) -> TraitItemMethod {
-        let mut m: TraitItemMethod = (*method).clone();
+    fn create_method_rename(method: &TraitItemFn) -> TraitItemFn {
+        let mut m: TraitItemFn = (*method).clone();
 
         // rename method and modify attributes
         {
@@ -41,7 +41,7 @@ pub(crate) fn contract_trait_item_trait(
                     .iter()
                     .filter(|a| {
                         let name =
-                            a.path.segments.last().unwrap().ident.to_string();
+                            a.path().segments.last().unwrap().ident.to_string();
 
                         ContractType::contract_type_and_mode(&name).is_none()
                     })
@@ -60,7 +60,7 @@ pub(crate) fn contract_trait_item_trait(
     /// includes contracts.
     ///
     /// This new function forwards the call to the actual implementation.
-    fn create_method_wrapper(method: &TraitItemMethod) -> TraitItemMethod {
+    fn create_method_wrapper(method: &TraitItemFn) -> TraitItemFn {
         struct ArgInfo {
             call_toks: proc_macro2::TokenStream,
         }
@@ -97,7 +97,7 @@ pub(crate) fn contract_trait_item_trait(
             }
         }
 
-        let mut m: TraitItemMethod = (*method).clone();
+        let mut m: TraitItemFn = (*method).clone();
 
         let argument_data = m
             .sig
@@ -144,7 +144,7 @@ pub(crate) fn contract_trait_item_trait(
                 .iter()
                 .filter(|a| {
                     let name =
-                        a.path.segments.last().unwrap().ident.to_string();
+                        a.path().segments.last().unwrap().ident.to_string();
                     // is doc?
                     if name == "doc" {
                         return true;
@@ -174,13 +174,13 @@ pub(crate) fn contract_trait_item_trait(
         .items
         .iter()
         .filter_map(|item| {
-            if let TraitItem::Method(m) = item {
+            if let TraitItem::Fn(m) = item {
                 let rename = create_method_rename(m);
                 let wrapper = create_method_wrapper(m);
 
                 Some(vec![
-                    TraitItem::Method(rename),
-                    TraitItem::Method(wrapper),
+                    TraitItem::Fn(rename),
+                    TraitItem::Fn(wrapper),
                 ])
             } else {
                 None
@@ -193,7 +193,7 @@ pub(crate) fn contract_trait_item_trait(
     trait_.items = trait_
         .items
         .into_iter()
-        .filter(|item| !matches!(item, TraitItem::Method(_)))
+        .filter(|item| !matches!(item, TraitItem::Fn(_)))
         .collect();
 
     // add back new methods
@@ -212,7 +212,7 @@ pub(crate) fn contract_trait_item_impl(
         let mut impl_: ItemImpl = impl_;
 
         impl_.items.iter_mut().for_each(|it| {
-            if let ImplItem::Method(method) = it {
+            if let ImplItem::Fn(method) = it {
                 let new_name =
                     contract_method_impl_name(&method.sig.ident.to_string());
                 let new_ident =

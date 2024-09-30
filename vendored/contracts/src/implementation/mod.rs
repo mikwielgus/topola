@@ -15,7 +15,7 @@ use syn::{Expr, ItemFn};
 
 pub(crate) use ensures::ensures;
 pub(crate) use invariant::invariant;
-use proc_macro2::{Span, TokenStream, TokenTree};
+use proc_macro2::{Span, TokenStream};
 pub(crate) use requires::requires;
 pub(crate) use traits::{contract_trait_item_impl, contract_trait_item_trait};
 
@@ -185,7 +185,7 @@ impl FuncWithContracts {
             .attrs
             .iter()
             .filter_map(|a| {
-                let name = a.path.segments.last().unwrap().ident.to_string();
+                let name = a.path().segments.last().unwrap().ident.to_string();
                 let (ty, mode) = ContractType::contract_type_and_mode(&name)?;
                 Some((ty, mode, a))
             })
@@ -194,15 +194,12 @@ impl FuncWithContracts {
                 // code might be mistakenly parsed as tuples, that's not good!
                 //
                 // this is a hack to get to the inner token stream.
-
-                let tok_tree = a.tokens.clone().into_iter().next().unwrap();
-                let toks = match tok_tree {
-                    TokenTree::Group(group) => group.stream(),
-                    TokenTree::Ident(i) => i.into_token_stream(),
-                    TokenTree::Punct(p) => p.into_token_stream(),
-                    TokenTree::Literal(l) => l.into_token_stream(),
+                use syn::Meta;
+                let toks = match &a.meta {
+                    Meta::Path(_) => unreachable!(),
+                    Meta::List(x) => x.tokens.clone(),
+                    Meta::NameValue(x) => x.value.to_token_stream(),
                 };
-
                 Contract::from_toks(ty, mode, toks)
             });
 
@@ -216,7 +213,7 @@ impl FuncWithContracts {
                 .into_iter()
                 .filter(|attr| {
                     ContractType::contract_type_and_mode(
-                        &attr.path.segments.last().unwrap().ident.to_string(),
+                        &attr.path().segments.last().unwrap().ident.to_string(),
                     )
                     .is_none()
                 })

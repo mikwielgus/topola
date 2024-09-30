@@ -6,7 +6,7 @@ use proc_macro2::{Ident, Span, TokenStream};
 use quote::ToTokens;
 use syn::{
     spanned::Spanned, visit_mut as visitor, Attribute, Expr, ExprCall, ExprTry,
-    ReturnType, Type, TypeImplTrait,
+    ReturnType, TypeImplTrait,
 };
 
 use crate::implementation::{
