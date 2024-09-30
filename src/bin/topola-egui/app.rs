@@ -1,4 +1,3 @@
-use futures::executor;
 use geo::point;
 use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use serde::{Deserialize, Serialize};
@@ -224,7 +223,7 @@ impl eframe::App for App {
 
 #[cfg(not(target_arch = "wasm32"))]
 pub fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
-    std::thread::spawn(move || futures::executor::block_on(f));
+    std::thread::spawn(move || futures_executor::block_on(f));
 }
 
 #[cfg(target_arch = "wasm32")]
