@@ -9,7 +9,7 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     router::{navmesh::Navmesh, trace::TraceStepper},
-    step::Step,
+    stepper::Step,
 };
 
 use super::{

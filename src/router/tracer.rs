@@ -4,7 +4,7 @@ use thiserror::Error;
 use crate::{
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, rules::AccessRules},
     layout::Layout,
-    step::{Step, StepBack},
+    stepper::{Step, StepBack},
 };
 
 use super::{

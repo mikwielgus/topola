@@ -15,7 +15,7 @@ use thiserror::Error;
 
 use std::cmp::Ordering;
 
-use crate::step::Step;
+use crate::stepper::Step;
 
 #[derive(Copy, Clone, Debug)]
 pub struct MinScored<K, T>(pub K, pub T);

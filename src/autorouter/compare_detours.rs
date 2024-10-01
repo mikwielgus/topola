@@ -6,7 +6,7 @@ use crate::{
     geometry::{primitive::PrimitiveShape, shape::MeasureLength},
     graph::MakeRef,
     router::{navmesh::Navmesh, trace::TraceStepper},
-    step::Step,
+    stepper::Step,
 };
 
 use super::{

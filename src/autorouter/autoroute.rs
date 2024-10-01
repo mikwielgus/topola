@@ -5,7 +5,7 @@ use crate::{
     drawing::{band::BandTermsegIndex, graph::PrimitiveIndex},
     geometry::primitive::PrimitiveShape,
     router::{navmesh::Navmesh, route::RouteStepper, trace::TraceStepper, Router, RouterStatus},
-    step::Step,
+    stepper::Step,
 };
 
 use super::{

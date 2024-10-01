@@ -10,7 +10,7 @@ use crate::{
         tracer::Tracer,
         Router, RouterAstarStrategy, RouterError, RouterStatus,
     },
-    step::Step,
+    stepper::Step,
 };
 
 pub struct RouteStepper {

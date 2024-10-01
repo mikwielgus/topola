@@ -19,7 +19,7 @@ use crate::{
     },
     graph::{GetPetgraphIndex, MakeRef},
     layout::Layout,
-    step::{Step, StepBack},
+    stepper::{Step, StepBack},
 };
 
 use super::{

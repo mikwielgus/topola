@@ -12,7 +12,7 @@ use topola::{
     geometry::primitive::PrimitiveShape,
     router::{navmesh::Navmesh, trace::TraceStepper},
     specctra::mesadata::SpecctraMesadata,
-    step::Step,
+    stepper::{Abort, Step},
 };
 
 #[derive(Debug, Clone)]
@@ -57,8 +57,16 @@ impl Step<Invoker<SpecctraMesadata>, ActivityStatus, ActivityError, ()> for Acti
         invoker: &mut Invoker<SpecctraMesadata>,
     ) -> Result<ActivityStatus, ActivityError> {
         match self {
-            ActivityStepper::Execution(execute) => Ok(execute.step(invoker)?.into()),
+            ActivityStepper::Execution(execution) => Ok(execution.step(invoker)?.into()),
         }
+    }
+}
+
+impl Abort<Invoker<SpecctraMesadata>> for ActivityStepper {
+    fn abort(&mut self, invoker: &mut Invoker<SpecctraMesadata>) {
+        match self {
+            ActivityStepper::Execution(execution) => execution.finish(invoker), // TODO.
+        };
     }
 }
 
@@ -66,7 +74,7 @@ impl GetMaybeNavmesh for ActivityStepper {
     /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         match self {
-            ActivityStepper::Execution(execute) => execute.maybe_navmesh(),
+            ActivityStepper::Execution(execution) => execution.maybe_navmesh(),
         }
     }
 }
@@ -75,7 +83,7 @@ impl GetMaybeTrace for ActivityStepper {
     /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
     fn maybe_trace(&self) -> Option<&TraceStepper> {
         match self {
-            ActivityStepper::Execution(execute) => execute.maybe_trace(),
+            ActivityStepper::Execution(execution) => execution.maybe_trace(),
         }
     }
 }
@@ -84,7 +92,7 @@ impl GetGhosts for ActivityStepper {
     /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
     fn ghosts(&self) -> &[PrimitiveShape] {
         match self {
-            ActivityStepper::Execution(execute) => execute.ghosts(),
+            ActivityStepper::Execution(execution) => execution.ghosts(),
         }
     }
 }
@@ -93,7 +101,7 @@ impl GetObstacles for ActivityStepper {
     /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
     fn obstacles(&self) -> &[PrimitiveIndex] {
         match self {
-            ActivityStepper::Execution(execute) => execute.obstacles(),
+            ActivityStepper::Execution(execution) => execution.obstacles(),
         }
     }
 }
@@ -104,9 +112,9 @@ pub struct ActivityWithStatus {
 }
 
 impl ActivityWithStatus {
-    pub fn new_execute(execute: ExecutionStepper) -> ActivityWithStatus {
+    pub fn new_execution(execution: ExecutionStepper) -> ActivityWithStatus {
         Self {
-            activity: ActivityStepper::Execution(execute),
+            activity: ActivityStepper::Execution(execution),
             maybe_status: None,
         }
     }

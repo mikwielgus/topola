@@ -10,6 +10,10 @@ pub trait Step<C, S: TryInto<O>, E, O> {
     }
 }
 
-pub trait StepBack<C, S: TryInto<O>, E, O> {
+pub trait StepBack<C, S, E> {
     fn step_back(&mut self, context: &mut C) -> Result<S, E>;
+}
+
+pub trait Abort<C> {
+    fn abort(&mut self, context: &mut C);
 }

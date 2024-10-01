@@ -9,7 +9,7 @@ use crate::{
         head::{BareHead, CaneHead, Head},
         rules::AccessRules,
     },
-    step::{Step, StepBack},
+    stepper::{Step, StepBack},
 };
 
 use super::{
@@ -129,9 +129,7 @@ impl<'a, 'b, R: AccessRules> Step<TraceStepContext<'a, 'b, R>, TracerStatus, Tra
     }
 }
 
-impl<'a, R: AccessRules> StepBack<Tracer<'a, R>, TracerStatus, TracerException, ()>
-    for TraceStepper
-{
+impl<'a, R: AccessRules> StepBack<Tracer<'a, R>, TracerStatus, TracerException> for TraceStepper {
     #[debug_ensures(self.path.len() == old(self.path.len() - 1))]
     fn step_back(&mut self, tracer: &mut Tracer<'a, R>) -> Result<TracerStatus, TracerException> {
         if let Head::Cane(head) = self.head {
