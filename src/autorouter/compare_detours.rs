@@ -5,12 +5,12 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{primitive::PrimitiveShape, shape::MeasureLength},
     graph::MakeRef,
-    router::{navmesh::Navmesh, trace::Trace},
+    router::{navmesh::Navmesh, trace::TraceStepper},
     step::Step,
 };
 
 use super::{
-    autoroute::{Autoroute, AutorouteStatus},
+    autoroute::{AutorouteCommandStepper, AutorouteStatus},
     invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles},
     Autorouter, AutorouterError, AutorouterOptions,
 };
@@ -32,9 +32,9 @@ impl TryInto<(f64, f64)> for CompareDetoursStatus {
     }
 }
 
-pub struct CompareDetours {
-    autoroute: Autoroute,
-    next_autoroute: Option<Autoroute>,
+pub struct CompareDetoursCommandStepper {
+    autoroute: AutorouteCommandStepper,
+    next_autoroute: Option<AutorouteCommandStepper>,
     ratline1: EdgeIndex<usize>,
     ratline2: EdgeIndex<usize>,
     total_length1: f64,
@@ -42,7 +42,7 @@ pub struct CompareDetours {
     done: bool,
 }
 
-impl CompareDetours {
+impl CompareDetoursCommandStepper {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratline1: EdgeIndex<usize>,
@@ -64,7 +64,7 @@ impl CompareDetours {
 // XXX: Do we really need this to be a stepper? We don't use at the moment, as sorting functions
 // aren't steppable either. It may be useful for debugging later on tho.
 impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterError, (f64, f64)>
-    for CompareDetours
+    for CompareDetoursCommandStepper
 {
     fn step(
         &mut self,
@@ -112,25 +112,25 @@ impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterErro
     }
 }
 
-impl GetMaybeNavmesh for CompareDetours {
+impl GetMaybeNavmesh for CompareDetoursCommandStepper {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         self.autoroute.maybe_navmesh()
     }
 }
 
-impl GetMaybeTrace for CompareDetours {
-    fn maybe_trace(&self) -> Option<&Trace> {
+impl GetMaybeTrace for CompareDetoursCommandStepper {
+    fn maybe_trace(&self) -> Option<&TraceStepper> {
         self.autoroute.maybe_trace()
     }
 }
 
-impl GetGhosts for CompareDetours {
+impl GetGhosts for CompareDetoursCommandStepper {
     fn ghosts(&self) -> &[PrimitiveShape] {
         self.autoroute.ghosts()
     }
 }
 
-impl GetObstacles for CompareDetours {
+impl GetObstacles for CompareDetoursCommandStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.autoroute.obstacles()
     }

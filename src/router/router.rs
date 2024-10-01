@@ -26,8 +26,8 @@ use super::{
     astar::{AstarError, AstarStrategy, PathTracker},
     draw::DrawException,
     navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
-    route::Route,
-    trace::{Trace, TraceStepContext},
+    route::RouteStepper,
+    trace::{TraceStepContext, TraceStepper},
     tracer::{Tracer, TracerException},
 };
 
@@ -63,14 +63,14 @@ impl TryInto<BandTermsegIndex> for RouterStatus {
 #[derive(Debug)]
 pub struct RouterAstarStrategy<'a, R: AccessRules> {
     pub tracer: Tracer<'a, R>,
-    pub trace: &'a mut Trace,
+    pub trace: &'a mut TraceStepper,
     pub target: FixedDotIndex,
     pub probe_ghosts: Vec<PrimitiveShape>,
     pub probe_obstacles: Vec<PrimitiveIndex>,
 }
 
 impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
-    pub fn new(tracer: Tracer<'a, R>, trace: &'a mut Trace, target: FixedDotIndex) -> Self {
+    pub fn new(tracer: Tracer<'a, R>, trace: &'a mut TraceStepper, target: FixedDotIndex) -> Self {
         Self {
             tracer,
             trace,
@@ -200,8 +200,8 @@ impl<'a, R: AccessRules> Router<'a, R> {
         from: FixedDotIndex,
         to: FixedDotIndex,
         width: f64,
-    ) -> Result<Route, RouterError> {
-        Route::new(self, from, to, width)
+    ) -> Result<RouteStepper, RouterError> {
+        RouteStepper::new(self, from, to, width)
     }
 
     pub fn layout_mut(&mut self) -> &mut Layout<R> {

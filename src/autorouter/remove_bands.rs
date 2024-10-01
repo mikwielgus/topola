@@ -2,7 +2,7 @@ use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
-    router::{navmesh::Navmesh, trace::Trace},
+    router::{navmesh::Navmesh, trace::TraceStepper},
 };
 
 use super::{
@@ -12,12 +12,12 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct RemoveBands {
+pub struct RemoveBandsCommandStepper {
     selection: BandSelection,
     done: bool,
 }
 
-impl RemoveBands {
+impl RemoveBandsCommandStepper {
     pub fn new(selection: &BandSelection) -> Result<Self, AutorouterError> {
         Ok(Self {
             selection: selection.clone(),
@@ -47,25 +47,25 @@ impl RemoveBands {
     }
 }
 
-impl GetMaybeNavmesh for RemoveBands {
+impl GetMaybeNavmesh for RemoveBandsCommandStepper {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         None
     }
 }
 
-impl GetMaybeTrace for RemoveBands {
-    fn maybe_trace(&self) -> Option<&Trace> {
+impl GetMaybeTrace for RemoveBandsCommandStepper {
+    fn maybe_trace(&self) -> Option<&TraceStepper> {
         None
     }
 }
 
-impl GetGhosts for RemoveBands {
+impl GetGhosts for RemoveBandsCommandStepper {
     fn ghosts(&self) -> &[PrimitiveShape] {
         &[]
     }
 }
 
-impl GetObstacles for RemoveBands {
+impl GetObstacles for RemoveBandsCommandStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         &[]
     }

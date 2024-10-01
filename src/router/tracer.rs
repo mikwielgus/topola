@@ -10,7 +10,7 @@ use crate::{
 use super::{
     draw::{Draw, DrawException},
     navmesh::{Navmesh, NavvertexIndex},
-    trace::{Trace, TraceStepContext},
+    trace::{TraceStepContext, TraceStepper},
 };
 
 #[derive(Error, Debug, Clone, Copy)]
@@ -51,14 +51,14 @@ impl<'a, R: AccessRules> Tracer<'a, R> {
         source: FixedDotIndex,
         source_navvertex: NavvertexIndex,
         width: f64,
-    ) -> Trace {
-        Trace::new(source, source_navvertex, width)
+    ) -> TraceStepper {
+        TraceStepper::new(source, source_navvertex, width)
     }
 
     pub fn finish(
         &mut self,
         _navmesh: &Navmesh,
-        trace: &mut Trace,
+        trace: &mut TraceStepper,
         target: FixedDotIndex,
         width: f64,
     ) -> Result<BandTermsegIndex, TracerException> {
@@ -70,7 +70,7 @@ impl<'a, R: AccessRules> Tracer<'a, R> {
     pub fn rework_path(
         &mut self,
         navmesh: &Navmesh,
-        trace: &mut Trace,
+        trace: &mut TraceStepper,
         path: &[NavvertexIndex],
         width: f64,
     ) -> Result<(), TracerException> {
@@ -90,7 +90,7 @@ impl<'a, R: AccessRules> Tracer<'a, R> {
     pub fn path(
         &mut self,
         navmesh: &Navmesh,
-        trace: &mut Trace,
+        trace: &mut TraceStepper,
         path: &[NavvertexIndex],
         width: f64,
     ) -> Result<(), TracerException> {
@@ -110,7 +110,7 @@ impl<'a, R: AccessRules> Tracer<'a, R> {
     }
 
     #[debug_ensures(trace.path.len() == old(trace.path.len() - step_count))]
-    pub fn undo_path(&mut self, trace: &mut Trace, step_count: usize) {
+    pub fn undo_path(&mut self, trace: &mut TraceStepper, step_count: usize) {
         for _ in 0..step_count {
             let _ = trace.step_back(self);
         }

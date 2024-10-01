@@ -4,7 +4,7 @@ use crate::{
     board::mesadata::AccessMesadata,
     drawing::{band::BandTermsegIndex, graph::PrimitiveIndex},
     geometry::primitive::PrimitiveShape,
-    router::{navmesh::Navmesh, route::Route, trace::Trace, Router, RouterStatus},
+    router::{navmesh::Navmesh, route::RouteStepper, trace::TraceStepper, Router, RouterStatus},
     step::Step,
 };
 
@@ -30,14 +30,14 @@ impl TryInto<()> for AutorouteStatus {
     }
 }
 
-pub struct Autoroute {
+pub struct AutorouteCommandStepper {
     ratlines_iter: Box<dyn Iterator<Item = EdgeIndex<usize>>>,
     options: AutorouterOptions,
-    route: Option<Route>,
+    route: Option<RouteStepper>,
     curr_ratline: Option<EdgeIndex<usize>>,
 }
 
-impl Autoroute {
+impl AutorouteCommandStepper {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: impl IntoIterator<Item = EdgeIndex<usize>> + 'static,
@@ -63,7 +63,9 @@ impl Autoroute {
     }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, AutorouterError, ()> for Autoroute {
+impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, AutorouterError, ()>
+    for AutorouteCommandStepper
+{
     fn step(&mut self, autorouter: &mut Autorouter<M>) -> Result<AutorouteStatus, AutorouterError> {
         let Some(curr_ratline) = self.curr_ratline else {
             return Ok(AutorouteStatus::Finished);
@@ -117,25 +119,25 @@ impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, AutorouterError, ()
     }
 }
 
-impl GetMaybeNavmesh for Autoroute {
+impl GetMaybeNavmesh for AutorouteCommandStepper {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         self.route.as_ref().map(|route| route.navmesh())
     }
 }
 
-impl GetMaybeTrace for Autoroute {
-    fn maybe_trace(&self) -> Option<&Trace> {
+impl GetMaybeTrace for AutorouteCommandStepper {
+    fn maybe_trace(&self) -> Option<&TraceStepper> {
         self.route.as_ref().map(|route| route.trace())
     }
 }
 
-impl GetGhosts for Autoroute {
+impl GetGhosts for AutorouteCommandStepper {
     fn ghosts(&self) -> &[PrimitiveShape] {
         self.route.as_ref().map_or(&[], |route| route.ghosts())
     }
 }
 
-impl GetObstacles for Autoroute {
+impl GetObstacles for AutorouteCommandStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.route.as_ref().map_or(&[], |route| route.obstacles())
     }

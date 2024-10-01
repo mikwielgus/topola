@@ -3,7 +3,7 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     layout::via::ViaWeight,
-    router::{navmesh::Navmesh, trace::Trace},
+    router::{navmesh::Navmesh, trace::TraceStepper},
 };
 
 use super::{
@@ -12,12 +12,12 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct PlaceVia {
+pub struct PlaceViaCommandStepper {
     weight: ViaWeight,
     done: bool,
 }
 
-impl PlaceVia {
+impl PlaceViaCommandStepper {
     pub fn new(weight: ViaWeight) -> Result<Self, AutorouterError> {
         Ok(Self {
             weight,
@@ -39,25 +39,25 @@ impl PlaceVia {
     }
 }
 
-impl GetMaybeNavmesh for PlaceVia {
+impl GetMaybeNavmesh for PlaceViaCommandStepper {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         None
     }
 }
 
-impl GetMaybeTrace for PlaceVia {
-    fn maybe_trace(&self) -> Option<&Trace> {
+impl GetMaybeTrace for PlaceViaCommandStepper {
+    fn maybe_trace(&self) -> Option<&TraceStepper> {
         None
     }
 }
 
-impl GetGhosts for PlaceVia {
+impl GetGhosts for PlaceViaCommandStepper {
     fn ghosts(&self) -> &[PrimitiveShape] {
         &[]
     }
 }
 
-impl GetObstacles for PlaceVia {
+impl GetObstacles for PlaceViaCommandStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         &[]
     }

@@ -3,7 +3,7 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{primitive::PrimitiveShape, shape::MeasureLength as MeasureLengthTrait},
     graph::MakeRef,
-    router::{navmesh::Navmesh, trace::Trace},
+    router::{navmesh::Navmesh, trace::TraceStepper},
 };
 
 use super::{
@@ -12,12 +12,12 @@ use super::{
     Autorouter, AutorouterError,
 };
 
-pub struct MeasureLength {
+pub struct MeasureLengthCommandStepper {
     selection: BandSelection,
     maybe_length: Option<f64>,
 }
 
-impl MeasureLength {
+impl MeasureLengthCommandStepper {
     pub fn new(selection: &BandSelection) -> Result<Self, AutorouterError> {
         Ok(Self {
             selection: selection.clone(),
@@ -51,25 +51,25 @@ impl MeasureLength {
     }
 }
 
-impl GetMaybeNavmesh for MeasureLength {
+impl GetMaybeNavmesh for MeasureLengthCommandStepper {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         None
     }
 }
 
-impl GetMaybeTrace for MeasureLength {
-    fn maybe_trace(&self) -> Option<&Trace> {
+impl GetMaybeTrace for MeasureLengthCommandStepper {
+    fn maybe_trace(&self) -> Option<&TraceStepper> {
         None
     }
 }
 
-impl GetGhosts for MeasureLength {
+impl GetGhosts for MeasureLengthCommandStepper {
     fn ghosts(&self) -> &[PrimitiveShape] {
         &[]
     }
 }
 
-impl GetObstacles for MeasureLength {
+impl GetObstacles for MeasureLengthCommandStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         &[]
     }

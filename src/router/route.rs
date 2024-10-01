@@ -6,21 +6,21 @@ use crate::{
     router::{
         astar::{Astar, AstarStatus},
         navmesh::Navmesh,
-        trace::Trace,
+        trace::TraceStepper,
         tracer::Tracer,
         Router, RouterAstarStrategy, RouterError, RouterStatus,
     },
     step::Step,
 };
 
-pub struct Route {
+pub struct RouteStepper {
     astar: Astar<Navmesh, f64>,
-    trace: Trace,
+    trace: TraceStepper,
     ghosts: Vec<PrimitiveShape>,
     obstacles: Vec<PrimitiveIndex>,
 }
 
-impl Route {
+impl RouteStepper {
     pub fn new(
         router: &mut Router<impl AccessRules>,
         from: FixedDotIndex,
@@ -60,7 +60,7 @@ impl Route {
         &self.astar.graph
     }
 
-    pub fn trace(&self) -> &Trace {
+    pub fn trace(&self) -> &TraceStepper {
         &self.trace
     }
 
@@ -74,7 +74,7 @@ impl Route {
 }
 
 impl<'a, R: AccessRules> Step<Router<'a, R>, RouterStatus, RouterError, BandTermsegIndex>
-    for Route
+    for RouteStepper
 {
     fn step(&mut self, router: &mut Router<R>) -> Result<RouterStatus, RouterError> {
         let tracer = Tracer::new(router.layout_mut());

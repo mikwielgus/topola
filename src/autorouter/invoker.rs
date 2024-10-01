@@ -8,18 +8,18 @@ use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
-    router::{navmesh::Navmesh, trace::Trace},
+    router::{navmesh::Navmesh, trace::TraceStepper},
     step::Step,
 };
 
 use super::{
-    autoroute::Autoroute,
-    compare_detours::CompareDetours,
-    execute::{Command, Execute},
+    autoroute::AutorouteCommandStepper,
+    command::{Command, CommandStepper},
+    compare_detours::CompareDetoursCommandStepper,
     history::{History, HistoryError},
-    measure_length::MeasureLength,
-    place_via::PlaceVia,
-    remove_bands::RemoveBands,
+    measure_length::MeasureLengthCommandStepper,
+    place_via::PlaceViaCommandStepper,
+    remove_bands::RemoveBandsCommandStepper,
     Autorouter, AutorouterError,
 };
 
@@ -30,7 +30,7 @@ pub trait GetMaybeNavmesh {
 
 #[enum_dispatch]
 pub trait GetMaybeTrace {
-    fn maybe_trace(&self) -> Option<&Trace>;
+    fn maybe_trace(&self) -> Option<&TraceStepper>;
 }
 
 #[enum_dispatch]
@@ -108,14 +108,14 @@ impl<M: AccessMesadata> Invoker<M> {
     }
 
     #[debug_requires(self.ongoing_command.is_none())]
-    pub fn execute_stepper(&mut self, command: Command) -> Result<Execute, InvokerError> {
+    pub fn execute_stepper(&mut self, command: Command) -> Result<CommandStepper, InvokerError> {
         let execute = self.dispatch_command(&command);
         self.ongoing_command = Some(command);
         execute
     }
 
     #[debug_requires(self.ongoing_command.is_none())]
-    fn dispatch_command(&mut self, command: &Command) -> Result<Execute, InvokerError> {
+    fn dispatch_command(&mut self, command: &Command) -> Result<CommandStepper, InvokerError> {
         Ok(match command {
             Command::Autoroute(selection, options) => {
                 let mut ratlines = self.autorouter.selected_ratlines(selection);
@@ -134,17 +134,19 @@ impl<M: AccessMesadata> Invoker<M> {
                     });
                 }
 
-                Execute::Autoroute(self.autorouter.autoroute_ratlines(ratlines, *options)?)
+                CommandStepper::Autoroute(self.autorouter.autoroute_ratlines(ratlines, *options)?)
             }
-            Command::PlaceVia(weight) => Execute::PlaceVia(self.autorouter.place_via(*weight)?),
+            Command::PlaceVia(weight) => {
+                CommandStepper::PlaceVia(self.autorouter.place_via(*weight)?)
+            }
             Command::RemoveBands(selection) => {
-                Execute::RemoveBands(self.autorouter.remove_bands(selection)?)
+                CommandStepper::RemoveBands(self.autorouter.remove_bands(selection)?)
             }
-            Command::CompareDetours(selection, options) => {
-                Execute::CompareDetours(self.autorouter.compare_detours(selection, *options)?)
-            }
+            Command::CompareDetours(selection, options) => CommandStepper::CompareDetours(
+                self.autorouter.compare_detours(selection, *options)?,
+            ),
             Command::MeasureLength(selection) => {
-                Execute::MeasureLength(self.autorouter.measure_length(selection)?)
+                CommandStepper::MeasureLength(self.autorouter.measure_length(selection)?)
             }
         })
     }

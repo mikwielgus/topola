@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::autorouter::execute::Command;
+use crate::autorouter::command::Command;
 
 #[derive(Error, Debug, Clone)]
 pub enum HistoryError {

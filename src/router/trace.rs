@@ -20,14 +20,18 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct Trace {
+pub struct TraceStepper {
     pub path: Vec<NavvertexIndex>,
     pub head: Head,
     pub width: f64,
 }
 
-impl Trace {
-    pub fn new(source: FixedDotIndex, source_navvertex: NavvertexIndex, width: f64) -> Trace {
+impl TraceStepper {
+    pub fn new(
+        source: FixedDotIndex,
+        source_navvertex: NavvertexIndex,
+        width: f64,
+    ) -> TraceStepper {
         Self {
             path: vec![source_navvertex],
             head: BareHead { face: source }.into(),
@@ -101,7 +105,7 @@ pub struct TraceStepContext<'a: 'b, 'b, R: AccessRules> {
 }
 
 impl<'a, 'b, R: AccessRules> Step<TraceStepContext<'a, 'b, R>, TracerStatus, TracerException, ()>
-    for Trace
+    for TraceStepper
 {
     #[debug_ensures(ret.is_ok() -> matches!(self.head, Head::Cane(..)))]
     #[debug_ensures(ret.is_ok() -> self.path.len() == old(self.path.len() + 1))]
@@ -125,7 +129,9 @@ impl<'a, 'b, R: AccessRules> Step<TraceStepContext<'a, 'b, R>, TracerStatus, Tra
     }
 }
 
-impl<'a, R: AccessRules> StepBack<Tracer<'a, R>, TracerStatus, TracerException, ()> for Trace {
+impl<'a, R: AccessRules> StepBack<Tracer<'a, R>, TracerStatus, TracerException, ()>
+    for TraceStepper
+{
     #[debug_ensures(self.path.len() == old(self.path.len() - 1))]
     fn step_back(&mut self, tracer: &mut Tracer<'a, R>) -> Result<TracerStatus, TracerException> {
         if let Head::Cane(head) = self.head {
