@@ -1,0 +1,11 @@
+steps:
+  test:
+    image: rust
+    environment:
+      RUST_BACKTRACE: 1
+      CARGO_TERM_COLOR: always
+    commands:
+      - rustup default stable
+      - cargo fmt --check
+    when:
+      event: [pull_request, push, tag]
