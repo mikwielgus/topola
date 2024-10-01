@@ -70,11 +70,11 @@ pub struct SpecctraMesadata {
 
 impl SpecctraMesadata {
     /// Creates a [`SpecctraMesadata`] instance from a given `Pcb` reference.
-    /// 
+    ///
     /// This function extracts the necessary metadata from the `Pcb` struct, such as
     /// layer-to-layer name mappings, net-to-net name mappings, and net class rules.
     pub fn from_pcb(pcb: &Pcb) -> Self {
-        let mut layer_layername = BiHashMap::from_iter(
+        let layer_layername = BiHashMap::from_iter(
             pcb.structure.layers
                 .iter()
                 .enumerate()
@@ -161,10 +161,10 @@ impl AccessRules for SpecctraMesadata {
         }
     }
 
-    fn largest_clearance(&self, maybe_net: Option<usize>) -> f64 {
+    fn largest_clearance(&self, _maybe_net: Option<usize>) -> f64 {
         let mut largest: f64 = 0.0;
 
-        for (class, rule) in &self.class_rules {
+        for rule in self.class_rules.values() {
             if rule.clearance > largest {
                 largest = rule.clearance;
             }
