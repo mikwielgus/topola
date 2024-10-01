@@ -2,7 +2,7 @@ use geo::{CoordsIter, Point, Polygon};
 use rstar::AABB;
 use topola::{
     geometry::primitive::{AccessPrimitiveShape, PrimitiveShape},
-    math::{self, Circle},
+    math::Circle,
 };
 
 pub struct Painter<'a> {

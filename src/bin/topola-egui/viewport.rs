@@ -9,7 +9,6 @@ use topola::{
         command::Command,
         invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles, Invoker},
     },
-    board::mesadata::AccessMesadata,
     drawing::{
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
@@ -21,8 +20,8 @@ use topola::{
 };
 
 use crate::{
-    activity::ActivityWithStatus, app::execute, layers::Layers, menu_bar::MenuBar,
-    overlay::Overlay, painter::Painter,
+    activity::ActivityWithStatus, layers::Layers, menu_bar::MenuBar, overlay::Overlay,
+    painter::Painter,
 };
 
 pub struct Viewport {
@@ -253,22 +252,21 @@ impl Viewport {
 
                             if let Some(navmesh) = activity.maybe_navmesh() {
                                 if top.show_origin_destination {
-                                    if let (origin, destination) = (navmesh.origin(), navmesh.destination()) {
-                                        painter.paint_dot(
-                                            Circle {
-                                                pos: board.layout().drawing().primitive(origin).shape().center(),
-                                                r: 150.0,
-                                            },
-                                            egui::Color32::from_rgb(255, 255, 100),
-                                        );
-                                        painter.paint_dot(
-                                            Circle {
-                                                pos: board.layout().drawing().primitive(destination).shape().center(),
-                                                r: 150.0,
-                                            },
-                                            egui::Color32::from_rgb(255, 255, 100),
-                                        );
-                                    }
+                                    let (origin, destination) = (navmesh.origin(), navmesh.destination());
+                                    painter.paint_dot(
+                                        Circle {
+                                            pos: board.layout().drawing().primitive(origin).shape().center(),
+                                            r: 150.0,
+                                        },
+                                        egui::Color32::from_rgb(255, 255, 100),
+                                    );
+                                    painter.paint_dot(
+                                        Circle {
+                                            pos: board.layout().drawing().primitive(destination).shape().center(),
+                                            r: 150.0,
+                                        },
+                                        egui::Color32::from_rgb(255, 255, 100),
+                                    );
                                 }
                             }
                         }

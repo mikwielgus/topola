@@ -33,7 +33,7 @@ impl Trigger {
         }
     }
 
-    pub fn button(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
+    pub fn button(&mut self, _ctx: &egui::Context, ui: &mut egui::Ui) {
         self.triggered = ui.button(self.action.widget_text()).clicked();
     }
 
@@ -42,7 +42,7 @@ impl Trigger {
         self.triggered()
     }
 
-    fn consume_key(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) {
+    fn consume_key(&mut self, ctx: &egui::Context, _ui: &mut egui::Ui) {
         if ctx.input_mut(|i| i.consume_shortcut(&self.action.shortcut)) {
             self.triggered = true;
         }
@@ -62,14 +62,14 @@ impl Switch {
         Self { action }
     }
 
-    pub fn toggle_widget(&mut self, ctx: &egui::Context, ui: &mut egui::Ui, selected: &mut bool) {
+    pub fn toggle_widget(&mut self, _ctx: &egui::Context, ui: &mut egui::Ui, selected: &mut bool) {
         ui.toggle_value(selected, self.action.widget_text());
     }
 
     pub fn consume_key_enabled(
         &mut self,
         ctx: &egui::Context,
-        ui: &mut egui::Ui,
+        _ui: &mut egui::Ui,
         selected: &mut bool,
     ) -> bool {
         if ctx.input_mut(|i| i.consume_shortcut(&self.action.shortcut)) {

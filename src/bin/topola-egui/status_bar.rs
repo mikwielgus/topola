@@ -1,5 +1,3 @@
-use topola::autorouter::invoker::InvokerStatus;
-
 use crate::{
     activity::{ActivityStatus, ActivityWithStatus},
     translator::Translator,

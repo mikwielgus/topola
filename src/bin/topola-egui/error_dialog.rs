@@ -1,9 +1,8 @@
 //! dialog for error messages (e.g. for displaying file parser errors)
 
+use crate::translator::Translator;
 use std::collections::BTreeSet;
 use std::sync::Arc;
-
-use crate::{translator::Translator, viewport::Viewport};
 
 pub struct ErrorDialog {
     /// messages is a list of error messages to display.
@@ -32,7 +31,7 @@ impl ErrorDialog {
         self.window_open = true;
     }
 
-    pub fn update(&mut self, ctx: &egui::Context, tr: &Translator, viewport: &Viewport) {
+    pub fn update(&mut self, ctx: &egui::Context, tr: &Translator) {
         let mut messages_cleared = false;
         egui::Window::new(tr.text("title-error-messages"))
             .id("error-messages-dialog".into())
@@ -48,10 +47,12 @@ impl ErrorDialog {
                     let mut messages_to_discard = BTreeSet::<usize>::new();
                     let style = Arc::clone(ui.style());
                     for (msg_id, msg) in self.messages.iter().enumerate() {
-                        use egui::style::{FontSelection, TextStyle};
-                        use egui::text::{LayoutJob, TextWrapping};
-                        use egui::widget_text::{RichText, WidgetText};
-                        use egui::{Align, FontFamily, FontId, TextFormat};
+                        use egui::{
+                            style::{FontSelection, TextStyle},
+                            text::LayoutJob,
+                            widget_text::{RichText, WidgetText},
+                            Align,
+                        };
 
                         let mut loj = LayoutJob::default();
                         loj.break_on_newline = true;

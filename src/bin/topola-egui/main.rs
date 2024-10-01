@@ -15,9 +15,8 @@ mod translator;
 mod viewport;
 
 use app::App;
-use fluent_templates::static_loader;
 use sys_locale::get_locale;
-use unic_langid::{langid, LanguageIdentifier};
+use unic_langid::langid;
 
 // Build to native.
 #[cfg(not(target_arch = "wasm32"))]

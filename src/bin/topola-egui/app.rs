@@ -1,8 +1,5 @@
-use geo::point;
-use petgraph::visit::{EdgeRef, IntoEdgeReferences};
 use serde::{Deserialize, Serialize};
 use std::{
-    fs::File,
     future::Future,
     sync::{
         mpsc::{channel, Receiver, Sender},
@@ -13,27 +10,6 @@ use unic_langid::{langid, LanguageIdentifier};
 
 use topola::{
     autorouter::{invoker::Invoker, Autorouter},
-    drawing::{
-        dot::FixedDotIndex,
-        graph::{MakePrimitive, PrimitiveIndex},
-        primitive::MakePrimitiveShape,
-        rules::AccessRules,
-        Drawing, DrawingException, Infringement,
-    },
-    geometry::{
-        compound::ManageCompounds,
-        primitive::{AccessPrimitiveShape, BendShape, DotShape, PrimitiveShape, SegShape},
-        shape::AccessShape,
-        GenericNode,
-    },
-    layout::{poly::MakePolyShape, via::ViaWeight, Layout},
-    math::Circle,
-    router::{
-        draw::DrawException,
-        navmesh::{BinavvertexNodeIndex, Navmesh},
-        trace::TraceStepper,
-        tracer::Tracer,
-    },
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
 
@@ -44,7 +20,6 @@ use crate::{
     layers::Layers,
     menu_bar::MenuBar,
     overlay::Overlay,
-    painter::Painter,
     status_bar::StatusBar,
     translator::Translator,
     viewport::Viewport,
@@ -250,10 +225,9 @@ impl eframe::App for App {
             }
         }
 
-        self.error_dialog
-            .update(ctx, &self.translator, &self.viewport);
+        self.error_dialog.update(ctx, &self.translator);
 
-        let viewport_rect = self.viewport.update(
+        let _viewport_rect = self.viewport.update(
             ctx,
             &self.top,
             &mut self.arc_mutex_maybe_invoker.lock().unwrap(),

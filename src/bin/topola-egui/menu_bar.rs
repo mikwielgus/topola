@@ -1,5 +1,4 @@
 use std::{
-    fs::File,
     path::Path,
     sync::{mpsc::Sender, Arc, Mutex},
 };
@@ -7,7 +6,7 @@ use std::{
 use topola::{
     autorouter::{
         command::Command,
-        invoker::{Invoker, InvokerError, InvokerStatus},
+        invoker::{Invoker, InvokerError},
         AutorouterOptions,
     },
     router::RouterOptions,

@@ -1,5 +1,3 @@
-use std::collections::HashSet;
-
 use geo::Point;
 use rstar::AABB;
 use spade::InsertionError;
@@ -17,9 +15,9 @@ use topola::{
     },
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
-        poly::{MakePolyShape, Poly, PolyWeight},
+        poly::{MakePolyShape, PolyWeight},
         via::ViaWeight,
-        CompoundWeight, Layout, NodeIndex,
+        CompoundWeight, NodeIndex,
     },
 };
 
@@ -61,7 +59,7 @@ impl Overlay {
                     }
                     NodeIndex::Compound(compound) => {
                         match board.layout().drawing().compound_weight(compound) {
-                            CompoundWeight::Poly(weight) => {
+                            CompoundWeight::Poly(_) => {
                                 board
                                     .layout()
                                     .poly(GenericIndex::<PolyWeight>::new(
@@ -94,12 +92,12 @@ impl Overlay {
             }
             NodeIndex::Compound(compound) => {
                 match board.layout().drawing().compound_weight(compound) {
-                    CompoundWeight::Poly(weight) => board
+                    CompoundWeight::Poly(_) => board
                         .layout()
                         .poly(GenericIndex::<PolyWeight>::new(compound.petgraph_index()))
                         .shape()
                         .into(),
-                    CompoundWeight::Via(weight) => board
+                    CompoundWeight::Via(_) => board
                         .layout()
                         .via(GenericIndex::<ViaWeight>::new(compound.petgraph_index()))
                         .shape()
