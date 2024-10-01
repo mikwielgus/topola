@@ -3,6 +3,7 @@
 mod action;
 mod activity;
 mod app;
+mod config;
 mod error_dialog;
 mod file_receiver;
 mod file_sender;
@@ -16,18 +17,19 @@ mod viewport;
 
 use app::App;
 use sys_locale::get_locale;
-use unic_langid::langid;
+use unic_langid::{LanguageIdentifier, langid};
+
+fn get_langid() -> LanguageIdentifier {
+    get_locale()
+        .and_then(|langname| langname.parse().ok())
+        .unwrap_or(langid!("en-US"))
+}
 
 // Build to native.
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result<()> {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
-
-    let langid = if let Some(langname) = get_locale() {
-        langname.parse().unwrap_or(langid!("en-US"))
-    } else {
-        langid!("en-US")
-    };
+    let langid = get_langid();
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()
@@ -49,7 +51,6 @@ fn main() {
 
     // Redirect `log` message to `console.log`:
     eframe::WebLogger::init(log::LevelFilter::Debug).ok();
-
     let web_options = eframe::WebOptions::default();
 
     wasm_bindgen_futures::spawn_local(async {
@@ -64,11 +65,12 @@ fn main() {
             .dyn_into::<eframe::web_sys::HtmlCanvasElement>()
             .expect("topola-egui was not a HtmlCanvasElement");
 
+        let langid = get_langid();
         let start_result = eframe::WebRunner::new()
             .start(
                 canvas,
                 web_options,
-                Box::new(|cc| Ok(Box::new(App::new(cc, langid!("en-US"))))),
+                Box::new(|cc| Ok(Box::new(App::new(cc, langid)))),
             )
             .await;
 

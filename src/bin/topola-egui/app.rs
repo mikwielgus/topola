@@ -16,6 +16,7 @@ use topola::{
 
 use crate::{
     activity::{ActivityStatus, ActivityStepperWithStatus},
+    config::Config,
     error_dialog::ErrorDialog,
     file_receiver::FileReceiver,
     layers::Layers,
@@ -26,52 +27,36 @@ use crate::{
     viewport::Viewport,
 };
 
-/// Deserialize/Serialize is needed to persist app state between restarts.
-#[derive(Serialize, Deserialize)]
-#[serde(default)]
 pub struct App {
+    config: Config,
     translator: Translator,
 
-    #[serde(skip)]
     maybe_overlay: Option<Overlay>,
 
-    #[serde(skip)]
     arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
 
-    #[serde(skip)]
     maybe_activity: Option<ActivityStepperWithStatus>,
 
-    #[serde(skip)]
     content_channel: (Sender<String>, Receiver<String>),
-
-    #[serde(skip)]
     history_channel: (Sender<String>, Receiver<String>),
 
-    #[serde(skip)]
     viewport: Viewport,
 
-    #[serde(skip)]
     menu_bar: MenuBar,
-
-    #[serde(skip)]
     status_bar: StatusBar,
 
-    #[serde(skip)]
     error_dialog: ErrorDialog,
 
-    #[serde(skip)]
     maybe_layers: Option<Layers>,
-
-    #[serde(skip)]
     maybe_design: Option<SpecctraDesign>,
 
-    #[serde(skip)]
     update_counter: f32,
 }
 
 impl Default for App {
     fn default() -> Self {
         Self {
+            config: Config::default(),
             translator: Translator::new(langid!("en-US")),
             maybe_overlay: None,
             arc_mutex_maybe_invoker: Arc::new(Mutex::new(None)),
@@ -92,19 +77,15 @@ impl Default for App {
 impl App {
     /// Called once on start.
     pub fn new(cc: &eframe::CreationContext<'_>, langid: LanguageIdentifier) -> Self {
-        // Load previous app state if one exists.
-        if let Some(storage) = cc.storage {
-            let this = Self {
-                translator: Translator::new(langid),
-                ..eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
-            };
-            return this;
-        }
-
-        Self {
+        let mut this = Self {
             translator: Translator::new(langid),
             ..Default::default()
+        };
+        // Load previous app state if one exists.
+        if let Some(storage) = cc.storage {
+            this.config = eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
         }
+        this
     }
 
     fn advance_state_by_dt(&mut self, dt: f32) {
@@ -196,7 +177,7 @@ impl App {
 impl eframe::App for App {
     /// Called to save state before shutdown.
     fn save(&mut self, storage: &mut dyn eframe::Storage) {
-        eframe::set_value(storage, eframe::APP_KEY, self);
+        eframe::set_value(storage, eframe::APP_KEY, &self.config);
     }
 
     /// Called each time the UI has to be repainted.
