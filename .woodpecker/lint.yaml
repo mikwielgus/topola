@@ -9,6 +9,5 @@ steps:
       - rustup component add rustfmt clippy
       - cargo fmt --check
       - cargo clippy
-    failure: ignore # TODO: remove this when all clippy problems were addressed
     when:
       event: [pull_request, push, tag]
