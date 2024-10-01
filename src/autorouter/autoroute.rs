@@ -30,14 +30,14 @@ impl TryInto<()> for AutorouteStatus {
     }
 }
 
-pub struct AutorouteCommandStepper {
+pub struct AutorouteExecutionStepper {
     ratlines_iter: Box<dyn Iterator<Item = EdgeIndex<usize>>>,
     options: AutorouterOptions,
     route: Option<RouteStepper>,
     curr_ratline: Option<EdgeIndex<usize>>,
 }
 
-impl AutorouteCommandStepper {
+impl AutorouteExecutionStepper {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: impl IntoIterator<Item = EdgeIndex<usize>> + 'static,
@@ -64,7 +64,7 @@ impl AutorouteCommandStepper {
 }
 
 impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, AutorouterError, ()>
-    for AutorouteCommandStepper
+    for AutorouteExecutionStepper
 {
     fn step(&mut self, autorouter: &mut Autorouter<M>) -> Result<AutorouteStatus, AutorouterError> {
         let Some(curr_ratline) = self.curr_ratline else {
@@ -119,25 +119,25 @@ impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, AutorouterError, ()
     }
 }
 
-impl GetMaybeNavmesh for AutorouteCommandStepper {
+impl GetMaybeNavmesh for AutorouteExecutionStepper {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         self.route.as_ref().map(|route| route.navmesh())
     }
 }
 
-impl GetMaybeTrace for AutorouteCommandStepper {
+impl GetMaybeTrace for AutorouteExecutionStepper {
     fn maybe_trace(&self) -> Option<&TraceStepper> {
         self.route.as_ref().map(|route| route.trace())
     }
 }
 
-impl GetGhosts for AutorouteCommandStepper {
+impl GetGhosts for AutorouteExecutionStepper {
     fn ghosts(&self) -> &[PrimitiveShape] {
         self.route.as_ref().map_or(&[], |route| route.ghosts())
     }
 }
 
-impl GetObstacles for AutorouteCommandStepper {
+impl GetObstacles for AutorouteExecutionStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.route.as_ref().map_or(&[], |route| route.obstacles())
     }

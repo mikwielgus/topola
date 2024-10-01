@@ -12,12 +12,12 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct RemoveBandsCommandStepper {
+pub struct RemoveBandsExecutionStepper {
     selection: BandSelection,
     done: bool,
 }
 
-impl RemoveBandsCommandStepper {
+impl RemoveBandsExecutionStepper {
     pub fn new(selection: &BandSelection) -> Result<Self, AutorouterError> {
         Ok(Self {
             selection: selection.clone(),
@@ -47,25 +47,25 @@ impl RemoveBandsCommandStepper {
     }
 }
 
-impl GetMaybeNavmesh for RemoveBandsCommandStepper {
+impl GetMaybeNavmesh for RemoveBandsExecutionStepper {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         None
     }
 }
 
-impl GetMaybeTrace for RemoveBandsCommandStepper {
+impl GetMaybeTrace for RemoveBandsExecutionStepper {
     fn maybe_trace(&self) -> Option<&TraceStepper> {
         None
     }
 }
 
-impl GetGhosts for RemoveBandsCommandStepper {
+impl GetGhosts for RemoveBandsExecutionStepper {
     fn ghosts(&self) -> &[PrimitiveShape] {
         &[]
     }
 }
 
-impl GetObstacles for RemoveBandsCommandStepper {
+impl GetObstacles for RemoveBandsExecutionStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         &[]
     }

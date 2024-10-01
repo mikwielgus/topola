@@ -16,12 +16,12 @@ use crate::{
 };
 
 use super::{
-    autoroute::AutorouteCommandStepper,
-    compare_detours::CompareDetoursCommandStepper,
-    measure_length::MeasureLengthCommandStepper,
-    place_via::PlaceViaCommandStepper,
+    autoroute::AutorouteExecutionStepper,
+    compare_detours::CompareDetoursExecutionStepper,
+    measure_length::MeasureLengthExecutionStepper,
+    place_via::PlaceViaExecutionStepper,
     ratsnest::{Ratsnest, RatvertexIndex},
-    remove_bands::RemoveBandsCommandStepper,
+    remove_bands::RemoveBandsExecutionStepper,
     selection::{BandSelection, PinSelection},
 };
 
@@ -62,7 +62,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         &mut self,
         selection: &PinSelection,
         options: AutorouterOptions,
-    ) -> Result<AutorouteCommandStepper, AutorouterError> {
+    ) -> Result<AutorouteExecutionStepper, AutorouterError> {
         self.autoroute_ratlines(self.selected_ratlines(selection), options)
     }
 
@@ -70,8 +70,8 @@ impl<M: AccessMesadata> Autorouter<M> {
         &mut self,
         ratlines: Vec<EdgeIndex<usize>>,
         options: AutorouterOptions,
-    ) -> Result<AutorouteCommandStepper, AutorouterError> {
-        AutorouteCommandStepper::new(self, ratlines, options)
+    ) -> Result<AutorouteExecutionStepper, AutorouterError> {
+        AutorouteExecutionStepper::new(self, ratlines, options)
     }
 
     pub fn undo_autoroute(&mut self, selection: &PinSelection) -> Result<(), AutorouterError> {
@@ -99,8 +99,8 @@ impl<M: AccessMesadata> Autorouter<M> {
         Ok(())
     }
 
-    pub fn place_via(&self, weight: ViaWeight) -> Result<PlaceViaCommandStepper, AutorouterError> {
-        PlaceViaCommandStepper::new(weight)
+    pub fn place_via(&self, weight: ViaWeight) -> Result<PlaceViaExecutionStepper, AutorouterError> {
+        PlaceViaExecutionStepper::new(weight)
     }
 
     pub fn undo_place_via(&mut self, _weight: ViaWeight) {
@@ -110,8 +110,8 @@ impl<M: AccessMesadata> Autorouter<M> {
     pub fn remove_bands(
         &self,
         selection: &BandSelection,
-    ) -> Result<RemoveBandsCommandStepper, AutorouterError> {
-        RemoveBandsCommandStepper::new(selection)
+    ) -> Result<RemoveBandsExecutionStepper, AutorouterError> {
+        RemoveBandsExecutionStepper::new(selection)
     }
 
     pub fn undo_remove_bands(&mut self, _selection: &BandSelection) {
@@ -122,7 +122,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         &mut self,
         selection: &PinSelection,
         options: AutorouterOptions,
-    ) -> Result<CompareDetoursCommandStepper, AutorouterError> {
+    ) -> Result<CompareDetoursExecutionStepper, AutorouterError> {
         let ratlines = self.selected_ratlines(selection);
         let ratline1 = *ratlines
             .get(0)
@@ -138,15 +138,15 @@ impl<M: AccessMesadata> Autorouter<M> {
         ratline1: EdgeIndex<usize>,
         ratline2: EdgeIndex<usize>,
         options: AutorouterOptions,
-    ) -> Result<CompareDetoursCommandStepper, AutorouterError> {
-        CompareDetoursCommandStepper::new(self, ratline1, ratline2, options)
+    ) -> Result<CompareDetoursExecutionStepper, AutorouterError> {
+        CompareDetoursExecutionStepper::new(self, ratline1, ratline2, options)
     }
 
     pub fn measure_length(
         &mut self,
         selection: &BandSelection,
-    ) -> Result<MeasureLengthCommandStepper, AutorouterError> {
-        MeasureLengthCommandStepper::new(selection)
+    ) -> Result<MeasureLengthExecutionStepper, AutorouterError> {
+        MeasureLengthExecutionStepper::new(selection)
     }
 
     pub fn ratline_endpoints(

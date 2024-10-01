@@ -12,12 +12,12 @@ use super::{
     Autorouter, AutorouterError,
 };
 
-pub struct MeasureLengthCommandStepper {
+pub struct MeasureLengthExecutionStepper {
     selection: BandSelection,
     maybe_length: Option<f64>,
 }
 
-impl MeasureLengthCommandStepper {
+impl MeasureLengthExecutionStepper {
     pub fn new(selection: &BandSelection) -> Result<Self, AutorouterError> {
         Ok(Self {
             selection: selection.clone(),
@@ -51,25 +51,25 @@ impl MeasureLengthCommandStepper {
     }
 }
 
-impl GetMaybeNavmesh for MeasureLengthCommandStepper {
+impl GetMaybeNavmesh for MeasureLengthExecutionStepper {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         None
     }
 }
 
-impl GetMaybeTrace for MeasureLengthCommandStepper {
+impl GetMaybeTrace for MeasureLengthExecutionStepper {
     fn maybe_trace(&self) -> Option<&TraceStepper> {
         None
     }
 }
 
-impl GetGhosts for MeasureLengthCommandStepper {
+impl GetGhosts for MeasureLengthExecutionStepper {
     fn ghosts(&self) -> &[PrimitiveShape] {
         &[]
     }
 }
 
-impl GetObstacles for MeasureLengthCommandStepper {
+impl GetObstacles for MeasureLengthExecutionStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         &[]
     }

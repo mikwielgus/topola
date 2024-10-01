@@ -12,12 +12,12 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct PlaceViaCommandStepper {
+pub struct PlaceViaExecutionStepper {
     weight: ViaWeight,
     done: bool,
 }
 
-impl PlaceViaCommandStepper {
+impl PlaceViaExecutionStepper {
     pub fn new(weight: ViaWeight) -> Result<Self, AutorouterError> {
         Ok(Self {
             weight,
@@ -39,25 +39,25 @@ impl PlaceViaCommandStepper {
     }
 }
 
-impl GetMaybeNavmesh for PlaceViaCommandStepper {
+impl GetMaybeNavmesh for PlaceViaExecutionStepper {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         None
     }
 }
 
-impl GetMaybeTrace for PlaceViaCommandStepper {
+impl GetMaybeTrace for PlaceViaExecutionStepper {
     fn maybe_trace(&self) -> Option<&TraceStepper> {
         None
     }
 }
 
-impl GetGhosts for PlaceViaCommandStepper {
+impl GetGhosts for PlaceViaExecutionStepper {
     fn ghosts(&self) -> &[PrimitiveShape] {
         &[]
     }
 }
 
-impl GetObstacles for PlaceViaCommandStepper {
+impl GetObstacles for PlaceViaExecutionStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         &[]
     }
