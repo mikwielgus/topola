@@ -6,6 +6,7 @@ steps:
       CARGO_TERM_COLOR: always
     commands:
       - rustup default stable
+      - rustup component add rustfmt clippy
       - cargo fmt --check
       - cargo clippy
     failure: ignore # TODO: remove this when all clippy problems were addressed
