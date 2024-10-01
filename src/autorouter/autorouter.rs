@@ -6,7 +6,7 @@ use thiserror::Error;
 use crate::{
     board::{mesadata::AccessMesadata, Board},
     drawing::{
-        band::{BandTermsegIndex, BandUid},
+        band::BandTermsegIndex,
         dot::FixedDotIndex,
         Infringement,
     },

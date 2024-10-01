@@ -4,10 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     board::{mesadata::AccessMesadata, BandName, Board},
-    drawing::{
-        band::BandUid,
-        graph::{GetLayer, MakePrimitive, PrimitiveIndex},
-    },
+    drawing::graph::{GetLayer, MakePrimitive, PrimitiveIndex},
     geometry::{compound::ManageCompounds, GenericNode},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{poly::PolyWeight, CompoundWeight, NodeIndex},

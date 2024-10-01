@@ -5,7 +5,7 @@ use geo::{LineString, Point, Polygon};
 use crate::{
     drawing::{
         dot::FixedDotIndex,
-        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex},
+        graph::{GetLayer, GetMaybeNet, PrimitiveIndex},
         primitive::GetLimbs,
         rules::AccessRules,
         seg::SegIndex,

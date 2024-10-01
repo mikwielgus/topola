@@ -1,6 +1,6 @@
 use crate::{
     board::mesadata::AccessMesadata,
-    drawing::{band::BandUid, graph::PrimitiveIndex},
+    drawing::graph::PrimitiveIndex,
     geometry::{primitive::PrimitiveShape, shape::MeasureLength as MeasureLengthTrait},
     graph::MakeRef,
     router::{navmesh::Navmesh, trace::Trace},

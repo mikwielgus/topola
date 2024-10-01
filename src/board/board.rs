@@ -6,7 +6,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     board::mesadata::AccessMesadata,
     drawing::{
-        band::{BandTermsegIndex, BandUid},
+        band::BandUid,
         dot::{FixedDotIndex, FixedDotWeight},
         graph::{GetLayer, GetMaybeNet},
         seg::{FixedSegIndex, FixedSegWeight},

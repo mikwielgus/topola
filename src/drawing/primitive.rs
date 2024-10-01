@@ -1,10 +1,6 @@
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
-use crate::geometry::{
-    primitive::{AccessPrimitiveShape, PrimitiveShape},
-    GetOffset, GetWidth,
-};
 use crate::{
     drawing::{
         bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
@@ -14,7 +10,7 @@ use crate::{
         seg::{FixedSegWeight, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex, SeqLooseSegWeight},
         Drawing,
     },
-    geometry::GenericNode,
+    geometry::{primitive::PrimitiveShape, GenericNode, GetOffset, GetWidth},
     graph::{GenericIndex, GetPetgraphIndex},
 };
 

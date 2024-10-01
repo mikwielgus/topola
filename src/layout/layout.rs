@@ -11,7 +11,6 @@ use crate::{
         dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         gear::GearIndex,
         graph::{GetMaybeNet, PrimitiveIndex},
-        primitive::{GetJoints, GetOtherJoint},
         rules::AccessRules,
         seg::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
@@ -19,7 +18,7 @@ use crate::{
         },
         Drawing, DrawingException, Infringement,
     },
-    geometry::{compound::ManageCompounds, shape::MeasureLength, GenericNode},
+    geometry::{compound::ManageCompounds, GenericNode},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
         poly::{Poly, PolyWeight},

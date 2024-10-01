@@ -21,7 +21,7 @@ use crate::{
         cane::Cane,
         collect::Collect,
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-        gear::{GearIndex, GearRef, GetNextGear},
+        gear::{GearIndex, GetNextGear},
         graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
         guide::Guide,
         loose::{GetPrevNextLoose, Loose, LooseIndex},
@@ -37,8 +37,6 @@ use crate::{
     },
     graph::MakeRef,
 };
-
-use super::head::{Head, HeadRef};
 
 #[enum_dispatch]
 #[derive(Error, Debug, Clone, Copy)]
