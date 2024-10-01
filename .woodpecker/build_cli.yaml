@@ -8,9 +8,11 @@ matrix:
 steps:
   build_cli:
     image: rust
-    environment: [RUST_BACKTRACE=1,CARGO_TERM_COLOR=always]
+    environment:
+      RUST_BACKTRACE: 1
+      CARGO_TERM_COLOR: always
     commands:
       - rustup default "$CHANNEL"
       - cargo build --features "$FEATURES" --
     when:
-      event: [pr, push, tag]
+      event: [pull_request, push, tag]
