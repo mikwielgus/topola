@@ -1,11 +1,11 @@
 use proc_macro2::TokenStream;
 use quote::quote;
-use syn::{Data, DeriveInput, Fields, Field};
-use syn::Type::Path;
 use syn::ext::IdentExt;
+use syn::Type::Path;
+use syn::{Data, DeriveInput, Field, Fields};
 
-use crate::attr_present;
 use crate::attr_content;
+use crate::attr_present;
 
 pub fn impl_read(input: &DeriveInput) -> TokenStream {
     let name = &input.ident;
@@ -24,26 +24,22 @@ pub fn impl_read(input: &DeriveInput) -> TokenStream {
 
 fn impl_body(data: &Data) -> TokenStream {
     match data {
-        Data::Struct(data) => {
-            match &data.fields {
-                Fields::Named(fields) => {
-                    let fields = fields.named.iter().map(|field| {
-                        impl_field(field)
-                    });
+        Data::Struct(data) => match &data.fields {
+            Fields::Named(fields) => {
+                let fields = fields.named.iter().map(|field| impl_field(field));
 
-                    quote! {
-                        Ok(Self {
-                            #(#fields)*
-                        })
-                    }
+                quote! {
+                    Ok(Self {
+                        #(#fields)*
+                    })
                 }
-                _ => unimplemented!()
             }
-        }
+            _ => unimplemented!(),
+        },
         Data::Enum(_data) => {
             todo!();
         }
-        _ => unimplemented!()
+        _ => unimplemented!(),
     }
 }
 
@@ -71,7 +67,7 @@ fn impl_field(field: &Field) -> TokenStream {
                 if ident == "Option" {
                     return quote! {
                         #name: tokenizer.read_optional(stringify!(#name_str))?,
-                    }
+                    };
                 }
             }
         }
@@ -81,4 +77,3 @@ fn impl_field(field: &Field) -> TokenStream {
         }
     }
 }
-

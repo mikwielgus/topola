@@ -39,7 +39,6 @@ pub enum LoadingError {
     Parse(#[from] read::ParseErrorContext),
 }
 
-
 /// This struct is responsible for managing the various Specctra components of a PCB design,
 /// including parsing the DSN file, handling the resolution, unit of measurement,
 /// and organizing the PCB's structure, placement, library, network, and wiring.
@@ -68,16 +67,16 @@ impl SpecctraDesign {
     pub fn get_name(&self) -> &str {
         &self.pcb.name
     }
-    
+
     /// Writes the Specctra Session (.ses) file format using the current board layout and mesadata.
     ///
     /// This function generates a Specctra SES session file that represents the board's net routing and
-    /// writes it to the provided output stream. The session data includes routed nets, wires, 
+    /// writes it to the provided output stream. The session data includes routed nets, wires,
     /// layers, and other essential information for routing management.
-    pub fn write_ses( 
+    pub fn write_ses(
         &self,
         board: &Board<SpecctraMesadata>,
-	writer: impl std::io::Write,
+        writer: impl std::io::Write,
     ) -> Result<(), std::io::Error> {
         let mesadata = board.mesadata();
         let drawing = board.layout().drawing();
@@ -150,8 +149,8 @@ impl SpecctraDesign {
                         structure::NetOut {
                             name: mesadata.net_netname(net).unwrap().to_owned(),
                             wire: vec![wire],
-                            via: Vec::new()
-			},
+                            via: Vec::new(),
+                        },
                     );
                 }
             }
@@ -193,7 +192,8 @@ impl SpecctraDesign {
         )));
 
         // mapping of pin -> net prepared for adding pins
-        let pin_nets = self.pcb
+        let pin_nets = self
+            .pcb
             .network
             .nets
             .iter()
@@ -229,22 +229,15 @@ impl SpecctraDesign {
                     .unwrap();
 
                 let place_side_is_front = place.side == "front";
-                let get_layer = |board: &Board<SpecctraMesadata>, name: &str| Self::layer(
-                    board,
-                    &self.pcb.structure.layers,
-                    name,
-                    place_side_is_front,
-                );
+                let get_layer = |board: &Board<SpecctraMesadata>, name: &str| {
+                    Self::layer(board, &self.pcb.structure.layers, name, place_side_is_front)
+                };
 
                 for pin in &image.pins {
                     let pinname = format!("{}-{}", place.name, pin.id);
                     let net = pin_nets.get(&pinname).unwrap();
 
-                    let padstack = self
-                        .pcb
-                        .library
-                        .find_padstack_by_name(&pin.name)
-                        .unwrap();
+                    let padstack = self.pcb.library.find_padstack_by_name(&pin.name).unwrap();
 
                     for shape in padstack.shapes.iter() {
                         match shape {
@@ -315,14 +308,11 @@ impl SpecctraDesign {
                 .netname_net(&via.net)
                 .unwrap();
 
-            let padstack = self
-                .pcb
-                .library
-                .find_padstack_by_name(&via.name)
-                .unwrap();
+            let padstack = self.pcb.library.find_padstack_by_name(&via.name).unwrap();
 
-            let get_layer = |board: &Board<SpecctraMesadata>, name: &str|
-                Self::layer(board, &self.pcb.structure.layers, name, true);
+            let get_layer = |board: &Board<SpecctraMesadata>, name: &str| {
+                Self::layer(board, &self.pcb.structure.layers, name, true)
+            };
 
             for shape in &padstack.shapes {
                 match shape {
@@ -692,12 +682,7 @@ impl SpecctraDesign {
         }
     }
 
-    fn pos(
-        place: PointWithRotation,
-        pin: PointWithRotation,
-        x: f64,
-        y: f64,
-    ) -> Point {
+    fn pos(place: PointWithRotation, pin: PointWithRotation, x: f64, y: f64) -> Point {
         let pos = (point! {x: x, y: y} + pin.pos).rotate_around_point(pin.rot, pin.pos);
         (pos + place.pos).rotate_around_point(place.rot, place.pos)
     }

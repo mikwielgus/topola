@@ -1,5 +1,5 @@
 //! Module for handling Specctra's mesadata - design rules, as well as layers
-//! or net properties 
+//! or net properties
 
 use std::collections::HashMap;
 
@@ -16,7 +16,7 @@ use crate::{
 /// the Topola auto-router, in a PCB design process. This struct defines two key design
 /// rules: the width of the trace and the minimum clearance between electrical features.
 pub struct SpecctraRule {
-    /// Specifies the width of the trace (or conductor) in millimeters. 
+    /// Specifies the width of the trace (or conductor) in millimeters.
     /// This value ensures that the traces meet electrical
     /// and mechanical requirements, such as current-carrying capacity or signal integrity.
     pub width: f64,
@@ -42,10 +42,9 @@ impl SpecctraRule {
 /// This struct encapsulates information about rules for individual nets, net classes,
 /// layers, and their corresponding relationships.
 pub struct SpecctraMesadata {
-    
     /// The default routing rule applied globally if no specific net class rule is defined.
     structure_rule: SpecctraRule,
-    
+
     // net class name -> rule
     /// A map from net class names to their specific `SpecctraRule` constraints.
     /// These rules are applied to all nets belonging to the respective net clas
@@ -67,7 +66,6 @@ pub struct SpecctraMesadata {
     net_netclass: HashMap<usize, String>,
 }
 
-
 impl SpecctraMesadata {
     /// Creates a [`SpecctraMesadata`] instance from a given `Pcb` reference.
     ///
@@ -75,10 +73,11 @@ impl SpecctraMesadata {
     /// layer-to-layer name mappings, net-to-net name mappings, and net class rules.
     pub fn from_pcb(pcb: &Pcb) -> Self {
         let layer_layername = BiHashMap::from_iter(
-            pcb.structure.layers
+            pcb.structure
+                .layers
                 .iter()
                 .enumerate()
-                .map(|(index, layer)| (index, layer.name.clone()))
+                .map(|(index, layer)| (index, layer.name.clone())),
         );
 
         // keeping this as a separate iter pass because it might be moved into a different struct later?
@@ -115,7 +114,9 @@ impl SpecctraMesadata {
             if rule.width.is_some() {
                 structure_rule.width = rule.width.unwrap()
             }
-            structure_rule.clearances.extend_from_slice(&rule.clearances);
+            structure_rule
+                .clearances
+                .extend_from_slice(&rule.clearances);
         }
 
         Self {
@@ -129,9 +130,9 @@ impl SpecctraMesadata {
 
     /// Retrieves the Specctra routing rule associated with a specified net ID.
     ///
-    /// This function looks up the routing rule for a given net ID. It first checks if the net is 
-    /// associated with a net class. If a net class is found, it retrieves the corresponding rule 
-    /// from the class rules. If no class is associated, or if the class does not have a defined rule, 
+    /// This function looks up the routing rule for a given net ID. It first checks if the net is
+    /// associated with a net class. If a net class is found, it retrieves the corresponding rule
+    /// from the class rules. If no class is associated, or if the class does not have a defined rule,
     /// it defaults to the general structure rule.
     ///
     pub fn get_rule(&self, net: usize) -> &SpecctraRule {

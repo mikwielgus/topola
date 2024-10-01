@@ -197,10 +197,8 @@ where
 
         let zero_score = K::default();
         this.scores.insert(start, zero_score);
-        this.visit_next.push(MinScored(
-            strategy.estimate_cost(&this.graph, start),
-            start,
-        ));
+        this.visit_next
+            .push(MinScored(strategy.estimate_cost(&this.graph, start), start));
         this
     }
 }

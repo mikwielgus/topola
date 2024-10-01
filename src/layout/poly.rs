@@ -37,7 +37,8 @@ impl<'a, R: AccessRules> Poly<'a, R> {
     }
 
     fn is_apex(&self, dot: FixedDotIndex) -> bool {
-        !self.layout
+        !self
+            .layout
             .drawing()
             .primitive(dot)
             .segs()

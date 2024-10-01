@@ -44,9 +44,9 @@ impl ExecutionStepper {
                 match autoroute.step(&mut invoker.autorouter)? {
                     AutorouteStatus::Running => InvokerStatus::Running,
                     AutorouteStatus::Routed(..) => InvokerStatus::Running,
-                    AutorouteStatus::Finished => InvokerStatus::Finished(
-                        "finished autorouting".to_string(),
-                    ),
+                    AutorouteStatus::Finished => {
+                        InvokerStatus::Finished("finished autorouting".to_string())
+                    }
                 }
             }
             ExecutionStepper::PlaceVia(place_via) => {
@@ -70,10 +70,7 @@ impl ExecutionStepper {
             }
             ExecutionStepper::MeasureLength(measure_length) => {
                 let length = measure_length.doit(&mut invoker.autorouter)?;
-                InvokerStatus::Finished(format!(
-                    "Total length of selected bands: {}",
-                    length
-                ))
+                InvokerStatus::Finished(format!("Total length of selected bands: {}", length))
             }
         })
     }

@@ -5,11 +5,7 @@ use thiserror::Error;
 
 use crate::{
     board::{mesadata::AccessMesadata, Board},
-    drawing::{
-        band::BandTermsegIndex,
-        dot::FixedDotIndex,
-        Infringement,
-    },
+    drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
     layout::via::ViaWeight,
     router::{navmesh::NavmeshError, RouterError, RouterOptions},
     triangulation::GetTrianvertexNodeIndex,
@@ -99,7 +95,10 @@ impl<M: AccessMesadata> Autorouter<M> {
         Ok(())
     }
 
-    pub fn place_via(&self, weight: ViaWeight) -> Result<PlaceViaExecutionStepper, AutorouterError> {
+    pub fn place_via(
+        &self,
+        weight: ViaWeight,
+    ) -> Result<PlaceViaExecutionStepper, AutorouterError> {
         PlaceViaExecutionStepper::new(weight)
     }
 

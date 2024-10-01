@@ -99,9 +99,7 @@ pub struct Structure {
 
 // custom impl to handle layers appearing late
 impl<R: std::io::BufRead> ReadDsn<R> for Structure {
-    fn read_dsn(
-        tokenizer: &mut ListTokenizer<R>,
-    ) -> Result<Self, ParseErrorContext> {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         let mut value = Self {
             layers: tokenizer.read_named_array("layer")?,
             boundary: tokenizer.read_named("boundary")?,
@@ -111,7 +109,9 @@ impl<R: std::io::BufRead> ReadDsn<R> for Structure {
             rules: tokenizer.read_named_array("rule")?,
         };
 
-        value.layers.append(&mut tokenizer.read_named_array("layer")?);
+        value
+            .layers
+            .append(&mut tokenizer.read_named_array("layer")?);
 
         Ok(value)
     }

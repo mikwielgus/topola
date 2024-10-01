@@ -434,10 +434,7 @@ impl<
                     GeometryLabel::Joined
                 )
             })
-            .map(|ni| {
-                self.primitive_weight(ni)
-                    .retag(ni)
-            })
+            .map(|ni| self.primitive_weight(ni).retag(ni))
     }
 
     pub fn seg_joints(&self, seg: SI) -> (DI, DI) {

@@ -927,12 +927,15 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     fn test_if_looses_dont_infringe_each_other(&self) -> bool {
         !self
             .primitive_nodes()
-            .filter(|node| matches!(node,
-                PrimitiveIndex::LooseDot(..)
-                | PrimitiveIndex::LoneLooseSeg(..)
-                | PrimitiveIndex::SeqLooseSeg(..)
-                | PrimitiveIndex::LooseBend(..)
-            ))
+            .filter(|node| {
+                matches!(
+                    node,
+                    PrimitiveIndex::LooseDot(..)
+                        | PrimitiveIndex::LoneLooseSeg(..)
+                        | PrimitiveIndex::SeqLooseSeg(..)
+                        | PrimitiveIndex::LooseBend(..)
+                )
+            })
             .any(|node| {
                 self.find_infringement(
                     node,
@@ -944,12 +947,15 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                                 None
                             }
                         })
-                        .filter(|primitive_node| matches!(primitive_node,
-                            PrimitiveIndex::LooseDot(..)
-                            | PrimitiveIndex::LoneLooseSeg(..)
-                            | PrimitiveIndex::SeqLooseSeg(..)
-                            | PrimitiveIndex::LooseBend(..)
-                        )),
+                        .filter(|primitive_node| {
+                            matches!(
+                                primitive_node,
+                                PrimitiveIndex::LooseDot(..)
+                                    | PrimitiveIndex::LoneLooseSeg(..)
+                                    | PrimitiveIndex::SeqLooseSeg(..)
+                                    | PrimitiveIndex::LooseBend(..)
+                            )
+                        }),
                 )
                 .is_some()
             })

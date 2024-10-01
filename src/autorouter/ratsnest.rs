@@ -89,7 +89,8 @@ impl Ratsnest {
         for layer in 0..layout.drawing().layer_count() {
             let mut handle_rvw = |maybe_net: Option<usize>, vertex: RatvertexIndex, pos: Point| {
                 if let Some(net) = maybe_net {
-                    triangulations.entry((layer, net))
+                    triangulations
+                        .entry((layer, net))
                         .or_insert_with(|| Triangulation::new(node_bound))
                         .add_vertex(RatvertexWeight { vertex, pos })?;
                 }

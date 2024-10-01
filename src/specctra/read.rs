@@ -38,26 +38,31 @@ pub struct InputToken {
 
 impl InputToken {
     pub fn new(token: ListToken, context: (usize, usize)) -> Self {
-        Self {
-            token,
-            context,
-        }
+        Self { token, context }
     }
 
     pub fn expect_start(self, name: &'static str) -> Result<(), ParseErrorContext> {
-        self.token.expect_start(name).map_err(|err| err.add_context(self.context))
+        self.token
+            .expect_start(name)
+            .map_err(|err| err.add_context(self.context))
     }
 
     pub fn expect_any_start(self) -> Result<String, ParseErrorContext> {
-        self.token.expect_any_start().map_err(|err| err.add_context(self.context))
+        self.token
+            .expect_any_start()
+            .map_err(|err| err.add_context(self.context))
     }
 
     pub fn expect_leaf(self) -> Result<String, ParseErrorContext> {
-        self.token.expect_leaf().map_err(|err| err.add_context(self.context))
+        self.token
+            .expect_leaf()
+            .map_err(|err| err.add_context(self.context))
     }
 
     pub fn expect_end(self) -> Result<(), ParseErrorContext> {
-        self.token.expect_end().map_err(|err| err.add_context(self.context))
+        self.token
+            .expect_end()
+            .map_err(|err| err.add_context(self.context))
     }
 }
 
@@ -191,9 +196,7 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         }
     }
 
-    fn map_context<T>(&self, result: Result<T, ParseError>)
-         -> Result<T, ParseErrorContext>
-    {
+    fn map_context<T>(&self, result: Result<T, ParseError>) -> Result<T, ParseErrorContext> {
         result.map_err(|err| self.add_context(err))
     }
 
@@ -215,7 +218,8 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         Ok(if let Some(chr) = self.peeked_char {
             chr
         } else {
-            let chr = self.reader
+            let chr = self
+                .reader
                 .read_char()
                 .transpose()
                 .ok_or(self.add_context(ParseError::Eof))?
@@ -332,7 +336,10 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         T::read_dsn(self)
     }
 
-    pub fn read_named<T: ReadDsn<R>>(&mut self, name: &'static str) -> Result<T, ParseErrorContext> {
+    pub fn read_named<T: ReadDsn<R>>(
+        &mut self,
+        name: &'static str,
+    ) -> Result<T, ParseErrorContext> {
         self.consume_token()?.expect_start(name)?;
         let value = self.read_value::<T>()?;
         self.consume_token()?.expect_end()?;

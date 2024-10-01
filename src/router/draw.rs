@@ -131,9 +131,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         let tangent = self
             .guide()
             .head_around_bend_segment(&head, around, cw, width)?;
-        let offset = self
-            .guide()
-            .head_around_bend_offset(&head, around, width);
+        let offset = self.guide().head_around_bend_offset(&head, around, width);
 
         self.cane_around(
             head,

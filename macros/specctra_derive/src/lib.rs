@@ -27,9 +27,5 @@ fn attr_content(attrs: &Vec<Attribute>, name: &str) -> Option<String> {
     attrs
         .iter()
         .find(|attr| attr.path().is_ident(name))
-        .and_then(|attr| Some(attr
-            .parse_args::<LitStr>()
-            .expect("string literal")
-            .value()
-        ))
+        .and_then(|attr| Some(attr.parse_args::<LitStr>().expect("string literal").value()))
 }

@@ -86,7 +86,8 @@ fn cast_point_to_canonical_line(pt: Point, line: CanonicalLine) -> Point {
             / (line.a * line.a + line.b * line.b),
         (line.a * (-line.b * pt.x() + line.a * pt.y()) - line.b * line.c)
             / (line.a * line.a + line.b * line.b),
-    ).into()
+    )
+        .into()
 }
 
 fn tangent_point_pairs(
