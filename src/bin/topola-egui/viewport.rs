@@ -21,8 +21,8 @@ use topola::{
 };
 
 use crate::{
-    activity::ActivityWithStatus, app::execute, layers::Layers, overlay::Overlay, painter::Painter,
-    top::Top,
+    activity::ActivityWithStatus, app::execute, layers::Layers, menu_bar::MenuBar,
+    overlay::Overlay, painter::Painter,
 };
 
 pub struct Viewport {
@@ -41,7 +41,7 @@ impl Viewport {
     pub fn update(
         &mut self,
         ctx: &egui::Context,
-        top: &Top,
+        top: &MenuBar,
         maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
         maybe_activity: &mut Option<ActivityWithStatus>,
         maybe_overlay: &mut Option<Overlay>,
@@ -66,7 +66,7 @@ impl Viewport {
     pub fn paint(
         &mut self,
         ctx: &egui::Context,
-        top: &Top,
+        top: &MenuBar,
         maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
         maybe_activity: &mut Option<ActivityWithStatus>,
         maybe_overlay: &mut Option<Overlay>,

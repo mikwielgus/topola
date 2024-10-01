@@ -39,13 +39,13 @@ use topola::{
 
 use crate::{
     activity::{ActivityStatus, ActivityWithStatus},
-    bottom::Bottom,
     error_dialog::ErrorDialog,
     file_receiver::FileReceiver,
     layers::Layers,
+    menu_bar::MenuBar,
     overlay::Overlay,
     painter::Painter,
-    top::Top,
+    status_bar::StatusBar,
     translator::Translator,
     viewport::Viewport,
 };
@@ -75,10 +75,10 @@ pub struct App {
     viewport: Viewport,
 
     #[serde(skip)]
-    top: Top,
+    top: MenuBar,
 
     #[serde(skip)]
-    bottom: Bottom,
+    bottom: StatusBar,
 
     #[serde(skip)]
     error_dialog: ErrorDialog,
@@ -103,8 +103,8 @@ impl Default for App {
             content_channel: channel(),
             history_channel: channel(),
             viewport: Viewport::new(),
-            top: Top::new(),
-            bottom: Bottom::new(),
+            top: MenuBar::new(),
+            bottom: StatusBar::new(),
             error_dialog: ErrorDialog::new(),
             maybe_layers: None,
             maybe_design: None,
