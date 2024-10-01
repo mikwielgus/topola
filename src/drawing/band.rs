@@ -1,3 +1,6 @@
+// FIXME (implement Hash for BandUid and such)
+#![allow(clippy::derived_hash_with_manual_eq)]
+
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
