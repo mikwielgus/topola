@@ -1,5 +1,5 @@
 steps:
-  test:
+  lint:
     image: rust
     environment:
       RUST_BACKTRACE: 1
@@ -7,5 +7,7 @@ steps:
     commands:
       - rustup default stable
       - cargo fmt --check
+      - cargo clippy
+    failure: ignore # TODO: remove this when all clippy problems were addressed
     when:
       event: [pull_request, push, tag]
