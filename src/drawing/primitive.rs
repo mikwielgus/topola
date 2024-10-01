@@ -193,7 +193,7 @@ impl<'a, W, CW: Copy, R: AccessRules> GenericPrimitive<'a, W, CW, R> {
     }
 
     fn primitive<WW>(&self, index: GenericIndex<WW>) -> GenericPrimitive<WW, CW, R> {
-        GenericPrimitive::new(index, &self.drawing)
+        GenericPrimitive::new(index, self.drawing)
     }
 }
 
@@ -379,7 +379,7 @@ impl<'a, CW: Copy, R: AccessRules> GetJoints<DotIndex, LooseDotIndex> for SeqLoo
         if let DotWeight::Fixed(..) = self.drawing.geometry().dot_weight(joints.0) {
             (
                 FixedDotIndex::new(joints.0.petgraph_index()).into(),
-                LooseDotIndex::new(joints.1.petgraph_index()).into(),
+                LooseDotIndex::new(joints.1.petgraph_index()),
             )
         } else if let DotWeight::Fixed(..) = self.drawing.geometry().dot_weight(joints.1) {
             (
@@ -389,7 +389,7 @@ impl<'a, CW: Copy, R: AccessRules> GetJoints<DotIndex, LooseDotIndex> for SeqLoo
         } else {
             (
                 LooseDotIndex::new(joints.0.petgraph_index()).into(),
-                LooseDotIndex::new(joints.1.petgraph_index()).into(),
+                LooseDotIndex::new(joints.1.petgraph_index()),
             )
         }
     }

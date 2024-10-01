@@ -84,52 +84,36 @@ impl Ratsnest {
         };
 
         let mut triangulations = HashMap::new();
+        let node_bound = layout.drawing().geometry().graph().node_bound();
 
         for layer in 0..layout.drawing().layer_count() {
-            for node in layout.drawing().layer_primitive_nodes(layer) {
-                match node {
-                    PrimitiveIndex::FixedDot(dot) => {
-                        if layout.polys(dot).next().is_none() {
-                            if let Some(net) = layout.drawing().primitive(dot).maybe_net() {
-                                if !triangulations.contains_key(&(layer, net)) {
-                                    triangulations.insert(
-                                        (layer, net),
-                                        Triangulation::new(
-                                            layout.drawing().geometry().graph().node_bound(),
-                                        ),
-                                    );
-                                }
+            let mut handle_rvw = |maybe_net: Option<usize>, vertex: RatvertexIndex, pos: Point| {
+                if let Some(net) = maybe_net {
+                    triangulations.entry((layer, net))
+                        .or_insert_with(|| Triangulation::new(node_bound))
+                        .add_vertex(RatvertexWeight { vertex, pos })?;
+                }
+                Ok(())
+            };
 
-                                triangulations.get_mut(&(layer, net)).unwrap().add_vertex(
-                                    RatvertexWeight {
-                                        vertex: RatvertexIndex::FixedDot(dot),
-                                        pos: node.primitive(layout.drawing()).shape().center(),
-                                    },
-                                )?;
-                            }
-                        }
+            for node in layout.drawing().layer_primitive_nodes(layer) {
+                if let PrimitiveIndex::FixedDot(dot) = node {
+                    if layout.polys(dot).next().is_none() {
+                        handle_rvw(
+                            layout.drawing().primitive(dot).maybe_net(),
+                            RatvertexIndex::FixedDot(dot),
+                            node.primitive(layout.drawing()).shape().center(),
+                        )?;
                     }
-                    _ => (),
                 }
             }
 
             for poly in layout.layer_poly_nodes(layer) {
-                if let Some(net) = layout.drawing().compound_weight(poly.into()).maybe_net() {
-                    if !triangulations.contains_key(&(layer, net)) {
-                        triangulations.insert(
-                            (layer, net),
-                            Triangulation::new(layout.drawing().geometry().graph().node_bound()),
-                        );
-                    }
-
-                    triangulations
-                        .get_mut(&(layer, net))
-                        .unwrap()
-                        .add_vertex(RatvertexWeight {
-                            vertex: RatvertexIndex::Poly(poly),
-                            pos: layout.poly(poly).shape().center(),
-                        })?
-                }
+                handle_rvw(
+                    layout.drawing().compound_weight(poly.into()).maybe_net(),
+                    RatvertexIndex::Poly(poly),
+                    layout.poly(poly).shape().center(),
+                )?;
             }
         }
 

@@ -221,8 +221,7 @@ impl<
         if let Some(old_inner_edge) = self
             .graph
             .edges_directed(bend.petgraph_index(), Incoming)
-            .filter(|edge| *edge.weight() == GeometryLabel::Outer)
-            .next()
+            .find(|edge| *edge.weight() == GeometryLabel::Outer)
         {
             self.graph.remove_edge(old_inner_edge.id());
         }
@@ -274,10 +273,7 @@ impl<
         let mut rail = bend;
 
         while let Some(inner) = self.inner(rail) {
-            let weight: BW = self
-                .bend_weight(inner)
-                .try_into()
-                .unwrap_or_else(|_| unreachable!());
+            let weight: BW = self.bend_weight(inner);
             r += weight.width() + weight.offset();
             rail = inner;
         }
@@ -441,8 +437,6 @@ impl<
             .map(|ni| {
                 self.primitive_weight(ni)
                     .retag(ni)
-                    .try_into()
-                    .unwrap_or_else(|_| unreachable!())
             })
     }
 
@@ -485,12 +479,7 @@ impl<
                     GeometryLabel::Compound
                 )
             })
-            .map(|ni| {
-                self.primitive_weight(ni)
-                    .retag(ni)
-                    .try_into()
-                    .unwrap_or_else(|_| unreachable!())
-            })
+            .map(|ni| self.primitive_weight(ni).retag(ni))
     }
 
     pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize> {

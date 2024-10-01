@@ -178,8 +178,8 @@ impl SpecctraDesign {
 
         ListWriter::new(writer).write_value(&ses)
     }
-    
-   /// Generates a [`Board<SpecctraMesadata>`] from the current PCB data.
+
+    /// Generates a [`Board<SpecctraMesadata>`] from the current PCB data.
     ///
     /// This function takes the internal `Pcb` structure and transforms it into a [`Board`] object,
     /// which is used for layout and routing operations. The board is initialized with [`SpecctraMesadata`],
@@ -193,31 +193,29 @@ impl SpecctraDesign {
         )));
 
         // mapping of pin -> net prepared for adding pins
-        let pin_nets = HashMap::<String, usize>::from_iter(
-            self.pcb
-                .network
-                .nets
-                .iter()
-                .map(|net_pin_assignments| {
-                    // resolve the id so we don't work with strings
-                    let net = board
-                        .layout()
-                        .drawing()
-                        .rules()
-                        .netname_net(&net_pin_assignments.name)
-                        .unwrap();
+        let pin_nets = self.pcb
+            .network
+            .nets
+            .iter()
+            // flatten the nested iters into a single stream of tuples
+            .flat_map(|net_pin_assignments| {
+                // resolve the id so we don't work with strings
+                let net = board
+                    .layout()
+                    .drawing()
+                    .rules()
+                    .netname_net(&net_pin_assignments.name)
+                    .unwrap();
 
-                    // take the list of pins
-                    // and for each pin id output (pin id, net id)
-                    net_pin_assignments
-                        .pins
-                        .names
-                        .iter()
-                        .map(move |pinname| (pinname.clone(), net))
-                })
-                // flatten the nested iters into a single stream of tuples
-                .flatten(),
-        );
+                // take the list of pins
+                // and for each pin id output (pin id, net id)
+                net_pin_assignments
+                    .pins
+                    .names
+                    .iter()
+                    .map(move |pinname| (pinname.clone(), net))
+            })
+            .collect::<HashMap<String, usize>>();
 
         // add pins from components
         for component in &self.pcb.placement.components {
@@ -416,7 +414,7 @@ impl SpecctraDesign {
 
     fn layer(
         board: &Board<SpecctraMesadata>,
-        layers: &Vec<Layer>,
+        layers: &[Layer],
         layername: &str,
         front: bool,
     ) -> usize {
@@ -571,7 +569,7 @@ impl SpecctraDesign {
         board: &mut Board<SpecctraMesadata>,
         place: PointWithRotation,
         pin: PointWithRotation,
-        coords: &Vec<structure::Point>,
+        coords: &[structure::Point],
         width: f64,
         layer: usize,
         net: usize,
@@ -632,7 +630,7 @@ impl SpecctraDesign {
         board: &mut Board<SpecctraMesadata>,
         place: PointWithRotation,
         pin: PointWithRotation,
-        coords: &Vec<structure::Point>,
+        coords: &[structure::Point],
         width: f64,
         layer: usize,
         net: usize,
@@ -667,7 +665,7 @@ impl SpecctraDesign {
             let index = board.add_poly_fixed_dot_infringably(
                 FixedDotWeight {
                     circle: Circle {
-                        pos: Self::pos(place, pin, coord.x, coord.y).into(),
+                        pos: Self::pos(place, pin, coord.x, coord.y),
                         r: width / 2.0,
                     },
                     layer,

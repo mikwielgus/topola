@@ -212,7 +212,7 @@ pub struct Library {
 
 impl Library {
     pub fn find_padstack_by_name(&self, name: &str) -> Option<&Padstack> {
-        self.padstacks.iter().find(|padstack| &padstack.name == name)
+        self.padstacks.iter().find(|padstack| padstack.name == name)
     }
 }
 

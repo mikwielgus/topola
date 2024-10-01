@@ -67,7 +67,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
                 self.layout
                     .add_lone_loose_seg(
                         dot,
-                        into.into(),
+                        into,
                         LoneLooseSegWeight {
                             width,
                             layer,
@@ -130,10 +130,10 @@ impl<'a, R: AccessRules> Draw<'a, R> {
     ) -> Result<CaneHead, DrawException> {
         let tangent = self
             .guide()
-            .head_around_bend_segment(&head, around.into(), cw, width)?;
+            .head_around_bend_segment(&head, around, cw, width)?;
         let offset = self
             .guide()
-            .head_around_bend_offset(&head, around.into(), width);
+            .head_around_bend_offset(&head, around, width);
 
         self.cane_around(
             head,

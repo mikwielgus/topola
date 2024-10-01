@@ -81,13 +81,12 @@ fn _tangents(circle1: Circle, circle2: Circle) -> Result<[CanonicalLine; 4], ()>
 }
 
 fn cast_point_to_canonical_line(pt: Point, line: CanonicalLine) -> Point {
-    return (
+    (
         (line.b * (line.b * pt.x() - line.a * pt.y()) - line.a * line.c)
             / (line.a * line.a + line.b * line.b),
         (line.a * (-line.b * pt.x() + line.a * pt.y()) - line.b * line.c)
             / (line.a * line.a + line.b * line.b),
-    )
-        .into();
+    ).into()
 }
 
 fn tangent_point_pairs(
@@ -193,6 +192,7 @@ pub fn intersect_circle_segment(circle: &Circle, segment: &Line) -> Vec<Point> {
     let from = segment.start_point();
     let to = segment.end_point();
     let epsilon = 1e-9;
+    let interval01 = 0.0..=1.0;
 
     let a = delta.dot(delta);
     let b =
@@ -209,24 +209,24 @@ pub fn intersect_circle_segment(circle: &Circle, segment: &Line) -> Vec<Point> {
     if discriminant == 0.0 {
         let u = -b / (2.0 * a);
 
-        if u >= 0.0 && u <= 1.0 {
-            return [from + (to - from) * -b / (2.0 * a)].into();
+        return if interval01.contains(&u) {
+            vec![from + (to - from) * -b / (2.0 * a)]
         } else {
-            return [].into();
-        }
+            vec![]
+        };
     }
 
     let mut v = vec![];
 
     let u1 = (-b + discriminant.sqrt()) / (2.0 * a);
 
-    if u1 >= 0.0 && u1 <= 1.0 {
+    if interval01.contains(&u1) {
         v.push(from + (to - from) * u1);
     }
 
     let u2 = (-b - discriminant.sqrt()) / (2.0 * a);
 
-    if u2 >= 0.0 && u2 <= 1.0 {
+    if interval01.contains(&u2) {
         v.push(from + (to - from) * u2);
     }
 

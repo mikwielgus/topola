@@ -102,7 +102,7 @@ impl<'a, R: AccessRules> Tracer<'a, R> {
                 width,
             }) {
                 self.undo_path(trace, i);
-                return Err(err.into());
+                return Err(err);
             }
         }
 

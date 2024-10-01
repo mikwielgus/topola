@@ -357,7 +357,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                     GeometryLabel::Core
                 )
             })
-            .map(|ni| FixedDotIndex::new(ni))
+            .map(FixedDotIndex::new)
             .collect::<Vec<FixedDotIndex>>()
             .first()
             .unwrap();
@@ -418,7 +418,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         if let Some(outer) = self.primitive(cane.bend).outer() {
             self.update_this_and_outward_bows(outer).map_err(|err| {
                 let joint = self.primitive(cane.bend).other_joint(cane.dot);
-                self.remove_cane(&cane, joint.into());
+                self.remove_cane(&cane, joint);
                 err
             })?;
         }
@@ -426,11 +426,11 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         // Segs must not cross.
         if let Some(collision) = self.detect_collision(cane.seg.into()) {
             let joint = self.primitive(cane.bend).other_joint(cane.dot);
-            self.remove_cane(&cane, joint.into());
-            return Err(collision.into());
+            self.remove_cane(&cane, joint);
+            Err(collision.into())
+        } else {
+            Ok(cane)
         }
-
-        Ok(cane)
     }
 
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
@@ -453,7 +453,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
             if let Some(inner) = rail_primitive.inner() {
                 let from = guide
                     .head_around_bend_segment(
-                        &from_head.into(),
+                        &from_head,
                         inner.into(),
                         true,
                         self.primitive(rail).width(),
@@ -461,14 +461,14 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                     .end_point();
                 let to = guide
                     .head_around_bend_segment(
-                        &to_head.into(),
+                        &to_head,
                         inner.into(),
                         false,
                         self.primitive(rail).width(),
                     )?
                     .end_point();
                 let offset = guide.head_around_bend_offset(
-                    &from_head.into(),
+                    &from_head,
                     inner.into(),
                     self.primitive(rail).width(),
                 );
@@ -495,7 +495,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                 let core = rail_primitive.core();
                 let from = guide
                     .head_around_dot_segment(
-                        &from_head.into(),
+                        &from_head,
                         core.into(),
                         true,
                         self.primitive(rail).width(),
@@ -503,14 +503,14 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                     .end_point();
                 let to = guide
                     .head_around_dot_segment(
-                        &to_head.into(),
+                        &to_head,
                         core.into(),
                         false,
                         self.primitive(rail).width(),
                     )?
                     .end_point();
                 let offset = guide.head_around_dot_offset(
-                    &from_head.into(),
+                    &from_head,
                     core.into(),
                     self.primitive(rail).width(),
                 );
@@ -659,7 +659,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         self.geometry_with_rtree.move_dot(dot, to);
 
         for limb in dot.primitive(self).limbs() {
-            if let Some(infringement) = self.detect_infringement_except(limb.into(), infringables) {
+            if let Some(infringement) = self.detect_infringement_except(limb, infringables) {
                 // Restore original state.
                 self.geometry_with_rtree.move_dot(dot, old_pos);
                 return Err(infringement);
@@ -713,10 +713,8 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                 }
             })
             .filter(|primitive_node| !self.are_connectable(node, *primitive_node))
-            .filter(|primitive_node| shape.intersects(&primitive_node.primitive(self).shape()))
-            .map(|primitive_node| primitive_node)
-            .next()
-            .and_then(|collidee| Some(Collision(shape, collidee)))
+            .find(|primitive_node| shape.intersects(&primitive_node.primitive(self).shape()))
+            .map(|collidee| Collision(shape, collidee))
     }
 }
 
@@ -784,7 +782,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                     }
                 })
                 .filter(|primitive_node| {
-                    maybe_except.is_some_and(|except| !except.contains(&primitive_node))
+                    maybe_except.is_some_and(|except| !except.contains(primitive_node))
                 }),
         )
     }
@@ -796,7 +794,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         let limiting_shape = node.primitive(self).shape().inflate(
             node.primitive(self)
                 .maybe_net()
-                .and_then(|net| Some(self.rules.largest_clearance(Some(net))))
+                .map(|net| self.rules.largest_clearance(Some(net)))
                 .unwrap_or(0.0),
         );
 
@@ -929,13 +927,12 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     fn test_if_looses_dont_infringe_each_other(&self) -> bool {
         !self
             .primitive_nodes()
-            .filter(|node| match node {
+            .filter(|node| matches!(node,
                 PrimitiveIndex::LooseDot(..)
                 | PrimitiveIndex::LoneLooseSeg(..)
                 | PrimitiveIndex::SeqLooseSeg(..)
-                | PrimitiveIndex::LooseBend(..) => true,
-                _ => false,
-            })
+                | PrimitiveIndex::LooseBend(..)
+            ))
             .any(|node| {
                 self.find_infringement(
                     node,
@@ -947,13 +944,12 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                                 None
                             }
                         })
-                        .filter(|primitive_node| match primitive_node {
+                        .filter(|primitive_node| matches!(primitive_node,
                             PrimitiveIndex::LooseDot(..)
                             | PrimitiveIndex::LoneLooseSeg(..)
                             | PrimitiveIndex::SeqLooseSeg(..)
-                            | PrimitiveIndex::LooseBend(..) => true,
-                            _ => false,
-                        }),
+                            | PrimitiveIndex::LooseBend(..)
+                        )),
                 )
                 .is_some()
             })

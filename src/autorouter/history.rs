@@ -11,7 +11,7 @@ pub enum HistoryError {
     NoNextCommand,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct History {
     done: Vec<Command>,
     undone: Vec<Command>,
@@ -19,10 +19,7 @@ pub struct History {
 
 impl History {
     pub fn new() -> Self {
-        Self {
-            done: vec![],
-            undone: vec![],
-        }
+        Self::default()
     }
 
     pub fn destruct(self) -> (Vec<Command>, Vec<Command>) {

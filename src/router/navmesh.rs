@@ -367,7 +367,7 @@ impl<'a> IntoNeighbors for &'a Navmesh {
         Box::new(
             self.graph
                 .neighbors(vertex.petgraph_index())
-                .map(|ni| NavvertexIndex(ni)),
+                .map(NavvertexIndex),
         )
     }
 }

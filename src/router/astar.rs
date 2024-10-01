@@ -111,7 +111,7 @@ where
         graph: &'a G,
         edge: <&'a G as IntoEdgeReferences>::EdgeRef,
     ) -> Option<K>;
-    fn remove_probe<'a>(&mut self, graph: &'a G);
+    fn remove_probe(&mut self, graph: &G);
     fn estimate_cost(&mut self, graph: &G, node: G::NodeId) -> K;
 }
 
@@ -198,7 +198,7 @@ where
         let zero_score = K::default();
         this.scores.insert(start, zero_score);
         this.visit_next.push(MinScored(
-            strategy.estimate_cost(&&this.graph, start),
+            strategy.estimate_cost(&this.graph, start),
             start,
         ));
         this

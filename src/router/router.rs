@@ -109,11 +109,11 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
         let width = self.trace.width;
 
         self.tracer
-            .rework_path(navmesh, &mut self.trace, &new_path[..], width)
+            .rework_path(navmesh, self.trace, &new_path[..], width)
             .unwrap();
 
         self.tracer
-            .finish(navmesh, &mut self.trace, self.target, width)
+            .finish(navmesh, self.trace, self.target, width)
             .ok()
     }
 
@@ -205,11 +205,11 @@ impl<'a, R: AccessRules> Router<'a, R> {
     }
 
     pub fn layout_mut(&mut self) -> &mut Layout<R> {
-        &mut self.layout
+        self.layout
     }
 
     pub fn layout(&self) -> &Layout<R> {
-        &self.layout
+        self.layout
     }
 
     pub fn options(&self) -> RouterOptions {

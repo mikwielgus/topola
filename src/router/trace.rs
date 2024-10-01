@@ -70,7 +70,7 @@ impl TraceStepper {
         cw: bool,
         width: f64,
     ) -> Result<CaneHead, TracerException> {
-        Ok(Draw::new(tracer.layout).cane_around_dot(head, around.into(), cw, width)?)
+        Ok(Draw::new(tracer.layout).cane_around_dot(head, around, cw, width)?)
     }
 
     fn wrap_around_loose_bend(

@@ -88,7 +88,7 @@ impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
         let mut gear = bend;
 
         while let Some(outer) = self.drawing.primitive(gear).outer() {
-            v.append(&mut self.bend_bow(outer.into()));
+            v.append(&mut self.bend_bow(outer));
             gear = outer;
         }
 

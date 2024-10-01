@@ -37,13 +37,12 @@ impl<'a, R: AccessRules> Poly<'a, R> {
     }
 
     fn is_apex(&self, dot: FixedDotIndex) -> bool {
-        self.layout
+        !self.layout
             .drawing()
             .primitive(dot)
             .segs()
             .iter()
-            .find(|seg| matches!(seg, SegIndex::Fixed(..)))
-            .is_none()
+            .any(|seg| matches!(seg, SegIndex::Fixed(..)))
             && self.layout.drawing().primitive(dot).bends().is_empty()
     }
 }
@@ -84,7 +83,7 @@ impl<'a, R: AccessRules> MakePolyShape for Poly<'a, R> {
                             };
 
                             if self.is_apex(dot) {
-                                return None;
+                                None
                             } else {
                                 Some(
                                     self.layout
@@ -164,13 +163,13 @@ pub struct PourPolyWeight {
     pub maybe_net: Option<usize>,
 }
 
-impl<'a> GetLayer for PourPolyWeight {
+impl GetLayer for PourPolyWeight {
     fn layer(&self) -> usize {
         self.layer
     }
 }
 
-impl<'a> GetMaybeNet for PourPolyWeight {
+impl GetMaybeNet for PourPolyWeight {
     fn maybe_net(&self) -> Option<usize> {
         self.maybe_net
     }

@@ -16,16 +16,14 @@ pub struct PinSelector {
     pub layer: String,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct PinSelection {
     selectors: HashSet<PinSelector>,
 }
 
 impl PinSelection {
     pub fn new() -> Self {
-        Self {
-            selectors: HashSet::new(),
-        }
+        Self::default()
     }
 
     pub fn new_select_layer(board: &Board<impl AccessMesadata>, layer: usize) -> Self {
@@ -100,16 +98,14 @@ pub struct BandSelector {
     pub band: BandName,
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct BandSelection {
     selectors: HashSet<BandSelector>,
 }
 
 impl BandSelection {
     pub fn new() -> Self {
-        Self {
-            selectors: HashSet::new(),
-        }
+        Self::default()
     }
 
     fn node_selector(
@@ -141,7 +137,7 @@ impl BandSelection {
     }
 
     fn deselect(&mut self, selector: &BandSelector) {
-        self.selectors.remove(&selector);
+        self.selectors.remove(selector);
     }
 
     pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
@@ -154,7 +150,7 @@ impl BandSelection {
     }
 }
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Selection {
     pub pin_selection: PinSelection,
     pub band_selection: BandSelection,
@@ -162,10 +158,7 @@ pub struct Selection {
 
 impl Selection {
     pub fn new() -> Self {
-        Self {
-            pin_selection: PinSelection::new(),
-            band_selection: BandSelection::new(),
-        }
+        Self::default()
     }
 
     pub fn toggle_at_node(&mut self, board: &Board<impl AccessMesadata>, node: NodeIndex) {

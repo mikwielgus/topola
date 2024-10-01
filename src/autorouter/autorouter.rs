@@ -124,13 +124,10 @@ impl<M: AccessMesadata> Autorouter<M> {
         options: AutorouterOptions,
     ) -> Result<CompareDetoursExecutionStepper, AutorouterError> {
         let ratlines = self.selected_ratlines(selection);
-        let ratline1 = *ratlines
-            .get(0)
-            .ok_or(AutorouterError::NeedExactlyTwoRatlines)?;
-        let ratline2 = *ratlines
-            .get(1)
-            .ok_or(AutorouterError::NeedExactlyTwoRatlines)?;
-        self.compare_detours_ratlines(ratline1, ratline2, options)
+        if ratlines.len() < 2 {
+            return Err(AutorouterError::NeedExactlyTwoRatlines);
+        }
+        self.compare_detours_ratlines(ratlines[0], ratlines[1], options)
     }
 
     pub(super) fn compare_detours_ratlines(
