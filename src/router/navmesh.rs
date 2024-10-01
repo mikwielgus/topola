@@ -206,7 +206,7 @@ impl Navmesh {
                 let mut gear =
                     Into::<GearIndex>::into(Into::<BinavvertexNodeIndex>::into(trianvertex));
 
-                if options.squeeze_under_bands {
+                if options.squeeze_through_under_bands {
                     Self::add_node_to_graph_and_map_as_binavvertex(
                         &mut graph,
                         &mut map,

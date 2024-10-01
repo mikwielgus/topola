@@ -41,7 +41,7 @@ impl MenuBar {
                 presort_by_pairwise_detours: false,
                 router_options: RouterOptions {
                     wrap_around_bands: true,
-                    squeeze_under_bands: true,
+                    squeeze_through_under_bands: true,
                 },
             },
             is_placing_via: false,
@@ -199,8 +199,8 @@ impl MenuBar {
                                 tr.text("presort-by-pairwise-detours"),
                             );
                             ui.checkbox(
-                                &mut self.autorouter_options.router_options.squeeze_under_bands,
-                                tr.text("squeeze-under-bands"),
+                                &mut self.autorouter_options.router_options.squeeze_through_under_bands,
+                                tr.text("squeeze-through-under-bands"),
                             );
                             ui.checkbox(
                                 &mut self.autorouter_options.router_options.wrap_around_bands,

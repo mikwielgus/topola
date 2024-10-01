@@ -24,7 +24,7 @@ action-undo = Undo
 action-redo = Redo
 
 presort-by-pairwise-detours = Presort by Pairwise Detours
-squeeze-under-bands = Squeeze under Bands
+squeeze-through-under-bands = Squeeze through under Bands
 wrap-around-bands = Wrap around Bands
 
 zoom-to-fit = Zoom to Fit

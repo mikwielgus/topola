@@ -34,7 +34,7 @@ use super::{
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct RouterOptions {
     pub wrap_around_bands: bool,
-    pub squeeze_under_bands: bool,
+    pub squeeze_through_under_bands: bool,
 }
 
 #[derive(Error, Debug, Clone)]

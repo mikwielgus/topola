@@ -33,7 +33,7 @@ fn main() -> Result<(), std::io::Error> {
                 presort_by_pairwise_detours: false,
                 router_options: RouterOptions {
                     wrap_around_bands: true,
-                    squeeze_under_bands: false,
+                    squeeze_through_under_bands: false,
                 },
             },
         ));
