@@ -170,9 +170,9 @@ impl App {
         false
     }
 
-    fn load_specctra_dsn(
+    fn load_specctra_dsn<I: std::io::BufRead>(
         &mut self,
-        input: std::io::Result<std::io::BufReader<std::fs::File>>,
+        input: std::io::Result<I>,
     ) -> Result<(), String> {
         let tr = &self.translator;
         let bufread = input.map_err(|err| format!("{}; {}", tr.text("error-file-load"), err))?;
