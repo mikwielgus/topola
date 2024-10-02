@@ -45,15 +45,28 @@ fn main() -> eframe::Result<()> {
 // Build to Web.
 #[cfg(target_arch = "wasm32")]
 fn main() {
+    use eframe::wasm_bindgen::JsCast;
+
     // Redirect `log` message to `console.log`:
     eframe::WebLogger::init(log::LevelFilter::Debug).ok();
 
     let web_options = eframe::WebOptions::default();
 
     wasm_bindgen_futures::spawn_local(async {
+        let document = eframe::web_sys::window()
+            .expect("No window")
+            .document()
+            .expect("No document");
+
+        let canvas = document
+            .get_element_by_id("topola-egui")
+            .expect("Failed to find the canvas id")
+            .dyn_into::<eframe::web_sys::HtmlCanvasElement>()
+            .expect("topola-egui was not a HtmlCanvasElement");
+
         let start_result = eframe::WebRunner::new()
             .start(
-                "topola-egui",
+                canvas,
                 web_options,
                 Box::new(|cc| Ok(Box::new(App::new(cc, langid!("en-US"))))),
             )
