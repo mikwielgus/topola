@@ -7,6 +7,7 @@ use topola::{
             InvokerStatus,
         },
     },
+    board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     router::{navmesh::Navmesh, trace::TraceStepper},
@@ -105,26 +106,17 @@ impl GetObstacles for ActivityStepper {
     }
 }
 
-pub struct ActivityWithStatus {
+pub struct ActivityStepperWithStatus {
     activity: ActivityStepper,
     maybe_status: Option<ActivityStatus>,
 }
 
-impl ActivityWithStatus {
-    pub fn new_execution(execution: ExecutionStepper) -> ActivityWithStatus {
+impl ActivityStepperWithStatus {
+    pub fn new_execution(execution: ExecutionStepper) -> ActivityStepperWithStatus {
         Self {
             activity: ActivityStepper::Execution(execution),
             maybe_status: None,
         }
-    }
-
-    pub fn step(
-        &mut self,
-        invoker: &mut Invoker<SpecctraMesadata>,
-    ) -> Result<ActivityStatus, ActivityError> {
-        let status = self.activity.step(invoker)?;
-        self.maybe_status = Some(status.clone());
-        Ok(status.into())
     }
 
     pub fn maybe_status(&self) -> Option<ActivityStatus> {
@@ -132,25 +124,45 @@ impl ActivityWithStatus {
     }
 }
 
-impl GetMaybeNavmesh for ActivityWithStatus {
+impl Step<Invoker<SpecctraMesadata>, ActivityStatus, ActivityError, ()>
+    for ActivityStepperWithStatus
+{
+    fn step(
+        &mut self,
+        invoker: &mut Invoker<SpecctraMesadata>,
+    ) -> Result<ActivityStatus, ActivityError> {
+        let status = self.activity.step(invoker)?;
+        self.maybe_status = Some(status.clone());
+        Ok(status.into())
+    }
+}
+
+impl Abort<Invoker<SpecctraMesadata>> for ActivityStepperWithStatus {
+    fn abort(&mut self, invoker: &mut Invoker<SpecctraMesadata>) {
+        self.maybe_status = Some(ActivityStatus::Finished(String::from("aborted")));
+        self.activity.abort(invoker);
+    }
+}
+
+impl GetMaybeNavmesh for ActivityStepperWithStatus {
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         self.activity.maybe_navmesh()
     }
 }
 
-impl GetMaybeTrace for ActivityWithStatus {
+impl GetMaybeTrace for ActivityStepperWithStatus {
     fn maybe_trace(&self) -> Option<&TraceStepper> {
         self.activity.maybe_trace()
     }
 }
 
-impl GetGhosts for ActivityWithStatus {
+impl GetGhosts for ActivityStepperWithStatus {
     fn ghosts(&self) -> &[PrimitiveShape] {
         self.activity.ghosts()
     }
 }
 
-impl GetObstacles for ActivityWithStatus {
+impl GetObstacles for ActivityStepperWithStatus {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.activity.obstacles()
     }

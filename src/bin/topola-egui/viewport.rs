@@ -20,7 +20,7 @@ use topola::{
 };
 
 use crate::{
-    activity::ActivityWithStatus, layers::Layers, menu_bar::MenuBar, overlay::Overlay,
+    activity::ActivityStepperWithStatus, layers::Layers, menu_bar::MenuBar, overlay::Overlay,
     painter::Painter,
 };
 
@@ -42,7 +42,7 @@ impl Viewport {
         ctx: &egui::Context,
         top: &MenuBar,
         maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
-        maybe_activity: &mut Option<ActivityWithStatus>,
+        maybe_activity: &mut Option<ActivityStepperWithStatus>,
         maybe_overlay: &mut Option<Overlay>,
         maybe_layers: &Option<Layers>,
     ) -> egui::Rect {
@@ -67,7 +67,7 @@ impl Viewport {
         ctx: &egui::Context,
         top: &MenuBar,
         maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
-        maybe_activity: &mut Option<ActivityWithStatus>,
+        maybe_activity: &mut Option<ActivityStepperWithStatus>,
         maybe_overlay: &mut Option<Overlay>,
         maybe_layers: &Option<Layers>,
     ) -> egui::Rect {

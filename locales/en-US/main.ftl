@@ -22,6 +22,7 @@ action-measure-length = Measure Length
 
 action-undo = Undo
 action-redo = Redo
+action-abort = Abort
 
 presort-by-pairwise-detours = Presort by Pairwise Detours
 squeeze-through-under-bands = Squeeze through under Bands

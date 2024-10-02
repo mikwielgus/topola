@@ -11,10 +11,11 @@ use unic_langid::{langid, LanguageIdentifier};
 use topola::{
     autorouter::{invoker::Invoker, Autorouter},
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
+    stepper::Step,
 };
 
 use crate::{
-    activity::{ActivityStatus, ActivityWithStatus},
+    activity::{ActivityStatus, ActivityStepperWithStatus},
     error_dialog::ErrorDialog,
     file_receiver::FileReceiver,
     layers::Layers,
@@ -38,7 +39,7 @@ pub struct App {
     arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
 
     #[serde(skip)]
-    maybe_activity: Option<ActivityWithStatus>,
+    maybe_activity: Option<ActivityStepperWithStatus>,
 
     #[serde(skip)]
     content_channel: (Sender<String>, Receiver<String>),
@@ -50,10 +51,10 @@ pub struct App {
     viewport: Viewport,
 
     #[serde(skip)]
-    top: MenuBar,
+    menu_bar: MenuBar,
 
     #[serde(skip)]
-    bottom: StatusBar,
+    status_bar: StatusBar,
 
     #[serde(skip)]
     error_dialog: ErrorDialog,
@@ -78,8 +79,8 @@ impl Default for App {
             content_channel: channel(),
             history_channel: channel(),
             viewport: Viewport::new(),
-            top: MenuBar::new(),
-            bottom: StatusBar::new(),
+            menu_bar: MenuBar::new(),
+            status_bar: StatusBar::new(),
             error_dialog: ErrorDialog::new(),
             maybe_layers: None,
             maybe_design: None,
@@ -109,8 +110,8 @@ impl App {
     fn advance_state_by_dt(&mut self, dt: f32) {
         self.update_counter += dt;
 
-        while self.update_counter >= self.top.frame_timestep {
-            self.update_counter -= self.top.frame_timestep;
+        while self.update_counter >= self.menu_bar.frame_timestep {
+            self.update_counter -= self.menu_bar.frame_timestep;
 
             if !self.update_state() {
                 return;
@@ -200,7 +201,7 @@ impl eframe::App for App {
 
     /// Called each time the UI has to be repainted.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.top.update(
+        self.menu_bar.update(
             ctx,
             &self.translator,
             self.content_channel.0.clone(),
@@ -214,10 +215,10 @@ impl eframe::App for App {
 
         self.advance_state_by_dt(ctx.input(|i| i.stable_dt));
 
-        self.bottom
+        self.status_bar
             .update(ctx, &self.translator, &self.viewport, &self.maybe_activity);
 
-        if self.top.show_layer_manager {
+        if self.menu_bar.show_layer_manager {
             if let Some(ref mut layers) = self.maybe_layers {
                 if let Some(invoker) = self.arc_mutex_maybe_invoker.lock().unwrap().as_ref() {
                     layers.update(ctx, invoker.autorouter().board());
@@ -229,7 +230,7 @@ impl eframe::App for App {
 
         let _viewport_rect = self.viewport.update(
             ctx,
-            &self.top,
+            &self.menu_bar,
             &mut self.arc_mutex_maybe_invoker.lock().unwrap(),
             &mut self.maybe_activity,
             &mut self.maybe_overlay,

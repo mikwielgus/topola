@@ -11,11 +11,12 @@ use topola::{
     },
     router::RouterOptions,
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
+    stepper::Abort,
 };
 
 use crate::{
     action::{Action, Switch, Trigger},
-    activity::{ActivityStatus, ActivityWithStatus},
+    activity::{ActivityStatus, ActivityStepperWithStatus},
     app::execute,
     file_sender::FileSender,
     overlay::Overlay,
@@ -61,7 +62,7 @@ impl MenuBar {
         content_sender: Sender<String>,
         history_sender: Sender<String>,
         arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
-        maybe_activity: &mut Option<ActivityWithStatus>,
+        maybe_activity: &mut Option<ActivityStepperWithStatus>,
         viewport: &mut Viewport,
         maybe_overlay: &mut Option<Overlay>,
         maybe_design: &Option<SpecctraDesign>,
@@ -91,20 +92,35 @@ impl MenuBar {
             egui::Modifiers::CTRL,
             egui::Key::Q,
         ));
-        let mut autoroute = Trigger::new(Action::new(
-            tr.text("action-autoroute"),
+        let mut undo = Trigger::new(Action::new(
+            tr.text("action-undo"),
             egui::Modifiers::CTRL,
-            egui::Key::A,
+            egui::Key::Z,
+        ));
+        let mut redo = Trigger::new(Action::new(
+            tr.text("action-redo"),
+            egui::Modifiers::CTRL,
+            egui::Key::Y,
+        ));
+        let mut abort = Trigger::new(Action::new(
+            tr.text("action-abort"),
+            egui::Modifiers::NONE,
+            egui::Key::Escape,
+        ));
+        let mut remove_bands = Trigger::new(Action::new(
+            tr.text("action-remove-bands"),
+            egui::Modifiers::NONE,
+            egui::Key::Delete,
         ));
         let mut place_via = Switch::new(Action::new(
             tr.text("action-place-via"),
             egui::Modifiers::CTRL,
             egui::Key::P,
         ));
-        let mut remove_bands = Trigger::new(Action::new(
-            tr.text("action-remove-bands"),
-            egui::Modifiers::NONE,
-            egui::Key::Delete,
+        let mut autoroute = Trigger::new(Action::new(
+            tr.text("action-autoroute"),
+            egui::Modifiers::CTRL,
+            egui::Key::A,
         ));
         let mut compare_detours = Trigger::new(Action::new(
             tr.text("action-compare-detours"),
@@ -115,16 +131,6 @@ impl MenuBar {
             tr.text("action-measure-length"),
             egui::Modifiers::NONE,
             egui::Key::Plus,
-        ));
-        let mut undo = Trigger::new(Action::new(
-            tr.text("action-undo"),
-            egui::Modifiers::CTRL,
-            egui::Key::Z,
-        ));
-        let mut redo = Trigger::new(Action::new(
-            tr.text("action-redo"),
-            egui::Modifiers::CTRL,
-            egui::Key::Y,
         ));
 
         egui::TopBottomPanel::top("menu_bar")
@@ -150,6 +156,10 @@ impl MenuBar {
                     ui.menu_button(tr.text("menu-edit"), |ui| {
                         undo.button(ctx, ui);
                         redo.button(ctx, ui);
+
+                        ui.separator();
+
+                        abort.button(ctx, ui);
 
                         ui.separator();
 
@@ -199,7 +209,10 @@ impl MenuBar {
                                 tr.text("presort-by-pairwise-detours"),
                             );
                             ui.checkbox(
-                                &mut self.autorouter_options.router_options.squeeze_through_under_bands,
+                                &mut self
+                                    .autorouter_options
+                                    .router_options
+                                    .squeeze_through_under_bands,
                                 tr.text("squeeze-through-under-bands"),
                             );
                             ui.checkbox(
@@ -289,25 +302,20 @@ impl MenuBar {
                     }
                 } else if quit.consume_key_triggered(ctx, ui) {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                } else if autoroute.consume_key_triggered(ctx, ui) {
-                    if maybe_activity.as_mut().map_or(true, |activity| {
-                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
-                    }) {
-                        if let (Some(invoker), Some(ref mut overlay)) = (
-                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
-                            maybe_overlay,
-                        ) {
-                            let selection = overlay.selection().clone();
-                            overlay.clear_selection();
-                            maybe_activity.insert(ActivityWithStatus::new_execution(
-                                invoker.execute_stepper(Command::Autoroute(
-                                    selection.pin_selection,
-                                    self.autorouter_options,
-                                ))?,
-                            ));
+                } else if undo.consume_key_triggered(ctx, ui) {
+                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
+                        invoker.undo();
+                    }
+                } else if redo.consume_key_triggered(ctx, ui) {
+                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
+                        invoker.redo();
+                    }
+                } else if abort.consume_key_triggered(ctx, ui) {
+                    if let Some(activity) = maybe_activity {
+                        if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
+                            activity.abort(invoker);
                         }
                     }
-                } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
                 } else if remove_bands.consume_key_triggered(ctx, ui) {
                     if maybe_activity.as_mut().map_or(true, |activity| {
                         matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
@@ -318,9 +326,46 @@ impl MenuBar {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_activity.insert(ActivityWithStatus::new_execution(
+                            maybe_activity.insert(ActivityStepperWithStatus::new_execution(
                                 invoker.execute_stepper(Command::RemoveBands(
                                     selection.band_selection,
+                                ))?,
+                            ));
+                        }
+                    }
+                } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
+                } else if autoroute.consume_key_triggered(ctx, ui) {
+                    if maybe_activity.as_mut().map_or(true, |activity| {
+                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
+                    }) {
+                        if let (Some(invoker), Some(ref mut overlay)) = (
+                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
+                            maybe_overlay,
+                        ) {
+                            let selection = overlay.selection().clone();
+                            overlay.clear_selection();
+                            maybe_activity.insert(ActivityStepperWithStatus::new_execution(
+                                invoker.execute_stepper(Command::Autoroute(
+                                    selection.pin_selection,
+                                    self.autorouter_options,
+                                ))?,
+                            ));
+                        }
+                    }
+                } else if compare_detours.consume_key_triggered(ctx, ui) {
+                    if maybe_activity.as_mut().map_or(true, |activity| {
+                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
+                    }) {
+                        if let (Some(invoker), Some(ref mut overlay)) = (
+                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
+                            maybe_overlay,
+                        ) {
+                            let selection = overlay.selection().clone();
+                            overlay.clear_selection();
+                            maybe_activity.insert(ActivityStepperWithStatus::new_execution(
+                                invoker.execute_stepper(Command::CompareDetours(
+                                    selection.pin_selection,
+                                    self.autorouter_options,
                                 ))?,
                             ));
                         }
@@ -335,41 +380,14 @@ impl MenuBar {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_activity.insert(ActivityWithStatus::new_execution(
+                            maybe_activity.insert(ActivityStepperWithStatus::new_execution(
                                 invoker.execute_stepper(Command::MeasureLength(
                                     selection.band_selection,
                                 ))?,
                             ));
                         }
                     }
-                } else if undo.consume_key_triggered(ctx, ui) {
-                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
-                        invoker.undo();
-                    }
-                } else if redo.consume_key_triggered(ctx, ui) {
-                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
-                        invoker.redo();
-                    }
-                } else if compare_detours.consume_key_triggered(ctx, ui) {
-                    if maybe_activity.as_mut().map_or(true, |activity| {
-                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
-                    }) {
-                        if let (Some(invoker), Some(ref mut overlay)) = (
-                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
-                            maybe_overlay,
-                        ) {
-                            let selection = overlay.selection().clone();
-                            overlay.clear_selection();
-                            maybe_activity.insert(ActivityWithStatus::new_execution(
-                                invoker.execute_stepper(Command::CompareDetours(
-                                    selection.pin_selection,
-                                    self.autorouter_options,
-                                ))?,
-                            ));
-                        }
-                    }
                 }
-
                 Ok::<(), InvokerError>(())
             })
             .inner
