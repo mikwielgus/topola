@@ -13,6 +13,7 @@ steps:
       CARG_TERM_COLOR: always
     commands:
       - rustup default "$CHANNEL"
+      - cargo install --locked trunk
       - trunk build
     when:
       event: [pull_request, push, tag]
