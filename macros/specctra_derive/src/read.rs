@@ -4,8 +4,8 @@ use syn::ext::IdentExt;
 use syn::Type::Path;
 use syn::{Data, DeriveInput, Field, Fields};
 
-use crate::attr_content;
-use crate::attr_present;
+use crate::parse_attributes;
+use crate::FieldType;
 
 pub fn impl_read(input: &DeriveInput) -> TokenStream {
     let name = &input.ident;
@@ -46,34 +46,41 @@ fn impl_body(data: &Data) -> TokenStream {
 fn impl_field(field: &Field) -> TokenStream {
     let name = &field.ident;
     let name_str = name.as_ref().expect("field name").unraw();
+    let field_type = parse_attributes(&field.attrs);
 
-    if attr_present(&field.attrs, "anon") {
-        quote! {
-            #name: tokenizer.read_value()?,
-        }
-    } else if let Some(dsn_name) = attr_content(&field.attrs, "vec") {
-        quote! {
-            #name: tokenizer.read_named_array(#dsn_name)?,
-        }
-    } else if attr_present(&field.attrs, "anon_vec") {
-        quote! {
-            #name: tokenizer.read_array()?,
-        }
-    } else {
-        if let Path(type_path) = &field.ty {
-            let segments = &type_path.path.segments;
-            if segments.len() == 1 {
-                let ident = &segments.first().unwrap().ident;
-                if ident == "Option" {
-                    return quote! {
-                        #name: tokenizer.read_optional(stringify!(#name_str))?,
-                    };
+    match field_type {
+        FieldType::Anonymous => {
+            quote! {
+                #name: tokenizer.read_value()?,
+            }
+        },
+        FieldType::AnonymousVec => {
+            quote! {
+                #name: tokenizer.read_array()?,
+            }
+        },
+        FieldType::NamedVec(valid_aliases) => {
+            quote! {
+                #name: tokenizer.read_array_with_alias(&[#(#valid_aliases),*])?,
+            }
+        },
+        FieldType::NotSpecified => {
+            if let Path(type_path) = &field.ty {
+                let segments = &type_path.path.segments;
+                if segments.len() == 1 {
+                    let ident = &segments.first().unwrap().ident;
+                    if ident == "Option" {
+                        return quote! {
+                            #name: tokenizer
+                                .read_optional(stringify!(#name_str))?,
+                        };
+                    }
                 }
             }
-        }
 
-        quote! {
-            #name: tokenizer.read_named(stringify!(#name_str))?,
+            quote! {
+                #name: tokenizer.read_named(stringify!(#name_str))?,
+            }
         }
     }
 }

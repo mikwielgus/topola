@@ -1,5 +1,6 @@
 use proc_macro::TokenStream;
-use syn::{Attribute, DeriveInput, LitStr};
+use syn::{Attribute, DeriveInput, LitStr, Meta, Token};
+use syn::punctuated::Punctuated;
 
 mod read;
 mod write;
@@ -16,16 +17,37 @@ pub fn derive_write(input: TokenStream) -> TokenStream {
     write::impl_write(&input).into()
 }
 
-fn attr_present(attrs: &Vec<Attribute>, name: &str) -> bool {
-    attrs
-        .iter()
-        .find(|attr| attr.path().is_ident(name))
-        .is_some()
+enum FieldType {
+    Anonymous,
+    AnonymousVec,
+    NamedVec(Vec<LitStr>),
+    NotSpecified,
 }
 
-fn attr_content(attrs: &Vec<Attribute>, name: &str) -> Option<String> {
-    attrs
-        .iter()
-        .find(|attr| attr.path().is_ident(name))
-        .and_then(|attr| Some(attr.parse_args::<LitStr>().expect("string literal").value()))
+fn parse_attributes(attrs: &Vec<Attribute>) -> FieldType {
+    for attr in attrs {
+        match &attr.meta {
+            Meta::Path(path) => {
+                if path.is_ident("anon") {
+                    return FieldType::Anonymous;
+                } else if path.is_ident("anon_vec") {
+                    return FieldType::AnonymousVec;
+                }
+            },
+            Meta::List(list) if list.path.is_ident("vec") => {
+                return FieldType::NamedVec(list
+                    .parse_args_with(
+                        Punctuated::<LitStr, Token![,]>::parse_terminated
+                    )
+                    .expect("#[vec(...)] must contain a list of string literals")
+                    .iter()
+                    .cloned()
+                    .collect()
+                );
+            },
+            _ => (),
+        }
+    }
+
+    FieldType::NotSpecified
 }

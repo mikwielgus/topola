@@ -388,6 +388,13 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         &mut self,
         name: &'static str,
     ) -> Result<Vec<T>, ParseErrorContext> {
+        self.read_array_with_alias(&[name])
+    }
+
+    pub fn read_array_with_alias<T: ReadDsn<R>>(
+        &mut self,
+        valid_names: &[&'static str],
+    ) -> Result<Vec<T>, ParseErrorContext> {
         let mut array = Vec::<T>::new();
         loop {
             let input = self.consume_token()?;
@@ -395,7 +402,7 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
                 name: ref actual_name,
             } = input.token
             {
-                if actual_name == name {
+                if valid_names.contains(&actual_name.to_ascii_lowercase().as_ref()) {
                     let value = self.read_value::<T>()?;
                     self.consume_token()?.expect_end()?;
                     array.push(value);

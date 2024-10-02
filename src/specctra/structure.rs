@@ -159,7 +159,7 @@ pub struct Grid {
 #[derive(ReadDsn, WriteSes, Debug)]
 pub struct StructureRule {
     pub width: Option<f32>,
-    #[vec("clearance")]
+    #[vec("clearance", "clear")]
     pub clearances: Vec<Clearance>,
 }
 
