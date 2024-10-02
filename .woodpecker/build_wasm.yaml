@@ -1,0 +1,18 @@
+matrix:
+  include:
+    - CHANNEL: stable
+      FEATURES: egui,disable_contracts
+    - CHANNEL: nightly
+      FEATURES: egui
+
+steps:
+  build_wasm:
+    image: rust
+    environment:
+      RUST_BACKTRACE: 1
+      CARG_TERM_COLOR: always
+    commands:
+      - rustup default "$CHANNEL"
+      - trunk build
+    when:
+      event: [pull_request, push, tag]
