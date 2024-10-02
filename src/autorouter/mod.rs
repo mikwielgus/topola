@@ -1,3 +1,5 @@
+//! Manages autorouting process, under work for now
+
 pub mod autoroute;
 mod autorouter;
 pub mod command;

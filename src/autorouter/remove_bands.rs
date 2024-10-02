@@ -1,3 +1,8 @@
+//! Provides functionality to remove bands from the layout in an
+//! autorouting context. It defines a struct that interacts with the autorouter
+//! to remove selected bands, and implements necessary traits for working
+//! with navigation meshes, traces, and obstacles.
+
 use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,

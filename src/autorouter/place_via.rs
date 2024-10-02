@@ -1,3 +1,7 @@
+//! Provides functionality for placing vias in a PCB layout, manages
+//! the process of inserting a via with a specified weight and
+//! checks if the via has already been placed.
+
 use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,

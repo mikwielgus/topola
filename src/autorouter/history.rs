@@ -1,3 +1,7 @@
+//! Manages command history operations, allowing for undoing and redoing commands.
+//! Handles error scenarios related to command history, maintaining lists of executed
+//! and undone commands for easy navigation.
+
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 

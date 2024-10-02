@@ -1,3 +1,7 @@
+//! Manages autorouting of ratlines in a layout, tracking status and processed
+//!  routing steps. Provides access to navigation meshes, traces, ghost shapes,
+//! and obstacles encountered during routing.
+
 use petgraph::graph::EdgeIndex;
 
 use crate::{
@@ -13,14 +17,23 @@ use super::{
     Autorouter, AutorouterError, AutorouterOptions,
 };
 
+/// Represents the current status of the autoroute operation.
 pub enum AutorouteStatus {
+    /// The autoroute is currently running and in progress.
     Running,
+    /// A specific segment has been successfully routed.
     Routed(BandTermsegIndex),
+    /// The autoroute process has completed successfully.
     Finished,
 }
 
 impl TryInto<()> for AutorouteStatus {
     type Error = ();
+    /// Attempts to get the [`Result`] from the  [`AutorouteStatus`].
+    ///
+    /// This implementation allows transitioning from [`AutorouteStatus`] to a 
+    /// [`Result`]. It returns success for the  [`AutorouteStatus::Finished`] state
+    /// or an error for [`AutorouteStatus::Running`] or [`AutorouteStatus::Routed`] states.
     fn try_into(self) -> Result<(), ()> {
         match self {
             AutorouteStatus::Running => Err(()),
@@ -30,14 +43,24 @@ impl TryInto<()> for AutorouteStatus {
     }
 }
 
+/// Manages the autorouting process across multiple ratlines.
 pub struct AutorouteExecutionStepper {
+    /// An iterator over ratlines that tracks which segments still need to be routed.
     ratlines_iter: Box<dyn Iterator<Item = EdgeIndex<usize>>>,
+    /// The options for the autorouting process, defining how routing should be carried out.
     options: AutorouterOptions,
+    /// Stores the current route being processed, if any.
     route: Option<RouteStepper>,
+    /// Keeps track of the current ratline being routed, if one is active.
     curr_ratline: Option<EdgeIndex<usize>>,
 }
 
 impl AutorouteExecutionStepper {
+    /// Initializes a new [`AutorouteExecutionStepper`] instance.
+    ///
+    /// This method sets up the routing process by accepting the execution properties.
+    /// It prepares the first ratline to route 
+    /// and stores the associated data for future routing steps.
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: impl IntoIterator<Item = EdgeIndex<usize>> + 'static,
@@ -120,24 +143,28 @@ impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, AutorouterError, ()
 }
 
 impl GetMaybeNavmesh for AutorouteExecutionStepper {
+    /// Retrieves an optional reference to the navigation mesh from the current route.
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         self.route.as_ref().map(|route| route.navmesh())
     }
 }
 
 impl GetMaybeTrace for AutorouteExecutionStepper {
+    /// Retrieves an optional reference to the trace from the current route.
     fn maybe_trace(&self) -> Option<&TraceStepper> {
         self.route.as_ref().map(|route| route.trace())
     }
 }
 
 impl GetGhosts for AutorouteExecutionStepper {
+    /// Retrieves ghost shapes from the current route.
     fn ghosts(&self) -> &[PrimitiveShape] {
         self.route.as_ref().map_or(&[], |route| route.ghosts())
     }
 }
 
 impl GetObstacles for AutorouteExecutionStepper {
+    /// Retrieves obstacles encountered during routing.
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.route.as_ref().map_or(&[], |route| route.obstacles())
     }

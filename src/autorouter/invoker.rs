@@ -1,3 +1,5 @@
+//! Manages the execution of routing commands within the autorouting system. 
+
 use std::cmp::Ordering;
 
 use contracts::debug_requires;

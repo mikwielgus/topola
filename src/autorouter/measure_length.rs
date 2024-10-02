@@ -1,3 +1,7 @@
+//! Provides functionality for measuring the total length of selected
+//! bands in a PCB layout. It interacts with the autorouter to calculate and return
+//! the length of specified band selections.
+
 use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,

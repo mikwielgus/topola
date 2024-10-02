@@ -1,3 +1,8 @@
+//! Defines data structures and methods for managing a graph
+//! used in layout triangulation and routing tasks. It includes vertex and edge
+//! structures for representing graph nodes and edges with associated metadata,
+//! as well as functions for constructing and manipulating these graphs.
+
 use std::collections::HashMap;
 
 use enum_dispatch::enum_dispatch;

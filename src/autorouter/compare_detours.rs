@@ -1,3 +1,8 @@
+//! Manages the comparison of detours between two ratlines, tracking their
+//! routing statuses and lengths. Facilitates stepwise processing of routing
+//! while providing access to navigation meshes, traces, ghost shapes, and
+//! obstacles encountered.
+
 use petgraph::graph::EdgeIndex;
 
 use crate::{
