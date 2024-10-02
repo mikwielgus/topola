@@ -22,9 +22,9 @@ impl Layers {
             .map(|(i, color)| {
                 let layername = board.mesadata().layer_layername(i);
 
-                if matches!(layername, Some("F.Cu")) {
+                if matches!(layername, Some("F.Cu") | Some("1")) {
                     egui::Color32::from_rgb(255, 52, 52)
-                } else if matches!(layername, Some("B.Cu")) {
+                } else if matches!(layername, Some("B.Cu") | Some("2")) {
                     egui::Color32::from_rgb(52, 52, 255)
                 } else if matches!(layername, Some("In1.Cu")) {
                     egui::Color32::from_rgb(127, 200, 127)
@@ -42,9 +42,9 @@ impl Layers {
             .map(|(i, color)| {
                 let layername = board.mesadata().layer_layername(i);
 
-                if matches!(layername, Some("F.Cu")) {
+                if matches!(layername, Some("F.Cu") | Some("1")) {
                     egui::Color32::from_rgb(255, 100, 100)
-                } else if matches!(layername, Some("B.Cu")) {
+                } else if matches!(layername, Some("B.Cu") | Some("2")) {
                     egui::Color32::from_rgb(100, 100, 255)
                 } else if matches!(layername, Some("In1.Cu")) {
                     egui::Color32::from_rgb(213, 236, 213)
