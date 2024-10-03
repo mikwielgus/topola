@@ -1,4 +1,4 @@
-//! Manages the execution of routing commands within the autorouting system. 
+//! Manages the execution of routing commands within the autorouting system.
 
 use std::cmp::Ordering;
 

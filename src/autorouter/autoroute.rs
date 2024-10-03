@@ -31,7 +31,7 @@ impl TryInto<()> for AutorouteStatus {
     type Error = ();
     /// Attempts to get the [`Result`] from the  [`AutorouteStatus`].
     ///
-    /// This implementation allows transitioning from [`AutorouteStatus`] to a 
+    /// This implementation allows transitioning from [`AutorouteStatus`] to a
     /// [`Result`]. It returns success for the  [`AutorouteStatus::Finished`] state
     /// or an error for [`AutorouteStatus::Running`] or [`AutorouteStatus::Routed`] states.
     fn try_into(self) -> Result<(), ()> {
@@ -59,7 +59,7 @@ impl AutorouteExecutionStepper {
     /// Initializes a new [`AutorouteExecutionStepper`] instance.
     ///
     /// This method sets up the routing process by accepting the execution properties.
-    /// It prepares the first ratline to route 
+    /// It prepares the first ratline to route
     /// and stores the associated data for future routing steps.
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
