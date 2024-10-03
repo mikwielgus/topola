@@ -22,7 +22,7 @@ use crate::{
     action::{Action, Switch, Trigger},
     activity::{ActivityStatus, ActivityStepperWithStatus},
     app::execute,
-    file_handler::{push_file_to_read, FileHandlerData},
+    file_handler::{handle_file, FileHandlerData},
     overlay::Overlay,
     translator::Translator,
     viewport::Viewport,
@@ -243,10 +243,9 @@ impl MenuBar {
 
                     execute(async move {
                         if let Some(file_handle) = task.await {
-                            push_file_to_read(&file_handle, content_sender, |data| {
+                            content_sender.send(handle_file(&file_handle, |data| {
                                 SpecctraDesign::load(data)
-                            })
-                            .await;
+                            }).await);
                             ctx.request_repaint();
                         }
                     });
@@ -285,14 +284,13 @@ impl MenuBar {
 
                     execute(async move {
                         if let Some(file_handle) = task.await {
-                            push_file_to_read(&file_handle, history_sender, |data| {
+                            history_sender.send(handle_file(&file_handle, |data| {
                                 match serde_json::from_reader(data) {
                                     Ok(history) => Ok(Ok(history)),
                                     Err(err) if err.is_io() => Err(err.into()),
                                     Err(err) => Ok(Err(err)),
                                 }
-                            })
-                            .await;
+                            }).await);
                             ctx.request_repaint();
                         }
                     });

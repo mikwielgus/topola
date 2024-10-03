@@ -46,19 +46,7 @@ impl io::BufRead for FileHandlerData {
     fhd_forward!(fn consume(&mut self, amt: usize));
 }
 
-#[inline]
-pub async fn push_file_to_read<R, E, C>(
-    file_handle: &rfd::FileHandle,
-    sender: Sender<Result<R, E>>,
-    callback: C,
-) where
-    E: From<std::io::Error>,
-    C: FnOnce(FileHandlerData) -> Result<R, E>,
-{
-    let _ = sender.send(handle_text(&file_handle, callback).await);
-}
-
-async fn handle_text<R, E, C>(file_handle: &rfd::FileHandle, callback: C) -> Result<R, E>
+pub async fn handle_file<R, E, C>(file_handle: &rfd::FileHandle, callback: C) -> Result<R, E>
 where
     E: From<std::io::Error>,
     C: FnOnce(FileHandlerData) -> Result<R, E>,
