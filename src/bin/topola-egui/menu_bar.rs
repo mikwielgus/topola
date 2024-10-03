@@ -254,8 +254,10 @@ impl MenuBar {
                             ctx.request_repaint();
                         }
                     });
-                } else if export_session.consume_key_triggered(ctx, ui) {
-                    if let Some(workspace) = maybe_workspace {
+                } else if quit.consume_key_triggered(ctx, ui) {
+                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                } else if let Some(workspace) = maybe_workspace {
+                    if export_session.consume_key_triggered(ctx, ui) {
                         let invoker = workspace.invoker.lock().unwrap();
                         let ctx = ui.ctx().clone();
                         let board = invoker.autorouter().board();
@@ -282,9 +284,7 @@ impl MenuBar {
                                 ctx.request_repaint();
                             }
                         });
-                    }
-                } else if import_history.consume_key_triggered(ctx, ui) {
-                    if let Some(workspace) = maybe_workspace {
+                    } else if import_history.consume_key_triggered(ctx, ui) {
                         let ctx = ctx.clone();
                         let task = rfd::AsyncFileDialog::new().pick_file();
                         let history_sender = workspace.history_channel.0.clone();
@@ -302,9 +302,7 @@ impl MenuBar {
                                 ctx.request_repaint();
                             }
                         });
-                    }
-                } else if export_history.consume_key_triggered(ctx, ui) {
-                    if let Some(workspace) = maybe_workspace {
+                    } else if export_history.consume_key_triggered(ctx, ui) {
                         let invoker = workspace.invoker.lock().unwrap();
                         let ctx = ctx.clone();
                         let task = rfd::AsyncFileDialog::new().save_file();
@@ -319,28 +317,18 @@ impl MenuBar {
                                 ctx.request_repaint();
                             }
                         });
-                    }
-                } else if quit.consume_key_triggered(ctx, ui) {
-                    ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                } else if undo.consume_key_triggered(ctx, ui) {
-                    if let Some(workspace) = maybe_workspace {
+                    } else if undo.consume_key_triggered(ctx, ui) {
                         workspace.invoker.lock().unwrap().undo();
-                    }
-                } else if redo.consume_key_triggered(ctx, ui) {
-                    if let Some(workspace) = maybe_workspace {
+                    } else if redo.consume_key_triggered(ctx, ui) {
                         workspace.invoker.lock().unwrap().redo();
-                    }
-                } else if abort.consume_key_triggered(ctx, ui) {
-                    if let Some(workspace) = maybe_workspace {
+                    } else if abort.consume_key_triggered(ctx, ui) {
                         if let Some(activity) = &mut workspace.maybe_activity {
                             activity.abort(&mut ActivityContext {
                                 interaction: InteractionContext {},
                                 invoker: &mut *workspace.invoker.lock().unwrap(),
                             });
                         }
-                    }
-                } else if remove_bands.consume_key_triggered(ctx, ui) {
-                    if let Some(workspace) = maybe_workspace {
+                    } else if remove_bands.consume_key_triggered(ctx, ui) {
                         if workspace.maybe_activity.as_mut().map_or(true, |activity| {
                             matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
                         }) {
@@ -352,10 +340,8 @@ impl MenuBar {
                                 )?),
                             );
                         }
-                    }
-                } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
-                } else if autoroute.consume_key_triggered(ctx, ui) {
-                    if let Some(workspace) = maybe_workspace {
+                    } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
+                    } else if autoroute.consume_key_triggered(ctx, ui) {
                         if workspace.maybe_activity.as_mut().map_or(true, |activity| {
                             matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
                         }) {
@@ -369,9 +355,7 @@ impl MenuBar {
                                     ))?,
                                 ));
                         }
-                    }
-                } else if compare_detours.consume_key_triggered(ctx, ui) {
-                    if let Some(workspace) = maybe_workspace {
+                    } else if compare_detours.consume_key_triggered(ctx, ui) {
                         if workspace.maybe_activity.as_mut().map_or(true, |activity| {
                             matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
                         }) {
@@ -385,9 +369,7 @@ impl MenuBar {
                                     ))?,
                                 ));
                         }
-                    }
-                } else if measure_length.consume_key_triggered(ctx, ui) {
-                    if let Some(workspace) = maybe_workspace {
+                    } else if measure_length.consume_key_triggered(ctx, ui) {
                         if workspace.maybe_activity.as_mut().map_or(true, |activity| {
                             matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
                         }) {
