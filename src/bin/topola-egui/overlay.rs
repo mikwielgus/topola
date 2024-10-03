@@ -36,6 +36,10 @@ impl Overlay {
         })
     }
 
+    pub fn take_selection(&mut self) -> Selection {
+        core::mem::replace(&mut self.selection, Selection::new())
+    }
+
     pub fn clear_selection(&mut self) {
         self.selection = Selection::new();
     }

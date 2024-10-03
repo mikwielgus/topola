@@ -324,8 +324,7 @@ impl MenuBar {
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
                             maybe_overlay,
                         ) {
-                            let selection = overlay.selection().clone();
-                            overlay.clear_selection();
+                            let selection = overlay.take_selection();
                             *maybe_activity = Some(ActivityStepperWithStatus::new_execution(
                                 invoker.execute_stepper(Command::RemoveBands(
                                     selection.band_selection,
@@ -342,8 +341,7 @@ impl MenuBar {
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
                             maybe_overlay,
                         ) {
-                            let selection = overlay.selection().clone();
-                            overlay.clear_selection();
+                            let selection = overlay.take_selection();
                             *maybe_activity = Some(ActivityStepperWithStatus::new_execution(
                                 invoker.execute_stepper(Command::Autoroute(
                                     selection.pin_selection,
@@ -360,8 +358,7 @@ impl MenuBar {
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
                             maybe_overlay,
                         ) {
-                            let selection = overlay.selection().clone();
-                            overlay.clear_selection();
+                            let selection = overlay.take_selection();
                             *maybe_activity = Some(ActivityStepperWithStatus::new_execution(
                                 invoker.execute_stepper(Command::CompareDetours(
                                     selection.pin_selection,
@@ -378,8 +375,7 @@ impl MenuBar {
                             arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
                             maybe_overlay,
                         ) {
-                            let selection = overlay.selection().clone();
-                            overlay.clear_selection();
+                            let selection = overlay.take_selection();
                             *maybe_activity = Some(ActivityStepperWithStatus::new_execution(
                                 invoker.execute_stepper(Command::MeasureLength(
                                     selection.band_selection,
