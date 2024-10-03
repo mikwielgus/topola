@@ -21,8 +21,7 @@ use topola::{
 use crate::{
     action::{Action, Switch, Trigger},
     activity::{ActivityStatus, ActivityStepperWithStatus},
-    app::execute,
-    file_handler::{handle_file, FileHandlerData},
+    app::{execute, handle_file},
     overlay::Overlay,
     translator::Translator,
     viewport::Viewport,
@@ -243,9 +242,11 @@ impl MenuBar {
 
                     execute(async move {
                         if let Some(file_handle) = task.await {
-                            content_sender.send(handle_file(&file_handle, |data| {
-                                SpecctraDesign::load(data)
-                            }).await);
+                            let data = handle_file(&file_handle)
+                                .await
+                                .map_err(Into::into)
+                                .and_then(SpecctraDesign::load);
+                            content_sender.send(data);
                             ctx.request_repaint();
                         }
                     });
@@ -284,13 +285,14 @@ impl MenuBar {
 
                     execute(async move {
                         if let Some(file_handle) = task.await {
-                            history_sender.send(handle_file(&file_handle, |data| {
+                            let data = handle_file(&file_handle).await.and_then(|data| {
                                 match serde_json::from_reader(data) {
                                     Ok(history) => Ok(Ok(history)),
                                     Err(err) if err.is_io() => Err(err.into()),
                                     Err(err) => Ok(Err(err)),
                                 }
-                            }).await);
+                            });
+                            history_sender.send(data);
                             ctx.request_repaint();
                         }
                     });

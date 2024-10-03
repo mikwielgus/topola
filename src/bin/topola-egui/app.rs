@@ -1,6 +1,7 @@
 use serde::{Deserialize, Serialize};
 use std::{
     future::Future,
+    io,
     sync::{
         mpsc::{channel, Receiver, Sender},
         Arc, Mutex,
@@ -21,7 +22,6 @@ use crate::{
     activity::{ActivityStatus, ActivityStepperWithStatus},
     config::Config,
     error_dialog::ErrorDialog,
-    file_handler::FileHandlerData,
     layers::Layers,
     menu_bar::MenuBar,
     overlay::Overlay,
@@ -249,4 +249,14 @@ pub fn execute<F: Future<Output = ()> + Send + 'static>(f: F) {
 #[cfg(target_arch = "wasm32")]
 pub fn execute<F: Future<Output = ()> + 'static>(f: F) {
     wasm_bindgen_futures::spawn_local(f);
+}
+
+pub async fn handle_file(file_handle: &rfd::FileHandle) -> io::Result<impl io::BufRead + io::Seek> {
+    #[cfg(not(target_arch = "wasm32"))]
+    let res = io::BufReader::new(std::fs::File::open(file_handle.path())?);
+
+    #[cfg(target_arch = "wasm32")]
+    let res = io::Cursor::new(file_handle.read().await);
+
+    Ok(res)
 }
