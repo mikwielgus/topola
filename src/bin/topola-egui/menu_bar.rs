@@ -124,6 +124,13 @@ impl MenuBar {
             egui::Key::Plus,
         ));
 
+        let workspace_activities_enabled = match &maybe_workspace {
+            Some(w) => w.maybe_activity.as_ref().map_or(true, |activity| {
+                matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
+            }),
+            None => false,
+        };
+
         egui::TopBottomPanel::top("menu_bar")
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
@@ -157,7 +164,9 @@ impl MenuBar {
 
                             ui.separator();
 
-                            remove_bands.button(ctx, ui);
+                            ui.add_enabled_ui(workspace_activities_enabled, |ui| {
+                                remove_bands.button(ctx, ui);
+                            });
                         });
                     });
 
@@ -214,7 +223,9 @@ impl MenuBar {
 
                     ui.menu_button(tr.text("tr-menu-route"), |ui| {
                         ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-                            autoroute.button(ctx, ui);
+                            ui.add_enabled_ui(workspace_activities_enabled, |ui| {
+                                autoroute.button(ctx, ui);
+                            });
                             ui.separator();
 
                             ui.menu_button(tr.text("tr-menu-options"), |ui| {
@@ -238,7 +249,7 @@ impl MenuBar {
                     });
 
                     ui.menu_button(tr.text("tr-menu-inspect"), |ui| {
-                        ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
+                        ui.add_enabled_ui(workspace_activities_enabled, |ui| {
                             compare_detours.button(ctx, ui);
                             measure_length.button(ctx, ui);
                         });
@@ -266,12 +277,6 @@ impl MenuBar {
                     });
                 } else if quit.consume_key_triggered(ctx, ui) {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
-                    // NOTE: intentionally left empty.
-                    //
-                    // when later a full two-phase workflow with disabling of unusable UI elements
-                    // is established, move this back under the maybe_workspace.is_some() condition
-                    // below.
                 } else if let Some(workspace) = maybe_workspace {
                     if export_session.consume_key_triggered(ctx, ui) {
                         let ctx = ui.ctx().clone();
@@ -342,9 +347,8 @@ impl MenuBar {
                                 invoker: &mut workspace.invoker,
                             });
                         }
-                    } else if workspace.maybe_activity.as_mut().map_or(true, |activity| {
-                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
-                    }) {
+                    } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
+                    } else if workspace_activities_enabled {
                         let mut schedule = |op: fn(Selection, AutorouterOptions) -> Command| {
                             let selection = workspace.overlay.take_selection();
                             workspace.maybe_activity =
