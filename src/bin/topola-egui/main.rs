@@ -13,6 +13,7 @@ mod painter;
 mod status_bar;
 mod translator;
 mod viewport;
+mod workspace;
 
 use app::App;
 use sys_locale::get_locale;

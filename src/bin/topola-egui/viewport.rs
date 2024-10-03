@@ -21,7 +21,7 @@ use topola::{
 
 use crate::{
     activity::ActivityStepperWithStatus, layers::Layers, menu_bar::MenuBar, overlay::Overlay,
-    painter::Painter,
+    painter::Painter, workspace::Workspace,
 };
 
 pub struct Viewport {
@@ -41,22 +41,13 @@ impl Viewport {
         &mut self,
         ctx: &egui::Context,
         top: &MenuBar,
-        maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
-        maybe_activity: &mut Option<ActivityStepperWithStatus>,
-        maybe_overlay: &mut Option<Overlay>,
-        maybe_layers: &Option<Layers>,
+        mut maybe_workspace: Option<&mut Workspace>,
     ) -> egui::Rect {
-        let viewport_rect = self.paint(
-            ctx,
-            top,
-            maybe_invoker,
-            maybe_activity,
-            maybe_overlay,
-            maybe_layers,
-        );
+        let viewport_rect = self.paint(ctx, top, maybe_workspace.as_deref_mut());
 
         if self.scheduled_zoom_to_fit {
-            self.zoom_to_fit(maybe_invoker, &viewport_rect);
+            let mut maybe_invoker = maybe_workspace.as_ref().map(|w| w.invoker.lock().unwrap());
+            self.zoom_to_fit(maybe_invoker.as_deref_mut(), &viewport_rect);
         }
 
         viewport_rect
@@ -66,10 +57,7 @@ impl Viewport {
         &mut self,
         ctx: &egui::Context,
         top: &MenuBar,
-        maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
-        maybe_activity: &mut Option<ActivityStepperWithStatus>,
-        maybe_overlay: &mut Option<Overlay>,
-        maybe_layers: &Option<Layers>,
+        maybe_workspace: Option<&mut Workspace>,
     ) -> egui::Rect {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
@@ -86,7 +74,11 @@ impl Viewport {
 
                 let mut painter = Painter::new(ui, self.transform, top.show_bboxes);
 
-                if let Some(ref mut invoker) = maybe_invoker {
+                if let Some(workspace) = maybe_workspace {
+                    let mut invoker = workspace.invoker.lock().unwrap();
+                    let layers = &mut workspace.layers;
+                    let overlay = &mut workspace.overlay;
+
                     if ctx.input(|i| i.pointer.any_click()) {
                         if top.is_placing_via {
                             invoker.execute(
@@ -100,7 +92,7 @@ impl Viewport {
                                     maybe_net: Some(1234),
                                 }),
                             );
-                        } else if let Some(overlay) = maybe_overlay {
+                        } else {
                             overlay.click(
                                 invoker.autorouter().board(),
                                 point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
@@ -108,166 +100,153 @@ impl Viewport {
                         }
                     }
 
-                    if let (Some(invoker), Some(overlay)) = (
-                        maybe_invoker,
-                        maybe_overlay,
-                    ) {
-                        let board = invoker.autorouter().board();
+                    let board = invoker.autorouter().board();
+                    for i in (0..layers.visible.len()).rev() {
+                        if layers.visible[i] {
+                            for primitive in board.layout().drawing().layer_primitive_nodes(i) {
+                                let shape = primitive.primitive(board.layout().drawing()).shape();
 
-                        if let Some(layers) = maybe_layers {
-                            for i in (0..layers.visible.len()).rev() {
-                                if layers.visible[i] {
-                                    for primitive in board.layout().drawing().layer_primitive_nodes(i) {
-                                        let shape = primitive.primitive(board.layout().drawing()).shape();
-
-                                        let color = if overlay
-                                            .selection()
-                                            .contains_node(board, GenericNode::Primitive(primitive))
-                                        {
-                                            layers.highlight_colors[i]
-                                        } else {
-                                            if let Some(activity) = maybe_activity {
-                                                if activity.obstacles().contains(&primitive) {
-                                                    layers.highlight_colors[i]
-                                                } else {
-                                                    layers.colors[i]
-                                                }
-                                            } else {
-                                                layers.colors[i]
-                                            }
-                                        };
-
-                                        painter.paint_primitive(&shape, color);
+                                let color = if overlay
+                                    .selection()
+                                    .contains_node(board, GenericNode::Primitive(primitive))
+                                {
+                                    layers.highlight_colors[i]
+                                } else if let Some(activity) = &mut workspace.maybe_activity {
+                                    if activity.obstacles().contains(&primitive) {
+                                        layers.highlight_colors[i]
+                                    } else {
+                                        layers.colors[i]
                                     }
+                                } else {
+                                    layers.colors[i]
+                                };
 
-                                    for poly in board.layout().layer_poly_nodes(i) {
-                                        let color = if overlay
-                                            .selection()
-                                            .contains_node(board, GenericNode::Compound(poly.into()))
-                                        {
-                                            layers.highlight_colors[i]
-                                        } else {
-                                            layers.colors[i]
-                                        };
-
-                                        painter.paint_polygon(&board.layout().poly(poly).shape().polygon, color)
-                                    }
-                                }
-                            }
-                        }
-
-                        if top.show_ratsnest {
-                            for edge in overlay.ratsnest().graph().edge_references() {
-                                let from = overlay
-                                    .ratsnest()
-                                    .graph()
-                                    .node_weight(edge.source())
-                                    .unwrap()
-                                    .pos;
-                                let to = overlay
-                                    .ratsnest()
-                                    .graph()
-                                    .node_weight(edge.target())
-                                    .unwrap()
-                                    .pos;
-
-                                painter.paint_edge(
-                                    from,
-                                    to,
-                                    egui::Stroke::new(1.0, egui::Color32::from_rgb(90, 90, 200)),
-                                );
-                            }
-                        }
-
-                        if top.show_navmesh {
-                            if let Some(activity) = maybe_activity {
-                                if let Some(navmesh) = activity.maybe_navmesh() {
-                                    for edge in navmesh.edge_references() {
-                                        let mut from = PrimitiveIndex::from(navmesh.node_weight(edge.source()).unwrap().node)
-                                            .primitive(board.layout().drawing())
-                                            .shape()
-                                            .center();
-                                        let mut to = PrimitiveIndex::from(navmesh.node_weight(edge.target()).unwrap().node)
-                                            .primitive(board.layout().drawing())
-                                            .shape()
-                                            .center();
-
-                                        if let Some(from_cw) = navmesh.node_weight(edge.source()).unwrap().maybe_cw {
-                                            if from_cw {
-                                                from -= [0.0, 150.0].into();
-                                            } else {
-                                                from += [0.0, 150.0].into();
-                                            }
-                                        }
-
-                                        if let Some(to_cw) = navmesh.node_weight(edge.target()).unwrap().maybe_cw {
-                                            if to_cw {
-                                                to -= [0.0, 150.0].into();
-                                            } else {
-                                                to += [0.0, 150.0].into();
-                                            }
-                                        }
-
-                                        let stroke = 'blk: {
-                                            if let (Some(source_pos), Some(target_pos)) = (
-                                                activity.maybe_trace().map(|trace|
-                                                    trace.path
-                                                    .iter()
-                                                    .position(|node| *node == edge.source())).flatten(),
-                                                activity.maybe_trace().map(|trace|
-                                                    trace.path
-                                                    .iter()
-                                                    .position(|node| *node == edge.target())).flatten(),
-                                            ) {
-                                                if target_pos == source_pos + 1
-                                                    || source_pos == target_pos + 1
-                                                {
-                                                    break 'blk egui::Stroke::new(
-                                                        5.0,
-                                                        egui::Color32::from_rgb(250, 250, 0),
-                                                    );
-                                                }
-                                            }
-
-                                            egui::Stroke::new(1.0, egui::Color32::from_rgb(125, 125, 125))
-                                        };
-
-                                        painter.paint_edge(from, to, stroke);
-                                    }
-                                }
-                            }
-                        }
-
-                        if top.show_bboxes {
-                            let root_bbox3d = board.layout().drawing().rtree().root().envelope();
-
-                            let root_bbox = AABB::<[f64; 2]>::from_corners([root_bbox3d.lower()[0], root_bbox3d.lower()[1]].into(), [root_bbox3d.upper()[0], root_bbox3d.upper()[1]].into());
-                            painter.paint_bbox(root_bbox);
-                        }
-
-                        if let Some(activity) = maybe_activity {
-                            for ghost in activity.ghosts().iter() {
-                                painter.paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
+                                painter.paint_primitive(&shape, color);
                             }
 
+                            for poly in board.layout().layer_poly_nodes(i) {
+                                let color = if overlay
+                                    .selection()
+                                    .contains_node(board, GenericNode::Compound(poly.into()))
+                                {
+                                    layers.highlight_colors[i]
+                                } else {
+                                    layers.colors[i]
+                                };
+
+                                painter.paint_polygon(&board.layout().poly(poly).shape().polygon, color)
+                            }
+                        }
+                    }
+
+                    if top.show_ratsnest {
+                        let graph = overlay.ratsnest().graph();
+                        for edge in graph.edge_references() {
+                            let from = graph
+                                .node_weight(edge.source())
+                                .unwrap()
+                                .pos;
+                            let to = graph
+                                .node_weight(edge.target())
+                                .unwrap()
+                                .pos;
+
+                            painter.paint_edge(
+                                from,
+                                to,
+                                egui::Stroke::new(1.0, egui::Color32::from_rgb(90, 90, 200)),
+                            );
+                        }
+                    }
+
+                    if top.show_navmesh {
+                        if let Some(activity) = &mut workspace.maybe_activity {
                             if let Some(navmesh) = activity.maybe_navmesh() {
-                                if top.show_origin_destination {
-                                    let (origin, destination) = (navmesh.origin(), navmesh.destination());
-                                    painter.paint_dot(
-                                        Circle {
-                                            pos: board.layout().drawing().primitive(origin).shape().center(),
-                                            r: 150.0,
-                                        },
-                                        egui::Color32::from_rgb(255, 255, 100),
-                                    );
-                                    painter.paint_dot(
-                                        Circle {
-                                            pos: board.layout().drawing().primitive(destination).shape().center(),
-                                            r: 150.0,
-                                        },
-                                        egui::Color32::from_rgb(255, 255, 100),
-                                    );
+                                for edge in navmesh.edge_references() {
+                                    let mut from = PrimitiveIndex::from(navmesh.node_weight(edge.source()).unwrap().node)
+                                        .primitive(board.layout().drawing())
+                                        .shape()
+                                        .center();
+                                    let mut to = PrimitiveIndex::from(navmesh.node_weight(edge.target()).unwrap().node)
+                                        .primitive(board.layout().drawing())
+                                        .shape()
+                                        .center();
+
+                                    if let Some(from_cw) = navmesh.node_weight(edge.source()).unwrap().maybe_cw {
+                                        if from_cw {
+                                            from -= [0.0, 150.0].into();
+                                        } else {
+                                            from += [0.0, 150.0].into();
+                                        }
+                                    }
+
+                                    if let Some(to_cw) = navmesh.node_weight(edge.target()).unwrap().maybe_cw {
+                                        if to_cw {
+                                            to -= [0.0, 150.0].into();
+                                        } else {
+                                            to += [0.0, 150.0].into();
+                                        }
+                                    }
+
+                                    let stroke = 'blk: {
+                                        if let (Some(source_pos), Some(target_pos)) = (
+                                            activity.maybe_trace().map(|trace|
+                                                trace.path
+                                                .iter()
+                                                .position(|node| *node == edge.source())).flatten(),
+                                            activity.maybe_trace().map(|trace|
+                                                trace.path
+                                                .iter()
+                                                .position(|node| *node == edge.target())).flatten(),
+                                        ) {
+                                            if target_pos == source_pos + 1
+                                                || source_pos == target_pos + 1
+                                            {
+                                                break 'blk egui::Stroke::new(
+                                                    5.0,
+                                                    egui::Color32::from_rgb(250, 250, 0),
+                                                );
+                                            }
+                                        }
+
+                                        egui::Stroke::new(1.0, egui::Color32::from_rgb(125, 125, 125))
+                                    };
+
+                                    painter.paint_edge(from, to, stroke);
                                 }
+                            }
+                        }
+                    }
+
+                    if top.show_bboxes {
+                        let root_bbox3d = board.layout().drawing().rtree().root().envelope();
+
+                        let root_bbox = AABB::<[f64; 2]>::from_corners([root_bbox3d.lower()[0], root_bbox3d.lower()[1]].into(), [root_bbox3d.upper()[0], root_bbox3d.upper()[1]].into());
+                        painter.paint_bbox(root_bbox);
+                    }
+
+                    if let Some(activity) = &mut workspace.maybe_activity {
+                        for ghost in activity.ghosts().iter() {
+                            painter.paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
+                        }
+
+                        if let Some(navmesh) = activity.maybe_navmesh() {
+                            if top.show_origin_destination {
+                                let (origin, destination) = (navmesh.origin(), navmesh.destination());
+                                painter.paint_dot(
+                                    Circle {
+                                        pos: board.layout().drawing().primitive(origin).shape().center(),
+                                        r: 150.0,
+                                    },
+                                    egui::Color32::from_rgb(255, 255, 100),
+                                );
+                                painter.paint_dot(
+                                    Circle {
+                                        pos: board.layout().drawing().primitive(destination).shape().center(),
+                                        r: 150.0,
+                                    },
+                                    egui::Color32::from_rgb(255, 255, 100),
+                                );
                             }
                         }
                     }
@@ -280,7 +259,7 @@ impl Viewport {
 
     fn zoom_to_fit(
         &mut self,
-        maybe_invoker: &mut Option<Invoker<SpecctraMesadata>>,
+        maybe_invoker: Option<&mut Invoker<SpecctraMesadata>>,
         viewport_rect: &egui::Rect,
     ) {
         if self.scheduled_zoom_to_fit {

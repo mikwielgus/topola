@@ -16,7 +16,7 @@ impl StatusBar {
         ctx: &egui::Context,
         tr: &Translator,
         viewport: &Viewport,
-        maybe_activity: &Option<ActivityStepperWithStatus>,
+        maybe_activity: Option<&ActivityStepperWithStatus>,
     ) {
         egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
             let latest_pos = viewport.transform.inverse()

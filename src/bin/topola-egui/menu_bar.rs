@@ -26,6 +26,7 @@ use crate::{
     overlay::Overlay,
     translator::Translator,
     viewport::Viewport,
+    workspace::Workspace,
 };
 
 pub struct MenuBar {
@@ -64,12 +65,8 @@ impl MenuBar {
         ctx: &egui::Context,
         tr: &Translator,
         content_sender: Sender<Result<SpecctraDesign, SpecctraLoadingError>>,
-        history_sender: Sender<std::io::Result<Result<History, serde_json::Error>>>,
-        arc_mutex_maybe_invoker: Arc<Mutex<Option<Invoker<SpecctraMesadata>>>>,
-        maybe_activity: &mut Option<ActivityStepperWithStatus>,
         viewport: &mut Viewport,
-        maybe_overlay: &mut Option<Overlay>,
-        maybe_design: &Option<SpecctraDesign>,
+        maybe_workspace: Option<&mut Workspace>,
     ) -> Result<(), InvokerError> {
         let mut open_design = Trigger::new(Action::new(
             tr.text("tr-menu-file-open"),
@@ -258,53 +255,57 @@ impl MenuBar {
                         }
                     });
                 } else if export_session.consume_key_triggered(ctx, ui) {
-                    if let Some(design) = maybe_design {
-                        if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_ref() {
-                            let ctx = ui.ctx().clone();
-                            let board = invoker.autorouter().board();
+                    if let Some(workspace) = maybe_workspace {
+                        let invoker = workspace.invoker.lock().unwrap();
+                        let ctx = ui.ctx().clone();
+                        let board = invoker.autorouter().board();
 
-                            // FIXME: I don't know how to avoid buffering the entire exported file
-                            let mut writebuf = vec![];
+                        // FIXME: I don't know how to avoid buffering the entire exported file
+                        let mut writebuf = vec![];
 
-                            design.write_ses(board, &mut writebuf);
+                        workspace.design.write_ses(board, &mut writebuf);
 
-                            let mut dialog = rfd::AsyncFileDialog::new();
-                            if let Some(filename) = Path::new(design.get_name()).file_stem() {
-                                if let Some(filename) = filename.to_str() {
-                                    dialog = dialog.set_file_name(filename);
-                                }
+                        let mut dialog = rfd::AsyncFileDialog::new();
+                        if let Some(filename) = Path::new(workspace.design.get_name()).file_stem() {
+                            if let Some(filename) = filename.to_str() {
+                                dialog = dialog.set_file_name(filename);
                             }
-                            let task = dialog
-                                .add_filter(tr.text("tr-menu-open-specctra-session-file"), &["ses"])
-                                .save_file();
-
-                            execute(async move {
-                                if let Some(file_handle) = task.await {
-                                    file_handle.write(&writebuf).await;
-                                    ctx.request_repaint();
-                                }
-                            });
                         }
+
+                        let task = dialog
+                            .add_filter(tr.text("tr-menu-open-specctra-session-file"), &["ses"])
+                            .save_file();
+
+                        execute(async move {
+                            if let Some(file_handle) = task.await {
+                                file_handle.write(&writebuf).await;
+                                ctx.request_repaint();
+                            }
+                        });
                     }
                 } else if import_history.consume_key_triggered(ctx, ui) {
-                    let ctx = ctx.clone();
-                    let task = rfd::AsyncFileDialog::new().pick_file();
+                    if let Some(workspace) = maybe_workspace {
+                        let ctx = ctx.clone();
+                        let task = rfd::AsyncFileDialog::new().pick_file();
+                        let history_sender = workspace.history_channel.0.clone();
 
-                    execute(async move {
-                        if let Some(file_handle) = task.await {
-                            let data = handle_file(&file_handle).await.and_then(|data| {
-                                match serde_json::from_reader(data) {
-                                    Ok(history) => Ok(Ok(history)),
-                                    Err(err) if err.is_io() => Err(err.into()),
-                                    Err(err) => Ok(Err(err)),
-                                }
-                            });
-                            history_sender.send(data);
-                            ctx.request_repaint();
-                        }
-                    });
+                        execute(async move {
+                            if let Some(file_handle) = task.await {
+                                let data = handle_file(&file_handle).await.and_then(|data| {
+                                    match serde_json::from_reader(data) {
+                                        Ok(history) => Ok(Ok(history)),
+                                        Err(err) if err.is_io() => Err(err.into()),
+                                        Err(err) => Ok(Err(err)),
+                                    }
+                                });
+                                history_sender.send(data);
+                                ctx.request_repaint();
+                            }
+                        });
+                    }
                 } else if export_history.consume_key_triggered(ctx, ui) {
-                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_ref() {
+                    if let Some(workspace) = maybe_workspace {
+                        let invoker = workspace.invoker.lock().unwrap();
                         let ctx = ctx.clone();
                         let task = rfd::AsyncFileDialog::new().save_file();
 
@@ -322,87 +323,81 @@ impl MenuBar {
                 } else if quit.consume_key_triggered(ctx, ui) {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
                 } else if undo.consume_key_triggered(ctx, ui) {
-                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
-                        invoker.undo();
+                    if let Some(workspace) = maybe_workspace {
+                        workspace.invoker.lock().unwrap().undo();
                     }
                 } else if redo.consume_key_triggered(ctx, ui) {
-                    if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
-                        invoker.redo();
+                    if let Some(workspace) = maybe_workspace {
+                        workspace.invoker.lock().unwrap().redo();
                     }
                 } else if abort.consume_key_triggered(ctx, ui) {
-                    if let Some(activity) = maybe_activity {
-                        if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
+                    if let Some(workspace) = maybe_workspace {
+                        if let Some(activity) = &mut workspace.maybe_activity {
                             activity.abort(&mut ActivityContext {
                                 interaction: InteractionContext {},
-                                invoker,
+                                invoker: &mut *workspace.invoker.lock().unwrap(),
                             });
                         }
                     }
                 } else if remove_bands.consume_key_triggered(ctx, ui) {
-                    if maybe_activity.as_mut().map_or(true, |activity| {
-                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
-                    }) {
-                        if let (Some(invoker), Some(ref mut overlay)) = (
-                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
-                            maybe_overlay,
-                        ) {
-                            let selection = overlay.take_selection();
-                            *maybe_activity = Some(ActivityStepperWithStatus::new_execution(
-                                invoker.execute_stepper(Command::RemoveBands(
-                                    selection.band_selection,
-                                ))?,
-                            ));
+                    if let Some(workspace) = maybe_workspace {
+                        if workspace.maybe_activity.as_mut().map_or(true, |activity| {
+                            matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
+                        }) {
+                            let mut invoker = workspace.invoker.lock().unwrap();
+                            let selection = workspace.overlay.take_selection();
+                            workspace.maybe_activity = Some(
+                                ActivityStepperWithStatus::new_execution(invoker.execute_stepper(
+                                    Command::RemoveBands(selection.band_selection),
+                                )?),
+                            );
                         }
                     }
                 } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
                 } else if autoroute.consume_key_triggered(ctx, ui) {
-                    if maybe_activity.as_mut().map_or(true, |activity| {
-                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
-                    }) {
-                        if let (Some(invoker), Some(ref mut overlay)) = (
-                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
-                            maybe_overlay,
-                        ) {
-                            let selection = overlay.take_selection();
-                            *maybe_activity = Some(ActivityStepperWithStatus::new_execution(
-                                invoker.execute_stepper(Command::Autoroute(
-                                    selection.pin_selection,
-                                    self.autorouter_options,
-                                ))?,
-                            ));
+                    if let Some(workspace) = maybe_workspace {
+                        if workspace.maybe_activity.as_mut().map_or(true, |activity| {
+                            matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
+                        }) {
+                            let mut invoker = workspace.invoker.lock().unwrap();
+                            let selection = workspace.overlay.take_selection();
+                            workspace.maybe_activity =
+                                Some(ActivityStepperWithStatus::new_execution(
+                                    invoker.execute_stepper(Command::Autoroute(
+                                        selection.pin_selection,
+                                        self.autorouter_options,
+                                    ))?,
+                                ));
                         }
                     }
                 } else if compare_detours.consume_key_triggered(ctx, ui) {
-                    if maybe_activity.as_mut().map_or(true, |activity| {
-                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
-                    }) {
-                        if let (Some(invoker), Some(ref mut overlay)) = (
-                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
-                            maybe_overlay,
-                        ) {
-                            let selection = overlay.take_selection();
-                            *maybe_activity = Some(ActivityStepperWithStatus::new_execution(
-                                invoker.execute_stepper(Command::CompareDetours(
-                                    selection.pin_selection,
-                                    self.autorouter_options,
-                                ))?,
-                            ));
+                    if let Some(workspace) = maybe_workspace {
+                        if workspace.maybe_activity.as_mut().map_or(true, |activity| {
+                            matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
+                        }) {
+                            let mut invoker = workspace.invoker.lock().unwrap();
+                            let selection = workspace.overlay.take_selection();
+                            workspace.maybe_activity =
+                                Some(ActivityStepperWithStatus::new_execution(
+                                    invoker.execute_stepper(Command::CompareDetours(
+                                        selection.pin_selection,
+                                        self.autorouter_options,
+                                    ))?,
+                                ));
                         }
                     }
                 } else if measure_length.consume_key_triggered(ctx, ui) {
-                    if maybe_activity.as_mut().map_or(true, |activity| {
-                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
-                    }) {
-                        if let (Some(invoker), Some(ref mut overlay)) = (
-                            arc_mutex_maybe_invoker.lock().unwrap().as_mut(),
-                            maybe_overlay,
-                        ) {
-                            let selection = overlay.take_selection();
-                            *maybe_activity = Some(ActivityStepperWithStatus::new_execution(
-                                invoker.execute_stepper(Command::MeasureLength(
-                                    selection.band_selection,
-                                ))?,
-                            ));
+                    if let Some(workspace) = maybe_workspace {
+                        if workspace.maybe_activity.as_mut().map_or(true, |activity| {
+                            matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
+                        }) {
+                            let mut invoker = workspace.invoker.lock().unwrap();
+                            let selection = workspace.overlay.take_selection();
+                            workspace.maybe_activity = Some(
+                                ActivityStepperWithStatus::new_execution(invoker.execute_stepper(
+                                    Command::MeasureLength(selection.band_selection),
+                                )?),
+                            );
                         }
                     }
                 }
