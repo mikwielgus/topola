@@ -97,10 +97,14 @@ impl Workspace {
         }
 
         if let Some(activity) = &mut self.maybe_activity {
+<<<<<<< HEAD
             return match activity.step(&mut ActivityContext {
                 interaction: InteractionContext {},
-                invoker: &mut self.invoker,
+                invoker: &mut *self.invoker.lock().unwrap(),
             }) {
+=======
+            return match activity.step(&mut self.invoker) {
+>>>>>>> 8938ce7 (egui/Workspace: get rid of unnecessary Arc<Mutex<...>>)
                 Ok(ActivityStatus::Running) => true,
                 Ok(ActivityStatus::Finished(..)) => false,
                 Err(err) => {

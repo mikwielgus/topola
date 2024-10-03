@@ -321,10 +321,14 @@ impl MenuBar {
                         workspace.invoker.redo();
                     } else if abort.consume_key_triggered(ctx, ui) {
                         if let Some(activity) = &mut workspace.maybe_activity {
+<<<<<<< HEAD
                             activity.abort(&mut ActivityContext {
                                 interaction: InteractionContext {},
-                                invoker: &mut workspace.invoker,
+                                invoker: &mut *workspace.invoker.lock().unwrap(),
                             });
+=======
+                            activity.abort(&mut workspace.invoker);
+>>>>>>> 8938ce7 (egui/Workspace: get rid of unnecessary Arc<Mutex<...>>)
                         }
                     } else if remove_bands.consume_key_triggered(ctx, ui) {
                         if workspace.maybe_activity.as_mut().map_or(true, |activity| {

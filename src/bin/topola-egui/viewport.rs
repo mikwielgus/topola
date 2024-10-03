@@ -46,7 +46,7 @@ impl Viewport {
         let viewport_rect = self.paint(ctx, top, maybe_workspace.as_deref_mut());
 
         if self.scheduled_zoom_to_fit {
-            let mut maybe_invoker = maybe_workspace.as_ref().map(|w| w.invoker.lock().unwrap());
+            let mut maybe_invoker = maybe_workspace.as_mut().map(|w| &mut w.invoker);
             self.zoom_to_fit(maybe_invoker.as_deref_mut(), &viewport_rect);
         }
 
@@ -75,7 +75,7 @@ impl Viewport {
                 let mut painter = Painter::new(ui, self.transform, top.show_bboxes);
 
                 if let Some(workspace) = maybe_workspace {
-                    let mut invoker = workspace.invoker.lock().unwrap();
+                    let invoker = &mut workspace.invoker;
                     let layers = &mut workspace.layers;
                     let overlay = &mut workspace.overlay;
 
