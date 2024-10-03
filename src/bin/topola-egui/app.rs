@@ -107,7 +107,7 @@ impl App {
             match self.load_specctra_dsn(input) {
                 Ok(()) => {}
                 Err(err) => {
-                    self.error_dialog.push_error("specctra-dsn-loader", err);
+                    self.error_dialog.push_error("tr-module-specctra-dsn-file-loader", err);
                 }
             }
         }
@@ -122,15 +122,15 @@ impl App {
                         Ok(res) => invoker.replay(res),
                         Err(err) => {
                             self.error_dialog.push_error(
-                                "history-loader",
-                                format!("{}; {}", tr.text("error-file-history-parse"), err),
+                                "tr-module-history-file-loader",
+                                format!("{}; {}", tr.text("tr-error_failed-to-parse-as-history-json"), err),
                             );
                         }
                     },
                     Err(err) => {
                         self.error_dialog.push_error(
-                            "history-loader",
-                            format!("{}; {}", tr.text("error-file-load"), err),
+                            "tr-module-history-file-loader",
+                            format!("{}; {}", tr.text("tr-error_unable-to-read-file"), err),
                         );
                     }
                 }
@@ -141,7 +141,7 @@ impl App {
                     Ok(ActivityStatus::Running) => true,
                     Ok(ActivityStatus::Finished(..)) => false,
                     Err(err) => {
-                        self.error_dialog.push_error("invoker", format!("{}", err));
+                        self.error_dialog.push_error("tr-module-invoker", format!("{}", err));
                         false
                     }
                 };
@@ -156,15 +156,15 @@ impl App {
         input: std::io::Result<I>,
     ) -> Result<(), String> {
         let tr = &self.translator;
-        let bufread = input.map_err(|err| format!("{}; {}", tr.text("error-file-load"), err))?;
+        let bufread = input.map_err(|err| format!("{}; {}", tr.text("tr-error_unable-to-read-file"), err))?;
         let design = SpecctraDesign::load(bufread)
-            .map_err(|err| format!("{}; {}", tr.text("error-file-specctra-dsn-parse"), err))?;
+            .map_err(|err| format!("{}; {}", tr.text("tr-error_failed-to-parse-as-specctra-dsn"), err))?;
         let board = design.make_board();
         let overlay = Overlay::new(&board)
-            .map_err(|err| format!("{}; {}", tr.text("error-overlay-init"), err))?;
+            .map_err(|err| format!("{}; {}", tr.text("tr-error_unable-to-initialize-overlay"), err))?;
         let layers = Layers::new(&board);
         let autorouter = Autorouter::new(board)
-            .map_err(|err| format!("{}; {}", tr.text("error-autorouter-init"), err))?;
+            .map_err(|err| format!("{}; {}", tr.text("tr-error_unable-to-initialize-autorouter"), err))?;
         self.maybe_overlay = Some(overlay);
         self.maybe_layers = Some(layers);
         self.maybe_design = Some(design);

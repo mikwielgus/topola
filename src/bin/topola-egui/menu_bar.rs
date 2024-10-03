@@ -68,67 +68,67 @@ impl MenuBar {
         maybe_design: &Option<SpecctraDesign>,
     ) -> Result<(), InvokerError> {
         let mut open_design = Trigger::new(Action::new(
-            tr.text("action-open-dsn"),
+            tr.text("tr-menu-file-open"),
             egui::Modifiers::CTRL,
             egui::Key::O,
         ));
         let mut export_session = Trigger::new(Action::new(
-            tr.text("action-export-ses"),
+            tr.text("tr-menu-file-export-session-file"),
             egui::Modifiers::CTRL,
             egui::Key::S,
         ));
         let mut import_history = Trigger::new(Action::new(
-            tr.text("action-import-cmd"),
+            tr.text("tr-menu-file-import-history"),
             egui::Modifiers::CTRL,
             egui::Key::I,
         ));
         let mut export_history = Trigger::new(Action::new(
-            tr.text("action-export-cmd"),
+            tr.text("tr-menu-file-export-history"),
             egui::Modifiers::CTRL,
             egui::Key::E,
         ));
         let mut quit = Trigger::new(Action::new(
-            tr.text("action-quit"),
+            tr.text("tr-menu-file-quit"),
             egui::Modifiers::CTRL,
             egui::Key::Q,
         ));
         let mut undo = Trigger::new(Action::new(
-            tr.text("action-undo"),
+            tr.text("tr-menu-edit_undo"),
             egui::Modifiers::CTRL,
             egui::Key::Z,
         ));
         let mut redo = Trigger::new(Action::new(
-            tr.text("action-redo"),
+            tr.text("tr-menu-edit_redo"),
             egui::Modifiers::CTRL,
             egui::Key::Y,
         ));
         let mut abort = Trigger::new(Action::new(
-            tr.text("action-abort"),
+            tr.text("tr-menu-edit_abort"),
             egui::Modifiers::NONE,
             egui::Key::Escape,
         ));
         let mut remove_bands = Trigger::new(Action::new(
-            tr.text("action-remove-bands"),
+            tr.text("tr-menu-edit_remove-bands"),
             egui::Modifiers::NONE,
             egui::Key::Delete,
         ));
         let mut place_via = Switch::new(Action::new(
-            tr.text("action-place-via"),
+            tr.text("tr-menu-place-place-via"),
             egui::Modifiers::CTRL,
             egui::Key::P,
         ));
         let mut autoroute = Trigger::new(Action::new(
-            tr.text("action-autoroute"),
+            tr.text("tr-menu-route-autoroute"),
             egui::Modifiers::CTRL,
             egui::Key::A,
         ));
         let mut compare_detours = Trigger::new(Action::new(
-            tr.text("action-compare-detours"),
+            tr.text("tr-menu-inspect_compare-detours"),
             egui::Modifiers::NONE,
             egui::Key::Minus,
         ));
         let mut measure_length = Trigger::new(Action::new(
-            tr.text("action-measure-length"),
+            tr.text("tr-menu-inspect_measure-length"),
             egui::Modifiers::NONE,
             egui::Key::Plus,
         ));
@@ -136,7 +136,7 @@ impl MenuBar {
         egui::TopBottomPanel::top("menu_bar")
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
-                    ui.menu_button(tr.text("menu-file"), |ui| {
+                    ui.menu_button(tr.text("tr-menu-file"), |ui| {
                         open_design.button(ctx, ui);
                         export_session.button(ctx, ui);
 
@@ -153,7 +153,7 @@ impl MenuBar {
                         }
                     });
 
-                    ui.menu_button(tr.text("menu-edit"), |ui| {
+                    ui.menu_button(tr.text("tr-menu-edit"), |ui| {
                         undo.button(ctx, ui);
                         redo.button(ctx, ui);
 
@@ -166,63 +166,63 @@ impl MenuBar {
                         remove_bands.button(ctx, ui);
                     });
 
-                    ui.menu_button(tr.text("menu-view"), |ui| {
+                    ui.menu_button(tr.text("tr-menu-view"), |ui| {
                         ui.toggle_value(
                             &mut viewport.scheduled_zoom_to_fit,
-                            tr.text("zoom-to-fit"),
+                            tr.text("tr-menu-view_zoom-to-fit"),
                         );
 
                         ui.separator();
 
-                        ui.checkbox(&mut self.show_ratsnest, tr.text("show-ratsnest"));
-                        ui.checkbox(&mut self.show_navmesh, tr.text("show-navmesh"));
-                        ui.checkbox(&mut self.show_bboxes, tr.text("show-bboxes"));
+                        ui.checkbox(&mut self.show_ratsnest, tr.text("tr-menu-view_show-ratsnest"));
+                        ui.checkbox(&mut self.show_navmesh, tr.text("tr-menu-view_show-navmesh"));
+                        ui.checkbox(&mut self.show_bboxes, tr.text("tr-menu-view_show-bboxes"));
                         ui.checkbox(
                             &mut self.show_origin_destination,
-                            tr.text("show-origin-destination"),
+                            tr.text("tr-menu-view_show-origin-destination"),
                         );
 
                         ui.separator();
 
-                        ui.checkbox(&mut self.show_layer_manager, tr.text("show-layer-manager"));
+                        ui.checkbox(&mut self.show_layer_manager, tr.text("tr-menu-view_show-layer-manager"));
 
                         ui.separator();
 
-                        ui.label(tr.text("frame-timestep"));
+                        ui.label(tr.text("tr-menu-view_frame-timestep"));
                         ui.add(
                             egui::widgets::Slider::new(&mut self.frame_timestep, 0.0..=3.0)
                                 .suffix(" s"),
                         );
                     });
 
-                    ui.menu_button(tr.text("menu-place"), |ui| {
+                    ui.menu_button(tr.text("tr-menu-place"), |ui| {
                         place_via.toggle_widget(ctx, ui, &mut self.is_placing_via);
                     });
 
-                    ui.menu_button(tr.text("menu-route"), |ui| {
+                    ui.menu_button(tr.text("tr-menu-route"), |ui| {
                         autoroute.button(ctx, ui);
                         ui.separator();
 
-                        ui.menu_button(tr.text("menu-options"), |ui| {
+                        ui.menu_button(tr.text("tr-menu-options"), |ui| {
                             ui.checkbox(
                                 &mut self.autorouter_options.presort_by_pairwise_detours,
-                                tr.text("presort-by-pairwise-detours"),
+                                tr.text("tr-menu-route-options_presort-by-pairwise-detours"),
                             );
                             ui.checkbox(
                                 &mut self
                                     .autorouter_options
                                     .router_options
                                     .squeeze_through_under_bands,
-                                tr.text("squeeze-through-under-bands"),
+                                tr.text("tr-menu-route-options_squeeze-through-under-bands"),
                             );
                             ui.checkbox(
                                 &mut self.autorouter_options.router_options.wrap_around_bands,
-                                tr.text("wrap-around-bands"),
+                                tr.text("tr-menu-route-options_wrap-around-bands"),
                             );
                         });
                     });
 
-                    ui.menu_button(tr.text("menu-inspect"), |ui| {
+                    ui.menu_button(tr.text("tr-menu-inspect"), |ui| {
                         compare_detours.button(ctx, ui);
                         measure_length.button(ctx, ui);
                     });
@@ -262,7 +262,7 @@ impl MenuBar {
                                 }
                             }
                             let task = dialog
-                                .add_filter(tr.text("specctra-session-file"), &["ses"])
+                                .add_filter(tr.text("tr-menu-open_specctra-session-file"), &["ses"])
                                 .save_file();
 
                             execute(async move {

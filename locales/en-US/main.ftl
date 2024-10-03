@@ -1,56 +1,56 @@
-menu-file = File
-menu-edit = Edit
-menu-view = View
-menu-place = Place
-menu-route = Route
-menu-inspect = Inspect
+tr-menu-file = File
+tr-menu-edit = Edit
+tr-menu-view = View
+tr-menu-place = Place
+tr-menu-route = Route
+tr-menu-inspect = Inspect
 
-menu-options = Options
-menu-debug = Debug
+tr-menu-options = Options
+tr-menu-debug = Debug
 
-action-open-dsn = Open
-action-export-ses = Export Session File
-action-import-cmd = Import History
-action-export-cmd = Export History
+tr-menu-file-open = Open
+tr-menu-file-export-session-file = Export Session File
+tr-menu-file-import-history = Import History
+tr-menu-file-export-history = Export History
 
-action-quit = Quit
-action-autoroute = Autoroute
-action-place-via = Place Via
-action-remove-bands = Remove Bands
-action-compare-detours = Compare Detours
-action-measure-length = Measure Length
+tr-menu-file-quit = Quit
+tr-menu-route-autoroute = Autoroute
+tr-menu-place-place-via = Place Via
+tr-menu-edit_remove-bands = Remove Bands
+tr-menu-inspect_compare-detours = Compare Detours
+tr-menu-inspect_measure-length = Measure Length
 
-action-undo = Undo
-action-redo = Redo
-action-abort = Abort
+tr-menu-edit_undo = Undo
+tr-menu-edit_redo = Redo
+tr-menu-edit_abort = Abort
 
-presort-by-pairwise-detours = Presort by Pairwise Detours
-squeeze-through-under-bands = Squeeze through under Bands
-wrap-around-bands = Wrap around Bands
+tr-menu-route-options_presort-by-pairwise-detours = Presort by Pairwise Detours
+tr-menu-route-options_squeeze-through-under-bands = Squeeze through under Bands
+tr-menu-route-options_wrap-around-bands = Wrap around Bands
 
-zoom-to-fit = Zoom to Fit
+tr-menu-view_zoom-to-fit = Zoom to Fit
 
-show-ratsnest = Show Ratsnest
-show-navmesh = Show Navmesh
-show-bboxes = Show BBoxes
-show-origin-destination = Show Origin–Destination
+tr-menu-view_show-ratsnest = Show Ratsnest
+tr-menu-view_show-navmesh = Show Navmesh
+tr-menu-view_show-bboxes = Show BBoxes
+tr-menu-view_show-origin-destination = Show Origin–Destination
 
-show-layer-manager = Show Layer Manager
+tr-menu-view_show-layer-manager = Show Layer Manager
 
-frame-timestep = Frame Timestep
+tr-menu-view_frame-timestep = Frame Timestep
 
-specctra-session-file = Specctra session file
+tr-menu-open_specctra-session-file = Specctra session file
 
-title-error-messages = Error Messages
-reset-error-messages = Reset Messages
-discard-item = Discard
+tr-dialog-tr-error-messages = Error Messages
+tr-dialog-tr-error-messages_reset = Reset Messages
+tr-dialog-tr-error-messages_discard = Discard
 
-specctra-dsn-loader = Specctra DSN file loader
-history-loader = History file loader
-invoker = Invoker
+tr-module-specctra-dsn-file-loader = Specctra DSN file loader
+tr-module-history-file-loader = History file loader
+tr-module-invoker = Invoker
 
-error-file-load = unable to read file
-error-file-specctra-dsn-parse = file failed to parse as Specctra DSN
-error-file-history-parse = file failed to parse as History JSON
-error-overlay-init = unable to initialize overlay
-error-autorouter-init = unable to initialize autorouter
+tr-error_unable-to-read-file = unable to read file
+tr-error_failed-to-parse-as-specctra-dsn = file failed to parse as Specctra DSN
+tr-error_failed-to-parse-as-history-json = file failed to parse as History JSON
+tr-error_unable-to-initialize-overlay = unable to initialize overlay
+tr-error_unable-to-initialize-autorouter = unable to initialize autorouter

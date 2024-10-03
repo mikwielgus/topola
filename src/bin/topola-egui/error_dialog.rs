@@ -33,17 +33,17 @@ impl ErrorDialog {
 
     pub fn update(&mut self, ctx: &egui::Context, tr: &Translator) {
         let mut messages_cleared = false;
-        egui::Window::new(tr.text("title-error-messages"))
-            .id("error-messages-dialog".into())
+        egui::Window::new(tr.text("tr-dialog-tr-error-messages"))
+            .id("tr-error-messages-dialog".into())
             .open(&mut self.window_open)
             .scroll(true)
             .show(ctx, |ui| {
-                if ui.button(tr.text("reset-error-messages")).clicked() {
+                if ui.button(tr.text("tr-dialog-tr-error-messages_reset")).clicked() {
                     self.messages.clear();
                     messages_cleared = true;
                 }
 
-                egui::Grid::new("error-messages-grid").show(ui, |ui| {
+                egui::Grid::new("tr-error-messages-grid").show(ui, |ui| {
                     let mut messages_to_discard = BTreeSet::<usize>::new();
                     let style = Arc::clone(ui.style());
                     for (msg_id, msg) in self.messages.iter().enumerate() {
@@ -72,7 +72,7 @@ impl ErrorDialog {
 
                         // TODO: perhaps alternatively, use small icon instead?
                         //   (provide alt text in that case!)
-                        if ui.add(egui::Button::new(tr.text("discard-item"))).clicked() {
+                        if ui.add(egui::Button::new(tr.text("tr-dialog-tr-error-messages_discard"))).clicked() {
                             messages_to_discard.insert(msg_id);
                         }
                         ui.label(WidgetText::LayoutJob(loj));
