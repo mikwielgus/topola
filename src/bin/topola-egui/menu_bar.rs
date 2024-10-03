@@ -326,7 +326,7 @@ impl MenuBar {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_activity.insert(ActivityStepperWithStatus::new_execution(
+                            *maybe_activity = Some(ActivityStepperWithStatus::new_execution(
                                 invoker.execute_stepper(Command::RemoveBands(
                                     selection.band_selection,
                                 ))?,
@@ -344,7 +344,7 @@ impl MenuBar {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_activity.insert(ActivityStepperWithStatus::new_execution(
+                            *maybe_activity = Some(ActivityStepperWithStatus::new_execution(
                                 invoker.execute_stepper(Command::Autoroute(
                                     selection.pin_selection,
                                     self.autorouter_options,
@@ -362,7 +362,7 @@ impl MenuBar {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_activity.insert(ActivityStepperWithStatus::new_execution(
+                            *maybe_activity = Some(ActivityStepperWithStatus::new_execution(
                                 invoker.execute_stepper(Command::CompareDetours(
                                     selection.pin_selection,
                                     self.autorouter_options,
@@ -380,7 +380,7 @@ impl MenuBar {
                         ) {
                             let selection = overlay.selection().clone();
                             overlay.clear_selection();
-                            maybe_activity.insert(ActivityStepperWithStatus::new_execution(
+                            *maybe_activity = Some(ActivityStepperWithStatus::new_execution(
                                 invoker.execute_stepper(Command::MeasureLength(
                                     selection.band_selection,
                                 ))?,
