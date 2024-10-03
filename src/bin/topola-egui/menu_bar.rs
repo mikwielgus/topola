@@ -1,7 +1,9 @@
 use std::{path::Path, sync::mpsc::Sender};
 
 use topola::{
-    autorouter::{execution::Command, invoker::InvokerError, AutorouterOptions},
+    autorouter::{
+        execution::Command, invoker::InvokerError, selection::Selection, AutorouterOptions,
+    },
     router::RouterOptions,
     specctra::design::{LoadingError as SpecctraLoadingError, SpecctraDesign},
     stepper::Abort,
@@ -314,56 +316,36 @@ impl MenuBar {
                                 invoker: &mut workspace.invoker,
                             });
                         }
-                    } else if remove_bands.consume_key_triggered(ctx, ui) {
-                        if workspace.maybe_activity.as_mut().map_or(true, |activity| {
-                            matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
-                        }) {
-                            let selection = workspace.overlay.take_selection();
-                            workspace.maybe_activity =
-                                Some(ActivityStepperWithStatus::new_execution(
-                                    workspace.invoker.execute_stepper(Command::RemoveBands(
-                                        selection.band_selection,
-                                    ))?,
-                                ));
-                        }
                     } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
-                    } else if autoroute.consume_key_triggered(ctx, ui) {
-                        if workspace.maybe_activity.as_mut().map_or(true, |activity| {
-                            matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
-                        }) {
+                    } else if workspace.maybe_activity.as_mut().map_or(true, |activity| {
+                        matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
+                    }) {
+                        let mut schedule = |op: fn(Selection, AutorouterOptions) -> Command| {
                             let selection = workspace.overlay.take_selection();
                             workspace.maybe_activity =
                                 Some(ActivityStepperWithStatus::new_execution(
-                                    workspace.invoker.execute_stepper(Command::Autoroute(
-                                        selection.pin_selection,
-                                        self.autorouter_options,
-                                    ))?,
+                                    workspace
+                                        .invoker
+                                        .execute_stepper(op(selection, self.autorouter_options))?,
                                 ));
-                        }
-                    } else if compare_detours.consume_key_triggered(ctx, ui) {
-                        if workspace.maybe_activity.as_mut().map_or(true, |activity| {
-                            matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
-                        }) {
-                            let selection = workspace.overlay.take_selection();
-                            workspace.maybe_activity =
-                                Some(ActivityStepperWithStatus::new_execution(
-                                    workspace.invoker.execute_stepper(Command::CompareDetours(
-                                        selection.pin_selection,
-                                        self.autorouter_options,
-                                    ))?,
-                                ));
-                        }
-                    } else if measure_length.consume_key_triggered(ctx, ui) {
-                        if workspace.maybe_activity.as_mut().map_or(true, |activity| {
-                            matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
-                        }) {
-                            let selection = workspace.overlay.take_selection();
-                            workspace.maybe_activity =
-                                Some(ActivityStepperWithStatus::new_execution(
-                                    workspace.invoker.execute_stepper(Command::MeasureLength(
-                                        selection.band_selection,
-                                    ))?,
-                                ));
+                            Ok::<(), InvokerError>(())
+                        };
+                        if remove_bands.consume_key_triggered(ctx, ui) {
+                            schedule(|selection, _| {
+                                Command::RemoveBands(selection.band_selection)
+                            })?;
+                        } else if autoroute.consume_key_triggered(ctx, ui) {
+                            schedule(|selection, opts| {
+                                Command::Autoroute(selection.pin_selection, opts)
+                            })?;
+                        } else if compare_detours.consume_key_triggered(ctx, ui) {
+                            schedule(|selection, opts| {
+                                Command::CompareDetours(selection.pin_selection, opts)
+                            })?;
+                        } else if measure_length.consume_key_triggered(ctx, ui) {
+                            schedule(|selection, _| {
+                                Command::MeasureLength(selection.band_selection)
+                            })?;
                         }
                     }
                 }
