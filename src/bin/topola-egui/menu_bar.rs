@@ -129,12 +129,14 @@ impl MenuBar {
                 egui::menu::bar(ui, |ui| {
                     ui.menu_button(tr.text("tr-menu-file"), |ui| {
                         open_design.button(ctx, ui);
-                        export_session.button(ctx, ui);
+                        ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
+                            export_session.button(ctx, ui);
 
-                        ui.separator();
+                            ui.separator();
 
-                        import_history.button(ctx, ui);
-                        export_history.button(ctx, ui);
+                            import_history.button(ctx, ui);
+                            export_history.button(ctx, ui);
+                        });
 
                         ui.separator();
 
@@ -145,16 +147,18 @@ impl MenuBar {
                     });
 
                     ui.menu_button(tr.text("tr-menu-edit"), |ui| {
-                        undo.button(ctx, ui);
-                        redo.button(ctx, ui);
+                        ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
+                            undo.button(ctx, ui);
+                            redo.button(ctx, ui);
 
-                        ui.separator();
+                            ui.separator();
 
-                        abort.button(ctx, ui);
+                            abort.button(ctx, ui);
 
-                        ui.separator();
+                            ui.separator();
 
-                        remove_bands.button(ctx, ui);
+                            remove_bands.button(ctx, ui);
+                        });
                     });
 
                     ui.menu_button(tr.text("tr-menu-view"), |ui| {
@@ -165,23 +169,28 @@ impl MenuBar {
 
                         ui.separator();
 
-                        ui.checkbox(
-                            &mut self.show_ratsnest,
-                            tr.text("tr-menu-view-show-ratsnest"),
-                        );
-                        ui.checkbox(&mut self.show_navmesh, tr.text("tr-menu-view-show-navmesh"));
-                        ui.checkbox(&mut self.show_bboxes, tr.text("tr-menu-view-show-bboxes"));
-                        ui.checkbox(
-                            &mut self.show_origin_destination,
-                            tr.text("tr-menu-view-show-origin-destination"),
-                        );
+                        ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
+                            ui.checkbox(
+                                &mut self.show_ratsnest,
+                                tr.text("tr-menu-view-show-ratsnest"),
+                            );
+                            ui.checkbox(
+                                &mut self.show_navmesh,
+                                tr.text("tr-menu-view-show-navmesh"),
+                            );
+                            ui.checkbox(&mut self.show_bboxes, tr.text("tr-menu-view-show-bboxes"));
+                            ui.checkbox(
+                                &mut self.show_origin_destination,
+                                tr.text("tr-menu-view-show-origin-destination"),
+                            );
 
-                        ui.separator();
+                            ui.separator();
 
-                        ui.checkbox(
-                            &mut self.show_layer_manager,
-                            tr.text("tr-menu-view-show-layer-manager"),
-                        );
+                            ui.checkbox(
+                                &mut self.show_layer_manager,
+                                tr.text("tr-menu-view-show-layer-manager"),
+                            );
+                        });
 
                         ui.separator();
 
@@ -192,36 +201,47 @@ impl MenuBar {
                         );
                     });
 
+                    // NOTE: we could disable the entire range of menus below
+                    // when no workspace is loaded, but that would disrupt "hover-scrolling"
+                    // between menus inside of the conditionally enabled section and
+                    // those outside...
+
                     ui.menu_button(tr.text("tr-menu-place"), |ui| {
-                        place_via.toggle_widget(ctx, ui, &mut self.is_placing_via);
+                        ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
+                            place_via.toggle_widget(ctx, ui, &mut self.is_placing_via);
+                        });
                     });
 
                     ui.menu_button(tr.text("tr-menu-route"), |ui| {
-                        autoroute.button(ctx, ui);
-                        ui.separator();
+                        ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
+                            autoroute.button(ctx, ui);
+                            ui.separator();
 
-                        ui.menu_button(tr.text("tr-menu-options"), |ui| {
-                            ui.checkbox(
-                                &mut self.autorouter_options.presort_by_pairwise_detours,
-                                tr.text("tr-menu-route-options-presort-by-pairwise-detours"),
-                            );
-                            ui.checkbox(
-                                &mut self
-                                    .autorouter_options
-                                    .router_options
-                                    .squeeze_through_under_bands,
-                                tr.text("tr-menu-route-options-squeeze-through-under-bands"),
-                            );
-                            ui.checkbox(
-                                &mut self.autorouter_options.router_options.wrap_around_bands,
-                                tr.text("tr-menu-route-options-wrap-around-bands"),
-                            );
+                            ui.menu_button(tr.text("tr-menu-options"), |ui| {
+                                ui.checkbox(
+                                    &mut self.autorouter_options.presort_by_pairwise_detours,
+                                    tr.text("tr-menu-route-options-presort-by-pairwise-detours"),
+                                );
+                                ui.checkbox(
+                                    &mut self
+                                        .autorouter_options
+                                        .router_options
+                                        .squeeze_through_under_bands,
+                                    tr.text("tr-menu-route-options-squeeze-through-under-bands"),
+                                );
+                                ui.checkbox(
+                                    &mut self.autorouter_options.router_options.wrap_around_bands,
+                                    tr.text("tr-menu-route-options-wrap-around-bands"),
+                                );
+                            });
                         });
                     });
 
                     ui.menu_button(tr.text("tr-menu-inspect"), |ui| {
-                        compare_detours.button(ctx, ui);
-                        measure_length.button(ctx, ui);
+                        ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
+                            compare_detours.button(ctx, ui);
+                            measure_length.button(ctx, ui);
+                        });
                     });
 
                     ui.separator();
