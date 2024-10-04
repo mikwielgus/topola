@@ -63,7 +63,7 @@ impl PinSelection {
         };
 
         if let (Some(pinname), Some(layername)) = (
-            board.node_pinname(node),
+            board.node_pinname(&node),
             board.layout().rules().layer_layername(layer),
         ) {
             Some(PinSelector {
@@ -127,7 +127,7 @@ impl BandSelection {
 
         Some(BandSelector {
             band: board
-                .band_bandname(board.layout().drawing().collect().loose_band_uid(loose))?
+                .band_bandname(&board.layout().drawing().collect().loose_band_uid(loose))?
                 .clone(),
         })
     }

@@ -86,7 +86,7 @@ impl<M: AccessMesadata> Board<M> {
     ) -> FixedDotIndex {
         let dot = self.layout.add_poly_fixed_dot_infringably(weight, poly);
 
-        if let Some(pin) = self.node_pinname(GenericNode::Compound(poly.into())) {
+        if let Some(pin) = self.node_pinname(&GenericNode::Compound(poly.into())) {
             self.node_to_pinname
                 .insert(GenericNode::Primitive(dot.into()), pin.to_string());
         }
@@ -128,7 +128,7 @@ impl<M: AccessMesadata> Board<M> {
             .layout
             .add_poly_fixed_seg_infringably(from, to, weight, poly);
 
-        if let Some(pin) = self.node_pinname(GenericNode::Compound(poly.into())) {
+        if let Some(pin) = self.node_pinname(&GenericNode::Compound(poly.into())) {
             self.node_to_pinname
                 .insert(GenericNode::Primitive(seg.into()), pin.to_string());
         }
@@ -176,18 +176,18 @@ impl<M: AccessMesadata> Board<M> {
     }
 
     /// Returns the pin name associated with a given node.
-    pub fn node_pinname(&self, node: NodeIndex) -> Option<&String> {
-        self.node_to_pinname.get(&node)
+    pub fn node_pinname(&self, node: &NodeIndex) -> Option<&String> {
+        self.node_to_pinname.get(node)
     }
 
     /// Returns the band name associated with a given band.
-    pub fn band_bandname(&self, band: BandUid) -> Option<&BandName> {
-        self.band_bandname.get_by_left(&band)
+    pub fn band_bandname(&self, band: &BandUid) -> Option<&BandName> {
+        self.band_bandname.get_by_left(band)
     }
 
     /// Returns the unique id associated with a given band name.
-    pub fn bandname_band(&self, bandname: BandName) -> Option<&BandUid> {
-        self.band_bandname.get_by_right(&bandname)
+    pub fn bandname_band(&self, bandname: &BandName) -> Option<&BandUid> {
+        self.band_bandname.get_by_right(bandname)
     }
 
     /// Creates band between the two nodes
@@ -198,11 +198,11 @@ impl<M: AccessMesadata> Board<M> {
         band: BandUid,
     ) {
         let source_pinname = self
-            .node_pinname(GenericNode::Primitive(source.into()))
+            .node_pinname(&GenericNode::Primitive(source.into()))
             .unwrap()
             .to_string();
         let target_pinname = self
-            .node_pinname(GenericNode::Primitive(target.into()))
+            .node_pinname(&GenericNode::Primitive(target.into()))
             .unwrap()
             .to_string();
         self.band_bandname

@@ -35,11 +35,7 @@ impl RemoveBandsExecutionStepper {
             self.done = true;
 
             for selector in self.selection.selectors() {
-                let band = autorouter
-                    .board
-                    .bandname_band(selector.band.clone())
-                    .unwrap()
-                    .0;
+                let band = autorouter.board.bandname_band(&selector.band).unwrap().0;
                 autorouter.board.layout_mut().remove_band(band);
             }
             Ok(())
