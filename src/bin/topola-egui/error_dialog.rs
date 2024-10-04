@@ -34,7 +34,7 @@ impl ErrorDialog {
     pub fn update(&mut self, ctx: &egui::Context, tr: &Translator) {
         let mut messages_cleared = false;
         egui::Window::new(tr.text("tr-dialog-tr-error-messages"))
-            .id("tr-error-messages-dialog".into())
+            .id("error-messages-dialog".into())
             .open(&mut self.window_open)
             .scroll(true)
             .show(ctx, |ui| {
@@ -43,7 +43,7 @@ impl ErrorDialog {
                     messages_cleared = true;
                 }
 
-                egui::Grid::new("tr-error-messages-grid").show(ui, |ui| {
+                egui::Grid::new("error-messages-grid").show(ui, |ui| {
                     let mut messages_to_discard = BTreeSet::<usize>::new();
                     let style = Arc::clone(ui.style());
                     for (msg_id, msg) in self.messages.iter().enumerate() {
