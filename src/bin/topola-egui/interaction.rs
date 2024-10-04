@@ -7,8 +7,6 @@ use topola::{
     stepper::{Abort, Step},
 };
 
-use crate::activity::ActivityStepperWithStatus;
-
 pub struct InteractionContext {
     // Empty for now.
     // For example, this will contain mouse pointer position.
@@ -47,7 +45,7 @@ pub enum InteractionStepper {
 impl Step<InteractionContext, InteractionStatus, InteractionError, ()> for InteractionStepper {
     fn step(
         &mut self,
-        invoker: &mut InteractionContext,
+        context: &mut InteractionContext,
     ) -> Result<InteractionStatus, InteractionError> {
         Ok(InteractionStatus::Finished(String::from("")))
     }

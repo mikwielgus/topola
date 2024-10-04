@@ -1,35 +1,15 @@
-use serde::{Deserialize, Serialize};
 use std::{
     future::Future,
     io,
-    sync::{
-        mpsc::{channel, Receiver, Sender},
-        Arc, Mutex,
-    },
+    sync::mpsc::{channel, Receiver, Sender},
 };
 use unic_langid::{langid, LanguageIdentifier};
 
-use topola::{
-    autorouter::{history::History, invoker::Invoker, Autorouter},
-    specctra::{
-        design::{LoadingError as SpecctraLoadingError, SpecctraDesign},
-        mesadata::SpecctraMesadata,
-    },
-    stepper::Step,
-};
+use topola::specctra::design::{LoadingError as SpecctraLoadingError, SpecctraDesign};
 
 use crate::{
-    activity::{ActivityContext, ActivityStatus, ActivityStepperWithStatus},
-    config::Config,
-    error_dialog::ErrorDialog,
-    interaction::InteractionContext,
-    layers::Layers,
-    menu_bar::MenuBar,
-    overlay::Overlay,
-    status_bar::StatusBar,
-    translator::Translator,
-    viewport::Viewport,
-    workspace::Workspace,
+    config::Config, error_dialog::ErrorDialog, menu_bar::MenuBar, status_bar::StatusBar,
+    translator::Translator, viewport::Viewport, workspace::Workspace,
 };
 
 pub struct App {

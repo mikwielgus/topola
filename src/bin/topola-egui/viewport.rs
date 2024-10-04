@@ -19,10 +19,7 @@ use topola::{
     specctra::mesadata::SpecctraMesadata,
 };
 
-use crate::{
-    activity::ActivityStepperWithStatus, layers::Layers, menu_bar::MenuBar, overlay::Overlay,
-    painter::Painter, workspace::Workspace,
-};
+use crate::{menu_bar::MenuBar, painter::Painter, workspace::Workspace};
 
 pub struct Viewport {
     pub transform: egui::emath::TSTransform,

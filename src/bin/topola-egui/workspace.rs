@@ -1,20 +1,8 @@
-use serde::{Deserialize, Serialize};
-use std::{
-    future::Future,
-    io,
-    sync::{
-        mpsc::{channel, Receiver, Sender},
-        Arc, Mutex,
-    },
-};
-use unic_langid::{langid, LanguageIdentifier};
+use std::sync::mpsc::{channel, Receiver, Sender};
 
 use topola::{
     autorouter::{history::History, invoker::Invoker, Autorouter},
-    specctra::{
-        design::{LoadingError as SpecctraLoadingError, SpecctraDesign},
-        mesadata::SpecctraMesadata,
-    },
+    specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
     stepper::Step,
 };
 
@@ -25,7 +13,6 @@ use crate::{
     layers::Layers,
     overlay::Overlay,
     translator::Translator,
-    viewport::Viewport,
 };
 
 /// A loaded design and associated structures

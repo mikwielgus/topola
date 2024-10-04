@@ -1,20 +1,9 @@
-use std::{
-    path::Path,
-    sync::{mpsc::Sender, Arc, Mutex},
-};
+use std::{path::Path, sync::mpsc::Sender};
 
 use topola::{
-    autorouter::{
-        execution::Command,
-        history::History,
-        invoker::{Invoker, InvokerError},
-        AutorouterOptions,
-    },
+    autorouter::{execution::Command, invoker::InvokerError, AutorouterOptions},
     router::RouterOptions,
-    specctra::{
-        design::{LoadingError as SpecctraLoadingError, SpecctraDesign},
-        mesadata::SpecctraMesadata,
-    },
+    specctra::design::{LoadingError as SpecctraLoadingError, SpecctraDesign},
     stepper::Abort,
 };
 
@@ -23,7 +12,6 @@ use crate::{
     activity::{ActivityContext, ActivityStatus, ActivityStepperWithStatus},
     app::{execute, handle_file},
     interaction::InteractionContext,
-    overlay::Overlay,
     translator::Translator,
     viewport::Viewport,
     workspace::Workspace,
