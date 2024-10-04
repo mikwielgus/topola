@@ -177,7 +177,10 @@ impl MenuBar {
 
                         ui.separator();
 
-                        ui.checkbox(&mut self.show_ratsnest, tr.text("tr-menu-view_show-ratsnest"));
+                        ui.checkbox(
+                            &mut self.show_ratsnest,
+                            tr.text("tr-menu-view_show-ratsnest"),
+                        );
                         ui.checkbox(&mut self.show_navmesh, tr.text("tr-menu-view_show-navmesh"));
                         ui.checkbox(&mut self.show_bboxes, tr.text("tr-menu-view_show-bboxes"));
                         ui.checkbox(
@@ -187,7 +190,10 @@ impl MenuBar {
 
                         ui.separator();
 
-                        ui.checkbox(&mut self.show_layer_manager, tr.text("tr-menu-view_show-layer-manager"));
+                        ui.checkbox(
+                            &mut self.show_layer_manager,
+                            tr.text("tr-menu-view_show-layer-manager"),
+                        );
 
                         ui.separator();
 

@@ -115,7 +115,8 @@ impl App {
                 Ok(design) => match self.load_specctra_dsn(design) {
                     Ok(()) => {}
                     Err(err) => {
-                        self.error_dialog.push_error("tr-module-specctra-dsn-file-loader", err);
+                        self.error_dialog
+                            .push_error("tr-module-specctra-dsn-file-loader", err);
                     }
                 },
                 Err(SpecctraLoadingError::Parse(err)) => {
@@ -123,7 +124,8 @@ impl App {
                         "tr-module-specctra-dsn-file-loader",
                         format!(
                             "{}; {}",
-                            self.translator.text("tr-error_failed-to-parse-as-specctra-dsn"),
+                            self.translator
+                                .text("tr-error_failed-to-parse-as-specctra-dsn"),
                             err
                         ),
                     );
@@ -131,7 +133,11 @@ impl App {
                 Err(SpecctraLoadingError::Io(err)) => {
                     self.error_dialog.push_error(
                         "tr-module-specctra-dsn-file-loader",
-                        format!("{}; {}", self.translator.text("tr-error_unable-to-read-file"), err),
+                        format!(
+                            "{}; {}",
+                            self.translator.text("tr-error_unable-to-read-file"),
+                            err
+                        ),
                     );
                 }
             }
@@ -147,7 +153,11 @@ impl App {
                     Ok(Err(err)) => {
                         self.error_dialog.push_error(
                             "tr-module-history-file-loader",
-                            format!("{}; {}", tr.text("tr-error_failed-to-parse-as-history-json"), err),
+                            format!(
+                                "{}; {}",
+                                tr.text("tr-error_failed-to-parse-as-history-json"),
+                                err
+                            ),
                         );
                     }
                     Err(err) => {
@@ -164,7 +174,8 @@ impl App {
                     Ok(ActivityStatus::Running) => true,
                     Ok(ActivityStatus::Finished(..)) => false,
                     Err(err) => {
-                        self.error_dialog.push_error("tr-module-invoker", format!("{}", err));
+                        self.error_dialog
+                            .push_error("tr-module-invoker", format!("{}", err));
                         false
                     }
                 };
@@ -177,11 +188,21 @@ impl App {
     fn load_specctra_dsn(&mut self, design: SpecctraDesign) -> Result<(), String> {
         let tr = &self.translator;
         let board = design.make_board();
-        let overlay = Overlay::new(&board)
-            .map_err(|err| format!("{}; {}", tr.text("tr-error_unable-to-initialize-overlay"), err))?;
+        let overlay = Overlay::new(&board).map_err(|err| {
+            format!(
+                "{}; {}",
+                tr.text("tr-error_unable-to-initialize-overlay"),
+                err
+            )
+        })?;
         let layers = Layers::new(&board);
-        let autorouter = Autorouter::new(board)
-            .map_err(|err| format!("{}; {}", tr.text("tr-error_unable-to-initialize-autorouter"), err))?;
+        let autorouter = Autorouter::new(board).map_err(|err| {
+            format!(
+                "{}; {}",
+                tr.text("tr-error_unable-to-initialize-autorouter"),
+                err
+            )
+        })?;
         self.maybe_overlay = Some(overlay);
         self.maybe_layers = Some(layers);
         self.maybe_design = Some(design);

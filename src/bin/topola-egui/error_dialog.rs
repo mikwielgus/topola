@@ -38,7 +38,10 @@ impl ErrorDialog {
             .open(&mut self.window_open)
             .scroll(true)
             .show(ctx, |ui| {
-                if ui.button(tr.text("tr-dialog-tr-error-messages_reset")).clicked() {
+                if ui
+                    .button(tr.text("tr-dialog-tr-error-messages_reset"))
+                    .clicked()
+                {
                     self.messages.clear();
                     messages_cleared = true;
                 }
@@ -72,7 +75,12 @@ impl ErrorDialog {
 
                         // TODO: perhaps alternatively, use small icon instead?
                         //   (provide alt text in that case!)
-                        if ui.add(egui::Button::new(tr.text("tr-dialog-tr-error-messages_discard"))).clicked() {
+                        if ui
+                            .add(egui::Button::new(
+                                tr.text("tr-dialog-tr-error-messages_discard"),
+                            ))
+                            .clicked()
+                        {
                             messages_to_discard.insert(msg_id);
                         }
                         ui.label(WidgetText::LayoutJob(loj));
