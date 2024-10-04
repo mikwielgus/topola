@@ -20,10 +20,14 @@ use crate::{
     math::Circle,
 };
 
+/// Represents a band between two pins.
 #[derive(Debug, Hash, Clone, PartialEq, Eq, Serialize, Deserialize)]
 pub struct BandName(String, String);
 
 impl BandName {
+    /// Creates a new [`BandName`] and manages their order.
+    ///
+    /// This function ensures that the two pin names are sorted in lexicographical order, so that the smaller name always comes first.
     pub fn new(pinname1: String, pinname2: String) -> Self {
         if pinname1.cmp(&pinname2) == Ordering::Greater {
             BandName(pinname2, pinname1)
@@ -33,6 +37,10 @@ impl BandName {
     }
 }
 
+/// Represents a board layout and its associated metadata.
+///
+/// The struct manages the relationships between board's layout,
+/// and its compounds, as well as provides methods to manipulate them.
 #[derive(Debug)]
 pub struct Board<M: AccessMesadata> {
     layout: Layout<M>,
@@ -41,6 +49,7 @@ pub struct Board<M: AccessMesadata> {
 }
 
 impl<M: AccessMesadata> Board<M> {
+    /// Initializes the board with given [`Layout`]
     pub fn new(layout: Layout<M>) -> Self {
         Self {
             layout,
@@ -49,6 +58,9 @@ impl<M: AccessMesadata> Board<M> {
         }
     }
 
+    /// Adds a new fixed dot with an optional pin name.
+    ///
+    /// Inserts the dot into the layout and, if a pin name is provided, maps it to the created dot's node.
     pub fn add_fixed_dot_infringably(
         &mut self,
         weight: FixedDotWeight,
@@ -64,6 +76,9 @@ impl<M: AccessMesadata> Board<M> {
         dot
     }
 
+    /// Adds a fixed segment between two dots with an optional pin name.
+    /// 
+    /// Adds the segment to the layout and maps the pin name to the created segment if provided.
     pub fn add_poly_fixed_dot_infringably(
         &mut self,
         weight: FixedDotWeight,
@@ -79,6 +94,9 @@ impl<M: AccessMesadata> Board<M> {
         dot
     }
 
+    /// Adds a fixed segment associated with a polygon in the layout.
+    /// 
+    /// Adds the segment to the layout and updates the internal mapping if necessary.
     pub fn add_fixed_seg_infringably(
         &mut self,
         from: FixedDotIndex,
@@ -96,6 +114,9 @@ impl<M: AccessMesadata> Board<M> {
         seg
     }
 
+    /// Adds a fixed segment associated with a polygon in the layout.
+    ///
+    /// Adds the segment to the layout and updates the internal mapping if necessary.
     pub fn add_poly_fixed_seg_infringably(
         &mut self,
         from: FixedDotIndex,
@@ -114,7 +135,10 @@ impl<M: AccessMesadata> Board<M> {
 
         seg
     }
-
+    
+    /// Adds a new polygon to the layout with an optional pin name.
+    ///
+    /// Inserts the polygon into the layout and, if a pin name is provided, maps it to the created polygon's node.
     pub fn add_poly(
         &mut self,
         weight: PolyWeight,
@@ -129,7 +153,10 @@ impl<M: AccessMesadata> Board<M> {
 
         poly
     }
-
+    
+    /// Retrieves or creates the apex (top point) of a polygon in the layout.
+    ///
+    /// If the polygon already has an apex, returns it. Otherwise, creates and returns a new fixed dot as the apex.
     pub fn poly_apex(&mut self, poly: GenericIndex<PolyWeight>) -> FixedDotIndex {
         if let Some(apex) = self.layout.poly(poly).maybe_apex() {
             apex
@@ -148,18 +175,22 @@ impl<M: AccessMesadata> Board<M> {
         }
     }
 
+    /// Returns the pin name associated with a given node.
     pub fn node_pinname(&self, node: NodeIndex) -> Option<&String> {
         self.node_to_pinname.get(&node)
     }
 
+    /// Returns the band name associated with a given band.
     pub fn band_bandname(&self, band: BandUid) -> Option<&BandName> {
         self.band_bandname.get_by_left(&band)
     }
 
+    /// Returns the unique id associated with a given band name.
     pub fn bandname_band(&self, bandname: BandName) -> Option<&BandUid> {
         self.band_bandname.get_by_right(&bandname)
     }
 
+    /// Creates band between the two nodes
     pub fn try_set_band_between_nodes(
         &mut self,
         source: FixedDotIndex,
@@ -178,6 +209,7 @@ impl<M: AccessMesadata> Board<M> {
             .insert(band, BandName::new(source_pinname, target_pinname));
     }
 
+    /// Finds a band between two pin names.
     pub fn band_between_pins(&self, pinname1: &str, pinname2: &str) -> Option<BandUid> {
         if let Some(band) = self
             .band_bandname
@@ -194,14 +226,17 @@ impl<M: AccessMesadata> Board<M> {
         }
     }
 
+    /// Returns the mesadata associated with the layout's drawing rules.
     pub fn mesadata(&self) -> &M {
         self.layout.drawing().rules()
     }
 
+    /// Returns the layout managed by this board.
     pub fn layout(&self) -> &Layout<M> {
         &self.layout
     }
 
+    /// Returns a mutable reference to the layout, allowing modifications.
     pub fn layout_mut(&mut self) -> &mut Layout<M> {
         &mut self.layout
     }
