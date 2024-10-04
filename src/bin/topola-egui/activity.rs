@@ -15,16 +15,14 @@ use topola::{
     stepper::{Abort, Step},
 };
 
+pub struct ActivityContext<'a> {
+    pub invoker: &'a mut Invoker<SpecctraMesadata>,
+}
+
 #[derive(Debug, Clone)]
 pub enum ActivityStatus {
     Running,
     Finished(String),
-}
-
-#[derive(Error, Debug, Clone)]
-pub enum ActivityError {
-    #[error(transparent)]
-    Invoker(#[from] InvokerError),
 }
 
 impl From<InvokerStatus> for ActivityStatus {
@@ -46,26 +44,29 @@ impl TryInto<()> for ActivityStatus {
     }
 }
 
+#[derive(Error, Debug, Clone)]
+pub enum ActivityError {
+    #[error(transparent)]
+    Invoker(#[from] InvokerError),
+}
+
 pub enum ActivityStepper {
     // There will be another variant for interactive activities here soon. (TODO)
     Execution(ExecutionStepper),
 }
 
-impl Step<Invoker<SpecctraMesadata>, ActivityStatus, ActivityError, ()> for ActivityStepper {
-    fn step(
-        &mut self,
-        invoker: &mut Invoker<SpecctraMesadata>,
-    ) -> Result<ActivityStatus, ActivityError> {
+impl Step<ActivityContext<'_>, ActivityStatus, ActivityError, ()> for ActivityStepper {
+    fn step(&mut self, context: &mut ActivityContext) -> Result<ActivityStatus, ActivityError> {
         match self {
-            ActivityStepper::Execution(execution) => Ok(execution.step(invoker)?.into()),
+            ActivityStepper::Execution(execution) => Ok(execution.step(context.invoker)?.into()),
         }
     }
 }
 
-impl Abort<Invoker<SpecctraMesadata>> for ActivityStepper {
-    fn abort(&mut self, invoker: &mut Invoker<SpecctraMesadata>) {
+impl Abort<ActivityContext<'_>> for ActivityStepper {
+    fn abort(&mut self, context: &mut ActivityContext) {
         match self {
-            ActivityStepper::Execution(execution) => execution.finish(invoker), // TODO.
+            ActivityStepper::Execution(execution) => execution.finish(context.invoker), // TODO.
         };
     }
 }
@@ -124,23 +125,18 @@ impl ActivityStepperWithStatus {
     }
 }
 
-impl Step<Invoker<SpecctraMesadata>, ActivityStatus, ActivityError, ()>
-    for ActivityStepperWithStatus
-{
-    fn step(
-        &mut self,
-        invoker: &mut Invoker<SpecctraMesadata>,
-    ) -> Result<ActivityStatus, ActivityError> {
-        let status = self.activity.step(invoker)?;
+impl Step<ActivityContext<'_>, ActivityStatus, ActivityError, ()> for ActivityStepperWithStatus {
+    fn step(&mut self, context: &mut ActivityContext) -> Result<ActivityStatus, ActivityError> {
+        let status = self.activity.step(context)?;
         self.maybe_status = Some(status.clone());
         Ok(status.into())
     }
 }
 
-impl Abort<Invoker<SpecctraMesadata>> for ActivityStepperWithStatus {
-    fn abort(&mut self, invoker: &mut Invoker<SpecctraMesadata>) {
+impl Abort<ActivityContext<'_>> for ActivityStepperWithStatus {
+    fn abort(&mut self, context: &mut ActivityContext) {
         self.maybe_status = Some(ActivityStatus::Finished(String::from("aborted")));
-        self.activity.abort(invoker);
+        self.activity.abort(context);
     }
 }
 

@@ -19,7 +19,7 @@ use topola::{
 };
 
 use crate::{
-    activity::{ActivityStatus, ActivityStepperWithStatus},
+    activity::{ActivityContext, ActivityStatus, ActivityStepperWithStatus},
     config::Config,
     error_dialog::ErrorDialog,
     layers::Layers,
@@ -170,7 +170,7 @@ impl App {
             }
 
             if let Some(ref mut activity) = self.maybe_activity {
-                return match activity.step(invoker) {
+                return match activity.step(&mut ActivityContext { invoker }) {
                     Ok(ActivityStatus::Running) => true,
                     Ok(ActivityStatus::Finished(..)) => false,
                     Err(err) => {

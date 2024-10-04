@@ -20,7 +20,7 @@ use topola::{
 
 use crate::{
     action::{Action, Switch, Trigger},
-    activity::{ActivityStatus, ActivityStepperWithStatus},
+    activity::{ActivityContext, ActivityStatus, ActivityStepperWithStatus},
     app::{execute, handle_file},
     overlay::Overlay,
     translator::Translator,
@@ -331,7 +331,7 @@ impl MenuBar {
                 } else if abort.consume_key_triggered(ctx, ui) {
                     if let Some(activity) = maybe_activity {
                         if let Some(invoker) = arc_mutex_maybe_invoker.lock().unwrap().as_mut() {
-                            activity.abort(invoker);
+                            activity.abort(&mut ActivityContext { invoker });
                         }
                     }
                 } else if remove_bands.consume_key_triggered(ctx, ui) {
