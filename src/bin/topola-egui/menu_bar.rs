@@ -246,6 +246,12 @@ impl MenuBar {
                     });
                 } else if quit.consume_key_triggered(ctx, ui) {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
+                    // NOTE: intentionally left empty.
+                    //
+                    // when later a full two-phase workflow with disabling of unusable UI elements
+                    // is established, move this back under the maybe_workspace.is_some() condition
+                    // below.
                 } else if let Some(workspace) = maybe_workspace {
                     if export_session.consume_key_triggered(ctx, ui) {
                         let ctx = ui.ctx().clone();
@@ -316,7 +322,6 @@ impl MenuBar {
                                 invoker: &mut workspace.invoker,
                             });
                         }
-                    } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
                     } else if workspace.maybe_activity.as_mut().map_or(true, |activity| {
                         matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
                     }) {
