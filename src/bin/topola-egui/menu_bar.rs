@@ -5,7 +5,7 @@ use std::{
 
 use topola::{
     autorouter::{
-        command::Command,
+        execution::Command,
         history::History,
         invoker::{Invoker, InvokerError},
         AutorouterOptions,

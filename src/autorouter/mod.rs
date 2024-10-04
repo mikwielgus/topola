@@ -2,8 +2,8 @@
 
 pub mod autoroute;
 mod autorouter;
-pub mod command;
 pub mod compare_detours;
+pub mod execution;
 pub mod history;
 pub mod invoker;
 pub mod measure_length;

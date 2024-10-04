@@ -6,7 +6,7 @@ use petgraph::{
 use rstar::{Envelope, AABB};
 use topola::{
     autorouter::{
-        command::Command,
+        execution::Command,
         invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles, Invoker},
     },
     drawing::{

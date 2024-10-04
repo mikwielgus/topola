@@ -1,7 +1,7 @@
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
-use crate::{board::mesadata::AccessMesadata, layout::via::ViaWeight, step::Step};
+use crate::{board::mesadata::AccessMesadata, layout::via::ViaWeight, stepper::Step};
 
 use super::{
     autoroute::{AutorouteExecutionStepper, AutorouteStatus},
@@ -39,47 +39,40 @@ impl ExecutionStepper {
         &mut self,
         invoker: &mut Invoker<M>,
     ) -> Result<InvokerStatus, InvokerError> {
-        match self {
+        Ok(match self {
             ExecutionStepper::Autoroute(autoroute) => {
                 match autoroute.step(&mut invoker.autorouter)? {
-                    AutorouteStatus::Running => Ok(InvokerStatus::Running),
-                    AutorouteStatus::Routed(..) => Ok(InvokerStatus::Running),
-                    AutorouteStatus::Finished => Ok(InvokerStatus::Finished(String::from(
-                        "finished autorouting",
-                    ))),
+                    AutorouteStatus::Running => InvokerStatus::Running,
+                    AutorouteStatus::Routed(..) => InvokerStatus::Running,
+                    AutorouteStatus::Finished => {
+                        InvokerStatus::Finished("finished autorouting".to_string())
+                    }
                 }
             }
             ExecutionStepper::PlaceVia(place_via) => {
                 place_via.doit(&mut invoker.autorouter)?;
-                Ok(InvokerStatus::Finished(String::from(
-                    "finished placing via",
-                )))
+                InvokerStatus::Finished("finished placing via".to_string())
             }
             ExecutionStepper::RemoveBands(remove_bands) => {
                 remove_bands.doit(&mut invoker.autorouter)?;
-                Ok(InvokerStatus::Finished(String::from(
-                    "finished removing bands",
-                )))
+                InvokerStatus::Finished("finished removing bands".to_string())
             }
             ExecutionStepper::CompareDetours(compare_detours) => {
                 match compare_detours.step(&mut invoker.autorouter)? {
-                    CompareDetoursStatus::Running => Ok(InvokerStatus::Running),
+                    CompareDetoursStatus::Running => InvokerStatus::Running,
                     CompareDetoursStatus::Finished(total_length1, total_length2) => {
-                        Ok(InvokerStatus::Finished(String::from(format!(
+                        InvokerStatus::Finished(format!(
                             "total detour lengths are {} and {}",
                             total_length1, total_length2
-                        ))))
+                        ))
                     }
                 }
             }
             ExecutionStepper::MeasureLength(measure_length) => {
                 let length = measure_length.doit(&mut invoker.autorouter)?;
-                Ok(InvokerStatus::Finished(format!(
-                    "Total length of selected bands: {}",
-                    length
-                )))
+                InvokerStatus::Finished(format!("Total length of selected bands: {}", length))
             }
-        }
+        })
     }
 }
 

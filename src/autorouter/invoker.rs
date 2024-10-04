@@ -16,8 +16,8 @@ use crate::{
 
 use super::{
     autoroute::AutorouteExecutionStepper,
-    command::{Command, ExecutionStepper},
     compare_detours::CompareDetoursExecutionStepper,
+    execution::{Command, ExecutionStepper},
     history::{History, HistoryError},
     measure_length::MeasureLengthExecutionStepper,
     place_via::PlaceViaExecutionStepper,
