@@ -92,6 +92,7 @@ impl Workspace {
                 Ok(ActivityStatus::Finished(..)) => false,
                 Err(err) => {
                     error_dialog.push_error("tr-module-invoker", format!("{}", err));
+                    self.maybe_activity = None;
                     false
                 }
             };
