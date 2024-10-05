@@ -7,7 +7,7 @@ use crate::{
     board::{mesadata::AccessMesadata, Board},
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
     layout::via::ViaWeight,
-    router::{navmesh::NavmeshError, RouterError, RouterOptions},
+    router::{astar::AstarError, navmesh::NavmeshError, RouterOptions},
     triangulation::GetTrianvertexNodeIndex,
 };
 
@@ -33,8 +33,8 @@ pub enum AutorouterError {
     NothingToRoute,
     #[error(transparent)]
     Navmesh(#[from] NavmeshError),
-    #[error(transparent)]
-    Router(#[from] RouterError),
+    #[error("routing failed: {0}")]
+    Astar(#[from] AstarError),
     #[error("could not place via")]
     CouldNotPlaceVia(#[from] Infringement),
     #[error("could not remove band")]

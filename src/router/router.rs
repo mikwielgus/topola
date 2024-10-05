@@ -1,7 +1,6 @@
 use geo::EuclideanDistance;
 use petgraph::{data::DataMap, visit::EdgeRef};
 use serde::{Deserialize, Serialize};
-use thiserror::Error;
 
 use crate::{
     drawing::{
@@ -22,7 +21,7 @@ use crate::{
 };
 
 use super::{
-    astar::{AstarError, AstarStrategy, PathTracker},
+    astar::{AstarStrategy, PathTracker},
     draw::DrawException,
     navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
     route::RouteStepper,
@@ -34,13 +33,6 @@ use super::{
 pub struct RouterOptions {
     pub wrap_around_bands: bool,
     pub squeeze_through_under_bands: bool,
-}
-
-#[derive(Error, Debug, Clone)]
-#[error("routing failed")]
-pub enum RouterError {
-    Navmesh(#[from] NavmeshError),
-    Astar(#[from] AstarError),
 }
 
 #[derive(Debug)]
@@ -199,7 +191,7 @@ impl<'a, R: AccessRules> Router<'a, R> {
         from: FixedDotIndex,
         to: FixedDotIndex,
         width: f64,
-    ) -> Result<RouteStepper, RouterError> {
+    ) -> Result<RouteStepper, NavmeshError> {
         RouteStepper::new(self, from, to, width)
     }
 
