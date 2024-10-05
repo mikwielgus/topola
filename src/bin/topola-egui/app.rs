@@ -22,6 +22,7 @@ use crate::{
     activity::{ActivityContext, ActivityStatus, ActivityStepperWithStatus},
     config::Config,
     error_dialog::ErrorDialog,
+    interaction::InteractionContext,
     layers::Layers,
     menu_bar::MenuBar,
     overlay::Overlay,
@@ -170,7 +171,10 @@ impl App {
             }
 
             if let Some(ref mut activity) = self.maybe_activity {
-                return match activity.step(&mut ActivityContext { invoker }) {
+                return match activity.step(&mut ActivityContext {
+                    interaction: InteractionContext {},
+                    invoker,
+                }) {
                     Ok(ActivityStatus::Running) => true,
                     Ok(ActivityStatus::Finished(..)) => false,
                     Err(err) => {

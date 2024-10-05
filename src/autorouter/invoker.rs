@@ -45,18 +45,18 @@ pub trait GetObstacles {
     fn obstacles(&self) -> &[PrimitiveIndex];
 }
 
+#[derive(Debug, Clone)]
+pub enum InvokerStatus {
+    Running,
+    Finished(String),
+}
+
 #[derive(Error, Debug, Clone)]
 pub enum InvokerError {
     #[error(transparent)]
     History(#[from] HistoryError),
     #[error(transparent)]
     Autorouter(#[from] AutorouterError),
-}
-
-#[derive(Debug, Clone)]
-pub enum InvokerStatus {
-    Running,
-    Finished(String),
 }
 
 impl TryInto<()> for InvokerStatus {

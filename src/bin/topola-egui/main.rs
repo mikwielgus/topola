@@ -5,6 +5,7 @@ mod activity;
 mod app;
 mod config;
 mod error_dialog;
+mod interaction;
 mod layers;
 mod menu_bar;
 mod overlay;

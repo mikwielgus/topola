@@ -24,8 +24,3 @@ pub trait AccessMesadata: AccessRules {
     /// Retrieves the index of a net by its name.
     fn netname_net(&self, netname: &str) -> Option<usize>;
 }
-
-
-
-
-

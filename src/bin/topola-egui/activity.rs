@@ -15,7 +15,12 @@ use topola::{
     stepper::{Abort, Step},
 };
 
+use crate::interaction::{
+    InteractionContext, InteractionError, InteractionStatus, InteractionStepper,
+};
+
 pub struct ActivityContext<'a> {
+    pub interaction: InteractionContext,
     pub invoker: &'a mut Invoker<SpecctraMesadata>,
 }
 
@@ -23,6 +28,15 @@ pub struct ActivityContext<'a> {
 pub enum ActivityStatus {
     Running,
     Finished(String),
+}
+
+impl From<InteractionStatus> for ActivityStatus {
+    fn from(status: InteractionStatus) -> Self {
+        match status {
+            InteractionStatus::Running => ActivityStatus::Running,
+            InteractionStatus::Finished(msg) => ActivityStatus::Finished(msg),
+        }
+    }
 }
 
 impl From<InvokerStatus> for ActivityStatus {
@@ -47,17 +61,22 @@ impl TryInto<()> for ActivityStatus {
 #[derive(Error, Debug, Clone)]
 pub enum ActivityError {
     #[error(transparent)]
+    Interaction(#[from] InteractionError),
+    #[error(transparent)]
     Invoker(#[from] InvokerError),
 }
 
 pub enum ActivityStepper {
-    // There will be another variant for interactive activities here soon. (TODO)
+    Interaction(InteractionStepper),
     Execution(ExecutionStepper),
 }
 
 impl Step<ActivityContext<'_>, ActivityStatus, ActivityError, ()> for ActivityStepper {
     fn step(&mut self, context: &mut ActivityContext) -> Result<ActivityStatus, ActivityError> {
         match self {
+            ActivityStepper::Interaction(interaction) => {
+                Ok(interaction.step(&mut context.interaction)?.into())
+            }
             ActivityStepper::Execution(execution) => Ok(execution.step(context.invoker)?.into()),
         }
     }
@@ -66,6 +85,9 @@ impl Step<ActivityContext<'_>, ActivityStatus, ActivityError, ()> for ActivitySt
 impl Abort<ActivityContext<'_>> for ActivityStepper {
     fn abort(&mut self, context: &mut ActivityContext) {
         match self {
+            ActivityStepper::Interaction(interaction) => {
+                Ok(interaction.abort(&mut context.interaction))
+            }
             ActivityStepper::Execution(execution) => execution.finish(context.invoker), // TODO.
         };
     }
@@ -75,6 +97,7 @@ impl GetMaybeNavmesh for ActivityStepper {
     /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         match self {
+            ActivityStepper::Interaction(interaction) => interaction.maybe_navmesh(),
             ActivityStepper::Execution(execution) => execution.maybe_navmesh(),
         }
     }
@@ -84,6 +107,7 @@ impl GetMaybeTrace for ActivityStepper {
     /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
     fn maybe_trace(&self) -> Option<&TraceStepper> {
         match self {
+            ActivityStepper::Interaction(interaction) => interaction.maybe_trace(),
             ActivityStepper::Execution(execution) => execution.maybe_trace(),
         }
     }
@@ -93,6 +117,7 @@ impl GetGhosts for ActivityStepper {
     /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
     fn ghosts(&self) -> &[PrimitiveShape] {
         match self {
+            ActivityStepper::Interaction(interaction) => interaction.ghosts(),
             ActivityStepper::Execution(execution) => execution.ghosts(),
         }
     }
@@ -102,6 +127,7 @@ impl GetObstacles for ActivityStepper {
     /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
     fn obstacles(&self) -> &[PrimitiveIndex] {
         match self {
+            ActivityStepper::Interaction(interaction) => interaction.obstacles(),
             ActivityStepper::Execution(execution) => execution.obstacles(),
         }
     }
