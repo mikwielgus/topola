@@ -1,4 +1,4 @@
-use contracts::debug_ensures;
+use contracts_try::debug_ensures;
 use geo::Point;
 use thiserror::Error;
 

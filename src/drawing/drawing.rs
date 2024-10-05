@@ -1,4 +1,4 @@
-use contracts::{debug_ensures, debug_invariant};
+use contracts_try::{debug_ensures, debug_invariant};
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 

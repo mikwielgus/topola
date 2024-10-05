@@ -2,7 +2,7 @@
 
 use std::cmp::Ordering;
 
-use contracts::debug_requires;
+use contracts_try::debug_requires;
 use enum_dispatch::enum_dispatch;
 use thiserror::Error;
 

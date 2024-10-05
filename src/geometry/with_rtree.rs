@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use contracts::debug_invariant;
+use contracts_try::debug_invariant;
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
 use rstar::{primitives::GeomWithData, Envelope, RTree, RTreeObject, AABB};

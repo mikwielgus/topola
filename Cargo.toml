@@ -29,7 +29,7 @@ egui = [
     "dep:sys-locale",
     "dep:unic-langid"
 ]
-disable_contracts = ["contracts/disable_contracts"]
+disable_contracts = ["contracts-try/disable_contracts"]
 
 [dependencies]
 thiserror = "1.0"
@@ -38,7 +38,7 @@ petgraph = "0.6.5"
 spade = "2.12.1"
 serde_json = "1.0"
 enum_dispatch = "0.3.13"
-contracts = "0.6.3"
+contracts-try = "0.7"
 bimap = "0.6.3"
 log = "0.4"
 utf8-chars = "3.0.4"
@@ -106,9 +106,6 @@ opt-level = 2 # fast and small wasm
 # Optimize all dependencies even in debug builds:
 [profile.dev.package."*"]
 opt-level = 2
-
-[patch.crates-io]
-contracts = { path = "vendored/contracts" }
 
 [build-dependencies]
 clap_mangen = "0.2.23"
