@@ -1,21 +1,17 @@
 use contracts::debug_ensures;
 use petgraph::data::DataMap;
 
-use crate::{
-    drawing::{
-        bend::LooseBendIndex,
-        dot::FixedDotIndex,
-        graph::PrimitiveIndex,
-        head::{BareHead, CaneHead, Head},
-        rules::AccessRules,
-    },
-    stepper::{Step, StepBack},
+use crate::drawing::{
+    bend::LooseBendIndex,
+    dot::FixedDotIndex,
+    graph::PrimitiveIndex,
+    head::{BareHead, CaneHead, Head},
+    rules::AccessRules,
 };
 
 use super::{
     draw::Draw,
     navmesh::{BinavvertexNodeIndex, Navmesh, NavvertexIndex},
-    tracer::TracerStatus,
     tracer::{Tracer, TracerException},
 };
 
@@ -104,16 +100,14 @@ pub struct TraceStepContext<'a: 'b, 'b, R: AccessRules> {
     pub width: f64,
 }
 
-impl<'a, 'b, R: AccessRules> Step<TraceStepContext<'a, 'b, R>, TracerStatus, TracerException, ()>
-    for TraceStepper
-{
+impl TraceStepper {
     #[debug_ensures(ret.is_ok() -> matches!(self.head, Head::Cane(..)))]
     #[debug_ensures(ret.is_ok() -> self.path.len() == old(self.path.len() + 1))]
     #[debug_ensures(ret.is_err() -> self.path.len() == old(self.path.len()))]
-    fn step(
+    pub fn step<'a, 'b, R: AccessRules>(
         &mut self,
         input: &mut TraceStepContext<'a, 'b, R>,
-    ) -> Result<TracerStatus, TracerException> {
+    ) -> Result<(), TracerException> {
         self.head = self
             .wrap(
                 input.tracer,
@@ -125,13 +119,14 @@ impl<'a, 'b, R: AccessRules> Step<TraceStepContext<'a, 'b, R>, TracerStatus, Tra
             .into();
         self.path.push(input.to);
 
-        Ok(TracerStatus::Running)
+        Ok(())
     }
-}
 
-impl<'a, R: AccessRules> StepBack<Tracer<'a, R>, TracerStatus, TracerException> for TraceStepper {
     #[debug_ensures(self.path.len() == old(self.path.len() - 1))]
-    fn step_back(&mut self, tracer: &mut Tracer<'a, R>) -> Result<TracerStatus, TracerException> {
+    pub fn step_back<'a, R: AccessRules>(
+        &mut self,
+        tracer: &mut Tracer<'a, R>,
+    ) -> Result<(), TracerException> {
         if let Head::Cane(head) = self.head {
             self.head = Draw::new(tracer.layout).undo_cane(head).unwrap();
         } else {
@@ -139,6 +134,6 @@ impl<'a, R: AccessRules> StepBack<Tracer<'a, R>, TracerStatus, TracerException> 
         }
 
         self.path.pop();
-        Ok(TracerStatus::Running)
+        Ok(())
     }
 }

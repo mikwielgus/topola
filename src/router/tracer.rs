@@ -4,7 +4,6 @@ use thiserror::Error;
 use crate::{
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, rules::AccessRules},
     layout::Layout,
-    stepper::{Step, StepBack},
 };
 
 use super::{
@@ -19,21 +18,6 @@ pub enum TracerException {
     CannotDraw(#[from] DrawException),
     #[error("cannot wrap")]
     CannotWrap,
-}
-
-pub enum TracerStatus {
-    Running,
-    Finished,
-}
-
-impl TryInto<()> for TracerStatus {
-    type Error = ();
-    fn try_into(self) -> Result<(), ()> {
-        match self {
-            TracerStatus::Running => Err(()),
-            TracerStatus::Finished => Ok(()),
-        }
-    }
 }
 
 #[derive(Debug)]
