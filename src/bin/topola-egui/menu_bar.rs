@@ -239,7 +239,7 @@ impl MenuBar {
 
                     ui.separator();
 
-                    egui::widgets::global_dark_light_mode_buttons(ui);
+                    egui::widgets::global_theme_preference_buttons(ui);
                 });
 
                 if open_design.consume_key_triggered(ctx, ui) {
