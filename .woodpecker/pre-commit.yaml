@@ -1,13 +1,14 @@
 steps:
-  lint:
+  pre-commit:
     image: rust
     environment:
       RUST_BACKTRACE: 1
       CARGO_TERM_COLOR: always
     commands:
+      - apt-get -y update > /dev/null
+      - apt-get -y install pre-commit > /dev/null
       - rustup default stable
       - rustup component add rustfmt clippy
-      - cargo fmt --check
-      - cargo clippy
+      - pre-commit run --all-files
     when:
       event: [pull_request, push, tag]
