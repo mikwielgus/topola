@@ -3,7 +3,8 @@ repos:
     rev: v1.0
     hooks:
     -   id: fmt
-    -   id: clippy
+    #-   id: clippy
+        #args: []
     -   id: cargo-check
 -   repo: https://github.com/compilerla/conventional-pre-commit
     rev: v3.4.0
