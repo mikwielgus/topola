@@ -53,17 +53,17 @@ fn impl_field(field: &Field) -> TokenStream {
             quote! {
                 #name: tokenizer.read_value()?,
             }
-        },
+        }
         FieldType::AnonymousVec => {
             quote! {
                 #name: tokenizer.read_array()?,
             }
-        },
+        }
         FieldType::NamedVec(valid_aliases) => {
             quote! {
                 #name: tokenizer.read_array_with_alias(&[#(#valid_aliases),*])?,
             }
-        },
+        }
         FieldType::NotSpecified => {
             if let Path(type_path) = &field.ty {
                 let segments = &type_path.path.segments;

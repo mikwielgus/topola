@@ -1,6 +1,6 @@
 use proc_macro::TokenStream;
-use syn::{Attribute, DeriveInput, LitStr, Meta, Token};
 use syn::punctuated::Punctuated;
+use syn::{Attribute, DeriveInput, LitStr, Meta, Token};
 
 mod read;
 mod write;
@@ -33,18 +33,16 @@ fn parse_attributes(attrs: &Vec<Attribute>) -> FieldType {
                 } else if path.is_ident("anon_vec") {
                     return FieldType::AnonymousVec;
                 }
-            },
+            }
             Meta::List(list) if list.path.is_ident("vec") => {
-                return FieldType::NamedVec(list
-                    .parse_args_with(
-                        Punctuated::<LitStr, Token![,]>::parse_terminated
-                    )
-                    .expect("#[vec(...)] must contain a list of string literals")
-                    .iter()
-                    .cloned()
-                    .collect()
+                return FieldType::NamedVec(
+                    list.parse_args_with(Punctuated::<LitStr, Token![,]>::parse_terminated)
+                        .expect("#[vec(...)] must contain a list of string literals")
+                        .iter()
+                        .cloned()
+                        .collect(),
                 );
-            },
+            }
             _ => (),
         }
     }

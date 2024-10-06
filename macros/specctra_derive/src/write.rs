@@ -51,18 +51,18 @@ fn impl_field(field: &Field) -> TokenStream {
             quote! {
                 writer.write_value(&self.#name)?;
             }
-        },
+        }
         FieldType::AnonymousVec => {
             quote! {
                 writer.write_array(&self.#name)?;
             }
-        },
+        }
         FieldType::NamedVec(valid_aliases) => {
             let canonical_name = &valid_aliases[0];
             quote! {
                 writer.write_named_array(#canonical_name, &self.#name)?;
             }
-        },
+        }
         FieldType::NotSpecified => {
             if let Path(type_path) = &field.ty {
                 let segments = &type_path.path.segments;
