@@ -33,13 +33,13 @@ impl ErrorDialog {
 
     pub fn update(&mut self, ctx: &egui::Context, tr: &Translator) {
         let mut messages_cleared = false;
-        egui::Window::new(tr.text("tr-dialog-tr-error-messages"))
+        egui::Window::new(tr.text("tr-dialog-error-messages"))
             .id("error-messages-dialog".into())
             .open(&mut self.window_open)
             .scroll(true)
             .show(ctx, |ui| {
                 if ui
-                    .button(tr.text("tr-dialog-tr-error-messages_reset"))
+                    .button(tr.text("tr-dialog-error-messages-reset"))
                     .clicked()
                 {
                     self.messages.clear();
@@ -77,7 +77,7 @@ impl ErrorDialog {
                         //   (provide alt text in that case!)
                         if ui
                             .add(egui::Button::new(
-                                tr.text("tr-dialog-tr-error-messages_discard"),
+                                tr.text("tr-dialog-error-messages-discard"),
                             ))
                             .clicked()
                         {

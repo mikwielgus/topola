@@ -97,22 +97,22 @@ impl MenuBar {
             egui::Key::Q,
         ));
         let mut undo = Trigger::new(Action::new(
-            tr.text("tr-menu-edit_undo"),
+            tr.text("tr-menu-edit-undo"),
             egui::Modifiers::CTRL,
             egui::Key::Z,
         ));
         let mut redo = Trigger::new(Action::new(
-            tr.text("tr-menu-edit_redo"),
+            tr.text("tr-menu-edit-redo"),
             egui::Modifiers::CTRL,
             egui::Key::Y,
         ));
         let mut abort = Trigger::new(Action::new(
-            tr.text("tr-menu-edit_abort"),
+            tr.text("tr-menu-edit-abort"),
             egui::Modifiers::NONE,
             egui::Key::Escape,
         ));
         let mut remove_bands = Trigger::new(Action::new(
-            tr.text("tr-menu-edit_remove-bands"),
+            tr.text("tr-menu-edit-remove-bands"),
             egui::Modifiers::NONE,
             egui::Key::Delete,
         ));
@@ -127,12 +127,12 @@ impl MenuBar {
             egui::Key::A,
         ));
         let mut compare_detours = Trigger::new(Action::new(
-            tr.text("tr-menu-inspect_compare-detours"),
+            tr.text("tr-menu-inspect-compare-detours"),
             egui::Modifiers::NONE,
             egui::Key::Minus,
         ));
         let mut measure_length = Trigger::new(Action::new(
-            tr.text("tr-menu-inspect_measure-length"),
+            tr.text("tr-menu-inspect-measure-length"),
             egui::Modifiers::NONE,
             egui::Key::Plus,
         ));
@@ -173,32 +173,32 @@ impl MenuBar {
                     ui.menu_button(tr.text("tr-menu-view"), |ui| {
                         ui.toggle_value(
                             &mut viewport.scheduled_zoom_to_fit,
-                            tr.text("tr-menu-view_zoom-to-fit"),
+                            tr.text("tr-menu-view-zoom-to-fit"),
                         );
 
                         ui.separator();
 
                         ui.checkbox(
                             &mut self.show_ratsnest,
-                            tr.text("tr-menu-view_show-ratsnest"),
+                            tr.text("tr-menu-view-show-ratsnest"),
                         );
-                        ui.checkbox(&mut self.show_navmesh, tr.text("tr-menu-view_show-navmesh"));
-                        ui.checkbox(&mut self.show_bboxes, tr.text("tr-menu-view_show-bboxes"));
+                        ui.checkbox(&mut self.show_navmesh, tr.text("tr-menu-view-show-navmesh"));
+                        ui.checkbox(&mut self.show_bboxes, tr.text("tr-menu-view-show-bboxes"));
                         ui.checkbox(
                             &mut self.show_origin_destination,
-                            tr.text("tr-menu-view_show-origin-destination"),
+                            tr.text("tr-menu-view-show-origin-destination"),
                         );
 
                         ui.separator();
 
                         ui.checkbox(
                             &mut self.show_layer_manager,
-                            tr.text("tr-menu-view_show-layer-manager"),
+                            tr.text("tr-menu-view-show-layer-manager"),
                         );
 
                         ui.separator();
 
-                        ui.label(tr.text("tr-menu-view_frame-timestep"));
+                        ui.label(tr.text("tr-menu-view-frame-timestep"));
                         ui.add(
                             egui::widgets::Slider::new(&mut self.frame_timestep, 0.0..=3.0)
                                 .suffix(" s"),
@@ -216,18 +216,18 @@ impl MenuBar {
                         ui.menu_button(tr.text("tr-menu-options"), |ui| {
                             ui.checkbox(
                                 &mut self.autorouter_options.presort_by_pairwise_detours,
-                                tr.text("tr-menu-route-options_presort-by-pairwise-detours"),
+                                tr.text("tr-menu-route-options-presort-by-pairwise-detours"),
                             );
                             ui.checkbox(
                                 &mut self
                                     .autorouter_options
                                     .router_options
                                     .squeeze_through_under_bands,
-                                tr.text("tr-menu-route-options_squeeze-through-under-bands"),
+                                tr.text("tr-menu-route-options-squeeze-through-under-bands"),
                             );
                             ui.checkbox(
                                 &mut self.autorouter_options.router_options.wrap_around_bands,
-                                tr.text("tr-menu-route-options_wrap-around-bands"),
+                                tr.text("tr-menu-route-options-wrap-around-bands"),
                             );
                         });
                     });
@@ -275,7 +275,7 @@ impl MenuBar {
                                 }
                             }
                             let task = dialog
-                                .add_filter(tr.text("tr-menu-open_specctra-session-file"), &["ses"])
+                                .add_filter(tr.text("tr-menu-open-specctra-session-file"), &["ses"])
                                 .save_file();
 
                             execute(async move {

@@ -126,7 +126,7 @@ impl App {
                         format!(
                             "{}; {}",
                             self.translator
-                                .text("tr-error_failed-to-parse-as-specctra-dsn"),
+                                .text("tr-error-failed-to-parse-as-specctra-dsn"),
                             err
                         ),
                     );
@@ -136,7 +136,7 @@ impl App {
                         "tr-module-specctra-dsn-file-loader",
                         format!(
                             "{}; {}",
-                            self.translator.text("tr-error_unable-to-read-file"),
+                            self.translator.text("tr-error-unable-to-read-file"),
                             err
                         ),
                     );
@@ -156,7 +156,7 @@ impl App {
                             "tr-module-history-file-loader",
                             format!(
                                 "{}; {}",
-                                tr.text("tr-error_failed-to-parse-as-history-json"),
+                                tr.text("tr-error-failed-to-parse-as-history-json"),
                                 err
                             ),
                         );
@@ -164,7 +164,7 @@ impl App {
                     Err(err) => {
                         self.error_dialog.push_error(
                             "tr-module-history-file-loader",
-                            format!("{}; {}", tr.text("tr-error_unable-to-read-file"), err),
+                            format!("{}; {}", tr.text("tr-error-unable-to-read-file"), err),
                         );
                     }
                 }
@@ -195,7 +195,7 @@ impl App {
         let overlay = Overlay::new(&board).map_err(|err| {
             format!(
                 "{}; {}",
-                tr.text("tr-error_unable-to-initialize-overlay"),
+                tr.text("tr-error-unable-to-initialize-overlay"),
                 err
             )
         })?;
@@ -203,7 +203,7 @@ impl App {
         let autorouter = Autorouter::new(board).map_err(|err| {
             format!(
                 "{}; {}",
-                tr.text("tr-error_unable-to-initialize-autorouter"),
+                tr.text("tr-error-unable-to-initialize-autorouter"),
                 err
             )
         })?;
