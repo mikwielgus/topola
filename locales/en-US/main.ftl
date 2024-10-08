@@ -48,9 +48,9 @@ tr-menu-inspect = Inspect
 tr-menu-inspect-compare-detours = Compare Detours
 tr-menu-inspect-measure-length = Measure Length
 
-tr-dialog-tr-error-messages = Error Messages
-tr-dialog-tr-error-messages-reset = Reset Messages
-tr-dialog-tr-error-messages-discard = Discard
+tr-dialog-error-messages = Error Messages
+tr-dialog-error-messages-reset = Reset Messages
+tr-dialog-error-messages-discard = Discard
 
 tr-module-specctra-dsn-file-loader = Specctra DSN file loader
 tr-module-history-file-loader = History file loader

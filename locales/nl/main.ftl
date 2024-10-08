@@ -22,4 +22,4 @@ tr-menu-view = Bekijken
 tr-menu-route = Route
 tr-menu-edit = Bewerken
 tr-menu-inspect = Inspecteren
-tr-dialog-tr-error-messages-discard = Negeren
+tr-dialog-error-messages-discard = Negeren
