@@ -38,22 +38,6 @@ impl Viewport {
         &mut self,
         ctx: &egui::Context,
         top: &MenuBar,
-        mut maybe_workspace: Option<&mut Workspace>,
-    ) -> egui::Rect {
-        let viewport_rect = self.paint(ctx, top, maybe_workspace.as_deref_mut());
-
-        if self.scheduled_zoom_to_fit {
-            let mut maybe_invoker = maybe_workspace.as_mut().map(|w| &mut w.invoker);
-            self.zoom_to_fit(maybe_invoker.as_deref_mut(), &viewport_rect);
-        }
-
-        viewport_rect
-    }
-
-    pub fn paint(
-        &mut self,
-        ctx: &egui::Context,
-        top: &MenuBar,
         maybe_workspace: Option<&mut Workspace>,
     ) -> egui::Rect {
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -247,49 +231,41 @@ impl Viewport {
                             }
                         }
                     }
+
+                    if self.scheduled_zoom_to_fit {
+                        let root_bbox = invoker
+                            .autorouter()
+                            .board()
+                            .layout()
+                            .drawing()
+                            .rtree()
+                            .root()
+                            .envelope();
+
+                        let root_bbox_width = root_bbox.upper()[0] - root_bbox.lower()[0];
+                        let root_bbox_height = root_bbox.upper()[1] - root_bbox.lower()[1];
+
+                        self.transform.scaling = 0.8 * if root_bbox_width / root_bbox_height
+                            >= (viewport_rect.width() as f64) / (viewport_rect.height() as f64)
+                        {
+                            viewport_rect.width() / root_bbox_width as f32
+                        } else {
+                            viewport_rect.height() / root_bbox_height as f32
+                        };
+
+                        self.transform.translation = egui::Vec2::new(
+                            viewport_rect.center()[0] as f32,
+                            viewport_rect.center()[1] as f32,
+                        ) - (self.transform.scaling
+                            * egui::Pos2::new(root_bbox.center()[0] as f32, -root_bbox.center()[1] as f32))
+                        .to_vec2();
+                    }
+
+                    self.scheduled_zoom_to_fit = false;
                 }
 
                 viewport_rect
             })
         }).inner.inner
-    }
-
-    fn zoom_to_fit(
-        &mut self,
-        maybe_invoker: Option<&mut Invoker<SpecctraMesadata>>,
-        viewport_rect: &egui::Rect,
-    ) {
-        if self.scheduled_zoom_to_fit {
-            if let Some(invoker) = maybe_invoker {
-                let root_bbox = invoker
-                    .autorouter()
-                    .board()
-                    .layout()
-                    .drawing()
-                    .rtree()
-                    .root()
-                    .envelope();
-
-                let root_bbox_width = root_bbox.upper()[0] - root_bbox.lower()[0];
-                let root_bbox_height = root_bbox.upper()[1] - root_bbox.lower()[1];
-
-                if root_bbox_width / root_bbox_height
-                    >= (viewport_rect.width() as f64) / (viewport_rect.height() as f64)
-                {
-                    self.transform.scaling = 0.8 * viewport_rect.width() / root_bbox_width as f32;
-                } else {
-                    self.transform.scaling = 0.8 * viewport_rect.height() / root_bbox_height as f32;
-                }
-
-                self.transform.translation = egui::Vec2::new(
-                    viewport_rect.center()[0] as f32,
-                    viewport_rect.center()[1] as f32,
-                ) - (self.transform.scaling
-                    * egui::Pos2::new(root_bbox.center()[0] as f32, -root_bbox.center()[1] as f32))
-                .to_vec2();
-            }
-        }
-
-        self.scheduled_zoom_to_fit = false;
     }
 }
