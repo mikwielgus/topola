@@ -136,14 +136,14 @@ impl MenuBar {
                 egui::menu::bar(ui, |ui| {
                     ui.menu_button(tr.text("tr-menu-file"), |ui| {
                         open_design.button(ctx, ui);
-                        ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-                            export_session.button(ctx, ui);
+                        //ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
+                        export_session.button(ctx, ui);
 
-                            ui.separator();
+                        ui.separator();
 
-                            import_history.button(ctx, ui);
-                            export_history.button(ctx, ui);
-                        });
+                        import_history.button(ctx, ui);
+                        export_history.button(ctx, ui);
+                        //});
 
                         ui.separator();
 
@@ -164,9 +164,9 @@ impl MenuBar {
 
                             ui.separator();
 
-                            ui.add_enabled_ui(workspace_activities_enabled, |ui| {
-                                remove_bands.button(ctx, ui);
-                            });
+                            //ui.add_enabled_ui(workspace_activities_enabled, |ui| {
+                            remove_bands.button(ctx, ui);
+                            //});
                         });
                     });
 
@@ -178,30 +178,27 @@ impl MenuBar {
 
                         ui.separator();
 
-                        ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-                            ui.checkbox(
-                                &mut self.show_ratsnest,
-                                tr.text("tr-menu-view-show-ratsnest"),
-                            );
-                            ui.checkbox(
-                                &mut self.show_navmesh,
-                                tr.text("tr-menu-view-show-navmesh"),
-                            );
-                            ui.checkbox(&mut self.show_bboxes, tr.text("tr-menu-view-show-bboxes"));
-                            ui.checkbox(
-                                &mut self.show_origin_destination,
-                                tr.text("tr-menu-view-show-origin-destination"),
-                            );
-
-                            ui.separator();
-
-                            ui.checkbox(
-                                &mut self.show_layer_manager,
-                                tr.text("tr-menu-view-show-layer-manager"),
-                            );
-                        });
+                        //ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
+                        ui.checkbox(
+                            &mut self.show_ratsnest,
+                            tr.text("tr-menu-view-show-ratsnest"),
+                        );
+                        ui.checkbox(&mut self.show_navmesh, tr.text("tr-menu-view-show-navmesh"));
+                        ui.checkbox(&mut self.show_bboxes, tr.text("tr-menu-view-show-bboxes"));
+                        ui.checkbox(
+                            &mut self.show_origin_destination,
+                            tr.text("tr-menu-view-show-origin-destination"),
+                        );
 
                         ui.separator();
+
+                        ui.checkbox(
+                            &mut self.show_layer_manager,
+                            tr.text("tr-menu-view-show-layer-manager"),
+                        );
+
+                        ui.separator();
+                        //});
 
                         ui.label(tr.text("tr-menu-view-frame-timestep"));
                         ui.add(
@@ -223,9 +220,9 @@ impl MenuBar {
 
                     ui.menu_button(tr.text("tr-menu-route"), |ui| {
                         ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-                            ui.add_enabled_ui(workspace_activities_enabled, |ui| {
-                                autoroute.button(ctx, ui);
-                            });
+                            //ui.add_enabled_ui(workspace_activities_enabled, |ui| {
+                            autoroute.button(ctx, ui);
+                            //});
                             ui.separator();
 
                             ui.menu_button(tr.text("tr-menu-options"), |ui| {
