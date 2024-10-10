@@ -7,10 +7,10 @@ use topola::{
             InvokerStatus,
         },
     },
+    board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     router::{navcord::NavcordStepper, navmesh::Navmesh},
-    specctra::mesadata::SpecctraMesadata,
     stepper::{Abort, Step},
 };
 
@@ -18,9 +18,9 @@ use crate::interaction::{
     InteractionContext, InteractionError, InteractionStatus, InteractionStepper,
 };
 
-pub struct ActivityContext<'a> {
+pub struct ActivityContext<'a, M: AccessMesadata> {
     pub interaction: InteractionContext,
-    pub invoker: &'a mut Invoker<SpecctraMesadata>,
+    pub invoker: &'a mut Invoker<M>,
 }
 
 #[derive(Debug, Clone)]
@@ -70,8 +70,10 @@ pub enum ActivityStepper {
     Execution(ExecutionStepper),
 }
 
-impl Step<ActivityContext<'_>, ActivityStatus, ActivityError, ()> for ActivityStepper {
-    fn step(&mut self, context: &mut ActivityContext) -> Result<ActivityStatus, ActivityError> {
+impl<M: AccessMesadata> Step<ActivityContext<'_, M>, ActivityStatus, ActivityError, ()>
+    for ActivityStepper
+{
+    fn step(&mut self, context: &mut ActivityContext<M>) -> Result<ActivityStatus, ActivityError> {
         match self {
             ActivityStepper::Interaction(interaction) => {
                 Ok(interaction.step(&mut context.interaction)?.into())
@@ -81,8 +83,8 @@ impl Step<ActivityContext<'_>, ActivityStatus, ActivityError, ()> for ActivitySt
     }
 }
 
-impl Abort<ActivityContext<'_>> for ActivityStepper {
-    fn abort(&mut self, context: &mut ActivityContext) {
+impl<M: AccessMesadata> Abort<ActivityContext<'_, M>> for ActivityStepper {
+    fn abort(&mut self, context: &mut ActivityContext<M>) {
         match self {
             ActivityStepper::Interaction(interaction) => {
                 Ok(interaction.abort(&mut context.interaction))
@@ -150,16 +152,18 @@ impl ActivityStepperWithStatus {
     }
 }
 
-impl Step<ActivityContext<'_>, ActivityStatus, ActivityError, ()> for ActivityStepperWithStatus {
-    fn step(&mut self, context: &mut ActivityContext) -> Result<ActivityStatus, ActivityError> {
+impl<M: AccessMesadata> Step<ActivityContext<'_, M>, ActivityStatus, ActivityError, ()>
+    for ActivityStepperWithStatus
+{
+    fn step(&mut self, context: &mut ActivityContext<M>) -> Result<ActivityStatus, ActivityError> {
         let status = self.activity.step(context)?;
         self.maybe_status = Some(status.clone());
         Ok(status.into())
     }
 }
 
-impl Abort<ActivityContext<'_>> for ActivityStepperWithStatus {
-    fn abort(&mut self, context: &mut ActivityContext) {
+impl<M: AccessMesadata> Abort<ActivityContext<'_, M>> for ActivityStepperWithStatus {
+    fn abort(&mut self, context: &mut ActivityContext<M>) {
         self.maybe_status = Some(ActivityStatus::Finished(String::from("aborted")));
         self.activity.abort(context);
     }
