@@ -1,7 +1,5 @@
 //! Manages the comparison of detours between two ratlines, tracking their
-//! routing statuses and lengths. Facilitates stepwise processing of routing
-//! while providing access to navigation meshes, traces, ghost shapes, and
-//! obstacles encountered.
+//! routing statuses and recording their lengths.
 
 use petgraph::graph::EdgeIndex;
 
@@ -10,13 +8,13 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{primitive::PrimitiveShape, shape::MeasureLength},
     graph::MakeRef,
-    router::{navmesh::Navmesh, trace::TraceStepper},
+    router::{navcord::NavcordStepper, navmesh::Navmesh},
     stepper::Step,
 };
 
 use super::{
     autoroute::{AutorouteExecutionStepper, AutorouteStatus},
-    invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles},
+    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
     Autorouter, AutorouterError, AutorouterOptions,
 };
 
@@ -123,9 +121,9 @@ impl GetMaybeNavmesh for CompareDetoursExecutionStepper {
     }
 }
 
-impl GetMaybeTrace for CompareDetoursExecutionStepper {
-    fn maybe_trace(&self) -> Option<&TraceStepper> {
-        self.autoroute.maybe_trace()
+impl GetMaybeNavcord for CompareDetoursExecutionStepper {
+    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
+        self.autoroute.maybe_navcord()
     }
 }
 

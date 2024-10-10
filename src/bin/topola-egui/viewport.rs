@@ -7,7 +7,7 @@ use rstar::{Envelope, AABB};
 use topola::{
     autorouter::{
         execution::Command,
-        invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles, Invoker},
+        invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles, Invoker},
     },
     drawing::{
         graph::{MakePrimitive, PrimitiveIndex},
@@ -171,12 +171,12 @@ impl Viewport {
 
                                     let stroke = 'blk: {
                                         if let (Some(source_pos), Some(target_pos)) = (
-                                            activity.maybe_trace().map(|trace|
-                                                trace.path
+                                            activity.maybe_navcord().map(|navcord|
+                                                navcord.path
                                                 .iter()
                                                 .position(|node| *node == edge.source())).flatten(),
-                                            activity.maybe_trace().map(|trace|
-                                                trace.path
+                                            activity.maybe_navcord().map(|navcord|
+                                                navcord.path
                                                 .iter()
                                                 .position(|node| *node == edge.target())).flatten(),
                                         ) {

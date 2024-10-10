@@ -5,9 +5,9 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     router::{
         astar::{Astar, AstarError, AstarStatus},
+        navcord::NavcordStepper,
+        navcorder::Navcorder,
         navmesh::{Navmesh, NavmeshError},
-        trace::TraceStepper,
-        tracer::Tracer,
         Router, RouterAstarStrategy, RouterStatus,
     },
     stepper::Step,
@@ -15,7 +15,7 @@ use crate::{
 
 pub struct RouteStepper {
     astar: Astar<Navmesh, f64>,
-    trace: TraceStepper,
+    navcord: NavcordStepper,
     ghosts: Vec<PrimitiveShape>,
     obstacles: Vec<PrimitiveIndex>,
 }
@@ -40,17 +40,17 @@ impl RouteStepper {
         let source_navvertex = navmesh.origin_navvertex();
         let target = navmesh.destination();
 
-        let mut tracer = Tracer::new(router.layout_mut());
-        let mut trace = tracer.start(source, source_navvertex, width);
+        let mut navcorder = Navcorder::new(router.layout_mut());
+        let mut navcord = navcorder.start(source, source_navvertex, width);
 
-        let mut strategy = RouterAstarStrategy::new(tracer, &mut trace, target);
+        let mut strategy = RouterAstarStrategy::new(navcorder, &mut navcord, target);
         let astar = Astar::new(navmesh, source_navvertex, &mut strategy);
         let ghosts = vec![];
         let obstacles = vec![];
 
         Self {
             astar,
-            trace,
+            navcord,
             ghosts,
             obstacles,
         }
@@ -60,8 +60,8 @@ impl RouteStepper {
         &self.astar.graph
     }
 
-    pub fn trace(&self) -> &TraceStepper {
-        &self.trace
+    pub fn navcord(&self) -> &NavcordStepper {
+        &self.navcord
     }
 
     pub fn ghosts(&self) -> &[PrimitiveShape] {
@@ -77,9 +77,9 @@ impl<'a, R: AccessRules> Step<Router<'a, R>, RouterStatus, AstarError, BandTerms
     for RouteStepper
 {
     fn step(&mut self, router: &mut Router<R>) -> Result<RouterStatus, AstarError> {
-        let tracer = Tracer::new(router.layout_mut());
+        let navcorder = Navcorder::new(router.layout_mut());
         let target = self.astar.graph.destination();
-        let mut strategy = RouterAstarStrategy::new(tracer, &mut self.trace, target);
+        let mut strategy = RouterAstarStrategy::new(navcorder, &mut self.navcord, target);
 
         let result = match self.astar.step(&mut strategy)? {
             AstarStatus::Probing | AstarStatus::Probed | AstarStatus::Visited => {

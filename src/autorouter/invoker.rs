@@ -10,7 +10,7 @@ use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
-    router::{navmesh::Navmesh, trace::TraceStepper},
+    router::{navcord::NavcordStepper, navmesh::Navmesh},
     stepper::Step,
 };
 
@@ -31,8 +31,8 @@ pub trait GetMaybeNavmesh {
 }
 
 #[enum_dispatch]
-pub trait GetMaybeTrace {
-    fn maybe_trace(&self) -> Option<&TraceStepper>;
+pub trait GetMaybeNavcord {
+    fn maybe_navcord(&self) -> Option<&NavcordStepper>;
 }
 
 #[enum_dispatch]

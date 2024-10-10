@@ -23,10 +23,10 @@ use crate::{
 use super::{
     astar::{AstarStrategy, PathTracker},
     draw::DrawException,
+    navcord::{NavcordStepContext, NavcordStepper},
+    navcorder::{Navcorder, NavcorderException},
     navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
     route::RouteStepper,
-    trace::{TraceStepContext, TraceStepper},
-    tracer::{Tracer, TracerException},
 };
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -53,18 +53,22 @@ impl TryInto<BandTermsegIndex> for RouterStatus {
 
 #[derive(Debug)]
 pub struct RouterAstarStrategy<'a, R: AccessRules> {
-    pub tracer: Tracer<'a, R>,
-    pub trace: &'a mut TraceStepper,
+    pub navcorder: Navcorder<'a, R>,
+    pub navcord: &'a mut NavcordStepper,
     pub target: FixedDotIndex,
     pub probe_ghosts: Vec<PrimitiveShape>,
     pub probe_obstacles: Vec<PrimitiveIndex>,
 }
 
 impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
-    pub fn new(tracer: Tracer<'a, R>, trace: &'a mut TraceStepper, target: FixedDotIndex) -> Self {
+    pub fn new(
+        navcorder: Navcorder<'a, R>,
+        navcord: &'a mut NavcordStepper,
+        target: FixedDotIndex,
+    ) -> Self {
         Self {
-            tracer,
-            trace,
+            navcorder,
+            navcord,
             target,
             probe_ghosts: vec![],
             probe_obstacles: vec![],
@@ -72,16 +76,19 @@ impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
     }
 
     fn bihead_length(&self) -> f64 {
-        self.trace.head.ref_(self.tracer.layout.drawing()).length()
-            + match self.trace.head.face() {
+        self.navcord
+            .head
+            .ref_(self.navcorder.layout.drawing())
+            .length()
+            + match self.navcord.head.face() {
                 DotIndex::Fixed(..) => 0.0,
                 DotIndex::Loose(face) => self
-                    .tracer
+                    .navcorder
                     .layout
                     .drawing()
                     .guide()
                     .rear_head(face)
-                    .ref_(self.tracer.layout.drawing())
+                    .ref_(self.navcorder.layout.drawing())
                     .length(),
             }
     }
@@ -97,14 +104,14 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
         tracker: &PathTracker<Navmesh>,
     ) -> Option<BandTermsegIndex> {
         let new_path = tracker.reconstruct_path_to(vertex);
-        let width = self.trace.width;
+        let width = self.navcord.width;
 
-        self.tracer
-            .rework_path(navmesh, self.trace, &new_path[..], width)
+        self.navcorder
+            .rework_path(navmesh, self.navcord, &new_path[..], width)
             .unwrap();
 
-        self.tracer
-            .finish(navmesh, self.trace, self.target, width)
+        self.navcorder
+            .finish(navmesh, self.navcord, self.target, width)
             .ok()
     }
 
@@ -115,9 +122,9 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
 
         let prev_bihead_length = self.bihead_length();
 
-        let width = self.trace.width;
-        let result = self.trace.step(&mut TraceStepContext {
-            tracer: &mut self.tracer,
+        let width = self.navcord.width;
+        let result = self.navcord.step(&mut NavcordStepContext {
+            navcorder: &mut self.navcorder,
             navmesh,
             to: edge.target(),
             width,
@@ -128,7 +135,7 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
         match result {
             Ok(..) => Some(probe_length),
             Err(err) => {
-                if let TracerException::CannotDraw(draw_err) = err {
+                if let NavcorderException::CannotDraw(draw_err) = err {
                     let layout_err = match draw_err {
                         DrawException::NoTangents(..) => return None,
                         DrawException::CannotFinishIn(.., layout_err) => layout_err,
@@ -155,16 +162,16 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
     }
 
     fn remove_probe(&mut self, _navmesh: &Navmesh) {
-        self.trace.step_back(&mut self.tracer);
+        self.navcord.step_back(&mut self.navcorder);
     }
 
     fn estimate_cost(&mut self, navmesh: &Navmesh, vertex: NavvertexIndex) -> f64 {
         let start_point = PrimitiveIndex::from(navmesh.node_weight(vertex).unwrap().node)
-            .primitive(self.tracer.layout.drawing())
+            .primitive(self.navcorder.layout.drawing())
             .shape()
             .center();
         let end_point = self
-            .tracer
+            .navcorder
             .layout
             .drawing()
             .primitive(self.target)

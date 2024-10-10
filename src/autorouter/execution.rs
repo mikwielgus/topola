@@ -25,7 +25,7 @@ pub enum Command {
     MeasureLength(BandSelection),
 }
 
-#[enum_dispatch(GetMaybeNavmesh, GetMaybeTrace, GetGhosts, GetObstacles)]
+#[enum_dispatch(GetMaybeNavmesh, GetMaybeNavcord, GetGhosts, GetObstacles)]
 pub enum ExecutionStepper {
     Autoroute(AutorouteExecutionStepper),
     PlaceVia(PlaceViaExecutionStepper),

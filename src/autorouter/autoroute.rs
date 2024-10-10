@@ -1,6 +1,5 @@
 //! Manages autorouting of ratlines in a layout, tracking status and processed
-//!  routing steps. Provides access to navigation meshes, traces, ghost shapes,
-//! and obstacles encountered during routing.
+//! routing steps.
 
 use petgraph::graph::EdgeIndex;
 
@@ -8,12 +7,14 @@ use crate::{
     board::mesadata::AccessMesadata,
     drawing::{band::BandTermsegIndex, graph::PrimitiveIndex},
     geometry::primitive::PrimitiveShape,
-    router::{navmesh::Navmesh, route::RouteStepper, trace::TraceStepper, Router, RouterStatus},
+    router::{
+        navcord::NavcordStepper, navmesh::Navmesh, route::RouteStepper, Router, RouterStatus,
+    },
     stepper::Step,
 };
 
 use super::{
-    invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles},
+    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
     Autorouter, AutorouterError, AutorouterOptions,
 };
 
@@ -149,10 +150,10 @@ impl GetMaybeNavmesh for AutorouteExecutionStepper {
     }
 }
 
-impl GetMaybeTrace for AutorouteExecutionStepper {
-    /// Retrieves an optional reference to the trace from the current route.
-    fn maybe_trace(&self) -> Option<&TraceStepper> {
-        self.route.as_ref().map(|route| route.trace())
+impl GetMaybeNavcord for AutorouteExecutionStepper {
+    /// Retrieves an optional reference to the navcord from the current route.
+    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
+        self.route.as_ref().map(|route| route.navcord())
     }
 }
 

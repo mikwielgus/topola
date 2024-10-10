@@ -11,23 +11,23 @@ use crate::drawing::{
 
 use super::{
     draw::Draw,
+    navcorder::{Navcorder, NavcorderException},
     navmesh::{BinavvertexNodeIndex, Navmesh, NavvertexIndex},
-    tracer::{Tracer, TracerException},
 };
 
 #[derive(Debug)]
-pub struct TraceStepper {
+pub struct NavcordStepper {
     pub path: Vec<NavvertexIndex>,
     pub head: Head,
     pub width: f64,
 }
 
-impl TraceStepper {
+impl NavcordStepper {
     pub fn new(
         source: FixedDotIndex,
         source_navvertex: NavvertexIndex,
         width: f64,
-    ) -> TraceStepper {
+    ) -> NavcordStepper {
         Self {
             path: vec![source_navvertex],
             head: BareHead { face: source }.into(),
@@ -37,47 +37,47 @@ impl TraceStepper {
 
     fn wrap(
         &mut self,
-        tracer: &mut Tracer<impl AccessRules>,
+        navcorder: &mut Navcorder<impl AccessRules>,
         navmesh: &Navmesh,
         head: Head,
         around: NavvertexIndex,
         width: f64,
-    ) -> Result<CaneHead, TracerException> {
+    ) -> Result<CaneHead, NavcorderException> {
         let cw = self
             .maybe_cw(navmesh, around)
-            .ok_or(TracerException::CannotWrap)?;
+            .ok_or(NavcorderException::CannotWrap)?;
 
         match self.binavvertex(navmesh, around) {
             BinavvertexNodeIndex::FixedDot(dot) => {
-                self.wrap_around_fixed_dot(tracer, head, dot, cw, width)
+                self.wrap_around_fixed_dot(navcorder, head, dot, cw, width)
             }
             BinavvertexNodeIndex::FixedBend(_fixed_bend) => todo!(),
             BinavvertexNodeIndex::LooseBend(loose_bend) => {
-                self.wrap_around_loose_bend(tracer, head, loose_bend, cw, width)
+                self.wrap_around_loose_bend(navcorder, head, loose_bend, cw, width)
             }
         }
     }
 
     fn wrap_around_fixed_dot(
         &mut self,
-        tracer: &mut Tracer<impl AccessRules>,
+        navcorder: &mut Navcorder<impl AccessRules>,
         head: Head,
         around: FixedDotIndex,
         cw: bool,
         width: f64,
-    ) -> Result<CaneHead, TracerException> {
-        Ok(Draw::new(tracer.layout).cane_around_dot(head, around, cw, width)?)
+    ) -> Result<CaneHead, NavcorderException> {
+        Ok(Draw::new(navcorder.layout).cane_around_dot(head, around, cw, width)?)
     }
 
     fn wrap_around_loose_bend(
         &mut self,
-        tracer: &mut Tracer<impl AccessRules>,
+        navcorder: &mut Navcorder<impl AccessRules>,
         head: Head,
         around: LooseBendIndex,
         cw: bool,
         width: f64,
-    ) -> Result<CaneHead, TracerException> {
-        Ok(Draw::new(tracer.layout).cane_around_bend(head, around.into(), cw, width)?)
+    ) -> Result<CaneHead, NavcorderException> {
+        Ok(Draw::new(navcorder.layout).cane_around_bend(head, around.into(), cw, width)?)
     }
 
     fn binavvertex(&self, navmesh: &Navmesh, navvertex: NavvertexIndex) -> BinavvertexNodeIndex {
@@ -93,24 +93,24 @@ impl TraceStepper {
     }
 }
 
-pub struct TraceStepContext<'a: 'b, 'b, R: AccessRules> {
-    pub tracer: &'b mut Tracer<'a, R>,
+pub struct NavcordStepContext<'a: 'b, 'b, R: AccessRules> {
+    pub navcorder: &'b mut Navcorder<'a, R>,
     pub navmesh: &'b Navmesh,
     pub to: NavvertexIndex,
     pub width: f64,
 }
 
-impl TraceStepper {
+impl NavcordStepper {
     #[debug_ensures(ret.is_ok() -> matches!(self.head, Head::Cane(..)))]
     #[debug_ensures(ret.is_ok() -> self.path.len() == old(self.path.len() + 1))]
     #[debug_ensures(ret.is_err() -> self.path.len() == old(self.path.len()))]
     pub fn step<'a, 'b, R: AccessRules>(
         &mut self,
-        input: &mut TraceStepContext<'a, 'b, R>,
-    ) -> Result<(), TracerException> {
+        input: &mut NavcordStepContext<'a, 'b, R>,
+    ) -> Result<(), NavcorderException> {
         self.head = self
             .wrap(
-                input.tracer,
+                input.navcorder,
                 input.navmesh,
                 self.head,
                 input.to,
@@ -125,10 +125,10 @@ impl TraceStepper {
     #[debug_ensures(self.path.len() == old(self.path.len() - 1))]
     pub fn step_back<'a, R: AccessRules>(
         &mut self,
-        tracer: &mut Tracer<'a, R>,
-    ) -> Result<(), TracerException> {
+        navcorder: &mut Navcorder<'a, R>,
+    ) -> Result<(), NavcorderException> {
         if let Head::Cane(head) = self.head {
-            self.head = Draw::new(tracer.layout).undo_cane(head).unwrap();
+            self.head = Draw::new(navcorder.layout).undo_cane(head).unwrap();
         } else {
             panic!();
         }

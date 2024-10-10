@@ -1,17 +1,14 @@
-//! Provides functionality to remove bands from the layout in an
-//! autorouting context. It defines a struct that interacts with the autorouter
-//! to remove selected bands, and implements necessary traits for working
-//! with navigation meshes, traces, and obstacles.
+//! Provides functionality to remove bands from the layout.
 
 use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
-    router::{navmesh::Navmesh, trace::TraceStepper},
+    router::{navcord::NavcordStepper, navmesh::Navmesh},
 };
 
 use super::{
-    invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles},
+    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
     selection::BandSelection,
     Autorouter, AutorouterError,
 };
@@ -58,8 +55,8 @@ impl GetMaybeNavmesh for RemoveBandsExecutionStepper {
     }
 }
 
-impl GetMaybeTrace for RemoveBandsExecutionStepper {
-    fn maybe_trace(&self) -> Option<&TraceStepper> {
+impl GetMaybeNavcord for RemoveBandsExecutionStepper {
+    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
         None
     }
 }

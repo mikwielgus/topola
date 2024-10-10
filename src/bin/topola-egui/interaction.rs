@@ -1,9 +1,9 @@
 use thiserror::Error;
 use topola::{
-    autorouter::invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles},
+    autorouter::invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
-    router::{navmesh::Navmesh, trace::TraceStepper},
+    router::{navcord::NavcordStepper, navmesh::Navmesh},
     stepper::{Abort, Step},
 };
 
@@ -63,8 +63,8 @@ impl GetMaybeNavmesh for InteractionStepper {
     }
 }
 
-impl GetMaybeTrace for InteractionStepper {
-    fn maybe_trace(&self) -> Option<&TraceStepper> {
+impl GetMaybeNavcord for InteractionStepper {
+    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
         todo!()
     }
 }

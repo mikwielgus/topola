@@ -7,11 +7,11 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     layout::via::ViaWeight,
-    router::{navmesh::Navmesh, trace::TraceStepper},
+    router::{navcord::NavcordStepper, navmesh::Navmesh},
 };
 
 use super::{
-    invoker::{GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles},
+    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
     Autorouter, AutorouterError,
 };
 
@@ -49,8 +49,8 @@ impl GetMaybeNavmesh for PlaceViaExecutionStepper {
     }
 }
 
-impl GetMaybeTrace for PlaceViaExecutionStepper {
-    fn maybe_trace(&self) -> Option<&TraceStepper> {
+impl GetMaybeNavcord for PlaceViaExecutionStepper {
+    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
         None
     }
 }

@@ -3,13 +3,13 @@ use topola::{
     autorouter::{
         execution::ExecutionStepper,
         invoker::{
-            GetGhosts, GetMaybeNavmesh, GetMaybeTrace, GetObstacles, Invoker, InvokerError,
+            GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles, Invoker, InvokerError,
             InvokerStatus,
         },
     },
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
-    router::{navmesh::Navmesh, trace::TraceStepper},
+    router::{navcord::NavcordStepper, navmesh::Navmesh},
     specctra::mesadata::SpecctraMesadata,
     stepper::{Abort, Step},
 };
@@ -102,12 +102,12 @@ impl GetMaybeNavmesh for ActivityStepper {
     }
 }
 
-impl GetMaybeTrace for ActivityStepper {
+impl GetMaybeNavcord for ActivityStepper {
     /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
-    fn maybe_trace(&self) -> Option<&TraceStepper> {
+    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
         match self {
-            ActivityStepper::Interaction(interaction) => interaction.maybe_trace(),
-            ActivityStepper::Execution(execution) => execution.maybe_trace(),
+            ActivityStepper::Interaction(interaction) => interaction.maybe_navcord(),
+            ActivityStepper::Execution(execution) => execution.maybe_navcord(),
         }
     }
 }
@@ -171,9 +171,9 @@ impl GetMaybeNavmesh for ActivityStepperWithStatus {
     }
 }
 
-impl GetMaybeTrace for ActivityStepperWithStatus {
-    fn maybe_trace(&self) -> Option<&TraceStepper> {
-        self.activity.maybe_trace()
+impl GetMaybeNavcord for ActivityStepperWithStatus {
+    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
+        self.activity.maybe_navcord()
     }
 }
 
