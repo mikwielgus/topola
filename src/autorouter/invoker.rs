@@ -3,7 +3,7 @@
 use std::cmp::Ordering;
 
 use contracts_try::debug_requires;
-use derive_getters::Dissolve;
+use derive_getters::{Dissolve, Getters};
 use enum_dispatch::enum_dispatch;
 use thiserror::Error;
 
@@ -70,7 +70,7 @@ impl TryInto<()> for InvokerStatus {
     }
 }
 
-#[derive(Dissolve)]
+#[derive(Getters, Dissolve)]
 pub struct Invoker<M: AccessMesadata> {
     pub(super) autorouter: Autorouter<M>,
     pub(super) history: History,
@@ -198,13 +198,5 @@ impl<M: AccessMesadata> Invoker<M> {
         }
 
         self.history.set_undone(undone.into_iter());
-    }
-
-    pub fn autorouter(&self) -> &Autorouter<M> {
-        &self.autorouter
-    }
-
-    pub fn history(&self) -> &History {
-        &self.history
     }
 }

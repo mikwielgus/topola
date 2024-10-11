@@ -1,3 +1,4 @@
+use derive_getters::Getters;
 use geo::EuclideanDistance;
 use petgraph::{data::DataMap, visit::EdgeRef};
 use serde::{Deserialize, Serialize};
@@ -182,8 +183,9 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
     }
 }
 
-#[derive(Debug)]
+#[derive(Debug, Getters)]
 pub struct Router<'a, R: AccessRules> {
+    #[getter(skip)]
     layout: &'a mut Layout<R>,
     options: RouterOptions,
 }
@@ -208,9 +210,5 @@ impl<'a, R: AccessRules> Router<'a, R> {
 
     pub fn layout(&self) -> &Layout<R> {
         self.layout
-    }
-
-    pub fn options(&self) -> RouterOptions {
-        self.options
     }
 }

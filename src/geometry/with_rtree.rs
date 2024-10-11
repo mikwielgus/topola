@@ -1,6 +1,7 @@
 use std::marker::PhantomData;
 
 use contracts_try::debug_invariant;
+use derive_getters::Getters;
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
 use rstar::{primitives::GeomWithData, Envelope, RTree, RTreeObject, AABB};
@@ -36,7 +37,7 @@ impl RTreeObject for Bbox {
 
 pub type BboxedIndex<I> = GeomWithData<Bbox, I>;
 
-#[derive(Debug)]
+#[derive(Debug, Getters)]
 pub struct GeometryWithRtree<
     PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
     DW: AccessDotWeight<PW> + GetLayer,
@@ -345,19 +346,6 @@ impl<
         } else {
             unreachable!();
         }
-    }
-
-    pub fn layer_count(&self) -> usize {
-        self.layer_count
-    }
-
-    pub fn geometry(&self) -> &Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
-        &self.geometry
-    }
-
-    // XXX: The type appears wrong? I don't think it should contain CW?
-    pub fn rtree(&self) -> &RTree<BboxedIndex<GenericNode<PI, GenericIndex<CW>>>> {
-        &self.rtree
     }
 
     pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize> {

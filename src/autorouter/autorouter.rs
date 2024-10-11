@@ -1,3 +1,4 @@
+use derive_getters::Getters;
 use petgraph::graph::EdgeIndex;
 use serde::{Deserialize, Serialize};
 use spade::InsertionError;
@@ -43,6 +44,7 @@ pub enum AutorouterError {
     NeedExactlyTwoRatlines,
 }
 
+#[derive(Getters)]
 pub struct Autorouter<M: AccessMesadata> {
     pub(super) board: Board<M>,
     pub(super) ratsnest: Ratsnest,
@@ -200,13 +202,5 @@ impl<M: AccessMesadata> Autorouter<M> {
                     && selection.contains_node(&self.board, to_navvertex.into())
             })
             .collect()
-    }
-
-    pub fn board(&self) -> &Board<M> {
-        &self.board
-    }
-
-    pub fn ratsnest(&self) -> &Ratsnest {
-        &self.ratsnest
     }
 }

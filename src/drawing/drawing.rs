@@ -1,4 +1,5 @@
 use contracts_try::{debug_ensures, debug_invariant};
+use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 
@@ -64,7 +65,7 @@ pub struct Collision(pub PrimitiveShape, pub PrimitiveIndex);
 #[error("{1:?} is already connected to net {0}")]
 pub struct AlreadyConnected(pub usize, pub PrimitiveIndex);
 
-#[derive(Debug)]
+#[derive(Debug, Getters)]
 pub struct Drawing<CW: Copy, R: AccessRules> {
     geometry_with_rtree: GeometryWithRtree<
         PrimitiveWeight,
@@ -890,10 +891,6 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         self.geometry_with_rtree.rtree()
     }
 
-    pub fn rules(&self) -> &R {
-        &self.rules
-    }
-
     #[debug_ensures(self.geometry_with_rtree.graph().node_count() == old(self.geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.geometry_with_rtree.graph().edge_count() == old(self.geometry_with_rtree.graph().edge_count()))]
     pub fn rules_mut(&mut self) -> &mut R {
@@ -917,7 +914,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     }
 
     pub fn layer_count(&self) -> usize {
-        self.geometry_with_rtree.layer_count()
+        *self.geometry_with_rtree.layer_count()
     }
 
     pub fn node_count(&self) -> usize {

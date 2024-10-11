@@ -1,5 +1,6 @@
 use std::marker::PhantomData;
 
+use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
@@ -68,7 +69,7 @@ pub trait AccessDotWeight<CW>: GetPos + SetPos + GetWidth + Into<CW> + Copy {}
 pub trait AccessSegWeight<CW>: GetWidth + Into<CW> + Copy {}
 pub trait AccessBendWeight<CW>: GetOffset + SetOffset + GetWidth + Into<CW> + Copy {}
 
-#[derive(Debug)]
+#[derive(Debug, Getters)]
 pub struct Geometry<
     PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
     DW: AccessDotWeight<PW>,
@@ -477,10 +478,6 @@ impl<
                 )
             })
             .map(|ni| self.primitive_weight(ni).retag(ni))
-    }
-
-    pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize> {
-        &self.graph
     }
 }
 

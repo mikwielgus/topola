@@ -1,6 +1,7 @@
 use std::{cmp::Ordering, collections::HashMap};
 
 use bimap::BiHashMap;
+use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -41,10 +42,13 @@ impl BandName {
 ///
 /// The struct manages the relationships between board's layout,
 /// and its compounds, as well as provides methods to manipulate them.
-#[derive(Debug)]
+#[derive(Debug, Getters)]
 pub struct Board<M: AccessMesadata> {
     layout: Layout<M>,
+    // TODO: Simplify access logic to these members so that `#[getter(skip)]`s can be removed.
+    #[getter(skip)]
     node_to_pinname: HashMap<NodeIndex, String>,
+    #[getter(skip)]
     band_bandname: BiHashMap<BandUid, BandName>,
 }
 
@@ -229,11 +233,6 @@ impl<M: AccessMesadata> Board<M> {
     /// Returns the mesadata associated with the layout's drawing rules.
     pub fn mesadata(&self) -> &M {
         self.layout.drawing().rules()
-    }
-
-    /// Returns the layout managed by this board.
-    pub fn layout(&self) -> &Layout<M> {
-        &self.layout
     }
 
     /// Returns a mutable reference to the layout, allowing modifications.

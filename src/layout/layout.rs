@@ -1,4 +1,5 @@
 use contracts_try::debug_ensures;
+use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use rstar::AABB;
@@ -35,7 +36,7 @@ pub enum CompoundWeight {
 
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<CompoundWeight>>;
 
-#[derive(Debug)]
+#[derive(Debug, Getters)]
 pub struct Layout<R: AccessRules> {
     drawing: Drawing<CompoundWeight, R>,
 }
@@ -254,10 +255,6 @@ impl<R: AccessRules> Layout<R> {
         self.drawing
             .geometry()
             .compound_members(GenericIndex::new(poly.petgraph_index()))
-    }
-
-    pub fn drawing(&self) -> &Drawing<CompoundWeight, R> {
-        &self.drawing
     }
 
     pub fn rules(&self) -> &R {
