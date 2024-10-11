@@ -13,7 +13,7 @@ use topola::{
 };
 
 use crate::{
-    activity::{ActivityContext, ActivityStatus, ActivityStepperWithStatus},
+    activity::{ActivityContext, ActivityError, ActivityStatus, ActivityStepperWithStatus},
     interaction::InteractionContext,
 };
 
@@ -62,22 +62,21 @@ impl<M: AccessMesadata> Interactor<M> {
         self.invoker.replay(history);
     }
 
-    pub fn update(&mut self) -> ControlFlow<()> {
+    pub fn update(&mut self) -> ControlFlow<Result<(), ActivityError>> {
         if let Some(ref mut activity) = self.activity {
             return match activity.step(&mut ActivityContext {
                 interaction: InteractionContext {},
                 invoker: &mut self.invoker,
             }) {
                 Ok(ActivityStatus::Running) => ControlFlow::Continue(()),
-                Ok(ActivityStatus::Finished(..)) => ControlFlow::Break(()),
+                Ok(ActivityStatus::Finished(..)) => ControlFlow::Break(Ok(())),
                 Err(err) => {
-                    //error_dialog.push_error("tr-module-invoker", format!("{}", err));
                     self.activity = None;
-                    ControlFlow::Break(())
+                    ControlFlow::Break(Err(err))
                 }
             };
         }
-        ControlFlow::Break(())
+        ControlFlow::Break(Ok(()))
     }
 
     pub fn invoker(&self) -> &Invoker<M> {

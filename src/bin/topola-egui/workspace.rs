@@ -87,7 +87,14 @@ impl Workspace {
             }
         }
 
-        self.interactor.update()
+        match self.interactor.update() {
+            ControlFlow::Continue(()) => ControlFlow::Continue(()),
+            ControlFlow::Break(Ok(())) => ControlFlow::Break(()),
+            ControlFlow::Break(Err(err)) => {
+                error_dialog.push_error("tr-module-invoker", format!("{}", err));
+                ControlFlow::Break(())
+            }
+        }
     }
 
     pub fn update_layers(&mut self, ctx: &egui::Context) {
