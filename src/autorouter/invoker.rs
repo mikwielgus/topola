@@ -3,6 +3,7 @@
 use std::cmp::Ordering;
 
 use contracts_try::debug_requires;
+use derive_getters::Dissolve;
 use enum_dispatch::enum_dispatch;
 use thiserror::Error;
 
@@ -69,6 +70,7 @@ impl TryInto<()> for InvokerStatus {
     }
 }
 
+#[derive(Dissolve)]
 pub struct Invoker<M: AccessMesadata> {
     pub(super) autorouter: Autorouter<M>,
     pub(super) history: History,
@@ -86,10 +88,6 @@ impl<M: AccessMesadata> Invoker<M> {
             history,
             ongoing_command: None,
         }
-    }
-
-    pub fn destruct(self) -> (Autorouter<M>, History, Option<Command>) {
-        (self.autorouter, self.history, self.ongoing_command)
     }
 
     //#[debug_requires(self.ongoing_command.is_none())]
@@ -193,7 +191,7 @@ impl<M: AccessMesadata> Invoker<M> {
 
     #[debug_requires(self.ongoing_command.is_none())]
     pub fn replay(&mut self, history: History) {
-        let (done, undone) = history.destruct();
+        let (done, undone) = history.dissolve();
 
         for command in done {
             self.execute(command);

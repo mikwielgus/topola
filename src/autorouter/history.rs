@@ -2,6 +2,7 @@
 //! Handles error scenarios related to command history, maintaining lists of executed
 //! and undone commands for easy navigation.
 
+use derive_getters::Dissolve;
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
@@ -15,7 +16,7 @@ pub enum HistoryError {
     NoNextCommand,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+#[derive(Debug, Default, Clone, Dissolve, Serialize, Deserialize)]
 pub struct History {
     done: Vec<Command>,
     undone: Vec<Command>,
@@ -24,10 +25,6 @@ pub struct History {
 impl History {
     pub fn new() -> Self {
         Self::default()
-    }
-
-    pub fn destruct(self) -> (Vec<Command>, Vec<Command>) {
-        (self.done, self.undone)
     }
 
     pub fn do_(&mut self, command: Command) {

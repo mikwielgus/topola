@@ -19,7 +19,7 @@ fn test_0603_breakout() {
         "tests/single_layer/0603_breakout/autoroute_all.cmd",
     );
 
-    let (mut autorouter, ..) = invoker.destruct();
+    let (mut autorouter, ..) = invoker.dissolve();
 
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
     //common::assert_number_of_conncomps(&mut autorouter, 2);
@@ -35,7 +35,7 @@ fn test_tht_diode_bridge_rectifier() {
         "tests/single_layer/tht_diode_bridge_rectifier/autoroute_all.cmd",
     );
 
-    let (mut autorouter, ..) = invoker.destruct();
+    let (mut autorouter, ..) = invoker.dissolve();
 
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
     //common::assert_number_of_conncomps(&mut autorouter, 4);
@@ -69,7 +69,7 @@ fn test_4x_3rd_order_smd_lc_filters() {
         "tests/single_layer/4x_3rd_order_smd_lc_filters/autoroute_signals.cmd",
     );
 
-    let (mut autorouter, ..) = invoker.destruct();
+    let (mut autorouter, ..) = invoker.dissolve();
 
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
     //common::assert_number_of_conncomps(&mut autorouter, 16);
@@ -87,7 +87,7 @@ fn test_tht_3pin_xlr_to_tht_3pin_xlr() {
         "tests/single_layer/tht_3pin_xlr_to_tht_3pin_xlr/autoroute_all.cmd",
     );
 
-    let (mut autorouter, ..) = invoker.destruct();
+    let (mut autorouter, ..) = invoker.dissolve();
 
     // FIXME: The routing result is pretty bad.
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
