@@ -56,13 +56,12 @@ impl Viewport {
                 let mut painter = Painter::new(ui, self.transform, top.show_bboxes);
 
                 if let Some(workspace) = maybe_workspace {
-                    let invoker = &mut workspace.invoker;
                     let layers = &mut workspace.layers;
                     let overlay = &mut workspace.overlay;
 
                     if ctx.input(|i| i.pointer.any_click()) {
                         if top.is_placing_via {
-                            invoker.execute(
+                            workspace.interactor.execute(
                                 Command::PlaceVia(ViaWeight {
                                     from_layer: 0,
                                     to_layer: 0,
@@ -75,13 +74,14 @@ impl Viewport {
                             );
                         } else {
                             overlay.click(
-                                invoker.autorouter().board(),
+                                workspace.interactor.invoker().autorouter().board(),
                                 point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
                             );
                         }
                     }
 
-                    let board = invoker.autorouter().board();
+                    let board = workspace.interactor.invoker().autorouter().board();
+
                     for i in (0..layers.visible.len()).rev() {
                         if layers.visible[i] {
                             for primitive in board.layout().drawing().layer_primitive_nodes(i) {
@@ -92,7 +92,7 @@ impl Viewport {
                                     .contains_node(board, GenericNode::Primitive(primitive))
                                 {
                                     layers.highlight_colors[i]
-                                } else if let Some(activity) = &mut workspace.maybe_activity {
+                                } else if let Some(activity) = &mut workspace.interactor.maybe_activity() {
                                     if activity.obstacles().contains(&primitive) {
                                         layers.highlight_colors[i]
                                     } else {
@@ -141,7 +141,7 @@ impl Viewport {
                     }
 
                     if top.show_navmesh {
-                        if let Some(activity) = &mut workspace.maybe_activity {
+                        if let Some(activity) = workspace.interactor.maybe_activity() {
                             if let Some(navmesh) = activity.maybe_navmesh() {
                                 for edge in navmesh.edge_references() {
                                     let mut from = PrimitiveIndex::from(navmesh.node_weight(edge.source()).unwrap().node)
@@ -206,7 +206,7 @@ impl Viewport {
                         painter.paint_bbox(root_bbox);
                     }
 
-                    if let Some(activity) = &mut workspace.maybe_activity {
+                    if let Some(activity) = &mut workspace.interactor.maybe_activity() {
                         for ghost in activity.ghosts().iter() {
                             painter.paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
                         }
@@ -233,7 +233,7 @@ impl Viewport {
                     }
 
                     if self.scheduled_zoom_to_fit {
-                        let root_bbox = invoker
+                        let root_bbox = workspace.interactor.invoker()
                             .autorouter()
                             .board()
                             .layout()

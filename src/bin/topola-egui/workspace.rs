@@ -1,4 +1,7 @@
-use std::sync::mpsc::{channel, Receiver, Sender};
+use std::{
+    ops::ControlFlow,
+    sync::mpsc::{channel, Receiver, Sender},
+};
 
 use topola::{
     autorouter::{history::History, invoker::Invoker, Autorouter},
@@ -10,6 +13,7 @@ use crate::{
     activity::{ActivityContext, ActivityStatus, ActivityStepperWithStatus},
     error_dialog::ErrorDialog,
     interaction::InteractionContext,
+    interactor::Interactor,
     layers::Layers,
     overlay::Overlay,
     translator::Translator,
@@ -20,9 +24,7 @@ pub struct Workspace {
     pub design: SpecctraDesign,
     pub layers: Layers,
     pub overlay: Overlay,
-    pub invoker: Invoker<SpecctraMesadata>,
-
-    pub maybe_activity: Option<ActivityStepperWithStatus>,
+    pub interactor: Interactor<SpecctraMesadata>,
 
     pub history_channel: (
         Sender<std::io::Result<Result<History, serde_json::Error>>>,
@@ -33,18 +35,11 @@ pub struct Workspace {
 impl Workspace {
     pub fn new(design: SpecctraDesign, tr: &Translator) -> Result<Self, String> {
         let board = design.make_board();
+        let layers = Layers::new(&board);
         let overlay = Overlay::new(&board).map_err(|err| {
             format!(
                 "{}; {}",
-                tr.text("tr-error_unable-to-initialize-overlay"),
-                err
-            )
-        })?;
-        let layers = Layers::new(&board);
-        let autorouter = Autorouter::new(board).map_err(|err| {
-            format!(
-                "{}; {}",
-                tr.text("tr-error_unable-to-initialize-autorouter"),
+                tr.text("tr-error-unable-to-initialize-overlay"),
                 err
             )
         })?;
@@ -52,24 +47,33 @@ impl Workspace {
             design,
             layers,
             overlay,
-            invoker: Invoker::new(autorouter),
-            maybe_activity: None,
+            interactor: Interactor::new(board).map_err(|err| {
+                format!(
+                    "{}; {}",
+                    tr.text("tr-error_unable-to-initialize-overlay"),
+                    err
+                )
+            })?,
             history_channel: channel(),
         })
     }
 
-    pub fn update_state(&mut self, tr: &Translator, error_dialog: &mut ErrorDialog) -> bool {
+    pub fn update_state(
+        &mut self,
+        tr: &Translator,
+        error_dialog: &mut ErrorDialog,
+    ) -> ControlFlow<()> {
         if let Ok(data) = self.history_channel.1.try_recv() {
             match data {
                 Ok(Ok(data)) => {
-                    self.invoker.replay(data);
+                    self.interactor.replay(data);
                 }
                 Ok(Err(err)) => {
                     error_dialog.push_error(
                         "tr-module-history-file-loader",
                         format!(
                             "{}; {}",
-                            tr.text("tr-error_failed-to-parse-as-history-json"),
+                            tr.text("tr-error-failed-to-parse-as-history-json"),
                             err
                         ),
                     );
@@ -77,30 +81,17 @@ impl Workspace {
                 Err(err) => {
                     error_dialog.push_error(
                         "tr-module-history-file-loader",
-                        format!("{}; {}", tr.text("tr-error_unable-to-read-file"), err),
+                        format!("{}; {}", tr.text("tr-error-unable-to-read-file"), err),
                     );
                 }
             }
         }
 
-        if let Some(activity) = &mut self.maybe_activity {
-            return match activity.step(&mut ActivityContext {
-                interaction: InteractionContext {},
-                invoker: &mut self.invoker,
-            }) {
-                Ok(ActivityStatus::Running) => true,
-                Ok(ActivityStatus::Finished(..)) => false,
-                Err(err) => {
-                    error_dialog.push_error("tr-module-invoker", format!("{}", err));
-                    self.maybe_activity = None;
-                    false
-                }
-            };
-        }
-        false
+        self.interactor.update()
     }
 
     pub fn update_layers(&mut self, ctx: &egui::Context) {
-        self.layers.update(ctx, self.invoker.autorouter().board());
+        self.layers
+            .update(ctx, self.interactor.invoker().autorouter().board());
     }
 }

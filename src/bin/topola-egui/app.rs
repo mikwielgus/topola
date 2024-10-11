@@ -1,6 +1,7 @@
 use std::{
     future::Future,
     io,
+    ops::ControlFlow,
     sync::mpsc::{channel, Receiver, Sender},
 };
 use unic_langid::{langid, LanguageIdentifier};
@@ -67,13 +68,13 @@ impl App {
         while self.update_counter >= self.menu_bar.frame_timestep {
             self.update_counter -= self.menu_bar.frame_timestep;
 
-            if !self.update_state() {
+            if let ControlFlow::Break(()) = self.update_state() {
                 return;
             }
         }
     }
 
-    fn update_state(&mut self) -> bool {
+    fn update_state(&mut self) -> ControlFlow<()> {
         if let Ok(data) = self.content_channel.1.try_recv() {
             match data {
                 Ok(design) => match Workspace::new(design, &self.translator) {
@@ -113,7 +114,8 @@ impl App {
         if let Some(workspace) = &mut self.maybe_workspace {
             return workspace.update_state(&self.translator, &mut self.error_dialog);
         }
-        false
+
+        ControlFlow::Break(())
     }
 }
 
@@ -141,7 +143,7 @@ impl eframe::App for App {
             &self.viewport,
             self.maybe_workspace
                 .as_ref()
-                .and_then(|w| w.maybe_activity.as_ref()),
+                .and_then(|w| w.interactor.maybe_activity().as_ref()),
         );
 
         if self.menu_bar.show_layer_manager {

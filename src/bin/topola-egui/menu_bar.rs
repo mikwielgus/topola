@@ -125,9 +125,13 @@ impl MenuBar {
         ));
 
         let workspace_activities_enabled = match &maybe_workspace {
-            Some(w) => w.maybe_activity.as_ref().map_or(true, |activity| {
-                matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
-            }),
+            Some(w) => w
+                .interactor
+                .maybe_activity()
+                .as_ref()
+                .map_or(true, |activity| {
+                    matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
+                }),
             None => false,
         };
 
@@ -277,7 +281,7 @@ impl MenuBar {
                 } else if let Some(workspace) = maybe_workspace {
                     if export_session.consume_key_triggered(ctx, ui) {
                         let ctx = ui.ctx().clone();
-                        let board = workspace.invoker.autorouter().board();
+                        let board = workspace.interactor.invoker().autorouter().board();
 
                         // FIXME: I don't know how to avoid buffering the entire exported file
                         let mut writebuf = vec![];
@@ -325,7 +329,10 @@ impl MenuBar {
 
                         // FIXME: I don't think we should be buffering everything in a `Vec<u8>`.
                         let mut writebuf = vec![];
-                        serde_json::to_writer_pretty(&mut writebuf, workspace.invoker.history());
+                        serde_json::to_writer_pretty(
+                            &mut writebuf,
+                            workspace.interactor.invoker().history(),
+                        );
 
                         execute(async move {
                             if let Some(file_handle) = task.await {
@@ -334,26 +341,18 @@ impl MenuBar {
                             }
                         });
                     } else if undo.consume_key_triggered(ctx, ui) {
-                        workspace.invoker.undo();
+                        workspace.interactor.undo();
                     } else if redo.consume_key_triggered(ctx, ui) {
-                        workspace.invoker.redo();
+                        workspace.interactor.redo();
                     } else if abort.consume_key_triggered(ctx, ui) {
-                        if let Some(activity) = &mut workspace.maybe_activity {
-                            activity.abort(&mut ActivityContext {
-                                interaction: InteractionContext {},
-                                invoker: &mut workspace.invoker,
-                            });
-                        }
+                        workspace.interactor.abort()
                     } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
                     } else if workspace_activities_enabled {
                         let mut schedule = |op: fn(Selection, AutorouterOptions) -> Command| {
                             let selection = workspace.overlay.take_selection();
-                            workspace.maybe_activity =
-                                Some(ActivityStepperWithStatus::new_execution(
-                                    workspace
-                                        .invoker
-                                        .execute_stepper(op(selection, self.autorouter_options))?,
-                                ));
+                            workspace
+                                .interactor
+                                .schedule(op(selection, self.autorouter_options));
                             Ok::<(), InvokerError>(())
                         };
                         if remove_bands.consume_key_triggered(ctx, ui) {
