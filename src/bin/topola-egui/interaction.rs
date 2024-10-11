@@ -42,7 +42,9 @@ pub enum InteractionStepper {
     // - interactively moving a footprint.
 }
 
-impl Step<InteractionContext, InteractionStatus, InteractionError, ()> for InteractionStepper {
+impl Step<InteractionContext, InteractionStatus, ()> for InteractionStepper {
+    type Error = InteractionError;
+
     fn step(
         &mut self,
         context: &mut InteractionContext,

@@ -87,9 +87,9 @@ impl AutorouteExecutionStepper {
     }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, AutorouterError, ()>
-    for AutorouteExecutionStepper
-{
+impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, ()> for AutorouteExecutionStepper {
+    type Error = AutorouterError;
+
     fn step(&mut self, autorouter: &mut Autorouter<M>) -> Result<AutorouteStatus, AutorouterError> {
         let Some(curr_ratline) = self.curr_ratline else {
             return Ok(AutorouteStatus::Finished);

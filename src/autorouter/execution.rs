@@ -74,7 +74,9 @@ impl ExecutionStepper {
     }
 }
 
-impl<M: AccessMesadata> Step<Invoker<M>, InvokerStatus, InvokerError, ()> for ExecutionStepper {
+impl<M: AccessMesadata> Step<Invoker<M>, InvokerStatus, ()> for ExecutionStepper {
+    type Error = InvokerError;
+
     fn step(&mut self, invoker: &mut Invoker<M>) -> Result<InvokerStatus, InvokerError> {
         match self.step_catch_err(&mut invoker.autorouter) {
             Ok(InvokerStatus::Running) => Ok(InvokerStatus::Running),

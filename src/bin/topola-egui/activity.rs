@@ -70,9 +70,9 @@ pub enum ActivityStepper {
     Execution(ExecutionStepper),
 }
 
-impl<M: AccessMesadata> Step<ActivityContext<'_, M>, ActivityStatus, ActivityError, ()>
-    for ActivityStepper
-{
+impl<M: AccessMesadata> Step<ActivityContext<'_, M>, ActivityStatus, ()> for ActivityStepper {
+    type Error = ActivityError;
+
     fn step(&mut self, context: &mut ActivityContext<M>) -> Result<ActivityStatus, ActivityError> {
         match self {
             ActivityStepper::Interaction(interaction) => {
@@ -152,9 +152,11 @@ impl ActivityStepperWithStatus {
     }
 }
 
-impl<M: AccessMesadata> Step<ActivityContext<'_, M>, ActivityStatus, ActivityError, ()>
+impl<M: AccessMesadata> Step<ActivityContext<'_, M>, ActivityStatus, ()>
     for ActivityStepperWithStatus
 {
+    type Error = ActivityError;
+
     fn step(&mut self, context: &mut ActivityContext<M>) -> Result<ActivityStatus, ActivityError> {
         let status = self.activity.step(context)?;
         self.maybe_status = Some(status.clone());

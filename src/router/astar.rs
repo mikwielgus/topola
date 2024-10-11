@@ -203,14 +203,16 @@ where
     }
 }
 
-impl<G, K, R, S: AstarStrategy<G, K, R>>
-    Step<S, AstarStatus<G, K, R>, AstarError, (K, Vec<G::NodeId>, R)> for Astar<G, K>
+impl<G, K, R, S: AstarStrategy<G, K, R>> Step<S, AstarStatus<G, K, R>, (K, Vec<G::NodeId>, R)>
+    for Astar<G, K>
 where
     G: GraphBase,
     G::NodeId: Eq + Hash,
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
     K: Measure + Copy,
 {
+    type Error = AstarError;
+
     fn step(&mut self, strategy: &mut S) -> Result<AstarStatus<G, K, R>, AstarError> {
         if let Some(curr_node) = self.maybe_curr_node {
             if self.is_probing {

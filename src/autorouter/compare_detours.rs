@@ -66,9 +66,11 @@ impl CompareDetoursExecutionStepper {
 
 // XXX: Do we really need this to be a stepper? We don't use at the moment, as sorting functions
 // aren't steppable either. It may be useful for debugging later on tho.
-impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, AutorouterError, (f64, f64)>
+impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, (f64, f64)>
     for CompareDetoursExecutionStepper
 {
+    type Error = AutorouterError;
+
     fn step(
         &mut self,
         autorouter: &mut Autorouter<M>,

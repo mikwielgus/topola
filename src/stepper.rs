@@ -1,7 +1,9 @@
-pub trait Step<C, S: TryInto<O>, E, O> {
-    fn step(&mut self, context: &mut C) -> Result<S, E>;
+pub trait Step<C, S: TryInto<O>, O> {
+    type Error;
 
-    fn finish(&mut self, context: &mut C) -> Result<O, E> {
+    fn step(&mut self, context: &mut C) -> Result<S, Self::Error>;
+
+    fn finish(&mut self, context: &mut C) -> Result<O, Self::Error> {
         loop {
             if let Ok(outcome) = self.step(context)?.try_into() {
                 return Ok(outcome);

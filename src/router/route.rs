@@ -73,9 +73,9 @@ impl RouteStepper {
     }
 }
 
-impl<'a, R: AccessRules> Step<Router<'a, R>, RouterStatus, AstarError, BandTermsegIndex>
-    for RouteStepper
-{
+impl<'a, R: AccessRules> Step<Router<'a, R>, RouterStatus, BandTermsegIndex> for RouteStepper {
+    type Error = AstarError;
+
     fn step(&mut self, router: &mut Router<R>) -> Result<RouterStatus, AstarError> {
         let navcorder = Navcorder::new(router.layout_mut());
         let target = self.astar.graph.destination();
