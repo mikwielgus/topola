@@ -10,7 +10,7 @@ use topola::{
 };
 
 use crate::{
-    activity::{ActivityContext, ActivityStatus, ActivityStepperWithStatus},
+    activity::{ActivityContext, ActivityStepperWithStatus},
     error_dialog::ErrorDialog,
     interaction::InteractionContext,
     interactor::Interactor,

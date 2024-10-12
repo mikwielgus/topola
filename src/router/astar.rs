@@ -8,6 +8,7 @@ use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{BinaryHeap, HashMap, VecDeque};
 
 use std::hash::Hash;
+use std::ops::ControlFlow;
 
 use petgraph::algo::Measure;
 use petgraph::visit::{EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges};
@@ -138,42 +139,17 @@ where
     pub is_probing: bool,
 }
 
+#[derive(Debug)]
+pub enum AstarContinueStatus {
+    Probing,
+    Probed,
+    Visited,
+}
+
 #[derive(Error, Debug, Clone)]
 pub enum AstarError {
     #[error("A* search found no path")]
     NotFound,
-}
-
-#[derive(Debug)]
-pub enum AstarStatus<G, K, R>
-where
-    G: GraphBase,
-    G::NodeId: Eq + Hash,
-    for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
-    K: Measure + Copy,
-{
-    Probing,
-    Probed,
-    Visited,
-    Finished(K, Vec<G::NodeId>, R),
-}
-
-impl<G, K, R> TryInto<(K, Vec<G::NodeId>, R)> for AstarStatus<G, K, R>
-where
-    G: GraphBase,
-    G::NodeId: Eq + Hash,
-    for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
-    K: Measure + Copy,
-{
-    type Error = ();
-    fn try_into(self) -> Result<(K, Vec<G::NodeId>, R), ()> {
-        match self {
-            AstarStatus::Probing => Err(()),
-            AstarStatus::Probed => Err(()),
-            AstarStatus::Visited => Err(()),
-            AstarStatus::Finished(cost, path, result) => Ok((cost, path, result)),
-        }
-    }
 }
 
 impl<G, K> Astar<G, K>
@@ -203,7 +179,7 @@ where
     }
 }
 
-impl<G, K, R, S: AstarStrategy<G, K, R>> Step<S, AstarStatus<G, K, R>, (K, Vec<G::NodeId>, R)>
+impl<G, K, R, S: AstarStrategy<G, K, R>> Step<S, (K, Vec<G::NodeId>, R), AstarContinueStatus>
     for Astar<G, K>
 where
     G: GraphBase,
@@ -213,7 +189,10 @@ where
 {
     type Error = AstarError;
 
-    fn step(&mut self, strategy: &mut S) -> Result<AstarStatus<G, K, R>, AstarError> {
+    fn step(
+        &mut self,
+        strategy: &mut S,
+    ) -> Result<ControlFlow<(K, Vec<G::NodeId>, R), AstarContinueStatus>, AstarError> {
         if let Some(curr_node) = self.maybe_curr_node {
             if self.is_probing {
                 strategy.remove_probe(&self.graph);
@@ -235,7 +214,7 @@ where
                             // No need to add neighbors that we have already reached through a
                             // shorter path than now.
                             if *entry.get() <= next_score {
-                                return Ok(AstarStatus::Probed);
+                                return Ok(ControlFlow::Continue(AstarContinueStatus::Probed));
                             }
                             entry.insert(next_score);
                         }
@@ -250,10 +229,10 @@ where
                     self.visit_next.push(MinScored(next_estimate_score, next));
 
                     self.is_probing = true;
-                    return Ok(AstarStatus::Probing);
+                    return Ok(ControlFlow::Continue(AstarContinueStatus::Probing));
                 }
 
-                return Ok(AstarStatus::Probed);
+                return Ok(ControlFlow::Continue(AstarContinueStatus::Probed));
             }
 
             self.maybe_curr_node = None;
@@ -266,7 +245,7 @@ where
         if let Some(result) = strategy.is_goal(&self.graph, node, &self.path_tracker) {
             let path = self.path_tracker.reconstruct_path_to(node);
             let cost = self.scores[&node];
-            return Ok(AstarStatus::Finished(cost, path, result));
+            return Ok(ControlFlow::Break((cost, path, result)));
         }
 
         match self.estimate_scores.entry(node) {
@@ -274,7 +253,7 @@ where
                 // If the node has already been visited with an equal or lower score than
                 // now, then we do not need to re-visit it.
                 if *entry.get() <= estimate_score {
-                    return Ok(AstarStatus::Visited);
+                    return Ok(ControlFlow::Continue(AstarContinueStatus::Visited));
                 }
                 entry.insert(estimate_score);
             }
@@ -286,6 +265,6 @@ where
         self.maybe_curr_node = Some(node);
         self.edge_ids = self.graph.edges(node).map(|edge| edge.id()).collect();
 
-        Ok(AstarStatus::Visited)
+        Ok(ControlFlow::Continue(AstarContinueStatus::Visited))
     }
 }

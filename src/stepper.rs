@@ -1,11 +1,13 @@
-pub trait Step<C, S: TryInto<O>, O> {
+use std::ops::ControlFlow;
+
+pub trait Step<Ctx, B, C = ()> {
     type Error;
 
-    fn step(&mut self, context: &mut C) -> Result<S, Self::Error>;
+    fn step(&mut self, context: &mut Ctx) -> Result<ControlFlow<B, C>, Self::Error>;
 
-    fn finish(&mut self, context: &mut C) -> Result<O, Self::Error> {
+    fn finish(&mut self, context: &mut Ctx) -> Result<B, Self::Error> {
         loop {
-            if let Ok(outcome) = self.step(context)?.try_into() {
+            if let ControlFlow::Break(outcome) = self.step(context)? {
                 return Ok(outcome);
             }
         }

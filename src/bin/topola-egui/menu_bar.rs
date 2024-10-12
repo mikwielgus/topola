@@ -1,4 +1,4 @@
-use std::{path::Path, sync::mpsc::Sender};
+use std::{ops::ControlFlow, path::Path, sync::mpsc::Sender};
 
 use topola::{
     autorouter::{
@@ -11,7 +11,7 @@ use topola::{
 
 use crate::{
     action::{Action, Switch, Trigger},
-    activity::{ActivityContext, ActivityStatus, ActivityStepperWithStatus},
+    activity::{ActivityContext, ActivityStepperWithStatus},
     app::{execute, handle_file},
     interaction::InteractionContext,
     translator::Translator,
@@ -130,7 +130,7 @@ impl MenuBar {
                 .maybe_activity()
                 .as_ref()
                 .map_or(true, |activity| {
-                    matches!(activity.maybe_status(), Some(ActivityStatus::Finished(..)))
+                    matches!(activity.maybe_status(), Some(ControlFlow::Break(..)))
                 }),
             None => false,
         };

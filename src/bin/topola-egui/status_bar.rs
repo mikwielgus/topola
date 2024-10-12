@@ -1,8 +1,6 @@
-use crate::{
-    activity::{ActivityStatus, ActivityStepperWithStatus},
-    translator::Translator,
-    viewport::Viewport,
-};
+use std::ops::ControlFlow;
+
+use crate::{activity::ActivityStepperWithStatus, translator::Translator, viewport::Viewport};
 
 pub struct StatusBar {}
 
@@ -25,7 +23,7 @@ impl StatusBar {
             let mut message = String::from("");
 
             if let Some(activity) = maybe_activity {
-                if let Some(ActivityStatus::Finished(msg)) = activity.maybe_status() {
+                if let Some(ControlFlow::Break(msg)) = activity.maybe_status() {
                     message = msg;
                 }
             }

@@ -1,6 +1,6 @@
 //! Manages the execution of routing commands within the autorouting system.
 
-use std::cmp::Ordering;
+use std::{cmp::Ordering, ops::ControlFlow};
 
 use contracts_try::debug_requires;
 use derive_getters::{Dissolve, Getters};
@@ -46,28 +46,12 @@ pub trait GetObstacles {
     fn obstacles(&self) -> &[PrimitiveIndex];
 }
 
-#[derive(Debug, Clone)]
-pub enum InvokerStatus {
-    Running,
-    Finished(String),
-}
-
 #[derive(Error, Debug, Clone)]
 pub enum InvokerError {
     #[error(transparent)]
     History(#[from] HistoryError),
     #[error(transparent)]
     Autorouter(#[from] AutorouterError),
-}
-
-impl TryInto<()> for InvokerStatus {
-    type Error = ();
-    fn try_into(self) -> Result<(), ()> {
-        match self {
-            InvokerStatus::Running => Err(()),
-            InvokerStatus::Finished(..) => Ok(()),
-        }
-    }
 }
 
 #[derive(Getters, Dissolve)]
@@ -95,12 +79,9 @@ impl<M: AccessMesadata> Invoker<M> {
         let mut execute = self.execute_stepper(command)?;
 
         loop {
-            let status = match execute.step(self) {
-                Ok(status) => status,
-                Err(err) => return Err(err),
-            };
+            let status = execute.step(self)?;
 
-            if let InvokerStatus::Finished(..) = status {
+            if let ControlFlow::Break(..) = status {
                 self.history.set_undone(std::iter::empty());
                 return Ok(());
             }
@@ -183,7 +164,7 @@ impl<M: AccessMesadata> Invoker<M> {
                 Err(err) => return Err(err),
             };
 
-            if let InvokerStatus::Finished(..) = status {
+            if let ControlFlow::Break(..) = status {
                 return Ok(self.history.redo()?);
             }
         }

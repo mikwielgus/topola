@@ -1,12 +1,14 @@
+use std::ops::ControlFlow;
+
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
 use crate::{board::mesadata::AccessMesadata, layout::via::ViaWeight, stepper::Step};
 
 use super::{
-    autoroute::{AutorouteExecutionStepper, AutorouteStatus},
-    compare_detours::{CompareDetoursExecutionStepper, CompareDetoursStatus},
-    invoker::{Invoker, InvokerError, InvokerStatus},
+    autoroute::AutorouteExecutionStepper,
+    compare_detours::CompareDetoursExecutionStepper,
+    invoker::{Invoker, InvokerError},
     measure_length::MeasureLengthExecutionStepper,
     place_via::PlaceViaExecutionStepper,
     remove_bands::RemoveBandsExecutionStepper,
@@ -38,28 +40,25 @@ impl ExecutionStepper {
     fn step_catch_err<M: AccessMesadata>(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<InvokerStatus, InvokerError> {
+    ) -> Result<ControlFlow<String>, InvokerError> {
         Ok(match self {
             ExecutionStepper::Autoroute(autoroute) => match autoroute.step(autorouter)? {
-                AutorouteStatus::Running => InvokerStatus::Running,
-                AutorouteStatus::Routed(..) => InvokerStatus::Running,
-                AutorouteStatus::Finished => {
-                    InvokerStatus::Finished("finished autorouting".to_string())
-                }
+                ControlFlow::Continue(..) => ControlFlow::Continue(()),
+                ControlFlow::Break(..) => ControlFlow::Break("finished autorouting".to_string()),
             },
             ExecutionStepper::PlaceVia(place_via) => {
                 place_via.doit(autorouter)?;
-                InvokerStatus::Finished("finished placing via".to_string())
+                ControlFlow::Break("finished placing via".to_string())
             }
             ExecutionStepper::RemoveBands(remove_bands) => {
                 remove_bands.doit(autorouter)?;
-                InvokerStatus::Finished("finished removing bands".to_string())
+                ControlFlow::Break("finished removing bands".to_string())
             }
             ExecutionStepper::CompareDetours(compare_detours) => {
                 match compare_detours.step(autorouter)? {
-                    CompareDetoursStatus::Running => InvokerStatus::Running,
-                    CompareDetoursStatus::Finished(total_length1, total_length2) => {
-                        InvokerStatus::Finished(format!(
+                    ControlFlow::Continue(()) => ControlFlow::Continue(()),
+                    ControlFlow::Break((total_length1, total_length2)) => {
+                        ControlFlow::Break(format!(
                             "total detour lengths are {} and {}",
                             total_length1, total_length2
                         ))
@@ -68,24 +67,24 @@ impl ExecutionStepper {
             }
             ExecutionStepper::MeasureLength(measure_length) => {
                 let length = measure_length.doit(autorouter)?;
-                InvokerStatus::Finished(format!("Total length of selected bands: {}", length))
+                ControlFlow::Break(format!("Total length of selected bands: {}", length))
             }
         })
     }
 }
 
-impl<M: AccessMesadata> Step<Invoker<M>, InvokerStatus, ()> for ExecutionStepper {
+impl<M: AccessMesadata> Step<Invoker<M>, String> for ExecutionStepper {
     type Error = InvokerError;
 
-    fn step(&mut self, invoker: &mut Invoker<M>) -> Result<InvokerStatus, InvokerError> {
+    fn step(&mut self, invoker: &mut Invoker<M>) -> Result<ControlFlow<String>, InvokerError> {
         match self.step_catch_err(&mut invoker.autorouter) {
-            Ok(InvokerStatus::Running) => Ok(InvokerStatus::Running),
-            Ok(InvokerStatus::Finished(msg)) => {
+            Ok(ControlFlow::Continue(())) => Ok(ControlFlow::Continue(())),
+            Ok(ControlFlow::Break(msg)) => {
                 if let Some(command) = invoker.ongoing_command.take() {
                     invoker.history.do_(command);
                 }
 
-                Ok(InvokerStatus::Finished(msg))
+                Ok(ControlFlow::Break(msg))
             }
             Err(err) => {
                 invoker.ongoing_command = None;

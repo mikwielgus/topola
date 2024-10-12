@@ -37,22 +37,6 @@ pub struct RouterOptions {
 }
 
 #[derive(Debug)]
-pub enum RouterStatus {
-    Running,
-    Finished(BandTermsegIndex),
-}
-
-impl TryInto<BandTermsegIndex> for RouterStatus {
-    type Error = ();
-    fn try_into(self) -> Result<BandTermsegIndex, ()> {
-        match self {
-            RouterStatus::Running => Err(()),
-            RouterStatus::Finished(band_termseg) => Ok(band_termseg),
-        }
-    }
-}
-
-#[derive(Debug)]
 pub struct RouterAstarStrategy<'a, R: AccessRules> {
     pub navcorder: Navcorder<'a, R>,
     pub navcord: &'a mut NavcordStepper,

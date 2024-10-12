@@ -1,3 +1,5 @@
+use std::ops::ControlFlow;
+
 use thiserror::Error;
 use topola::{
     autorouter::invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
@@ -13,22 +15,6 @@ pub struct InteractionContext {
     // (we will need an additional struct to hold a reference to a `Board<...>`)
 }
 
-#[derive(Debug, Clone)]
-pub enum InteractionStatus {
-    Running,
-    Finished(String),
-}
-
-impl TryInto<()> for InteractionStatus {
-    type Error = ();
-    fn try_into(self) -> Result<(), ()> {
-        match self {
-            InteractionStatus::Running => Err(()),
-            InteractionStatus::Finished(..) => Ok(()),
-        }
-    }
-}
-
 #[derive(Error, Debug, Clone)]
 pub enum InteractionError {
     #[error("nothing to interact with")]
@@ -42,14 +28,14 @@ pub enum InteractionStepper {
     // - interactively moving a footprint.
 }
 
-impl Step<InteractionContext, InteractionStatus, ()> for InteractionStepper {
+impl Step<InteractionContext, String> for InteractionStepper {
     type Error = InteractionError;
 
     fn step(
         &mut self,
         context: &mut InteractionContext,
-    ) -> Result<InteractionStatus, InteractionError> {
-        Ok(InteractionStatus::Finished(String::from("")))
+    ) -> Result<ControlFlow<String>, InteractionError> {
+        Ok(ControlFlow::Break(String::from("")))
     }
 }
 

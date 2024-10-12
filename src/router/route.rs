@@ -1,14 +1,16 @@
+use std::ops::ControlFlow;
+
 use crate::{
     drawing::{
         band::BandTermsegIndex, dot::FixedDotIndex, graph::PrimitiveIndex, rules::AccessRules,
     },
     geometry::primitive::PrimitiveShape,
     router::{
-        astar::{Astar, AstarError, AstarStatus},
+        astar::{Astar, AstarError},
         navcord::NavcordStepper,
         navcorder::Navcorder,
         navmesh::{Navmesh, NavmeshError},
-        Router, RouterAstarStrategy, RouterStatus,
+        Router, RouterAstarStrategy,
     },
     stepper::Step,
 };
@@ -73,19 +75,20 @@ impl RouteStepper {
     }
 }
 
-impl<'a, R: AccessRules> Step<Router<'a, R>, RouterStatus, BandTermsegIndex> for RouteStepper {
+impl<'a, R: AccessRules> Step<Router<'a, R>, BandTermsegIndex> for RouteStepper {
     type Error = AstarError;
 
-    fn step(&mut self, router: &mut Router<R>) -> Result<RouterStatus, AstarError> {
+    fn step(
+        &mut self,
+        router: &mut Router<R>,
+    ) -> Result<ControlFlow<BandTermsegIndex>, AstarError> {
         let navcorder = Navcorder::new(router.layout_mut());
         let target = self.astar.graph.destination();
         let mut strategy = RouterAstarStrategy::new(navcorder, &mut self.navcord, target);
 
         let result = match self.astar.step(&mut strategy)? {
-            AstarStatus::Probing | AstarStatus::Probed | AstarStatus::Visited => {
-                Ok(RouterStatus::Running)
-            }
-            AstarStatus::Finished(_cost, _path, band) => Ok(RouterStatus::Finished(band)),
+            ControlFlow::Continue(..) => Ok(ControlFlow::Continue(())),
+            ControlFlow::Break((_cost, _path, band)) => Ok(ControlFlow::Break(band)),
         };
 
         self.ghosts = strategy.probe_ghosts;

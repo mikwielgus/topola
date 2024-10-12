@@ -1,6 +1,8 @@
 //! Manages the comparison of detours between two ratlines, tracking their
 //! routing statuses and recording their lengths.
 
+use std::ops::ControlFlow;
+
 use petgraph::graph::EdgeIndex;
 
 use crate::{
@@ -13,27 +15,10 @@ use crate::{
 };
 
 use super::{
-    autoroute::{AutorouteExecutionStepper, AutorouteStatus},
+    autoroute::{AutorouteContinueStatus, AutorouteExecutionStepper},
     invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
     Autorouter, AutorouterError, AutorouterOptions,
 };
-
-pub enum CompareDetoursStatus {
-    Running,
-    Finished(f64, f64),
-}
-
-impl TryInto<(f64, f64)> for CompareDetoursStatus {
-    type Error = ();
-    fn try_into(self) -> Result<(f64, f64), ()> {
-        match self {
-            CompareDetoursStatus::Running => Err(()),
-            CompareDetoursStatus::Finished(total_length1, total_length2) => {
-                Ok((total_length1, total_length2))
-            }
-        }
-    }
-}
 
 pub struct CompareDetoursExecutionStepper {
     autoroute: AutorouteExecutionStepper,
@@ -66,25 +51,22 @@ impl CompareDetoursExecutionStepper {
 
 // XXX: Do we really need this to be a stepper? We don't use at the moment, as sorting functions
 // aren't steppable either. It may be useful for debugging later on tho.
-impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, (f64, f64)>
-    for CompareDetoursExecutionStepper
-{
+impl<M: AccessMesadata> Step<Autorouter<M>, (f64, f64)> for CompareDetoursExecutionStepper {
     type Error = AutorouterError;
 
     fn step(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<CompareDetoursStatus, AutorouterError> {
+    ) -> Result<ControlFlow<(f64, f64)>, AutorouterError> {
         if self.done {
-            return Ok(CompareDetoursStatus::Finished(
-                self.total_length1,
-                self.total_length2,
-            ));
+            return Ok(ControlFlow::Break((self.total_length1, self.total_length2)));
         }
 
         match self.autoroute.step(autorouter)? {
-            AutorouteStatus::Running => Ok(CompareDetoursStatus::Running),
-            AutorouteStatus::Routed(band_termseg) => {
+            ControlFlow::Continue(AutorouteContinueStatus::Running) => {
+                Ok(ControlFlow::Continue(()))
+            }
+            ControlFlow::Continue(AutorouteContinueStatus::Routed(band_termseg)) => {
                 let length = band_termseg
                     .ref_(autorouter.board.layout().drawing())
                     .length();
@@ -95,22 +77,19 @@ impl<M: AccessMesadata> Step<Autorouter<M>, CompareDetoursStatus, (f64, f64)>
                     self.total_length2 += length;
                 }
 
-                Ok(CompareDetoursStatus::Running)
+                Ok(ControlFlow::Continue(()))
             }
-            AutorouteStatus::Finished => {
+            ControlFlow::Break(()) => {
                 if let Some(next_autoroute) = self.next_autoroute.take() {
                     autorouter.undo_autoroute_ratlines(vec![self.ratline1, self.ratline2])?;
                     self.autoroute = next_autoroute;
 
-                    Ok(CompareDetoursStatus::Running)
+                    Ok(ControlFlow::Continue(()))
                 } else {
                     self.done = true;
                     autorouter.undo_autoroute_ratlines(vec![self.ratline2, self.ratline1])?;
 
-                    Ok(CompareDetoursStatus::Finished(
-                        self.total_length1,
-                        self.total_length2,
-                    ))
+                    Ok(ControlFlow::Break((self.total_length1, self.total_length2)))
                 }
             }
         }

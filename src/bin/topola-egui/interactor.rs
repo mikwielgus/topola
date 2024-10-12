@@ -13,7 +13,7 @@ use topola::{
 };
 
 use crate::{
-    activity::{ActivityContext, ActivityError, ActivityStatus, ActivityStepperWithStatus},
+    activity::{ActivityContext, ActivityError, ActivityStepperWithStatus},
     interaction::InteractionContext,
 };
 
@@ -68,8 +68,8 @@ impl<M: AccessMesadata> Interactor<M> {
                 interaction: InteractionContext {},
                 invoker: &mut self.invoker,
             }) {
-                Ok(ActivityStatus::Running) => ControlFlow::Continue(()),
-                Ok(ActivityStatus::Finished(..)) => ControlFlow::Break(Ok(())),
+                Ok(ControlFlow::Continue(())) => ControlFlow::Continue(()),
+                Ok(ControlFlow::Break(msg)) => ControlFlow::Break(Ok(())),
                 Err(err) => {
                     self.activity = None;
                     ControlFlow::Break(Err(err))

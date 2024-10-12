@@ -1,15 +1,15 @@
 //! Manages autorouting of ratlines in a layout, tracking status and processed
 //! routing steps.
 
+use std::ops::ControlFlow;
+
 use petgraph::graph::EdgeIndex;
 
 use crate::{
     board::mesadata::AccessMesadata,
     drawing::{band::BandTermsegIndex, graph::PrimitiveIndex},
     geometry::primitive::PrimitiveShape,
-    router::{
-        navcord::NavcordStepper, navmesh::Navmesh, route::RouteStepper, Router, RouterStatus,
-    },
+    router::{navcord::NavcordStepper, navmesh::Navmesh, route::RouteStepper, Router},
     stepper::Step,
 };
 
@@ -19,29 +19,11 @@ use super::{
 };
 
 /// Represents the current status of the autoroute operation.
-pub enum AutorouteStatus {
+pub enum AutorouteContinueStatus {
     /// The autoroute is currently running and in progress.
     Running,
     /// A specific segment has been successfully routed.
     Routed(BandTermsegIndex),
-    /// The autoroute process has completed successfully.
-    Finished,
-}
-
-impl TryInto<()> for AutorouteStatus {
-    type Error = ();
-    /// Attempts to get the [`Result`] from the  [`AutorouteStatus`].
-    ///
-    /// This implementation allows transitioning from [`AutorouteStatus`] to a
-    /// [`Result`]. It returns success for the  [`AutorouteStatus::Finished`] state
-    /// or an error for [`AutorouteStatus::Running`] or [`AutorouteStatus::Routed`] states.
-    fn try_into(self) -> Result<(), ()> {
-        match self {
-            AutorouteStatus::Running => Err(()),
-            AutorouteStatus::Routed(..) => Err(()),
-            AutorouteStatus::Finished => Ok(()),
-        }
-    }
 }
 
 /// Manages the autorouting process across multiple ratlines.
@@ -87,17 +69,22 @@ impl AutorouteExecutionStepper {
     }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, ()> for AutorouteExecutionStepper {
+impl<M: AccessMesadata> Step<Autorouter<M>, (), AutorouteContinueStatus>
+    for AutorouteExecutionStepper
+{
     type Error = AutorouterError;
 
-    fn step(&mut self, autorouter: &mut Autorouter<M>) -> Result<AutorouteStatus, AutorouterError> {
+    fn step(
+        &mut self,
+        autorouter: &mut Autorouter<M>,
+    ) -> Result<ControlFlow<(), AutorouteContinueStatus>, AutorouterError> {
         let Some(curr_ratline) = self.curr_ratline else {
-            return Ok(AutorouteStatus::Finished);
+            return Ok(ControlFlow::Break(()));
         };
 
         let Some(ref mut route) = self.route else {
             // Shouldn't happen.
-            return Ok(AutorouteStatus::Finished);
+            return Ok(ControlFlow::Break(()));
         };
 
         let (source, target) = autorouter.ratline_endpoints(curr_ratline);
@@ -106,8 +93,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, ()> for AutorouteEx
             let mut router =
                 Router::new(autorouter.board.layout_mut(), self.options.router_options);
 
-            let RouterStatus::Finished(band_termseg) = route.step(&mut router)? else {
-                return Ok(AutorouteStatus::Running);
+            let ControlFlow::Break(band_termseg) = route.step(&mut router)? else {
+                return Ok(ControlFlow::Continue(AutorouteContinueStatus::Running));
             };
             band_termseg
         };
@@ -139,7 +126,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, AutorouteStatus, ()> for AutorouteEx
             //return Ok(AutorouteStatus::Finished);
         }
 
-        Ok(AutorouteStatus::Routed(band_termseg))
+        Ok(ControlFlow::Continue(AutorouteContinueStatus::Routed(
+            band_termseg,
+        )))
     }
 }
 

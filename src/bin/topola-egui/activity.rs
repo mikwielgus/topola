@@ -1,10 +1,11 @@
+use std::ops::ControlFlow;
+
 use thiserror::Error;
 use topola::{
     autorouter::{
         execution::ExecutionStepper,
         invoker::{
             GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles, Invoker, InvokerError,
-            InvokerStatus,
         },
     },
     board::mesadata::AccessMesadata,
@@ -14,47 +15,11 @@ use topola::{
     stepper::{Abort, Step},
 };
 
-use crate::interaction::{
-    InteractionContext, InteractionError, InteractionStatus, InteractionStepper,
-};
+use crate::interaction::{InteractionContext, InteractionError, InteractionStepper};
 
 pub struct ActivityContext<'a, M: AccessMesadata> {
     pub interaction: InteractionContext,
     pub invoker: &'a mut Invoker<M>,
-}
-
-#[derive(Debug, Clone)]
-pub enum ActivityStatus {
-    Running,
-    Finished(String),
-}
-
-impl From<InteractionStatus> for ActivityStatus {
-    fn from(status: InteractionStatus) -> Self {
-        match status {
-            InteractionStatus::Running => ActivityStatus::Running,
-            InteractionStatus::Finished(msg) => ActivityStatus::Finished(msg),
-        }
-    }
-}
-
-impl From<InvokerStatus> for ActivityStatus {
-    fn from(status: InvokerStatus) -> Self {
-        match status {
-            InvokerStatus::Running => ActivityStatus::Running,
-            InvokerStatus::Finished(msg) => ActivityStatus::Finished(msg),
-        }
-    }
-}
-
-impl TryInto<()> for ActivityStatus {
-    type Error = ();
-    fn try_into(self) -> Result<(), ()> {
-        match self {
-            ActivityStatus::Running => Err(()),
-            ActivityStatus::Finished(..) => Ok(()),
-        }
-    }
 }
 
 #[derive(Error, Debug, Clone)]
@@ -70,15 +35,18 @@ pub enum ActivityStepper {
     Execution(ExecutionStepper),
 }
 
-impl<M: AccessMesadata> Step<ActivityContext<'_, M>, ActivityStatus, ()> for ActivityStepper {
+impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for ActivityStepper {
     type Error = ActivityError;
 
-    fn step(&mut self, context: &mut ActivityContext<M>) -> Result<ActivityStatus, ActivityError> {
+    fn step(
+        &mut self,
+        context: &mut ActivityContext<M>,
+    ) -> Result<ControlFlow<String>, ActivityError> {
         match self {
             ActivityStepper::Interaction(interaction) => {
-                Ok(interaction.step(&mut context.interaction)?.into())
+                Ok(interaction.step(&mut context.interaction)?)
             }
-            ActivityStepper::Execution(execution) => Ok(execution.step(context.invoker)?.into()),
+            ActivityStepper::Execution(execution) => Ok(execution.step(context.invoker)?),
         }
     }
 }
@@ -87,9 +55,11 @@ impl<M: AccessMesadata> Abort<ActivityContext<'_, M>> for ActivityStepper {
     fn abort(&mut self, context: &mut ActivityContext<M>) {
         match self {
             ActivityStepper::Interaction(interaction) => {
-                Ok(interaction.abort(&mut context.interaction))
+                interaction.abort(&mut context.interaction)
             }
-            ActivityStepper::Execution(execution) => execution.finish(context.invoker), // TODO.
+            ActivityStepper::Execution(execution) => {
+                execution.finish(context.invoker);
+            } // TODO.
         };
     }
 }
@@ -136,7 +106,7 @@ impl GetObstacles for ActivityStepper {
 
 pub struct ActivityStepperWithStatus {
     activity: ActivityStepper,
-    maybe_status: Option<ActivityStatus>,
+    maybe_status: Option<ControlFlow<String>>,
 }
 
 impl ActivityStepperWithStatus {
@@ -147,17 +117,18 @@ impl ActivityStepperWithStatus {
         }
     }
 
-    pub fn maybe_status(&self) -> Option<ActivityStatus> {
+    pub fn maybe_status(&self) -> Option<ControlFlow<String>> {
         self.maybe_status.clone()
     }
 }
 
-impl<M: AccessMesadata> Step<ActivityContext<'_, M>, ActivityStatus, ()>
-    for ActivityStepperWithStatus
-{
+impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for ActivityStepperWithStatus {
     type Error = ActivityError;
 
-    fn step(&mut self, context: &mut ActivityContext<M>) -> Result<ActivityStatus, ActivityError> {
+    fn step(
+        &mut self,
+        context: &mut ActivityContext<M>,
+    ) -> Result<ControlFlow<String>, ActivityError> {
         let status = self.activity.step(context)?;
         self.maybe_status = Some(status.clone());
         Ok(status.into())
@@ -166,7 +137,7 @@ impl<M: AccessMesadata> Step<ActivityContext<'_, M>, ActivityStatus, ()>
 
 impl<M: AccessMesadata> Abort<ActivityContext<'_, M>> for ActivityStepperWithStatus {
     fn abort(&mut self, context: &mut ActivityContext<M>) {
-        self.maybe_status = Some(ActivityStatus::Finished(String::from("aborted")));
+        self.maybe_status = Some(ControlFlow::Break(String::from("aborted")));
         self.activity.abort(context);
     }
 }
