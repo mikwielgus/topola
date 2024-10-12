@@ -1,7 +1,8 @@
 use std::ops::ControlFlow;
 
 use thiserror::Error;
-use topola::{
+
+use crate::{
     autorouter::invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,

@@ -1,20 +1,20 @@
 use std::ops::ControlFlow;
 
 use spade::InsertionError;
-use topola::{
+
+use crate::{
     autorouter::{
-        execution::{Command, ExecutionStepper},
+        execution::Command,
         history::History,
         invoker::{Invoker, InvokerError},
         Autorouter,
     },
     board::{mesadata::AccessMesadata, Board},
+    interactor::{
+        activity::{ActivityContext, ActivityError, ActivityStepperWithStatus},
+        interaction::InteractionContext,
+    },
     stepper::{Abort, Step},
-};
-
-use crate::{
-    activity::{ActivityContext, ActivityError, ActivityStepperWithStatus},
-    interaction::InteractionContext,
 };
 
 pub struct Interactor<M: AccessMesadata> {

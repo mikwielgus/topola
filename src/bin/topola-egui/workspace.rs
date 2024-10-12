@@ -5,19 +5,16 @@ use std::{
 
 use topola::{
     autorouter::{history::History, invoker::Invoker, Autorouter},
+    interactor::{
+        activity::{ActivityContext, ActivityStepperWithStatus},
+        interaction::InteractionContext,
+        Interactor,
+    },
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
     stepper::Step,
 };
 
-use crate::{
-    activity::{ActivityContext, ActivityStepperWithStatus},
-    error_dialog::ErrorDialog,
-    interaction::InteractionContext,
-    interactor::Interactor,
-    layers::Layers,
-    overlay::Overlay,
-    translator::Translator,
-};
+use crate::{error_dialog::ErrorDialog, layers::Layers, overlay::Overlay, translator::Translator};
 
 /// A loaded design and associated structures
 pub struct Workspace {

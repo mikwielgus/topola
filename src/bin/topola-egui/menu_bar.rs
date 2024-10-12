@@ -4,6 +4,10 @@ use topola::{
     autorouter::{
         execution::Command, invoker::InvokerError, selection::Selection, AutorouterOptions,
     },
+    interactor::{
+        activity::{ActivityContext, ActivityStepperWithStatus},
+        interaction::InteractionContext,
+    },
     router::RouterOptions,
     specctra::design::{LoadingError as SpecctraLoadingError, SpecctraDesign},
     stepper::Abort,
@@ -11,9 +15,7 @@ use topola::{
 
 use crate::{
     action::{Action, Switch, Trigger},
-    activity::{ActivityContext, ActivityStepperWithStatus},
     app::{execute, handle_file},
-    interaction::InteractionContext,
     translator::Translator,
     viewport::Viewport,
     workspace::Workspace,

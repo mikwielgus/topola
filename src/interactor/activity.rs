@@ -1,7 +1,8 @@
 use std::ops::ControlFlow;
 
 use thiserror::Error;
-use topola::{
+
+use crate::{
     autorouter::{
         execution::ExecutionStepper,
         invoker::{
@@ -11,11 +12,10 @@ use topola::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
+    interactor::interaction::{InteractionContext, InteractionError, InteractionStepper},
     router::{navcord::NavcordStepper, navmesh::Navmesh},
     stepper::{Abort, Step},
 };
-
-use crate::interaction::{InteractionContext, InteractionError, InteractionStepper};
 
 pub struct ActivityContext<'a, M: AccessMesadata> {
     pub interaction: InteractionContext,

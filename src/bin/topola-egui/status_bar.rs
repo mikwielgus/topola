@@ -1,6 +1,8 @@
 use std::ops::ControlFlow;
 
-use crate::{activity::ActivityStepperWithStatus, translator::Translator, viewport::Viewport};
+use topola::interactor::activity::ActivityStepperWithStatus;
+
+use crate::{translator::Translator, viewport::Viewport};
 
 pub struct StatusBar {}
 

@@ -12,6 +12,7 @@ pub mod drawing;
 pub mod autorouter;
 pub mod board;
 pub mod geometry;
+pub mod interactor;
 pub mod layout;
 pub mod math;
 pub mod router;
