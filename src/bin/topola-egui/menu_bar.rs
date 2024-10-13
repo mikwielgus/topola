@@ -130,6 +130,7 @@ impl MenuBar {
             egui::Modifiers::NONE,
             egui::Key::F1,
         ));
+        let online_documentation_url = "https://topola.codeberg.page/doc/";
 
         let workspace_activities_enabled = match &maybe_workspace {
             Some(w) => w
@@ -181,42 +182,7 @@ impl MenuBar {
                         });
                     });
 
-                    ui.menu_button(tr.text("tr-menu-view"), |ui| {
-                        ui.toggle_value(
-                            &mut viewport.scheduled_zoom_to_fit,
-                            tr.text("tr-menu-view-zoom-to-fit"),
-                        );
-
-                        ui.separator();
-
-                        //ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-                        ui.checkbox(
-                            &mut self.show_ratsnest,
-                            tr.text("tr-menu-view-show-ratsnest"),
-                        );
-                        ui.checkbox(&mut self.show_navmesh, tr.text("tr-menu-view-show-navmesh"));
-                        ui.checkbox(&mut self.show_bboxes, tr.text("tr-menu-view-show-bboxes"));
-                        ui.checkbox(
-                            &mut self.show_origin_destination,
-                            tr.text("tr-menu-view-show-origin-destination"),
-                        );
-
-                        ui.separator();
-
-                        ui.checkbox(
-                            &mut self.show_layer_manager,
-                            tr.text("tr-menu-view-show-layer-manager"),
-                        );
-
-                        ui.separator();
-                        //});
-
-                        ui.label(tr.text("tr-menu-view-frame-timestep"));
-                        ui.add(
-                            egui::widgets::Slider::new(&mut self.frame_timestep, 0.0..=3.0)
-                                .suffix(" s"),
-                        );
-                    });
+                    self.update_view_menu(ctx, ui, tr, viewport);
 
                     // NOTE: we could disable the entire range of menus below
                     // when no workspace is loaded, but that would disrupt "hover-scrolling"
@@ -264,11 +230,7 @@ impl MenuBar {
                     });
 
                     ui.menu_button(tr.text("tr-menu-help"), |ui| {
-                        online_documentation.hyperlink(
-                            ctx,
-                            ui,
-                            "https://topola.codeberg.page/doc/",
-                        );
+                        online_documentation.hyperlink(ctx, ui, online_documentation_url);
                     });
 
                     ui.separator();
@@ -293,6 +255,11 @@ impl MenuBar {
                     });
                 } else if quit.consume_key_triggered(ctx, ui) {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
+                } else if online_documentation.consume_key_triggered(ctx, ui) {
+                    ui.ctx().open_url(egui::OpenUrl {
+                        url: String::from(online_documentation_url),
+                        new_tab: true,
+                    });
                 } else if let Some(workspace) = maybe_workspace {
                     if export_session.consume_key_triggered(ctx, ui) {
                         let ctx = ui.ctx().clone();
@@ -392,5 +359,47 @@ impl MenuBar {
                 Ok::<(), InvokerError>(())
             })
             .inner
+    }
+
+    pub fn update_view_menu(
+        &mut self,
+        ctx: &egui::Context,
+        ui: &mut egui::Ui,
+        tr: &Translator,
+        viewport: &mut Viewport,
+    ) {
+        ui.menu_button(tr.text("tr-menu-view"), |ui| {
+            ui.toggle_value(
+                &mut viewport.scheduled_zoom_to_fit,
+                tr.text("tr-menu-view-zoom-to-fit"),
+            );
+
+            ui.separator();
+
+            //ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
+            ui.checkbox(
+                &mut self.show_ratsnest,
+                tr.text("tr-menu-view-show-ratsnest"),
+            );
+            ui.checkbox(&mut self.show_navmesh, tr.text("tr-menu-view-show-navmesh"));
+            ui.checkbox(&mut self.show_bboxes, tr.text("tr-menu-view-show-bboxes"));
+            ui.checkbox(
+                &mut self.show_origin_destination,
+                tr.text("tr-menu-view-show-origin-destination"),
+            );
+
+            ui.separator();
+
+            ui.checkbox(
+                &mut self.show_layer_manager,
+                tr.text("tr-menu-view-show-layer-manager"),
+            );
+
+            ui.separator();
+            //});
+
+            ui.label(tr.text("tr-menu-view-frame-timestep"));
+            ui.add(egui::widgets::Slider::new(&mut self.frame_timestep, 0.0..=3.0).suffix(" s"));
+        });
     }
 }
