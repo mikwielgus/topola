@@ -15,6 +15,7 @@ use topola::{
 
 use crate::{
     action::{Action, Switch, Trigger},
+    actions::Actions,
     app::{execute, handle_file},
     translator::Translator,
     viewport::Viewport,
@@ -60,76 +61,7 @@ impl MenuBar {
         viewport: &mut Viewport,
         maybe_workspace: Option<&mut Workspace>,
     ) -> Result<(), InvokerError> {
-        let mut open_design = Trigger::new(Action::new(
-            tr.text("tr-menu-file-open"),
-            egui::Modifiers::CTRL,
-            egui::Key::O,
-        ));
-        let mut export_session = Trigger::new(Action::new(
-            tr.text("tr-menu-file-export-session-file"),
-            egui::Modifiers::CTRL,
-            egui::Key::S,
-        ));
-        let mut import_history = Trigger::new(Action::new(
-            tr.text("tr-menu-file-import-history"),
-            egui::Modifiers::CTRL,
-            egui::Key::I,
-        ));
-        let mut export_history = Trigger::new(Action::new(
-            tr.text("tr-menu-file-export-history"),
-            egui::Modifiers::CTRL,
-            egui::Key::E,
-        ));
-        let mut quit = Trigger::new(Action::new(
-            tr.text("tr-menu-file-quit"),
-            egui::Modifiers::CTRL,
-            egui::Key::Q,
-        ));
-        let mut undo = Trigger::new(Action::new(
-            tr.text("tr-menu-edit-undo"),
-            egui::Modifiers::CTRL,
-            egui::Key::Z,
-        ));
-        let mut redo = Trigger::new(Action::new(
-            tr.text("tr-menu-edit-redo"),
-            egui::Modifiers::CTRL,
-            egui::Key::Y,
-        ));
-        let mut abort = Trigger::new(Action::new(
-            tr.text("tr-menu-edit-abort"),
-            egui::Modifiers::NONE,
-            egui::Key::Escape,
-        ));
-        let mut remove_bands = Trigger::new(Action::new(
-            tr.text("tr-menu-edit-remove-bands"),
-            egui::Modifiers::NONE,
-            egui::Key::Delete,
-        ));
-        let mut place_via = Switch::new(Action::new(
-            tr.text("tr-menu-place-place-via"),
-            egui::Modifiers::CTRL,
-            egui::Key::P,
-        ));
-        let mut autoroute = Trigger::new(Action::new(
-            tr.text("tr-menu-route-autoroute"),
-            egui::Modifiers::CTRL,
-            egui::Key::A,
-        ));
-        let mut compare_detours = Trigger::new(Action::new(
-            tr.text("tr-menu-inspect-compare-detours"),
-            egui::Modifiers::NONE,
-            egui::Key::Minus,
-        ));
-        let mut measure_length = Trigger::new(Action::new(
-            tr.text("tr-menu-inspect-measure-length"),
-            egui::Modifiers::NONE,
-            egui::Key::Plus,
-        ));
-        let mut online_documentation = Trigger::new(Action::new(
-            tr.text("tr-menu-help-online-documentation"),
-            egui::Modifiers::NONE,
-            egui::Key::F1,
-        ));
+        let mut actions = Actions::new(tr);
         let online_documentation_url = "https://topola.codeberg.page/doc/";
 
         let workspace_activities_enabled = match &maybe_workspace {
@@ -147,37 +79,37 @@ impl MenuBar {
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
                     ui.menu_button(tr.text("tr-menu-file"), |ui| {
-                        open_design.button(ctx, ui);
+                        actions.file.open_design.button(ctx, ui);
                         //ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-                        export_session.button(ctx, ui);
+                        actions.file.export_session.button(ctx, ui);
 
                         ui.separator();
 
-                        import_history.button(ctx, ui);
-                        export_history.button(ctx, ui);
+                        actions.file.import_history.button(ctx, ui);
+                        actions.file.export_history.button(ctx, ui);
                         //});
 
                         ui.separator();
 
                         // "Quit" button wouldn't work on a Web page.
                         if !cfg!(target_arch = "wasm32") {
-                            quit.button(ctx, ui);
+                            actions.file.quit.button(ctx, ui);
                         }
                     });
 
                     ui.menu_button(tr.text("tr-menu-edit"), |ui| {
                         ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-                            undo.button(ctx, ui);
-                            redo.button(ctx, ui);
+                            actions.edit.undo.button(ctx, ui);
+                            actions.edit.redo.button(ctx, ui);
 
                             ui.separator();
 
-                            abort.button(ctx, ui);
+                            actions.edit.abort.button(ctx, ui);
 
                             ui.separator();
 
                             //ui.add_enabled_ui(workspace_activities_enabled, |ui| {
-                            remove_bands.button(ctx, ui);
+                            actions.edit.remove_bands.button(ctx, ui);
                             //});
                         });
                     });
@@ -191,14 +123,18 @@ impl MenuBar {
 
                     ui.menu_button(tr.text("tr-menu-place"), |ui| {
                         ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-                            place_via.toggle_widget(ctx, ui, &mut self.is_placing_via);
+                            actions.place.place_via.toggle_widget(
+                                ctx,
+                                ui,
+                                &mut self.is_placing_via,
+                            );
                         });
                     });
 
                     ui.menu_button(tr.text("tr-menu-route"), |ui| {
                         ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
                             //ui.add_enabled_ui(workspace_activities_enabled, |ui| {
-                            autoroute.button(ctx, ui);
+                            actions.route.autoroute.button(ctx, ui);
                             //});
                             ui.separator();
 
@@ -224,13 +160,17 @@ impl MenuBar {
 
                     ui.menu_button(tr.text("tr-menu-inspect"), |ui| {
                         ui.add_enabled_ui(workspace_activities_enabled, |ui| {
-                            compare_detours.button(ctx, ui);
-                            measure_length.button(ctx, ui);
+                            actions.inspect.compare_detours.button(ctx, ui);
+                            actions.inspect.measure_length.button(ctx, ui);
                         });
                     });
 
                     ui.menu_button(tr.text("tr-menu-help"), |ui| {
-                        online_documentation.hyperlink(ctx, ui, online_documentation_url);
+                        actions.help.online_documentation.hyperlink(
+                            ctx,
+                            ui,
+                            online_documentation_url,
+                        );
                     });
 
                     ui.separator();
@@ -238,7 +178,7 @@ impl MenuBar {
                     egui::widgets::global_theme_preference_buttons(ui);
                 });
 
-                if open_design.consume_key_triggered(ctx, ui) {
+                if actions.file.open_design.consume_key_triggered(ctx, ui) {
                     // NOTE: On Linux, this requires Zenity to be installed on your system.
                     let ctx = ctx.clone();
                     let task = rfd::AsyncFileDialog::new().pick_file();
@@ -253,15 +193,19 @@ impl MenuBar {
                             ctx.request_repaint();
                         }
                     });
-                } else if quit.consume_key_triggered(ctx, ui) {
+                } else if actions.file.quit.consume_key_triggered(ctx, ui) {
                     ctx.send_viewport_cmd(egui::ViewportCommand::Close);
-                } else if online_documentation.consume_key_triggered(ctx, ui) {
+                } else if actions
+                    .help
+                    .online_documentation
+                    .consume_key_triggered(ctx, ui)
+                {
                     ui.ctx().open_url(egui::OpenUrl {
                         url: String::from(online_documentation_url),
                         new_tab: true,
                     });
                 } else if let Some(workspace) = maybe_workspace {
-                    if export_session.consume_key_triggered(ctx, ui) {
+                    if actions.file.export_session.consume_key_triggered(ctx, ui) {
                         let ctx = ui.ctx().clone();
                         let board = workspace.interactor.invoker().autorouter().board();
 
@@ -287,7 +231,7 @@ impl MenuBar {
                                 ctx.request_repaint();
                             }
                         });
-                    } else if import_history.consume_key_triggered(ctx, ui) {
+                    } else if actions.file.import_history.consume_key_triggered(ctx, ui) {
                         let ctx = ctx.clone();
                         let task = rfd::AsyncFileDialog::new().pick_file();
                         let history_sender = workspace.history_channel.0.clone();
@@ -305,7 +249,7 @@ impl MenuBar {
                                 ctx.request_repaint();
                             }
                         });
-                    } else if export_history.consume_key_triggered(ctx, ui) {
+                    } else if actions.file.export_history.consume_key_triggered(ctx, ui) {
                         let ctx = ctx.clone();
                         let task = rfd::AsyncFileDialog::new().save_file();
 
@@ -322,13 +266,17 @@ impl MenuBar {
                                 ctx.request_repaint();
                             }
                         });
-                    } else if undo.consume_key_triggered(ctx, ui) {
+                    } else if actions.edit.undo.consume_key_triggered(ctx, ui) {
                         workspace.interactor.undo();
-                    } else if redo.consume_key_triggered(ctx, ui) {
+                    } else if actions.edit.redo.consume_key_triggered(ctx, ui) {
                         workspace.interactor.redo();
-                    } else if abort.consume_key_triggered(ctx, ui) {
+                    } else if actions.edit.abort.consume_key_triggered(ctx, ui) {
                         workspace.interactor.abort()
-                    } else if place_via.consume_key_enabled(ctx, ui, &mut self.is_placing_via) {
+                    } else if actions.place.place_via.consume_key_enabled(
+                        ctx,
+                        ui,
+                        &mut self.is_placing_via,
+                    ) {
                     } else if workspace_activities_enabled {
                         let mut schedule = |op: fn(Selection, AutorouterOptions) -> Command| {
                             let selection = workspace.overlay.take_selection();
@@ -337,19 +285,27 @@ impl MenuBar {
                                 .schedule(op(selection, self.autorouter_options));
                             Ok::<(), InvokerError>(())
                         };
-                        if remove_bands.consume_key_triggered(ctx, ui) {
+                        if actions.edit.remove_bands.consume_key_triggered(ctx, ui) {
                             schedule(|selection, _| {
                                 Command::RemoveBands(selection.band_selection)
                             })?;
-                        } else if autoroute.consume_key_triggered(ctx, ui) {
+                        } else if actions.route.autoroute.consume_key_triggered(ctx, ui) {
                             schedule(|selection, opts| {
                                 Command::Autoroute(selection.pin_selection, opts)
                             })?;
-                        } else if compare_detours.consume_key_triggered(ctx, ui) {
+                        } else if actions
+                            .inspect
+                            .compare_detours
+                            .consume_key_triggered(ctx, ui)
+                        {
                             schedule(|selection, opts| {
                                 Command::CompareDetours(selection.pin_selection, opts)
                             })?;
-                        } else if measure_length.consume_key_triggered(ctx, ui) {
+                        } else if actions
+                            .inspect
+                            .measure_length
+                            .consume_key_triggered(ctx, ui)
+                        {
                             schedule(|selection, _| {
                                 Command::MeasureLength(selection.band_selection)
                             })?;
