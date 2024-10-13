@@ -125,6 +125,11 @@ impl MenuBar {
             egui::Modifiers::NONE,
             egui::Key::Plus,
         ));
+        let mut online_documentation = Trigger::new(Action::new(
+            tr.text("tr-menu-help-online-documentation"),
+            egui::Modifiers::NONE,
+            egui::Key::F1,
+        ));
 
         let workspace_activities_enabled = match &maybe_workspace {
             Some(w) => w
@@ -256,6 +261,14 @@ impl MenuBar {
                             compare_detours.button(ctx, ui);
                             measure_length.button(ctx, ui);
                         });
+                    });
+
+                    ui.menu_button(tr.text("tr-menu-help"), |ui| {
+                        online_documentation.hyperlink(
+                            ctx,
+                            ui,
+                            "https://topola.codeberg.page/doc/",
+                        );
                     });
 
                     ui.separator();

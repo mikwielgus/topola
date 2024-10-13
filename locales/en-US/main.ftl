@@ -2,6 +2,8 @@
 
 tr-menu-debug = Debug
 
+##
+
 tr-menu-file = File
 tr-menu-file-open = Open
 tr-menu-open-specctra-session-file = Specctra session file
@@ -30,6 +32,9 @@ tr-menu-place-place-via = Place Via
 
 tr-menu-route = Route
 tr-menu-route-autoroute = Autoroute
+
+tr-menu-help = Help
+tr-menu-help-online-documentation = Online Documentation
 
 # Misnamed tag, TODO fix this.
 tr-menu-options = Options

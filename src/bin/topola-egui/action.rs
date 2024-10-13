@@ -37,6 +37,10 @@ impl Trigger {
         self.triggered = ui.button(self.action.widget_text()).clicked();
     }
 
+    pub fn hyperlink(&mut self, _ctx: &egui::Context, ui: &mut egui::Ui, url: &str) {
+        ui.hyperlink_to(self.action.widget_text(), url);
+    }
+
     pub fn consume_key_triggered(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) -> bool {
         self.consume_key(ctx, ui);
         self.triggered()
