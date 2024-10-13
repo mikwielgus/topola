@@ -41,3 +41,5 @@ tr-error-unable-to-read-file = kann Datei nicht lesen
 tr-error-failed-to-parse-as-history-json = kann Datei nicht als Historien-JSON interpretieren
 tr-error-unable-to-initialize-overlay = kann Overlay nicht initialisieren
 tr-error-unable-to-initialize-autorouter = kann Autorouter nicht initialisieren
+tr-menu-help = Hilfe
+tr-menu-help-online-documentation = Onlinedokumentation
