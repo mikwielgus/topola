@@ -56,7 +56,7 @@ impl MenuBar {
     pub fn update(
         &mut self,
         ctx: &egui::Context,
-        tr: &Translator,
+        tr: &mut Translator,
         content_sender: Sender<Result<SpecctraDesign, SpecctraLoadingError>>,
         viewport: &mut Viewport,
         maybe_workspace: Option<&mut Workspace>,
@@ -162,6 +162,19 @@ impl MenuBar {
                         ui.add_enabled_ui(workspace_activities_enabled, |ui| {
                             actions.inspect.compare_detours.button(ctx, ui);
                             actions.inspect.measure_length.button(ctx, ui);
+                        });
+                    });
+
+                    ui.menu_button(tr.text("tr-menu-properties"), |ui| {
+                        ui.menu_button(tr.text("tr-menu-properties-set-language"), |ui| {
+                            for langid in Translator::locales() {
+                                ui.radio_value(
+                                    tr.langid_mut(),
+                                    langid.clone(),
+                                    langid.language.as_str(),
+                                );
+                                //ui.add(egui::RadioButton::new(true, locale.language.as_str()));
+                            }
                         });
                     });
 

@@ -22,4 +22,12 @@ impl Translator {
     pub fn text(&self, fluent_id: &str) -> String {
         LOCALES.lookup(&self.langid, fluent_id)
     }
+
+    pub fn langid_mut(&mut self) -> &mut LanguageIdentifier {
+        &mut self.langid
+    }
+
+    pub fn locales() -> Box<dyn Iterator<Item = &'static LanguageIdentifier> + 'static> {
+        LOCALES.locales()
+    }
 }

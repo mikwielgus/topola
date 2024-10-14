@@ -53,6 +53,9 @@ tr-menu-inspect = Inspect
 tr-menu-inspect-compare-detours = Compare Detours
 tr-menu-inspect-measure-length = Measure Length
 
+tr-menu-properties = Properties
+tr-menu-properties-set-language = Set Language
+
 tr-dialog-error-messages = Error Messages
 tr-dialog-error-messages-reset = Reset Messages
 tr-dialog-error-messages-discard = Discard
