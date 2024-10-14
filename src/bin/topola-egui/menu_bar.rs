@@ -1,4 +1,8 @@
-use std::{ops::ControlFlow, path::Path, sync::mpsc::Sender};
+use icu::{
+    experimental::displaynames::LocaleDisplayNamesFormatter,
+    locid::{locale, LanguageIdentifier, Locale},
+};
+use std::{borrow::Cow, ops::ControlFlow, path::Path, sync::mpsc::Sender};
 
 use topola::{
     autorouter::{
@@ -168,12 +172,23 @@ impl MenuBar {
                     ui.menu_button(tr.text("tr-menu-properties"), |ui| {
                         ui.menu_button(tr.text("tr-menu-properties-set-language"), |ui| {
                             for langid in Translator::locales() {
-                                ui.radio_value(
-                                    tr.langid_mut(),
-                                    langid.clone(),
-                                    langid.language.as_str(),
-                                );
-                                //ui.add(egui::RadioButton::new(true, locale.language.as_str()));
+                                if let Ok(locale) =
+                                    Locale::try_from_bytes(langid.to_string().as_bytes())
+                                {
+                                    if let Ok(formatter) = LocaleDisplayNamesFormatter::try_new(
+                                        &locale.clone().into(),
+                                        Default::default(),
+                                    ) {
+                                        ui.radio_value(
+                                            tr.langid_mut(),
+                                            langid.clone(),
+                                            formatter.of(&locale),
+                                        );
+                                        continue;
+                                    }
+                                }
+
+                                ui.radio_value(tr.langid_mut(), langid.clone(), langid.to_string());
                             }
                         });
                     });

@@ -25,9 +25,10 @@ egui = [
     "dep:env_logger",
     "dep:fluent-templates",
     "dep:futures-lite",
+    "dep:icu",
     "dep:rfd",
     "dep:sys-locale",
-    "dep:unic-langid"
+    "dep:unic-langid",
 ]
 disable_contracts = ["contracts-try/disable_contracts"]
 
@@ -73,6 +74,11 @@ features = ["macros", "serde"]
 [dependencies.fluent-templates]
 optional = true
 version = "0.11"
+
+[dependencies.icu]
+optional = true
+version = "1.5.0"
+features = ["experimental"]
 
 [dependencies.eframe]
 optional = true
