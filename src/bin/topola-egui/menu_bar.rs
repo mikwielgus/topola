@@ -1,5 +1,5 @@
 use icu::{
-    experimental::displaynames::LocaleDisplayNamesFormatter,
+    experimental::displaynames::{DisplayNamesOptions, Fallback, LocaleDisplayNamesFormatter},
     locid::{locale, LanguageIdentifier, Locale},
 };
 use std::{borrow::Cow, ops::ControlFlow, path::Path, sync::mpsc::Sender};
@@ -169,29 +169,7 @@ impl MenuBar {
                         });
                     });
 
-                    ui.menu_button(tr.text("tr-menu-properties"), |ui| {
-                        ui.menu_button(tr.text("tr-menu-properties-set-language"), |ui| {
-                            for langid in Translator::locales() {
-                                if let Ok(locale) =
-                                    Locale::try_from_bytes(langid.to_string().as_bytes())
-                                {
-                                    if let Ok(formatter) = LocaleDisplayNamesFormatter::try_new(
-                                        &locale.clone().into(),
-                                        Default::default(),
-                                    ) {
-                                        ui.radio_value(
-                                            tr.langid_mut(),
-                                            langid.clone(),
-                                            formatter.of(&locale),
-                                        );
-                                        continue;
-                                    }
-                                }
-
-                                ui.radio_value(tr.langid_mut(), langid.clone(), langid.to_string());
-                            }
-                        });
-                    });
+                    self.update_properties_menu(ctx, ui, tr);
 
                     ui.menu_button(tr.text("tr-menu-help"), |ui| {
                         actions.help.online_documentation.hyperlink(
@@ -384,6 +362,38 @@ impl MenuBar {
 
             ui.label(tr.text("tr-menu-view-frame-timestep"));
             ui.add(egui::widgets::Slider::new(&mut self.frame_timestep, 0.0..=3.0).suffix(" s"));
+        });
+    }
+
+    pub fn update_properties_menu(
+        &mut self,
+        ctx: &egui::Context,
+        ui: &mut egui::Ui,
+        tr: &mut Translator,
+    ) {
+        ui.menu_button(tr.text("tr-menu-properties"), |ui| {
+            ui.menu_button(tr.text("tr-menu-properties-set-language"), |ui| {
+                let mut display_names_options: DisplayNamesOptions = Default::default();
+                display_names_options.fallback = Fallback::None;
+
+                for langid in Translator::locales() {
+                    if let Ok(locale) = Locale::try_from_bytes(langid.to_string().as_bytes()) {
+                        if let Ok(formatter) = LocaleDisplayNamesFormatter::try_new(
+                            &locale.clone().into(),
+                            display_names_options,
+                        ) {
+                            // NOTE: I don't know how to reliably detect if there's no display name
+                            // in the current locale to fall back to the English display name.
+                            // NOTE: At the time of writing, `Fallback::None` handling hasn't been
+                            // implemented in the ICU library, despite this enum variant existing.
+                            ui.radio_value(tr.langid_mut(), langid.clone(), formatter.of(&locale));
+                            continue;
+                        }
+                    }
+
+                    ui.radio_value(tr.langid_mut(), langid.clone(), langid.to_string());
+                }
+            });
         });
     }
 }
