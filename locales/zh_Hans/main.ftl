@@ -39,3 +39,7 @@ tr-menu-inspect-compare-detours = 比较路线
 tr-dialog-error-messages-reset = 重置消息
 tr-menu-view-zoom-to-fit = 缩放以适应
 tr-menu-route-options-presort-by-pairwise-detours = 通过成对绕道预排序
+tr-menu-help = 帮助
+tr-menu-help-online-documentation = 在线文档
+tr-menu-properties = 属性
+tr-menu-properties-set-language = 设置语言
