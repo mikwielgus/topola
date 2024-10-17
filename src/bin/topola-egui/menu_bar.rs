@@ -169,7 +169,7 @@ impl MenuBar {
                         });
                     });
 
-                    self.update_properties_menu(ctx, ui, tr);
+                    self.update_preferences_menu(ctx, ui, tr);
 
                     ui.menu_button(tr.text("tr-menu-help"), |ui| {
                         actions.help.online_documentation.hyperlink(
@@ -365,14 +365,14 @@ impl MenuBar {
         });
     }
 
-    pub fn update_properties_menu(
+    pub fn update_preferences_menu(
         &mut self,
         ctx: &egui::Context,
         ui: &mut egui::Ui,
         tr: &mut Translator,
     ) {
-        ui.menu_button(tr.text("tr-menu-properties"), |ui| {
-            ui.menu_button(tr.text("tr-menu-properties-set-language"), |ui| {
+        ui.menu_button(tr.text("tr-menu-preferences"), |ui| {
+            ui.menu_button(tr.text("tr-menu-preferences-set-language"), |ui| {
                 let mut display_names_options: DisplayNamesOptions = Default::default();
                 display_names_options.fallback = Fallback::None;
 
