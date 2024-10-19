@@ -1,3 +1,4 @@
+use geo::point;
 use std::{
     future::Future,
     io,
@@ -6,7 +7,10 @@ use std::{
 };
 use unic_langid::{langid, LanguageIdentifier};
 
-use topola::specctra::design::{LoadingError as SpecctraLoadingError, SpecctraDesign};
+use topola::{
+    interactor::activity::InteractiveInput,
+    specctra::design::{LoadingError as SpecctraLoadingError, SpecctraDesign},
+};
 
 use crate::{
     config::Config, error_dialog::ErrorDialog, menu_bar::MenuBar, status_bar::StatusBar,
@@ -62,19 +66,19 @@ impl App {
         this
     }
 
-    fn advance_state_by_dt(&mut self, dt: f32) {
-        self.update_counter += dt;
+    fn advance_state_by_dt(&mut self, interactive_input: &InteractiveInput) {
+        self.update_counter += interactive_input.dt;
 
         while self.update_counter >= self.menu_bar.frame_timestep {
             self.update_counter -= self.menu_bar.frame_timestep;
 
-            if let ControlFlow::Break(()) = self.update_state() {
+            if let ControlFlow::Break(()) = self.update_state(interactive_input) {
                 return;
             }
         }
     }
 
-    fn update_state(&mut self) -> ControlFlow<()> {
+    fn update_state(&mut self, interactive_input: &InteractiveInput) -> ControlFlow<()> {
         if let Ok(data) = self.content_channel.1.try_recv() {
             match data {
                 Ok(design) => match Workspace::new(design, &self.translator) {
@@ -112,7 +116,11 @@ impl App {
         }
 
         if let Some(workspace) = &mut self.maybe_workspace {
-            return workspace.update_state(&self.translator, &mut self.error_dialog);
+            return workspace.update_state(
+                &self.translator,
+                &mut self.error_dialog,
+                interactive_input,
+            );
         }
 
         ControlFlow::Break(())
@@ -135,7 +143,13 @@ impl eframe::App for App {
             self.maybe_workspace.as_mut(),
         );
 
-        self.advance_state_by_dt(ctx.input(|i| i.stable_dt));
+        let pointer_pos = self.viewport.transform.inverse()
+            * ctx.input(|i| i.pointer.latest_pos().unwrap_or_default());
+
+        self.advance_state_by_dt(&InteractiveInput {
+            pointer_pos: point! {x: pointer_pos.x as f64, y: pointer_pos.y as f64},
+            dt: ctx.input(|i| i.stable_dt),
+        });
 
         self.status_bar.update(
             ctx,

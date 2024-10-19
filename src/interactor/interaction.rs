@@ -4,17 +4,14 @@ use thiserror::Error;
 
 use crate::{
     autorouter::invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
+    board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     router::{navcord::NavcordStepper, navmesh::Navmesh},
     stepper::{Abort, Step},
 };
 
-pub struct InteractionContext {
-    // Empty for now.
-    // For example, this will contain mouse pointer position.
-    // (we will need an additional struct to hold a reference to a `Board<...>`)
-}
+use super::activity::ActivityContext;
 
 #[derive(Error, Debug, Clone)]
 pub enum InteractionError {
@@ -29,19 +26,19 @@ pub enum InteractionStepper {
     // - interactively moving a footprint.
 }
 
-impl Step<InteractionContext, String> for InteractionStepper {
+impl<'a, M: AccessMesadata> Step<ActivityContext<'a, M>, String> for InteractionStepper {
     type Error = InteractionError;
 
     fn step(
         &mut self,
-        context: &mut InteractionContext,
+        context: &mut ActivityContext<M>,
     ) -> Result<ControlFlow<String>, InteractionError> {
         Ok(ControlFlow::Break(String::from("")))
     }
 }
 
-impl Abort<InteractionContext> for InteractionStepper {
-    fn abort(&mut self, context: &mut InteractionContext) {
+impl<'a, M: AccessMesadata> Abort<ActivityContext<'a, M>> for InteractionStepper {
+    fn abort(&mut self, context: &mut ActivityContext<M>) {
         todo!();
     }
 }

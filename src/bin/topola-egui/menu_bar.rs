@@ -8,10 +8,7 @@ use topola::{
     autorouter::{
         execution::Command, invoker::InvokerError, selection::Selection, AutorouterOptions,
     },
-    interactor::{
-        activity::{ActivityContext, ActivityStepperWithStatus},
-        interaction::InteractionContext,
-    },
+    interactor::activity::{ActivityContext, ActivityStepperWithStatus, InteractiveInput},
     router::RouterOptions,
     specctra::design::{LoadingError as SpecctraLoadingError, SpecctraDesign},
     stepper::Abort,
@@ -277,7 +274,7 @@ impl MenuBar {
                     } else if actions.edit.redo.consume_key_triggered(ctx, ui) {
                         workspace.interactor.redo();
                     } else if actions.edit.abort.consume_key_triggered(ctx, ui) {
-                        workspace.interactor.abort()
+                        workspace.interactor.abort();
                     } else if actions.place.place_via.consume_key_enabled(
                         ctx,
                         ui,

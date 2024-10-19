@@ -10,9 +10,8 @@ use crate::{
         Autorouter,
     },
     board::{mesadata::AccessMesadata, Board},
-    interactor::{
-        activity::{ActivityContext, ActivityError, ActivityStepperWithStatus},
-        interaction::InteractionContext,
+    interactor::activity::{
+        ActivityContext, ActivityError, ActivityStepperWithStatus, InteractiveInput,
     },
     stepper::{Abort, Step},
 };
@@ -51,8 +50,11 @@ impl<M: AccessMesadata> Interactor<M> {
 
     pub fn abort(&mut self) {
         if let Some(ref mut activity) = self.activity {
-            activity.abort(&mut ActivityContext {
-                interaction: InteractionContext {},
+            activity.abort(&mut ActivityContext::<M> {
+                interactive_input: &InteractiveInput {
+                    pointer_pos: [0.0, 0.0].into(),
+                    dt: 0.0,
+                },
                 invoker: &mut self.invoker,
             });
         }
@@ -62,10 +64,13 @@ impl<M: AccessMesadata> Interactor<M> {
         self.invoker.replay(history);
     }
 
-    pub fn update(&mut self) -> ControlFlow<Result<(), ActivityError>> {
+    pub fn update(
+        &mut self,
+        interactive_input: &InteractiveInput,
+    ) -> ControlFlow<Result<(), ActivityError>> {
         if let Some(ref mut activity) = self.activity {
             return match activity.step(&mut ActivityContext {
-                interaction: InteractionContext {},
+                interactive_input,
                 invoker: &mut self.invoker,
             }) {
                 Ok(ControlFlow::Continue(())) => ControlFlow::Continue(()),

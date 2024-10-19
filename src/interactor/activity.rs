@@ -1,5 +1,6 @@
 use std::ops::ControlFlow;
 
+use geo::Point;
 use thiserror::Error;
 
 use crate::{
@@ -12,13 +13,18 @@ use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
-    interactor::interaction::{InteractionContext, InteractionError, InteractionStepper},
+    interactor::interaction::{InteractionError, InteractionStepper},
     router::{navcord::NavcordStepper, navmesh::Navmesh},
     stepper::{Abort, Step},
 };
 
+pub struct InteractiveInput {
+    pub pointer_pos: Point,
+    pub dt: f32,
+}
+
 pub struct ActivityContext<'a, M: AccessMesadata> {
-    pub interaction: InteractionContext,
+    pub interactive_input: &'a InteractiveInput,
     pub invoker: &'a mut Invoker<M>,
 }
 
@@ -43,9 +49,7 @@ impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for ActivityStepper
         context: &mut ActivityContext<M>,
     ) -> Result<ControlFlow<String>, ActivityError> {
         match self {
-            ActivityStepper::Interaction(interaction) => {
-                Ok(interaction.step(&mut context.interaction)?)
-            }
+            ActivityStepper::Interaction(interaction) => Ok(interaction.step(context)?),
             ActivityStepper::Execution(execution) => Ok(execution.step(context.invoker)?),
         }
     }
@@ -54,9 +58,7 @@ impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for ActivityStepper
 impl<M: AccessMesadata> Abort<ActivityContext<'_, M>> for ActivityStepper {
     fn abort(&mut self, context: &mut ActivityContext<M>) {
         match self {
-            ActivityStepper::Interaction(interaction) => {
-                interaction.abort(&mut context.interaction)
-            }
+            ActivityStepper::Interaction(interaction) => interaction.abort(context),
             ActivityStepper::Execution(execution) => {
                 execution.finish(context.invoker);
             } // TODO.
