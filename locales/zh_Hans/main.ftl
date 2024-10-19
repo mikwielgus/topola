@@ -43,3 +43,5 @@ tr-menu-help = 帮助
 tr-menu-help-online-documentation = 在线文档
 tr-menu-properties = 属性
 tr-menu-properties-set-language = 设置语言
+tr-menu-preferences-set-language = 设置语言
+tr-menu-preferences = 首选项
