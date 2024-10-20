@@ -43,3 +43,7 @@ tr-error-unable-to-initialize-overlay = kann Overlay nicht initialisieren
 tr-error-unable-to-initialize-autorouter = kann Autorouter nicht initialisieren
 tr-menu-help = Hilfe
 tr-menu-help-online-documentation = Onlinedokumentation
+tr-menu-properties = Eigenschaften
+tr-menu-properties-set-language = Sprache wählen
+tr-menu-preferences = Einstellungen
+tr-menu-preferences-set-language = Sprache wählen
