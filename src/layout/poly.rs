@@ -1,3 +1,5 @@
+//! Module for handling Polygon properties
+
 use enum_dispatch::enum_dispatch;
 
 use geo::{LineString, Point, Polygon};

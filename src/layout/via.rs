@@ -1,3 +1,5 @@
+//! Module for handling Vias properties
+
 use serde::{Deserialize, Serialize};
 
 use crate::{

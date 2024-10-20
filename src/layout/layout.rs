@@ -27,16 +27,21 @@ use crate::{
     },
 };
 
+/// Represents a weight for various compounds
 #[derive(Debug, Clone, Copy)]
 #[enum_dispatch(GetMaybeNet)]
 pub enum CompoundWeight {
+    /// Represents the weight of a polygon compound, includes its basic [`Layout`] information
     Poly(PolyWeight),
+    /// Represents Via weight properties, containing its [`Layout`] properties
     Via(ViaWeight),
 }
 
+/// The alias to differ node types
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<CompoundWeight>>;
 
 #[derive(Debug, Getters)]
+/// Structure for managing the Layout design
 pub struct Layout<R: AccessRules> {
     drawing: Drawing<CompoundWeight, R>,
 }
@@ -46,9 +51,10 @@ impl<R: AccessRules> Layout<R> {
         Self { drawing }
     }
 
+    /// Insert [`Cane`] object into the [`Layout`]
     pub fn insert_cane(
         &mut self,
-        from: DotIndex,
+        from: DotIndex, 
         around: GearIndex,
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
@@ -58,13 +64,15 @@ impl<R: AccessRules> Layout<R> {
         self.drawing
             .insert_cane(from, around, dot_weight, seg_weight, bend_weight, cw)
     }
-
+    
+    /// Remove [`Cane`] object from the [`Layout`]
     pub fn remove_cane(&mut self, cane: &Cane, face: LooseDotIndex) {
         self.drawing.remove_cane(cane, face)
     }
 
     #[debug_ensures(ret.is_ok() -> self.drawing.node_count() == old(self.drawing.node_count()) + weight.to_layer - weight.from_layer + 2)]
     #[debug_ensures(ret.is_err() -> self.drawing.node_count() == old(self.drawing.node_count()))]
+    /// Insert [`Via`] into the [`Layout`]
     pub fn add_via(&mut self, weight: ViaWeight) -> Result<GenericIndex<ViaWeight>, Infringement> {
         let compound = self.drawing.add_compound(weight.into());
         let mut dots = vec![];
@@ -95,6 +103,7 @@ impl<R: AccessRules> Layout<R> {
 
         Ok(GenericIndex::<ViaWeight>::new(compound.petgraph_index()))
     }
+
 
     pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, Infringement> {
         self.drawing.add_fixed_dot(weight)
