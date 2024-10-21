@@ -1,5 +1,6 @@
 use derive_getters::Getters;
-use petgraph::graph::EdgeIndex;
+use geo::Point;
+use petgraph::graph::{EdgeIndex, NodeIndex};
 use serde::{Deserialize, Serialize};
 use spade::InsertionError;
 use thiserror::Error;
@@ -17,6 +18,7 @@ use super::{
     compare_detours::CompareDetoursExecutionStepper,
     measure_length::MeasureLengthExecutionStepper,
     place_via::PlaceViaExecutionStepper,
+    pointroute::PointrouteExecutionStepper,
     ratsnest::{Ratsnest, RatvertexIndex},
     remove_bands::RemoveBandsExecutionStepper,
     selection::{BandSelection, PinSelection},
@@ -54,6 +56,34 @@ impl<M: AccessMesadata> Autorouter<M> {
     pub fn new(board: Board<M>) -> Result<Self, InsertionError> {
         let ratsnest = Ratsnest::new(board.layout())?;
         Ok(Self { board, ratsnest })
+    }
+
+    pub fn pointroute(
+        &mut self,
+        selection: &PinSelection,
+        point: Point,
+        options: AutorouterOptions,
+    ) -> Result<PointrouteExecutionStepper, AutorouterError> {
+        let ratvertex = self.find_selected_ratvertex(selection).unwrap();
+        let origin_dot = match self
+            .ratsnest
+            .graph()
+            .node_weight(ratvertex)
+            .unwrap()
+            .node_index()
+        {
+            RatvertexIndex::FixedDot(dot) => dot,
+            RatvertexIndex::Poly(poly) => self.board.poly_apex(poly),
+        };
+
+        PointrouteExecutionStepper::new(self, origin_dot, point, options)
+    }
+
+    pub fn undo_pointroute(&mut self, band: BandTermsegIndex) -> Result<(), AutorouterError> {
+        self.board
+            .layout_mut()
+            .remove_band(band)
+            .map_err(|_| AutorouterError::CouldNotRemoveBand(band))
     }
 
     pub fn autoroute(
@@ -185,22 +215,36 @@ impl<M: AccessMesadata> Autorouter<M> {
             .filter(|ratline| {
                 let (source, target) = self.ratsnest.graph().edge_endpoints(*ratline).unwrap();
 
-                let source_navvertex = self
+                let source_ratvertex = self
                     .ratsnest
                     .graph()
                     .node_weight(source)
                     .unwrap()
                     .node_index();
-                let to_navvertex = self
+                let to_ratvertex = self
                     .ratsnest
                     .graph()
                     .node_weight(target)
                     .unwrap()
                     .node_index();
 
-                selection.contains_node(&self.board, source_navvertex.into())
-                    && selection.contains_node(&self.board, to_navvertex.into())
+                selection.contains_node(&self.board, source_ratvertex.into())
+                    && selection.contains_node(&self.board, to_ratvertex.into())
             })
             .collect()
+    }
+
+    fn find_selected_ratvertex(&self, selection: &PinSelection) -> Option<NodeIndex<usize>> {
+        self.ratsnest.graph().node_indices().find(|ratvertex| {
+            selection.contains_node(
+                &self.board,
+                self.ratsnest
+                    .graph()
+                    .node_weight(*ratvertex)
+                    .unwrap()
+                    .node_index()
+                    .into(),
+            )
+        })
     }
 }

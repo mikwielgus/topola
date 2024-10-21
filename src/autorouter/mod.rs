@@ -8,6 +8,7 @@ pub mod history;
 pub mod invoker;
 pub mod measure_length;
 pub mod place_via;
+pub mod pointroute;
 pub mod ratsnest;
 pub mod remove_bands;
 pub mod selection;

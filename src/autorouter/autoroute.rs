@@ -55,17 +55,19 @@ impl AutorouteExecutionStepper {
             return Err(AutorouterError::NothingToRoute);
         };
 
-        let (source, target) = autorouter.ratline_endpoints(curr_ratline);
+        let (origin, destination) = autorouter.ratline_endpoints(curr_ratline);
         let mut router = Router::new(autorouter.board.layout_mut(), options.router_options);
 
-        let this = Self {
+        Ok(Self {
             ratlines_iter,
             options,
-            route: Some(router.route(source, target, options.router_options.routed_band_width)?),
+            route: Some(router.route(
+                origin,
+                destination,
+                options.router_options.routed_band_width,
+            )?),
             curr_ratline: Some(curr_ratline),
-        };
-
-        Ok(this)
+        })
     }
 }
 
