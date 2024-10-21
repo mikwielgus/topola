@@ -6,7 +6,6 @@ tr-menu-file = 檔案
 tr-menu-view = 檢視
 tr-menu-route = 路線
 tr-menu-options = 選項
-tr-menu-debug = 偵錯
 tr-menu-file-export-session-file = 匯出工作階段檔案
 tr-menu-file-export-history = 匯出歷史
 tr-menu-file-quit = 退出

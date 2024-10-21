@@ -1,5 +1,4 @@
 tr-menu-file = Bestand
-tr-menu-debug = Debug
 tr-menu-file-export-session-file = Sessiebestand exporteren
 tr-menu-file-export-history = Geschiedenis exporteren
 tr-menu-file-quit = Stop

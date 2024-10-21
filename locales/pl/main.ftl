@@ -1,5 +1,4 @@
 tr-menu-place-place-via = Wstaw przelotkę
-tr-menu-debug = Debuguj
 tr-menu-file-open = Otwórz
 tr-menu-file-export-history = Eksportuj historię
 tr-menu-route-autoroute = Autotrasuj

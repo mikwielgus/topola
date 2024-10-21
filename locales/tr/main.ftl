@@ -1,4 +1,3 @@
-tr-menu-debug = Hata ayıklama
 tr-menu-file = Dosya
 tr-menu-open-specctra-session-file = Specctra oturum dosyası
 tr-menu-file-export-session-file = Oturum Dosyasını Dışa Aktar
@@ -36,8 +35,6 @@ tr-error-failed-to-parse-as-history-json = dosya Geçmiş JSON olarak ayrıştı
 tr-error-unable-to-initialize-overlay = kaplama başlatılamadı
 tr-error-unable-to-initialize-autorouter = autorouter başlatılamadı
 tr-module-invoker = Başlatıcı
-tr-menu-properties = Özellikler
-tr-menu-properties-set-language = Dil Seç
 tr-menu-file-open = Aç
 tr-menu-file-quit = Çıkış
 tr-menu-edit = Düzenle
