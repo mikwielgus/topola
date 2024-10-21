@@ -1,10 +1,3 @@
-## Orphaned strings.
-
-tr-menu-debug = Debug
-
-tr-menu-properties = Properties
-tr-menu-properties-set-language = Set Language
-
 ##
 
 tr-menu-file = File
@@ -35,6 +28,7 @@ tr-menu-place-place-via = Place Via
 
 tr-menu-route = Route
 tr-menu-route-autoroute = Autoroute
+tr-menu-route-routed-band-width = Routed Band Width
 
 tr-menu-help = Help
 tr-menu-help-online-documentation = Online Documentation

@@ -61,7 +61,7 @@ impl AutorouteExecutionStepper {
         let this = Self {
             ratlines_iter,
             options,
-            route: Some(router.route(source, target, 100.0)?),
+            route: Some(router.route(source, target, options.router_options.routed_band_width)?),
             curr_ratline: Some(curr_ratline),
         };
 
@@ -120,7 +120,11 @@ impl<M: AccessMesadata> Step<Autorouter<M>, (), AutorouteContinueStatus>
                 Router::new(autorouter.board.layout_mut(), self.options.router_options);
 
             self.curr_ratline = Some(new_ratline);
-            self.route = Some(router.route(source, target, 100.0)?);
+            self.route = Some(router.route(
+                source,
+                target,
+                self.options.router_options.routed_band_width,
+            )?);
         } else {
             self.curr_ratline = None;
             //return Ok(AutorouteStatus::Finished);

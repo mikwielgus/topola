@@ -40,6 +40,7 @@ impl MenuBar {
             autorouter_options: AutorouterOptions {
                 presort_by_pairwise_detours: false,
                 router_options: RouterOptions {
+                    routed_band_width: 100.0,
                     wrap_around_bands: true,
                     squeeze_through_under_bands: true,
                 },
@@ -137,6 +138,18 @@ impl MenuBar {
                             //ui.add_enabled_ui(workspace_activities_enabled, |ui| {
                             actions.route.autoroute.button(ctx, ui);
                             //});
+                            ui.separator();
+
+                            ui.label(tr.text("tr-menu-route-routed-band-width"));
+
+                            ui.add(
+                                egui::widgets::Slider::new(
+                                    &mut self.autorouter_options.router_options.routed_band_width,
+                                    1.0..=1000.0,
+                                )
+                                .suffix(""),
+                            );
+
                             ui.separator();
 
                             ui.menu_button(tr.text("tr-menu-options"), |ui| {

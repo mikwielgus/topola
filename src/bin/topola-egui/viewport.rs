@@ -37,7 +37,7 @@ impl Viewport {
     pub fn update(
         &mut self,
         ctx: &egui::Context,
-        top: &MenuBar,
+        menu_bar: &MenuBar,
         maybe_workspace: Option<&mut Workspace>,
     ) -> egui::Rect {
         egui::CentralPanel::default().show(ctx, |ui| {
@@ -53,21 +53,21 @@ impl Viewport {
                 self.transform.translation += latest_pos.to_vec2() * (old_scaling - self.transform.scaling);
                 self.transform.translation += ctx.input(|i| i.smooth_scroll_delta);
 
-                let mut painter = Painter::new(ui, self.transform, top.show_bboxes);
+                let mut painter = Painter::new(ui, self.transform, menu_bar.show_bboxes);
 
                 if let Some(workspace) = maybe_workspace {
                     let layers = &mut workspace.layers;
                     let overlay = &mut workspace.overlay;
 
                     if ctx.input(|i| i.pointer.any_click()) {
-                        if top.is_placing_via {
+                        if menu_bar.is_placing_via {
                             workspace.interactor.execute(
                                 Command::PlaceVia(ViaWeight {
                                     from_layer: 0,
                                     to_layer: 0,
                                     circle: Circle {
                                         pos: point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
-                                        r: 100.0,
+                                        r: menu_bar.autorouter_options.router_options.routed_band_width / 2.0,
                                     },
                                     maybe_net: Some(1234),
                                 }),
@@ -120,7 +120,7 @@ impl Viewport {
                         }
                     }
 
-                    if top.show_ratsnest {
+                    if menu_bar.show_ratsnest {
                         let graph = overlay.ratsnest().graph();
                         for edge in graph.edge_references() {
                             let from = graph
@@ -140,7 +140,7 @@ impl Viewport {
                         }
                     }
 
-                    if top.show_navmesh {
+                    if menu_bar.show_navmesh {
                         if let Some(activity) = workspace.interactor.maybe_activity() {
                             if let Some(navmesh) = activity.maybe_navmesh() {
                                 for edge in navmesh.edge_references() {
@@ -199,7 +199,7 @@ impl Viewport {
                         }
                     }
 
-                    if top.show_bboxes {
+                    if menu_bar.show_bboxes {
                         let root_bbox3d = board.layout().drawing().rtree().root().envelope();
 
                         let root_bbox = AABB::<[f64; 2]>::from_corners([root_bbox3d.lower()[0], root_bbox3d.lower()[1]].into(), [root_bbox3d.upper()[0], root_bbox3d.upper()[1]].into());
@@ -212,7 +212,7 @@ impl Viewport {
                         }
 
                         if let Some(navmesh) = activity.maybe_navmesh() {
-                            if top.show_origin_destination {
+                            if menu_bar.show_origin_destination {
                                 let (origin, destination) = (navmesh.origin(), navmesh.destination());
                                 painter.paint_dot(
                                     Circle {

@@ -32,6 +32,7 @@ use super::{
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
 pub struct RouterOptions {
+    pub routed_band_width: f64,
     pub wrap_around_bands: bool,
     pub squeeze_through_under_bands: bool,
 }
