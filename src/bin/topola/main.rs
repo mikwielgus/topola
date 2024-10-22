@@ -34,6 +34,7 @@ fn main() -> Result<(), std::io::Error> {
                 router_options: RouterOptions {
                     wrap_around_bands: true,
                     squeeze_through_under_bands: false,
+                    routed_band_width: 100.0,
                 },
             },
         ));
