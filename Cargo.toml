@@ -35,7 +35,7 @@ disable_contracts = ["contracts-try/disable_contracts"]
 [dependencies]
 thiserror = "1.0"
 rstar = "0.12"
-petgraph = "0.6.5"
+petgraph = { git = "https://codeberg.org/topola/petgraph.git" }
 spade = "2.12.1"
 serde_json = "1.0"
 contracts-try = "0.7"
