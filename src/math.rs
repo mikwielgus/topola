@@ -46,6 +46,15 @@ impl Default for PointWithRotation {
     }
 }
 
+impl PointWithRotation {
+    pub fn from_xy(x: f64, y: f64) -> Self {
+        Self {
+            pos: (x, y).into(),
+            rot: 0.0,
+        }
+    }
+}
+
 fn _tangent(center: Point, r1: f64, r2: f64) -> Result<CanonicalLine, ()> {
     let epsilon = 1e-9;
     let dr = r2 - r1;

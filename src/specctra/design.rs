@@ -198,8 +198,7 @@ impl SpecctraDesign {
             .network
             .nets
             .iter()
-            // flatten the nested iters into a single stream of tuples
-            .flat_map(|net_pin_assignments| {
+            .filter_map(|net_pin_assignments| {
                 // resolve the id so we don't work with strings
                 let net = board
                     .layout()
@@ -208,14 +207,18 @@ impl SpecctraDesign {
                     .netname_net(&net_pin_assignments.name)
                     .unwrap();
 
-                // take the list of pins
-                // and for each pin id output (pin id, net id)
-                net_pin_assignments
-                    .pins
-                    .names
-                    .iter()
-                    .map(move |pinname| (pinname.clone(), net))
+                net_pin_assignments.pins.as_ref().and_then(|pins| {
+                    // take the list of pins
+                    // and for each pin output (pin name, net id)
+                    Some(pins
+                        .names
+                        .iter()
+                        .map(move |pinname| (pinname.clone(), net))
+                    )
+                })
             })
+            // flatten the nested iters into a single stream of tuples
+            .flatten()
             .collect::<HashMap<String, usize>>();
 
         // add pins from components
@@ -236,7 +239,7 @@ impl SpecctraDesign {
 
                 for pin in &image.pins {
                     let pinname = format!("{}-{}", place.name, pin.id);
-                    let net = pin_nets.get(&pinname).unwrap();
+                    let net = pin_nets.get(&pinname).copied();
 
                     let padstack = self.pcb.library.find_padstack_by_name(&pin.name).unwrap();
 
@@ -250,7 +253,7 @@ impl SpecctraDesign {
                                     pin.point_with_rotation(),
                                     circle.diameter / 2.0,
                                     layer,
-                                    *net,
+                                    net,
                                     Some(pinname.clone()),
                                 )
                             }
@@ -265,7 +268,7 @@ impl SpecctraDesign {
                                     rect.x2,
                                     rect.y2,
                                     layer,
-                                    *net,
+                                    net,
                                     Some(pinname.clone()),
                                 )
                             }
@@ -278,7 +281,7 @@ impl SpecctraDesign {
                                     &path.coords,
                                     path.width,
                                     layer,
-                                    *net,
+                                    net,
                                     Some(pinname.clone()),
                                 )
                             }
@@ -291,7 +294,7 @@ impl SpecctraDesign {
                                     &polygon.coords,
                                     polygon.width,
                                     layer,
-                                    *net,
+                                    net,
                                     Some(pinname.clone()),
                                 )
                             }
@@ -306,8 +309,7 @@ impl SpecctraDesign {
                 .layout()
                 .drawing()
                 .rules()
-                .netname_net(&via.net)
-                .unwrap();
+                .netname_net(&via.net);
 
             let padstack = self.pcb.library.find_padstack_by_name(&via.name).unwrap();
 
@@ -321,7 +323,9 @@ impl SpecctraDesign {
                         let layer = get_layer(&board, &circle.layer);
                         Self::add_circle(
                             &mut board,
-                            PointWithRotation::default(),
+                            // TODO: refactor?
+                            // should this call take PointWithRotation?
+                            PointWithRotation::from_xy(via.x, via.y),
                             PointWithRotation::default(),
                             circle.diameter / 2.0,
                             layer,
@@ -333,7 +337,7 @@ impl SpecctraDesign {
                         let layer = get_layer(&board, &rect.layer);
                         Self::add_rect(
                             &mut board,
-                            PointWithRotation::default(),
+                            PointWithRotation::from_xy(via.x, via.y),
                             PointWithRotation::default(),
                             rect.x1,
                             rect.y1,
@@ -348,7 +352,7 @@ impl SpecctraDesign {
                         let layer = get_layer(&board, &path.layer);
                         Self::add_path(
                             &mut board,
-                            PointWithRotation::default(),
+                            PointWithRotation::from_xy(via.x, via.y),
                             PointWithRotation::default(),
                             &path.coords,
                             path.width,
@@ -361,7 +365,7 @@ impl SpecctraDesign {
                         let layer = get_layer(&board, &polygon.layer);
                         Self::add_polygon(
                             &mut board,
-                            PointWithRotation::default(),
+                            PointWithRotation::from_xy(via.x, via.y),
                             PointWithRotation::default(),
                             &polygon.coords,
                             polygon.width,
@@ -385,8 +389,7 @@ impl SpecctraDesign {
                 .layout()
                 .drawing()
                 .rules()
-                .netname_net(&wire.net)
-                .unwrap();
+                .netname_net(&wire.net);
 
             Self::add_path(
                 &mut board,
@@ -429,7 +432,7 @@ impl SpecctraDesign {
         pin: PointWithRotation,
         r: f64,
         layer: usize,
-        net: usize,
+        maybe_net: Option<usize>,
         maybe_pin: Option<String>,
     ) {
         let circle = Circle {
@@ -441,7 +444,7 @@ impl SpecctraDesign {
             FixedDotWeight {
                 circle,
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             },
             maybe_pin.clone(),
         );
@@ -456,13 +459,13 @@ impl SpecctraDesign {
         x2: f64,
         y2: f64,
         layer: usize,
-        net: usize,
+        maybe_net: Option<usize>,
         maybe_pin: Option<String>,
     ) {
         let poly = board.add_poly(
             SolidPolyWeight {
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             }
             .into(),
             maybe_pin.clone(),
@@ -476,7 +479,7 @@ impl SpecctraDesign {
                     r: 0.5,
                 },
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             },
             poly,
         );
@@ -487,7 +490,7 @@ impl SpecctraDesign {
                     r: 0.5,
                 },
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             },
             poly,
         );
@@ -498,7 +501,7 @@ impl SpecctraDesign {
                     r: 0.5,
                 },
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             },
             poly,
         );
@@ -509,7 +512,7 @@ impl SpecctraDesign {
                     r: 0.5,
                 },
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             },
             poly,
         );
@@ -520,7 +523,7 @@ impl SpecctraDesign {
             FixedSegWeight {
                 width: 1.0,
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             },
             poly,
         );
@@ -530,7 +533,7 @@ impl SpecctraDesign {
             FixedSegWeight {
                 width: 1.0,
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             },
             poly,
         );
@@ -540,7 +543,7 @@ impl SpecctraDesign {
             FixedSegWeight {
                 width: 1.0,
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             },
             poly,
         );
@@ -550,7 +553,7 @@ impl SpecctraDesign {
             FixedSegWeight {
                 width: 1.0,
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             },
             poly,
         );
@@ -563,7 +566,7 @@ impl SpecctraDesign {
         coords: &[structure::Point],
         width: f64,
         layer: usize,
-        net: usize,
+        maybe_net: Option<usize>,
         maybe_pin: Option<String>,
     ) {
         // add the first coordinate in the wire path as a dot and save its index
@@ -575,7 +578,7 @@ impl SpecctraDesign {
                     r: width / 2.0,
                 },
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             },
             maybe_pin.clone(),
         );
@@ -595,7 +598,7 @@ impl SpecctraDesign {
                         r: width / 2.0,
                     },
                     layer,
-                    maybe_net: Some(net),
+                    maybe_net,
                 },
                 maybe_pin.clone(),
             );
@@ -607,7 +610,7 @@ impl SpecctraDesign {
                 FixedSegWeight {
                     width,
                     layer,
-                    maybe_net: Some(net),
+                    maybe_net,
                 },
                 maybe_pin.clone(),
             );
@@ -624,13 +627,13 @@ impl SpecctraDesign {
         coords: &[structure::Point],
         width: f64,
         layer: usize,
-        net: usize,
+        maybe_net: Option<usize>,
         maybe_pin: Option<String>,
     ) {
         let poly = board.add_poly(
             SolidPolyWeight {
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             }
             .into(),
             maybe_pin.clone(),
@@ -644,7 +647,7 @@ impl SpecctraDesign {
                     r: width / 2.0,
                 },
                 layer,
-                maybe_net: Some(net),
+                maybe_net,
             },
             // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
             //GenericIndex::new(poly.petgraph_index()).into(),
@@ -660,7 +663,7 @@ impl SpecctraDesign {
                         r: width / 2.0,
                     },
                     layer,
-                    maybe_net: Some(net),
+                    maybe_net,
                 },
                 // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
                 poly,
@@ -673,7 +676,7 @@ impl SpecctraDesign {
                 FixedSegWeight {
                     width,
                     layer,
-                    maybe_net: Some(net),
+                    maybe_net,
                 },
                 // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
                 poly,

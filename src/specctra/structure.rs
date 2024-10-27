@@ -87,6 +87,8 @@ pub struct Structure {
     pub boundary: Boundary,
     #[vec("plane")]
     pub planes: Vec<Plane>,
+    #[vec("keepout")]
+    pub keepouts: Vec<Keepout>,
     pub via: ViaNames,
     #[vec("grid")]
     pub grids: Vec<Grid>,
@@ -104,6 +106,7 @@ impl<R: std::io::BufRead> ReadDsn<R> for Structure {
             layers: tokenizer.read_named_array("layer")?,
             boundary: tokenizer.read_named("boundary")?,
             planes: tokenizer.read_named_array("plane")?,
+            keepouts: tokenizer.read_named_array("keepout")?,
             via: tokenizer.read_named("via")?,
             grids: tokenizer.read_named_array("grid")?,
             rules: tokenizer.read_named_array("rule")?,
@@ -331,7 +334,7 @@ pub struct Network {
 pub struct NetPinAssignments {
     #[anon]
     pub name: String,
-    pub pins: Pins,
+    pub pins: Option<Pins>,
 }
 
 #[derive(ReadDsn, WriteSes, Debug)]
@@ -481,9 +484,9 @@ pub struct Via {
     #[anon]
     pub name: String,
     #[anon]
-    pub x: i32,
+    pub x: f64,
     #[anon]
-    pub y: i32,
+    pub y: f64,
     pub net: String,
     pub r#type: String,
 }

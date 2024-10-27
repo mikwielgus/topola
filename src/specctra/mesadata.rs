@@ -80,12 +80,17 @@ impl SpecctraMesadata {
                 .map(|(index, layer)| (index, layer.name.clone())),
         );
 
-        // keeping this as a separate iter pass because it might be moved into a different struct later?
+        // assign IDs to all nets named in pcb.network
         let net_netname = BiHashMap::from_iter(
             pcb.network
                 .classes
                 .iter()
                 .flat_map(|class| &class.nets)
+                .chain(
+                    pcb.network.nets
+                        .iter()
+                        .map(|net| &net.name)
+                )
                 .enumerate()
                 .map(|(net, netname)| (net, netname.clone())),
         );
