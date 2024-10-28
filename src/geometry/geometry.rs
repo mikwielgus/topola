@@ -65,9 +65,9 @@ pub enum GenericNode<P, C> {
     Compound(C),
 }
 
-pub trait AccessDotWeight<CW>: GetPos + SetPos + GetWidth + Into<CW> + Copy {}
-pub trait AccessSegWeight<CW>: GetWidth + Into<CW> + Copy {}
-pub trait AccessBendWeight<CW>: GetOffset + SetOffset + GetWidth + Into<CW> + Copy {}
+pub trait AccessDotWeight<PW>: GetPos + SetPos + GetWidth + Into<PW> + Copy {}
+pub trait AccessSegWeight<PW>: GetWidth + Into<PW> + Copy {}
+pub trait AccessBendWeight<PW>: GetOffset + SetOffset + GetWidth + Into<PW> + Copy {}
 
 #[derive(Debug, Getters)]
 pub struct Geometry<
@@ -82,7 +82,7 @@ pub struct Geometry<
     BI: GetPetgraphIndex + Into<PI> + Copy,
 > {
     graph: StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize>,
-    weight_marker: PhantomData<PW>,
+    primitive_weight_marker: PhantomData<PW>,
     dot_weight_marker: PhantomData<DW>,
     seg_weight_marker: PhantomData<SW>,
     bend_weight_marker: PhantomData<BW>,
@@ -108,7 +108,7 @@ impl<
     pub fn new() -> Self {
         Self {
             graph: StableDiGraph::default(),
-            weight_marker: PhantomData,
+            primitive_weight_marker: PhantomData,
             dot_weight_marker: PhantomData,
             seg_weight_marker: PhantomData,
             bend_weight_marker: PhantomData,

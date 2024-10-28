@@ -1,5 +1,3 @@
-use std::marker::PhantomData;
-
 use contracts_try::debug_invariant;
 use derive_getters::Getters;
 use geo::Point;
@@ -52,14 +50,6 @@ pub struct GeometryWithRtree<
     geometry: Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
     rtree: RTree<BboxedIndex<GenericNode<PI, GenericIndex<CW>>>>,
     layer_count: usize,
-    weight_marker: PhantomData<PW>,
-    dot_weight_marker: PhantomData<DW>,
-    seg_weight_marker: PhantomData<SW>,
-    bend_weight_marker: PhantomData<BW>,
-    index_marker: PhantomData<PI>,
-    dot_index_marker: PhantomData<DI>,
-    seg_index_marker: PhantomData<SI>,
-    bend_index_marker: PhantomData<BI>,
 }
 
 #[debug_invariant(self.test_envelopes())]
@@ -81,14 +71,6 @@ impl<
             geometry: Geometry::<PW, DW, SW, BW, CW, PI, DI, SI, BI>::new(),
             rtree: RTree::new(),
             layer_count,
-            weight_marker: PhantomData,
-            dot_weight_marker: PhantomData,
-            seg_weight_marker: PhantomData,
-            bend_weight_marker: PhantomData,
-            index_marker: PhantomData,
-            dot_index_marker: PhantomData,
-            seg_index_marker: PhantomData,
-            bend_index_marker: PhantomData,
         }
     }
 
