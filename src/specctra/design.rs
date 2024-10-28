@@ -162,7 +162,7 @@ impl SpecctraDesign {
                 id: "ID".to_string(),
                 routes: structure::Routes {
                     resolution: structure::Resolution {
-                        unit: "um".into(),
+                        unit: self.pcb.resolution.unit.clone(),
                         value: 1.0,
                     },
                     library_out: structure::Library {
