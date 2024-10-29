@@ -2,6 +2,7 @@ use std::fs::File;
 use std::io::BufReader;
 use topola::autorouter::invoker::Invoker;
 use topola::autorouter::Autorouter;
+use topola::layout::LayoutEdit;
 use topola::specctra::design::SpecctraDesign;
 
 fn main() -> Result<(), std::io::Error> {
@@ -9,7 +10,7 @@ fn main() -> Result<(), std::io::Error> {
     let design_bufread = BufReader::new(design_file);
 
     let design = SpecctraDesign::load(design_bufread).unwrap();
-    let board = design.make_board();
+    let board = design.make_board(&mut LayoutEdit::new());
 
     let invoker = Invoker::new(Autorouter::new(board).unwrap());
 

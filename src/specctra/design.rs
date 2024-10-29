@@ -16,7 +16,7 @@ use crate::{
         Drawing,
     },
     geometry::{primitive::PrimitiveShape, GetWidth},
-    layout::{poly::SolidPolyWeight, Layout},
+    layout::{poly::SolidPolyWeight, Layout, LayoutEdit},
     math::{Circle, PointWithRotation},
     specctra::{
         mesadata::SpecctraMesadata,
@@ -185,7 +185,7 @@ impl SpecctraDesign {
     /// which is used for layout and routing operations. The board is initialized with [`SpecctraMesadata`],
     /// which includes layer and net mappings, and is populated with components, pins, vias, and wires
     /// from the PCB definition.
-    pub fn make_board(&self) -> Board<SpecctraMesadata> {
+    pub fn make_board(&self, recorder: &mut LayoutEdit) -> Board<SpecctraMesadata> {
         let mesadata = SpecctraMesadata::from_pcb(&self.pcb);
         let mut board = Board::new(Layout::new(Drawing::new(
             mesadata,
@@ -210,11 +210,7 @@ impl SpecctraDesign {
                 net_pin_assignments.pins.as_ref().and_then(|pins| {
                     // take the list of pins
                     // and for each pin output (pin name, net id)
-                    Some(pins
-                        .names
-                        .iter()
-                        .map(move |pinname| (pinname.clone(), net))
-                    )
+                    Some(pins.names.iter().map(move |pinname| (pinname.clone(), net)))
                 })
             })
             // flatten the nested iters into a single stream of tuples
@@ -248,6 +244,7 @@ impl SpecctraDesign {
                             Shape::Circle(circle) => {
                                 let layer = get_layer(&board, &circle.layer);
                                 Self::add_circle(
+                                    recorder,
                                     &mut board,
                                     place.point_with_rotation(),
                                     pin.point_with_rotation(),
@@ -260,6 +257,7 @@ impl SpecctraDesign {
                             Shape::Rect(rect) => {
                                 let layer = get_layer(&board, &rect.layer);
                                 Self::add_rect(
+                                    recorder,
                                     &mut board,
                                     place.point_with_rotation(),
                                     pin.point_with_rotation(),
@@ -275,6 +273,7 @@ impl SpecctraDesign {
                             Shape::Path(path) => {
                                 let layer = get_layer(&board, &path.layer);
                                 Self::add_path(
+                                    recorder,
                                     &mut board,
                                     place.point_with_rotation(),
                                     pin.point_with_rotation(),
@@ -288,6 +287,7 @@ impl SpecctraDesign {
                             Shape::Polygon(polygon) => {
                                 let layer = get_layer(&board, &polygon.layer);
                                 Self::add_polygon(
+                                    recorder,
                                     &mut board,
                                     place.point_with_rotation(),
                                     pin.point_with_rotation(),
@@ -305,11 +305,7 @@ impl SpecctraDesign {
         }
 
         for via in &self.pcb.wiring.vias {
-            let net = board
-                .layout()
-                .drawing()
-                .rules()
-                .netname_net(&via.net);
+            let net = board.layout().drawing().rules().netname_net(&via.net);
 
             let padstack = self.pcb.library.find_padstack_by_name(&via.name).unwrap();
 
@@ -322,6 +318,7 @@ impl SpecctraDesign {
                     Shape::Circle(circle) => {
                         let layer = get_layer(&board, &circle.layer);
                         Self::add_circle(
+                            recorder,
                             &mut board,
                             // TODO: refactor?
                             // should this call take PointWithRotation?
@@ -336,6 +333,7 @@ impl SpecctraDesign {
                     Shape::Rect(rect) => {
                         let layer = get_layer(&board, &rect.layer);
                         Self::add_rect(
+                            recorder,
                             &mut board,
                             PointWithRotation::from_xy(via.x, via.y),
                             PointWithRotation::default(),
@@ -351,6 +349,7 @@ impl SpecctraDesign {
                     Shape::Path(path) => {
                         let layer = get_layer(&board, &path.layer);
                         Self::add_path(
+                            recorder,
                             &mut board,
                             PointWithRotation::from_xy(via.x, via.y),
                             PointWithRotation::default(),
@@ -364,6 +363,7 @@ impl SpecctraDesign {
                     Shape::Polygon(polygon) => {
                         let layer = get_layer(&board, &polygon.layer);
                         Self::add_polygon(
+                            recorder,
                             &mut board,
                             PointWithRotation::from_xy(via.x, via.y),
                             PointWithRotation::default(),
@@ -385,13 +385,10 @@ impl SpecctraDesign {
                 .rules()
                 .layername_layer(&wire.path.layer)
                 .unwrap();
-            let net = board
-                .layout()
-                .drawing()
-                .rules()
-                .netname_net(&wire.net);
+            let net = board.layout().drawing().rules().netname_net(&wire.net);
 
             Self::add_path(
+                recorder,
                 &mut board,
                 PointWithRotation::default(),
                 PointWithRotation::default(),
@@ -427,6 +424,7 @@ impl SpecctraDesign {
     }
 
     fn add_circle(
+        recorder: &mut LayoutEdit,
         board: &mut Board<SpecctraMesadata>,
         place: PointWithRotation,
         pin: PointWithRotation,
@@ -441,6 +439,7 @@ impl SpecctraDesign {
         };
 
         board.add_fixed_dot_infringably(
+            recorder,
             FixedDotWeight {
                 circle,
                 layer,
@@ -451,6 +450,7 @@ impl SpecctraDesign {
     }
 
     fn add_rect(
+        recorder: &mut LayoutEdit,
         board: &mut Board<SpecctraMesadata>,
         place: PointWithRotation,
         pin: PointWithRotation,
@@ -463,16 +463,14 @@ impl SpecctraDesign {
         maybe_pin: Option<String>,
     ) {
         let poly = board.add_poly(
-            SolidPolyWeight {
-                layer,
-                maybe_net,
-            }
-            .into(),
+            recorder,
+            SolidPolyWeight { layer, maybe_net }.into(),
             maybe_pin.clone(),
         );
 
         // Corners.
         let dot_1_1 = board.add_poly_fixed_dot_infringably(
+            recorder,
             FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place, pin, x1, y1),
@@ -484,6 +482,7 @@ impl SpecctraDesign {
             poly,
         );
         let dot_2_1 = board.add_poly_fixed_dot_infringably(
+            recorder,
             FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place, pin, x2, y1),
@@ -495,6 +494,7 @@ impl SpecctraDesign {
             poly,
         );
         let dot_2_2 = board.add_poly_fixed_dot_infringably(
+            recorder,
             FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place, pin, x2, y2),
@@ -506,6 +506,7 @@ impl SpecctraDesign {
             poly,
         );
         let dot_1_2 = board.add_poly_fixed_dot_infringably(
+            recorder,
             FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place, pin, x1, y2),
@@ -518,6 +519,7 @@ impl SpecctraDesign {
         );
         // Sides.
         board.add_poly_fixed_seg_infringably(
+            recorder,
             dot_1_1,
             dot_2_1,
             FixedSegWeight {
@@ -528,6 +530,7 @@ impl SpecctraDesign {
             poly,
         );
         board.add_poly_fixed_seg_infringably(
+            recorder,
             dot_2_1,
             dot_2_2,
             FixedSegWeight {
@@ -538,6 +541,7 @@ impl SpecctraDesign {
             poly,
         );
         board.add_poly_fixed_seg_infringably(
+            recorder,
             dot_2_2,
             dot_1_2,
             FixedSegWeight {
@@ -548,6 +552,7 @@ impl SpecctraDesign {
             poly,
         );
         board.add_poly_fixed_seg_infringably(
+            recorder,
             dot_1_2,
             dot_1_1,
             FixedSegWeight {
@@ -560,6 +565,7 @@ impl SpecctraDesign {
     }
 
     fn add_path(
+        recorder: &mut LayoutEdit,
         board: &mut Board<SpecctraMesadata>,
         place: PointWithRotation,
         pin: PointWithRotation,
@@ -572,6 +578,7 @@ impl SpecctraDesign {
         // add the first coordinate in the wire path as a dot and save its index
         let mut prev_pos = Self::pos(place, pin, coords[0].x, coords[0].y);
         let mut prev_index = board.add_fixed_dot_infringably(
+            recorder,
             FixedDotWeight {
                 circle: Circle {
                     pos: prev_pos,
@@ -592,6 +599,7 @@ impl SpecctraDesign {
             }
 
             let index = board.add_fixed_dot_infringably(
+                recorder,
                 FixedDotWeight {
                     circle: Circle {
                         pos,
@@ -605,6 +613,7 @@ impl SpecctraDesign {
 
             // add a seg between the current and previous coords
             let _ = board.add_fixed_seg_infringably(
+                recorder,
                 prev_index,
                 index,
                 FixedSegWeight {
@@ -621,6 +630,7 @@ impl SpecctraDesign {
     }
 
     fn add_polygon(
+        recorder: &mut LayoutEdit,
         board: &mut Board<SpecctraMesadata>,
         place: PointWithRotation,
         pin: PointWithRotation,
@@ -631,16 +641,14 @@ impl SpecctraDesign {
         maybe_pin: Option<String>,
     ) {
         let poly = board.add_poly(
-            SolidPolyWeight {
-                layer,
-                maybe_net,
-            }
-            .into(),
+            recorder,
+            SolidPolyWeight { layer, maybe_net }.into(),
             maybe_pin.clone(),
         );
 
         // add the first coordinate in the wire path as a dot and save its index
         let mut prev_index = board.add_poly_fixed_dot_infringably(
+            recorder,
             FixedDotWeight {
                 circle: Circle {
                     pos: Self::pos(place, pin, coords[0].x, coords[0].y),
@@ -657,6 +665,7 @@ impl SpecctraDesign {
         // iterate through path coords starting from the second
         for coord in coords.iter().skip(1) {
             let index = board.add_poly_fixed_dot_infringably(
+                recorder,
                 FixedDotWeight {
                     circle: Circle {
                         pos: Self::pos(place, pin, coord.x, coord.y),
@@ -671,6 +680,7 @@ impl SpecctraDesign {
 
             // add a seg between the current and previous coords
             let _ = board.add_poly_fixed_seg_infringably(
+                recorder,
                 prev_index,
                 index,
                 FixedSegWeight {

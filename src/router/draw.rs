@@ -16,7 +16,7 @@ use crate::{
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
         DrawingException, Infringement,
     },
-    layout::Layout,
+    layout::{Layout, LayoutEdit},
     math::{Circle, NoTangents},
 };
 
@@ -66,6 +66,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
             DotIndex::Fixed(dot) => BandTermsegIndex::Straight(
                 self.layout
                     .add_lone_loose_seg(
+                        &mut LayoutEdit::new(),
                         dot,
                         into,
                         LoneLooseSegWeight {
@@ -79,6 +80,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
             DotIndex::Loose(dot) => BandTermsegIndex::Bended(
                 self.layout
                     .add_seq_loose_seg(
+                        &mut LayoutEdit::new(),
                         into.into(),
                         dot,
                         SeqLooseSegWeight {
@@ -164,7 +166,8 @@ impl<'a, R: AccessRules> Draw<'a, R> {
     #[debug_ensures(self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
     fn extend_head(&mut self, head: Head, to: Point) -> Result<Head, Infringement> {
         if let Head::Cane(head) = head {
-            self.layout.move_dot(head.face.into(), to)?;
+            self.layout
+                .move_dot(&mut LayoutEdit::new(), head.face.into(), to)?;
             Ok(Head::Cane(head))
         } else {
             Ok(head)
@@ -185,6 +188,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         let layer = head.face().primitive(self.layout.drawing()).layer();
         let maybe_net = head.face().primitive(self.layout.drawing()).maybe_net();
         let cane = self.layout.insert_cane(
+            &mut LayoutEdit::new(),
             head.face(),
             around,
             LooseDotWeight {
@@ -227,7 +231,8 @@ impl<'a, R: AccessRules> Draw<'a, R> {
             .primitive(head.cane.seg)
             .other_joint(head.cane.dot.into());
 
-        self.layout.remove_cane(&head.cane, head.face);
+        self.layout
+            .remove_cane(&mut LayoutEdit::new(), &head.cane, head.face);
         Some(self.guide().head(prev_dot))
     }
 

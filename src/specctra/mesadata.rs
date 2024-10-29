@@ -86,11 +86,7 @@ impl SpecctraMesadata {
                 .classes
                 .iter()
                 .flat_map(|class| &class.nets)
-                .chain(
-                    pcb.network.nets
-                        .iter()
-                        .map(|net| &net.name)
-                )
+                .chain(pcb.network.nets.iter().map(|net| &net.name))
                 .enumerate()
                 .map(|(net, netname)| (net, netname.clone())),
         );

@@ -7,6 +7,7 @@ use topola::autorouter::invoker::Invoker;
 use topola::autorouter::selection::PinSelection;
 use topola::autorouter::Autorouter;
 use topola::autorouter::AutorouterOptions;
+use topola::layout::LayoutEdit;
 use topola::router::RouterOptions;
 use topola::specctra::design::SpecctraDesign;
 
@@ -19,7 +20,7 @@ fn main() -> Result<(), std::io::Error> {
     let mut design_bufread = BufReader::new(design_file);
 
     let design = SpecctraDesign::load(design_bufread).unwrap();
-    let board = design.make_board();
+    let board = design.make_board(&mut LayoutEdit::new());
 
     let history = if let Some(commands_filename) = args.commands {
         let command_file = File::open(commands_filename)?;

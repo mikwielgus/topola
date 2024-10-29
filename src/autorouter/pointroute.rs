@@ -8,6 +8,7 @@ use crate::{
         band::BandTermsegIndex,
         dot::{FixedDotIndex, FixedDotWeight},
     },
+    layout::LayoutEdit,
     math::Circle,
     router::{route::RouteStepper, Router},
     stepper::Step,
@@ -29,6 +30,7 @@ impl PointrouteExecutionStepper {
         options: AutorouterOptions,
     ) -> Result<Self, AutorouterError> {
         let destination = autorouter.board.add_fixed_dot_infringably(
+            &mut LayoutEdit::new(),
             FixedDotWeight {
                 circle: Circle {
                     pos: point,

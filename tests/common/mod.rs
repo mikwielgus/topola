@@ -11,6 +11,7 @@ use topola::{
     drawing::graph::{GetLayer, GetMaybeNet},
     geometry::shape::MeasureLength,
     graph::{GetPetgraphIndex, MakeRef},
+    layout::LayoutEdit,
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
 
@@ -18,7 +19,8 @@ pub fn load_design_and_assert(filename: &str) -> Invoker<SpecctraMesadata> {
     let design_file = File::open(filename).unwrap();
     let design_bufread = BufReader::new(design_file);
     let design = SpecctraDesign::load(design_bufread).unwrap();
-    let mut invoker = Invoker::new(Autorouter::new(design.make_board()).unwrap());
+    let mut invoker =
+        Invoker::new(Autorouter::new(design.make_board(&mut LayoutEdit::new())).unwrap());
 
     assert!(matches!(
         invoker.undo(),

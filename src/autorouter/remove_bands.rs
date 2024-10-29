@@ -4,6 +4,7 @@ use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
+    layout::LayoutEdit,
     router::{navcord::NavcordStepper, navmesh::Navmesh},
 };
 
@@ -36,7 +37,10 @@ impl RemoveBandsExecutionStepper {
 
             for selector in self.selection.selectors() {
                 let band = autorouter.board.bandname_band(&selector.band).unwrap().0;
-                autorouter.board.layout_mut().remove_band(band);
+                autorouter
+                    .board
+                    .layout_mut()
+                    .remove_band(&mut LayoutEdit::new(), band);
             }
             Ok(())
         } else {

@@ -6,7 +6,7 @@ use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
-    layout::via::ViaWeight,
+    layout::{via::ViaWeight, LayoutEdit},
     router::{navcord::NavcordStepper, navmesh::Navmesh},
 };
 
@@ -35,7 +35,10 @@ impl PlaceViaExecutionStepper {
     ) -> Result<(), AutorouterError> {
         if !self.done {
             self.done = true;
-            autorouter.board.layout_mut().add_via(self.weight)?;
+            autorouter
+                .board
+                .layout_mut()
+                .add_via(&mut LayoutEdit::new(), self.weight)?;
             Ok(())
         } else {
             Ok(())

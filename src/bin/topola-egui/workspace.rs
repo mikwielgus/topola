@@ -9,6 +9,7 @@ use topola::{
         activity::{ActivityContext, ActivityStepperWithStatus, InteractiveInput},
         Interactor,
     },
+    layout::LayoutEdit,
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
     stepper::Step,
 };
@@ -30,7 +31,7 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn new(design: SpecctraDesign, tr: &Translator) -> Result<Self, String> {
-        let board = design.make_board();
+        let board = design.make_board(&mut LayoutEdit::new());
         let layers = Layers::new(&board);
         let overlay = Overlay::new(&board).map_err(|err| {
             format!(

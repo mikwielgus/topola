@@ -8,7 +8,7 @@ use thiserror::Error;
 use crate::{
     board::{mesadata::AccessMesadata, Board},
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
-    layout::via::ViaWeight,
+    layout::{via::ViaWeight, LayoutEdit},
     router::{astar::AstarError, navmesh::NavmeshError, RouterOptions},
     triangulation::GetTrianvertexNodeIndex,
 };
@@ -73,7 +73,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => self.board.poly_apex(poly),
+            RatvertexIndex::Poly(poly) => self.board.poly_apex(&mut LayoutEdit::new(), poly),
         };
 
         PointrouteExecutionStepper::new(self, origin_dot, point, options)
@@ -82,7 +82,7 @@ impl<M: AccessMesadata> Autorouter<M> {
     pub fn undo_pointroute(&mut self, band: BandTermsegIndex) -> Result<(), AutorouterError> {
         self.board
             .layout_mut()
-            .remove_band(band)
+            .remove_band(&mut LayoutEdit::new(), band)
             .map_err(|_| AutorouterError::CouldNotRemoveBand(band))
     }
 
@@ -120,7 +120,7 @@ impl<M: AccessMesadata> Autorouter<M> {
                 .unwrap();
             self.board
                 .layout_mut()
-                .remove_band(band)
+                .remove_band(&mut LayoutEdit::new(), band)
                 .map_err(|_| AutorouterError::CouldNotRemoveBand(band))?;
         }
 
@@ -191,7 +191,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => self.board.poly_apex(poly),
+            RatvertexIndex::Poly(poly) => self.board.poly_apex(&mut LayoutEdit::new(), poly),
         };
 
         let target_dot = match self
@@ -202,7 +202,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => self.board.poly_apex(poly),
+            RatvertexIndex::Poly(poly) => self.board.poly_apex(&mut LayoutEdit::new(), poly),
         };
 
         (source_dot, target_dot)

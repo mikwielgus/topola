@@ -4,10 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     drawing::{graph::GetMaybeNet, primitive::MakePrimitiveShape, rules::AccessRules},
-    geometry::{
-        compound::ManageCompounds,
-        primitive::{DotShape, PrimitiveShape},
-    },
+    geometry::primitive::{DotShape, PrimitiveShape},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{CompoundWeight, Layout},
     math::Circle,

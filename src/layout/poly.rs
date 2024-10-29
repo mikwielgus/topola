@@ -12,7 +12,7 @@ use crate::{
         rules::AccessRules,
         seg::SegIndex,
     },
-    geometry::{compound::ManageCompounds, poly::PolyShape, GetPos},
+    geometry::{poly::PolyShape, GetPos},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{CompoundWeight, Layout},
 };

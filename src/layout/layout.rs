@@ -17,9 +17,9 @@ use crate::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
             SeqLooseSegWeight,
         },
-        Drawing, DrawingException, Infringement,
+        Drawing, DrawingEdit, DrawingException, Infringement,
     },
-    geometry::{compound::ManageCompounds, GenericNode},
+    geometry::GenericNode,
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
         poly::{Poly, PolyWeight},
@@ -39,6 +39,7 @@ pub enum CompoundWeight {
 
 /// The alias to differ node types
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<CompoundWeight>>;
+pub type LayoutEdit = DrawingEdit<CompoundWeight>;
 
 #[derive(Debug, Getters)]
 /// Structure for managing the Layout design
@@ -54,46 +55,61 @@ impl<R: AccessRules> Layout<R> {
     /// Insert [`Cane`] object into the [`Layout`]
     pub fn insert_cane(
         &mut self,
-        from: DotIndex, 
+        recorder: &mut LayoutEdit,
+        from: DotIndex,
         around: GearIndex,
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         cw: bool,
     ) -> Result<Cane, DrawingException> {
-        self.drawing
-            .insert_cane(from, around, dot_weight, seg_weight, bend_weight, cw)
+        self.drawing.insert_cane(
+            recorder,
+            from,
+            around,
+            dot_weight,
+            seg_weight,
+            bend_weight,
+            cw,
+        )
     }
-    
+
     /// Remove [`Cane`] object from the [`Layout`]
-    pub fn remove_cane(&mut self, cane: &Cane, face: LooseDotIndex) {
-        self.drawing.remove_cane(cane, face)
+    pub fn remove_cane(&mut self, recorder: &mut LayoutEdit, cane: &Cane, face: LooseDotIndex) {
+        self.drawing.remove_cane(recorder, cane, face)
     }
 
     #[debug_ensures(ret.is_ok() -> self.drawing.node_count() == old(self.drawing.node_count()) + weight.to_layer - weight.from_layer + 2)]
     #[debug_ensures(ret.is_err() -> self.drawing.node_count() == old(self.drawing.node_count()))]
     /// Insert [`Via`] into the [`Layout`]
-    pub fn add_via(&mut self, weight: ViaWeight) -> Result<GenericIndex<ViaWeight>, Infringement> {
-        let compound = self.drawing.add_compound(weight.into());
+    pub fn add_via(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        weight: ViaWeight,
+    ) -> Result<GenericIndex<ViaWeight>, Infringement> {
+        let compound = self.drawing.add_compound(recorder, weight.into());
         let mut dots = vec![];
 
         for layer in weight.from_layer..=weight.to_layer {
-            match self.drawing.add_fixed_dot(FixedDotWeight {
-                circle: weight.circle,
-                layer,
-                maybe_net: weight.maybe_net,
-            }) {
+            match self.drawing.add_fixed_dot(
+                recorder,
+                FixedDotWeight {
+                    circle: weight.circle,
+                    layer,
+                    maybe_net: weight.maybe_net,
+                },
+            ) {
                 Ok(dot) => {
-                    self.drawing.add_to_compound(dot, compound);
+                    self.drawing.add_to_compound(recorder, dot, compound);
                     dots.push(dot);
                 }
                 Err(err) => {
                     // Remove inserted dots.
 
-                    self.drawing.remove_compound(compound);
+                    self.drawing.remove_compound(recorder, compound);
 
                     for dot in dots.iter().rev() {
-                        self.drawing.remove_fixed_dot(*dot);
+                        self.drawing.remove_fixed_dot(recorder, *dot);
                     }
 
                     return Err(err);
@@ -104,24 +120,32 @@ impl<R: AccessRules> Layout<R> {
         Ok(GenericIndex::<ViaWeight>::new(compound.petgraph_index()))
     }
 
-
-    pub fn add_fixed_dot(&mut self, weight: FixedDotWeight) -> Result<FixedDotIndex, Infringement> {
-        self.drawing.add_fixed_dot(weight)
+    pub fn add_fixed_dot(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        weight: FixedDotWeight,
+    ) -> Result<FixedDotIndex, Infringement> {
+        self.drawing.add_fixed_dot(recorder, weight)
     }
 
-    pub fn add_fixed_dot_infringably(&mut self, weight: FixedDotWeight) -> FixedDotIndex {
-        self.drawing.add_fixed_dot_infringably(weight)
+    pub fn add_fixed_dot_infringably(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        weight: FixedDotWeight,
+    ) -> FixedDotIndex {
+        self.drawing.add_fixed_dot_infringably(recorder, weight)
     }
 
     pub fn add_poly_fixed_dot(
         &mut self,
+        recorder: &mut LayoutEdit,
         weight: FixedDotWeight,
         poly: GenericIndex<PolyWeight>,
     ) -> Result<FixedDotIndex, Infringement> {
-        let maybe_dot = self.drawing.add_fixed_dot(weight);
+        let maybe_dot = self.drawing.add_fixed_dot(recorder, weight);
 
         if let Ok(dot) = maybe_dot {
-            self.drawing.add_to_compound(dot, poly.into());
+            self.drawing.add_to_compound(recorder, dot, poly.into());
         }
 
         maybe_dot
@@ -129,43 +153,48 @@ impl<R: AccessRules> Layout<R> {
 
     pub fn add_poly_fixed_dot_infringably(
         &mut self,
+        recorder: &mut LayoutEdit,
         weight: FixedDotWeight,
         poly: GenericIndex<PolyWeight>,
     ) -> FixedDotIndex {
-        let dot = self.drawing.add_fixed_dot_infringably(weight);
-        self.drawing.add_to_compound(dot, poly.into());
+        let dot = self.drawing.add_fixed_dot_infringably(recorder, weight);
+        self.drawing.add_to_compound(recorder, dot, poly.into());
         dot
     }
 
     pub fn add_fixed_seg(
         &mut self,
+        recorder: &mut LayoutEdit,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
     ) -> Result<FixedSegIndex, Infringement> {
-        self.drawing.add_fixed_seg(from, to, weight)
+        self.drawing.add_fixed_seg(recorder, from, to, weight)
     }
 
     pub fn add_fixed_seg_infringably(
         &mut self,
+        recorder: &mut LayoutEdit,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
     ) -> FixedSegIndex {
-        self.drawing.add_fixed_seg_infringably(from, to, weight)
+        self.drawing
+            .add_fixed_seg_infringably(recorder, from, to, weight)
     }
 
     pub fn add_poly_fixed_seg(
         &mut self,
+        recorder: &mut LayoutEdit,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
         poly: GenericIndex<PolyWeight>,
     ) -> Result<FixedSegIndex, Infringement> {
-        let maybe_seg = self.add_fixed_seg(from, to, weight);
+        let maybe_seg = self.add_fixed_seg(recorder, from, to, weight);
 
         if let Ok(seg) = maybe_seg {
-            self.drawing.add_to_compound(seg, poly.into());
+            self.drawing.add_to_compound(recorder, seg, poly.into());
         }
 
         maybe_seg
@@ -173,48 +202,64 @@ impl<R: AccessRules> Layout<R> {
 
     pub fn add_poly_fixed_seg_infringably(
         &mut self,
+        recorder: &mut LayoutEdit,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
         poly: GenericIndex<PolyWeight>,
     ) -> FixedSegIndex {
-        let seg = self.add_fixed_seg_infringably(from, to, weight);
-        self.drawing.add_to_compound(seg, poly.into());
+        let seg = self.add_fixed_seg_infringably(recorder, from, to, weight);
+        self.drawing.add_to_compound(recorder, seg, poly.into());
         seg
     }
 
     pub fn add_lone_loose_seg(
         &mut self,
+        recorder: &mut LayoutEdit,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: LoneLooseSegWeight,
     ) -> Result<LoneLooseSegIndex, Infringement> {
-        self.drawing.add_lone_loose_seg(from, to, weight)
+        self.drawing.add_lone_loose_seg(recorder, from, to, weight)
     }
 
     pub fn add_seq_loose_seg(
         &mut self,
+        recorder: &mut LayoutEdit,
         from: DotIndex,
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
     ) -> Result<SeqLooseSegIndex, Infringement> {
-        self.drawing.add_seq_loose_seg(from, to, weight)
+        self.drawing.add_seq_loose_seg(recorder, from, to, weight)
     }
 
-    pub fn move_dot(&mut self, dot: DotIndex, to: Point) -> Result<(), Infringement> {
-        self.drawing.move_dot(dot, to)
+    pub fn move_dot(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        dot: DotIndex,
+        to: Point,
+    ) -> Result<(), Infringement> {
+        self.drawing.move_dot(recorder, dot, to)
     }
 
-    pub fn add_poly(&mut self, weight: PolyWeight) -> GenericIndex<PolyWeight> {
+    pub fn add_poly(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        weight: PolyWeight,
+    ) -> GenericIndex<PolyWeight> {
         GenericIndex::<PolyWeight>::new(
             self.drawing
-                .add_compound(CompoundWeight::Poly(weight))
+                .add_compound(recorder, CompoundWeight::Poly(weight))
                 .petgraph_index(),
         )
     }
 
-    pub fn remove_band(&mut self, band: BandTermsegIndex) -> Result<(), DrawingException> {
-        self.drawing.remove_band(band)
+    pub fn remove_band(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        band: BandTermsegIndex,
+    ) -> Result<(), DrawingException> {
+        self.drawing.remove_band(recorder, band)
     }
 
     pub fn polys<W: 'static>(

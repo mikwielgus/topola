@@ -2,6 +2,7 @@ use std::{collections::HashMap, hash::Hash, marker::PhantomData};
 
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
+use rstar::RTree;
 
 use crate::{
     drawing::graph::{GetLayer, Retag},
@@ -9,10 +10,13 @@ use crate::{
 };
 
 use super::{
-    compound::ManageCompounds, with_rtree::GeometryWithRtree, AccessBendWeight, AccessDotWeight,
-    AccessSegWeight, GenericNode, GeometryLabel, GetWidth,
+    compound::ManageCompounds,
+    with_rtree::{BboxedIndex, GeometryWithRtree},
+    AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
+    GetWidth,
 };
 
+#[derive(Debug)]
 pub struct GeometryEdit<
     PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
     DW: AccessDotWeight<PW> + GetLayer,
@@ -31,6 +35,30 @@ pub struct GeometryEdit<
     primitive_weight_marker: PhantomData<PW>,
 }
 
+impl<
+        PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
+        DW: AccessDotWeight<PW> + GetLayer,
+        SW: AccessSegWeight<PW> + GetLayer,
+        BW: AccessBendWeight<PW> + GetLayer,
+        CW: Copy,
+        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Hash + Copy,
+        DI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
+        SI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
+        BI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
+    > GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>
+{
+    pub fn new() -> Self {
+        Self {
+            dots: HashMap::new(),
+            segs: HashMap::new(),
+            bends: HashMap::new(),
+            compounds: HashMap::new(),
+            primitive_weight_marker: PhantomData,
+        }
+    }
+}
+
+#[derive(Debug)]
 pub struct RecordingGeometryWithRtree<
     PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
     DW: AccessDotWeight<PW> + GetLayer,
@@ -57,6 +85,14 @@ impl<
         BI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
     > RecordingGeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
+    pub fn new(layer_count: usize) -> Self {
+        Self {
+            geometry_with_rtree: GeometryWithRtree::<PW, DW, SW, BW, CW, PI, DI, SI, BI>::new(
+                layer_count,
+            ),
+        }
+    }
+
     pub fn add_dot<W: AccessDotWeight<PW> + GetLayer>(
         &mut self,
         recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
@@ -347,6 +383,18 @@ impl<
         node: GenericIndex<W>,
     ) -> impl Iterator<Item = GenericIndex<CW>> + 'a {
         self.geometry_with_rtree.compounds(node)
+    }
+
+    pub fn geometry(&self) -> &Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
+        self.geometry_with_rtree.geometry()
+    }
+
+    pub fn rtree(&self) -> &RTree<BboxedIndex<GenericNode<PI, GenericIndex<CW>>>> {
+        self.geometry_with_rtree.rtree()
+    }
+
+    pub fn layer_count(&self) -> usize {
+        *self.geometry_with_rtree.layer_count()
     }
 
     pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize> {
