@@ -28,6 +28,7 @@ use super::{
 
 #[enum_dispatch]
 pub trait GetMaybeNavmesh {
+    /// Returns navigation mesh if possible
     fn maybe_navmesh(&self) -> Option<&Navmesh>;
 }
 

@@ -117,6 +117,10 @@ pub enum NavmeshError {
     Insertion(#[from] InsertionError),
 }
 
+/// Contains Navigation Mesh properties
+///
+/// Navigation Mesh is a mesh of possible routes between
+/// two nodes
 #[derive(Debug, Clone)]
 pub struct Navmesh {
     graph: UnGraph<NavvertexWeight, (), usize>,
@@ -127,6 +131,10 @@ pub struct Navmesh {
 }
 
 impl Navmesh {
+    /// Create new Navigation mesh
+    ///
+    /// Method to create new Navigation Mesh between
+    /// origin and destination nodes
     pub fn new(
         layout: &Layout<impl AccessRules>,
         origin: FixedDotIndex,
@@ -291,22 +299,27 @@ impl Navmesh {
             .push((navvertex1, navvertex2));
     }
 
+    /// Returns Graph with undirected edges of Navigation Vertex
     pub fn graph(&self) -> &UnGraph<NavvertexWeight, (), usize> {
         &self.graph
     }
 
+    /// Returns origin node index
     pub fn origin(&self) -> FixedDotIndex {
         self.origin
     }
 
+    /// Returns Navigation Vertex of origin node
     pub fn origin_navvertex(&self) -> NavvertexIndex {
         self.origin_navvertex
     }
-
+    
+    /// Returns destination node index
     pub fn destination(&self) -> FixedDotIndex {
         self.destination
     }
 
+    /// Returns Navigation Vertex of destination node
     pub fn destination_navvertex(&self) -> NavvertexIndex {
         self.destination_navvertex
     }
