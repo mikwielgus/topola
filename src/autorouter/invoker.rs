@@ -27,46 +27,63 @@ use super::{
 };
 
 #[enum_dispatch]
+/// Getter trait to obtain Navigation Mesh
 pub trait GetMaybeNavmesh {
     /// Returns navigation mesh if possible
     fn maybe_navmesh(&self) -> Option<&Navmesh>;
 }
 
 #[enum_dispatch]
+/// TODO: Trait to require Navigation Cord implementation details
 pub trait GetMaybeNavcord {
     fn maybe_navcord(&self) -> Option<&NavcordStepper>;
 }
 
 #[enum_dispatch]
+/// TODO: Requires Ghosts implementations
 pub trait GetGhosts {
+    /// Retrieves the ghosts associated with the execution.
     fn ghosts(&self) -> &[PrimitiveShape];
 }
 
 #[enum_dispatch]
+/// TODO: Defines Obstacles getter implementation
 pub trait GetObstacles {
+    /// Returns possible obstacles
     fn obstacles(&self) -> &[PrimitiveIndex];
 }
 
+/// Error types that can occur during the invocation of commands
 #[derive(Error, Debug, Clone)]
 pub enum InvokerError {
+    
+    /// Wraps errors related to command history operations
     #[error(transparent)]
     History(#[from] HistoryError),
+    
+    /// Wraps errors related to autorouter operations
     #[error(transparent)]
     Autorouter(#[from] AutorouterError),
 }
 
 #[derive(Getters, Dissolve)]
+/// Structure that manages the execution of commands within the autorouting system
 pub struct Invoker<M: AccessMesadata> {
+    /// The structure instance used for executing commands
     pub(super) autorouter: Autorouter<M>,
+    /// History of executed commands
     pub(super) history: History,
+    /// Currently executed command.
     pub(super) ongoing_command: Option<Command>,
 }
 
 impl<M: AccessMesadata> Invoker<M> {
+    /// Creates a new instance of Invoker with the given autorouter instance
     pub fn new(autorouter: Autorouter<M>) -> Self {
         Self::new_with_history(autorouter, History::new())
     }
 
+    /// Creates a new instance of Invoker with the given autorouter and history
     pub fn new_with_history(autorouter: Autorouter<M>, history: History) -> Self {
         Self {
             autorouter,
@@ -76,6 +93,7 @@ impl<M: AccessMesadata> Invoker<M> {
     }
 
     //#[debug_requires(self.ongoing_command.is_none())]
+    /// Executes a command, managing the command status and history
     pub fn execute(&mut self, command: Command) -> Result<(), InvokerError> {
         let mut execute = self.execute_stepper(command)?;
 
@@ -90,6 +108,7 @@ impl<M: AccessMesadata> Invoker<M> {
     }
 
     #[debug_requires(self.ongoing_command.is_none())]
+    /// Pass given command to be executed
     pub fn execute_stepper(&mut self, command: Command) -> Result<ExecutionStepper, InvokerError> {
         let execute = self.dispatch_command(&command);
         self.ongoing_command = Some(command);
@@ -134,6 +153,7 @@ impl<M: AccessMesadata> Invoker<M> {
     }
 
     #[debug_requires(self.ongoing_command.is_none())]
+    /// Undo last command
     pub fn undo(&mut self) -> Result<(), InvokerError> {
         let command = self.history.last_done()?;
 
@@ -155,6 +175,7 @@ impl<M: AccessMesadata> Invoker<M> {
     }
 
     //#[debug_requires(self.ongoing.is_none())]
+    /// Redo last command
     pub fn redo(&mut self) -> Result<(), InvokerError> {
         let command = self.history.last_undone()?.clone();
         let mut execute = self.execute_stepper(command)?;
@@ -172,6 +193,7 @@ impl<M: AccessMesadata> Invoker<M> {
     }
 
     #[debug_requires(self.ongoing_command.is_none())]
+    /// Replay last command
     pub fn replay(&mut self, history: History) {
         let (done, undone) = history.dissolve();
 
