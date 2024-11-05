@@ -44,3 +44,4 @@ tr-menu-help = Hilfe
 tr-menu-help-online-documentation = Onlinedokumentation
 tr-menu-preferences = Einstellungen
 tr-menu-preferences-set-language = Sprache wählen
+tr-menu-route-routed-band-width = Bandbreite für Route
