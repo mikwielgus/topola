@@ -55,8 +55,7 @@ pub trait GetObstacles {
 
 /// Error types that can occur during the invocation of commands
 #[derive(Error, Debug, Clone)]
-pub enum InvokerError {
-    
+pub enum InvokerError {    
     /// Wraps errors related to command history operations
     #[error(transparent)]
     History(#[from] HistoryError),
@@ -67,13 +66,13 @@ pub enum InvokerError {
 }
 
 #[derive(Getters, Dissolve)]
-/// Structure that manages the execution of commands within the autorouting system
+/// Structure that manages the execution and history of commands within the autorouting system
 pub struct Invoker<M: AccessMesadata> {
-    /// The structure instance used for executing commands
+    /// Returns an reference to used [`Autorouter`] executor 
     pub(super) autorouter: Autorouter<M>,
-    /// History of executed commands
+    /// Returns a reference to [`History`] of executed commands
     pub(super) history: History,
-    /// Currently executed command.
+    /// Returns a reference to currently ongoing command type.
     pub(super) ongoing_command: Option<Command>,
 }
 
@@ -94,6 +93,9 @@ impl<M: AccessMesadata> Invoker<M> {
 
     //#[debug_requires(self.ongoing_command.is_none())]
     /// Executes a command, managing the command status and history
+    ///
+    /// This function is used to pass the [`Command`] to [`Invoker::execute_stepper`]
+    /// function, and control its execution status
     pub fn execute(&mut self, command: Command) -> Result<(), InvokerError> {
         let mut execute = self.execute_stepper(command)?;
 
@@ -109,6 +111,8 @@ impl<M: AccessMesadata> Invoker<M> {
 
     #[debug_requires(self.ongoing_command.is_none())]
     /// Pass given command to be executed
+    ///
+    /// Function used to set given [`Command`] to ongoing state, dispatch and execute it
     pub fn execute_stepper(&mut self, command: Command) -> Result<ExecutionStepper, InvokerError> {
         let execute = self.dispatch_command(&command);
         self.ongoing_command = Some(command);
@@ -174,7 +178,7 @@ impl<M: AccessMesadata> Invoker<M> {
         Ok(self.history.undo()?)
     }
 
-    //#[debug_requires(self.ongoing.is_none())]
+    //#[debug_requires(self.ongoing_command.is_none())]
     /// Redo last command
     pub fn redo(&mut self) -> Result<(), InvokerError> {
         let command = self.history.last_undone()?.clone();
