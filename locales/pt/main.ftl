@@ -1,4 +1,4 @@
-tr-menu-file = Arquivo
+tr-menu-file = Ficheiro
 tr-menu-file-open = Abrir
 tr-menu-file-export-session-file = Exportar Arquivo de Sessão
 tr-menu-file-import-history = Histórico de Importações
@@ -8,7 +8,7 @@ tr-menu-edit = Editar
 tr-menu-edit-undo = Desfazer
 tr-menu-edit-redo = Refazer
 tr-menu-edit-abort = Abortar
-tr-menu-view = Exibir
+tr-menu-view = Visualizar
 tr-menu-view-zoom-to-fit = Zoom para caber
 tr-menu-view-show-origin-destination = Mostrar Origem-Destino
 tr-menu-view-show-layer-manager = Mostrar Gerenciador de Camadas
