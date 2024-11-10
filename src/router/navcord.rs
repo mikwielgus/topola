@@ -16,13 +16,21 @@ use super::{
 };
 
 #[derive(Debug)]
+/// Structure containing information about Navigation Cord Stepper
+///
+/// Navigation Cord is a one of chosen possible ways to connect
+/// both Navigation Vertex
 pub struct NavcordStepper {
+    /// Path of the current Navigation Cord
     pub path: Vec<NavvertexIndex>,
+    /// Type of Navigaction Cord head
     pub head: Head,
+    /// Width of the cord
     pub width: f64,
 }
 
 impl NavcordStepper {
+    /// Create new Navigation Cord instance
     pub fn new(
         source: FixedDotIndex,
         source_navvertex: NavvertexIndex,

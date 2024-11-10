@@ -28,28 +28,41 @@ use super::{
 
 #[enum_dispatch]
 /// Getter trait to obtain Navigation Mesh
+///
+/// Navigation Mesh is possible routes between
+/// two points
 pub trait GetMaybeNavmesh {
-    /// Returns navigation mesh if possible
+    /// Returns Navigation Mesh if possible
     fn maybe_navmesh(&self) -> Option<&Navmesh>;
 }
 
 #[enum_dispatch]
-/// TODO: Trait to require Navigation Cord implementation details
+/// Getter for Navigation Cord
+///
+/// Navigation Cord is the possible path of
+/// ongoing autorouting process
 pub trait GetMaybeNavcord {
+    /// Gets the Navigation Cord if possible
     fn maybe_navcord(&self) -> Option<&NavcordStepper>;
 }
 
 #[enum_dispatch]
-/// TODO: Requires Ghosts implementations
+/// Requires Ghosts implementations
+///
+/// Ghosts are possible shapes of routing
+/// bands
 pub trait GetGhosts {
     /// Retrieves the ghosts associated with the execution.
     fn ghosts(&self) -> &[PrimitiveShape];
 }
 
 #[enum_dispatch]
-/// TODO: Defines Obstacles getter implementation
+/// Getter for the Obstacles
+///
+/// Obstacles are shapes of existing bands
+/// to be avoided by the new band
 pub trait GetObstacles {
-    /// Returns possible obstacles
+    /// Returns possible Obstacles
     fn obstacles(&self) -> &[PrimitiveIndex];
 }
 

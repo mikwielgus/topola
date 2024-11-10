@@ -10,9 +10,13 @@ use crate::drawing::{
 use super::rules::AccessRules;
 
 #[derive(Debug, Clone, Copy)]
+/// Geometrical structure to define Navigation Cord Head
 pub struct Cane {
+    /// Loose segment of the Cane
     pub seg: SeqLooseSegIndex,
+    /// Loose dot of the Cane structure
     pub dot: LooseDotIndex,
+    /// Bend of the Cane
     pub bend: LooseBendIndex,
 }
 

@@ -17,6 +17,11 @@ pub trait GetFace {
 
 #[enum_dispatch(GetFace)]
 #[derive(Debug, Clone, Copy)]
+/// Defines possible Head objects
+///
+/// Head is the working end of routed band, which can be
+/// either Bare when nothing has been routed yet, or Cane
+/// when routed process has been started
 pub enum Head {
     Bare(BareHead),
     Cane(CaneHead),
@@ -29,7 +34,9 @@ impl<'a, CW: Copy, R: AccessRules> MakeRef<'a, HeadRef<'a, CW, R>, Drawing<CW, R
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Defines not started Head
 pub struct BareHead {
+    /// Describes face of not started Head
     pub face: FixedDotIndex,
 }
 
@@ -40,8 +47,11 @@ impl GetFace for BareHead {
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Defines Head during routing process
 pub struct CaneHead {
+    /// Describes face of not started Head
     pub face: LooseDotIndex,
+    /// Last cane followed on the unfinished end
     pub cane: Cane,
 }
 
