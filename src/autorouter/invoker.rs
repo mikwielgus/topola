@@ -81,11 +81,11 @@ pub enum InvokerError {
 #[derive(Getters, Dissolve)]
 /// Structure that manages the execution and history of commands within the autorouting system
 pub struct Invoker<M: AccessMesadata> {
-    /// Returns an reference to used [`Autorouter`] executor 
+    /// Instance for executing desired autorouting commands
     pub(super) autorouter: Autorouter<M>,
-    /// Returns a reference to [`History`] of executed commands
+    /// History of executed commands
     pub(super) history: History,
-    /// Returns a reference to currently ongoing command type.
+    /// Currently ongoing command type.
     pub(super) ongoing_command: Option<Command>,
 }
 
