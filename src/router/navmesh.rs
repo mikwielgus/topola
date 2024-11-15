@@ -313,7 +313,7 @@ impl Navmesh {
     pub fn origin_navvertex(&self) -> NavvertexIndex {
         self.origin_navvertex
     }
-    
+
     /// Returns destination node index
     pub fn destination(&self) -> FixedDotIndex {
         self.destination

@@ -7,7 +7,7 @@
 #![cfg_attr(not(feature = "disable_contracts"), feature(try_blocks))]
 //! [Topola](https://topola.dev) is a work-in-progress interactive
 //! topological router in Rust.
-//! 
+//!
 //! The project is funded by the [NLnet Foundation](https://nlnet.nl/) from
 //! the [NGI0 Entrust](https://nlnet.nl/entrust/) fund.
 
