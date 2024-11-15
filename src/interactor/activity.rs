@@ -18,11 +18,13 @@ use crate::{
     stepper::{Abort, Step},
 };
 
+/// Stores the interactive input data from the user
 pub struct InteractiveInput {
     pub pointer_pos: Point,
     pub dt: f32,
 }
 
+/// This is the execution context passed to the stepper on each step
 pub struct ActivityContext<'a, M: AccessMesadata> {
     pub interactive_input: &'a InteractiveInput,
     pub invoker: &'a mut Invoker<M>,
@@ -36,6 +38,7 @@ pub enum ActivityError {
     Invoker(#[from] InvokerError),
 }
 
+/// An activity is either an interaction or an execution
 pub enum ActivityStepper {
     Interaction(InteractionStepper),
     Execution(ExecutionStepper),
@@ -106,6 +109,7 @@ impl GetObstacles for ActivityStepper {
     }
 }
 
+/// An ActivityStepper that preserves its status
 pub struct ActivityStepperWithStatus {
     activity: ActivityStepper,
     maybe_status: Option<ControlFlow<String>>,
