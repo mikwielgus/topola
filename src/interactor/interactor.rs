@@ -16,12 +16,14 @@ use crate::{
     stepper::{Abort, Step},
 };
 
+/// Structure that manages the invoker and activities
 pub struct Interactor<M: AccessMesadata> {
     invoker: Invoker<M>,
     activity: Option<ActivityStepperWithStatus>,
 }
 
 impl<M: AccessMesadata> Interactor<M> {
+    /// Create a new instance of Interactor with the given Board instance
     pub fn new(board: Board<M>) -> Result<Self, InsertionError> {
         Ok(Self {
             invoker: Invoker::new(Autorouter::new(board)?),
@@ -29,10 +31,12 @@ impl<M: AccessMesadata> Interactor<M> {
         })
     }
 
+    /// Execute a command
     pub fn execute(&mut self, command: Command) -> Result<(), InvokerError> {
         self.invoker.execute(command)
     }
 
+    /// Start executing an activity
     pub fn schedule(&mut self, command: Command) -> Result<(), InvokerError> {
         self.activity = Some(ActivityStepperWithStatus::new_execution(
             self.invoker.execute_stepper(command)?,
@@ -40,14 +44,17 @@ impl<M: AccessMesadata> Interactor<M> {
         Ok(())
     }
 
+    /// Undo last command
     pub fn undo(&mut self) -> Result<(), InvokerError> {
         self.invoker.undo()
     }
 
+    /// Redo last command
     pub fn redo(&mut self) -> Result<(), InvokerError> {
         self.invoker.redo()
     }
 
+    /// Abort the currently running execution or activity
     pub fn abort(&mut self) {
         if let Some(ref mut activity) = self.activity {
             activity.abort(&mut ActivityContext::<M> {
@@ -60,10 +67,12 @@ impl<M: AccessMesadata> Interactor<M> {
         }
     }
 
+    /// Replay last command
     pub fn replay(&mut self, history: History) {
         self.invoker.replay(history);
     }
 
+    /// Update the currently running execution or activity
     pub fn update(
         &mut self,
         interactive_input: &InteractiveInput,
@@ -84,10 +93,12 @@ impl<M: AccessMesadata> Interactor<M> {
         ControlFlow::Break(Ok(()))
     }
 
+    /// Returns the invoker
     pub fn invoker(&self) -> &Invoker<M> {
         &self.invoker
     }
 
+    /// Returns the currently running activity
     pub fn maybe_activity(&self) -> &Option<ActivityStepperWithStatus> {
         &self.activity
     }
