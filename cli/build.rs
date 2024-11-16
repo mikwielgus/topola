@@ -1,4 +1,4 @@
-include!("src/bin/topola/cli.rs");
+include!("src/cli.rs");
 use clap::CommandFactory;
 use clap_mangen::Man;
 use std::fs::{create_dir_all, File};

@@ -13,6 +13,6 @@ steps:
       CARGO_TERM_COLOR: always
     commands:
       - rustup default "$CHANNEL"
-      - cargo test --verbose --features "$FEATURES"
+      - cargo test --verbose --no-default-features --features "$FEATURES"
     when:
       event: [pull_request, push, tag]

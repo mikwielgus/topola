@@ -1,9 +1,9 @@
 matrix:
   include:
     - CHANNEL: stable
-      FEATURES: egui,disable_contracts
+      FEATURES: disable_contracts
     - CHANNEL: nightly
-      FEATURES: egui
+      FEATURES:
 
 steps:
   build_egui:
@@ -13,6 +13,6 @@ steps:
       CARGO_TERM_COLOR: always
     commands:
       - rustup default "$CHANNEL"
-      - cargo build --features "$FEATURES" --bin "topola-egui"
+      - cargo build -p topola-egui --no-default-features --features "$FEATURES"
     when:
       event: [pull_request, push, tag]

@@ -36,7 +36,7 @@ Change your working directory to your clone of Topola's repository:
 Run the following command to build and install Topola's command-line
 application:
 
-    cargo install --locked --path . --features cli
+    cargo install --locked --path cli
 
 The application will now be invokable from your terminal as `topola`.
 
@@ -70,12 +70,12 @@ In the newly opened file dialog, choose the file named
 
 If you chose not to install the command-line application, you can build
 and run it without installing by replacing the `topola` command with
-`cargo run --features cli --`. Running the above autorouting example is
+`cargo run -p topola-cli --`. Running the above autorouting example is
 then as follows:
 
 ```
 cd tests/single_layer/tht_diode_bridge_rectifier/
-cargo run --features cli -- tht_diode_bridge_rectifier.dsn
+cargo run -p topola-cli -- tht_diode_bridge_rectifier.dsn
 ```
 
 Viewing the results is obviously the same.
@@ -89,7 +89,7 @@ framework.
 
 The following command will build and install Topola's GUI application:
 
-    cargo install --locked --path . --features egui --bin topola-egui
+    cargo install --locked --path egui
 
 You can then invoke the application from your terminal by running
 
@@ -103,7 +103,7 @@ If you chose not to install the GUI application, you can build and run
 it without installing by running
 
 ```
-cargo run --features egui --bin topola-egui
+cargo run -p topola-egui
 ```
 
 instead of the above `topola-egui` command.
@@ -180,4 +180,4 @@ Of course, you can enable contracts for any build target. For instance,
 the following command will build the Egui application with debug profile
 and contracts enabled:
 
-    cargo build --features egui --bin topola-egui --no-default-features
+    cargo build -p topola-egui --no-default-features

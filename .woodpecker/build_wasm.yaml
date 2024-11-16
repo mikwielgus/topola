@@ -1,9 +1,9 @@
 matrix:
   include:
     - CHANNEL: stable
-      FEATURES: egui,disable_contracts
+      FEATURES: disable_contracts
     - CHANNEL: nightly
-      FEATURES: egui
+      FEATURES:
 
 steps:
   build_wasm:

@@ -1,9 +1,9 @@
 matrix:
   include:
     - CHANNEL: stable
-      FEATURES: cli
+      FEATURES: disable_contracts
     - CHANNEL: nightly
-      FEATURES: cli
+      FEATURES:
 
 steps:
   build_cli:
@@ -13,6 +13,6 @@ steps:
       CARGO_TERM_COLOR: always
     commands:
       - rustup default "$CHANNEL"
-      - cargo build --features "$FEATURES" --
+      - cargo build -p topola-cli --no-default-features --features "$FEATURES" --
     when:
       event: [pull_request, push, tag]

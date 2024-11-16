@@ -1,0 +1,47 @@
+[package]
+name = "topola-egui"
+description = "Work-in-progress free and open-source topological (rubberband) router and autorouter for printed circuit boards (PCBs)"
+version = "0.1.0"
+edition = "2021"
+
+[features]
+default = ["disable_contracts"]
+disable_contracts = ["topola/disable_contracts"]
+
+[dependencies]
+derive-getters.workspace = true
+egui = "0.29"
+fluent-templates = "0.11"
+geo.workspace = true
+log = "0.4"
+petgraph.workspace = true
+rfd = "0.15"
+rstar.workspace = true
+serde.workspace = true
+serde_json.workspace = true
+spade.workspace = true
+sys-locale = "0.3.1"
+
+[dependencies.topola]
+path = ".."
+default-features = false
+
+[dependencies.unic-langid]
+version = "0.9.5"
+features = ["macros", "serde"]
+
+[dependencies.icu]
+version = "1.5.0"
+features = ["experimental"]
+
+[dependencies.eframe]
+version = "0.29"
+default-features = false
+features = ["accesskit", "default_fonts", "glow", "persistence"]
+
+[target.'cfg(not(target_arch = "wasm32"))'.dependencies]
+futures-lite = "2.3"
+env_logger = "0.11"
+
+[target.'cfg(target_arch = "wasm32")'.dependencies]
+wasm-bindgen-futures = "0.4"
