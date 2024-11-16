@@ -68,11 +68,11 @@ pub trait GetObstacles {
 
 /// Error types that can occur during the invocation of commands
 #[derive(Error, Debug, Clone)]
-pub enum InvokerError {    
+pub enum InvokerError {
     /// Wraps errors related to command history operations
     #[error(transparent)]
     History(#[from] HistoryError),
-    
+
     /// Wraps errors related to autorouter operations
     #[error(transparent)]
     Autorouter(#[from] AutorouterError),
