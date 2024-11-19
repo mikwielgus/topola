@@ -1,3 +1,4 @@
+use derive_getters::Getters;
 use fluent_templates::{static_loader, Loader};
 use serde::{Deserialize, Serialize};
 use unic_langid::LanguageIdentifier;
@@ -9,7 +10,7 @@ static_loader! {
     };
 }
 
-#[derive(Debug, Serialize, Deserialize)]
+#[derive(Debug, Serialize, Deserialize, Getters)]
 pub struct Translator {
     langid: LanguageIdentifier,
 }

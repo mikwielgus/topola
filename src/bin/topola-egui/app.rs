@@ -125,6 +125,25 @@ impl App {
 
         ControlFlow::Break(())
     }
+
+    #[cfg(not(target_arch = "wasm32"))]
+    fn update_locale(&mut self) {
+        // I don't know any equivalent of changing the lang property in desktop.
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn update_locale(&mut self) {
+        use eframe::wasm_bindgen::JsCast;
+
+        let document_element = eframe::web_sys::window()
+            .expect("No window")
+            .document()
+            .expect("No document")
+            .document_element()
+            .expect("No document element");
+
+        document_element.set_attribute("lang", &self.translator.langid().to_string());
+    }
 }
 
 impl eframe::App for App {
@@ -171,6 +190,8 @@ impl eframe::App for App {
         let _viewport_rect =
             self.viewport
                 .update(ctx, &self.menu_bar, self.maybe_workspace.as_mut());
+
+        self.update_locale();
 
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
