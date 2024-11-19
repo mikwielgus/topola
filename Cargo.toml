@@ -1,10 +1,5 @@
 [workspace]
-members = [
-    ".",
-    "cli",
-    "egui",
-    "macros/specctra_derive",
-]
+members = [".", "crates/*"]
 resolver = "2"
 
 [workspace.dependencies]
@@ -47,7 +42,7 @@ thiserror = "1.0"
 utf8-chars = "3.0.4"
 
 [dependencies.specctra_derive]
-path = "macros/specctra_derive"
+path = "crates/specctra_derive"
 
 [dev-dependencies]
 serde_json.workspace = true

@@ -23,7 +23,7 @@ spade.workspace = true
 sys-locale = "0.3.1"
 
 [dependencies.topola]
-path = ".."
+path = "../.."
 default-features = false
 
 [dependencies.unic-langid]

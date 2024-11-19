@@ -5,7 +5,7 @@ use unic_langid::LanguageIdentifier;
 
 static_loader! {
     static LOCALES = {
-        locales: "../locales",
+        locales: "../../locales",
         fallback_language: "en-US",
     };
 }
