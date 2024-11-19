@@ -3,6 +3,7 @@ use std::{
     future::Future,
     io,
     ops::ControlFlow,
+    path::Path,
     sync::mpsc::{channel, Receiver, Sender},
 };
 use unic_langid::{langid, LanguageIdentifier};
@@ -127,14 +128,41 @@ impl App {
     }
 
     #[cfg(not(target_arch = "wasm32"))]
+    fn update_title(&mut self, ctx: &egui::Context) {
+        if let Some(workspace) = &self.maybe_workspace {
+            if let Some(filename) = Path::new(workspace.design.get_name())
+                .file_name()
+                .and_then(|n| n.to_str())
+            {
+                ctx.send_viewport_cmd(egui::ViewportCommand::Title(filename.to_string()));
+            }
+        }
+    }
+
+    #[cfg(target_arch = "wasm32")]
+    fn update_title(&mut self, ctx: &egui::Context) {
+        if let Some(workspace) = &self.maybe_workspace {
+            if let Some(filename) = Path::new(workspace.design.get_name())
+                .file_name()
+                .and_then(|n| n.to_str())
+            {
+                let document = eframe::web_sys::window()
+                    .expect("No window")
+                    .document()
+                    .expect("No document");
+
+                document.set_title(filename);
+            }
+        }
+    }
+
+    #[cfg(not(target_arch = "wasm32"))]
     fn update_locale(&mut self) {
         // I don't know any equivalent of changing the lang property in desktop.
     }
 
     #[cfg(target_arch = "wasm32")]
     fn update_locale(&mut self) {
-        use eframe::wasm_bindgen::JsCast;
-
         let document_element = eframe::web_sys::window()
             .expect("No window")
             .document()
@@ -192,6 +220,7 @@ impl eframe::App for App {
                 .update(ctx, &self.menu_bar, self.maybe_workspace.as_mut());
 
         self.update_locale();
+        self.update_title(ctx);
 
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             ctx.send_viewport_cmd(egui::ViewportCommand::Close);
