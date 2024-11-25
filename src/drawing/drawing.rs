@@ -7,8 +7,9 @@ use rstar::{RTree, AABB};
 use thiserror::Error;
 
 use crate::geometry::{
+    edit::GeometryEdit,
     primitive::{AccessPrimitiveShape, PrimitiveShape},
-    recording_with_rtree::{GeometryEdit, RecordingGeometryWithRtree},
+    recording_with_rtree::RecordingGeometryWithRtree,
     with_rtree::BboxedIndex,
     AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
     GetOffset, GetPos, GetWidth,

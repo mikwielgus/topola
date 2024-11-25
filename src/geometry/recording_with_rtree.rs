@@ -1,4 +1,4 @@
-use std::{collections::HashMap, hash::Hash, marker::PhantomData};
+use std::hash::Hash;
 
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
@@ -11,52 +11,11 @@ use crate::{
 
 use super::{
     compound::ManageCompounds,
+    edit::GeometryEdit,
     with_rtree::{BboxedIndex, GeometryWithRtree},
     AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
     GetWidth,
 };
-
-#[derive(Debug)]
-pub struct GeometryEdit<
-    PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-    DW: AccessDotWeight<PW> + GetLayer,
-    SW: AccessSegWeight<PW> + GetLayer,
-    BW: AccessBendWeight<PW> + GetLayer,
-    CW: Copy,
-    PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Hash + Copy,
-    DI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-    SI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-    BI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-> {
-    dots: HashMap<DI, (Option<DW>, Option<DW>)>,
-    segs: HashMap<SI, (Option<((DI, DI), SW)>, Option<((DI, DI), SW)>)>,
-    bends: HashMap<BI, (Option<((DI, DI, DI), BW)>, Option<((DI, DI, DI), BW)>)>,
-    compounds: HashMap<GenericIndex<CW>, (Option<(Vec<PI>, CW)>, Option<(Vec<PI>, CW)>)>,
-    primitive_weight_marker: PhantomData<PW>,
-}
-
-impl<
-        PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: AccessDotWeight<PW> + GetLayer,
-        SW: AccessSegWeight<PW> + GetLayer,
-        BW: AccessBendWeight<PW> + GetLayer,
-        CW: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Hash + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-    > GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>
-{
-    pub fn new() -> Self {
-        Self {
-            dots: HashMap::new(),
-            segs: HashMap::new(),
-            bends: HashMap::new(),
-            compounds: HashMap::new(),
-            primitive_weight_marker: PhantomData,
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct RecordingGeometryWithRtree<
