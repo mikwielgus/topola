@@ -79,15 +79,16 @@ impl<
         GenericIndex<W>: Into<PI>,
     {
         let dot = self.geometry.add_dot(weight);
-        self.rtree.insert(BboxedIndex::new(
-            Bbox::new(
-                self.geometry
-                    .dot_shape(dot.into().try_into().unwrap_or_else(|_| unreachable!()))
-                    .envelope_3d(0.0, weight.layer()),
-            ),
-            GenericNode::Primitive(dot.into()),
-        ));
+        self.init_dot_bbox(dot, weight);
         dot
+    }
+
+    fn init_dot_bbox<W: AccessDotWeight<PW> + GetLayer>(&mut self, dot: GenericIndex<W>, weight: W)
+    where
+        GenericIndex<W>: Into<PI>,
+    {
+        self.rtree
+            .insert(self.make_dot_bbox(dot.into().try_into().unwrap_or_else(|_| unreachable!())));
     }
 
     pub fn add_seg<W: AccessSegWeight<PW> + GetLayer>(
@@ -100,15 +101,16 @@ impl<
         GenericIndex<W>: Into<PI>,
     {
         let seg = self.geometry.add_seg(from, to, weight);
-        self.rtree.insert(BboxedIndex::new(
-            Bbox::new(
-                self.geometry
-                    .seg_shape(seg.into().try_into().unwrap_or_else(|_| unreachable!()))
-                    .envelope_3d(0.0, weight.layer()),
-            ),
-            GenericNode::Primitive(seg.into()),
-        ));
+        self.init_seg_bbox(seg, weight);
         seg
+    }
+
+    fn init_seg_bbox<W: AccessSegWeight<PW> + GetLayer>(&mut self, seg: GenericIndex<W>, weight: W)
+    where
+        GenericIndex<W>: Into<PI>,
+    {
+        self.rtree
+            .insert(self.make_seg_bbox(seg.into().try_into().unwrap_or_else(|_| unreachable!())));
     }
 
     pub fn add_bend<W: AccessBendWeight<PW> + GetLayer>(
@@ -122,15 +124,19 @@ impl<
         GenericIndex<W>: Into<PI>,
     {
         let bend = self.geometry.add_bend(from, to, core, weight);
-        self.rtree.insert(BboxedIndex::new(
-            Bbox::new(
-                self.geometry
-                    .bend_shape(bend.into().try_into().unwrap_or_else(|_| unreachable!()))
-                    .envelope_3d(0.0, weight.layer()),
-            ),
-            GenericNode::Primitive(bend.into()),
-        ));
+        self.init_bend_bbox(bend, weight);
         bend
+    }
+
+    fn init_bend_bbox<W: AccessBendWeight<PW> + GetLayer>(
+        &mut self,
+        bend: GenericIndex<W>,
+        weight: W,
+    ) where
+        GenericIndex<W>: Into<PI>,
+    {
+        self.rtree
+            .insert(self.make_bend_bbox(bend.into().try_into().unwrap_or_else(|_| unreachable!())));
     }
 
     pub fn add_to_compound<W>(&mut self, primitive: GenericIndex<W>, compound: GenericIndex<CW>) {

@@ -132,7 +132,11 @@ impl<
     ) -> GenericIndex<W> {
         let seg =
             GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())));
+        self.init_seg_joints(seg, from, to);
+        seg
+    }
 
+    fn init_seg_joints<W: AccessSegWeight<PW>>(&mut self, seg: GenericIndex<W>, from: DI, to: DI) {
         self.graph.update_edge(
             from.petgraph_index(),
             seg.petgraph_index(),
@@ -143,8 +147,6 @@ impl<
             to.petgraph_index(),
             GeometryLabel::Joined,
         );
-
-        seg
     }
 
     pub fn add_bend<W: AccessBendWeight<PW>>(
@@ -156,7 +158,17 @@ impl<
     ) -> GenericIndex<W> {
         let bend =
             GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())));
+        self.init_bend_joints_and_core(bend, from, to, core);
+        bend
+    }
 
+    fn init_bend_joints_and_core<W: AccessBendWeight<PW>>(
+        &mut self,
+        bend: GenericIndex<W>,
+        from: DI,
+        to: DI,
+        core: DI,
+    ) {
         self.graph.update_edge(
             from.petgraph_index(),
             bend.petgraph_index(),
@@ -172,8 +184,6 @@ impl<
             core.petgraph_index(),
             GeometryLabel::Core,
         );
-
-        bend
     }
 
     pub fn remove_primitive(&mut self, primitive: PI) {
