@@ -7,19 +7,19 @@ use rstar::AABB;
 use crate::{
     drawing::{
         band::BandTermsegIndex,
-        bend::LooseBendWeight,
+        bend::{BendIndex, BendWeight, LooseBendWeight},
         cane::Cane,
-        dot::{DotIndex, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+        dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         gear::GearIndex,
-        graph::{GetMaybeNet, PrimitiveIndex},
+        graph::{GetMaybeNet, PrimitiveIndex, PrimitiveWeight},
         rules::AccessRules,
         seg::{
-            FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
-            SeqLooseSegWeight,
+            FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
+            SegWeight, SeqLooseSegIndex, SeqLooseSegWeight,
         },
         Drawing, DrawingEdit, DrawingException, Infringement,
     },
-    geometry::GenericNode,
+    geometry::{edit::ApplyGeometryEdit, GenericNode},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
         poly::{Poly, PolyWeight},
@@ -325,5 +325,23 @@ impl<R: AccessRules> Layout<R> {
 
     pub fn via(&self, index: GenericIndex<ViaWeight>) -> Via<R> {
         Via::new(index, self)
+    }
+}
+
+impl<R: AccessRules>
+    ApplyGeometryEdit<
+        PrimitiveWeight,
+        DotWeight,
+        SegWeight,
+        BendWeight,
+        CompoundWeight,
+        PrimitiveIndex,
+        DotIndex,
+        SegIndex,
+        BendIndex,
+    > for Layout<R>
+{
+    fn apply(&mut self, edit: LayoutEdit) {
+        self.drawing.apply(edit);
     }
 }

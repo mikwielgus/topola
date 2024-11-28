@@ -7,7 +7,7 @@ use rstar::{RTree, AABB};
 use thiserror::Error;
 
 use crate::geometry::{
-    edit::GeometryEdit,
+    edit::{ApplyGeometryEdit, GeometryEdit},
     primitive::{AccessPrimitiveShape, PrimitiveShape},
     recording_with_rtree::RecordingGeometryWithRtree,
     with_rtree::BboxedIndex,
@@ -1118,5 +1118,23 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                 )
                 .is_some()
             })
+    }
+}
+
+impl<CW: Copy, R: AccessRules>
+    ApplyGeometryEdit<
+        PrimitiveWeight,
+        DotWeight,
+        SegWeight,
+        BendWeight,
+        CW,
+        PrimitiveIndex,
+        DotIndex,
+        SegIndex,
+        BendIndex,
+    > for Drawing<CW, R>
+{
+    fn apply(&mut self, edit: DrawingEdit<CW>) {
+        self.recording_geometry_with_rtree.apply(edit);
     }
 }

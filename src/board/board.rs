@@ -8,15 +8,16 @@ use crate::{
     board::mesadata::AccessMesadata,
     drawing::{
         band::BandUid,
-        dot::{FixedDotIndex, FixedDotWeight},
-        graph::{GetLayer, GetMaybeNet},
-        seg::{FixedSegIndex, FixedSegWeight},
+        bend::{BendIndex, BendWeight},
+        dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight},
+        graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight},
+        seg::{FixedSegIndex, FixedSegWeight, SegIndex, SegWeight},
     },
-    geometry::{shape::AccessShape, GenericNode},
+    geometry::{edit::ApplyGeometryEdit, shape::AccessShape, GenericNode},
     graph::GenericIndex,
     layout::{
         poly::{GetMaybeApex, MakePolyShape, PolyWeight},
-        Layout, LayoutEdit, NodeIndex,
+        CompoundWeight, Layout, LayoutEdit, NodeIndex,
     },
     math::Circle,
 };
@@ -167,7 +168,7 @@ impl<M: AccessMesadata> Board<M> {
         poly
     }
 
-    /// Retrieves or creates the apex (top point) of a polygon in the layout.
+    /// Retrieves or creates the apex (center point) of a polygon in the layout.
     ///
     /// If the polygon already has an apex, returns it. Otherwise, creates and returns a new fixed dot as the apex.
     pub fn poly_apex(
@@ -252,5 +253,23 @@ impl<M: AccessMesadata> Board<M> {
     /// Returns a mutable reference to the layout, allowing modifications.
     pub fn layout_mut(&mut self) -> &mut Layout<M> {
         &mut self.layout
+    }
+}
+
+impl<M: AccessMesadata>
+    ApplyGeometryEdit<
+        PrimitiveWeight,
+        DotWeight,
+        SegWeight,
+        BendWeight,
+        CompoundWeight,
+        PrimitiveIndex,
+        DotIndex,
+        SegIndex,
+        BendIndex,
+    > for Board<M>
+{
+    fn apply(&mut self, edit: LayoutEdit) {
+        self.layout.apply(edit);
     }
 }
