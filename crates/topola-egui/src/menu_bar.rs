@@ -1,5 +1,3 @@
-use icu_experimental::displaynames::{DisplayNamesOptions, Fallback, LocaleDisplayNamesFormatter};
-use icu_locid::{locale, LanguageIdentifier, Locale};
 use std::{borrow::Cow, ops::ControlFlow, path::Path, sync::mpsc::Sender};
 
 use topola::{
@@ -381,13 +379,18 @@ impl MenuBar {
     ) {
         ui.menu_button(tr.text("tr-menu-preferences"), |ui| {
             ui.menu_button(tr.text("tr-menu-preferences-set-language"), |ui| {
+                use icu_experimental::displaynames::{
+                    DisplayNamesOptions, Fallback, LocaleDisplayNamesFormatter,
+                };
+                use icu_locale_core::{locale, LanguageIdentifier, Locale};
+
                 let mut display_names_options: DisplayNamesOptions = Default::default();
                 display_names_options.fallback = Fallback::None;
 
                 for langid in Translator::locales() {
-                    if let Ok(locale) = Locale::try_from_bytes(langid.to_string().as_bytes()) {
+                    if let Ok(locale) = Locale::try_from_str(&langid.to_string()) {
                         if let Ok(formatter) = LocaleDisplayNamesFormatter::try_new(
-                            &locale.clone().into(),
+                            locale.clone().into(),
                             display_names_options,
                         ) {
                             // NOTE: I don't know how to reliably detect if there's no display name
