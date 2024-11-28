@@ -7,6 +7,21 @@ use crate::{
 
 use super::{AccessBendWeight, AccessDotWeight, AccessSegWeight, GetWidth};
 
+pub trait ApplyGeometryEdit<
+    PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
+    DW: AccessDotWeight<PW> + GetLayer,
+    SW: AccessSegWeight<PW> + GetLayer,
+    BW: AccessBendWeight<PW> + GetLayer,
+    CW: Copy,
+    PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Hash + Copy,
+    DI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
+    SI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
+    BI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
+>
+{
+    fn apply(&mut self, edit: GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>);
+}
+
 #[derive(Debug)]
 pub struct GeometryEdit<
     PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,

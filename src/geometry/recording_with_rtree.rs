@@ -11,7 +11,7 @@ use crate::{
 
 use super::{
     compound::ManageCompounds,
-    edit::GeometryEdit,
+    edit::{ApplyGeometryEdit, GeometryEdit},
     with_rtree::{BboxedIndex, GeometryWithRtree},
     AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
     GetWidth,
@@ -333,7 +333,48 @@ impl<
         }
     }
 
-    pub fn apply_edit(&mut self, edit: GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>) {
+    pub fn compound_weight(&self, compound: GenericIndex<CW>) -> CW {
+        self.geometry_with_rtree.compound_weight(compound)
+    }
+
+    pub fn compounds<'a, W: 'a>(
+        &'a self,
+        node: GenericIndex<W>,
+    ) -> impl Iterator<Item = GenericIndex<CW>> + 'a {
+        self.geometry_with_rtree.compounds(node)
+    }
+
+    pub fn geometry(&self) -> &Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
+        self.geometry_with_rtree.geometry()
+    }
+
+    pub fn rtree(&self) -> &RTree<BboxedIndex<GenericNode<PI, GenericIndex<CW>>>> {
+        self.geometry_with_rtree.rtree()
+    }
+
+    pub fn layer_count(&self) -> usize {
+        *self.geometry_with_rtree.layer_count()
+    }
+
+    pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize> {
+        self.geometry_with_rtree.graph()
+    }
+}
+
+impl<
+        PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
+        DW: AccessDotWeight<PW> + GetLayer,
+        SW: AccessSegWeight<PW> + GetLayer,
+        BW: AccessBendWeight<PW> + GetLayer,
+        CW: Copy,
+        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Hash + Copy,
+        DI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
+        SI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
+        BI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
+    > ApplyGeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>
+    for RecordingGeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
+{
+    fn apply(&mut self, edit: GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>) {
         for (compound, ..) in &edit.compounds {
             self.geometry_with_rtree.remove_compound(*compound);
         }
@@ -383,32 +424,5 @@ impl<
                 }
             }
         }
-    }
-
-    pub fn compound_weight(&self, compound: GenericIndex<CW>) -> CW {
-        self.geometry_with_rtree.compound_weight(compound)
-    }
-
-    pub fn compounds<'a, W: 'a>(
-        &'a self,
-        node: GenericIndex<W>,
-    ) -> impl Iterator<Item = GenericIndex<CW>> + 'a {
-        self.geometry_with_rtree.compounds(node)
-    }
-
-    pub fn geometry(&self) -> &Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
-        self.geometry_with_rtree.geometry()
-    }
-
-    pub fn rtree(&self) -> &RTree<BboxedIndex<GenericNode<PI, GenericIndex<CW>>>> {
-        self.geometry_with_rtree.rtree()
-    }
-
-    pub fn layer_count(&self) -> usize {
-        *self.geometry_with_rtree.layer_count()
-    }
-
-    pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize> {
-        self.geometry_with_rtree.graph()
     }
 }
