@@ -79,16 +79,22 @@ impl<
         GenericIndex<W>: Into<PI>,
     {
         let dot = self.geometry.add_dot(weight);
-        self.init_dot_bbox(dot, weight);
+        self.init_dot_bbox(dot.into().try_into().unwrap_or_else(|_| unreachable!()));
         dot
     }
 
-    fn init_dot_bbox<W: AccessDotWeight<PW> + GetLayer>(&mut self, dot: GenericIndex<W>, weight: W)
-    where
-        GenericIndex<W>: Into<PI>,
-    {
-        self.rtree
-            .insert(self.make_dot_bbox(dot.into().try_into().unwrap_or_else(|_| unreachable!())));
+    pub(super) fn add_dot_at_index<W: AccessDotWeight<PW> + GetLayer>(
+        &mut self,
+        dot: DI,
+        weight: W,
+    ) {
+        self.geometry
+            .add_dot_at_index(GenericIndex::<W>::new(dot.petgraph_index()), weight);
+        self.init_dot_bbox(dot);
+    }
+
+    fn init_dot_bbox(&mut self, dot: DI) {
+        self.rtree.insert(self.make_dot_bbox(dot));
     }
 
     pub fn add_seg<W: AccessSegWeight<PW> + GetLayer>(
@@ -101,16 +107,28 @@ impl<
         GenericIndex<W>: Into<PI>,
     {
         let seg = self.geometry.add_seg(from, to, weight);
-        self.init_seg_bbox(seg, weight);
+        self.init_seg_bbox(seg.into().try_into().unwrap_or_else(|_| unreachable!()));
         seg
     }
 
-    fn init_seg_bbox<W: AccessSegWeight<PW> + GetLayer>(&mut self, seg: GenericIndex<W>, weight: W)
-    where
-        GenericIndex<W>: Into<PI>,
-    {
-        self.rtree
-            .insert(self.make_seg_bbox(seg.into().try_into().unwrap_or_else(|_| unreachable!())));
+    pub(super) fn add_seg_at_index<W: AccessSegWeight<PW> + GetLayer>(
+        &mut self,
+        seg: SI,
+        from: DI,
+        to: DI,
+        weight: W,
+    ) {
+        self.geometry.add_seg_at_index(
+            GenericIndex::<W>::new(seg.petgraph_index()),
+            from,
+            to,
+            weight,
+        );
+        self.init_seg_bbox(seg);
+    }
+
+    fn init_seg_bbox(&mut self, seg: SI) {
+        self.rtree.insert(self.make_seg_bbox(seg));
     }
 
     pub fn add_bend<W: AccessBendWeight<PW> + GetLayer>(
@@ -124,17 +142,34 @@ impl<
         GenericIndex<W>: Into<PI>,
     {
         let bend = self.geometry.add_bend(from, to, core, weight);
-        self.init_bend_bbox(bend, weight);
+        self.init_bend_bbox(bend.into().try_into().unwrap_or_else(|_| unreachable!()));
         bend
     }
 
-    fn init_bend_bbox<W: AccessBendWeight<PW> + GetLayer>(
+    pub(super) fn add_bend_at_index<W: AccessBendWeight<PW> + GetLayer>(
         &mut self,
-        bend: GenericIndex<W>,
+        bend: BI,
+        from: DI,
+        to: DI,
+        core: DI,
         weight: W,
-    ) where
-        GenericIndex<W>: Into<PI>,
-    {
+    ) {
+        self.geometry.add_bend_at_index(
+            GenericIndex::<W>::new(bend.petgraph_index()),
+            from,
+            to,
+            core,
+            weight,
+        );
+        self.init_bend_bbox(bend);
+    }
+
+    pub(super) fn add_compound_at_index(&mut self, compound: GenericIndex<CW>, weight: CW) {
+        self.geometry
+            .add_compound_at_index(GenericIndex::<CW>::new(compound.petgraph_index()), weight);
+    }
+
+    fn init_bend_bbox(&mut self, bend: BI) {
         self.rtree
             .insert(self.make_bend_bbox(bend.into().try_into().unwrap_or_else(|_| unreachable!())));
     }

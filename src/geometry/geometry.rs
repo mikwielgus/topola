@@ -124,6 +124,15 @@ impl<
         GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())))
     }
 
+    pub(super) fn add_dot_at_index<W: AccessDotWeight<PW>>(
+        &mut self,
+        dot: GenericIndex<W>,
+        weight: W,
+    ) {
+        self.graph
+            .update_node(dot.petgraph_index(), GenericNode::Primitive(weight.into()));
+    }
+
     pub fn add_seg<W: AccessSegWeight<PW>>(
         &mut self,
         from: DI,
@@ -134,6 +143,18 @@ impl<
             GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())));
         self.init_seg_joints(seg, from, to);
         seg
+    }
+
+    pub(super) fn add_seg_at_index<W: AccessSegWeight<PW>>(
+        &mut self,
+        seg: GenericIndex<W>,
+        from: DI,
+        to: DI,
+        weight: W,
+    ) {
+        self.graph
+            .update_node(seg.petgraph_index(), GenericNode::Primitive(weight.into()));
+        self.init_seg_joints(seg, from, to);
     }
 
     fn init_seg_joints<W: AccessSegWeight<PW>>(&mut self, seg: GenericIndex<W>, from: DI, to: DI) {
@@ -160,6 +181,26 @@ impl<
             GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())));
         self.init_bend_joints_and_core(bend, from, to, core);
         bend
+    }
+
+    pub(super) fn add_bend_at_index<W: AccessBendWeight<PW>>(
+        &mut self,
+        bend: GenericIndex<W>,
+        from: DI,
+        to: DI,
+        core: DI,
+        weight: W,
+    ) {
+        self.graph
+            .update_node(bend.petgraph_index(), GenericNode::Primitive(weight.into()));
+        self.init_bend_joints_and_core(bend, from, to, core);
+    }
+
+    pub(super) fn add_compound_at_index(&mut self, compound: GenericIndex<CW>, weight: CW) {
+        self.graph.update_node(
+            compound.petgraph_index(),
+            GenericNode::Compound(weight.into()),
+        );
     }
 
     fn init_bend_joints_and_core<W: AccessBendWeight<PW>>(
