@@ -1,7 +1,5 @@
-use icu::{
-    experimental::displaynames::{DisplayNamesOptions, Fallback, LocaleDisplayNamesFormatter},
-    locid::{locale, LanguageIdentifier, Locale},
-};
+use icu_experimental::displaynames::{DisplayNamesOptions, Fallback, LocaleDisplayNamesFormatter};
+use icu_locid::{locale, LanguageIdentifier, Locale};
 use std::{borrow::Cow, ops::ControlFlow, path::Path, sync::mpsc::Sender};
 
 use topola::{
