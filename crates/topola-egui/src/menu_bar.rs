@@ -6,7 +6,7 @@ use topola::{
     },
     interactor::activity::{ActivityContext, ActivityStepperWithStatus, InteractiveInput},
     router::RouterOptions,
-    specctra::design::{LoadingError as SpecctraLoadingError, SpecctraDesign},
+    specctra::{design::SpecctraDesign, ParseError, ParseErrorContext as SpecctraLoadingError},
     stepper::Abort,
 };
 
@@ -199,7 +199,7 @@ impl MenuBar {
                         if let Some(file_handle) = task.await {
                             let data = handle_file(&file_handle)
                                 .await
-                                .map_err(Into::into)
+                                .map_err(|e| ParseError::from(e).add_context((0, 0)))
                                 .and_then(SpecctraDesign::load);
                             content_sender.send(data);
                             ctx.request_repaint();

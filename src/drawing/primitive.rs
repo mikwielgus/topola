@@ -6,13 +6,14 @@ use crate::{
         bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight, Retag},
-        rules::{AccessRules, Conditions, GetConditions},
         seg::{FixedSegWeight, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex, SeqLooseSegWeight},
         Drawing,
     },
     geometry::{primitive::PrimitiveShape, GenericNode, GetOffset, GetWidth},
     graph::{GenericIndex, GetPetgraphIndex},
 };
+
+use specctra_core::rules::{AccessRules, Conditions, GetConditions};
 
 #[enum_dispatch]
 pub trait GetDrawing<'a, R: AccessRules> {
@@ -154,8 +155,7 @@ macro_rules! impl_loose_primitive {
     GetWidth,
     GetDrawing,
     MakePrimitiveShape,
-    GetLimbs,
-    GetConditions
+    GetLimbs
 )]
 pub enum Primitive<'a, CW: Copy, R: AccessRules> {
     FixedDot(FixedDot<'a, CW, R>),
@@ -165,6 +165,20 @@ pub enum Primitive<'a, CW: Copy, R: AccessRules> {
     SeqLooseSeg(SeqLooseSeg<'a, CW, R>),
     FixedBend(FixedBend<'a, CW, R>),
     LooseBend(LooseBend<'a, CW, R>),
+}
+
+impl<'a, CW: Copy, R: AccessRules> specctra_core::rules::GetConditions for Primitive<'a, CW, R> {
+    fn conditions(&self) -> specctra_core::rules::Conditions {
+        match self {
+            Self::FixedDot(x) => x.conditions(),
+            Self::LooseDot(x) => x.conditions(),
+            Self::FixedSeg(x) => x.conditions(),
+            Self::LoneLooseSeg(x) => x.conditions(),
+            Self::SeqLooseSeg(x) => x.conditions(),
+            Self::FixedBend(x) => x.conditions(),
+            Self::LooseBend(x) => x.conditions(),
+        }
+    }
 }
 
 #[derive(Debug)]

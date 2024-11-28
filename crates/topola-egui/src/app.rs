@@ -10,7 +10,7 @@ use unic_langid::{langid, LanguageIdentifier};
 
 use topola::{
     interactor::activity::InteractiveInput,
-    specctra::design::{LoadingError as SpecctraLoadingError, SpecctraDesign},
+    specctra::{design::SpecctraDesign, ParseErrorContext as SpecctraLoadingError},
 };
 
 use crate::{
@@ -92,27 +92,29 @@ impl App {
                             .push_error("tr-module-specctra-dsn-file-loader", err);
                     }
                 },
-                Err(SpecctraLoadingError::Parse(err)) => {
-                    self.error_dialog.push_error(
-                        "tr-module-specctra-dsn-file-loader",
-                        format!(
-                            "{}; {}",
-                            self.translator
-                                .text("tr-error-failed-to-parse-as-specctra-dsn"),
-                            err
-                        ),
-                    );
-                }
-                Err(SpecctraLoadingError::Io(err)) => {
-                    self.error_dialog.push_error(
-                        "tr-module-specctra-dsn-file-loader",
-                        format!(
-                            "{}; {}",
-                            self.translator.text("tr-error-unable-to-read-file"),
-                            err
-                        ),
-                    );
-                }
+                Err(err) => match &err.error {
+                    topola::specctra::ParseError::Io(err) => {
+                        self.error_dialog.push_error(
+                            "tr-module-specctra-dsn-file-loader",
+                            format!(
+                                "{}; {}",
+                                self.translator.text("tr-error-unable-to-read-file"),
+                                err
+                            ),
+                        );
+                    }
+                    _ => {
+                        self.error_dialog.push_error(
+                            "tr-module-specctra-dsn-file-loader",
+                            format!(
+                                "{}; {}",
+                                self.translator
+                                    .text("tr-error-failed-to-parse-as-specctra-dsn"),
+                                err
+                            ),
+                        );
+                    }
+                },
             }
         }
 

@@ -3,9 +3,8 @@
 #![forbid(unused_must_use)]
 #![forbid(clippy::panic_in_result_fn, clippy::unwrap_in_result)]
 
-mod common;
+pub use specctra_core::error::{ParseError, ParseErrorContext};
+pub use specctra_core::mesadata;
+use specctra_core::*;
+
 pub mod design;
-pub mod mesadata;
-mod read;
-mod structure;
-mod write;

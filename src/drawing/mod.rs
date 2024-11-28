@@ -11,7 +11,7 @@ pub mod guide;
 pub mod head;
 pub mod loose;
 pub mod primitive;
-pub mod rules;
+pub use specctra_core::rules;
 pub mod seg;
 
 pub use drawing::*;

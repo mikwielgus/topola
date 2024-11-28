@@ -1,10 +1,9 @@
 //! Module for managing the various Specctra PCB design, including loading the
 //! Design DSN file, creating the [`Board`] object from the file, as well as
 //! exporting the session file
-use std::collections::HashMap;
 
 use geo::{point, Point, Rotate};
-use thiserror::Error;
+use std::collections::HashMap;
 
 use crate::{
     board::{mesadata::AccessMesadata, Board},
@@ -20,25 +19,13 @@ use crate::{
     math::{Circle, PointWithRotation},
     specctra::{
         mesadata::SpecctraMesadata,
-        read::{self, ListTokenizer},
+        read::ListTokenizer,
         structure::{self, DsnFile, Layer, Pcb, Shape},
         write::ListWriter,
     },
 };
 
-pub use read::ParseErrorContext;
-
-/// Errors raised by [`SpecctraDesign::load`]
-#[derive(Error, Debug)]
-pub enum LoadingError {
-    /// I/O file reading error from [`std::io::Error`]
-    #[error(transparent)]
-    Io(#[from] std::io::Error),
-    /// File parsing errors containing information about unexpected end of file,
-    /// or any other parsing issues with provided DSN file
-    #[error(transparent)]
-    Parse(#[from] read::ParseErrorContext),
-}
+pub use specctra_core::error::ParseErrorContext;
 
 /// This struct is responsible for managing the various Specctra components of a PCB design,
 /// including parsing the DSN file, handling the resolution, unit of measurement,
@@ -55,7 +42,7 @@ impl SpecctraDesign {
     /// This function reads the Specctra Design data from an input stream.
     /// Later the data is parsed and loaded into a [`SpecctraDesign`] structure,
     /// allowing further operations such as rule validation, routing, or netlist management.
-    pub fn load(reader: impl std::io::BufRead) -> Result<SpecctraDesign, LoadingError> {
+    pub fn load(reader: impl std::io::BufRead) -> Result<SpecctraDesign, ParseErrorContext> {
         let mut list_reader = ListTokenizer::new(reader);
         let dsn = list_reader.read_value::<DsnFile>()?;
 

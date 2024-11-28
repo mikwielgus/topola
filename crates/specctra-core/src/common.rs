@@ -1,4 +1,4 @@
-use super::read::ParseError;
+use crate::error::ParseError;
 
 pub enum ListToken {
     Start { name: String },
