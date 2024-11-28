@@ -93,10 +93,6 @@ impl<
         self.init_dot_bbox(dot);
     }
 
-    fn init_dot_bbox(&mut self, dot: DI) {
-        self.rtree.insert(self.make_dot_bbox(dot));
-    }
-
     pub fn add_seg<W: AccessSegWeight<PW> + GetLayer>(
         &mut self,
         from: DI,
@@ -125,10 +121,6 @@ impl<
             weight,
         );
         self.init_seg_bbox(seg);
-    }
-
-    fn init_seg_bbox(&mut self, seg: SI) {
-        self.rtree.insert(self.make_seg_bbox(seg));
     }
 
     pub fn add_bend<W: AccessBendWeight<PW> + GetLayer>(
@@ -167,11 +159,6 @@ impl<
     pub(super) fn add_compound_at_index(&mut self, compound: GenericIndex<CW>, weight: CW) {
         self.geometry
             .add_compound_at_index(GenericIndex::<CW>::new(compound.petgraph_index()), weight);
-    }
-
-    fn init_bend_bbox(&mut self, bend: BI) {
-        self.rtree
-            .insert(self.make_bend_bbox(bend.into().try_into().unwrap_or_else(|_| unreachable!())));
     }
 
     pub fn add_to_compound<W>(&mut self, primitive: GenericIndex<W>, compound: GenericIndex<CW>) {
@@ -289,6 +276,18 @@ impl<
         BI: GetPetgraphIndex + Into<PI> + Copy,
     > GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
+    fn init_dot_bbox(&mut self, dot: DI) {
+        self.rtree.insert(self.make_dot_bbox(dot));
+    }
+
+    fn init_seg_bbox(&mut self, seg: SI) {
+        self.rtree.insert(self.make_seg_bbox(seg));
+    }
+
+    fn init_bend_bbox(&mut self, bend: BI) {
+        self.rtree.insert(self.make_bend_bbox(bend));
+    }
+
     fn make_bbox(&self, primitive: PI) -> BboxedIndex<GenericNode<PI, GenericIndex<CW>>> {
         if let Ok(dot) = <PI as TryInto<DI>>::try_into(primitive) {
             self.make_dot_bbox(dot)
