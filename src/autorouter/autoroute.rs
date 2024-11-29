@@ -9,6 +9,7 @@ use crate::{
     board::mesadata::AccessMesadata,
     drawing::{band::BandTermsegIndex, graph::PrimitiveIndex},
     geometry::primitive::PrimitiveShape,
+    layout::LayoutEdit,
     router::{navcord::NavcordStepper, navmesh::Navmesh, route::RouteStepper, Router},
     stepper::Step,
 };
@@ -71,7 +72,7 @@ impl AutorouteExecutionStepper {
     }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, (), AutorouteContinueStatus>
+impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinueStatus>
     for AutorouteExecutionStepper
 {
     type Error = AutorouterError;
@@ -79,14 +80,14 @@ impl<M: AccessMesadata> Step<Autorouter<M>, (), AutorouteContinueStatus>
     fn step(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<ControlFlow<(), AutorouteContinueStatus>, AutorouterError> {
+    ) -> Result<ControlFlow<Option<LayoutEdit>, AutorouteContinueStatus>, AutorouterError> {
         let Some(curr_ratline) = self.curr_ratline else {
-            return Ok(ControlFlow::Break(()));
+            return Ok(ControlFlow::Break(None));
         };
 
         let Some(ref mut route) = self.route else {
             // Shouldn't happen.
-            return Ok(ControlFlow::Break(()));
+            return Ok(ControlFlow::Break(None));
         };
 
         let (source, target) = autorouter.ratline_endpoints(curr_ratline);

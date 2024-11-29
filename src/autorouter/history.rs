@@ -6,7 +6,7 @@ use derive_getters::{Dissolve, Getters};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::autorouter::execution::Command;
+use crate::{autorouter::execution::Command, layout::LayoutEdit};
 
 #[derive(Error, Debug, Clone)]
 pub enum HistoryError {
@@ -16,10 +16,18 @@ pub enum HistoryError {
     NoNextCommand,
 }
 
+#[derive(Debug, Clone, Getters, Serialize, Deserialize)]
+#[serde(transparent)]
+pub struct HistoryEntry {
+    command: Command,
+    #[serde(skip)]
+    edit: Option<LayoutEdit>,
+}
+
 #[derive(Debug, Default, Clone, Getters, Dissolve, Serialize, Deserialize)]
 pub struct History {
-    done: Vec<Command>,
-    undone: Vec<Command>,
+    done: Vec<HistoryEntry>,
+    undone: Vec<HistoryEntry>,
 }
 
 impl History {
@@ -27,8 +35,8 @@ impl History {
         Self::default()
     }
 
-    pub fn do_(&mut self, command: Command) {
-        self.done.push(command);
+    pub fn do_(&mut self, command: Command, edit: Option<LayoutEdit>) {
+        self.done.push(HistoryEntry { command, edit });
     }
 
     pub fn undo(&mut self) -> Result<(), HistoryError> {
@@ -49,15 +57,15 @@ impl History {
         Ok(())
     }
 
-    pub fn set_undone(&mut self, iter: impl IntoIterator<Item = Command>) {
+    pub fn set_undone(&mut self, iter: impl IntoIterator<Item = HistoryEntry>) {
         self.undone = Vec::from_iter(iter);
     }
 
-    pub fn last_done(&self) -> Result<&Command, HistoryError> {
+    pub fn last_done(&self) -> Result<&HistoryEntry, HistoryError> {
         self.done.last().ok_or(HistoryError::NoPreviousCommand)
     }
 
-    pub fn last_undone(&self) -> Result<&Command, HistoryError> {
+    pub fn last_undone(&self) -> Result<&HistoryEntry, HistoryError> {
         self.undone.last().ok_or(HistoryError::NoNextCommand)
     }
 }

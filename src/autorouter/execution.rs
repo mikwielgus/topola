@@ -3,7 +3,11 @@ use std::ops::ControlFlow;
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
-use crate::{board::mesadata::AccessMesadata, layout::via::ViaWeight, stepper::Step};
+use crate::{
+    board::mesadata::AccessMesadata,
+    layout::{via::ViaWeight, LayoutEdit},
+    stepper::Step,
+};
 
 use super::{
     autoroute::AutorouteExecutionStepper,
@@ -40,34 +44,37 @@ impl ExecutionStepper {
     fn step_catch_err<M: AccessMesadata>(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<ControlFlow<String>, InvokerError> {
+    ) -> Result<ControlFlow<(Option<LayoutEdit>, String)>, InvokerError> {
         Ok(match self {
             ExecutionStepper::Autoroute(autoroute) => match autoroute.step(autorouter)? {
                 ControlFlow::Continue(..) => ControlFlow::Continue(()),
-                ControlFlow::Break(..) => ControlFlow::Break("finished autorouting".to_string()),
+                ControlFlow::Break(edit) => {
+                    ControlFlow::Break((edit, "finished autorouting".to_string()))
+                }
             },
             ExecutionStepper::PlaceVia(place_via) => {
                 place_via.doit(autorouter)?;
-                ControlFlow::Break("finished placing via".to_string())
+                ControlFlow::Break((None, "finished placing via".to_string()))
             }
             ExecutionStepper::RemoveBands(remove_bands) => {
                 remove_bands.doit(autorouter)?;
-                ControlFlow::Break("finished removing bands".to_string())
+                ControlFlow::Break((None, "finished removing bands".to_string()))
             }
             ExecutionStepper::CompareDetours(compare_detours) => {
                 match compare_detours.step(autorouter)? {
                     ControlFlow::Continue(()) => ControlFlow::Continue(()),
-                    ControlFlow::Break((total_length1, total_length2)) => {
-                        ControlFlow::Break(format!(
+                    ControlFlow::Break((total_length1, total_length2)) => ControlFlow::Break((
+                        None,
+                        format!(
                             "total detour lengths are {} and {}",
                             total_length1, total_length2
-                        ))
-                    }
+                        ),
+                    )),
                 }
             }
             ExecutionStepper::MeasureLength(measure_length) => {
                 let length = measure_length.doit(autorouter)?;
-                ControlFlow::Break(format!("Total length of selected bands: {}", length))
+                ControlFlow::Break((None, format!("Total length of selected bands: {}", length)))
             }
         })
     }
@@ -79,9 +86,9 @@ impl<M: AccessMesadata> Step<Invoker<M>, String> for ExecutionStepper {
     fn step(&mut self, invoker: &mut Invoker<M>) -> Result<ControlFlow<String>, InvokerError> {
         match self.step_catch_err(&mut invoker.autorouter) {
             Ok(ControlFlow::Continue(())) => Ok(ControlFlow::Continue(())),
-            Ok(ControlFlow::Break(msg)) => {
-                if let Some(command) = invoker.ongoing_command.take() {
-                    invoker.history.do_(command);
+            Ok(ControlFlow::Break((maybe_edit, msg))) => {
+                if let (Some(command), Some(edit)) = (invoker.ongoing_command.take(), maybe_edit) {
+                    invoker.history.do_(command, Some(edit));
                 }
 
                 Ok(ControlFlow::Break(msg))

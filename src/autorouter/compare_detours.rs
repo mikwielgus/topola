@@ -79,7 +79,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, (f64, f64)> for CompareDetoursExecut
 
                 Ok(ControlFlow::Continue(()))
             }
-            ControlFlow::Break(()) => {
+            ControlFlow::Break(..) => {
                 if let Some(next_autoroute) = self.next_autoroute.take() {
                     autorouter.undo_autoroute_ratlines(vec![self.ratline1, self.ratline2])?;
                     self.autoroute = next_autoroute;

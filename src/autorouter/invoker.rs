@@ -172,7 +172,7 @@ impl<M: AccessMesadata> Invoker<M> {
     #[debug_requires(self.ongoing_command.is_none())]
     /// Undo last command
     pub fn undo(&mut self) -> Result<(), InvokerError> {
-        let command = self.history.last_done()?;
+        let command = self.history.last_done()?.command();
 
         match command {
             Command::Autoroute(ref selection, ..) => {
@@ -194,7 +194,7 @@ impl<M: AccessMesadata> Invoker<M> {
     //#[debug_requires(self.ongoing_command.is_none())]
     /// Redo last command
     pub fn redo(&mut self) -> Result<(), InvokerError> {
-        let command = self.history.last_undone()?.clone();
+        let command = self.history.last_undone()?.command().clone();
         let mut execute = self.execute_stepper(command)?;
 
         loop {
@@ -214,8 +214,8 @@ impl<M: AccessMesadata> Invoker<M> {
     pub fn replay(&mut self, history: History) {
         let (done, undone) = history.dissolve();
 
-        for command in done {
-            self.execute(command);
+        for entry in done {
+            self.execute(entry.command().clone());
         }
 
         self.history.set_undone(undone.into_iter());

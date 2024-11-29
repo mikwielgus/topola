@@ -22,7 +22,7 @@ pub trait ApplyGeometryEdit<
     fn apply(&mut self, edit: GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>);
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 pub struct GeometryEdit<
     PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
     DW: AccessDotWeight<PW> + GetLayer,
