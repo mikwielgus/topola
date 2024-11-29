@@ -13,6 +13,8 @@ pub enum ParseError {
     Expected(&'static str),
     #[error("expected ({0}")]
     ExpectedStartOfList(&'static str),
+    #[error("found a space inside a quoted string, but file didn't declare this possibility")]
+    UnexpectedSpaceInQuotedStr,
 }
 
 impl ParseError {
@@ -241,9 +243,24 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
     }
 
     fn read_string(&mut self) -> Result<String, ParseErrorContext> {
-        if let Some(chr) = self.quote_char {
-            if chr == self.peek_char()? {
-                return self.read_quoted();
+        if let Some(quote_chr) = self.quote_char {
+            if quote_chr == self.peek_char()? {
+                let mut string = String::new();
+                assert_eq!(self.next_char().unwrap(), quote_chr);
+
+                loop {
+                    let ctx = self.context();
+                    let chr = self.next_char()?;
+                    if chr == ' ' && !self.space_in_quoted {
+                        return Err(ParseError::UnexpectedSpaceInQuotedStr.add_context(ctx));
+                    } else if chr == quote_chr {
+                        break;
+                    } else {
+                        string.push(chr);
+                    }
+                }
+
+                return Ok(string);
             }
         }
         self.read_unquoted()
@@ -265,28 +282,6 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         } else {
             Ok(string)
         }
-    }
-
-    fn read_quoted(&mut self) -> Result<String, ParseErrorContext> {
-        let mut string = String::new();
-
-        if self.next_char().unwrap() != self.quote_char.unwrap() {
-            panic!();
-        }
-
-        loop {
-            let chr = self.peek_char()?;
-            if !self.space_in_quoted && chr == ' ' {
-                panic!("found a space inside a quoted string, but file didn't declare this possibility");
-            }
-            if chr == self.quote_char.unwrap() {
-                self.next_char().unwrap();
-                break;
-            }
-            string.push(self.next_char().unwrap());
-        }
-
-        Ok(string)
     }
 
     // the following two methods effectively allow 1 token of lookahead
