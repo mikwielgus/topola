@@ -95,11 +95,16 @@ impl<R: std::io::BufRead> ReadDsn<R> for String {
 
 impl<R: std::io::BufRead> ReadDsn<R> for char {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
+        let err = tokenizer.add_context(ParseError::Expected("a single character"));
         let string = tokenizer.consume_token()?.expect_leaf()?;
-        if string.chars().count() == 1 {
-            Ok(string.chars().next().unwrap())
-        } else {
-            Err(tokenizer.add_context(ParseError::Expected("a single character")))
+        let mut it = string.chars();
+        let first = match it.next() {
+            None => return Err(err),
+            Some(x) => x,
+        };
+        match it.next() {
+            None => Ok(first),
+            Some(_) => Err(err),
         }
     }
 }
@@ -204,16 +209,22 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
 
     fn next_char(&mut self) -> Result<char, ParseErrorContext> {
         let return_chr = self.peek_char()?;
-        self.peeked_char = None;
-
-        if return_chr == '\n' {
-            self.line += 1;
-            self.column = 0;
-        } else {
-            self.column += 1;
-        }
-
+        self.reset_char();
         Ok(return_chr)
+    }
+
+    /// discard last peeked character, move cursor forward
+    fn reset_char(&mut self) -> Option<char> {
+        let ret = self.peeked_char.take();
+        if let Some(return_chr) = ret {
+            if return_chr == '\n' {
+                self.line += 1;
+                self.column = 0;
+            } else {
+                self.column += 1;
+            }
+        }
+        ret
     }
 
     fn peek_char(&mut self) -> Result<char, ParseErrorContext> {
@@ -235,7 +246,7 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         loop {
             let chr = self.peek_char()?;
             if chr == ' ' || chr == '\r' || chr == '\n' {
-                self.next_char().unwrap();
+                self.reset_char();
             } else {
                 return Ok(());
             }
@@ -246,7 +257,7 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         if let Some(quote_chr) = self.quote_char {
             if quote_chr == self.peek_char()? {
                 let mut string = String::new();
-                assert_eq!(self.next_char().unwrap(), quote_chr);
+                self.reset_char();
 
                 loop {
                     let ctx = self.context();
@@ -274,7 +285,8 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
             if chr == ' ' || chr == '(' || chr == ')' || chr == '\r' || chr == '\n' {
                 break;
             }
-            string.push(self.next_char().unwrap());
+            string.push(chr);
+            self.reset_char();
         }
 
         if string.is_empty() {
@@ -290,12 +302,11 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
     pub fn consume_token(&mut self) -> Result<InputToken, ParseErrorContext> {
         // move out of cache if not empty, otherwise consume input
         // always leaves cache empty
-        if let Some(token) = self.cached_token.take() {
-            Ok(token)
+        Ok(if let Some(token) = self.cached_token.take() {
+            token
         } else {
-            let token = self.read_token()?;
-            Ok(token)
-        }
+            self.read_token()?
+        })
     }
 
     // puts a token back into cache, to be consumed by something else
@@ -310,13 +321,13 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         let chr = self.peek_char()?;
         Ok(InputToken::new(
             if chr == '(' {
-                self.next_char().unwrap();
+                self.reset_char();
                 self.skip_whitespace()?;
                 ListToken::Start {
                     name: self.read_string()?,
                 }
             } else if chr == ')' {
-                self.next_char().unwrap();
+                self.reset_char();
                 ListToken::End
             } else {
                 ListToken::Leaf {
