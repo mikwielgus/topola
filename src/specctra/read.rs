@@ -311,6 +311,7 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
 
     // puts a token back into cache, to be consumed by something else
     pub fn return_token(&mut self, token: InputToken) {
+        assert!(self.cached_token.is_none());
         self.cached_token = Some(token);
     }
 
