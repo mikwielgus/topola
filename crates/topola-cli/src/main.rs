@@ -28,17 +28,20 @@ fn main() -> Result<(), std::io::Error> {
         serde_json::from_reader(commands_bufread)?
     } else {
         let mut history = History::new();
-        history.do_(Command::Autoroute(
-            PinSelection::new_select_layer(&board, 0),
-            AutorouterOptions {
-                presort_by_pairwise_detours: false,
-                router_options: RouterOptions {
-                    wrap_around_bands: true,
-                    squeeze_through_under_bands: false,
-                    routed_band_width: 100.0,
+        history.do_(
+            Command::Autoroute(
+                PinSelection::new_select_layer(&board, 0),
+                AutorouterOptions {
+                    presort_by_pairwise_detours: false,
+                    router_options: RouterOptions {
+                        wrap_around_bands: true,
+                        squeeze_through_under_bands: false,
+                        routed_band_width: 100.0,
+                    },
                 },
-            },
-        ));
+            ),
+            None,
+        );
         history
     };
 
