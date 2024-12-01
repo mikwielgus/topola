@@ -15,13 +15,11 @@ pub trait GetFace {
     fn face(&self) -> DotIndex;
 }
 
+/// The head is the working part of the running end of the currently routed
+/// band. Both bare and cane heads have a face, which is the fixed dot that
+/// terminates the running end.
 #[enum_dispatch(GetFace)]
 #[derive(Debug, Clone, Copy)]
-/// Defines possible Head objects
-///
-/// Head is the working end of routed band, which can be
-/// either Bare when nothing has been routed yet, or Cane
-/// when routed process has been started
 pub enum Head {
     Bare(BareHead),
     Cane(CaneHead),
@@ -33,10 +31,12 @@ impl<'a, CW: Copy, R: AccessRules> MakeRef<'a, HeadRef<'a, CW, R>, Drawing<CW, R
     }
 }
 
+/// The head is bare when the routed band is not pulled out (i.e. is of zero
+/// length). This happens on the first routing step and when the routed band was
+/// contracted due to the routing algorithm backtracking. In these situations a
+/// cane head cannot be used because there is obviously no cane behind the face.
 #[derive(Debug, Clone, Copy)]
-/// Defines not started Head
 pub struct BareHead {
-    /// Describes face of not started Head
     pub face: FixedDotIndex,
 }
 
@@ -46,12 +46,12 @@ impl GetFace for BareHead {
     }
 }
 
+/// The head is a cane head when the routed band is of nonzero length (i.e. is
+/// pulled out). It differs from the bare head by having a `cane` member, which
+/// is the terminal cane on the running end of the currently routed band.
 #[derive(Debug, Clone, Copy)]
-/// Defines Head during routing process
 pub struct CaneHead {
-    /// Describes face of not started Head
     pub face: LooseDotIndex,
-    /// Last cane followed on the unfinished end
     pub cane: Cane,
 }
 

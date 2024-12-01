@@ -255,7 +255,7 @@ impl Navmesh {
                         trianvertex.into(),
                     );
                 }
-            };
+            }
         }
 
         for edge in triangulation.edge_references() {

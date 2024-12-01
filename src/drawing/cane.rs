@@ -1,22 +1,23 @@
-use crate::drawing::{
+use super::{
     bend::LooseBendIndex,
     dot::LooseDotIndex,
     graph::PrimitiveIndex,
     primitive::{GetInterior, GetJoints, GetOtherJoint, LooseBend, LooseDot},
+    rules::AccessRules,
     seg::SeqLooseSegIndex,
     Drawing,
 };
 
-use super::rules::AccessRules;
-
+/// A cane is a sequence consisting of a seg followed by a dot followed by a
+/// bend, with the dot joining the seg with the bend as a joint.
+///
+/// The name "cane" comes from the iconic cane: a slender walking stick that
+/// ends with a round bend that is its handle. Topola's canes are of similar
+/// shape.
 #[derive(Debug, Clone, Copy)]
-/// Geometrical structure to define Navigation Cord Head
 pub struct Cane {
-    /// Loose segment of the Cane
     pub seg: SeqLooseSegIndex,
-    /// Loose dot of the Cane structure
     pub dot: LooseDotIndex,
-    /// Bend of the Cane
     pub bend: LooseBendIndex,
 }
 

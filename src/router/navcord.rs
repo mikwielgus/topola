@@ -16,16 +16,13 @@ use super::{
 };
 
 #[derive(Debug)]
-/// Structure containing information about Navigation Cord Stepper
-///
-/// Navigation Cord is a one of chosen possible ways to connect
-/// both Navigation Vertex
+/// Stepper for the Navcord.
 pub struct NavcordStepper {
-    /// Path of the current Navigation Cord
+    /// The currently chosen path.
     pub path: Vec<NavvertexIndex>,
-    /// Type of Navigaction Cord head
+    /// Head of the routed band.
     pub head: Head,
-    /// Width of the cord
+    /// Width of the routed band.
     pub width: f64,
 }
 
