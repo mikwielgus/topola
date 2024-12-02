@@ -81,15 +81,20 @@ impl SpecctraMesadata {
         );
 
         // assign IDs to all nets named in pcb.network
-        let net_netname = BiHashMap::from_iter(
-            pcb.network
+        let net_netname = {
+            let mut tmp: Vec<_> = pcb
+                .network
                 .classes
                 .iter()
                 .flat_map(|class| &class.nets)
                 .chain(pcb.network.nets.iter().map(|net| &net.name))
-                .enumerate()
-                .map(|(net, netname)| (net, netname.clone())),
-        );
+                .collect();
+            // deduplicate net names
+            tmp.sort_unstable();
+            tmp.dedup();
+
+            BiHashMap::from_iter(tmp.into_iter().cloned().enumerate())
+        };
 
         let mut net_netclass = HashMap::new();
         let class_rules = HashMap::from_iter(
@@ -98,6 +103,8 @@ impl SpecctraMesadata {
                 .iter()
                 .inspect(|class| {
                     for netname in &class.nets {
+                        // this can't panic because we did iterate over
+                        // `pcb.network.classes[].nets` above
                         let net = net_netname.get_by_right(netname).unwrap();
                         net_netclass.insert(*net, class.name.clone());
                     }
