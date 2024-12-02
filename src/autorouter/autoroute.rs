@@ -83,7 +83,14 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
         autorouter: &mut Autorouter<M>,
     ) -> Result<ControlFlow<Option<LayoutEdit>, AutorouteContinueStatus>, AutorouterError> {
         let Some(curr_ratline) = self.curr_ratline else {
-            return Ok(ControlFlow::Break(None));
+            let recorder = if let Some(taken_route) = self.route.take() {
+                let (_astar, navcord, ..) = taken_route.dissolve();
+                navcord.recorder
+            } else {
+                LayoutEdit::new()
+            };
+
+            return Ok(ControlFlow::Break(Some(recorder)));
         };
 
         let Some(ref mut route) = self.route else {

@@ -238,15 +238,14 @@ impl<'a, R: AccessRules> Draw<'a, R> {
 
     #[debug_ensures(ret.is_some() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() - 4))]
     #[debug_ensures(ret.is_none() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
-    pub fn undo_cane(&mut self, head: CaneHead) -> Option<Head> {
+    pub fn undo_cane(&mut self, recorder: &mut LayoutEdit, head: CaneHead) -> Option<Head> {
         let prev_dot = self
             .layout
             .drawing()
             .primitive(head.cane.seg)
             .other_joint(head.cane.dot.into());
 
-        self.layout
-            .remove_cane(&mut LayoutEdit::new(), &head.cane, head.face);
+        self.layout.remove_cane(recorder, &head.cane, head.face);
         Some(self.guide().head(prev_dot))
     }
 

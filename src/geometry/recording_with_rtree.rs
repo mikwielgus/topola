@@ -184,7 +184,13 @@ impl<
     ) -> Result<(), ()> {
         let weight = self.geometry_with_rtree.geometry().dot_weight(dot);
         self.geometry_with_rtree.remove_dot(dot)?;
-        recorder.dots.insert(dot, (Some(weight), None));
+
+        if let Some((None, Some(..))) = recorder.dots.get(&dot) {
+            recorder.dots.remove(&dot);
+        } else {
+            recorder.dots.insert(dot, (Some(weight), None));
+        };
+
         Ok(())
     }
 
@@ -196,7 +202,12 @@ impl<
         let weight = self.geometry_with_rtree.geometry().seg_weight(seg);
         let joints = self.geometry_with_rtree.geometry().seg_joints(seg);
         self.geometry_with_rtree.remove_seg(seg);
-        recorder.segs.insert(seg, (Some((joints, weight)), None));
+
+        if let Some((None, Some(..))) = recorder.segs.get(&seg) {
+            recorder.segs.remove(&seg);
+        } else {
+            recorder.segs.insert(seg, (Some((joints, weight)), None));
+        }
     }
 
     pub fn remove_bend(
@@ -208,9 +219,14 @@ impl<
         let joints = self.geometry_with_rtree.geometry().bend_joints(bend);
         let core = self.geometry_with_rtree.geometry().core(bend);
         self.geometry_with_rtree.remove_bend(bend);
-        recorder
-            .bends
-            .insert(bend, (Some(((joints.0, joints.1, core), weight)), None));
+
+        if let Some((None, Some(..))) = recorder.bends.get(&bend) {
+            recorder.bends.remove(&bend);
+        } else {
+            recorder
+                .bends
+                .insert(bend, (Some(((joints.0, joints.1, core), weight)), None));
+        }
     }
 
     pub fn remove_compound(
@@ -228,9 +244,14 @@ impl<
             .compound_members(compound)
             .collect();
         self.geometry_with_rtree.remove_compound(compound);
-        recorder
-            .compounds
-            .insert(compound, (Some((members, weight)), None));
+
+        if let Some((None, Some(..))) = recorder.compounds.get(&compound) {
+            recorder.compounds.remove(&compound);
+        } else {
+            recorder
+                .compounds
+                .insert(compound, (Some((members, weight)), None));
+        }
     }
 
     pub fn move_dot(

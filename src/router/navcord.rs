@@ -155,7 +155,9 @@ impl NavcordStepper {
         navcorder: &mut Navcorder<'a, R>,
     ) -> Result<(), NavcorderException> {
         if let Head::Cane(head) = self.head {
-            self.head = Draw::new(navcorder.layout).undo_cane(head).unwrap();
+            self.head = Draw::new(navcorder.layout)
+                .undo_cane(&mut self.recorder, head)
+                .unwrap();
         } else {
             panic!();
         }
