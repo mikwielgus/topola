@@ -254,24 +254,31 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
     }
 
     fn read_string(&mut self) -> Result<String, ParseErrorContext> {
+        fn read_quoted<R: std::io::BufRead>(
+            this: &mut ListTokenizer<R>,
+            quote_chr: char,
+        ) -> Result<String, ParseErrorContext> {
+            let mut string = String::new();
+            this.reset_char();
+
+            loop {
+                let ctx = this.context();
+                let chr = this.next_char()?;
+                if chr == ' ' && !this.space_in_quoted {
+                    return Err(ParseError::UnexpectedSpaceInQuotedStr.add_context(ctx));
+                } else if chr == quote_chr {
+                    break;
+                } else {
+                    string.push(chr);
+                }
+            }
+
+            Ok(string)
+        }
+
         if let Some(quote_chr) = self.quote_char {
             if quote_chr == self.peek_char()? {
-                let mut string = String::new();
-                self.reset_char();
-
-                loop {
-                    let ctx = self.context();
-                    let chr = self.next_char()?;
-                    if chr == ' ' && !self.space_in_quoted {
-                        return Err(ParseError::UnexpectedSpaceInQuotedStr.add_context(ctx));
-                    } else if chr == quote_chr {
-                        break;
-                    } else {
-                        string.push(chr);
-                    }
-                }
-
-                return Ok(string);
+                return read_quoted(self, quote_chr);
             }
         }
         self.read_unquoted()
