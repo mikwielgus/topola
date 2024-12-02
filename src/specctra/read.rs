@@ -35,7 +35,7 @@ pub struct ParseErrorContext {
 
 pub struct InputToken {
     pub token: ListToken,
-    context: (usize, usize),
+    pub context: (usize, usize),
 }
 
 impl InputToken {

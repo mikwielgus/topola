@@ -399,7 +399,9 @@ impl<R: std::io::BufRead> ReadDsn<R> for Vec<Point> {
         loop {
             let input = tokenizer.consume_token()?;
             if let ListToken::Leaf { value: ref x } = input.token {
-                let x = x.parse::<f64>().unwrap();
+                let x = x
+                    .parse::<f64>()
+                    .map_err(|_| ParseError::Expected("f64").add_context(input.context))?;
                 let y = tokenizer.read_value::<f64>()?;
                 array.push(Point { x, y });
             } else {
@@ -415,7 +417,9 @@ impl<R: std::io::BufRead> ReadDsn<R> for Option<Point> {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         let input = tokenizer.consume_token()?;
         if let ListToken::Leaf { value: ref x } = input.token {
-            let x = x.parse::<f64>().unwrap();
+            let x = x
+                .parse::<f64>()
+                .map_err(|_| ParseError::Expected("f64").add_context(input.context))?;
             let y = tokenizer.read_value::<f64>()?;
             Ok(Some(Point { x, y }))
         } else {
