@@ -119,8 +119,8 @@ impl SpecctraMesadata {
         // workaround for differing syntax
         // collapse multiple rule entries into a single one
         for rule in &pcb.structure.rules {
-            if rule.width.is_some() {
-                structure_rule.width = rule.width.unwrap()
+            if let Some(width) = rule.width {
+                structure_rule.width = width
             }
             structure_rule
                 .clearances
@@ -144,13 +144,10 @@ impl SpecctraMesadata {
     /// it defaults to the general structure rule.
     ///
     pub fn get_rule(&self, net: usize) -> &SpecctraRule {
-        if let Some(netclass) = self.net_netclass.get(&net) {
-            self.class_rules
-                .get(netclass)
-                .unwrap_or(&self.structure_rule)
-        } else {
-            &self.structure_rule
-        }
+        self.net_netclass
+            .get(&net)
+            .and_then(|netclass| self.class_rules.get(netclass))
+            .unwrap_or(&self.structure_rule)
     }
 }
 
