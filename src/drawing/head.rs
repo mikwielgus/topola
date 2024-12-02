@@ -16,8 +16,8 @@ pub trait GetFace {
 }
 
 /// The head is the working part of the running end of the currently routed
-/// band. Both bare and cane heads have a face, which is the fixed dot that
-/// terminates the running end.
+/// band. Both bare and cane heads have a face, which is the dot that terminates
+/// the running end.
 #[enum_dispatch(GetFace)]
 #[derive(Debug, Clone, Copy)]
 pub enum Head {
@@ -33,8 +33,9 @@ impl<'a, CW: Copy, R: AccessRules> MakeRef<'a, HeadRef<'a, CW, R>, Drawing<CW, R
 
 /// The head is bare when the routed band is not pulled out (i.e. is of zero
 /// length). This happens on the first routing step and when the routed band was
-/// contracted due to the routing algorithm backtracking. In these situations a
-/// cane head cannot be used because there is obviously no cane behind the face.
+/// completely contracted due to the routing algorithm backtracking. In these
+/// situations a cane head cannot be used because there is obviously no cane
+/// behind the face, and the face itself is fixed instead of loose.
 #[derive(Debug, Clone, Copy)]
 pub struct BareHead {
     pub face: FixedDotIndex,
@@ -46,9 +47,14 @@ impl GetFace for BareHead {
     }
 }
 
-/// The head is a cane head when the routed band is of nonzero length (i.e. is
-/// pulled out). It differs from the bare head by having a `cane` member, which
-/// is the terminal cane on the running end of the currently routed band.
+/// The head is a cane head when the routed band is pulled out (i.e. is of
+/// non-zero length). It differs from a bare head by having a `cane` member,
+/// which is the terminal cane on the running end of the currently routed band.
+///
+/// You can think of the cane head's cane as of a very long neck, though in
+/// anatomy the neck is not considered to be a part of the head, and the face,
+/// which here would be the head proper, itself has the same width as the cane,
+/// also unlike a real head.
 #[derive(Debug, Clone, Copy)]
 pub struct CaneHead {
     pub face: LooseDotIndex,

@@ -15,10 +15,14 @@ use super::{
     navmesh::{BinavvertexNodeIndex, Navmesh, NavvertexIndex},
 };
 
+/// The navcord is a structure that holds the movable non-borrowing data of the
+/// currently running routing process.
+///
+/// The name "navcord" is a shortening of "navigation cord", by analogy to
+/// "navmesh" being a shortening of "navigation mesh".
 #[derive(Debug)]
-/// Stepper for the Navcord.
 pub struct NavcordStepper {
-    /// The currently chosen path.
+    /// The currently attempted path.
     pub path: Vec<NavvertexIndex>,
     /// Head of the routed band.
     pub head: Head,
@@ -27,7 +31,7 @@ pub struct NavcordStepper {
 }
 
 impl NavcordStepper {
-    /// Create new Navigation Cord instance
+    /// Creates a new navcord.
     pub fn new(
         source: FixedDotIndex,
         source_navvertex: NavvertexIndex,
