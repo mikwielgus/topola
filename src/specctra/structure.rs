@@ -395,19 +395,9 @@ pub struct Point {
 // Custom impl for the case described above
 impl<R: std::io::BufRead> ReadDsn<R> for Vec<Point> {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
-        let mut array = Vec::<Point>::new();
-        loop {
-            let input = tokenizer.consume_token()?;
-            if let ListToken::Leaf { value: ref x } = input.token {
-                let x = x
-                    .parse::<f64>()
-                    .map_err(|_| ParseError::Expected("f64").add_context(input.context))?;
-                let y = tokenizer.read_value::<f64>()?;
-                array.push(Point { x, y });
-            } else {
-                tokenizer.return_token(input);
-                break;
-            }
+        let mut array = Vec::new();
+        while let Some(x) = tokenizer.read_value::<Option<Point>>()? {
+            array.push(x);
         }
         Ok(array)
     }
@@ -416,16 +406,16 @@ impl<R: std::io::BufRead> ReadDsn<R> for Vec<Point> {
 impl<R: std::io::BufRead> ReadDsn<R> for Option<Point> {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         let input = tokenizer.consume_token()?;
-        if let ListToken::Leaf { value: ref x } = input.token {
+        Ok(if let ListToken::Leaf { value: ref x } = input.token {
             let x = x
                 .parse::<f64>()
                 .map_err(|_| ParseError::Expected("f64").add_context(input.context))?;
             let y = tokenizer.read_value::<f64>()?;
-            Ok(Some(Point { x, y }))
+            Some(Point { x, y })
         } else {
             tokenizer.return_token(input);
-            Ok(None)
-        }
+            None
+        })
     }
 }
 
