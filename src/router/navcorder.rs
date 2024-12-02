@@ -3,7 +3,7 @@ use thiserror::Error;
 
 use crate::{
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, rules::AccessRules},
-    layout::Layout,
+    layout::{Layout, LayoutEdit},
 };
 
 use super::{
@@ -32,11 +32,12 @@ impl<'a, R: AccessRules> Navcorder<'a, R> {
 
     pub fn start(
         &mut self,
+        recorder: LayoutEdit,
         source: FixedDotIndex,
         source_navvertex: NavvertexIndex,
         width: f64,
     ) -> NavcordStepper {
-        NavcordStepper::new(source, source_navvertex, width)
+        NavcordStepper::new(recorder, source, source_navvertex, width)
     }
 
     pub fn finish(
@@ -46,7 +47,12 @@ impl<'a, R: AccessRules> Navcorder<'a, R> {
         target: FixedDotIndex,
         width: f64,
     ) -> Result<BandTermsegIndex, NavcorderException> {
-        Ok(Draw::new(self.layout).finish_in_dot(navcord.head, target, width)?)
+        Ok(Draw::new(self.layout).finish_in_dot(
+            &mut navcord.recorder,
+            navcord.head,
+            target,
+            width,
+        )?)
     }
 
     #[debug_requires(path[0] == navcord.path[0])]

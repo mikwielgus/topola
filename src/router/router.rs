@@ -18,7 +18,7 @@ use crate::{
         shape::{AccessShape, MeasureLength},
     },
     graph::{GetPetgraphIndex, MakeRef},
-    layout::Layout,
+    layout::{Layout, LayoutEdit},
 };
 
 use super::{
@@ -182,11 +182,12 @@ impl<'a, R: AccessRules> Router<'a, R> {
 
     pub fn route(
         &mut self,
+        recorder: LayoutEdit,
         from: FixedDotIndex,
         to: FixedDotIndex,
         width: f64,
     ) -> Result<RouteStepper, NavmeshError> {
-        RouteStepper::new(self, from, to, width)
+        RouteStepper::new(self, recorder, from, to, width)
     }
 
     pub fn layout_mut(&mut self) -> &mut Layout<R> {

@@ -1,12 +1,15 @@
 use contracts_try::debug_ensures;
 use petgraph::data::DataMap;
 
-use crate::drawing::{
-    bend::LooseBendIndex,
-    dot::FixedDotIndex,
-    graph::PrimitiveIndex,
-    head::{BareHead, CaneHead, Head},
-    rules::AccessRules,
+use crate::{
+    drawing::{
+        bend::LooseBendIndex,
+        dot::FixedDotIndex,
+        graph::PrimitiveIndex,
+        head::{BareHead, CaneHead, Head},
+        rules::AccessRules,
+    },
+    layout::LayoutEdit,
 };
 
 use super::{
@@ -15,13 +18,14 @@ use super::{
     navmesh::{BinavvertexNodeIndex, Navmesh, NavvertexIndex},
 };
 
-/// The navcord is a structure that holds the movable non-borrowing data of the
-/// currently running routing process.
+/// The navcord (stepper) is a structure that holds the movable non-borrowing
+/// data of the currently running routing process.
 ///
 /// The name "navcord" is a shortening of "navigation cord", by analogy to
 /// "navmesh" being a shortening of "navigation mesh".
 #[derive(Debug)]
 pub struct NavcordStepper {
+    pub recorder: LayoutEdit,
     /// The currently attempted path.
     pub path: Vec<NavvertexIndex>,
     /// Head of the routed band.
@@ -33,11 +37,13 @@ pub struct NavcordStepper {
 impl NavcordStepper {
     /// Creates a new navcord.
     pub fn new(
+        recorder: LayoutEdit,
         source: FixedDotIndex,
         source_navvertex: NavvertexIndex,
         width: f64,
     ) -> NavcordStepper {
         Self {
+            recorder,
             path: vec![source_navvertex],
             head: BareHead { face: source }.into(),
             width,
@@ -75,7 +81,13 @@ impl NavcordStepper {
         cw: bool,
         width: f64,
     ) -> Result<CaneHead, NavcorderException> {
-        Ok(Draw::new(navcorder.layout).cane_around_dot(head, around, cw, width)?)
+        Ok(Draw::new(navcorder.layout).cane_around_dot(
+            &mut self.recorder,
+            head,
+            around,
+            cw,
+            width,
+        )?)
     }
 
     fn wrap_around_loose_bend(
@@ -86,7 +98,13 @@ impl NavcordStepper {
         cw: bool,
         width: f64,
     ) -> Result<CaneHead, NavcorderException> {
-        Ok(Draw::new(navcorder.layout).cane_around_bend(head, around.into(), cw, width)?)
+        Ok(Draw::new(navcorder.layout).cane_around_bend(
+            &mut self.recorder,
+            head,
+            around.into(),
+            cw,
+            width,
+        )?)
     }
 
     fn binavvertex(&self, navmesh: &Navmesh, navvertex: NavvertexIndex) -> BinavvertexNodeIndex {

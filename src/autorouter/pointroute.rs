@@ -47,6 +47,7 @@ impl PointrouteExecutionStepper {
         Ok(Self {
             point,
             route: router.route(
+                LayoutEdit::new(),
                 origin,
                 destination,
                 options.router_options.routed_band_width,
