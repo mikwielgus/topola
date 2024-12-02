@@ -135,7 +135,15 @@ impl SpecctraDesign {
                     path: structure::Path {
                         layer: mesadata
                             .layer_layername(primitive.layer())
-                            .unwrap()
+                            .ok_or_else(|| {
+                                std::io::Error::new(
+                                    std::io::ErrorKind::InvalidData,
+                                    format!(
+                                        "tried to reference invalid primitive layer {}",
+                                        primitive.layer()
+                                    ),
+                                )
+                            })?
                             .to_owned(),
                         width: primitive.width(),
                         coords,
@@ -148,7 +156,15 @@ impl SpecctraDesign {
                     net_outs.insert(
                         net,
                         structure::NetOut {
-                            name: mesadata.net_netname(net).unwrap().to_owned(),
+                            name: mesadata
+                                .net_netname(net)
+                                .ok_or_else(|| {
+                                    std::io::Error::new(
+                                        std::io::ErrorKind::InvalidData,
+                                        format!("tried to reference invalid net ID {}", net),
+                                    )
+                                })?
+                                .to_owned(),
                             wire: vec![wire],
                             via: Vec::new(),
                         },
