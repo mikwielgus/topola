@@ -36,7 +36,7 @@ Change your working directory to your clone of Topola's repository:
 Run the following command to build and install Topola's command-line
 application:
 
-    cargo install --locked --path cli
+    cargo install --locked --path crates/topola-cli
 
 The application will now be invokable from your terminal as `topola`.
 
@@ -89,7 +89,7 @@ framework.
 
 The following command will build and install Topola's GUI application:
 
-    cargo install --locked --path egui
+    cargo install --locked --path crates/topola-egui
 
 You can then invoke the application from your terminal by running
 
