@@ -53,12 +53,12 @@ impl ExecutionStepper {
                 }
             },
             ExecutionStepper::PlaceVia(place_via) => {
-                place_via.doit(autorouter)?;
-                ControlFlow::Break((None, "finished placing via".to_string()))
+                let edit = place_via.doit(autorouter)?;
+                ControlFlow::Break((edit, "finished placing via".to_string()))
             }
             ExecutionStepper::RemoveBands(remove_bands) => {
-                remove_bands.doit(autorouter)?;
-                ControlFlow::Break((None, "finished removing bands".to_string()))
+                let edit = remove_bands.doit(autorouter)?;
+                ControlFlow::Break((edit, "finished removing bands".to_string()))
             }
             ExecutionStepper::CompareDetours(compare_detours) => {
                 match compare_detours.step(autorouter)? {

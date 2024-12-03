@@ -32,16 +32,18 @@ impl PlaceViaExecutionStepper {
     pub fn doit(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
-    ) -> Result<(), AutorouterError> {
+    ) -> Result<Option<LayoutEdit>, AutorouterError> {
         if !self.done {
             self.done = true;
+
+            let mut edit = LayoutEdit::new();
             autorouter
                 .board
                 .layout_mut()
-                .add_via(&mut LayoutEdit::new(), self.weight)?;
-            Ok(())
+                .add_via(&mut edit, self.weight)?;
+            Ok(Some(edit))
         } else {
-            Ok(())
+            Ok(None)
         }
     }
 }

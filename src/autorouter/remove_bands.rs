@@ -31,20 +31,18 @@ impl RemoveBandsExecutionStepper {
     pub fn doit(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
-    ) -> Result<(), AutorouterError> {
+    ) -> Result<Option<LayoutEdit>, AutorouterError> {
         if !self.done {
             self.done = true;
 
+            let mut edit = LayoutEdit::new();
             for selector in self.selection.selectors() {
                 let band = autorouter.board.bandname_band(&selector.band).unwrap().0;
-                autorouter
-                    .board
-                    .layout_mut()
-                    .remove_band(&mut LayoutEdit::new(), band);
+                autorouter.board.layout_mut().remove_band(&mut edit, band);
             }
-            Ok(())
+            Ok(Some(edit))
         } else {
-            Ok(())
+            Ok(None)
         }
     }
 }
