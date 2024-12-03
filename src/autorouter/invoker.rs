@@ -10,7 +10,7 @@ use thiserror::Error;
 use crate::{
     board::mesadata::AccessMesadata,
     drawing::graph::PrimitiveIndex,
-    geometry::primitive::PrimitiveShape,
+    geometry::{edit::ApplyGeometryEdit, primitive::PrimitiveShape},
     router::{navcord::NavcordStepper, navmesh::Navmesh},
     stepper::Step,
 };
@@ -172,20 +172,10 @@ impl<M: AccessMesadata> Invoker<M> {
     #[debug_requires(self.ongoing_command.is_none())]
     /// Undo last command
     pub fn undo(&mut self) -> Result<(), InvokerError> {
-        let command = self.history.last_done()?.command();
+        let last_done = self.history.last_done()?;
 
-        match command {
-            Command::Autoroute(ref selection, ..) => {
-                self.autorouter.undo_autoroute(selection)?;
-            }
-            Command::PlaceVia(weight) => {
-                self.autorouter.undo_place_via(*weight);
-            }
-            Command::RemoveBands(ref selection) => {
-                self.autorouter.undo_remove_bands(selection);
-            }
-            Command::CompareDetours(..) => {}
-            Command::MeasureLength(..) => {}
+        if let Some(edit) = last_done.edit() {
+            self.autorouter.board.apply(edit.reverse());
         }
 
         Ok(self.history.undo()?)
@@ -194,19 +184,13 @@ impl<M: AccessMesadata> Invoker<M> {
     //#[debug_requires(self.ongoing_command.is_none())]
     /// Redo last command
     pub fn redo(&mut self) -> Result<(), InvokerError> {
-        let command = self.history.last_undone()?.command().clone();
-        let mut execute = self.execute_stepper(command)?;
+        let last_undone = self.history.last_undone()?;
 
-        loop {
-            let status = match execute.step(self) {
-                Ok(status) => status,
-                Err(err) => return Err(err),
-            };
-
-            if let ControlFlow::Break(..) = status {
-                return Ok(self.history.redo()?);
-            }
+        if let Some(edit) = last_undone.edit() {
+            self.autorouter.board.apply(edit.clone());
         }
+
+        Ok(self.history.redo()?)
     }
 
     #[debug_requires(self.ongoing_command.is_none())]

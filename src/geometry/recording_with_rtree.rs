@@ -396,44 +396,52 @@ impl<
     for RecordingGeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
     fn apply(&mut self, edit: GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>) {
-        for (compound, ..) in &edit.compounds {
-            self.geometry_with_rtree.remove_compound(*compound);
+        for (compound, (maybe_old_data, ..)) in &edit.compounds {
+            if maybe_old_data.is_some() {
+                self.geometry_with_rtree.remove_compound(*compound);
+            }
         }
 
-        for (bend, ..) in &edit.bends {
-            self.geometry_with_rtree.remove_bend(*bend);
+        for (bend, (maybe_old_data, ..)) in &edit.bends {
+            if maybe_old_data.is_some() {
+                self.geometry_with_rtree.remove_bend(*bend);
+            }
         }
 
-        for (seg, ..) in &edit.segs {
-            self.geometry_with_rtree.remove_seg(*seg);
+        for (seg, (maybe_old_data, ..)) in &edit.segs {
+            if maybe_old_data.is_some() {
+                self.geometry_with_rtree.remove_seg(*seg);
+            }
         }
 
-        for (dot, ..) in &edit.dots {
-            self.geometry_with_rtree.remove_dot(*dot);
+        for (dot, (maybe_old_data, ..)) in &edit.dots {
+            if maybe_old_data.is_some() {
+                self.geometry_with_rtree.remove_dot(*dot);
+            }
         }
 
-        for (dot, (.., maybe_weight)) in &edit.dots {
-            if let Some(weight) = maybe_weight {
+        for (dot, (.., maybe_new_data)) in &edit.dots {
+            if let Some(weight) = maybe_new_data {
                 self.geometry_with_rtree.add_dot_at_index(*dot, *weight);
             }
         }
 
-        for (seg, (.., maybe_data)) in &edit.segs {
-            if let Some(((from, to), weight)) = maybe_data {
+        for (seg, (.., maybe_new_data)) in &edit.segs {
+            if let Some(((from, to), weight)) = maybe_new_data {
                 self.geometry_with_rtree
                     .add_seg_at_index(*seg, *from, *to, *weight);
             }
         }
 
-        for (bend, (.., maybe_data)) in &edit.bends {
-            if let Some(((from, to, core), weight)) = maybe_data {
+        for (bend, (.., maybe_new_data)) in &edit.bends {
+            if let Some(((from, to, core), weight)) = maybe_new_data {
                 self.geometry_with_rtree
                     .add_bend_at_index(*bend, *from, *to, *core, *weight);
             }
         }
 
-        for (compound, (.., maybe_data)) in &edit.compounds {
-            if let Some((members, weight)) = maybe_data {
+        for (compound, (.., maybe_new_data)) in &edit.compounds {
+            if let Some((members, weight)) = maybe_new_data {
                 self.geometry_with_rtree
                     .add_compound_at_index(*compound, *weight);
 

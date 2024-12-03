@@ -62,4 +62,34 @@ impl<
             primitive_weight_marker: PhantomData,
         }
     }
+
+    pub fn reverse(&self) -> Self {
+        Self {
+            dots: self
+                .dots
+                .clone()
+                .into_iter()
+                .map(|(k, v)| (k, (v.1, v.0)))
+                .collect(),
+            segs: self
+                .segs
+                .clone()
+                .into_iter()
+                .map(|(k, v)| (k, (v.1, v.0)))
+                .collect(),
+            bends: self
+                .bends
+                .clone()
+                .into_iter()
+                .map(|(k, v)| (k, (v.1, v.0)))
+                .collect(),
+            compounds: self
+                .compounds
+                .clone()
+                .into_iter()
+                .map(|(k, v)| (k, (v.1, v.0)))
+                .collect(),
+            primitive_weight_marker: PhantomData,
+        }
+    }
 }
