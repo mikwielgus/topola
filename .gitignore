@@ -15,8 +15,11 @@ Cargo.lock
 *.pdb
 
 # ---> KiCad
-# Autoarchive files
+# Temporary and autoarchive files
+
 *-backups
+fp-info-cache
+~*.lck
 *.zip
 
 # Lockfiles
