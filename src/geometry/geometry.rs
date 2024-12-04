@@ -6,7 +6,7 @@ use geo::Point;
 use petgraph::{
     stable_graph::{NodeIndex, StableDiGraph},
     visit::EdgeRef,
-    Direction::Incoming,
+    Direction::{self, Incoming},
 };
 
 use crate::{
@@ -489,28 +489,61 @@ impl<
             .map(|ni| self.primitive_weight(ni).retag(ni))
     }
 
-    pub fn seg_joints(&self, seg: SI) -> (DI, DI) {
-        let v: Vec<_> = self.joineds(seg.into()).collect();
-        (
-            v[0].try_into().unwrap_or_else(|_| unreachable!()),
-            v[1].try_into().unwrap_or_else(|_| unreachable!()),
-        )
-    }
-
-    pub fn bend_joints(&self, bend: BI) -> (DI, DI) {
-        let v: Vec<_> = self.joineds(bend.into()).collect();
-        (
-            v[0].try_into().unwrap_or_else(|_| unreachable!()),
-            v[1].try_into().unwrap_or_else(|_| unreachable!()),
-        )
-    }
-
     pub fn joined_segs(&self, dot: DI) -> impl Iterator<Item = SI> + '_ {
         self.joineds(dot.into()).filter_map(|ni| ni.try_into().ok())
     }
 
     pub fn joined_bends(&self, dot: DI) -> impl Iterator<Item = BI> + '_ {
         self.joineds(dot.into()).filter_map(|ni| ni.try_into().ok())
+    }
+
+    fn joints(&self, node: PI) -> (DI, DI) {
+        (
+            self.graph
+                .neighbors_directed(node.petgraph_index(), Direction::Incoming)
+                .find(move |ni| {
+                    matches!(
+                        self.graph
+                            .edge_weight(
+                                self.graph
+                                    .find_edge_undirected(node.petgraph_index(), *ni)
+                                    .unwrap()
+                                    .0,
+                            )
+                            .unwrap(),
+                        GeometryLabel::Joined
+                    )
+                })
+                .map(|ni| self.primitive_weight(ni).retag(ni))
+                .map(|pi| pi.try_into().unwrap_or_else(|_| unreachable!()))
+                .unwrap(),
+            self.graph
+                .neighbors_directed(node.petgraph_index(), Direction::Outgoing)
+                .find(move |ni| {
+                    matches!(
+                        self.graph
+                            .edge_weight(
+                                self.graph
+                                    .find_edge_undirected(node.petgraph_index(), *ni)
+                                    .unwrap()
+                                    .0,
+                            )
+                            .unwrap(),
+                        GeometryLabel::Joined
+                    )
+                })
+                .map(|ni| self.primitive_weight(ni).retag(ni))
+                .map(|pi| pi.try_into().unwrap_or_else(|_| unreachable!()))
+                .unwrap(),
+        )
+    }
+
+    pub fn seg_joints(&self, seg: SI) -> (DI, DI) {
+        self.joints(seg.into())
+    }
+
+    pub fn bend_joints(&self, bend: BI) -> (DI, DI) {
+        self.joints(bend.into())
     }
 
     pub fn compound_members(&self, compound: GenericIndex<CW>) -> impl Iterator<Item = PI> + '_ {

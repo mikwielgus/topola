@@ -147,7 +147,7 @@ pub fn tangent_segments(
                 let cross2 =
                     seq_cross_product(tangent_point_pair.0, tangent_point_pair.1, circle2.pos);
 
-                if (cw2 && cross2 <= 0.0) || (!cw2 && cross2 >= 0.0) {
+                if (cw2 && cross2 >= 0.0) || (!cw2 && cross2 <= 0.0) {
                     return None;
                 }
             }
