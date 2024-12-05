@@ -21,12 +21,12 @@ path = "../.."
 default-features = false
 
 [dependencies.clap]
-version = "4.5.18"
+version = "4.5"
 features = ["derive"]
 
 [build-dependencies]
-clap_mangen = "0.2.23"
+clap_mangen = "0.2"
 
 [build-dependencies.clap]
-version = "4.5.18"
+version = "4.5"
 features = ["derive"]

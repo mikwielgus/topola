@@ -22,14 +22,14 @@ rstar.workspace = true
 serde.workspace = true
 serde_json.workspace = true
 spade.workspace = true
-sys-locale = "0.3.1"
+sys-locale = "0.3"
 
 [dependencies.topola]
 path = "../.."
 default-features = false
 
 [dependencies.unic-langid]
-version = "0.9.5"
+version = "0.9"
 features = ["macros", "serde"]
 
 [dependencies.eframe]
@@ -38,7 +38,7 @@ default-features = false
 features = ["accesskit", "default_fonts", "glow", "persistence"]
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-futures-lite = "2.3"
+futures-lite = "2.5"
 env_logger = "0.11"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
