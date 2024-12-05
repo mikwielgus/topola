@@ -42,7 +42,7 @@ impl MenuBar {
                 },
             },
             is_placing_via: false,
-            show_ratsnest: false,
+            show_ratsnest: true,
             show_navmesh: false,
             show_bboxes: false,
             show_origin_destination: false,
