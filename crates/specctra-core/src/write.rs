@@ -26,10 +26,13 @@ impl<W: io::Write> WriteSes<W> for String {
 
 impl<W: io::Write> WriteSes<W> for bool {
     fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
-        writer.write_leaf(match self {
-            true => "on".to_string(),
-            false => "off".to_string(),
-        })
+        writer.write_leaf(
+            match self {
+                true => "on",
+                false => "off",
+            }
+            .to_string(),
+        )
     }
 }
 
@@ -122,11 +125,7 @@ impl<W: io::Write> ListWriter<W> {
         value.write_dsn(self)
     }
 
-    pub fn write_named<T: WriteSes<W>>(
-        &mut self,
-        name: &'static str,
-        value: &T,
-    ) -> Result<(), io::Error> {
+    pub fn write_named<T: WriteSes<W>>(&mut self, name: &str, value: &T) -> Result<(), io::Error> {
         self.write_token(ListToken::Start {
             name: name.to_string(),
         })?;
@@ -138,7 +137,7 @@ impl<W: io::Write> ListWriter<W> {
 
     pub fn write_optional<T: WriteSes<W>>(
         &mut self,
-        name: &'static str,
+        name: &str,
         optional: &Option<T>,
     ) -> Result<(), io::Error> {
         if let Some(value) = optional {
@@ -148,7 +147,7 @@ impl<W: io::Write> ListWriter<W> {
         Ok(())
     }
 
-    pub fn write_array<T: WriteSes<W>>(&mut self, array: &Vec<T>) -> Result<(), io::Error> {
+    pub fn write_array<T: WriteSes<W>>(&mut self, array: &[T]) -> Result<(), io::Error> {
         for elem in array {
             self.write_value(elem)?;
         }
@@ -158,8 +157,8 @@ impl<W: io::Write> ListWriter<W> {
 
     pub fn write_named_array<T: WriteSes<W>>(
         &mut self,
-        name: &'static str,
-        array: &Vec<T>,
+        name: &str,
+        array: &[T],
     ) -> Result<(), io::Error> {
         for elem in array {
             self.write_named(name, elem)?;
