@@ -3,7 +3,7 @@
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &str| {
-    let mut cursor = std::io::Cursor::new(data);
+    let cursor = std::io::Cursor::new(data);
 
     use specctra_core::{read::ListTokenizer, structure::DsnFile};
 
