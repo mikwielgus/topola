@@ -448,7 +448,7 @@ impl SpecctraDesign {
                 layer,
                 maybe_net,
             },
-            maybe_pin.clone(),
+            maybe_pin,
         );
     }
 
@@ -468,7 +468,7 @@ impl SpecctraDesign {
         let poly = board.add_poly(
             recorder,
             SolidPolyWeight { layer, maybe_net }.into(),
-            maybe_pin.clone(),
+            maybe_pin,
         );
 
         // Corners.
@@ -646,7 +646,7 @@ impl SpecctraDesign {
         let poly = board.add_poly(
             recorder,
             SolidPolyWeight { layer, maybe_net }.into(),
-            maybe_pin.clone(),
+            maybe_pin,
         );
 
         // add the first coordinate in the wire path as a dot and save its index

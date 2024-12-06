@@ -35,7 +35,7 @@ impl RouteStepper {
         to: FixedDotIndex,
         width: f64,
     ) -> Result<Self, NavmeshError> {
-        let navmesh = Navmesh::new(router.layout(), from, to, router.options().clone())?;
+        let navmesh = Navmesh::new(router.layout(), from, to, *router.options())?;
         Ok(Self::new_from_navmesh(router, recorder, navmesh, width))
     }
 

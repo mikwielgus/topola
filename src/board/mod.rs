@@ -82,9 +82,9 @@ impl<M: AccessMesadata> Board<M> {
     ) -> FixedDotIndex {
         let dot = self.layout.add_fixed_dot_infringably(recorder, weight);
 
-        if let Some(ref pin) = maybe_pin {
+        if let Some(pin) = maybe_pin {
             self.node_to_pinname
-                .insert(GenericNode::Primitive(dot.into()), pin.clone());
+                .insert(GenericNode::Primitive(dot.into()), pin);
         }
 
         dot
@@ -128,7 +128,7 @@ impl<M: AccessMesadata> Board<M> {
 
         if let Some(pin) = maybe_pin {
             self.node_to_pinname
-                .insert(GenericNode::Primitive(seg.into()), pin.to_string());
+                .insert(GenericNode::Primitive(seg.into()), pin);
         }
 
         seg
@@ -170,7 +170,7 @@ impl<M: AccessMesadata> Board<M> {
 
         if let Some(pin) = maybe_pin {
             self.node_to_pinname
-                .insert(GenericNode::Compound(poly.into()), pin.to_string());
+                .insert(GenericNode::Compound(poly.into()), pin);
         }
 
         poly
@@ -184,18 +184,19 @@ impl<M: AccessMesadata> Board<M> {
         recorder: &mut LayoutEdit,
         poly: GenericIndex<PolyWeight>,
     ) -> FixedDotIndex {
-        if let Some(apex) = self.layout.poly(poly).maybe_apex() {
+        let resolved_poly = self.layout.poly(poly);
+        if let Some(apex) = resolved_poly.maybe_apex() {
             apex
         } else {
             self.add_poly_fixed_dot_infringably(
                 recorder,
                 FixedDotWeight {
                     circle: Circle {
-                        pos: self.layout.poly(poly).shape().center(),
+                        pos: resolved_poly.shape().center(),
                         r: 100.0,
                     },
-                    layer: self.layout.poly(poly).layer(),
-                    maybe_net: self.layout.poly(poly).maybe_net(),
+                    layer: resolved_poly.layer(),
+                    maybe_net: resolved_poly.maybe_net(),
                 },
                 poly,
             )
@@ -240,12 +241,8 @@ impl<M: AccessMesadata> Board<M> {
     pub fn band_between_pins(&self, pinname1: &str, pinname2: &str) -> Option<BandUid> {
         if let Some(band) = self
             .band_bandname
+            // note: it doesn't matter in what order pinnames are given, the constructor sorts them
             .get_by_right(&BandName::new(pinname1.to_string(), pinname2.to_string()))
-        {
-            Some(*band)
-        } else if let Some(band) = self
-            .band_bandname
-            .get_by_right(&BandName::new(pinname2.to_string(), pinname1.to_string()))
         {
             Some(*band)
         } else {
