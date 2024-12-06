@@ -89,55 +89,28 @@ impl<R: std::io::BufRead> ReadDsn<R> for bool {
     }
 }
 
-impl<R: std::io::BufRead> ReadDsn<R> for i32 {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
-        tokenizer
-            .consume_token()?
-            .expect_leaf()?
-            .parse()
-            .map_err(|_| tokenizer.add_context(ParseError::Expected("i32")))
+/// `impl_ReadDsn_via_FromStr!((TYPE, TYPE-NAME); ...)`
+macro_rules! impl_ReadDsn_via_FromStr {
+    ($(($t:ty, $name:expr));* $(;)?) => {
+        $( impl<R: std::io::BufRead> ReadDsn<R> for $t {
+            fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
+                tokenizer
+                    .consume_token()?
+                    .expect_leaf()?
+                    .parse()
+                    .map_err(|_| tokenizer.add_context(ParseError::Expected($name)))
+            }
+        } )*
     }
 }
 
-impl<R: std::io::BufRead> ReadDsn<R> for u32 {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
-        tokenizer
-            .consume_token()?
-            .expect_leaf()?
-            .parse()
-            .map_err(|_| tokenizer.add_context(ParseError::Expected("u32")))
-    }
-}
-
-impl<R: std::io::BufRead> ReadDsn<R> for usize {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
-        tokenizer
-            .consume_token()?
-            .expect_leaf()?
-            .parse()
-            .map_err(|_| tokenizer.add_context(ParseError::Expected("usize")))
-    }
-}
-
-impl<R: std::io::BufRead> ReadDsn<R> for f32 {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
-        tokenizer
-            .consume_token()?
-            .expect_leaf()?
-            .parse()
-            .map_err(|_| tokenizer.add_context(ParseError::Expected("f32")))
-    }
-}
-
-impl<R: std::io::BufRead> ReadDsn<R> for f64 {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
-        tokenizer
-            .consume_token()?
-            .expect_leaf()?
-            .parse()
-            .map_err(|_| tokenizer.add_context(ParseError::Expected("f64")))
-    }
-}
+impl_ReadDsn_via_FromStr!(
+    (i32, "i32");
+    (u32, "u32");
+    (usize, "usize");
+    (f32, "f32");
+    (f64, "f64");
+);
 
 pub struct ListTokenizer<R: std::io::BufRead> {
     reader: R,
