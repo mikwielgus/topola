@@ -66,7 +66,7 @@ impl<R: std::io::BufRead> ReadDsn<R> for String {
 impl<R: std::io::BufRead> ReadDsn<R> for char {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         let err = tokenizer.add_context(ParseError::Expected("a single character"));
-        let string = tokenizer.consume_token()?.expect_leaf()?;
+        let string = String::read_dsn(tokenizer)?;
         let mut it = string.chars();
         let first = match it.next() {
             None => return Err(err),
@@ -81,7 +81,7 @@ impl<R: std::io::BufRead> ReadDsn<R> for char {
 
 impl<R: std::io::BufRead> ReadDsn<R> for bool {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
-        match tokenizer.consume_token()?.expect_leaf()?.as_str() {
+        match String::read_dsn(tokenizer)?.as_str() {
             "on" => Ok(true),
             "off" => Ok(false),
             _ => Err(tokenizer.add_context(ParseError::Expected("boolean"))),
@@ -94,9 +94,7 @@ macro_rules! impl_ReadDsn_via_FromStr {
     ($(($t:ty, $name:expr));* $(;)?) => {
         $( impl<R: std::io::BufRead> ReadDsn<R> for $t {
             fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
-                tokenizer
-                    .consume_token()?
-                    .expect_leaf()?
+                String::read_dsn(tokenizer)?
                     .parse()
                     .map_err(|_| tokenizer.add_context(ParseError::Expected($name)))
             }
