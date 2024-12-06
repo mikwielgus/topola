@@ -141,10 +141,6 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         }
     }
 
-    fn map_context<T>(&self, result: Result<T, ParseError>) -> Result<T, ParseErrorContext> {
-        result.map_err(|err| self.add_context(err))
-    }
-
     fn next_char(&mut self) -> Result<char, ParseErrorContext> {
         let return_chr = self.peek_char()?;
         self.reset_char();

@@ -1,5 +1,3 @@
-use crate::error::ParseError;
-
 pub enum ListToken {
     Start { name: String },
     Leaf { value: String },
