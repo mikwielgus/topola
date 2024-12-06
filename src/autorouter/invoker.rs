@@ -175,7 +175,7 @@ impl<M: AccessMesadata> Invoker<M> {
         let last_done = self.history.last_done()?;
 
         if let Some(edit) = last_done.edit() {
-            self.autorouter.board.apply(edit.reverse());
+            self.autorouter.board.apply(&edit.reverse());
         }
 
         Ok(self.history.undo()?)
@@ -187,7 +187,7 @@ impl<M: AccessMesadata> Invoker<M> {
         let last_undone = self.history.last_undone()?;
 
         if let Some(edit) = last_undone.edit() {
-            self.autorouter.board.apply(edit.clone());
+            self.autorouter.board.apply(edit);
         }
 
         Ok(self.history.redo()?)

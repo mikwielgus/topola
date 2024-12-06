@@ -19,7 +19,7 @@ pub trait ApplyGeometryEdit<
     BI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
 >
 {
-    fn apply(&mut self, edit: GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>);
+    fn apply(&mut self, edit: &GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>);
 }
 
 #[derive(Debug, Clone)]

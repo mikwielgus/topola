@@ -274,7 +274,7 @@ impl<M: AccessMesadata>
         BendIndex,
     > for Board<M>
 {
-    fn apply(&mut self, edit: LayoutEdit) {
+    fn apply(&mut self, edit: &LayoutEdit) {
         self.layout.apply(edit);
     }
 }

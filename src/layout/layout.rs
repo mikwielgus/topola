@@ -341,7 +341,7 @@ impl<R: AccessRules>
         BendIndex,
     > for Layout<R>
 {
-    fn apply(&mut self, edit: LayoutEdit) {
+    fn apply(&mut self, edit: &LayoutEdit) {
         self.drawing.apply(edit);
     }
 }

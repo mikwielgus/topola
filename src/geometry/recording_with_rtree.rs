@@ -395,7 +395,7 @@ impl<
     > ApplyGeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>
     for RecordingGeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
-    fn apply(&mut self, edit: GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>) {
+    fn apply(&mut self, edit: &GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>) {
         for (compound, (maybe_old_data, ..)) in &edit.compounds {
             if maybe_old_data.is_some() {
                 self.geometry_with_rtree.remove_compound(*compound);

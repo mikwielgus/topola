@@ -1134,7 +1134,7 @@ impl<CW: Copy, R: AccessRules>
         BendIndex,
     > for Drawing<CW, R>
 {
-    fn apply(&mut self, edit: DrawingEdit<CW>) {
+    fn apply(&mut self, edit: &DrawingEdit<CW>) {
         self.recording_geometry_with_rtree.apply(edit);
     }
 }
