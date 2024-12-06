@@ -17,30 +17,6 @@ impl ListToken {
         }
     }
 
-    pub fn expect_any_start(self) -> Result<String, ParseError> {
-        if let Self::Start { name } = self {
-            Ok(name.to_ascii_lowercase())
-        } else {
-            Err(ParseError::ExpectedStartOfList(""))
-        }
-    }
-
-    pub fn expect_leaf(self) -> Result<String, ParseError> {
-        if let Self::Leaf { value } = self {
-            Ok(value)
-        } else {
-            Err(ParseError::ExpectedLeaf)
-        }
-    }
-
-    pub fn expect_end(self) -> Result<(), ParseError> {
-        if let Self::End = self {
-            Ok(())
-        } else {
-            Err(ParseError::ExpectedEndOfList)
-        }
-    }
-
     pub fn len(&self) -> usize {
         match &self {
             Self::Start { name } => 1 + name.len(),

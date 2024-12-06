@@ -14,21 +14,27 @@ impl InputToken {
     }
 
     pub fn expect_any_start(self) -> Result<String, ParseErrorContext> {
-        self.token
-            .expect_any_start()
-            .map_err(|err| err.add_context(self.context))
+        if let ListToken::Start { name } = self.token {
+            Ok(name.to_ascii_lowercase())
+        } else {
+            Err(ParseError::ExpectedStartOfList("").add_context(self.context))
+        }
     }
 
     pub fn expect_leaf(self) -> Result<String, ParseErrorContext> {
-        self.token
-            .expect_leaf()
-            .map_err(|err| err.add_context(self.context))
+        if let ListToken::Leaf { value } = self.token {
+            Ok(value)
+        } else {
+            Err(ParseError::ExpectedLeaf.add_context(self.context))
+        }
     }
 
     pub fn expect_end(self) -> Result<(), ParseErrorContext> {
-        self.token
-            .expect_end()
-            .map_err(|err| err.add_context(self.context))
+        if let ListToken::End = self.token {
+            Ok(())
+        } else {
+            Err(ParseError::ExpectedEndOfList.add_context(self.context))
+        }
     }
 }
 
