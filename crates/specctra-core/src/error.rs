@@ -6,10 +6,16 @@ pub enum ParseError {
     Eof,
     #[error(transparent)]
     Io(#[from] std::io::Error),
+
     #[error("expected {0}")]
     Expected(&'static str),
-    #[error("expected ({0}")]
+    #[error("expected \"({0}\"")]
     ExpectedStartOfList(&'static str),
+    #[error("expected \")\"")]
+    ExpectedEndOfList,
+    #[error("expected leaf value")]
+    ExpectedLeaf,
+
     #[error("found a space inside a quoted string, but file didn't declare this possibility")]
     UnexpectedSpaceInQuotedStr,
 }

@@ -31,7 +31,7 @@ impl ListToken {
         if let Self::Leaf { value } = self {
             Ok(value)
         } else {
-            Err(ParseError::Expected("leaf value"))
+            Err(ParseError::ExpectedLeaf)
         }
     }
 
@@ -39,7 +39,7 @@ impl ListToken {
         if let Self::End = self {
             Ok(())
         } else {
-            Err(ParseError::Expected("end of list"))
+            Err(ParseError::ExpectedEndOfList)
         }
     }
 
