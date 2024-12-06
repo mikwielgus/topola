@@ -21,14 +21,6 @@ impl InputToken {
         }
     }
 
-    pub fn expect_leaf(self) -> Result<String, ParseErrorContext> {
-        if let ListToken::Leaf { value } = self.token {
-            Ok(value)
-        } else {
-            Err(ParseError::ExpectedLeaf.add_context(self.context))
-        }
-    }
-
     pub fn expect_end(self) -> Result<(), ParseErrorContext> {
         if let ListToken::End = self.token {
             Ok(())
@@ -59,7 +51,12 @@ impl<R: std::io::BufRead> ReadDsn<R> for Parser {
 
 impl<R: std::io::BufRead> ReadDsn<R> for String {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
-        tokenizer.consume_token()?.expect_leaf()
+        let inptoken = tokenizer.consume_token()?;
+        if let ListToken::Leaf { value } = inptoken.token {
+            Ok(value)
+        } else {
+            Err(ParseError::ExpectedLeaf.add_context(inptoken.context))
+        }
     }
 }
 
