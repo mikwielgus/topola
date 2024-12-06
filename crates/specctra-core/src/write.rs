@@ -1,4 +1,4 @@
-use super::common::ListToken;
+use super::ListToken;
 use std::io;
 
 pub trait WriteSes<W: io::Write> {

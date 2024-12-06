@@ -1,6 +1,6 @@
-use super::common::ListToken;
 use super::error::{ParseError, ParseErrorContext};
 use super::structure::Parser;
+use super::ListToken;
 use utf8_chars::BufReadCharsExt;
 
 pub struct InputToken {
