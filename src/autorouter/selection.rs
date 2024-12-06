@@ -16,32 +16,8 @@ pub struct PinSelector {
     pub layer: String,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct PinSelection {
-    selectors: HashSet<PinSelector>,
-}
-
-impl PinSelection {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    pub fn new_select_layer(board: &Board<impl AccessMesadata>, layer: usize) -> Self {
-        let mut this = Self::new();
-
-        for node in board.layout().drawing().layer_primitive_nodes(layer) {
-            if let Some(selector) = this.node_selector(board, GenericNode::Primitive(node)) {
-                if !this.contains_node(board, GenericNode::Primitive(node)) {
-                    this.select(selector);
-                }
-            }
-        }
-
-        this
-    }
-
-    fn node_selector(
-        &self,
+impl PinSelector {
+    pub fn try_from_node(
         board: &Board<impl AccessMesadata>,
         node: NodeIndex,
     ) -> Option<PinSelector> {
@@ -74,22 +50,35 @@ impl PinSelection {
             None
         }
     }
+}
 
-    fn select(&mut self, selector: PinSelector) {
-        self.selectors.insert(selector);
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct PinSelection(HashSet<PinSelector>);
+
+impl PinSelection {
+    pub fn new() -> Self {
+        Self::default()
     }
 
-    fn deselect(&mut self, selector: &PinSelector) {
-        self.selectors.remove(selector);
+    pub fn new_select_layer(board: &Board<impl AccessMesadata>, layer: usize) -> Self {
+        let mut this = Self::default();
+
+        for node in board.layout().drawing().layer_primitive_nodes(layer) {
+            if let Some(selector) = PinSelector::try_from_node(board, GenericNode::Primitive(node))
+            {
+                this.0.insert(selector);
+            }
+        }
+
+        this
     }
 
     pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
-        self.node_selector(board, node)
-            .map_or(false, |selector| self.selectors.contains(&selector))
+        PinSelector::try_from_node(board, node).map_or(false, |selector| self.0.contains(&selector))
     }
 
     pub fn selectors(&self) -> impl Iterator<Item = &PinSelector> {
-        self.selectors.iter()
+        self.0.iter()
     }
 }
 
@@ -98,18 +87,8 @@ pub struct BandSelector {
     pub band: BandName,
 }
 
-#[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct BandSelection {
-    selectors: HashSet<BandSelector>,
-}
-
-impl BandSelection {
-    pub fn new() -> Self {
-        Self::default()
-    }
-
-    fn node_selector(
-        &self,
+impl BandSelector {
+    pub fn try_from_node(
         board: &Board<impl AccessMesadata>,
         node: NodeIndex,
     ) -> Option<BandSelector> {
@@ -131,22 +110,23 @@ impl BandSelection {
                 .clone(),
         })
     }
+}
 
-    fn select(&mut self, selector: BandSelector) {
-        self.selectors.insert(selector);
-    }
+#[derive(Debug, Default, Clone, Serialize, Deserialize)]
+pub struct BandSelection(HashSet<BandSelector>);
 
-    fn deselect(&mut self, selector: &BandSelector) {
-        self.selectors.remove(selector);
+impl BandSelection {
+    pub fn new() -> Self {
+        Self::default()
     }
 
     pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
-        self.node_selector(board, node)
-            .map_or(false, |selector| self.selectors.contains(&selector))
+        BandSelector::try_from_node(board, node)
+            .map_or(false, |selector| self.0.contains(&selector))
     }
 
     pub fn selectors(&self) -> impl Iterator<Item = &BandSelector> {
-        self.selectors.iter()
+        self.0.iter()
     }
 }
 
@@ -162,17 +142,17 @@ impl Selection {
     }
 
     pub fn toggle_at_node(&mut self, board: &Board<impl AccessMesadata>, node: NodeIndex) {
-        if let Some(selector) = self.pin_selection.node_selector(board, node) {
-            if self.pin_selection.contains_node(board, node) {
-                self.pin_selection.deselect(&selector);
+        if let Some(selector) = PinSelector::try_from_node(board, node) {
+            if self.pin_selection.0.contains(&selector) {
+                self.pin_selection.0.remove(&selector);
             } else {
-                self.pin_selection.select(selector);
+                self.pin_selection.0.insert(selector);
             }
-        } else if let Some(selector) = self.band_selection.node_selector(board, node) {
-            if self.band_selection.contains_node(board, node) {
-                self.band_selection.deselect(&selector);
+        } else if let Some(selector) = BandSelector::try_from_node(board, node) {
+            if self.band_selection.0.contains(&selector) {
+                self.band_selection.0.remove(&selector);
             } else {
-                self.band_selection.select(selector);
+                self.band_selection.0.insert(selector);
             }
         }
     }
