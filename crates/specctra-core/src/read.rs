@@ -107,7 +107,7 @@ impl_ReadDsn_via_FromStr!(
     (f64, "f64");
 );
 
-pub struct ListTokenizer<R: std::io::BufRead> {
+pub struct ListTokenizer<R> {
     reader: R,
     peeked_char: Option<char>,
     cached_token: Option<InputToken>,
