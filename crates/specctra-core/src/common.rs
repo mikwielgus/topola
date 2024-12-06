@@ -7,15 +7,22 @@ pub enum ListToken {
 }
 
 impl ListToken {
-    pub fn expect_start(self, name: &'static str) -> Result<(), ParseError> {
+    pub fn is_start_of(&self, valid_names: &[&'static str]) -> bool {
         if let Self::Start { name: actual_name } = self {
-            if name.eq_ignore_ascii_case(&actual_name) {
-                Ok(())
-            } else {
-                Err(ParseError::ExpectedStartOfList(name))
-            }
+            valid_names
+                .iter()
+                .any(|i| i.eq_ignore_ascii_case(actual_name))
         } else {
-            Err(ParseError::ExpectedStartOfList(name))
+            false
+        }
+    }
+
+    pub fn expect_start(self, valid_names: &[&'static str]) -> Result<(), ParseError> {
+        assert!(!valid_names.is_empty());
+        if self.is_start_of(valid_names) {
+            Ok(())
+        } else {
+            Err(ParseError::ExpectedStartOfList(valid_names[0]))
         }
     }
 

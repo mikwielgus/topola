@@ -103,18 +103,18 @@ pub struct Structure {
 impl<R: std::io::BufRead> ReadDsn<R> for Structure {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         let mut value = Self {
-            layers: tokenizer.read_named_array("layer")?,
-            boundary: tokenizer.read_named("boundary")?,
-            planes: tokenizer.read_named_array("plane")?,
-            keepouts: tokenizer.read_named_array("keepout")?,
-            via: tokenizer.read_named("via")?,
-            grids: tokenizer.read_named_array("grid")?,
-            rules: tokenizer.read_named_array("rule")?,
+            layers: tokenizer.read_named_array(&["layer"])?,
+            boundary: tokenizer.read_named(&["boundary"])?,
+            planes: tokenizer.read_named_array(&["plane"])?,
+            keepouts: tokenizer.read_named_array(&["keepout"])?,
+            via: tokenizer.read_named(&["via"])?,
+            grids: tokenizer.read_named_array(&["grid"])?,
+            rules: tokenizer.read_named_array(&["rule"])?,
         };
 
         value
             .layers
-            .append(&mut tokenizer.read_named_array("layer")?);
+            .append(&mut tokenizer.read_named_array(&["layer"])?);
 
         Ok(value)
     }

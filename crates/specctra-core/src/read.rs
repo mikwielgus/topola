@@ -13,9 +13,9 @@ impl InputToken {
         Self { token, context }
     }
 
-    pub fn expect_start(self, name: &'static str) -> Result<(), ParseErrorContext> {
+    pub fn expect_start(self, valid_names: &[&'static str]) -> Result<(), ParseErrorContext> {
         self.token
-            .expect_start(name)
+            .expect_start(valid_names)
             .map_err(|err| err.add_context(self.context))
     }
 
@@ -295,9 +295,9 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
 
     pub fn read_named<T: ReadDsn<R>>(
         &mut self,
-        name: &'static str,
+        valid_names: &[&'static str],
     ) -> Result<T, ParseErrorContext> {
-        self.consume_token()?.expect_start(name)?;
+        self.consume_token()?.expect_start(valid_names)?;
         let value = self.read_value::<T>()?;
         self.consume_token()?.expect_end()?;
         Ok(value)
@@ -308,27 +308,14 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         valid_names: &[&'static str],
     ) -> Result<Option<T>, ParseErrorContext> {
         let input = self.consume_token()?;
-        Ok(
-            if let ListToken::Start {
-                name: ref actual_name,
-            } = input.token
-            {
-                if valid_names
-                    .iter()
-                    .any(|i| i.eq_ignore_ascii_case(actual_name))
-                {
-                    let value = self.read_value::<T>()?;
-                    self.consume_token()?.expect_end()?;
-                    Some(value)
-                } else {
-                    self.return_token(input);
-                    None
-                }
-            } else {
-                self.return_token(input);
-                None
-            },
-        )
+        Ok(if input.token.is_start_of(valid_names) {
+            let value = self.read_value::<T>()?;
+            self.consume_token()?.expect_end()?;
+            Some(value)
+        } else {
+            self.return_token(input);
+            None
+        })
     }
 
     pub fn read_array<T: ReadDsn<R>>(&mut self) -> Result<Vec<T>, ParseErrorContext> {
@@ -347,13 +334,6 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
     }
 
     pub fn read_named_array<T: ReadDsn<R>>(
-        &mut self,
-        name: &'static str,
-    ) -> Result<Vec<T>, ParseErrorContext> {
-        self.read_array_with_alias(&[name])
-    }
-
-    pub fn read_array_with_alias<T: ReadDsn<R>>(
         &mut self,
         valid_names: &[&'static str],
     ) -> Result<Vec<T>, ParseErrorContext> {

@@ -61,7 +61,7 @@ fn impl_field(field: &Field) -> TokenStream {
         }
         FieldType::NamedVec(valid_aliases) => {
             quote! {
-                #name: tokenizer.read_array_with_alias(&[#(#valid_aliases),*])?,
+                #name: tokenizer.read_named_array(&[#(#valid_aliases),*])?,
             }
         }
         FieldType::NotSpecified => {
@@ -79,7 +79,7 @@ fn impl_field(field: &Field) -> TokenStream {
             }
 
             quote! {
-                #name: tokenizer.read_named(stringify!(#name_str))?,
+                #name: tokenizer.read_named(&[stringify!(#name_str)])?,
             }
         }
     }
