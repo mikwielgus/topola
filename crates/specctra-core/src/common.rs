@@ -17,15 +17,6 @@ impl ListToken {
         }
     }
 
-    pub fn expect_start(self, valid_names: &[&'static str]) -> Result<(), ParseError> {
-        assert!(!valid_names.is_empty());
-        if self.is_start_of(valid_names) {
-            Ok(())
-        } else {
-            Err(ParseError::ExpectedStartOfList(valid_names[0]))
-        }
-    }
-
     pub fn expect_any_start(self) -> Result<String, ParseError> {
         if let Self::Start { name } = self {
             Ok(name.to_ascii_lowercase())

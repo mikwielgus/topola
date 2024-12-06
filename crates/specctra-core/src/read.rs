@@ -13,12 +13,6 @@ impl InputToken {
         Self { token, context }
     }
 
-    pub fn expect_start(self, valid_names: &[&'static str]) -> Result<(), ParseErrorContext> {
-        self.token
-            .expect_start(valid_names)
-            .map_err(|err| err.add_context(self.context))
-    }
-
     pub fn expect_any_start(self) -> Result<String, ParseErrorContext> {
         self.token
             .expect_any_start()
@@ -295,10 +289,9 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         &mut self,
         valid_names: &[&'static str],
     ) -> Result<T, ParseErrorContext> {
-        self.consume_token()?.expect_start(valid_names)?;
-        let value = self.read_value::<T>()?;
-        self.consume_token()?.expect_end()?;
-        Ok(value)
+        assert!(!valid_names.is_empty());
+        self.read_optional(valid_names)?
+            .ok_or_else(|| self.add_context(ParseError::ExpectedStartOfList(valid_names[0])))
     }
 
     pub fn read_optional<T: ReadDsn<R>>(
