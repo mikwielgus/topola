@@ -72,7 +72,7 @@ fn impl_field(field: &Field) -> TokenStream {
                     if ident == "Option" {
                         return quote! {
                             #name: tokenizer
-                                .read_optional(stringify!(#name_str))?,
+                                .read_optional(&[stringify!(#name_str)])?,
                         };
                     }
                 }

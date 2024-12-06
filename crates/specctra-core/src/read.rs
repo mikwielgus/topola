@@ -46,13 +46,13 @@ impl<R: std::io::BufRead> ReadDsn<R> for Parser {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         Ok(Self {
             string_quote: tokenizer
-                .read_optional("string_quote")?
+                .read_optional(&["string_quote"])?
                 .inspect(|v| tokenizer.quote_char = Some(*v)),
             space_in_quoted_tokens: tokenizer
-                .read_optional("space_in_quoted_tokens")?
+                .read_optional(&["space_in_quoted_tokens"])?
                 .inspect(|v| tokenizer.space_in_quoted = *v),
-            host_cad: tokenizer.read_optional("host_cad")?,
-            host_version: tokenizer.read_optional("host_version")?,
+            host_cad: tokenizer.read_optional(&["host_cad"])?,
+            host_version: tokenizer.read_optional(&["host_version"])?,
         })
     }
 }
@@ -332,25 +332,30 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
 
     pub fn read_optional<T: ReadDsn<R>>(
         &mut self,
-        name: &'static str,
+        valid_names: &[&'static str],
     ) -> Result<Option<T>, ParseErrorContext> {
         let input = self.consume_token()?;
-        if let ListToken::Start {
-            name: ref actual_name,
-        } = input.token
-        {
-            if actual_name == name {
-                let value = self.read_value::<T>()?;
-                self.consume_token()?.expect_end()?;
-                Ok(Some(value))
+        Ok(
+            if let ListToken::Start {
+                name: ref actual_name,
+            } = input.token
+            {
+                if valid_names
+                    .iter()
+                    .any(|i| i.eq_ignore_ascii_case(actual_name))
+                {
+                    let value = self.read_value::<T>()?;
+                    self.consume_token()?.expect_end()?;
+                    Some(value)
+                } else {
+                    self.return_token(input);
+                    None
+                }
             } else {
                 self.return_token(input);
-                Ok(None)
-            }
-        } else {
-            self.return_token(input);
-            Ok(None)
-        }
+                None
+            },
+        )
     }
 
     pub fn read_array<T: ReadDsn<R>>(&mut self) -> Result<Vec<T>, ParseErrorContext> {
@@ -379,25 +384,9 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
         &mut self,
         valid_names: &[&'static str],
     ) -> Result<Vec<T>, ParseErrorContext> {
-        let mut array = Vec::<T>::new();
-        loop {
-            let input = self.consume_token()?;
-            if let ListToken::Start {
-                name: ref actual_name,
-            } = input.token
-            {
-                if valid_names.contains(&actual_name.to_ascii_lowercase().as_ref()) {
-                    let value = self.read_value::<T>()?;
-                    self.consume_token()?.expect_end()?;
-                    array.push(value);
-                } else {
-                    self.return_token(input);
-                    break;
-                }
-            } else {
-                self.return_token(input);
-                break;
-            }
+        let mut array = Vec::new();
+        while let Some(value) = self.read_optional::<T>(valid_names)? {
+            array.push(value);
         }
         Ok(array)
     }

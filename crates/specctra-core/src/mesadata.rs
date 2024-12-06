@@ -190,15 +190,11 @@ impl AccessRules for SpecctraMesadata {
     }
 
     fn largest_clearance(&self, _maybe_net: Option<usize>) -> f64 {
-        let mut largest: f64 = 0.0;
-
-        for rule in self.class_rules.values() {
-            if rule.clearance > largest {
-                largest = rule.clearance;
-            }
-        }
-
-        largest
+        self.class_rules
+            .values()
+            .map(|rule| rule.clearance)
+            .reduce(f64::max)
+            .unwrap_or(0.0)
     }
 }
 
