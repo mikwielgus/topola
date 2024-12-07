@@ -28,9 +28,9 @@ pub struct NavcordStepper {
     pub recorder: LayoutEdit,
     /// The currently attempted path.
     pub path: Vec<NavvertexIndex>,
-    /// Head of the routed band.
+    /// The head of the routed band.
     pub head: Head,
-    /// Width of the routed band.
+    /// The width of the routed band.
     pub width: f64,
 }
 

@@ -42,6 +42,9 @@ impl GetPetgraphIndex for NavvertexIndex {
     }
 }
 
+/// A binavvertex is a pair of navvertices, one clockwise and the other
+/// counterclockwise. Unlike their constituents, binavvertices are themselves
+/// not considered navvertices.
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
 pub enum BinavvertexNodeIndex {
@@ -70,6 +73,12 @@ impl From<BinavvertexNodeIndex> for GearIndex {
     }
 }
 
+/// Trianvertices are the vertices of the triangulation before it is converted
+/// to the navmesh by multiplying each of them into more vertices (called
+/// navvertices). Every trianvertex corresponds to one or more binavvertices on
+/// the navmesh.
+///
+/// The name "trianvertex" is a shortening of "triangulation vertex".
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
 #[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
 enum TrianvertexNodeIndex {
@@ -105,6 +114,7 @@ impl HasPosition for TrianvertexWeight {
     }
 }
 
+/// The name "navvertex" is a shortening of "navigation vertex".
 #[derive(Debug, Clone)]
 pub struct NavvertexWeight {
     pub node: BinavvertexNodeIndex,
@@ -117,10 +127,13 @@ pub enum NavmeshError {
     Insertion(#[from] InsertionError),
 }
 
-/// Contains Navigation Mesh properties
+/// The navmesh holds the entire Topola's search space represented as a graph.
+/// Topola's routing works by navigating over this graph with a pathfinding
+/// algorithm such as A* while drawing a track segment (always a cane except
+/// when going directly to destination) on the layout for each leap and
+/// along-edge crossing.
 ///
-/// Navigation Mesh is a mesh of possible routes between
-/// two nodes
+/// The name "navmesh" is a shortening of "navigation mesh".
 #[derive(Debug, Clone)]
 pub struct Navmesh {
     graph: UnGraph<NavvertexWeight, (), usize>,
@@ -131,10 +144,7 @@ pub struct Navmesh {
 }
 
 impl Navmesh {
-    /// Create new Navigation mesh
-    ///
-    /// Method to create new Navigation Mesh between
-    /// origin and destination nodes
+    /// Creates a new navmesh.
     pub fn new(
         layout: &Layout<impl AccessRules>,
         origin: FixedDotIndex,
@@ -299,27 +309,27 @@ impl Navmesh {
             .push((navvertex1, navvertex2));
     }
 
-    /// Returns Graph with undirected edges of Navigation Vertex
+    /// Returns the navmesh's underlying petgraph graph structure.
     pub fn graph(&self) -> &UnGraph<NavvertexWeight, (), usize> {
         &self.graph
     }
 
-    /// Returns origin node index
+    /// Returns the origin node.
     pub fn origin(&self) -> FixedDotIndex {
         self.origin
     }
 
-    /// Returns Navigation Vertex of origin node
+    /// Returns the navvertex of the origin node.
     pub fn origin_navvertex(&self) -> NavvertexIndex {
         self.origin_navvertex
     }
 
-    /// Returns destination node index
+    /// Returns the destination node.
     pub fn destination(&self) -> FixedDotIndex {
         self.destination
     }
 
-    /// Returns Navigation Vertex of destination node
+    /// Returns the navvertex of the destination node.
     pub fn destination_navvertex(&self) -> NavvertexIndex {
         self.destination_navvertex
     }
