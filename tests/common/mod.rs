@@ -8,19 +8,28 @@ use topola::{
         Autorouter,
     },
     board::{mesadata::AccessMesadata, Board},
-    drawing::graph::{GetLayer, GetMaybeNet},
-    geometry::shape::MeasureLength,
+    drawing::{
+        dot::FixedDotIndex,
+        graph::{GetLayer, GetMaybeNet},
+    },
+    geometry::{shape::MeasureLength, GenericNode},
     graph::{GetPetgraphIndex, MakeRef},
     layout::LayoutEdit,
+    router::{navmesh::Navmesh, RouterOptions},
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
 
-pub fn load_design_and_assert(filename: &str) -> Invoker<SpecctraMesadata> {
+pub fn load_design(filename: &str) -> Autorouter<SpecctraMesadata> {
     let design_file = File::open(filename).unwrap();
     let design_bufread = BufReader::new(design_file);
     let design = SpecctraDesign::load(design_bufread).unwrap();
-    let mut invoker =
-        Invoker::new(Autorouter::new(design.make_board(&mut LayoutEdit::new())).unwrap());
+    Autorouter::new(design.make_board(&mut LayoutEdit::new())).unwrap()
+}
+
+pub fn create_invoker_and_assert(
+    autorouter: Autorouter<SpecctraMesadata>,
+) -> Invoker<SpecctraMesadata> {
+    let mut invoker = Invoker::new(autorouter);
 
     assert!(matches!(
         invoker.undo(),
@@ -60,6 +69,50 @@ pub fn replay_and_assert(invoker: &mut Invoker<SpecctraMesadata>, filename: &str
     );
 }
 
+pub fn assert_navvertex_count(
+    autorouter: &mut Autorouter<SpecctraMesadata>,
+    origin_pin: &str,
+    destination_pin: &str,
+    expected_count: usize,
+) {
+    let (origin, destination) = autorouter
+        .ratsnest()
+        .graph()
+        .edge_indices()
+        .collect::<Vec<_>>()
+        .iter()
+        .find_map(|ratline| {
+            let (candidate_origin, candidate_destination) = autorouter.ratline_endpoints(*ratline);
+            let candidate_origin_pin = autorouter
+                .board()
+                .node_pinname(&GenericNode::Primitive(candidate_origin.into()))
+                .unwrap();
+            let candidate_destination_pin = autorouter
+                .board()
+                .node_pinname(&GenericNode::Primitive(candidate_destination.into()))
+                .unwrap();
+
+            ((candidate_origin_pin == origin_pin && candidate_destination_pin == destination_pin)
+                || (candidate_origin_pin == destination_pin
+                    && candidate_destination_pin == origin_pin))
+                .then_some((candidate_origin, candidate_destination))
+        })
+        .unwrap();
+
+    let navmesh = Navmesh::new(
+        autorouter.board().layout(),
+        origin,
+        destination,
+        RouterOptions {
+            wrap_around_bands: true,
+            squeeze_through_under_bands: false,
+            routed_band_width: 100.0,
+        },
+    )
+    .unwrap();
+    assert_eq!(navmesh.graph().node_count(), expected_count);
+}
+
 pub fn assert_single_layer_groundless_autoroute(
     autorouter: &mut Autorouter<impl AccessMesadata>,
     layername: &str,
@@ -67,64 +120,64 @@ pub fn assert_single_layer_groundless_autoroute(
     let unionfind = unionfind(autorouter);
 
     for ratline in autorouter.ratsnest().graph().edge_indices() {
-        let (source_dot, target_dot) = autorouter.ratline_endpoints(ratline);
+        let (origin_dot, destination_dot) = autorouter.ratline_endpoints(ratline);
 
-        let source_layer = autorouter
+        let origin_layer = autorouter
             .board()
             .layout()
             .drawing()
-            .primitive(source_dot)
+            .primitive(origin_dot)
             .layer();
-        let target_layer = autorouter
+        let destination_layer = autorouter
             .board()
             .layout()
             .drawing()
-            .primitive(target_dot)
+            .primitive(destination_dot)
             .layer();
 
-        if let (Some(source_layername), Some(target_layername)) = (
+        if let (Some(origin_layername), Some(destination_layername)) = (
             autorouter
                 .board()
                 .layout()
                 .rules()
-                .layer_layername(source_layer),
+                .layer_layername(origin_layer),
             autorouter
                 .board()
                 .layout()
                 .rules()
-                .layer_layername(target_layer),
+                .layer_layername(destination_layer),
         ) {
-            assert_eq!(source_layername, target_layername);
+            assert_eq!(origin_layername, destination_layername);
 
-            if source_layername != layername {
+            if origin_layername != layername {
                 continue;
             }
         } else {
             assert!(false);
         }
 
-        let source_net = autorouter
+        let origin_net = autorouter
             .board()
             .layout()
             .drawing()
-            .primitive(source_dot)
+            .primitive(origin_dot)
             .maybe_net();
-        let target_net = autorouter
+        let destination_net = autorouter
             .board()
             .layout()
             .drawing()
-            .primitive(target_dot)
+            .primitive(destination_dot)
             .maybe_net();
-        assert_eq!(source_net, target_net);
+        assert_eq!(origin_net, destination_net);
 
-        let net = source_net.unwrap();
+        let net = origin_net.unwrap();
 
         if let Some(netname) = autorouter.board().layout().rules().net_netname(net) {
             // We don't route ground.
             if netname != "GND" {
                 assert_eq!(
-                    unionfind.find(source_dot.petgraph_index()),
-                    unionfind.find(target_dot.petgraph_index())
+                    unionfind.find(origin_dot.petgraph_index()),
+                    unionfind.find(destination_dot.petgraph_index())
                 );
             }
         }
@@ -145,12 +198,12 @@ pub fn assert_single_layer_groundless_autoroute(
 
 pub fn assert_band_length(
     board: &Board<impl AccessMesadata>,
-    source: &str,
-    target: &str,
+    source_pin: &str,
+    target_pin: &str,
     expected_length: f64,
     rel_err: f64,
 ) {
-    let band = board.band_between_pins(source, target).unwrap();
+    let band = board.band_between_pins(source_pin, target_pin).unwrap();
     let band_length = band.0.ref_(board.layout().drawing()).length();
     assert!(
         (band_length - expected_length).abs() < expected_length * rel_err,

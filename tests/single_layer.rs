@@ -12,8 +12,9 @@ mod common;
 
 #[test]
 fn test_0603_breakout() {
-    let mut invoker =
-        common::load_design_and_assert("tests/single_layer/0603_breakout/0603_breakout.dsn");
+    let mut autorouter = common::load_design("tests/single_layer/0603_breakout/0603_breakout.dsn");
+    common::assert_navvertex_count(&mut autorouter, "R1-2", "J1-2", 50);
+    let mut invoker = common::create_invoker_and_assert(autorouter);
     common::replay_and_assert(
         &mut invoker,
         "tests/single_layer/0603_breakout/autoroute_all.cmd",
@@ -27,9 +28,11 @@ fn test_0603_breakout() {
 
 #[test]
 fn test_tht_diode_bridge_rectifier() {
-    let mut invoker = common::load_design_and_assert(
+    let mut autorouter = common::load_design(
         "tests/single_layer/tht_diode_bridge_rectifier/tht_diode_bridge_rectifier.dsn",
     );
+    common::assert_navvertex_count(&mut autorouter, "J2-2", "D4-2", 56);
+    let mut invoker = common::create_invoker_and_assert(autorouter);
     common::replay_and_assert(
         &mut invoker,
         "tests/single_layer/tht_diode_bridge_rectifier/autoroute_all.cmd",
@@ -61,9 +64,11 @@ fn test_tht_diode_bridge_rectifier() {
 
 #[test]
 fn test_4x_3rd_order_smd_lc_filters() {
-    let mut invoker = common::load_design_and_assert(
+    let mut autorouter = common::load_design(
         "tests/single_layer/4x_3rd_order_smd_lc_filters/4x_3rd_order_smd_lc_filters.dsn",
     );
+    common::assert_navvertex_count(&mut autorouter, "J1-1", "L1-1", 1954);
+    let mut invoker = common::create_invoker_and_assert(autorouter);
     common::replay_and_assert(
         &mut invoker,
         "tests/single_layer/4x_3rd_order_smd_lc_filters/autoroute_signals.cmd",
@@ -79,9 +84,11 @@ fn test_4x_3rd_order_smd_lc_filters() {
 // NOTE: Disabled until determinism is fixed.
 //#[test]
 fn test_tht_3pin_xlr_to_tht_3pin_xlr() {
-    let mut invoker = common::load_design_and_assert(
+    let mut autorouter = common::load_design(
         "tests/single_layer/tht_3pin_xlr_to_tht_3pin_xlr/tht_3pin_xlr_to_tht_3pin_xlr.dsn",
     );
+    //common::assert_navvertex_count(&mut autorouter, "R1-2", "J1-2", ?);
+    let mut invoker = common::create_invoker_and_assert(autorouter);
     common::replay_and_assert(
         &mut invoker,
         "tests/single_layer/tht_3pin_xlr_to_tht_3pin_xlr/autoroute_all.cmd",
