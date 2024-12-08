@@ -14,12 +14,14 @@ use topola::{
     stepper::Step,
 };
 
-use crate::{error_dialog::ErrorDialog, layers::Layers, overlay::Overlay, translator::Translator};
+use crate::{
+    error_dialog::ErrorDialog, layers::AppearancePanel, overlay::Overlay, translator::Translator,
+};
 
 /// A loaded design and associated structures
 pub struct Workspace {
     pub design: SpecctraDesign,
-    pub layers: Layers,
+    pub layers: AppearancePanel,
     pub overlay: Overlay,
     pub interactor: Interactor<SpecctraMesadata>,
 
@@ -32,7 +34,7 @@ pub struct Workspace {
 impl Workspace {
     pub fn new(design: SpecctraDesign, tr: &Translator) -> Result<Self, String> {
         let board = design.make_board(&mut LayoutEdit::new());
-        let layers = Layers::new(&board);
+        let layers = AppearancePanel::new(&board);
         let overlay = Overlay::new(&board).map_err(|err| {
             format!(
                 "{}; {}",

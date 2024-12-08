@@ -3,9 +3,9 @@
 mod action;
 mod actions;
 mod app;
+mod appearance_panel;
 mod config;
 mod error_dialog;
-mod layers;
 mod menu_bar;
 mod overlay;
 mod painter;

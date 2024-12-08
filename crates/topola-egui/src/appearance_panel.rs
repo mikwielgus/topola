@@ -1,6 +1,6 @@
 use topola::board::{mesadata::AccessMesadata, Board};
 
-pub struct Layers {
+pub struct AppearancePanel {
     // TODO:
     // In1.Cu shall be #7fc87f (#d5ecd5 when selected).
     // In2.Cu shall be #ce7d2c (#e8c39e when selected).
@@ -9,7 +9,7 @@ pub struct Layers {
     pub highlight_colors: Box<[egui::Color32]>,
 }
 
-impl Layers {
+impl AppearancePanel {
     pub fn new(board: &Board<impl AccessMesadata>) -> Self {
         let layer_count = board.layout().drawing().layer_count();
         let visible = std::iter::repeat(true)
