@@ -209,17 +209,20 @@ impl eframe::App for App {
                 .and_then(|w| w.interactor.maybe_activity().as_ref()),
         );
 
-        if self.menu_bar.show_layer_manager {
+        if self.menu_bar.show_appearance_panel {
             if let Some(workspace) = &mut self.maybe_workspace {
-                workspace.update_layers(ctx);
+                workspace.update_appearance_panel(ctx);
             }
         }
 
         self.error_dialog.update(ctx, &self.translator);
 
-        let _viewport_rect =
-            self.viewport
-                .update(ctx, &self.menu_bar, self.maybe_workspace.as_mut());
+        let _viewport_rect = self.viewport.update(
+            &self.config,
+            ctx,
+            &self.menu_bar,
+            self.maybe_workspace.as_mut(),
+        );
 
         self.update_locale();
         self.update_title(ctx);

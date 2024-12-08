@@ -9,6 +9,7 @@ use topola::{
         execution::Command,
         invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles, Invoker},
     },
+    board::mesadata::AccessMesadata,
     drawing::{
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,
@@ -19,7 +20,7 @@ use topola::{
     specctra::mesadata::SpecctraMesadata,
 };
 
-use crate::{menu_bar::MenuBar, painter::Painter, workspace::Workspace};
+use crate::{config::Config, menu_bar::MenuBar, painter::Painter, workspace::Workspace};
 
 pub struct Viewport {
     pub transform: egui::emath::TSTransform,
@@ -36,6 +37,7 @@ impl Viewport {
 
     pub fn update(
         &mut self,
+        config: &Config,
         ctx: &egui::Context,
         menu_bar: &MenuBar,
         maybe_workspace: Option<&mut Workspace>,
@@ -56,7 +58,7 @@ impl Viewport {
                 let mut painter = Painter::new(ui, self.transform, menu_bar.show_bboxes);
 
                 if let Some(workspace) = maybe_workspace {
-                    let layers = &mut workspace.layers;
+                    let layers = &mut workspace.appearance_panel;
                     let overlay = &mut workspace.overlay;
 
                     if ctx.input(|i| i.pointer.any_click()) {
@@ -91,15 +93,15 @@ impl Viewport {
                                     .selection()
                                     .contains_node(board, GenericNode::Primitive(primitive))
                                 {
-                                    layers.highlight_colors[i]
+                                    config.dark_theme.layers.color(board.layout().rules().layer_layername(i)).highlighted
                                 } else if let Some(activity) = &mut workspace.interactor.maybe_activity() {
                                     if activity.obstacles().contains(&primitive) {
-                                        layers.highlight_colors[i]
+                                        config.dark_theme.layers.color(board.layout().rules().layer_layername(i)).highlighted
                                     } else {
-                                        layers.colors[i]
+                                        config.dark_theme.layers.color(board.layout().rules().layer_layername(i)).normal
                                     }
                                 } else {
-                                    layers.colors[i]
+                                    config.dark_theme.layers.color(board.layout().rules().layer_layername(i)).normal
                                 };
 
                                 painter.paint_primitive(&shape, color);
@@ -110,9 +112,9 @@ impl Viewport {
                                     .selection()
                                     .contains_node(board, GenericNode::Compound(poly.into()))
                                 {
-                                    layers.highlight_colors[i]
+                                    config.dark_theme.layers.color(board.layout().rules().layer_layername(i)).highlighted
                                 } else {
-                                    layers.colors[i]
+                                    config.dark_theme.layers.color(board.layout().rules().layer_layername(i)).normal
                                 };
 
                                 painter.paint_polygon(&board.layout().poly(poly).shape().polygon, color)

@@ -26,7 +26,7 @@ pub struct MenuBar {
     pub show_navmesh: bool,
     pub show_bboxes: bool,
     pub show_origin_destination: bool,
-    pub show_layer_manager: bool,
+    pub show_appearance_panel: bool,
     pub frame_timestep: f32,
 }
 
@@ -46,7 +46,7 @@ impl MenuBar {
             show_navmesh: false,
             show_bboxes: false,
             show_origin_destination: false,
-            show_layer_manager: true,
+            show_appearance_panel: true,
             frame_timestep: 0.1,
         }
     }
@@ -359,7 +359,7 @@ impl MenuBar {
             ui.separator();
 
             ui.checkbox(
-                &mut self.show_layer_manager,
+                &mut self.show_appearance_panel,
                 tr.text("tr-menu-view-show-layer-manager"),
             );
 

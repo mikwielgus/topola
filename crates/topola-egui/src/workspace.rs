@@ -22,7 +22,7 @@ use crate::{
 /// A loaded design and associated structures
 pub struct Workspace {
     pub design: SpecctraDesign,
-    pub layers: AppearancePanel,
+    pub appearance_panel: AppearancePanel,
     pub overlay: Overlay,
     pub interactor: Interactor<SpecctraMesadata>,
 
@@ -35,7 +35,7 @@ pub struct Workspace {
 impl Workspace {
     pub fn new(design: SpecctraDesign, tr: &Translator) -> Result<Self, String> {
         let board = design.make_board(&mut LayoutEdit::new());
-        let layers = AppearancePanel::new(&board);
+        let appearance_panel = AppearancePanel::new(&board);
         let overlay = Overlay::new(&board).map_err(|err| {
             format!(
                 "{}; {}",
@@ -45,7 +45,7 @@ impl Workspace {
         })?;
         Ok(Self {
             design,
-            layers,
+            appearance_panel,
             overlay,
             interactor: Interactor::new(board).map_err(|err| {
                 format!(
@@ -98,8 +98,8 @@ impl Workspace {
         }
     }
 
-    pub fn update_layers(&mut self, ctx: &egui::Context) {
-        self.layers
+    pub fn update_appearance_panel(&mut self, ctx: &egui::Context) {
+        self.appearance_panel
             .update(ctx, self.interactor.invoker().autorouter().board());
     }
 }
