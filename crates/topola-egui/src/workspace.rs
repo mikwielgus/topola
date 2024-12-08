@@ -15,7 +15,8 @@ use topola::{
 };
 
 use crate::{
-    error_dialog::ErrorDialog, layers::AppearancePanel, overlay::Overlay, translator::Translator,
+    appearance_panel::AppearancePanel, error_dialog::ErrorDialog, overlay::Overlay,
+    translator::Translator,
 };
 
 /// A loaded design and associated structures
