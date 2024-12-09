@@ -4,14 +4,10 @@ use std::{
 };
 
 use topola::{
-    autorouter::{history::History, invoker::Invoker, Autorouter},
-    interactor::{
-        activity::{ActivityContext, ActivityStepperWithStatus, InteractiveInput},
-        Interactor,
-    },
+    autorouter::history::History,
+    interactor::{activity::InteractiveInput, Interactor},
     layout::LayoutEdit,
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
-    stepper::Step,
 };
 
 use crate::{

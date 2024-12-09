@@ -9,10 +9,7 @@ use topola::{
         graph::{GetLayer, MakePrimitive},
         primitive::MakePrimitiveShape,
     },
-    geometry::{
-        compound::ManageCompounds,
-        shape::{AccessShape, Shape},
-    },
+    geometry::shape::{AccessShape, Shape},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
         poly::{MakePolyShape, PolyWeight},

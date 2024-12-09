@@ -17,7 +17,6 @@ use topola::{
     geometry::{shape::AccessShape, GenericNode},
     layout::{poly::MakePolyShape, via::ViaWeight},
     math::Circle,
-    specctra::mesadata::SpecctraMesadata,
 };
 
 use crate::{config::Config, menu_bar::MenuBar, painter::Painter, workspace::Workspace};
@@ -93,15 +92,15 @@ impl Viewport {
                                     .selection()
                                     .contains_node(board, GenericNode::Primitive(primitive))
                                 {
-                                    config.dark_theme.layers.color(board.layout().rules().layer_layername(i)).highlighted
+                                    config.colors(ctx).layers.color(board.layout().rules().layer_layername(i)).highlighted
                                 } else if let Some(activity) = &mut workspace.interactor.maybe_activity() {
                                     if activity.obstacles().contains(&primitive) {
-                                        config.dark_theme.layers.color(board.layout().rules().layer_layername(i)).highlighted
+                                        config.colors(ctx).layers.color(board.layout().rules().layer_layername(i)).highlighted
                                     } else {
-                                        config.dark_theme.layers.color(board.layout().rules().layer_layername(i)).normal
+                                        config.colors(ctx).layers.color(board.layout().rules().layer_layername(i)).normal
                                     }
                                 } else {
-                                    config.dark_theme.layers.color(board.layout().rules().layer_layername(i)).normal
+                                    config.colors(ctx).layers.color(board.layout().rules().layer_layername(i)).normal
                                 };
 
                                 painter.paint_primitive(&shape, color);
@@ -112,9 +111,9 @@ impl Viewport {
                                     .selection()
                                     .contains_node(board, GenericNode::Compound(poly.into()))
                                 {
-                                    config.dark_theme.layers.color(board.layout().rules().layer_layername(i)).highlighted
+                                    config.colors(ctx).layers.color(board.layout().rules().layer_layername(i)).highlighted
                                 } else {
-                                    config.dark_theme.layers.color(board.layout().rules().layer_layername(i)).normal
+                                    config.colors(ctx).layers.color(board.layout().rules().layer_layername(i)).normal
                                 };
 
                                 painter.paint_polygon(&board.layout().poly(poly).shape().polygon, color)

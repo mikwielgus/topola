@@ -332,7 +332,7 @@ impl MenuBar {
 
     pub fn update_view_menu(
         &mut self,
-        ctx: &egui::Context,
+        _ctx: &egui::Context,
         ui: &mut egui::Ui,
         tr: &Translator,
         viewport: &mut Viewport,
