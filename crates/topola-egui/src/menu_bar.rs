@@ -76,6 +76,9 @@ impl MenuBar {
         egui::TopBottomPanel::top("menu_bar")
             .show(ctx, |ui| {
                 egui::menu::bar(ui, |ui| {
+                    egui::widgets::global_theme_preference_switch(ui);
+                    ui.separator();
+
                     ui.menu_button(tr.text("tr-menu-file"), |ui| {
                         actions.file.open_design.button(ctx, ui);
                         //ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
@@ -186,8 +189,6 @@ impl MenuBar {
                     });
 
                     ui.separator();
-
-                    egui::widgets::global_theme_preference_buttons(ui);
                 });
 
                 if actions.file.open_design.consume_key_triggered(ctx, ui) {
