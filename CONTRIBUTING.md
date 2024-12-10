@@ -35,6 +35,14 @@ on [Weblate](https://translate.codeberg.org/engage/topola/).
 
 ![](https://translate.codeberg.org/widget/topola/topola/multi-auto.svg)
 
+## Issue labeling
+
+You can help us assign [labels](https://codeberg.org/topola/topola/labels) to
+the issues reported on our issue tracker. If you would like to do that, ask us
+on our chat to add you to the
+[Labelers](https://codeberg.org/org/topola/teams/labelers) group which has the
+necessary permissions.
+
 ## Writing code
 
 We welcome code from anyone regardless of skill or experience level. We are
