@@ -56,20 +56,18 @@ impl From<BandTermsegIndex> for LooseIndex {
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> MakeRef<'a, BandRef<'a, CW, R>, Drawing<CW, R>>
-    for BandTermsegIndex
-{
+impl<'a, CW, R> MakeRef<'a, BandRef<'a, CW, R>, Drawing<CW, R>> for BandTermsegIndex {
     fn ref_(&self, drawing: &'a Drawing<CW, R>) -> BandRef<'a, CW, R> {
         BandRef::new(*self, drawing)
     }
 }
 
-pub struct BandRef<'a, CW: Copy, R: AccessRules> {
+pub struct BandRef<'a, CW, R> {
     first_seg: BandTermsegIndex,
     drawing: &'a Drawing<CW, R>,
 }
 
-impl<'a, CW: Copy, R: AccessRules> BandRef<'a, CW, R> {
+impl<'a, CW, R> BandRef<'a, CW, R> {
     pub fn new(first_seg: BandTermsegIndex, drawing: &'a Drawing<CW, R>) -> BandRef<'a, CW, R> {
         Self { first_seg, drawing }
     }

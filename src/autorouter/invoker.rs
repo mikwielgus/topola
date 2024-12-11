@@ -80,7 +80,7 @@ pub enum InvokerError {
 
 #[derive(Getters, Dissolve)]
 /// Structure that manages the execution and history of commands within the autorouting system
-pub struct Invoker<M: AccessMesadata> {
+pub struct Invoker<M> {
     /// Instance for executing desired autorouting commands
     pub(super) autorouter: Autorouter<M>,
     /// History of executed commands

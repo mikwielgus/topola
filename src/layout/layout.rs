@@ -43,15 +43,17 @@ pub type LayoutEdit = DrawingEdit<CompoundWeight>;
 
 #[derive(Debug, Getters)]
 /// Structure for managing the Layout design
-pub struct Layout<R: AccessRules> {
+pub struct Layout<R> {
     drawing: Drawing<CompoundWeight, R>,
 }
 
-impl<R: AccessRules> Layout<R> {
+impl<R> Layout<R> {
     pub fn new(drawing: Drawing<CompoundWeight, R>) -> Self {
         Self { drawing }
     }
+}
 
+impl<R: AccessRules> Layout<R> {
     /// Insert [`Cane`] object into the [`Layout`]
     pub fn insert_cane(
         &mut self,

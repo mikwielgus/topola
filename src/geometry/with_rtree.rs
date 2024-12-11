@@ -36,17 +36,7 @@ impl RTreeObject for Bbox {
 pub type BboxedIndex<I> = GeomWithData<Bbox, I>;
 
 #[derive(Debug, Getters)]
-pub struct GeometryWithRtree<
-    PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-    DW: AccessDotWeight<PW> + GetLayer,
-    SW: AccessSegWeight<PW> + GetLayer,
-    BW: AccessBendWeight<PW> + GetLayer,
-    CW: Copy,
-    PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
-    DI: GetPetgraphIndex + Into<PI> + Copy,
-    SI: GetPetgraphIndex + Into<PI> + Copy,
-    BI: GetPetgraphIndex + Into<PI> + Copy,
-> {
+pub struct GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     geometry: Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
     rtree: RTree<BboxedIndex<GenericNode<PI, GenericIndex<CW>>>>,
     layer_count: usize,

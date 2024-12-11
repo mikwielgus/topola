@@ -66,7 +66,7 @@ pub struct Collision(pub PrimitiveShape, pub PrimitiveIndex);
 #[error("{1:?} is already connected to net {0}")]
 pub struct AlreadyConnected(pub usize, pub PrimitiveIndex);
 
-pub type DrawingEdit<CW: Copy> = GeometryEdit<
+pub type DrawingEdit<CW> = GeometryEdit<
     PrimitiveWeight,
     DotWeight,
     SegWeight,
@@ -79,7 +79,7 @@ pub type DrawingEdit<CW: Copy> = GeometryEdit<
 >;
 
 #[derive(Debug, Getters)]
-pub struct Drawing<CW: Copy, R: AccessRules> {
+pub struct Drawing<CW, R> {
     recording_geometry_with_rtree: RecordingGeometryWithRtree<
         PrimitiveWeight,
         DotWeight,

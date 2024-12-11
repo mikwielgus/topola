@@ -25,7 +25,7 @@ pub struct InteractiveInput {
 }
 
 /// This is the execution context passed to the stepper on each step
-pub struct ActivityContext<'a, M: AccessMesadata> {
+pub struct ActivityContext<'a, M> {
     pub interactive_input: &'a InteractiveInput,
     pub invoker: &'a mut Invoker<M>,
 }

@@ -66,14 +66,14 @@ impl<W: io::Write> WriteSes<W> for f64 {
     }
 }
 
-pub struct ListWriter<W: io::Write> {
+pub struct ListWriter<W> {
     writable: W,
     indent_level: usize,
     multiline_level: usize,
     pub line_len: usize,
 }
 
-impl<W: io::Write> ListWriter<W> {
+impl<W> ListWriter<W> {
     pub fn new(writable: W) -> Self {
         Self {
             writable,
@@ -82,7 +82,9 @@ impl<W: io::Write> ListWriter<W> {
             line_len: 0,
         }
     }
+}
 
+impl<W: io::Write> ListWriter<W> {
     pub fn write_token(&mut self, token: ListToken) -> Result<(), io::Error> {
         let len = token.len();
 

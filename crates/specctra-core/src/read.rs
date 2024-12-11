@@ -117,7 +117,7 @@ pub struct ListTokenizer<R> {
     column: usize,
 }
 
-impl<R: std::io::BufRead> ListTokenizer<R> {
+impl<R> ListTokenizer<R> {
     pub fn new(reader: R) -> Self {
         Self {
             reader,
@@ -140,7 +140,9 @@ impl<R: std::io::BufRead> ListTokenizer<R> {
             context: (self.line, self.column),
         }
     }
+}
 
+impl<R: std::io::BufRead> ListTokenizer<R> {
     fn next_char(&mut self) -> Result<char, ParseErrorContext> {
         let return_chr = self.peek_char()?;
         self.reset_char();

@@ -120,7 +120,7 @@ impl NavcordStepper {
     }
 }
 
-pub struct NavcordStepContext<'a: 'b, 'b, R: AccessRules> {
+pub struct NavcordStepContext<'a: 'b, 'b, R> {
     pub navcorder: &'b mut Navcorder<'a, R>,
     pub navmesh: &'b Navmesh,
     pub to: NavvertexIndex,

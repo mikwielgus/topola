@@ -28,7 +28,7 @@ pub trait GetMaybeApex {
 }
 
 #[derive(Debug)]
-pub struct Poly<'a, R: AccessRules> {
+pub struct Poly<'a, R> {
     pub index: GenericIndex<PolyWeight>,
     layout: &'a Layout<R>,
 }

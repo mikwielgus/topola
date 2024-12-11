@@ -34,7 +34,7 @@ pub enum DrawException {
 /// This struct is a simple wrapper whose sole purpose is to have a separate
 /// file for the router module's routines for drawing and erasing the primitives
 /// to pull out or contract the currently routed band.
-pub struct Draw<'a, R: AccessRules> {
+pub struct Draw<'a, R> {
     layout: &'a mut Layout<R>,
 }
 

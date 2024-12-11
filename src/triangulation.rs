@@ -12,21 +12,14 @@ pub trait GetTrianvertexNodeIndex<I> {
 }
 
 #[derive(Debug, Clone)]
-pub struct Triangulation<
-    I: Copy + PartialEq + GetPetgraphIndex,
-    VW: GetTrianvertexNodeIndex<I> + HasPosition,
-    EW: Copy + Default,
-> {
+pub struct Triangulation<I, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Default> {
     triangulation: DelaunayTriangulation<VW, EW>,
     trianvertex_to_handle: Box<[Option<FixedVertexHandle>]>,
     index_marker: PhantomData<I>,
 }
 
-impl<
-        I: Copy + PartialEq + GetPetgraphIndex,
-        VW: GetTrianvertexNodeIndex<I> + HasPosition<Scalar = f64>,
-        EW: Copy + Default,
-    > Triangulation<I, VW, EW>
+impl<I: GetPetgraphIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Default>
+    Triangulation<I, VW, EW>
 {
     pub fn new(node_bound: usize) -> Self {
         Self {
@@ -57,12 +50,6 @@ impl<
         )
     }
 
-    pub fn position(&self, vertex: I) -> Point {
-        let position =
-            spade::Triangulation::vertex(&self.triangulation, self.handle(vertex)).position();
-        point! {x: position.x, y: position.y}
-    }
-
     fn vertex(&self, handle: FixedVertexHandle) -> I {
         spade::Triangulation::vertex(&self.triangulation, handle)
             .as_ref()
@@ -72,12 +59,21 @@ impl<
     fn handle(&self, vertex: I) -> FixedVertexHandle {
         self.trianvertex_to_handle[vertex.petgraph_index().index()].unwrap()
     }
+
+    pub fn position(&self, vertex: I) -> Point<<VW as HasPosition>::Scalar>
+    where
+        <VW as HasPosition>::Scalar: geo::CoordNum,
+    {
+        let position =
+            spade::Triangulation::vertex(&self.triangulation, self.handle(vertex)).position();
+        point! {x: position.x, y: position.y}
+    }
 }
 
 impl<
         I: Copy + PartialEq + GetPetgraphIndex,
-        VW: GetTrianvertexNodeIndex<I> + HasPosition<Scalar = f64>,
-        EW: Copy + Default,
+        VW: GetTrianvertexNodeIndex<I> + HasPosition,
+        EW: Default,
     > visit::GraphBase for Triangulation<I, VW, EW>
 {
     type NodeId = I;
@@ -85,18 +81,18 @@ impl<
 }
 
 #[derive(Debug, Clone, Copy)]
-pub struct TriangulationEdgeWeightWrapper<EW: Copy + Default> {
+pub struct TriangulationEdgeWeightWrapper<EW> {
     length: f64,
     pub weight: EW,
 }
 
-impl<EW: Copy + Default> PartialEq for TriangulationEdgeWeightWrapper<EW> {
+impl<EW> PartialEq for TriangulationEdgeWeightWrapper<EW> {
     fn eq(&self, other: &Self) -> bool {
         self.length.eq(&other.length)
     }
 }
 
-impl<EW: Copy + Default> PartialOrd for TriangulationEdgeWeightWrapper<EW> {
+impl<EW> PartialOrd for TriangulationEdgeWeightWrapper<EW> {
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.length.partial_cmp(&other.length)
     }
@@ -104,7 +100,7 @@ impl<EW: Copy + Default> PartialOrd for TriangulationEdgeWeightWrapper<EW> {
 
 impl<
         I: Copy + PartialEq + GetPetgraphIndex,
-        VW: GetTrianvertexNodeIndex<I> + HasPosition<Scalar = f64>,
+        VW: GetTrianvertexNodeIndex<I> + HasPosition,
         EW: Copy + Default,
     > visit::Data for Triangulation<I, VW, EW>
 {
@@ -113,13 +109,13 @@ impl<
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct TriangulationEdgeReference<I, EW: Copy + Default> {
+pub struct TriangulationEdgeReference<I, EW> {
     from: I,
     to: I,
     weight: TriangulationEdgeWeightWrapper<EW>,
 }
 
-impl<I: Copy, EW: Copy + Default> visit::EdgeRef for TriangulationEdgeReference<I, EW> {
+impl<I: Copy, EW: Copy> visit::EdgeRef for TriangulationEdgeReference<I, EW> {
     type NodeId = I;
     type EdgeId = (I, I);
     type Weight = TriangulationEdgeWeightWrapper<EW>;
@@ -144,8 +140,8 @@ impl<I: Copy, EW: Copy + Default> visit::EdgeRef for TriangulationEdgeReference<
 impl<
         'a,
         I: Copy + PartialEq + GetPetgraphIndex,
-        VW: GetTrianvertexNodeIndex<I> + HasPosition<Scalar = f64>,
-        EW: Copy + Default,
+        VW: GetTrianvertexNodeIndex<I> + HasPosition,
+        EW: Default,
     > visit::IntoNeighbors for &'a Triangulation<I, VW, EW>
 {
     type Neighbors = Box<dyn Iterator<Item = I> + 'a>;
@@ -221,8 +217,8 @@ impl<
 impl<
         'a,
         I: Copy + PartialEq + GetPetgraphIndex,
-        VW: GetTrianvertexNodeIndex<I> + HasPosition<Scalar = f64>,
-        EW: Copy + Default,
+        VW: GetTrianvertexNodeIndex<I> + HasPosition,
+        EW: Default,
     > visit::IntoNodeIdentifiers for &'a Triangulation<I, VW, EW>
 {
     type NodeIdentifiers = Box<dyn Iterator<Item = I> + 'a>;
@@ -238,13 +234,24 @@ impl<
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct TriangulationVertexReference<'a, I: Copy, VW> {
+#[derive(Debug, PartialEq)]
+pub struct TriangulationVertexReference<'a, I, VW> {
     index: I,
     weight: &'a VW,
 }
 
-impl<'a, I: Copy, VW: Copy> visit::NodeRef for TriangulationVertexReference<'a, I, VW> {
+impl<I: Clone, VW> Clone for TriangulationVertexReference<'_, I, VW> {
+    fn clone(&self) -> Self {
+        Self {
+            index: self.index.clone(),
+            weight: self.weight,
+        }
+    }
+}
+
+impl<I: Copy, VW> Copy for TriangulationVertexReference<'_, I, VW> {}
+
+impl<I: Copy, VW> visit::NodeRef for TriangulationVertexReference<'_, I, VW> {
     type NodeId = I;
     type Weight = VW;
 
@@ -260,7 +267,7 @@ impl<'a, I: Copy, VW: Copy> visit::NodeRef for TriangulationVertexReference<'a, 
 impl<
         'a,
         I: Copy + PartialEq + GetPetgraphIndex,
-        VW: Copy + GetTrianvertexNodeIndex<I> + HasPosition<Scalar = f64>,
+        VW: GetTrianvertexNodeIndex<I> + HasPosition,
         EW: Copy + Default,
     > visit::IntoNodeReferences for &'a Triangulation<I, VW, EW>
 {
@@ -283,8 +290,8 @@ impl<
 impl<
         'a,
         I: Copy + PartialEq + GetPetgraphIndex + std::fmt::Debug,
-        VW: GetTrianvertexNodeIndex<I> + HasPosition<Scalar = f64>,
-        EW: Copy + Default,
+        VW: GetTrianvertexNodeIndex<I> + HasPosition,
+        EW: Default,
     > visit::NodeIndexable for &'a Triangulation<I, VW, EW>
 {
     fn node_bound(&self) -> usize {

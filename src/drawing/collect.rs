@@ -12,15 +12,17 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct Collect<'a, CW: Copy, R: AccessRules> {
+pub struct Collect<'a, CW, R> {
     drawing: &'a Drawing<CW, R>,
 }
 
-impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
+impl<'a, CW, R> Collect<'a, CW, R> {
     pub fn new(drawing: &'a Drawing<CW, R>) -> Self {
         Self { drawing }
     }
+}
 
+impl<'a, CW: Copy, R: AccessRules> Collect<'a, CW, R> {
     pub fn loose_band_uid(&self, start_loose: LooseIndex) -> BandUid {
         BandUid::new(
             self.loose_band_first_seg(start_loose),

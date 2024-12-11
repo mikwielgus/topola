@@ -25,7 +25,7 @@ pub enum Head {
     Cane(CaneHead),
 }
 
-impl<'a, CW: Copy, R: AccessRules> MakeRef<'a, HeadRef<'a, CW, R>, Drawing<CW, R>> for Head {
+impl<'a, CW, R> MakeRef<'a, HeadRef<'a, CW, R>, Drawing<CW, R>> for Head {
     fn ref_(&self, drawing: &'a Drawing<CW, R>) -> HeadRef<'a, CW, R> {
         HeadRef::new(*self, drawing)
     }
@@ -67,18 +67,18 @@ impl GetFace for CaneHead {
     }
 }
 
-pub struct HeadRef<'a, CW: Copy, R: AccessRules> {
+pub struct HeadRef<'a, CW, R> {
     head: Head,
     drawing: &'a Drawing<CW, R>,
 }
 
-impl<'a, CW: Copy, R: AccessRules> HeadRef<'a, CW, R> {
+impl<'a, CW, R> HeadRef<'a, CW, R> {
     pub fn new(head: Head, drawing: &'a Drawing<CW, R>) -> Self {
         Self { drawing, head }
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetFace for HeadRef<'a, CW, R> {
+impl<'a, CW, R> GetFace for HeadRef<'a, CW, R> {
     fn face(&self) -> DotIndex {
         self.head.face()
     }

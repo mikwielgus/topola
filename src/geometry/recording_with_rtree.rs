@@ -19,17 +19,7 @@ use super::{
 };
 
 #[derive(Debug)]
-pub struct RecordingGeometryWithRtree<
-    PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-    DW: AccessDotWeight<PW> + GetLayer,
-    SW: AccessSegWeight<PW> + GetLayer,
-    BW: AccessBendWeight<PW> + GetLayer,
-    CW: Copy,
-    PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Hash + Copy,
-    DI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-    SI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-    BI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-> {
+pub struct RecordingGeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     geometry_with_rtree: GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
 }
 

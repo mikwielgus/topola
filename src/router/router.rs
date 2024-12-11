@@ -38,7 +38,7 @@ pub struct RouterOptions {
 }
 
 #[derive(Debug)]
-pub struct RouterAstarStrategy<'a, R: AccessRules> {
+pub struct RouterAstarStrategy<'a, R> {
     pub navcorder: Navcorder<'a, R>,
     pub navcord: &'a mut NavcordStepper,
     pub target: FixedDotIndex,
@@ -46,7 +46,7 @@ pub struct RouterAstarStrategy<'a, R: AccessRules> {
     pub probe_obstacles: Vec<PrimitiveIndex>,
 }
 
-impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
+impl<'a, R> RouterAstarStrategy<'a, R> {
     pub fn new(
         navcorder: Navcorder<'a, R>,
         navcord: &'a mut NavcordStepper,
@@ -60,7 +60,9 @@ impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
             probe_obstacles: vec![],
         }
     }
+}
 
+impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
     fn bihead_length(&self) -> f64 {
         self.navcord
             .head

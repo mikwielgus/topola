@@ -21,15 +21,17 @@ pub enum NavcorderException {
 }
 
 #[derive(Debug)]
-pub struct Navcorder<'a, R: AccessRules> {
+pub struct Navcorder<'a, R> {
     pub layout: &'a mut Layout<R>,
 }
 
-impl<'a, R: AccessRules> Navcorder<'a, R> {
+impl<'a, R> Navcorder<'a, R> {
     pub fn new(layout: &mut Layout<R>) -> Navcorder<R> {
         Navcorder { layout }
     }
+}
 
+impl<'a, R: AccessRules> Navcorder<'a, R> {
     pub fn start(
         &mut self,
         recorder: LayoutEdit,

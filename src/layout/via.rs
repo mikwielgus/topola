@@ -11,12 +11,12 @@ use crate::{
 };
 
 #[derive(Debug)]
-pub struct Via<'a, R: AccessRules> {
+pub struct Via<'a, R> {
     pub index: GenericIndex<ViaWeight>,
     layout: &'a Layout<R>,
 }
 
-impl<'a, R: AccessRules> Via<'a, R> {
+impl<'a, R> Via<'a, R> {
     pub fn new(index: GenericIndex<ViaWeight>, layout: &'a Layout<R>) -> Self {
         Self { index, layout }
     }

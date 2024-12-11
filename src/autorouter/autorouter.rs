@@ -47,7 +47,7 @@ pub enum AutorouterError {
 }
 
 #[derive(Getters)]
-pub struct Autorouter<M: AccessMesadata> {
+pub struct Autorouter<M> {
     pub(super) board: Board<M>,
     pub(super) ratsnest: Ratsnest,
 }

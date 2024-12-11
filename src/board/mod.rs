@@ -52,7 +52,7 @@ impl BandName {
 /// The struct manages the relationships between board's layout,
 /// and its compounds, as well as provides methods to manipulate them.
 #[derive(Debug, Getters)]
-pub struct Board<M: AccessMesadata> {
+pub struct Board<M> {
     layout: Layout<M>,
     // TODO: Simplify access logic to these members so that `#[getter(skip)]`s can be removed.
     #[getter(skip)]
@@ -61,7 +61,7 @@ pub struct Board<M: AccessMesadata> {
     band_bandname: BiHashMap<BandUid, BandName>,
 }
 
-impl<M: AccessMesadata> Board<M> {
+impl<M> Board<M> {
     /// Initializes the board with given [`Layout`]
     pub fn new(layout: Layout<M>) -> Self {
         Self {
@@ -71,6 +71,13 @@ impl<M: AccessMesadata> Board<M> {
         }
     }
 
+    /// Returns a mutable reference to the layout, allowing modifications.
+    pub fn layout_mut(&mut self) -> &mut Layout<M> {
+        &mut self.layout
+    }
+}
+
+impl<M: AccessMesadata> Board<M> {
     /// Adds a new fixed dot with an optional pin name.
     ///
     /// Inserts the dot into the layout and, if a pin name is provided, maps it to the created dot's node.
@@ -248,11 +255,6 @@ impl<M: AccessMesadata> Board<M> {
     /// Returns the mesadata associated with the layout's drawing rules.
     pub fn mesadata(&self) -> &M {
         self.layout.drawing().rules()
-    }
-
-    /// Returns a mutable reference to the layout, allowing modifications.
-    pub fn layout_mut(&mut self) -> &mut Layout<M> {
-        &mut self.layout
     }
 }
 

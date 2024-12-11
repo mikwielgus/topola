@@ -17,7 +17,7 @@ use crate::{
 };
 
 /// Structure that manages the invoker and activities
-pub struct Interactor<M: AccessMesadata> {
+pub struct Interactor<M> {
     invoker: Invoker<M>,
     activity: Option<ActivityStepperWithStatus>,
 }

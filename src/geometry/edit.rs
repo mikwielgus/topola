@@ -23,17 +23,7 @@ pub trait ApplyGeometryEdit<
 }
 
 #[derive(Debug, Clone)]
-pub struct GeometryEdit<
-    PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-    DW: AccessDotWeight<PW> + GetLayer,
-    SW: AccessSegWeight<PW> + GetLayer,
-    BW: AccessBendWeight<PW> + GetLayer,
-    CW: Copy,
-    PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Hash + Copy,
-    DI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-    SI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-    BI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-> {
+pub struct GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     pub(super) dots: HashMap<DI, (Option<DW>, Option<DW>)>,
     pub(super) segs: HashMap<SI, (Option<((DI, DI), SW)>, Option<((DI, DI), SW)>)>,
     pub(super) bends: HashMap<BI, (Option<((DI, DI, DI), BW)>, Option<((DI, DI, DI), BW)>)>,

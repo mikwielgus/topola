@@ -18,15 +18,17 @@ use super::{
     Drawing,
 };
 
-pub struct Guide<'a, CW: Copy, R: AccessRules> {
+pub struct Guide<'a, CW, R> {
     drawing: &'a Drawing<CW, R>,
 }
 
-impl<'a, CW: Copy, R: AccessRules> Guide<'a, CW, R> {
+impl<'a, CW, R> Guide<'a, CW, R> {
     pub fn new(drawing: &'a Drawing<CW, R>) -> Self {
         Self { drawing }
     }
+}
 
+impl<'a, CW: Copy, R: AccessRules> Guide<'a, CW, R> {
     pub fn head_into_dot_segment(
         &self,
         head: &Head,

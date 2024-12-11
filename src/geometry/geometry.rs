@@ -70,17 +70,7 @@ pub trait AccessSegWeight<PW>: GetWidth + Into<PW> + Copy {}
 pub trait AccessBendWeight<PW>: GetOffset + SetOffset + GetWidth + Into<PW> + Copy {}
 
 #[derive(Debug, Getters)]
-pub struct Geometry<
-    PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-    DW: AccessDotWeight<PW>,
-    SW: AccessSegWeight<PW>,
-    BW: AccessBendWeight<PW>,
-    CW: Copy,
-    PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
-    DI: GetPetgraphIndex + Into<PI> + Copy,
-    SI: GetPetgraphIndex + Into<PI> + Copy,
-    BI: GetPetgraphIndex + Into<PI> + Copy,
-> {
+pub struct Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     graph: StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize>,
     primitive_weight_marker: PhantomData<PW>,
     dot_weight_marker: PhantomData<DW>,
