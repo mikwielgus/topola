@@ -3,7 +3,7 @@
 //! exporting the session file
 
 use geo::{point, Point, Rotate};
-use std::collections::HashMap;
+use std::collections::{hash_map::Entry as HashMapEntry, HashMap};
 
 use crate::{
     board::{mesadata::AccessMesadata, Board},
@@ -94,20 +94,9 @@ impl SpecctraDesign {
                         // line segments.
                         // TODO: make this configurable? pick a smarter value?
                         let segment_count: usize = 100;
-
-                        let circle = bend.circle();
-                        let angle_from = bend.start_angle();
-                        let angle_step = bend.spanned_angle() / segment_count as f64;
-
-                        let mut points = Vec::new();
-                        for i in 0..=segment_count {
-                            let x = circle.pos.x()
-                                + circle.r * (angle_from + i as f64 * angle_step).cos();
-                            let y = circle.pos.y()
-                                + circle.r * (angle_from + i as f64 * angle_step).sin();
-                            points.push(structure::Point { x, y });
-                        }
-                        points
+                        bend.render_discretization(segment_count + 1)
+                            .map(Into::into)
+                            .collect()
                     }
 
                     // Intentionally skipped for now.
@@ -137,26 +126,23 @@ impl SpecctraDesign {
                     },
                 };
 
-                if let Some(net) = net_outs.get_mut(&net) {
-                    net.wire.push(wire);
-                } else {
-                    net_outs.insert(
-                        net,
-                        structure::NetOut {
-                            name: mesadata
-                                .net_netname(net)
-                                .ok_or_else(|| {
-                                    std::io::Error::new(
-                                        std::io::ErrorKind::InvalidData,
-                                        format!("tried to reference invalid net ID {}", net),
-                                    )
-                                })?
-                                .to_owned(),
-                            wire: vec![wire],
-                            via: Vec::new(),
-                        },
-                    );
-                }
+                let net_out = match net_outs.entry(net) {
+                    HashMapEntry::Occupied(occ) => occ.into_mut(),
+                    HashMapEntry::Vacant(vac) => vac.insert(structure::NetOut {
+                        name: mesadata
+                            .net_netname(net)
+                            .ok_or_else(|| {
+                                std::io::Error::new(
+                                    std::io::ErrorKind::InvalidData,
+                                    format!("tried to reference invalid net ID {}", net),
+                                )
+                            })?
+                            .to_owned(),
+                        wire: Vec::new(),
+                        via: Vec::new(),
+                    }),
+                };
+                net_out.wire.push(wire);
             }
         }
 
@@ -210,10 +196,10 @@ impl SpecctraDesign {
                     .netname_net(&net_pin_assignments.name)
                     .unwrap();
 
-                net_pin_assignments.pins.as_ref().and_then(|pins| {
+                net_pin_assignments.pins.as_ref().map(|pins| {
                     // take the list of pins
                     // and for each pin output (pin name, net id)
-                    Some(pins.names.iter().map(move |pinname| (pinname.clone(), net)))
+                    pins.names.iter().map(move |pinname| (pinname.clone(), net))
                 })
             })
             // flatten the nested iters into a single stream of tuples

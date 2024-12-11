@@ -5,7 +5,7 @@ edition = "2021"
 
 [dependencies]
 bimap.workspace = true
-geo.workspace = true
+geo-types.workspace = true
 serde.workspace = true
 specctra_derive.path = "../specctra_derive"
 thiserror.workspace = true

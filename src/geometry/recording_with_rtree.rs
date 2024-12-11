@@ -1,3 +1,4 @@
+use std::collections::hash_map::Entry as HashMapEntry;
 use std::hash::Hash;
 
 use geo::Point;
@@ -144,37 +145,21 @@ impl<
         primitive: GenericIndex<W>,
         compound: GenericIndex<CW>,
     ) {
-        let old_members = self
-            .geometry_with_rtree
-            .geometry()
-            .compound_members(compound)
-            .collect();
-        let old_weight = self
-            .geometry_with_rtree
-            .geometry()
-            .compound_weight(compound);
+        let geometry = self.geometry_with_rtree.geometry();
+        let old_members = geometry.compound_members(compound).collect();
+        let old_weight = geometry.compound_weight(compound);
 
-        let new_members = self
-            .geometry_with_rtree
-            .geometry()
-            .compound_members(compound)
-            .collect();
-        let new_weight = self
-            .geometry_with_rtree
-            .geometry()
-            .compound_weight(compound);
+        // TODO ???
 
-        if let Some(value) = recorder.compounds.get_mut(&compound) {
-            value.1 = Some((new_members, new_weight));
-        } else {
-            recorder.compounds.insert(
-                compound,
-                (
-                    Some((old_members, old_weight)),
-                    Some((new_members, new_weight)),
-                ),
-            );
-        }
+        let geometry = self.geometry_with_rtree.geometry();
+        let new_members = geometry.compound_members(compound).collect();
+        let new_weight = geometry.compound_weight(compound);
+
+        recorder
+            .compounds
+            .entry(compound)
+            .or_insert((Some((old_members, old_weight)), None))
+            .1 = Some((new_members, new_weight));
     }
 
     pub fn remove_dot(
@@ -184,13 +169,7 @@ impl<
     ) -> Result<(), ()> {
         let weight = self.geometry_with_rtree.geometry().dot_weight(dot);
         self.geometry_with_rtree.remove_dot(dot)?;
-
-        if let Some((None, Some(..))) = recorder.dots.get(&dot) {
-            recorder.dots.remove(&dot);
-        } else {
-            recorder.dots.insert(dot, (Some(weight), None));
-        };
-
+        edit_remove_from_map(&mut recorder.dots, dot, weight);
         Ok(())
     }
 
@@ -199,15 +178,11 @@ impl<
         recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
         seg: SI,
     ) {
-        let weight = self.geometry_with_rtree.geometry().seg_weight(seg);
-        let joints = self.geometry_with_rtree.geometry().seg_joints(seg);
+        let geometry = self.geometry_with_rtree.geometry();
+        let weight = geometry.seg_weight(seg);
+        let joints = geometry.seg_joints(seg);
         self.geometry_with_rtree.remove_seg(seg);
-
-        if let Some((None, Some(..))) = recorder.segs.get(&seg) {
-            recorder.segs.remove(&seg);
-        } else {
-            recorder.segs.insert(seg, (Some((joints, weight)), None));
-        }
+        edit_remove_from_map(&mut recorder.segs, seg, (joints, weight));
     }
 
     pub fn remove_bend(
@@ -215,18 +190,16 @@ impl<
         recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
         bend: BI,
     ) {
-        let weight = self.geometry_with_rtree.geometry().bend_weight(bend);
-        let joints = self.geometry_with_rtree.geometry().bend_joints(bend);
-        let core = self.geometry_with_rtree.geometry().core(bend);
+        let geometry = self.geometry_with_rtree.geometry();
+        let weight = geometry.bend_weight(bend);
+        let joints = geometry.bend_joints(bend);
+        let core = geometry.core(bend);
         self.geometry_with_rtree.remove_bend(bend);
-
-        if let Some((None, Some(..))) = recorder.bends.get(&bend) {
-            recorder.bends.remove(&bend);
-        } else {
-            recorder
-                .bends
-                .insert(bend, (Some(((joints.0, joints.1, core), weight)), None));
-        }
+        edit_remove_from_map(
+            &mut recorder.bends,
+            bend,
+            ((joints.0, joints.1, core), weight),
+        );
     }
 
     pub fn remove_compound(
@@ -234,24 +207,11 @@ impl<
         recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
         compound: GenericIndex<CW>,
     ) {
-        let weight = self
-            .geometry_with_rtree
-            .geometry()
-            .compound_weight(compound);
-        let members = self
-            .geometry_with_rtree
-            .geometry()
-            .compound_members(compound)
-            .collect();
+        let geometry = self.geometry_with_rtree.geometry();
+        let weight = geometry.compound_weight(compound);
+        let members = geometry.compound_members(compound).collect();
         self.geometry_with_rtree.remove_compound(compound);
-
-        if let Some((None, Some(..))) = recorder.compounds.get(&compound) {
-            recorder.compounds.remove(&compound);
-        } else {
-            recorder
-                .compounds
-                .insert(compound, (Some((members, weight)), None));
-        }
+        edit_remove_from_map(&mut recorder.compounds, compound, (members, weight));
     }
 
     pub fn move_dot(
@@ -264,13 +224,41 @@ impl<
         self.geometry_with_rtree.move_dot(dot, to);
         let new_weight = self.geometry_with_rtree.geometry().dot_weight(dot);
 
-        if let Some(value) = recorder.dots.get_mut(&dot) {
-            value.1 = Some(new_weight);
-        } else {
-            recorder
-                .dots
-                .insert(dot, (Some(old_weight), Some(new_weight)));
-        }
+        recorder
+            .dots
+            .entry(dot)
+            .or_insert((Some(old_weight), None))
+            .1 = Some(new_weight);
+    }
+
+    fn modify_bend<F>(
+        &mut self,
+        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        bend: BI,
+        f: F,
+    ) where
+        F: FnOnce(&mut GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>, BI),
+    {
+        let geometry = self.geometry_with_rtree.geometry();
+        let old_joints = geometry.bend_joints(bend);
+        let old_core = geometry.core(bend);
+        let old_weight = geometry.bend_weight(bend);
+
+        f(&mut self.geometry_with_rtree, bend);
+
+        let geometry = self.geometry_with_rtree.geometry();
+        let new_joints = geometry.bend_joints(bend);
+        let new_core = geometry.core(bend);
+        let new_weight = geometry.bend_weight(bend);
+
+        recorder
+            .bends
+            .entry(bend)
+            .or_insert((
+                Some(((old_joints.0, old_joints.1, old_core), old_weight)),
+                None,
+            ))
+            .1 = Some(((new_joints.0, new_joints.1, new_core), new_weight));
     }
 
     pub fn shift_bend(
@@ -279,25 +267,9 @@ impl<
         bend: BI,
         offset: f64,
     ) {
-        let old_joints = self.geometry_with_rtree.geometry().bend_joints(bend);
-        let old_core = self.geometry_with_rtree.geometry().core(bend);
-        let old_weight = self.geometry_with_rtree.geometry().bend_weight(bend);
-        self.geometry_with_rtree.shift_bend(bend, offset);
-        let new_joints = self.geometry_with_rtree.geometry().bend_joints(bend);
-        let new_core = self.geometry_with_rtree.geometry().core(bend);
-        let new_weight = self.geometry_with_rtree.geometry().bend_weight(bend);
-
-        if let Some(value) = recorder.bends.get_mut(&bend) {
-            value.1 = Some(((new_joints.0, new_joints.1, new_core), new_weight));
-        } else {
-            recorder.bends.insert(
-                bend,
-                (
-                    Some(((old_joints.0, old_joints.1, old_core), old_weight)),
-                    Some(((new_joints.0, new_joints.1, new_core), new_weight)),
-                ),
-            );
-        }
+        self.modify_bend(recorder, bend, |geometry_with_rtree, bend| {
+            geometry_with_rtree.shift_bend(bend, offset)
+        });
     }
 
     pub fn flip_bend(
@@ -305,25 +277,9 @@ impl<
         recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
         bend: BI,
     ) {
-        let old_joints = self.geometry_with_rtree.geometry().bend_joints(bend);
-        let old_core = self.geometry_with_rtree.geometry().core(bend);
-        let old_weight = self.geometry_with_rtree.geometry().bend_weight(bend);
-        self.geometry_with_rtree.flip_bend(bend);
-        let new_joints = self.geometry_with_rtree.geometry().bend_joints(bend);
-        let new_core = self.geometry_with_rtree.geometry().core(bend);
-        let new_weight = self.geometry_with_rtree.geometry().bend_weight(bend);
-
-        if let Some(value) = recorder.bends.get_mut(&bend) {
-            value.1 = Some(((new_joints.0, new_joints.1, new_core), new_weight));
-        } else {
-            recorder.bends.insert(
-                bend,
-                (
-                    Some(((old_joints.0, old_joints.1, old_core), old_weight)),
-                    Some(((new_joints.0, new_joints.1, new_core), new_weight)),
-                ),
-            );
-        }
+        self.modify_bend(recorder, bend, |geometry_with_rtree, bend| {
+            geometry_with_rtree.flip_bend(bend)
+        });
     }
 
     pub fn reattach_bend(
@@ -332,26 +288,9 @@ impl<
         bend: BI,
         maybe_new_inner: Option<BI>,
     ) {
-        let old_joints = self.geometry_with_rtree.geometry().bend_joints(bend);
-        let old_core = self.geometry_with_rtree.geometry().core(bend);
-        let old_weight = self.geometry_with_rtree.geometry().bend_weight(bend);
-        self.geometry_with_rtree
-            .reattach_bend(bend, maybe_new_inner);
-        let new_joints = self.geometry_with_rtree.geometry().bend_joints(bend);
-        let new_core = self.geometry_with_rtree.geometry().core(bend);
-        let new_weight = self.geometry_with_rtree.geometry().bend_weight(bend);
-
-        if let Some(value) = recorder.bends.get_mut(&bend) {
-            value.1 = Some(((new_joints.0, new_joints.1, new_core), new_weight));
-        } else {
-            recorder.bends.insert(
-                bend,
-                (
-                    Some(((old_joints.0, old_joints.1, old_core), old_weight)),
-                    Some(((new_joints.0, new_joints.1, new_core), new_weight)),
-                ),
-            );
-        }
+        self.modify_bend(recorder, bend, |geometry_with_rtree, bend| {
+            geometry_with_rtree.reattach_bend(bend, maybe_new_inner)
+        });
     }
 
     pub fn compound_weight(&self, compound: GenericIndex<CW>) -> CW {
@@ -379,6 +318,28 @@ impl<
 
     pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize> {
         self.geometry_with_rtree.graph()
+    }
+}
+
+fn edit_remove_from_map<I, T>(
+    map: &mut std::collections::HashMap<I, (Option<T>, Option<T>)>,
+    index: I,
+    data: T,
+) where
+    I: core::cmp::Eq + Hash,
+{
+    let to_be_inserted = (Some(data), None);
+    match map.entry(index) {
+        HashMapEntry::Occupied(mut occ) => {
+            if let (None, Some(_)) = occ.get() {
+                occ.remove();
+            } else {
+                *occ.get_mut() = to_be_inserted;
+            }
+        }
+        HashMapEntry::Vacant(vac) => {
+            vac.insert(to_be_inserted);
+        }
     }
 }
 

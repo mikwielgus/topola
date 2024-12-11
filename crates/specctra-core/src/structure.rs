@@ -392,6 +392,23 @@ pub struct Point {
     pub y: f64,
 }
 
+impl From<geo_types::Point> for Point {
+    #[inline(always)]
+    fn from(z: geo_types::Point) -> Self {
+        Point { x: z.0.x, y: z.0.y }
+    }
+}
+
+impl From<Point> for geo_types::Point {
+    #[inline(always)]
+    fn from(z: Point) -> Self {
+        geo_types::point! {
+            x: z.x,
+            y: z.y
+        }
+    }
+}
+
 // Custom impl for the case described above
 impl<R: std::io::BufRead> ReadDsn<R> for Vec<Point> {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {

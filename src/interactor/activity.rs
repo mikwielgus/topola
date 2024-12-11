@@ -137,7 +137,7 @@ impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for ActivityStepper
     ) -> Result<ControlFlow<String>, ActivityError> {
         let status = self.activity.step(context)?;
         self.maybe_status = Some(status.clone());
-        Ok(status.into())
+        Ok(status)
     }
 }
 

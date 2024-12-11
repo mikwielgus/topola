@@ -239,15 +239,10 @@ impl<M: AccessMesadata> Board<M> {
 
     /// Finds a band between two pin names.
     pub fn band_between_pins(&self, pinname1: &str, pinname2: &str) -> Option<BandUid> {
-        if let Some(band) = self
-            .band_bandname
+        self.band_bandname
             // note: it doesn't matter in what order pinnames are given, the constructor sorts them
             .get_by_right(&BandName::new(pinname1.to_string(), pinname2.to_string()))
-        {
-            Some(*band)
-        } else {
-            None
-        }
+            .copied()
     }
 
     /// Returns the mesadata associated with the layout's drawing rules.

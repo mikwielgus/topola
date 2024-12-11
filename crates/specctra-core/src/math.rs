@@ -1,5 +1,5 @@
 use core::ops::Sub;
-use geo::geometry::Point;
+use geo_types::geometry::Point;
 use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
@@ -12,6 +12,19 @@ pub struct Circle {
 pub struct PointWithRotation {
     pub pos: Point,
     pub rot: f64,
+}
+
+impl Circle {
+    /// Calculate the point that lies on the circle at angle `phi`,
+    /// relative to coordinate axes.
+    ///
+    /// `phi` is the angle given in radians starting at `(r, 0)`.
+    pub fn position_at_angle(&self, phi: f64) -> Point {
+        geo_types::point! {
+            x: self.pos.0.x + self.r * phi.cos(),
+            y: self.pos.0.y + self.r * phi.sin()
+        }
+    }
 }
 
 impl Sub for Circle {

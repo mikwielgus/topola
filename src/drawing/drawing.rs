@@ -495,10 +495,9 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
 
         if let Some(outer) = self.primitive(cane.bend).outer() {
             self.update_this_and_outward_bows(recorder, outer)
-                .map_err(|err| {
+                .inspect_err(|_| {
                     let joint = self.primitive(cane.bend).other_joint(cane.dot);
                     self.remove_cane(recorder, &cane, joint);
-                    err
                 })?;
         }
 
@@ -669,20 +668,18 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         let seg_to = self.add_dot_with_infringables(recorder, dot_weight, infringables)?;
         let seg = self
             .add_seg_with_infringables(recorder, from, seg_to.into(), seg_weight, infringables)
-            .map_err(|err| {
+            .inspect_err(|_| {
                 self.recording_geometry_with_rtree
                     .remove_dot(recorder, seg_to.into());
-                err
             })?;
 
         let to = self
             .add_dot_with_infringables(recorder, dot_weight, infringables)
-            .map_err(|err| {
+            .inspect_err(|_| {
                 self.recording_geometry_with_rtree
                     .remove_seg(recorder, seg.into());
                 self.recording_geometry_with_rtree
                     .remove_dot(recorder, seg_to.into());
-                err
             })?;
 
         let (bend_from, bend_to) = if cw { (to, seg_to) } else { (seg_to, to) };
@@ -696,14 +693,13 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                 bend_weight,
                 infringables,
             )
-            .map_err(|err| {
+            .inspect_err(|_| {
                 self.recording_geometry_with_rtree
                     .remove_dot(recorder, to.into());
                 self.recording_geometry_with_rtree
                     .remove_seg(recorder, seg.into());
                 self.recording_geometry_with_rtree
                     .remove_dot(recorder, seg_to.into());
-                err
             })?;
 
         Ok(Cane {

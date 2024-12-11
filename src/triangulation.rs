@@ -17,7 +17,7 @@ pub struct Triangulation<
     EW: Copy + Default,
 > {
     triangulation: DelaunayTriangulation<VW, EW>,
-    trianvertex_to_handle: Vec<Option<FixedVertexHandle>>,
+    trianvertex_to_handle: Box<[Option<FixedVertexHandle>]>,
     index_marker: PhantomData<I>,
 }
 
@@ -28,13 +28,11 @@ impl<
     > Triangulation<I, VW, EW>
 {
     pub fn new(node_bound: usize) -> Self {
-        let mut this = Self {
+        Self {
             triangulation: <DelaunayTriangulation<VW, EW> as spade::Triangulation>::new(),
-            trianvertex_to_handle: Vec::new(),
+            trianvertex_to_handle: vec![None; node_bound].into_boxed_slice(),
             index_marker: PhantomData,
-        };
-        this.trianvertex_to_handle.resize(node_bound, None);
-        this
+        }
     }
 
     pub fn add_vertex(&mut self, weight: VW) -> Result<(), InsertionError> {

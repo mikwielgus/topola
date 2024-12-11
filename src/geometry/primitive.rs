@@ -296,6 +296,16 @@ impl BendShape {
             angle
         }
     }
+
+    /// Render this bend as a list of points on its circle.
+    pub fn render_discretization(&self, point_count: usize) -> impl Iterator<Item = Point> + '_ {
+        let circle = self.circle();
+        let angle_from = self.start_angle();
+        // we need to use one less than the whole point count
+        // because we need to also emit the end-point
+        let angle_step = self.spanned_angle() / ((point_count - 1) as f64);
+        (0..point_count).map(move |i| circle.position_at_angle(angle_from + i as f64 * angle_step))
+    }
 }
 
 impl MeasureLength for BendShape {

@@ -197,10 +197,8 @@ impl<
     }
 
     pub(super) fn add_compound_at_index(&mut self, compound: GenericIndex<CW>, weight: CW) {
-        self.graph.update_node(
-            compound.petgraph_index(),
-            GenericNode::Compound(weight.into()),
-        );
+        self.graph
+            .update_node(compound.petgraph_index(), GenericNode::Compound(weight));
     }
 
     fn init_bend_joints_and_core<W: AccessBendWeight<PW>>(

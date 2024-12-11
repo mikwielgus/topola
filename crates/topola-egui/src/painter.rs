@@ -36,25 +36,15 @@ impl<'a> Painter<'a> {
                 ],
                 egui::Stroke::new(seg.width as f32 * self.transform.scaling, color),
             ),
-            PrimitiveShape::Bend(bend) => {
-                let circle = bend.circle();
-
-                let angle_from = bend.start_angle();
-                let angle_step = bend.spanned_angle() / 100.0;
-
-                let mut points: Vec<egui::Pos2> = vec![];
-
-                for i in 0..=100 {
-                    let x = circle.pos.x() + circle.r * (angle_from + i as f64 * angle_step).cos();
-                    let y = circle.pos.y() + circle.r * (angle_from + i as f64 * angle_step).sin();
-                    points.push(self.transform.mul_pos([x as f32, -y as f32].into()));
-                }
-
-                egui::Shape::line(
-                    points,
-                    egui::Stroke::new(bend.width as f32 * self.transform.scaling, color),
-                )
-            }
+            PrimitiveShape::Bend(bend) => egui::Shape::line(
+                bend.render_discretization(101)
+                    .map(|point| {
+                        self.transform
+                            .mul_pos([point.0.x as f32, -point.0.y as f32].into())
+                    })
+                    .collect(),
+                egui::Stroke::new(bend.width as f32 * self.transform.scaling, color),
+            ),
         };
 
         self.ui.painter().add(epaint_shape);

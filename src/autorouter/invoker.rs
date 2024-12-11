@@ -202,6 +202,6 @@ impl<M: AccessMesadata> Invoker<M> {
             self.execute(entry.command().clone());
         }
 
-        self.history.set_undone(undone.into_iter());
+        self.history.set_undone(undone);
     }
 }
