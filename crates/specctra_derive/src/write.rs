@@ -27,7 +27,7 @@ fn impl_body(data: &Data) -> TokenStream {
     match data {
         Data::Struct(data) => match &data.fields {
             Fields::Named(fields) => {
-                let fields = fields.named.iter().map(|field| impl_field(field));
+                let fields = fields.named.iter().map(impl_field);
 
                 quote! {
                     #(#fields)*
