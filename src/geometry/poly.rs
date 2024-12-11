@@ -1,4 +1,5 @@
-use geo::{Centroid, Contains, EuclideanLength, Point, Polygon};
+use geo::algorithm::line_measures::{Euclidean, Length};
+use geo::{Centroid, Contains, Point, Polygon};
 
 use crate::geometry::shape::{AccessShape, MeasureLength};
 
@@ -12,7 +13,7 @@ impl MeasureLength for PolyShape {
         let mut length = 0.0;
 
         for line in self.polygon.exterior().lines() {
-            length += line.euclidean_length();
+            length += line.length::<Euclidean>();
         }
 
         length

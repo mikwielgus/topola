@@ -1,5 +1,5 @@
 use derive_getters::Getters;
-use geo::EuclideanDistance;
+use geo::algorithm::line_measures::{Distance, Euclidean};
 use petgraph::{data::DataMap, visit::EdgeRef};
 use serde::{Deserialize, Serialize};
 
@@ -164,7 +164,7 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
             .shape()
             .center();
 
-        end_point.euclidean_distance(&start_point)
+        Euclidean::distance(&end_point, &start_point)
     }
 }
 

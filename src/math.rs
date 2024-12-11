@@ -1,4 +1,5 @@
-use geo::{geometry::Point, point, EuclideanDistance, Line};
+use geo::algorithm::line_measures::{Distance, Euclidean};
+use geo::{geometry::Point, point, Line};
 use thiserror::Error;
 
 #[derive(Error, Debug, Clone, Copy, PartialEq)]
@@ -128,7 +129,7 @@ pub fn tangent_segment(
 
 pub fn intersect_circles(circle1: &Circle, circle2: &Circle) -> Vec<Point> {
     let delta = circle2.pos - circle1.pos;
-    let d = circle2.pos.euclidean_distance(&circle1.pos);
+    let d = Euclidean::distance(&circle2.pos, &circle1.pos);
 
     if d > circle1.r + circle2.r {
         // No intersection.

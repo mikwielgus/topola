@@ -1,6 +1,7 @@
 use std::{cmp::Ordering, marker::PhantomData};
 
-use geo::{point, EuclideanDistance, Point};
+use geo::algorithm::line_measures::{Distance, Euclidean};
+use geo::{point, Point};
 use petgraph::visit;
 use spade::{handles::FixedVertexHandle, DelaunayTriangulation, HasPosition, InsertionError};
 
@@ -178,7 +179,7 @@ impl<
                     from,
                     to,
                     weight: TriangulationEdgeWeightWrapper {
-                        length: self.position(from).euclidean_distance(&self.position(to)),
+                        length: Euclidean::distance(&self.position(from), &self.position(to)),
                         weight: *edge.data(),
                     },
                 }
@@ -208,7 +209,7 @@ impl<
                         from,
                         to,
                         weight: TriangulationEdgeWeightWrapper {
-                            length: self.position(from).euclidean_distance(&self.position(to)),
+                            length: Euclidean::distance(&self.position(from), &self.position(to)),
                             weight: *edge.data(),
                         },
                     }

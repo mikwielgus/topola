@@ -1,7 +1,8 @@
 use std::f64::consts::TAU;
 
 use enum_dispatch::enum_dispatch;
-use geo::{point, polygon, Contains, EuclideanDistance, Intersects, Point, Polygon, Rotate};
+use geo::algorithm::line_measures::{Distance, Euclidean};
+use geo::{point, polygon, Contains, Intersects, Point, Polygon, Rotate};
 use rstar::{RTreeObject, AABB};
 
 use crate::{
@@ -64,7 +65,7 @@ impl AccessShape for DotShape {
     }
 
     fn contains_point(&self, p: Point) -> bool {
-        p.euclidean_distance(&self.circle.pos) <= self.circle.r
+        Euclidean::distance(&p, &self.circle.pos) <= self.circle.r
     }
 }
 
@@ -89,11 +90,11 @@ impl AccessPrimitiveShape for DotShape {
 
         match other {
             PrimitiveShape::Dot(other) => {
-                self.circle.pos.euclidean_distance(&other.circle.pos)
+                Euclidean::distance(&self.circle.pos, &other.circle.pos)
                     < self.circle.r + other.circle.r
             }
             PrimitiveShape::Seg(other) => {
-                self.circle.pos.euclidean_distance(&other.polygon()) < self.circle.r
+                Euclidean::distance(&self.circle.pos, &other.polygon()) < self.circle.r
             }
             PrimitiveShape::Bend(other) => {
                 for point in math::intersect_circles(&self.circle, &other.inner_circle()) {
@@ -141,7 +142,7 @@ pub struct SegShape {
 impl SegShape {
     fn polygon(&self) -> Polygon {
         let tangent_vector = self.to - self.from;
-        let tangent_vector_norm = tangent_vector.euclidean_distance(&point! {x: 0.0, y: 0.0});
+        let tangent_vector_norm = Euclidean::distance(&tangent_vector, &point! {x: 0.0, y: 0.0});
         let unit_tangent_vector = tangent_vector / tangent_vector_norm;
 
         let normal = unit_tangent_vector.rotate_around_point(-90., point! {x: 0.0, y: 0.0});
@@ -157,7 +158,7 @@ impl SegShape {
 
 impl MeasureLength for SegShape {
     fn length(&self) -> f64 {
-        self.to.euclidean_distance(&self.from)
+        Euclidean::distance(&self.to, &self.from)
     }
 }
 
@@ -318,11 +319,12 @@ impl AccessShape for BendShape {
     fn center(&self) -> Point {
         let sum = (self.from - self.inner_circle.pos) + (self.to - self.inner_circle.pos);
         self.inner_circle.pos
-            + (sum / sum.euclidean_distance(&point! {x: 0.0, y: 0.0})) * self.inner_circle.r
+            + (sum / Euclidean::distance(&sum, &geo::point! { x: 0.0, y: 0.0 }))
+                * self.inner_circle.r
     }
 
     fn contains_point(&self, p: Point) -> bool {
-        let d = p.euclidean_distance(&self.inner_circle.pos);
+        let d = Euclidean::distance(&p, &self.inner_circle.pos);
         self.between_ends(p) && d >= self.inner_circle().r && d <= self.outer_circle().r
     }
 }
