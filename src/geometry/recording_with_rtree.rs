@@ -149,7 +149,7 @@ impl<
         let old_members = geometry.compound_members(compound).collect();
         let old_weight = geometry.compound_weight(compound);
 
-        // TODO ???
+        self.geometry_with_rtree.add_to_compound(primitive, compound);
 
         let geometry = self.geometry_with_rtree.geometry();
         let new_members = geometry.compound_members(compound).collect();
