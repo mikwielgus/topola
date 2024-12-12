@@ -99,3 +99,22 @@ fn test_tht_3pin_xlr_to_tht_3pin_xlr() {
     // FIXME: The routing result is pretty bad.
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
 }
+
+#[test]
+fn test_smd_non_rectangular_buck_converter() {
+    let mut path = "tests/single_layer/smd_non_rectangular_buck_converter/smd_non_rectangular_buck_converter.dsn";
+    let mut autorouter = common::load_design(&path);
+
+    let mut invoker = common::create_invoker_and_assert(autorouter);
+
+    common::replay_and_assert(
+        &mut invoker,
+        "tests/single_layer/smd_non_rectangular_buck_converter/route_all.cmd",
+    );
+
+    
+    let (mut autorouter, ..) = invoker.dissolve();
+
+    common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
+    //common::assert_number_of_conncomps(&mut autorouter, 16);
+}

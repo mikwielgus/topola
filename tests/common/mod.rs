@@ -174,10 +174,13 @@ pub fn assert_single_layer_groundless_autoroute(
 
         if let Some(netname) = autorouter.board().layout().rules().net_netname(net) {
             // We don't route ground.
+	    let mut org = unionfind.find(origin_dot.petgraph_index());
+	    let mut desc = unionfind.find(destination_dot.petgraph_index());
+		
             if netname != "GND" {
                 assert_eq!(
-                    unionfind.find(origin_dot.petgraph_index()),
-                    unionfind.find(destination_dot.petgraph_index())
+                    org,
+                    desc
                 );
             }
         }
