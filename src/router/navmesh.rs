@@ -114,10 +114,18 @@ impl HasPosition for TrianvertexWeight {
     }
 }
 
-/// The name "navvertex" is a shortening of "navigation vertex".
+/// The names "navvertex" and "navmesh vertex" are equivalent to "navigation vertex".
+///
+/// See the following blog post for more information and a visualization of the navmesh
+/// during autorouting: <https://topola.dev/blog/2024/07/20/junejuly-2024-development-update/#advanced-debug-visualization>
 #[derive(Debug, Clone)]
 pub struct NavvertexWeight {
     pub node: BinavvertexNodeIndex,
+
+    /// There are two navvertices for each navigable node:
+    /// one is clockwise (`Some(true)`), the other counterclockwise (`Some(false)`).
+    /// The origin and destination nodes however have
+    /// only one corresponding navmesh vertex each (`None`).
     pub maybe_cw: Option<bool>,
 }
 
