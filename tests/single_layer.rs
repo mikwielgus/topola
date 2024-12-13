@@ -112,7 +112,6 @@ fn test_smd_non_rectangular_buck_converter() {
         "tests/single_layer/smd_non_rectangular_buck_converter/route_all.cmd",
     );
 
-    
     let (mut autorouter, ..) = invoker.dissolve();
 
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
