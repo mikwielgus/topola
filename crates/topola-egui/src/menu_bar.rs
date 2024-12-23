@@ -129,7 +129,7 @@ impl MenuBar {
                             .render_menu(ctx, ui, workspace_activities_enabled);
                     });
 
-                    self.update_preferences_menu(ctx, ui, tr);
+                    Self::update_preferences_menu(ctx, ui, tr);
 
                     ui.menu_button(tr.text("tr-menu-help"), |ui| {
                         actions.help.render_menu(ctx, ui, online_documentation_url)
@@ -320,7 +320,6 @@ impl MenuBar {
     }
 
     pub fn update_preferences_menu(
-        &mut self,
         ctx: &egui::Context,
         ui: &mut egui::Ui,
         tr: &mut Translator,
