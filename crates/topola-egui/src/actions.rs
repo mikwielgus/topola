@@ -18,31 +18,36 @@ pub struct FileActions {
 impl FileActions {
     pub fn new(tr: &Translator) -> Self {
         Self {
-            open_design: Trigger::new(Action::new(
+            open_design: Action::new(
                 tr.text("tr-menu-file-open"),
                 egui::Modifiers::CTRL,
                 egui::Key::O,
-            )),
-            export_session: Trigger::new(Action::new(
+            )
+            .into_trigger(),
+            export_session: Action::new(
                 tr.text("tr-menu-file-export-session-file"),
                 egui::Modifiers::CTRL,
                 egui::Key::S,
-            )),
-            import_history: Trigger::new(Action::new(
+            )
+            .into_trigger(),
+            import_history: Action::new(
                 tr.text("tr-menu-file-import-history"),
                 egui::Modifiers::CTRL,
                 egui::Key::I,
-            )),
-            export_history: Trigger::new(Action::new(
+            )
+            .into_trigger(),
+            export_history: Action::new(
                 tr.text("tr-menu-file-export-history"),
                 egui::Modifiers::CTRL,
                 egui::Key::E,
-            )),
-            quit: Trigger::new(Action::new(
+            )
+            .into_trigger(),
+            quit: Action::new(
                 tr.text("tr-menu-file-quit"),
                 egui::Modifiers::CTRL,
                 egui::Key::Q,
-            )),
+            )
+            .into_trigger(),
         }
     }
 }
@@ -57,26 +62,30 @@ pub struct EditActions {
 impl EditActions {
     pub fn new(tr: &Translator) -> Self {
         Self {
-            undo: Trigger::new(Action::new(
+            undo: Action::new(
                 tr.text("tr-menu-edit-undo"),
                 egui::Modifiers::CTRL,
                 egui::Key::Z,
-            )),
-            redo: Trigger::new(Action::new(
+            )
+            .into_trigger(),
+            redo: Action::new(
                 tr.text("tr-menu-edit-redo"),
                 egui::Modifiers::CTRL,
                 egui::Key::Y,
-            )),
-            abort: Trigger::new(Action::new(
+            )
+            .into_trigger(),
+            abort: Action::new(
                 tr.text("tr-menu-edit-abort"),
                 egui::Modifiers::NONE,
                 egui::Key::Escape,
-            )),
-            remove_bands: Trigger::new(Action::new(
+            )
+            .into_trigger(),
+            remove_bands: Action::new(
                 tr.text("tr-menu-edit-remove-bands"),
                 egui::Modifiers::NONE,
                 egui::Key::Delete,
-            )),
+            )
+            .into_trigger(),
         }
     }
 }
@@ -88,11 +97,12 @@ pub struct PlaceActions {
 impl PlaceActions {
     pub fn new(tr: &Translator) -> Self {
         Self {
-            place_via: Switch::new(Action::new(
+            place_via: Action::new(
                 tr.text("tr-menu-place-place-via"),
                 egui::Modifiers::CTRL,
                 egui::Key::P,
-            )),
+            )
+            .into_switch(),
         }
     }
 }
@@ -104,11 +114,12 @@ pub struct RouteActions {
 impl RouteActions {
     pub fn new(tr: &Translator) -> Self {
         Self {
-            autoroute: Trigger::new(Action::new(
+            autoroute: Action::new(
                 tr.text("tr-menu-route-autoroute"),
                 egui::Modifiers::CTRL,
                 egui::Key::A,
-            )),
+            )
+            .into_trigger(),
         }
     }
 }
@@ -121,16 +132,18 @@ pub struct InspectActions {
 impl InspectActions {
     pub fn new(tr: &Translator) -> Self {
         Self {
-            compare_detours: Trigger::new(Action::new(
+            compare_detours: Action::new(
                 tr.text("tr-menu-inspect-compare-detours"),
                 egui::Modifiers::NONE,
                 egui::Key::Minus,
-            )),
-            measure_length: Trigger::new(Action::new(
+            )
+            .into_trigger(),
+            measure_length: Action::new(
                 tr.text("tr-menu-inspect-measure-length"),
                 egui::Modifiers::NONE,
                 egui::Key::Plus,
-            )),
+            )
+            .into_trigger(),
         }
     }
 }
@@ -142,11 +155,12 @@ pub struct HelpActions {
 impl HelpActions {
     pub fn new(tr: &Translator) -> Self {
         Self {
-            online_documentation: Trigger::new(Action::new(
+            online_documentation: Action::new(
                 tr.text("tr-menu-help-online-documentation"),
                 egui::Modifiers::NONE,
                 egui::Key::F1,
-            )),
+            )
+            .into_trigger(),
         }
     }
 }

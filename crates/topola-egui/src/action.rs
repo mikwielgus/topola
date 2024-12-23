@@ -7,6 +7,15 @@ pub struct Action {
     shortcut: egui::KeyboardShortcut,
 }
 
+pub struct Trigger {
+    action: Action,
+    triggered: bool,
+}
+
+pub struct Switch {
+    action: Action,
+}
+
 impl Action {
     pub fn new(name: String, modifiers: egui::Modifiers, key: egui::Key) -> Self {
         Self {
@@ -22,21 +31,22 @@ impl Action {
             self.shortcut.format(&egui::ModifierNames::NAMES, false)
         )
     }
-}
 
-pub struct Trigger {
-    action: Action,
-    triggered: bool,
-}
-
-impl Trigger {
-    pub fn new(action: Action) -> Self {
-        Self {
-            action,
+    #[inline]
+    pub fn into_trigger(self) -> Trigger {
+        Trigger {
+            action: self,
             triggered: false,
         }
     }
 
+    #[inline(always)]
+    pub fn into_switch(self) -> Switch {
+        Switch { action: self }
+    }
+}
+
+impl Trigger {
     pub fn button(&mut self, _ctx: &egui::Context, ui: &mut egui::Ui) {
         self.triggered = ui.button(self.action.widget_text()).clicked();
     }
@@ -61,15 +71,7 @@ impl Trigger {
     }
 }
 
-pub struct Switch {
-    action: Action,
-}
-
 impl Switch {
-    pub fn new(action: Action) -> Self {
-        Self { action }
-    }
-
     pub fn toggle_widget(&mut self, _ctx: &egui::Context, ui: &mut egui::Ui, selected: &mut bool) {
         ui.toggle_value(selected, self.action.widget_text());
     }
