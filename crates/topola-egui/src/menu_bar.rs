@@ -84,39 +84,16 @@ impl MenuBar {
                     ui.separator();
 
                     ui.menu_button(tr.text("tr-menu-file"), |ui| {
-                        actions.file.open_design.button(ctx, ui);
-                        //ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-                        actions.file.export_session.button(ctx, ui);
-
-                        ui.separator();
-
-                        actions.file.import_history.button(ctx, ui);
-                        actions.file.export_history.button(ctx, ui);
-                        //});
-
-                        ui.separator();
-
-                        // "Quit" button wouldn't work on a Web page.
-                        if !cfg!(target_arch = "wasm32") {
-                            actions.file.quit.button(ctx, ui);
-                        }
+                        actions.file.render_menu(ctx, ui, maybe_workspace.is_some())
                     });
 
                     ui.menu_button(tr.text("tr-menu-edit"), |ui| {
-                        ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-                            actions.edit.undo.button(ctx, ui);
-                            actions.edit.redo.button(ctx, ui);
-
-                            ui.separator();
-
-                            actions.edit.abort.button(ctx, ui);
-
-                            ui.separator();
-
-                            //ui.add_enabled_ui(workspace_activities_enabled, |ui| {
-                            actions.edit.remove_bands.button(ctx, ui);
-                            //});
-                        });
+                        actions.edit.render_menu(
+                            ctx,
+                            ui,
+                            maybe_workspace.is_some(),
+                            workspace_activities_enabled,
+                        )
                     });
 
                     self.update_view_menu(ctx, ui, tr, viewport);
@@ -127,69 +104,35 @@ impl MenuBar {
                     // those outside...
 
                     ui.menu_button(tr.text("tr-menu-place"), |ui| {
-                        ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-                            actions.place.place_via.toggle_widget(
-                                ctx,
-                                ui,
-                                &mut self.is_placing_via,
-                            );
-                        });
+                        actions.place.render_menu(
+                            ctx,
+                            ui,
+                            maybe_workspace.is_some(),
+                            &mut self.is_placing_via,
+                        )
                     });
 
                     ui.menu_button(tr.text("tr-menu-route"), |ui| {
-                        ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-                            //ui.add_enabled_ui(workspace_activities_enabled, |ui| {
-                            actions.route.autoroute.button(ctx, ui);
-                            //});
-                            ui.separator();
-
-                            ui.label(tr.text("tr-menu-route-routed-band-width"));
-
-                            ui.add(
-                                egui::widgets::Slider::new(
-                                    &mut self.autorouter_options.router_options.routed_band_width,
-                                    1.0..=1000.0,
-                                )
-                                .suffix(""),
-                            );
-
-                            ui.separator();
-
-                            ui.menu_button(tr.text("tr-menu-options"), |ui| {
-                                ui.checkbox(
-                                    &mut self.autorouter_options.presort_by_pairwise_detours,
-                                    tr.text("tr-menu-route-options-presort-by-pairwise-detours"),
-                                );
-                                ui.checkbox(
-                                    &mut self
-                                        .autorouter_options
-                                        .router_options
-                                        .squeeze_through_under_bends,
-                                    tr.text("tr-menu-route-options-squeeze-through-under-bends"),
-                                );
-                                ui.checkbox(
-                                    &mut self.autorouter_options.router_options.wrap_around_bands,
-                                    tr.text("tr-menu-route-options-wrap-around-bands"),
-                                );
-                            });
-                        });
+                        actions.route.render_menu(
+                            ctx,
+                            ui,
+                            tr,
+                            maybe_workspace.is_some(),
+                            workspace_activities_enabled,
+                            &mut self.autorouter_options,
+                        )
                     });
 
                     ui.menu_button(tr.text("tr-menu-inspect"), |ui| {
-                        ui.add_enabled_ui(workspace_activities_enabled, |ui| {
-                            actions.inspect.compare_detours.button(ctx, ui);
-                            actions.inspect.measure_length.button(ctx, ui);
-                        });
+                        actions
+                            .inspect
+                            .render_menu(ctx, ui, workspace_activities_enabled);
                     });
 
                     self.update_preferences_menu(ctx, ui, tr);
 
                     ui.menu_button(tr.text("tr-menu-help"), |ui| {
-                        actions.help.online_documentation.hyperlink(
-                            ctx,
-                            ui,
-                            online_documentation_url,
-                        );
+                        actions.help.render_menu(ctx, ui, online_documentation_url)
                     });
 
                     ui.separator();

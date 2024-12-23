@@ -51,7 +51,7 @@ impl Trigger {
         self.triggered = ui.button(self.action.widget_text()).clicked();
     }
 
-    pub fn hyperlink(&mut self, _ctx: &egui::Context, ui: &mut egui::Ui, url: &str) {
+    pub fn hyperlink(&self, _ctx: &egui::Context, ui: &mut egui::Ui, url: &str) {
         ui.hyperlink_to(self.action.widget_text(), url);
     }
 
@@ -72,7 +72,7 @@ impl Trigger {
 }
 
 impl Switch {
-    pub fn toggle_widget(&mut self, _ctx: &egui::Context, ui: &mut egui::Ui, selected: &mut bool) {
+    pub fn toggle_widget(&self, _ctx: &egui::Context, ui: &mut egui::Ui, selected: &mut bool) {
         ui.toggle_value(selected, self.action.widget_text());
     }
 

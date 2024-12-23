@@ -7,6 +7,9 @@ use crate::{
     translator::Translator,
 };
 
+use egui::{Context, Ui};
+use topola::autorouter::AutorouterOptions;
+
 pub struct FileActions {
     pub open_design: Trigger,
     pub export_session: Trigger,
@@ -50,6 +53,25 @@ impl FileActions {
             .into_trigger(),
         }
     }
+
+    pub fn render_menu(&mut self, ctx: &Context, ui: &mut Ui, _have_workspace: bool) {
+        self.open_design.button(ctx, ui);
+        //ui.add_enabled_ui(have_workspace, |ui| {
+        self.export_session.button(ctx, ui);
+
+        ui.separator();
+
+        self.import_history.button(ctx, ui);
+        self.export_history.button(ctx, ui);
+        //});
+
+        ui.separator();
+
+        // "Quit" button wouldn't work on a Web page.
+        if !cfg!(target_arch = "wasm32") {
+            self.quit.button(ctx, ui);
+        }
+    }
 }
 
 pub struct EditActions {
@@ -88,6 +110,29 @@ impl EditActions {
             .into_trigger(),
         }
     }
+
+    pub fn render_menu(
+        &mut self,
+        ctx: &Context,
+        ui: &mut Ui,
+        have_workspace: bool,
+        _workspace_activities_enabled: bool,
+    ) -> egui::InnerResponse<()> {
+        ui.add_enabled_ui(have_workspace, |ui| {
+            self.undo.button(ctx, ui);
+            self.redo.button(ctx, ui);
+
+            ui.separator();
+
+            self.abort.button(ctx, ui);
+
+            ui.separator();
+
+            //ui.add_enabled_ui(workspace_activities_enabled, |ui| {
+            self.remove_bands.button(ctx, ui);
+            //});
+        })
+    }
 }
 
 pub struct PlaceActions {
@@ -105,6 +150,18 @@ impl PlaceActions {
             .into_switch(),
         }
     }
+
+    pub fn render_menu(
+        &mut self,
+        ctx: &Context,
+        ui: &mut Ui,
+        have_workspace: bool,
+        is_placing_via: &mut bool,
+    ) -> egui::InnerResponse<()> {
+        ui.add_enabled_ui(have_workspace, |ui| {
+            self.place_via.toggle_widget(ctx, ui, is_placing_via);
+        })
+    }
 }
 
 pub struct RouteActions {
@@ -121,6 +178,52 @@ impl RouteActions {
             )
             .into_trigger(),
         }
+    }
+
+    pub fn render_menu(
+        &mut self,
+        ctx: &Context,
+        ui: &mut Ui,
+        tr: &Translator,
+        have_workspace: bool,
+        _workspace_activities_enabled: bool,
+        autorouter_options: &mut AutorouterOptions,
+    ) -> egui::InnerResponse<()> {
+        ui.add_enabled_ui(have_workspace, |ui| {
+            //ui.add_enabled_ui(workspace_activities_enabled, |ui| {
+            self.autoroute.button(ctx, ui);
+            //});
+            ui.separator();
+
+            ui.label(tr.text("tr-menu-route-routed-band-width"));
+
+            ui.add(
+                egui::widgets::Slider::new(
+                    &mut autorouter_options.router_options.routed_band_width,
+                    1.0..=1000.0,
+                )
+                .suffix(""),
+            );
+
+            ui.separator();
+
+            ui.menu_button(tr.text("tr-menu-options"), |ui| {
+                ui.checkbox(
+                    &mut autorouter_options.presort_by_pairwise_detours,
+                    tr.text("tr-menu-route-options-presort-by-pairwise-detours"),
+                );
+                ui.checkbox(
+                    &mut autorouter_options
+                        .router_options
+                        .squeeze_through_under_bends,
+                    tr.text("tr-menu-route-options-squeeze-through-under-bends"),
+                );
+                ui.checkbox(
+                    &mut autorouter_options.router_options.wrap_around_bands,
+                    tr.text("tr-menu-route-options-wrap-around-bands"),
+                );
+            });
+        })
     }
 }
 
@@ -146,6 +249,13 @@ impl InspectActions {
             .into_trigger(),
         }
     }
+
+    pub fn render_menu(&mut self, ctx: &Context, ui: &mut Ui, workspace_activities_enabled: bool) {
+        ui.add_enabled_ui(workspace_activities_enabled, |ui| {
+            self.compare_detours.button(ctx, ui);
+            self.measure_length.button(ctx, ui);
+        });
+    }
 }
 
 pub struct HelpActions {
@@ -162,6 +272,11 @@ impl HelpActions {
             )
             .into_trigger(),
         }
+    }
+
+    pub fn render_menu(&mut self, ctx: &Context, ui: &mut Ui, online_documentation_url: &str) {
+        self.online_documentation
+            .hyperlink(ctx, ui, online_documentation_url);
     }
 }
 
