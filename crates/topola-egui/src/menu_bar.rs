@@ -126,7 +126,7 @@ impl MenuBar {
                     ui.menu_button(tr.text("tr-menu-inspect"), |ui| {
                         actions
                             .inspect
-                            .render_menu(ctx, ui, workspace_activities_enabled);
+                            .render_menu(ctx, ui, workspace_activities_enabled)
                     });
 
                     Self::update_preferences_menu(ctx, ui, tr);
@@ -319,11 +319,7 @@ impl MenuBar {
         });
     }
 
-    pub fn update_preferences_menu(
-        ctx: &egui::Context,
-        ui: &mut egui::Ui,
-        tr: &mut Translator,
-    ) {
+    pub fn update_preferences_menu(ctx: &egui::Context, ui: &mut egui::Ui, tr: &mut Translator) {
         ui.menu_button(tr.text("tr-menu-preferences"), |ui| {
             ui.menu_button(tr.text("tr-menu-preferences-set-language"), |ui| {
                 use icu_experimental::displaynames::{
