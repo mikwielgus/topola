@@ -105,7 +105,7 @@ pub fn assert_navvertex_count(
         destination,
         RouterOptions {
             wrap_around_bands: true,
-            squeeze_through_under_bands: false,
+            squeeze_through_under_bends: false,
             routed_band_width: 100.0,
         },
     )

@@ -38,7 +38,7 @@ impl MenuBar {
                 router_options: RouterOptions {
                     routed_band_width: 100.0,
                     wrap_around_bands: true,
-                    squeeze_through_under_bands: true,
+                    squeeze_through_under_bends: true,
                 },
             },
             is_placing_via: false,
@@ -160,8 +160,8 @@ impl MenuBar {
                                     &mut self
                                         .autorouter_options
                                         .router_options
-                                        .squeeze_through_under_bands,
-                                    tr.text("tr-menu-route-options-squeeze-through-under-bands"),
+                                        .squeeze_through_under_bends,
+                                    tr.text("tr-menu-route-options-squeeze-through-under-bends"),
                                 );
                                 ui.checkbox(
                                     &mut self.autorouter_options.router_options.wrap_around_bands,

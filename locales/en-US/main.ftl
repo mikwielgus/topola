@@ -41,7 +41,7 @@ tr-menu-route-options-presort-by-pairwise-detours = Presort by Pairwise Detours
 ## Continuously applied, so use imperfective aspect if possible, e.g. in Polish
 ## it should be "przeciskaj pod taśmami" instead of "przeciśnij pod taśmami".
 
-tr-menu-route-options-squeeze-through-under-bands = Squeeze through under Bands
+tr-menu-route-options-squeeze-through-under-bends = Squeeze through under Bands
 tr-menu-route-options-wrap-around-bands = Wrap around Bands
 
 ##
