@@ -1,0 +1,25 @@
+# SPDX-FileCopyrightText: 2024 Topola contributors
+#
+# SPDX-License-Identifier: MIT
+
+version = 1
+
+[[annotations]]
+path = "assets/**"
+SPDX-FileCopyrightText = "2024 Topola contributors"
+SPDX-License-Identifier = "CC-BY-4.0 OR MIT"
+
+[[annotations]]
+path = "locales/**"
+SPDX-FileCopyrightText = "2024 Topola contributors"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = ["tests/single_layer/**", "tests/multilayer/**"]
+SPDX-FileCopyrightText = "2024 Topola contributors"
+SPDX-License-Identifier = "MIT"
+
+[[annotations]]
+path = "flake.lock"
+SPDX-FileCopyrightText = "2024 Topola contributors"
+SPDX-License-Identifier = "MIT"
