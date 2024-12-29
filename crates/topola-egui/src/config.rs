@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use std::collections::HashMap;
 
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]

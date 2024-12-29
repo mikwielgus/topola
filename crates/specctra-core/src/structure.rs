@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use super::read::{ListTokenizer, ReadDsn};
 use super::write::ListWriter;
 use super::write::WriteSes;

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use derive_getters::Getters;
 use fluent_templates::{static_loader, Loader};
 use serde::{Deserialize, Serialize};

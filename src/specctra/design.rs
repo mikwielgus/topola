@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 //! Module for managing the various Specctra PCB design, including loading the
 //! Design DSN file, creating the [`Board`] object from the file, as well as
 //! exporting the session file

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use contracts_try::debug_invariant;
 use derive_getters::Getters;
 use geo::Point;

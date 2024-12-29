@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 // FIXME (implement Hash for BandUid and such)
 #![allow(clippy::derived_hash_with_manual_eq)]
 

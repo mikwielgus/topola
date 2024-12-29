@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 pub struct Action {
     name: String,
     shortcut: egui::KeyboardShortcut,

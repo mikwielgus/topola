@@ -1,9 +1,8 @@
-/**
- *
- * Copied and substantially modified from petgraph's scored.rs and algo/astar.rs.
- *
- * Copyright (c) 2015
- **/
+// Copyright (c) 2015
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use std::collections::hash_map::Entry::{Occupied, Vacant};
 use std::collections::{BinaryHeap, HashMap, VecDeque};
 

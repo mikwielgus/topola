@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use geo::algorithm::line_measures::{Distance, Euclidean};
 use geo::{geometry::Point, point, Line};
 use thiserror::Error;

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use std::ops::ControlFlow;
 
 pub trait Step<Ctx, B, C = ()> {

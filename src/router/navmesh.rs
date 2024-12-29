@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use std::collections::HashMap;
 
 use enum_dispatch::enum_dispatch;

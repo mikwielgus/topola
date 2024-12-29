@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 //! Manages command history operations, allowing for undoing and redoing commands.
 //! Handles error scenarios related to command history, maintaining lists of executed
 //! and undone commands for easy navigation.

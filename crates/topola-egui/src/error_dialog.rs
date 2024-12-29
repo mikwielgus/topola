@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 //! dialog for error messages (e.g. for displaying file parser errors)
 
 use crate::translator::Translator;

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 //! Manages the comparison of detours between two ratlines, tracking their
 //! routing statuses and recording their lengths.
 

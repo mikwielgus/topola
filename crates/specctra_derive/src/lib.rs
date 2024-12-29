@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use proc_macro::TokenStream;
 use syn::punctuated::Punctuated;
 use syn::{Attribute, DeriveInput, LitStr, Meta, Token};

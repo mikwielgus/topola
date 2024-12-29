@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use proc_macro2::TokenStream;
 use quote::quote;
 use syn::ext::IdentExt;

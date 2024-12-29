@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use derive_getters::Getters;
 use geo::algorithm::line_measures::{Distance, Euclidean};
 use petgraph::{data::DataMap, visit::EdgeRef};

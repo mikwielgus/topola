@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use derive_getters::Getters;
 use geo::Point;
 use petgraph::graph::{EdgeIndex, NodeIndex};

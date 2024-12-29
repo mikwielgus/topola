@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use crate::graph::{GenericIndex, GetPetgraphIndex};
 
 pub trait ManageCompounds<CW: Copy, GI: GetPetgraphIndex + Copy> {

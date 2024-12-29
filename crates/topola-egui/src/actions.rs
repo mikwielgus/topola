@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use crate::{
     action::{Action, Switch, Trigger},
     translator::Translator,

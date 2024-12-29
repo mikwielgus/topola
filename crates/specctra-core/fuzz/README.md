@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2024 Topola contributors
+
+SPDX-License-Identifier: MIT
+-->
+
 # Fuzzer for `specctra-core`
 
 This fuzzer uses [`cargo-fuzz`](https://rust-fuzz.github.io/book/cargo-fuzz/tutorial.html).

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 //! Provides functionality for measuring the total length of selected
 //! bands in a PCB layout. It interacts with the autorouter to calculate and return
 //! the length of specified band selections.

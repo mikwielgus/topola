@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2024 Topola contributors
+
+SPDX-License-Identifier: MIT
+-->
+
 # Installing Topola
 
 ## Building and installing Topola from source

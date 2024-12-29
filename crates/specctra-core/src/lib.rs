@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 //! Module about handling the Specctra based file format, and parsing + serializing it
 
 pub mod error;

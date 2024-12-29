@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Topola contributors
+#
+# SPDX-License-Identifier: MIT
+
 [package]
 name = "specctra-core-fuzz"
 version = "0.0.0"

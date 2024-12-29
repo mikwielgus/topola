@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use std::{borrow::Cow, ops::ControlFlow, path::Path, sync::mpsc::Sender};
 
 use topola::{

@@ -1,5 +1,10 @@
 #![doc(
-    html_favicon_url = "https://codeberg.org/topola/topola/raw/commit/e1b56875edf039aab9f41868826bcd3a92097133/assets/favicon.ico"
+
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
+html_favicon_url = "https://codeberg.org/topola/topola/raw/commit/e1b56875edf039aab9f41868826bcd3a92097133/assets/favicon.ico"
 )]
 #![doc(
     html_logo_url = "https://codeberg.org/topola/topola/raw/commit/e1b56875edf039aab9f41868826bcd3a92097133/assets/logo.svg"

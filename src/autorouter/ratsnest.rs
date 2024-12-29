@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 //! Defines data structures and methods for managing a graph
 //! used in layout triangulation and routing tasks. It includes vertex and edge
 //! structures for representing graph nodes and edges with associated metadata,

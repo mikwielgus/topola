@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 //! Module for handling Polygon properties
 
 use enum_dispatch::enum_dispatch;

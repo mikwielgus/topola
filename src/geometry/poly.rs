@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use geo::algorithm::line_measures::{Euclidean, Length};
 use geo::{Centroid, Contains, Point, Polygon};
 

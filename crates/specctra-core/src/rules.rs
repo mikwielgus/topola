@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 pub trait GetConditions {
     fn conditions(&self) -> Conditions;
 }

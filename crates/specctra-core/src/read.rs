@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use super::error::{ParseError, ParseErrorContext};
 use super::structure::Parser;
 use super::ListToken;

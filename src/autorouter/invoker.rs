@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 //! Manages the execution of routing commands within the autorouting system.
 
 use std::{cmp::Ordering, ops::ControlFlow};

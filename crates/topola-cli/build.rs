@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 include!("src/cli.rs");
 use clap::CommandFactory;
 use clap_mangen::Man;

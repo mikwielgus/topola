@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use geo::{CoordsIter, Point, Polygon};
 use rstar::AABB;
 use topola::{

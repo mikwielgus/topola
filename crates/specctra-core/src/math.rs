@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use core::ops::Sub;
 use geo_types::geometry::Point;
 use serde::{Deserialize, Serialize};

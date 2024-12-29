@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use std::{fs::File, io::BufReader};
 
 use petgraph::{stable_graph::NodeIndex, unionfind::UnionFind, visit::NodeIndexable};

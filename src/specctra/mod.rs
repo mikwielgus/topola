@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 //! Module containing the informations about handling the Specctra
 //! based file format, and parsing it into Topola's objects
 #![forbid(unused_must_use)]

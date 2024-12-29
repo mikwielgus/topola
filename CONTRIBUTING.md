@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2024 Topola contributors
+
+SPDX-License-Identifier: MIT
+-->
+
 # Contributing to Topola
 
 *Anyone* can contribute to Topola, including you.

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use std::ops::ControlFlow;
 
 use derive_getters::{Dissolve, Getters};

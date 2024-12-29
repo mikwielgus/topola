@@ -1,3 +1,9 @@
+<!--
+SPDX-FileCopyrightText: 2024 Topola contributors
+
+SPDX-License-Identifier: MIT
+-->
+
 # Topola
 
 [Topola](https://topola.dev) is a work-in-progress interactive

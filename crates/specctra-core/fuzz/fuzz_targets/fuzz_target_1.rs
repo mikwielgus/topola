@@ -1,5 +1,9 @@
 #![no_main]
 
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use libfuzzer_sys::fuzz_target;
 
 fuzz_target!(|data: &str| {

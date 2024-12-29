@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use std::fs::File;
 use std::io::BufReader;
 use topola::autorouter::invoker::Invoker;

@@ -1,3 +1,7 @@
+// SPDX-FileCopyrightText: 2024 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
 use enum_dispatch::enum_dispatch;
 
 use crate::{geometry::shape::MeasureLength, graph::MakeRef};
