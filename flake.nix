@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2024 Topola contributors
+#
+# SPDX-License-Identifier: MIT
+
 {
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
