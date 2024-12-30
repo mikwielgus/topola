@@ -12,6 +12,7 @@ use petgraph::{
     visit::EdgeRef,
     Direction::{self, Incoming},
 };
+use serde::{Deserialize, Serialize};
 
 use crate::{
     drawing::{
@@ -63,7 +64,7 @@ pub enum GeometryLabel {
     Compound,
 }
 
-#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
 pub enum GenericNode<P, C> {
     Primitive(P),
     Compound(C),

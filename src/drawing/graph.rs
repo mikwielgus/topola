@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT
 
 use enum_dispatch::enum_dispatch;
-
 use petgraph::stable_graph::NodeIndex;
 
 use crate::{drawing::Drawing, graph::GetPetgraphIndex};
@@ -90,7 +89,7 @@ macro_rules! impl_loose_weight {
 // TODO: This enum shouldn't exist: we shouldn't be carrying the tag around like this. Instead we
 // should be getting it from the graph when it's needed.
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
-#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash)]
 pub enum PrimitiveIndex {
     FixedDot(FixedDotIndex),
     LooseDot(LooseDotIndex),
