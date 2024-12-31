@@ -9,8 +9,10 @@ version = "0.1.0"
 edition = "2021"
 
 [features]
-default = ["disable_contracts"]
+default = ["disable_contracts", "xdg-portal"]
 disable_contracts = ["topola/disable_contracts"]
+gtk3 = ["rfd/gtk3"]
+xdg-portal = ["rfd/xdg-portal"]
 
 [dependencies]
 derive-getters.workspace = true
@@ -21,7 +23,6 @@ icu_experimental = "0.2"
 icu_locale_core = "2.0.0-beta1"
 log = "0.4"
 petgraph.workspace = true
-rfd = "0.15"
 rstar.workspace = true
 serde.workspace = true
 serde_json.workspace = true
@@ -40,6 +41,10 @@ features = ["macros", "serde"]
 version = "0.29"
 default-features = false
 features = ["accesskit", "default_fonts", "glow", "persistence"]
+
+[dependencies.rfd]
+version = "0.15"
+default-features = false
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 futures-lite = "2.5"

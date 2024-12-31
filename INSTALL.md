@@ -103,6 +103,32 @@ You can then invoke the application from your terminal by running
 topola-egui
 ```
 
+#### Native run-time dependencies
+
+On Linux and BSDs, the `egui` depends on the native graphics libraries (X11, Wayland),
+and requires [GNOME `zenity`](https://gitlab.gnome.org/GNOME/zenity) when using `xdg-portal`
+(which is the default) as the backend for [`rfd`](https://docs.rs/rfd) (which we use for file chooser dialogs).
+
+If the Topola GUI crashes on startup (no window is shown), necessary graphics libraries (X11, Wayland)
+might be missing. Note that running `ldd` on the `topola-egui` executable doesn't show these,
+they are loaded dynamically (via some `dlopen`-like mechanism) on startup.
+
+If no file chooser dialog is shown (e.g. when trying to Open a DSN file),
+and, if `topola-egui` is started from a terminal, an error message like:
+```
+[2025-01-01T01:16:17Z ERROR rfd::backend::xdg_desktop_portal] pick_file error No such file or directory (os error 2)
+```
+is emitted (which should only happen on Linux/BSDs and similar environments), then
+[GNOME `zenity`](https://gitlab.gnome.org/GNOME/zenity) is not installed, but is required
+for the file choser to work.
+Alternatively, one might try the alternative `gtk3` backend for `rfd` by enabling the `gtk3`
+feature of `topola-egui`, e.g.
+```
+cargo build -p topola-egui --release --no-default-features --features disable_contracts --features gtk3
+```
+This is mostly interesting for people who want to package Topola, and allow exposing features
+(e.g. Gentoo Linux / Portage)
+
 #### Building and running without installing
 
 If you chose not to install the GUI application, you can build and run
