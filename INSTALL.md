@@ -35,7 +35,7 @@ Topola has a command-line application written with the help of the
 
 #### Installation from source
 
-(Topola can be built and run without installation. If you do not want to install
+(Topola can be also built and run without installation. If you do not want to install
 new software on your system, skip now to the [*Debug build*](#debug-build)
 subsection.)
 
