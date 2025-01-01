@@ -81,9 +81,9 @@ In the newly opened file dialog, choose the file named
 
 ### Egui graphical user interface application
 
-Topola has a graphical user interface (GUI) application written using the [egui]
-(https://github.com/emilk/egui/) library and its paired [eframe](https://
-github.com/emilk/egui/tree/master/crates/eframe) framework.
+Topola has a graphical user interface (GUI) application written using the
+[egui](https://github.com/emilk/egui/) library and its paired
+[eframe](https://github.com/emilk/egui/tree/master/crates/eframe) framework.
 
 (If you do not want to install new software on your system, skip now to the
 [Debug build](#debug-build-1) subsection.)
