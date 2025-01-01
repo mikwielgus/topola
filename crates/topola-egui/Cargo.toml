@@ -12,7 +12,7 @@ edition = "2021"
 default = ["disable_contracts", "xdg-portal"]
 disable_contracts = ["topola/disable_contracts"]
 gtk3 = ["rfd/gtk3"]
-xdg-portal = ["rfd/xdg-portal"]
+xdg-portal = ["rfd/async-std", "rfd/xdg-portal"]
 
 [dependencies]
 derive-getters.workspace = true
