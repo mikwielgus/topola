@@ -49,8 +49,11 @@ petgraph.workspace = true
 rstar.workspace = true
 serde.workspace = true
 spade.workspace = true
-specctra-core.path = "crates/specctra-core"
 thiserror.workspace = true
+
+[dependencies.specctra-core]
+path = "crates/specctra-core"
+features = ["rstar"]
 
 [dev-dependencies]
 serde_json.workspace = true

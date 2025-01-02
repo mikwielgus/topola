@@ -14,3 +14,7 @@ serde.workspace = true
 specctra_derive.path = "../specctra_derive"
 thiserror.workspace = true
 utf8-chars = "3.0"
+
+[dependencies.rstar]
+workspace = true
+optional = true

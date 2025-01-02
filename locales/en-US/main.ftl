@@ -12,6 +12,8 @@ tr-menu-edit = Edit
 tr-menu-edit-undo = Undo
 tr-menu-edit-redo = Redo
 tr-menu-edit-abort = Abort
+tr-menu-edit-select-all = Select All
+tr-menu-edit-unselect-all = Unselect All
 tr-menu-edit-remove-bands = Remove Bands
 
 tr-menu-view = View

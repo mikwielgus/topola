@@ -78,6 +78,8 @@ pub struct EditActions {
     pub undo: Trigger,
     pub redo: Trigger,
     pub abort: Trigger,
+    pub select_all: Trigger,
+    pub unselect_all: Trigger,
     pub remove_bands: Trigger,
 }
 
@@ -100,6 +102,18 @@ impl EditActions {
                 tr.text("tr-menu-edit-abort"),
                 egui::Modifiers::NONE,
                 egui::Key::Escape,
+            )
+            .into_trigger(),
+            select_all: Action::new(
+                tr.text("tr-menu-edit-select-all"),
+                egui::Modifiers::CTRL,
+                egui::Key::A, // taken from KiCAD
+            )
+            .into_trigger(),
+            unselect_all: Action::new(
+                tr.text("tr-menu-edit-unselect-all"),
+                egui::Modifiers::CTRL | egui::Modifiers::SHIFT,
+                egui::Key::A,
             )
             .into_trigger(),
             remove_bands: Action::new(
@@ -125,6 +139,11 @@ impl EditActions {
             ui.separator();
 
             self.abort.button(ctx, ui);
+
+            ui.separator();
+
+            self.select_all.button(ctx, ui);
+            self.unselect_all.button(ctx, ui);
 
             ui.separator();
 
@@ -174,7 +193,7 @@ impl RouteActions {
             autoroute: Action::new(
                 tr.text("tr-menu-route-autoroute"),
                 egui::Modifiers::CTRL,
-                egui::Key::A,
+                egui::Key::R,
             )
             .into_trigger(),
         }

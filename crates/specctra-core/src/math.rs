@@ -29,6 +29,16 @@ impl Circle {
             y: self.pos.0.y + self.r * phi.sin()
         }
     }
+
+    /// The (x,y) axis aligned bounding box for this circle.
+    #[cfg(feature = "rstar")]
+    pub fn bbox(&self, margin: f64) -> rstar::AABB<[f64; 2]> {
+        let r = self.r + margin;
+        rstar::AABB::from_corners(
+            [self.pos.0.x - r, self.pos.0.y - r],
+            [self.pos.0.x + r, self.pos.0.y + r],
+        )
+    }
 }
 
 impl Sub for Circle {

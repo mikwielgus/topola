@@ -59,6 +59,10 @@ impl<'a> Painter<'a> {
     }
 
     pub fn paint_bbox(&mut self, bbox: AABB<[f64; 2]>) {
+        self.paint_bbox_with_color(bbox, egui::Color32::GRAY)
+    }
+
+    pub fn paint_bbox_with_color(&mut self, bbox: AABB<[f64; 2]>, color: egui::Color32) {
         let rect = egui::epaint::Rect {
             min: [bbox.lower()[0] as f32, -bbox.upper()[1] as f32].into(),
             max: [bbox.upper()[0] as f32, -bbox.lower()[1] as f32].into(),
@@ -66,7 +70,7 @@ impl<'a> Painter<'a> {
         self.ui.painter().add(egui::Shape::rect_stroke(
             self.transform * rect,
             egui::Rounding::ZERO,
-            egui::Stroke::new(1.0, egui::Color32::GRAY),
+            egui::Stroke::new(1.0, color),
         ));
     }
 

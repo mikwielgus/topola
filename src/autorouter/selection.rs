@@ -4,6 +4,7 @@
 
 use std::collections::HashSet;
 
+use rstar::AABB;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -145,6 +146,37 @@ impl Selection {
         Self::default()
     }
 
+    pub fn select_all_in_bbox(
+        &mut self,
+        board: &Board<impl AccessMesadata>,
+        aabb: &AABB<[f64; 2]>,
+        active_layer: usize,
+    ) {
+        use rstar::Envelope;
+        let layout = board.layout();
+        for &geom in layout.drawing().rtree().locate_in_envelope_intersecting(
+            &AABB::<[f64; 3]>::from_corners(
+                [aabb.lower()[0], aabb.lower()[1], -f64::INFINITY],
+                [aabb.upper()[0], aabb.upper()[1], f64::INFINITY],
+            ),
+        ) {
+            let node = geom.data;
+            if aabb.contains_envelope(&layout.node_bbox(node))
+                && layout.is_node_in_layer(node, active_layer)
+            {
+                self.select_at_node(board, node);
+            }
+        }
+    }
+
+    pub fn select_at_node(&mut self, board: &Board<impl AccessMesadata>, node: NodeIndex) {
+        if let Some(selector) = PinSelector::try_from_node(board, node) {
+            self.pin_selection.0.insert(selector);
+        } else if let Some(selector) = BandSelector::try_from_node(board, node) {
+            self.band_selection.0.insert(selector);
+        }
+    }
+
     pub fn toggle_at_node(&mut self, board: &Board<impl AccessMesadata>, node: NodeIndex) {
         if let Some(selector) = PinSelector::try_from_node(board, node) {
             if self.pin_selection.0.contains(&selector) {
@@ -164,5 +196,12 @@ impl Selection {
     pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
         self.pin_selection.contains_node(board, node)
             || self.band_selection.contains_node(board, node)
+    }
+}
+
+impl<'a> core::ops::BitXorAssign<&'a Selection> for Selection {
+    fn bitxor_assign(&mut self, rhs: &'a Selection) {
+        self.pin_selection.0 = &self.pin_selection.0 ^ &rhs.pin_selection.0;
+        self.band_selection.0 = &self.band_selection.0 ^ &rhs.band_selection.0;
     }
 }

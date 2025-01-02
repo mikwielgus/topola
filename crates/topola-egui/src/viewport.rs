@@ -45,232 +45,320 @@ impl Viewport {
         menu_bar: &MenuBar,
         maybe_workspace: Option<&mut Workspace>,
     ) -> egui::Rect {
-        egui::CentralPanel::default().show(ctx, |ui| {
-            egui::Frame::canvas(ui.style()).show(ui, |ui| {
-                ui.ctx().request_repaint();
+        egui::CentralPanel::default()
+            .show(ctx, |ui| {
+                egui::Frame::canvas(ui.style()).show(ui, |ui| {
+                    ui.ctx().request_repaint();
 
-                let (_id, viewport_rect) = ui.allocate_space(ui.available_size());
-                let latest_pos = self.transform.inverse() * (ctx.input(|i| i.pointer.latest_pos().unwrap_or_default()));
+                    let (id, viewport_rect) = ui.allocate_space(ui.available_size());
+                    let response = ui.interact(viewport_rect, id, egui::Sense::click_and_drag());
+                    // NOTE: we use `interact_pos` instead of `latest_pos` to handle "pointer gone"
+                    // events more graceful
+                    let latest_pos = self.transform.inverse()
+                        * (response.interact_pointer_pos().unwrap_or_else(|| {
+                            ctx.input(|i| i.pointer.interact_pos().unwrap_or_default())
+                        }));
 
-                let old_scaling = self.transform.scaling;
-                self.transform.scaling *= ctx.input(|i| i.zoom_delta());
+                    let old_scaling = self.transform.scaling;
+                    self.transform.scaling *= ctx.input(|i| i.zoom_delta());
 
-                self.transform.translation += latest_pos.to_vec2() * (old_scaling - self.transform.scaling);
-                self.transform.translation += ctx.input(|i| i.smooth_scroll_delta);
+                    self.transform.translation +=
+                        latest_pos.to_vec2() * (old_scaling - self.transform.scaling);
+                    self.transform.translation += ctx.input(|i| i.smooth_scroll_delta);
 
-                let mut painter = Painter::new(ui, self.transform, menu_bar.show_bboxes);
+                    let mut painter = Painter::new(ui, self.transform, menu_bar.show_bboxes);
 
-                if let Some(workspace) = maybe_workspace {
-                    let layers = &mut workspace.appearance_panel;
-                    let overlay = &mut workspace.overlay;
+                    if let Some(workspace) = maybe_workspace {
+                        let layers = &mut workspace.appearance_panel;
+                        let overlay = &mut workspace.overlay;
+                        let latest_point = point! {x: latest_pos.x as f64, y: -latest_pos.y as f64};
+                        let board = workspace.interactor.invoker().autorouter().board();
 
-                    if ctx.input(|i| i.pointer.any_click()) {
-                        if menu_bar.is_placing_via {
-                            workspace.interactor.execute(
-                                Command::PlaceVia(ViaWeight {
+                        if response.clicked_by(egui::PointerButton::Primary) {
+                            if menu_bar.is_placing_via {
+                                workspace.interactor.execute(Command::PlaceVia(ViaWeight {
                                     from_layer: 0,
                                     to_layer: 0,
                                     circle: Circle {
-                                        pos: point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
-                                        r: menu_bar.autorouter_options.router_options.routed_band_width / 2.0,
+                                        pos: latest_point,
+                                        r: menu_bar
+                                            .autorouter_options
+                                            .router_options
+                                            .routed_band_width
+                                            / 2.0,
                                     },
                                     maybe_net: Some(1234),
-                                }),
+                                }));
+                            } else {
+                                overlay.click(board, latest_point);
+                            }
+                        } else if response.drag_started_by(egui::PointerButton::Primary) {
+                            overlay.drag_start(
+                                board,
+                                latest_point,
+                                &response.ctx.input(|i| i.modifiers),
                             );
-                        } else {
-                            overlay.click(
-                                workspace.interactor.invoker().autorouter().board(),
-                                point! {x: latest_pos.x as f64, y: -latest_pos.y as f64},
-                            );
+                        } else if response.drag_stopped_by(egui::PointerButton::Primary) {
+                            overlay.drag_stop(board, latest_point);
+                        } else if let Some((_, cur_bbox)) = overlay.get_bbox_reselect(latest_point)
+                        {
+                            painter.paint_bbox_with_color(cur_bbox, egui::Color32::RED);
                         }
-                    }
 
-                    let board = workspace.interactor.invoker().autorouter().board();
+                        let board = workspace.interactor.invoker().autorouter().board();
 
-                    for i in (0..layers.visible.len()).rev() {
-                        if layers.visible[i] {
-                            for primitive in board.layout().drawing().layer_primitive_nodes(i) {
-                                let shape = primitive.primitive(board.layout().drawing()).shape();
+                        for i in (0..layers.visible.len()).rev() {
+                            if layers.visible[i] {
+                                for primitive in board.layout().drawing().layer_primitive_nodes(i) {
+                                    let shape =
+                                        primitive.primitive(board.layout().drawing()).shape();
 
-                                let color = if overlay
-                                    .selection()
-                                    .contains_node(board, GenericNode::Primitive(primitive))
-                                {
-                                    config.colors(ctx).layers.color(board.layout().rules().layer_layername(i)).highlighted
-                                } else if let Some(activity) = &mut workspace.interactor.maybe_activity() {
-                                    if activity.obstacles().contains(&primitive) {
-                                        config.colors(ctx).layers.color(board.layout().rules().layer_layername(i)).highlighted
+                                    let color = if overlay
+                                        .selection()
+                                        .contains_node(board, GenericNode::Primitive(primitive))
+                                    {
+                                        config
+                                            .colors(ctx)
+                                            .layers
+                                            .color(board.layout().rules().layer_layername(i))
+                                            .highlighted
+                                    } else if let Some(activity) =
+                                        &mut workspace.interactor.maybe_activity()
+                                    {
+                                        if activity.obstacles().contains(&primitive) {
+                                            config
+                                                .colors(ctx)
+                                                .layers
+                                                .color(board.layout().rules().layer_layername(i))
+                                                .highlighted
+                                        } else {
+                                            config
+                                                .colors(ctx)
+                                                .layers
+                                                .color(board.layout().rules().layer_layername(i))
+                                                .normal
+                                        }
                                     } else {
-                                        config.colors(ctx).layers.color(board.layout().rules().layer_layername(i)).normal
-                                    }
-                                } else {
-                                    config.colors(ctx).layers.color(board.layout().rules().layer_layername(i)).normal
-                                };
-
-                                painter.paint_primitive(&shape, color);
-                            }
-
-                            for poly in board.layout().layer_poly_nodes(i) {
-                                let color = if overlay
-                                    .selection()
-                                    .contains_node(board, GenericNode::Compound(poly.into()))
-                                {
-                                    config.colors(ctx).layers.color(board.layout().rules().layer_layername(i)).highlighted
-                                } else {
-                                    config.colors(ctx).layers.color(board.layout().rules().layer_layername(i)).normal
-                                };
-
-                                painter.paint_polygon(&board.layout().poly(poly).shape().polygon, color)
-                            }
-                        }
-                    }
-
-                    if menu_bar.show_ratsnest {
-                        let graph = overlay.ratsnest().graph();
-                        for edge in graph.edge_references() {
-                            let from = graph
-                                .node_weight(edge.source())
-                                .unwrap()
-                                .pos;
-                            let to = graph
-                                .node_weight(edge.target())
-                                .unwrap()
-                                .pos;
-
-                            painter.paint_edge(
-                                from,
-                                to,
-                                egui::Stroke::new(1.0, egui::Color32::from_rgb(90, 90, 200)),
-                            );
-                        }
-                    }
-
-                    if menu_bar.show_navmesh {
-                        if let Some(activity) = workspace.interactor.maybe_activity() {
-                            if let Some(navmesh) = activity.maybe_navmesh() {
-                                for edge in navmesh.edge_references() {
-                                    let mut from = PrimitiveIndex::from(navmesh.node_weight(edge.source()).unwrap().node)
-                                        .primitive(board.layout().drawing())
-                                        .shape()
-                                        .center();
-                                    let mut to = PrimitiveIndex::from(navmesh.node_weight(edge.target()).unwrap().node)
-                                        .primitive(board.layout().drawing())
-                                        .shape()
-                                        .center();
-
-                                    if let Some(from_cw) = navmesh.node_weight(edge.source()).unwrap().maybe_cw {
-                                        if from_cw {
-                                            from -= [0.0, 150.0].into();
-                                        } else {
-                                            from += [0.0, 150.0].into();
-                                        }
-                                    }
-
-                                    if let Some(to_cw) = navmesh.node_weight(edge.target()).unwrap().maybe_cw {
-                                        if to_cw {
-                                            to -= [0.0, 150.0].into();
-                                        } else {
-                                            to += [0.0, 150.0].into();
-                                        }
-                                    }
-
-                                    let stroke = 'blk: {
-                                        if let (Some(source_pos), Some(target_pos)) = (
-                                            activity.maybe_navcord().map(|navcord|
-                                                navcord.path
-                                                .iter()
-                                                .position(|node| *node == edge.source())).flatten(),
-                                            activity.maybe_navcord().map(|navcord|
-                                                navcord.path
-                                                .iter()
-                                                .position(|node| *node == edge.target())).flatten(),
-                                        ) {
-                                            if target_pos == source_pos + 1
-                                                || source_pos == target_pos + 1
-                                            {
-                                                break 'blk egui::Stroke::new(
-                                                    5.0,
-                                                    egui::Color32::from_rgb(250, 250, 0),
-                                                );
-                                            }
-                                        }
-
-                                        egui::Stroke::new(1.0, egui::Color32::from_rgb(125, 125, 125))
+                                        config
+                                            .colors(ctx)
+                                            .layers
+                                            .color(board.layout().rules().layer_layername(i))
+                                            .normal
                                     };
 
-                                    painter.paint_edge(from, to, stroke);
+                                    painter.paint_primitive(&shape, color);
+                                }
+
+                                for poly in board.layout().layer_poly_nodes(i) {
+                                    let color = if overlay
+                                        .selection()
+                                        .contains_node(board, GenericNode::Compound(poly.into()))
+                                    {
+                                        config
+                                            .colors(ctx)
+                                            .layers
+                                            .color(board.layout().rules().layer_layername(i))
+                                            .highlighted
+                                    } else {
+                                        config
+                                            .colors(ctx)
+                                            .layers
+                                            .color(board.layout().rules().layer_layername(i))
+                                            .normal
+                                    };
+
+                                    painter.paint_polygon(
+                                        &board.layout().poly(poly).shape().polygon,
+                                        color,
+                                    )
                                 }
                             }
                         }
-                    }
 
-                    if menu_bar.show_bboxes {
-                        let root_bbox3d = board.layout().drawing().rtree().root().envelope();
+                        if menu_bar.show_ratsnest {
+                            let graph = overlay.ratsnest().graph();
+                            for edge in graph.edge_references() {
+                                let from = graph.node_weight(edge.source()).unwrap().pos;
+                                let to = graph.node_weight(edge.target()).unwrap().pos;
 
-                        let root_bbox = AABB::<[f64; 2]>::from_corners([root_bbox3d.lower()[0], root_bbox3d.lower()[1]].into(), [root_bbox3d.upper()[0], root_bbox3d.upper()[1]].into());
-                        painter.paint_bbox(root_bbox);
-                    }
-
-                    if let Some(activity) = &mut workspace.interactor.maybe_activity() {
-                        for ghost in activity.ghosts().iter() {
-                            painter.paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
-                        }
-
-                        if let Some(navmesh) = activity.maybe_navmesh() {
-                            if menu_bar.show_origin_destination {
-                                let (origin, destination) = (navmesh.origin(), navmesh.destination());
-                                painter.paint_dot(
-                                    Circle {
-                                        pos: board.layout().drawing().primitive(origin).shape().center(),
-                                        r: 150.0,
-                                    },
-                                    egui::Color32::from_rgb(255, 255, 100),
-                                );
-                                painter.paint_dot(
-                                    Circle {
-                                        pos: board.layout().drawing().primitive(destination).shape().center(),
-                                        r: 150.0,
-                                    },
-                                    egui::Color32::from_rgb(255, 255, 100),
+                                painter.paint_edge(
+                                    from,
+                                    to,
+                                    egui::Stroke::new(1.0, egui::Color32::from_rgb(90, 90, 200)),
                                 );
                             }
                         }
+
+                        if menu_bar.show_navmesh {
+                            if let Some(activity) = workspace.interactor.maybe_activity() {
+                                if let Some(navmesh) = activity.maybe_navmesh() {
+                                    for edge in navmesh.edge_references() {
+                                        let mut from = PrimitiveIndex::from(
+                                            navmesh.node_weight(edge.source()).unwrap().node,
+                                        )
+                                        .primitive(board.layout().drawing())
+                                        .shape()
+                                        .center();
+                                        let mut to = PrimitiveIndex::from(
+                                            navmesh.node_weight(edge.target()).unwrap().node,
+                                        )
+                                        .primitive(board.layout().drawing())
+                                        .shape()
+                                        .center();
+
+                                        if let Some(from_cw) =
+                                            navmesh.node_weight(edge.source()).unwrap().maybe_cw
+                                        {
+                                            if from_cw {
+                                                from -= [0.0, 150.0].into();
+                                            } else {
+                                                from += [0.0, 150.0].into();
+                                            }
+                                        }
+
+                                        if let Some(to_cw) =
+                                            navmesh.node_weight(edge.target()).unwrap().maybe_cw
+                                        {
+                                            if to_cw {
+                                                to -= [0.0, 150.0].into();
+                                            } else {
+                                                to += [0.0, 150.0].into();
+                                            }
+                                        }
+
+                                        let stroke =
+                                            'blk: {
+                                                if let (Some(source_pos), Some(target_pos)) = (
+                                                    activity
+                                                        .maybe_navcord()
+                                                        .map(|navcord| {
+                                                            navcord.path.iter().position(|node| {
+                                                                *node == edge.source()
+                                                            })
+                                                        })
+                                                        .flatten(),
+                                                    activity
+                                                        .maybe_navcord()
+                                                        .map(|navcord| {
+                                                            navcord.path.iter().position(|node| {
+                                                                *node == edge.target()
+                                                            })
+                                                        })
+                                                        .flatten(),
+                                                ) {
+                                                    if target_pos == source_pos + 1
+                                                        || source_pos == target_pos + 1
+                                                    {
+                                                        break 'blk egui::Stroke::new(
+                                                            5.0,
+                                                            egui::Color32::from_rgb(250, 250, 0),
+                                                        );
+                                                    }
+                                                }
+
+                                                egui::Stroke::new(
+                                                    1.0,
+                                                    egui::Color32::from_rgb(125, 125, 125),
+                                                )
+                                            };
+
+                                        painter.paint_edge(from, to, stroke);
+                                    }
+                                }
+                            }
+                        }
+
+                        if menu_bar.show_bboxes {
+                            let root_bbox3d = board.layout().drawing().rtree().root().envelope();
+
+                            let root_bbox = AABB::<[f64; 2]>::from_corners(
+                                [root_bbox3d.lower()[0], root_bbox3d.lower()[1]].into(),
+                                [root_bbox3d.upper()[0], root_bbox3d.upper()[1]].into(),
+                            );
+                            painter.paint_bbox(root_bbox);
+                        }
+
+                        if let Some(activity) = workspace.interactor.maybe_activity() {
+                            for ghost in activity.ghosts().iter() {
+                                painter
+                                    .paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
+                            }
+
+                            if let Some(navmesh) = activity.maybe_navmesh() {
+                                if menu_bar.show_origin_destination {
+                                    let (origin, destination) =
+                                        (navmesh.origin(), navmesh.destination());
+                                    painter.paint_dot(
+                                        Circle {
+                                            pos: board
+                                                .layout()
+                                                .drawing()
+                                                .primitive(origin)
+                                                .shape()
+                                                .center(),
+                                            r: 150.0,
+                                        },
+                                        egui::Color32::from_rgb(255, 255, 100),
+                                    );
+                                    painter.paint_dot(
+                                        Circle {
+                                            pos: board
+                                                .layout()
+                                                .drawing()
+                                                .primitive(destination)
+                                                .shape()
+                                                .center(),
+                                            r: 150.0,
+                                        },
+                                        egui::Color32::from_rgb(255, 255, 100),
+                                    );
+                                }
+                            }
+                        }
+
+                        if self.scheduled_zoom_to_fit {
+                            let root_bbox = workspace
+                                .interactor
+                                .invoker()
+                                .autorouter()
+                                .board()
+                                .layout()
+                                .drawing()
+                                .rtree()
+                                .root()
+                                .envelope();
+
+                            let root_bbox_width = root_bbox.upper()[0] - root_bbox.lower()[0];
+                            let root_bbox_height = root_bbox.upper()[1] - root_bbox.lower()[1];
+
+                            self.transform.scaling = 0.8
+                                * if root_bbox_width / root_bbox_height
+                                    >= (viewport_rect.width() as f64)
+                                        / (viewport_rect.height() as f64)
+                                {
+                                    viewport_rect.width() / root_bbox_width as f32
+                                } else {
+                                    viewport_rect.height() / root_bbox_height as f32
+                                };
+
+                            self.transform.translation = egui::Vec2::new(
+                                viewport_rect.center()[0] as f32,
+                                viewport_rect.center()[1] as f32,
+                            ) - (self.transform.scaling
+                                * egui::Pos2::new(
+                                    root_bbox.center()[0] as f32,
+                                    -root_bbox.center()[1] as f32,
+                                ))
+                            .to_vec2();
+                        }
+
+                        self.scheduled_zoom_to_fit = false;
                     }
 
-                    if self.scheduled_zoom_to_fit {
-                        let root_bbox = workspace.interactor.invoker()
-                            .autorouter()
-                            .board()
-                            .layout()
-                            .drawing()
-                            .rtree()
-                            .root()
-                            .envelope();
-
-                        let root_bbox_width = root_bbox.upper()[0] - root_bbox.lower()[0];
-                        let root_bbox_height = root_bbox.upper()[1] - root_bbox.lower()[1];
-
-                        self.transform.scaling = 0.8 * if root_bbox_width / root_bbox_height
-                            >= (viewport_rect.width() as f64) / (viewport_rect.height() as f64)
-                        {
-                            viewport_rect.width() / root_bbox_width as f32
-                        } else {
-                            viewport_rect.height() / root_bbox_height as f32
-                        };
-
-                        self.transform.translation = egui::Vec2::new(
-                            viewport_rect.center()[0] as f32,
-                            viewport_rect.center()[1] as f32,
-                        ) - (self.transform.scaling
-                            * egui::Pos2::new(root_bbox.center()[0] as f32, -root_bbox.center()[1] as f32))
-                        .to_vec2();
-                    }
-
-                    self.scheduled_zoom_to_fit = false;
-                }
-
-                viewport_rect
+                    viewport_rect
+                })
             })
-        }).inner.inner
+            .inner
+            .inner
     }
 }

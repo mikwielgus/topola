@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 use geo::Point;
-use rstar::AABB;
+use rstar::{Point as _, AABB};
 use spade::InsertionError;
 
 use topola::{
@@ -18,21 +18,32 @@ use topola::{
     layout::{
         poly::{MakePolyShape, PolyWeight},
         via::ViaWeight,
-        CompoundWeight, NodeIndex,
+        CompoundWeight, Layout, NodeIndex,
     },
 };
+
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum SelectionMode {
+    Addition,
+    Substitution,
+    Toggling,
+}
 
 pub struct Overlay {
     ratsnest: Ratsnest,
     selection: Selection,
+    reselect_bbox: Option<(SelectionMode, Point)>,
     active_layer: usize,
 }
+
+const INF: f64 = f64::INFINITY;
 
 impl Overlay {
     pub fn new(board: &Board<impl AccessMesadata>) -> Result<Self, InsertionError> {
         Ok(Self {
             ratsnest: Ratsnest::new(board.layout())?,
             selection: Selection::new(),
+            reselect_bbox: None,
             active_layer: 0,
         })
     }
@@ -41,11 +52,64 @@ impl Overlay {
         core::mem::replace(&mut self.selection, Selection::new())
     }
 
-    pub fn clear_selection(&mut self) {
+    pub fn select_all(&mut self, board: &Board<impl AccessMesadata>) {
+        self.select_all_in_bbox(board, &AABB::from_corners([-INF, -INF], [INF, INF]));
+    }
+
+    pub fn unselect_all(&mut self) {
         self.selection = Selection::new();
+        self.reselect_bbox = None;
+    }
+
+    pub fn drag_start(
+        &mut self,
+        board: &Board<impl AccessMesadata>,
+        at: Point,
+        modifiers: &egui::Modifiers,
+    ) {
+        if self.reselect_bbox.is_none() {
+            // handle bounding box selection
+            let selmode = if modifiers.ctrl {
+                SelectionMode::Toggling
+            } else if modifiers.shift {
+                SelectionMode::Addition
+            } else {
+                SelectionMode::Substitution
+            };
+            self.reselect_bbox = Some((selmode, at));
+        }
+    }
+
+    pub fn drag_stop(&mut self, board: &Board<impl AccessMesadata>, at: Point) {
+        if let Some((selmode, aabb)) = self.get_bbox_reselect(at) {
+            // handle bounding box selection
+            self.reselect_bbox = None;
+
+            match selmode {
+                SelectionMode::Substitution => {
+                    self.selection = Selection::new();
+                    self.select_all_in_bbox(board, &aabb);
+                }
+                SelectionMode::Addition => {
+                    self.select_all_in_bbox(board, &aabb);
+                }
+                SelectionMode::Toggling => {
+                    let old_selection = self.take_selection();
+                    self.select_all_in_bbox(board, &aabb);
+                    self.selection ^= &old_selection;
+                }
+            }
+        }
     }
 
     pub fn click(&mut self, board: &Board<impl AccessMesadata>, at: Point) {
+        if self.reselect_bbox.is_some() {
+            // handle bounding box selection (takes precendence over other interactions)
+            // this is mostly in order to allow the user to recover from a missed/dropped drag_stop event
+            self.drag_stop(board, at);
+            return;
+        }
+
         let geoms: Vec<_> = board
             .layout()
             .drawing()
@@ -57,61 +121,22 @@ impl Overlay {
             .collect();
 
         if let Some(geom) = geoms.iter().find(|&&geom| {
-            self.contains_point(board, geom.data, at)
-                && match geom.data {
-                    NodeIndex::Primitive(primitive) => {
-                        primitive.primitive(board.layout().drawing()).layer() == self.active_layer
-                    }
-                    NodeIndex::Compound(compound) => {
-                        match board.layout().drawing().compound_weight(compound) {
-                            CompoundWeight::Poly(_) => {
-                                board
-                                    .layout()
-                                    .poly(GenericIndex::<PolyWeight>::new(
-                                        compound.petgraph_index(),
-                                    ))
-                                    .layer()
-                                    == self.active_layer
-                            }
-                            CompoundWeight::Via(weight) => {
-                                weight.from_layer >= self.active_layer
-                                    && weight.to_layer <= self.active_layer
-                            }
-                        }
-                    }
-                }
+            board.layout().node_shape(geom.data).contains_point(at)
+                && board
+                    .layout()
+                    .is_node_in_layer(geom.data, self.active_layer)
         }) {
             self.selection.toggle_at_node(board, geom.data);
         }
     }
 
-    fn contains_point(
-        &self,
+    pub fn select_all_in_bbox(
+        &mut self,
         board: &Board<impl AccessMesadata>,
-        node: NodeIndex,
-        p: Point,
-    ) -> bool {
-        let shape: Shape = match node {
-            NodeIndex::Primitive(primitive) => {
-                primitive.primitive(board.layout().drawing()).shape().into()
-            }
-            NodeIndex::Compound(compound) => {
-                match board.layout().drawing().compound_weight(compound) {
-                    CompoundWeight::Poly(_) => board
-                        .layout()
-                        .poly(GenericIndex::<PolyWeight>::new(compound.petgraph_index()))
-                        .shape()
-                        .into(),
-                    CompoundWeight::Via(_) => board
-                        .layout()
-                        .via(GenericIndex::<ViaWeight>::new(compound.petgraph_index()))
-                        .shape()
-                        .into(),
-                }
-            }
-        };
-
-        shape.contains_point(p)
+        aabb: &AABB<[f64; 2]>,
+    ) {
+        self.selection
+            .select_all_in_bbox(board, aabb, self.active_layer);
     }
 
     pub fn ratsnest(&self) -> &Ratsnest {
@@ -120,5 +145,15 @@ impl Overlay {
 
     pub fn selection(&self) -> &Selection {
         &self.selection
+    }
+
+    /// Returns the currently selected bounding box of a bounding-box reselect
+    pub fn get_bbox_reselect(&self, at: Point) -> Option<(SelectionMode, AABB<[f64; 2]>)> {
+        self.reselect_bbox.map(|(selmode, pt)| {
+            (
+                selmode,
+                AABB::from_corners([pt.x(), pt.y()], [at.x(), at.y()]),
+            )
+        })
     }
 }

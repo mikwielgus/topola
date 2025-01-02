@@ -232,6 +232,12 @@ impl MenuBar {
                         workspace.interactor.redo();
                     } else if actions.edit.abort.consume_key_triggered(ctx, ui) {
                         workspace.interactor.abort();
+                    } else if actions.edit.unselect_all.consume_key_triggered(ctx, ui) {
+                        // NOTE: we need to check `unselect` first because `Ctrl+A` would also match `Ctrl+Shift+A`
+                        workspace.overlay.unselect_all();
+                    } else if actions.edit.select_all.consume_key_triggered(ctx, ui) {
+                        let board = workspace.interactor.invoker().autorouter().board();
+                        workspace.overlay.select_all(board);
                     } else if actions.place.place_via.consume_key_enabled(
                         ctx,
                         ui,

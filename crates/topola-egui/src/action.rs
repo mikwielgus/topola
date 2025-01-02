@@ -57,7 +57,7 @@ impl Trigger {
 
     pub fn consume_key_triggered(&mut self, ctx: &egui::Context, ui: &mut egui::Ui) -> bool {
         self.consume_key(ctx, ui);
-        self.triggered()
+        self.triggered
     }
 
     fn consume_key(&mut self, ctx: &egui::Context, _ui: &mut egui::Ui) {

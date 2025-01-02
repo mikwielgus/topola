@@ -15,7 +15,8 @@ use crate::{
         cane::Cane,
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         gear::GearIndex,
-        graph::{GetMaybeNet, PrimitiveIndex, PrimitiveWeight},
+        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+        primitive::MakePrimitiveShape,
         rules::AccessRules,
         seg::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
@@ -23,10 +24,10 @@ use crate::{
         },
         Drawing, DrawingEdit, DrawingException, Infringement,
     },
-    geometry::{edit::ApplyGeometryEdit, GenericNode},
+    geometry::{edit::ApplyGeometryEdit, shape::Shape, GenericNode},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
-        poly::{Poly, PolyWeight},
+        poly::{MakePolyShape, Poly, PolyWeight},
         via::{Via, ViaWeight},
     },
 };
@@ -315,6 +316,67 @@ impl<R: AccessRules> Layout<R> {
         self.drawing
             .geometry()
             .compound_members(GenericIndex::new(poly.petgraph_index()))
+    }
+
+    pub fn is_node_in_layer(&self, index: NodeIndex, active_layer: usize) -> bool {
+        use crate::drawing::graph::GetLayer;
+        match index {
+            NodeIndex::Primitive(primitive) => {
+                primitive.primitive(&self.drawing).layer() == active_layer
+            }
+            NodeIndex::Compound(compound) => match self.drawing.compound_weight(compound) {
+                CompoundWeight::Poly(_) => {
+                    self.poly(GenericIndex::<PolyWeight>::new(compound.petgraph_index()))
+                        .layer()
+                        == active_layer
+                }
+                CompoundWeight::Via(weight) => {
+                    weight.from_layer >= active_layer && weight.to_layer <= active_layer
+                }
+            },
+        }
+    }
+
+    pub fn node_shape(&self, index: NodeIndex) -> Shape {
+        match index {
+            NodeIndex::Primitive(primitive) => primitive.primitive(&self.drawing).shape().into(),
+            NodeIndex::Compound(compound) => match self.drawing.compound_weight(compound) {
+                CompoundWeight::Poly(_) => self
+                    .poly(GenericIndex::<PolyWeight>::new(compound.petgraph_index()))
+                    .shape()
+                    .into(),
+                CompoundWeight::Via(_) => self
+                    .via(GenericIndex::<ViaWeight>::new(compound.petgraph_index()))
+                    .shape()
+                    .into(),
+            },
+        }
+    }
+
+    pub fn node_bbox(&self, index: NodeIndex) -> AABB<[f64; 2]> {
+        use crate::geometry::primitive::AccessPrimitiveShape;
+        match index {
+            NodeIndex::Primitive(primitive) => primitive.primitive(&self.drawing).shape().bbox(0.0),
+            NodeIndex::Compound(compound) => match self.drawing.compound_weight(compound) {
+                CompoundWeight::Poly(_) => {
+                    let coord_string = self
+                        .poly(GenericIndex::<PolyWeight>::new(compound.petgraph_index()))
+                        .shape()
+                        .polygon
+                        .exterior()
+                        .0
+                        .iter()
+                        .map(|coord| [coord.x, coord.y])
+                        .collect::<Vec<_>>();
+
+                    AABB::from_points(&coord_string[..])
+                }
+                CompoundWeight::Via(_) => self
+                    .via(GenericIndex::<ViaWeight>::new(compound.petgraph_index()))
+                    .shape()
+                    .bbox(0.0),
+            },
+        }
     }
 
     pub fn rules(&self) -> &R {
