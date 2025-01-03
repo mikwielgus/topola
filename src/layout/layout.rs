@@ -353,32 +353,6 @@ impl<R: AccessRules> Layout<R> {
         }
     }
 
-    pub fn node_bbox(&self, index: NodeIndex) -> AABB<[f64; 2]> {
-        use crate::geometry::primitive::AccessPrimitiveShape;
-        match index {
-            NodeIndex::Primitive(primitive) => primitive.primitive(&self.drawing).shape().bbox(0.0),
-            NodeIndex::Compound(compound) => match self.drawing.compound_weight(compound) {
-                CompoundWeight::Poly(_) => {
-                    let coord_string = self
-                        .poly(GenericIndex::<PolyWeight>::new(compound.petgraph_index()))
-                        .shape()
-                        .polygon
-                        .exterior()
-                        .0
-                        .iter()
-                        .map(|coord| [coord.x, coord.y])
-                        .collect::<Vec<_>>();
-
-                    AABB::from_points(&coord_string[..])
-                }
-                CompoundWeight::Via(_) => self
-                    .via(GenericIndex::<ViaWeight>::new(compound.petgraph_index()))
-                    .shape()
-                    .bbox(0.0),
-            },
-        }
-    }
-
     pub fn rules(&self) -> &R {
         self.drawing.rules()
     }

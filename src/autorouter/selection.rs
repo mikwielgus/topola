@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     board::{mesadata::AccessMesadata, BandName, Board, ResolvedSelector},
     drawing::graph::{GetLayer, MakePrimitive, PrimitiveIndex},
-    geometry::GenericNode,
+    geometry::{shape::AccessShape, GenericNode},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{poly::PolyWeight, CompoundWeight, NodeIndex},
 };
@@ -209,7 +209,7 @@ impl Selection {
                             if let Some(rsel) = ResolvedSelector::try_from_node(board, node) {
                                 let rseli = selectors.entry(rsel).or_default();
                                 rseli.0.insert(node);
-                                if kind.matches(aabb, &layout.node_bbox(node)) {
+                                if kind.matches(aabb, &layout.node_shape(node).bbox(0.0)) {
                                     rseli.1.insert(node);
                                 }
                             }
@@ -234,7 +234,7 @@ impl Selection {
                     ) {
                         let node = geom.data;
                         if layout.is_node_in_layer(node, active_layer)
-                            && kind.matches(aabb, &layout.node_bbox(node))
+                            && kind.matches(aabb, &layout.node_shape(node).bbox(0.0))
                         {
                             if let Some(rsel) = ResolvedSelector::try_from_node(board, node) {
                                 selectors.insert(rsel);

@@ -4,6 +4,7 @@
 
 use enum_dispatch::enum_dispatch;
 use geo::Point;
+use rstar::AABB;
 
 use crate::geometry::{
     poly::PolyShape,
@@ -19,6 +20,15 @@ pub trait MeasureLength {
 pub trait AccessShape: MeasureLength {
     fn center(&self) -> Point;
     fn contains_point(&self, p: Point) -> bool;
+    fn bbox_without_margin(&self) -> AABB<[f64; 2]>;
+
+    fn bbox(&self, margin: f64) -> AABB<[f64; 2]> {
+        let aabb = self.bbox_without_margin();
+        AABB::<[f64; 2]>::from_corners(
+            [aabb.lower()[0] - margin, aabb.lower()[1] - margin],
+            [aabb.upper()[0] + margin, aabb.upper()[1] + margin],
+        )
+    }
 }
 
 #[enum_dispatch(MeasureLength, AccessShape)]

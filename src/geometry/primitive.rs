@@ -19,7 +19,6 @@ pub trait AccessPrimitiveShape: AccessShape {
     fn priority(&self) -> usize;
     fn inflate(&self, margin: f64) -> PrimitiveShape;
     fn intersects(&self, other: &PrimitiveShape) -> bool;
-    fn bbox(&self, margin: f64) -> AABB<[f64; 2]>;
     fn width(&self) -> f64;
 
     fn envelope_3d(&self, margin: f64, layer: usize) -> AABB<[f64; 3]> {
@@ -71,6 +70,10 @@ impl AccessShape for DotShape {
     fn contains_point(&self, p: Point) -> bool {
         Euclidean::distance(&p, &self.circle.pos) <= self.circle.r
     }
+
+    fn bbox_without_margin(&self) -> AABB<[f64; 2]> {
+        self.circle.bbox(0.0)
+    }
 }
 
 impl AccessPrimitiveShape for DotShape {
@@ -118,19 +121,6 @@ impl AccessPrimitiveShape for DotShape {
         }
     }
 
-    fn bbox(&self, margin: f64) -> AABB<[f64; 2]> {
-        AABB::from_corners(
-            [
-                self.circle.pos.x() - self.circle.r - margin,
-                self.circle.pos.y() - self.circle.r - margin,
-            ],
-            [
-                self.circle.pos.x() + self.circle.r + margin,
-                self.circle.pos.y() + self.circle.r + margin,
-            ],
-        )
-    }
-
     fn width(&self) -> f64 {
         self.circle.r * 2.0
     }
@@ -173,6 +163,13 @@ impl AccessShape for SegShape {
 
     fn contains_point(&self, p: Point) -> bool {
         self.polygon().contains(&p)
+    }
+
+    fn bbox_without_margin(&self) -> AABB<[f64; 2]> {
+        super::poly::PolyShape {
+            polygon: self.polygon(),
+        }
+        .bbox_without_margin()
     }
 }
 
@@ -218,22 +215,6 @@ impl AccessPrimitiveShape for SegShape {
                 false
             }
         }
-    }
-
-    fn bbox(&self, margin: f64) -> AABB<[f64; 2]> {
-        let points: Vec<[f64; 2]> = self
-            .polygon()
-            .exterior()
-            .points()
-            .map(|p| [p.x(), p.y()])
-            .collect();
-
-        let aabb = AABB::<[f64; 2]>::from_points(points.iter());
-
-        // Inflate.
-        let lower = [aabb.lower()[0] - margin, aabb.lower()[1] - margin];
-        let upper = [aabb.upper()[0] + margin, aabb.upper()[1] + margin];
-        AABB::<[f64; 2]>::from_corners(lower, upper)
     }
 
     fn width(&self) -> f64 {
@@ -331,6 +312,10 @@ impl AccessShape for BendShape {
         let d = Euclidean::distance(&p, &self.inner_circle.pos);
         self.between_ends(p) && d >= self.inner_circle().r && d <= self.outer_circle().r
     }
+
+    fn bbox_without_margin(&self) -> AABB<[f64; 2]> {
+        self.inner_circle.bbox(self.width)
+    }
 }
 
 impl AccessPrimitiveShape for BendShape {
@@ -387,20 +372,6 @@ impl AccessPrimitiveShape for BendShape {
         }
     }
 
-    fn bbox(&self, _margin: f64) -> AABB<[f64; 2]> {
-        let halfwidth = self.inner_circle.r + self.width;
-        AABB::from_corners(
-            [
-                self.inner_circle.pos.x() - halfwidth,
-                self.inner_circle.pos.y() - halfwidth,
-            ],
-            [
-                self.inner_circle.pos.x() + halfwidth,
-                self.inner_circle.pos.y() + halfwidth,
-            ],
-        )
-    }
-
     fn width(&self) -> f64 {
         self.width
     }
@@ -409,6 +380,6 @@ impl AccessPrimitiveShape for BendShape {
 impl RTreeObject for PrimitiveShape {
     type Envelope = AABB<[f64; 2]>;
     fn envelope(&self) -> Self::Envelope {
-        AccessPrimitiveShape::bbox(self, 0.0)
+        AccessShape::bbox(self, 0.0)
     }
 }
