@@ -73,8 +73,6 @@ impl TryFrom<PrimitiveWeight> for BendWeight {
     }
 }
 
-impl AccessBendWeight<PrimitiveWeight> for BendWeight {}
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedBendWeight {
     pub width: f64,
@@ -84,7 +82,6 @@ pub struct FixedBendWeight {
 }
 
 impl_fixed_weight!(FixedBendWeight, FixedBend, FixedBendIndex);
-impl AccessBendWeight<PrimitiveWeight> for FixedBendWeight {}
 
 impl GetOffset for FixedBendWeight {
     fn offset(&self) -> f64 {
@@ -131,4 +128,3 @@ impl GetWidth for LooseBendWeight {
 }
 
 impl_loose_weight!(LooseBendWeight, LooseBend, LooseBendIndex);
-impl AccessBendWeight<PrimitiveWeight> for LooseBendWeight {}

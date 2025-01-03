@@ -13,9 +13,9 @@ use super::{AccessBendWeight, AccessDotWeight, AccessSegWeight, GetWidth};
 
 pub trait ApplyGeometryEdit<
     PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-    DW: AccessDotWeight<PW> + GetLayer,
-    SW: AccessSegWeight<PW> + GetLayer,
-    BW: AccessBendWeight<PW> + GetLayer,
+    DW: AccessDotWeight + Into<PW> + GetLayer,
+    SW: AccessSegWeight + Into<PW> + GetLayer,
+    BW: AccessBendWeight + Into<PW> + GetLayer,
     CW: Copy,
     PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
     DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
@@ -38,9 +38,9 @@ pub struct GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
 
 impl<
         PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: AccessDotWeight<PW> + GetLayer,
-        SW: AccessSegWeight<PW> + GetLayer,
-        BW: AccessBendWeight<PW> + GetLayer,
+        DW: AccessDotWeight + Into<PW> + GetLayer,
+        SW: AccessSegWeight + Into<PW> + GetLayer,
+        BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
         DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,

@@ -28,9 +28,9 @@ pub struct RecordingGeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
 
 impl<
         PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: AccessDotWeight<PW> + GetLayer,
-        SW: AccessSegWeight<PW> + GetLayer,
-        BW: AccessBendWeight<PW> + GetLayer,
+        DW: AccessDotWeight + Into<PW> + GetLayer,
+        SW: AccessSegWeight + Into<PW> + GetLayer,
+        BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
         DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
@@ -46,7 +46,7 @@ impl<
         }
     }
 
-    pub fn add_dot<W: AccessDotWeight<PW> + GetLayer>(
+    pub fn add_dot<W: AccessDotWeight + Into<PW> + GetLayer>(
         &mut self,
         recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
         weight: W,
@@ -67,7 +67,7 @@ impl<
         dot
     }
 
-    pub fn add_seg<W: AccessSegWeight<PW> + GetLayer>(
+    pub fn add_seg<W: AccessSegWeight + Into<PW> + GetLayer>(
         &mut self,
         recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
         from: DI,
@@ -93,7 +93,7 @@ impl<
         seg
     }
 
-    pub fn add_bend<W: AccessBendWeight<PW> + GetLayer>(
+    pub fn add_bend<W: AccessBendWeight + Into<PW> + GetLayer>(
         &mut self,
         recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
         from: DI,
@@ -339,9 +339,9 @@ fn edit_remove_from_map<I: Ord, T>(
 
 impl<
         PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: AccessDotWeight<PW> + GetLayer,
-        SW: AccessSegWeight<PW> + GetLayer,
-        BW: AccessBendWeight<PW> + GetLayer,
+        DW: AccessDotWeight + Into<PW> + GetLayer,
+        SW: AccessSegWeight + Into<PW> + GetLayer,
+        BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
         DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,

@@ -14,7 +14,7 @@ use crate::{
         rules::AccessRules,
         Drawing,
     },
-    geometry::{AccessDotWeight, GetSetPos, GetWidth},
+    geometry::{GetSetPos, GetWidth},
     graph::{GenericIndex, GetPetgraphIndex},
     math::Circle,
 };
@@ -75,8 +75,6 @@ impl TryFrom<PrimitiveWeight> for DotWeight {
     }
 }
 
-impl AccessDotWeight<PrimitiveWeight> for DotWeight {}
-
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct FixedDotWeight {
     pub circle: Circle,
@@ -85,7 +83,6 @@ pub struct FixedDotWeight {
 }
 
 impl_fixed_weight!(FixedDotWeight, FixedDot, FixedDotIndex);
-impl AccessDotWeight<PrimitiveWeight> for FixedDotWeight {}
 
 impl GetSetPos for FixedDotWeight {
     fn pos(&self) -> Point {
@@ -111,7 +108,6 @@ pub struct LooseDotWeight {
 }
 
 impl_loose_weight!(LooseDotWeight, LooseDot, LooseDotIndex);
-impl AccessDotWeight<PrimitiveWeight> for LooseDotWeight {}
 
 impl GetSetPos for LooseDotWeight {
     fn pos(&self) -> Point {

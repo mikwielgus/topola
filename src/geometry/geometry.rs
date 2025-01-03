@@ -66,9 +66,14 @@ pub enum GenericNode<P, C> {
     Compound(C),
 }
 
-pub trait AccessDotWeight<PW>: GetSetPos + GetWidth + Into<PW> + Copy {}
-pub trait AccessSegWeight<PW>: GetWidth + Into<PW> + Copy {}
-pub trait AccessBendWeight<PW>: SetOffset + GetWidth + Into<PW> + Copy {}
+pub trait AccessDotWeight: GetSetPos + GetWidth + Copy {}
+impl<T: GetSetPos + GetWidth + Copy> AccessDotWeight for T {}
+
+pub trait AccessSegWeight: GetWidth + Copy {}
+impl<T: GetWidth + Copy> AccessSegWeight for T {}
+
+pub trait AccessBendWeight: SetOffset + GetWidth + Copy {}
+impl<T: SetOffset + GetWidth + Copy> AccessBendWeight for T {}
 
 #[derive(Debug, Getters)]
 pub struct Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
@@ -86,9 +91,9 @@ pub struct Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
 
 impl<
         PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: AccessDotWeight<PW>,
-        SW: AccessSegWeight<PW>,
-        BW: AccessBendWeight<PW>,
+        DW: AccessDotWeight + Into<PW>,
+        SW: AccessSegWeight + Into<PW>,
+        BW: AccessBendWeight + Into<PW>,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,
@@ -111,11 +116,11 @@ impl<
         }
     }
 
-    pub fn add_dot<W: AccessDotWeight<PW>>(&mut self, weight: W) -> GenericIndex<W> {
+    pub fn add_dot<W: AccessDotWeight + Into<PW>>(&mut self, weight: W) -> GenericIndex<W> {
         GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())))
     }
 
-    pub(super) fn add_dot_at_index<W: AccessDotWeight<PW>>(
+    pub(super) fn add_dot_at_index<W: AccessDotWeight + Into<PW>>(
         &mut self,
         dot: GenericIndex<W>,
         weight: W,
@@ -124,7 +129,7 @@ impl<
             .update_node(dot.petgraph_index(), GenericNode::Primitive(weight.into()));
     }
 
-    pub fn add_seg<W: AccessSegWeight<PW>>(
+    pub fn add_seg<W: AccessSegWeight + Into<PW>>(
         &mut self,
         from: DI,
         to: DI,
@@ -136,7 +141,7 @@ impl<
         seg
     }
 
-    pub(super) fn add_seg_at_index<W: AccessSegWeight<PW>>(
+    pub(super) fn add_seg_at_index<W: AccessSegWeight + Into<PW>>(
         &mut self,
         seg: GenericIndex<W>,
         from: DI,
@@ -148,7 +153,12 @@ impl<
         self.init_seg_joints(seg, from, to);
     }
 
-    fn init_seg_joints<W: AccessSegWeight<PW>>(&mut self, seg: GenericIndex<W>, from: DI, to: DI) {
+    fn init_seg_joints<W: AccessSegWeight + Into<PW>>(
+        &mut self,
+        seg: GenericIndex<W>,
+        from: DI,
+        to: DI,
+    ) {
         self.graph.update_edge(
             from.petgraph_index(),
             seg.petgraph_index(),
@@ -161,7 +171,7 @@ impl<
         );
     }
 
-    pub fn add_bend<W: AccessBendWeight<PW>>(
+    pub fn add_bend<W: AccessBendWeight + Into<PW>>(
         &mut self,
         from: DI,
         to: DI,
@@ -174,7 +184,7 @@ impl<
         bend
     }
 
-    pub(super) fn add_bend_at_index<W: AccessBendWeight<PW>>(
+    pub(super) fn add_bend_at_index<W: AccessBendWeight + Into<PW>>(
         &mut self,
         bend: GenericIndex<W>,
         from: DI,
@@ -192,7 +202,7 @@ impl<
             .update_node(compound.petgraph_index(), GenericNode::Compound(weight));
     }
 
-    fn init_bend_joints_and_core<W: AccessBendWeight<PW>>(
+    fn init_bend_joints_and_core<W: AccessBendWeight + Into<PW>>(
         &mut self,
         bend: GenericIndex<W>,
         from: DI,
@@ -556,9 +566,9 @@ impl<
 
 impl<
         PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: AccessDotWeight<PW>,
-        SW: AccessSegWeight<PW>,
-        BW: AccessBendWeight<PW>,
+        DW: AccessDotWeight + Into<PW>,
+        SW: AccessSegWeight + Into<PW>,
+        BW: AccessBendWeight + Into<PW>,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,

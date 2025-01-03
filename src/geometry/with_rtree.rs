@@ -50,9 +50,9 @@ pub struct GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
 #[debug_invariant(self.geometry.graph().node_count() == self.rtree.size())]
 impl<
         PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: AccessDotWeight<PW> + GetLayer,
-        SW: AccessSegWeight<PW> + GetLayer,
-        BW: AccessBendWeight<PW> + GetLayer,
+        DW: AccessDotWeight + Into<PW> + GetLayer,
+        SW: AccessSegWeight + Into<PW> + GetLayer,
+        BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,
@@ -68,7 +68,10 @@ impl<
         }
     }
 
-    pub fn add_dot<W: AccessDotWeight<PW> + GetLayer>(&mut self, weight: W) -> GenericIndex<W>
+    pub fn add_dot<W: AccessDotWeight + Into<PW> + GetLayer>(
+        &mut self,
+        weight: W,
+    ) -> GenericIndex<W>
     where
         GenericIndex<W>: Into<PI>,
     {
@@ -77,7 +80,7 @@ impl<
         dot
     }
 
-    pub(super) fn add_dot_at_index<W: AccessDotWeight<PW> + GetLayer>(
+    pub(super) fn add_dot_at_index<W: AccessDotWeight + Into<PW> + GetLayer>(
         &mut self,
         dot: DI,
         weight: W,
@@ -87,7 +90,7 @@ impl<
         self.init_dot_bbox(dot);
     }
 
-    pub fn add_seg<W: AccessSegWeight<PW> + GetLayer>(
+    pub fn add_seg<W: AccessSegWeight + Into<PW> + GetLayer>(
         &mut self,
         from: DI,
         to: DI,
@@ -101,7 +104,7 @@ impl<
         seg
     }
 
-    pub(super) fn add_seg_at_index<W: AccessSegWeight<PW> + GetLayer>(
+    pub(super) fn add_seg_at_index<W: AccessSegWeight + Into<PW> + GetLayer>(
         &mut self,
         seg: SI,
         from: DI,
@@ -117,7 +120,7 @@ impl<
         self.init_seg_bbox(seg);
     }
 
-    pub fn add_bend<W: AccessBendWeight<PW> + GetLayer>(
+    pub fn add_bend<W: AccessBendWeight + Into<PW> + GetLayer>(
         &mut self,
         from: DI,
         to: DI,
@@ -132,7 +135,7 @@ impl<
         bend
     }
 
-    pub(super) fn add_bend_at_index<W: AccessBendWeight<PW> + GetLayer>(
+    pub(super) fn add_bend_at_index<W: AccessBendWeight + Into<PW> + GetLayer>(
         &mut self,
         bend: BI,
         from: DI,
@@ -260,9 +263,9 @@ impl<
 
 impl<
         PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: AccessDotWeight<PW> + GetLayer,
-        SW: AccessSegWeight<PW> + GetLayer,
-        BW: AccessBendWeight<PW> + GetLayer,
+        DW: AccessDotWeight + Into<PW> + GetLayer,
+        SW: AccessSegWeight + Into<PW> + GetLayer,
+        BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,
@@ -390,9 +393,9 @@ impl<
 
 impl<
         PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: AccessDotWeight<PW> + GetLayer,
-        SW: AccessSegWeight<PW> + GetLayer,
-        BW: AccessBendWeight<PW> + GetLayer,
+        DW: AccessDotWeight + Into<PW> + GetLayer,
+        SW: AccessSegWeight + Into<PW> + GetLayer,
+        BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,

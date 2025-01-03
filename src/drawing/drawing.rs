@@ -211,7 +211,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
 
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
-    fn add_dot_with_infringables<W: AccessDotWeight<PrimitiveWeight> + GetLayer>(
+    fn add_dot_with_infringables<W: AccessDotWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
         recorder: &mut DrawingEdit<CW>,
         weight: W,
@@ -286,7 +286,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().edge_count() >= old(self.recording_geometry_with_rtree.graph().edge_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn add_seg_with_infringables<W: AccessSegWeight<PrimitiveWeight> + GetLayer>(
+    fn add_seg_with_infringables<W: AccessSegWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
         recorder: &mut DrawingEdit<CW>,
         from: DotIndex,
@@ -373,7 +373,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count() + 3))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn add_core_bend_with_infringables<W: AccessBendWeight<PrimitiveWeight> + GetLayer>(
+    fn add_core_bend_with_infringables<W: AccessBendWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
         recorder: &mut DrawingEdit<CW>,
         from: DotIndex,
@@ -848,7 +848,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
 impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn add_dot_infringably<W: AccessDotWeight<PrimitiveWeight> + GetLayer>(
+    fn add_dot_infringably<W: AccessDotWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
         recorder: &mut DrawingEdit<CW>,
         weight: W,
@@ -861,7 +861,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
 
     #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count() + 2))]
-    fn add_seg_infringably<W: AccessSegWeight<PrimitiveWeight> + GetLayer>(
+    fn add_seg_infringably<W: AccessSegWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
         recorder: &mut DrawingEdit<CW>,
         from: DotIndex,
