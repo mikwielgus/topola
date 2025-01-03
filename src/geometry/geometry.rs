@@ -2,9 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::marker::PhantomData;
-
-use derive_getters::Getters;
+use core::marker::PhantomData;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
@@ -75,7 +73,7 @@ impl<T: GetWidth + Copy> AccessSegWeight for T {}
 pub trait AccessBendWeight: SetOffset + GetWidth + Copy {}
 impl<T: SetOffset + GetWidth + Copy> AccessBendWeight for T {}
 
-#[derive(Debug, Getters)]
+#[derive(Debug)]
 pub struct Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     graph: StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize>,
     primitive_weight_marker: PhantomData<PW>,
@@ -89,18 +87,7 @@ pub struct Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     bend_index_marker: PhantomData<BI>,
 }
 
-impl<
-        PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: AccessDotWeight + Into<PW>,
-        SW: AccessSegWeight + Into<PW>,
-        BW: AccessBendWeight + Into<PW>,
-        CW: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Copy,
-    > Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>
-{
+impl<PW, DW, SW, BW, CW, PI, DI, SI, BI> Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     pub fn new() -> Self {
         Self {
             graph: StableDiGraph::default(),
@@ -116,6 +103,27 @@ impl<
         }
     }
 
+    // we could use `derive_getters` to generate these, but `Geometry` only wraps a single
+    // field that actually contains data...
+
+    #[inline(always)]
+    pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel, usize> {
+        &self.graph
+    }
+}
+
+impl<
+        PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
+        DW: AccessDotWeight + Into<PW>,
+        SW: AccessSegWeight + Into<PW>,
+        BW: AccessBendWeight + Into<PW>,
+        CW: Copy,
+        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
+        DI: GetPetgraphIndex + Into<PI> + Copy,
+        SI: GetPetgraphIndex + Into<PI> + Copy,
+        BI: GetPetgraphIndex + Into<PI> + Copy,
+    > Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>
+{
     pub fn add_dot<W: AccessDotWeight + Into<PW>>(&mut self, weight: W) -> GenericIndex<W> {
         GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())))
     }
@@ -564,17 +572,8 @@ impl<
     }
 }
 
-impl<
-        PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
-        DW: AccessDotWeight + Into<PW>,
-        SW: AccessSegWeight + Into<PW>,
-        BW: AccessBendWeight + Into<PW>,
-        CW: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Copy,
-    > ManageCompounds<CW, GenericIndex<CW>> for Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>
+impl<PW, DW, SW, BW, CW: Copy, PI, DI, SI, BI> ManageCompounds<CW, GenericIndex<CW>>
+    for Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
     fn add_compound(&mut self, weight: CW) -> GenericIndex<CW> {
         GenericIndex::<CW>::new(self.graph.add_node(GenericNode::Compound(weight)))
