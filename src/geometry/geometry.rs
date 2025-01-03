@@ -48,7 +48,7 @@ pub trait GetOffset {
 }
 
 #[enum_dispatch]
-pub trait SetOffset {
+pub trait SetOffset: GetOffset {
     fn set_offset(&mut self, offset: f64);
 }
 
@@ -68,7 +68,7 @@ pub enum GenericNode<P, C> {
 
 pub trait AccessDotWeight<PW>: GetSetPos + GetWidth + Into<PW> + Copy {}
 pub trait AccessSegWeight<PW>: GetWidth + Into<PW> + Copy {}
-pub trait AccessBendWeight<PW>: GetOffset + SetOffset + GetWidth + Into<PW> + Copy {}
+pub trait AccessBendWeight<PW>: SetOffset + GetWidth + Into<PW> + Copy {}
 
 #[derive(Debug, Getters)]
 pub struct Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
