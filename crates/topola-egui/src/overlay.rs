@@ -7,7 +7,10 @@ use rstar::{Point as _, AABB};
 use spade::InsertionError;
 
 use topola::{
-    autorouter::{ratsnest::Ratsnest, selection::Selection},
+    autorouter::{
+        ratsnest::Ratsnest,
+        selection::{BboxSelectionKind, Selection},
+    },
     board::{mesadata::AccessMesadata, Board},
     drawing::{
         graph::{GetLayer, MakePrimitive},
@@ -53,7 +56,11 @@ impl Overlay {
     }
 
     pub fn select_all(&mut self, board: &Board<impl AccessMesadata>) {
-        self.select_all_in_bbox(board, &AABB::from_corners([-INF, -INF], [INF, INF]));
+        self.select_all_in_bbox(
+            board,
+            &AABB::from_corners([-INF, -INF], [INF, INF]),
+            BboxSelectionKind::CompletelyInside,
+        );
     }
 
     pub fn unselect_all(&mut self) {
@@ -81,21 +88,21 @@ impl Overlay {
     }
 
     pub fn drag_stop(&mut self, board: &Board<impl AccessMesadata>, at: Point) {
-        if let Some((selmode, aabb)) = self.get_bbox_reselect(at) {
+        if let Some((selmode, bsk, aabb)) = self.get_bbox_reselect(at) {
             // handle bounding box selection
             self.reselect_bbox = None;
 
             match selmode {
                 SelectionMode::Substitution => {
                     self.selection = Selection::new();
-                    self.select_all_in_bbox(board, &aabb);
+                    self.select_all_in_bbox(board, &aabb, bsk);
                 }
                 SelectionMode::Addition => {
-                    self.select_all_in_bbox(board, &aabb);
+                    self.select_all_in_bbox(board, &aabb, bsk);
                 }
                 SelectionMode::Toggling => {
                     let old_selection = self.take_selection();
-                    self.select_all_in_bbox(board, &aabb);
+                    self.select_all_in_bbox(board, &aabb, bsk);
                     self.selection ^= &old_selection;
                 }
             }
@@ -134,9 +141,10 @@ impl Overlay {
         &mut self,
         board: &Board<impl AccessMesadata>,
         aabb: &AABB<[f64; 2]>,
+        bsk: BboxSelectionKind,
     ) {
         self.selection
-            .select_all_in_bbox(board, aabb, self.active_layer);
+            .select_all_in_bbox(board, aabb, self.active_layer, bsk);
     }
 
     pub fn ratsnest(&self) -> &Ratsnest {
@@ -148,10 +156,21 @@ impl Overlay {
     }
 
     /// Returns the currently selected bounding box of a bounding-box reselect
-    pub fn get_bbox_reselect(&self, at: Point) -> Option<(SelectionMode, AABB<[f64; 2]>)> {
+    pub fn get_bbox_reselect(
+        &self,
+        at: Point,
+    ) -> Option<(SelectionMode, BboxSelectionKind, AABB<[f64; 2]>)> {
         self.reselect_bbox.map(|(selmode, pt)| {
             (
                 selmode,
+                // Δx = at.x() - pt.x()
+                if at.x() <= pt.x() {
+                    // Δx ≤ 0
+                    BboxSelectionKind::MerelyIntersects
+                } else {
+                    // Δx > 0
+                    BboxSelectionKind::CompletelyInside
+                },
                 AABB::from_corners([pt.x(), pt.y()], [at.x(), at.y()]),
             )
         })

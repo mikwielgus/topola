@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use rstar::AABB;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    board::{mesadata::AccessMesadata, BandName, Board},
+    board::{mesadata::AccessMesadata, BandName, Board, ResolvedSelector},
     drawing::graph::{GetLayer, MakePrimitive, PrimitiveIndex},
     geometry::GenericNode,
     graph::{GenericIndex, GetPetgraphIndex},
@@ -54,6 +54,17 @@ impl PinSelector {
         } else {
             None
         }
+    }
+
+    pub fn try_from_pin_and_layer_id(
+        board: &Board<impl AccessMesadata>,
+        pin: &str,
+        layer: usize,
+    ) -> Option<PinSelector> {
+        Some(PinSelector {
+            pin: pin.to_string(),
+            layer: board.layout().rules().layer_layername(layer)?.to_string(),
+        })
     }
 }
 
@@ -109,10 +120,18 @@ impl BandSelector {
             _ => return None,
         };
 
+        Self::try_from_uid(
+            board,
+            &board.layout().drawing().collect().loose_band_uid(loose),
+        )
+    }
+
+    pub fn try_from_uid(
+        board: &Board<impl AccessMesadata>,
+        uid: &crate::drawing::band::BandUid,
+    ) -> Option<BandSelector> {
         Some(BandSelector {
-            band: board
-                .band_bandname(&board.layout().drawing().collect().loose_band_uid(loose))?
-                .clone(),
+            band: board.band_bandname(uid)?.clone(),
         })
     }
 }
@@ -135,6 +154,22 @@ impl BandSelection {
     }
 }
 
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum BboxSelectionKind {
+    CompletelyInside,
+    MerelyIntersects,
+}
+
+impl BboxSelectionKind {
+    pub fn matches(&self, bigger: &AABB<[f64; 2]>, smaller: &AABB<[f64; 2]>) -> bool {
+        use rstar::Envelope;
+        match self {
+            Self::CompletelyInside => bigger.contains_envelope(&smaller),
+            Self::MerelyIntersects => bigger.intersection_area(&smaller) > 0.0,
+        }
+    }
+}
+
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
 pub struct Selection {
     pub pin_selection: PinSelection,
@@ -151,20 +186,80 @@ impl Selection {
         board: &Board<impl AccessMesadata>,
         aabb: &AABB<[f64; 2]>,
         active_layer: usize,
+        kind: BboxSelectionKind,
     ) {
-        use rstar::Envelope;
+        const INF: f64 = f64::INFINITY;
         let layout = board.layout();
-        for &geom in layout.drawing().rtree().locate_in_envelope_intersecting(
-            &AABB::<[f64; 3]>::from_corners(
-                [aabb.lower()[0], aabb.lower()[1], -f64::INFINITY],
-                [aabb.upper()[0], aabb.upper()[1], f64::INFINITY],
-            ),
-        ) {
-            let node = geom.data;
-            if aabb.contains_envelope(&layout.node_bbox(node))
-                && layout.is_node_in_layer(node, active_layer)
-            {
-                self.select_at_node(board, node);
+
+        let resolved_selectors =
+            match kind {
+                BboxSelectionKind::CompletelyInside => {
+                    // 1. gather relevant node indices, and group them by resolved selectors
+                    // .0 collects all nodes per resolved selection
+                    // .1 collects only nodes which are actively selected here
+                    let mut selectors = BTreeMap::<
+                        ResolvedSelector,
+                        (BTreeSet<NodeIndex>, BTreeSet<NodeIndex>),
+                    >::new();
+                    for &geom in layout.drawing().rtree().locate_in_envelope_intersecting(
+                        &AABB::<[f64; 3]>::from_corners([-INF, -INF, -INF], [INF, INF, INF]),
+                    ) {
+                        let node = geom.data;
+                        if layout.is_node_in_layer(node, active_layer) {
+                            if let Some(rsel) = ResolvedSelector::try_from_node(board, node) {
+                                let rseli = selectors.entry(rsel).or_default();
+                                rseli.0.insert(node);
+                                if kind.matches(aabb, &layout.node_bbox(node)) {
+                                    rseli.1.insert(node);
+                                }
+                            }
+                        }
+                    }
+
+                    // 2. restrict to complete matches, return associated keys
+                    selectors
+                        .into_iter()
+                        .filter(|(_, nis)| &nis.0 == &nis.1)
+                        .map(|(k, _)| k)
+                        .collect::<BTreeSet<_>>()
+                }
+                BboxSelectionKind::MerelyIntersects => {
+                    // 1. gather relevant resolved selectors
+                    let mut selectors = BTreeSet::<ResolvedSelector>::new();
+                    for &geom in layout.drawing().rtree().locate_in_envelope_intersecting(
+                        &AABB::<[f64; 3]>::from_corners(
+                            [aabb.lower()[0], aabb.lower()[1], -f64::INFINITY],
+                            [aabb.upper()[0], aabb.upper()[1], f64::INFINITY],
+                        ),
+                    ) {
+                        let node = geom.data;
+                        if layout.is_node_in_layer(node, active_layer)
+                            && kind.matches(aabb, &layout.node_bbox(node))
+                        {
+                            if let Some(rsel) = ResolvedSelector::try_from_node(board, node) {
+                                selectors.insert(rsel);
+                            }
+                        }
+                    }
+                    // 2. nothing to restrict
+                    selectors
+                }
+            };
+
+        // 3. convert resolved selectors to actual selections
+        for i in resolved_selectors {
+            match i {
+                ResolvedSelector::Band { band_uid } => {
+                    if let Some(x) = BandSelector::try_from_uid(board, &band_uid) {
+                        self.band_selection.0.insert(x);
+                    }
+                }
+                ResolvedSelector::Pin { pin_name, layer } => {
+                    if let Some(x) = PinSelector::try_from_pin_and_layer_id(board, pin_name, layer)
+                    {
+                        self.pin_selection.0.insert(x);
+                    }
+                }
             }
         }
     }

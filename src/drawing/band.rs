@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
+use core::{cmp, hash};
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
@@ -19,7 +20,7 @@ use super::{
     Drawing,
 };
 
-#[derive(Clone, Copy, Debug, Ord, PartialOrd)]
+#[derive(Clone, Copy, Debug)]
 pub struct BandUid(pub BandTermsegIndex, pub BandTermsegIndex);
 
 impl BandUid {
@@ -40,6 +41,30 @@ impl PartialEq for BandUid {
 }
 
 impl Eq for BandUid {}
+
+impl hash::Hash for BandUid {
+    fn hash<H: hash::Hasher>(&self, state: &mut H) {
+        self.0.petgraph_index().hash(state);
+        self.1.petgraph_index().hash(state);
+    }
+}
+
+impl cmp::PartialOrd for BandUid {
+    fn partial_cmp(&self, other: &Self) -> Option<cmp::Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl cmp::Ord for BandUid {
+    fn cmp(&self, other: &Self) -> cmp::Ordering {
+        use cmp::Ordering as O;
+        match self.0.petgraph_index().cmp(&other.0.petgraph_index()) {
+            O::Less => O::Less,
+            O::Greater => O::Greater,
+            O::Equal => self.1.petgraph_index().cmp(&other.1.petgraph_index()),
+        }
+    }
+}
 
 #[enum_dispatch(GetPetgraphIndex)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]

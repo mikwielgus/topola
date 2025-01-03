@@ -100,9 +100,17 @@ impl Viewport {
                             );
                         } else if response.drag_stopped_by(egui::PointerButton::Primary) {
                             overlay.drag_stop(board, latest_point);
-                        } else if let Some((_, cur_bbox)) = overlay.get_bbox_reselect(latest_point)
+                        } else if let Some((_, bsk, cur_bbox)) =
+                            overlay.get_bbox_reselect(latest_point)
                         {
-                            painter.paint_bbox_with_color(cur_bbox, egui::Color32::RED);
+                            use topola::autorouter::selection::BboxSelectionKind;
+                            painter.paint_bbox_with_color(
+                                cur_bbox,
+                                match bsk {
+                                    BboxSelectionKind::CompletelyInside => egui::Color32::YELLOW,
+                                    BboxSelectionKind::MerelyIntersects => egui::Color32::BLUE,
+                                },
+                            );
                         }
 
                         let board = workspace.interactor.invoker().autorouter().board();

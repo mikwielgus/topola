@@ -51,6 +51,53 @@ impl BandName {
     }
 }
 
+#[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub enum ResolvedSelector<'a> {
+    Band { band_uid: BandUid },
+    Pin { pin_name: &'a str, layer: usize },
+}
+
+impl<'a> ResolvedSelector<'a> {
+    pub fn try_from_node(board: &'a Board<impl AccessMesadata>, node: NodeIndex) -> Option<Self> {
+        use crate::{drawing::graph::MakePrimitive, graph::GetPetgraphIndex};
+
+        let (layer, loose) = match node {
+            NodeIndex::Primitive(primitive) => (
+                primitive.primitive(board.layout().drawing()).layer(),
+                match primitive {
+                    PrimitiveIndex::LooseDot(dot) => Some(dot.into()),
+                    PrimitiveIndex::LoneLooseSeg(seg) => Some(seg.into()),
+                    PrimitiveIndex::SeqLooseSeg(seg) => Some(seg.into()),
+                    PrimitiveIndex::LooseBend(bend) => Some(bend.into()),
+                    _ => None,
+                },
+            ),
+            NodeIndex::Compound(compound) => {
+                match board.layout().drawing().compound_weight(compound) {
+                    CompoundWeight::Poly(..) => (
+                        board
+                            .layout()
+                            .poly(GenericIndex::<PolyWeight>::new(compound.petgraph_index()))
+                            .layer(),
+                        None,
+                    ),
+                    _ => return None,
+                }
+            }
+        };
+
+        if let Some(pin_name) = board.node_pinname(&node) {
+            Some(ResolvedSelector::Pin { pin_name, layer })
+        } else if let Some(loose) = loose {
+            Some(ResolvedSelector::Band {
+                band_uid: board.layout().drawing().collect().loose_band_uid(loose),
+            })
+        } else {
+            None
+        }
+    }
+}
+
 /// Represents a board layout and its associated metadata.
 ///
 /// The struct manages the relationships between board's layout,
