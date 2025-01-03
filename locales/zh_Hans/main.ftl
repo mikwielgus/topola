@@ -43,3 +43,5 @@ tr-menu-help-online-documentation = 在线文档
 tr-menu-preferences-set-language = 设置语言
 tr-menu-preferences = 首选项
 tr-menu-route-routed-band-width = 布线宽度
+tr-menu-edit-unselect-all = 取消全选
+tr-menu-edit-select-all = 全选
