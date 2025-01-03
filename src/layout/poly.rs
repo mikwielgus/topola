@@ -16,14 +16,14 @@ use crate::{
         rules::AccessRules,
         seg::SegIndex,
     },
-    geometry::{poly::PolyShape, GetPos},
+    geometry::GetPos,
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{CompoundWeight, Layout},
 };
 
 #[enum_dispatch]
-pub trait MakePolyShape {
-    fn shape(&self) -> PolyShape;
+pub trait MakePolygon {
+    fn shape(&self) -> Polygon;
 }
 
 #[enum_dispatch]
@@ -75,37 +75,35 @@ impl<'a, R: AccessRules> GetMaybeNet for Poly<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> MakePolyShape for Poly<'a, R> {
-    fn shape(&self) -> PolyShape {
-        PolyShape {
-            polygon: Polygon::new(
-                LineString::from(
-                    self.layout
-                        .drawing()
-                        .geometry()
-                        .compound_members(self.index.into())
-                        .filter_map(|primitive_node| {
-                            let PrimitiveIndex::FixedDot(dot) = primitive_node else {
-                                return None;
-                            };
+impl<'a, R: AccessRules> MakePolygon for Poly<'a, R> {
+    fn shape(&self) -> Polygon {
+        Polygon::new(
+            LineString::from(
+                self.layout
+                    .drawing()
+                    .geometry()
+                    .compound_members(self.index.into())
+                    .filter_map(|primitive_node| {
+                        let PrimitiveIndex::FixedDot(dot) = primitive_node else {
+                            return None;
+                        };
 
-                            if self.is_apex(dot) {
-                                None
-                            } else {
-                                Some(
-                                    self.layout
-                                        .drawing()
-                                        .geometry()
-                                        .dot_weight(dot.into())
-                                        .pos(),
-                                )
-                            }
-                        })
-                        .collect::<Vec<Point>>(),
-                ),
-                vec![],
+                        if self.is_apex(dot) {
+                            None
+                        } else {
+                            Some(
+                                self.layout
+                                    .drawing()
+                                    .geometry()
+                                    .dot_weight(dot.into())
+                                    .pos(),
+                            )
+                        }
+                    })
+                    .collect::<Vec<Point>>(),
             ),
-        }
+            vec![],
+        )
     }
 }
 

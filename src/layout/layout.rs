@@ -27,7 +27,7 @@ use crate::{
     geometry::{edit::ApplyGeometryEdit, shape::Shape, GenericNode},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
-        poly::{MakePolyShape, Poly, PolyWeight},
+        poly::{MakePolygon, Poly, PolyWeight},
         via::{Via, ViaWeight},
     },
 };

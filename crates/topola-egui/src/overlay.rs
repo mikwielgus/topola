@@ -19,7 +19,7 @@ use topola::{
     geometry::shape::{AccessShape, Shape},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
-        poly::{MakePolyShape, PolyWeight},
+        poly::{MakePolygon, PolyWeight},
         via::ViaWeight,
         CompoundWeight, Layout, NodeIndex,
     },

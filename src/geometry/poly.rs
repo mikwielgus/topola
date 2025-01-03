@@ -8,16 +8,11 @@ use rstar::AABB;
 
 use crate::geometry::shape::{AccessShape, MeasureLength};
 
-#[derive(Debug, Clone, PartialEq)]
-pub struct PolyShape {
-    pub polygon: Polygon,
-}
-
-impl MeasureLength for PolyShape {
+impl MeasureLength for Polygon {
     fn length(&self) -> f64 {
         let mut length = 0.0;
 
-        for line in self.polygon.exterior().lines() {
+        for line in self.exterior().lines() {
             length += line.length::<Euclidean>();
         }
 
@@ -25,19 +20,18 @@ impl MeasureLength for PolyShape {
     }
 }
 
-impl AccessShape for PolyShape {
+impl AccessShape for Polygon {
     fn center(&self) -> Point {
-        self.polygon.centroid().unwrap()
+        self.centroid().unwrap()
     }
 
     fn contains_point(&self, p: Point) -> bool {
-        self.polygon.contains(&p)
+        self.contains(&p)
     }
 
     fn bbox_without_margin(&self) -> AABB<[f64; 2]> {
         AABB::from_points(
-            self.polygon
-                .exterior()
+            self.exterior()
                 .0
                 .iter()
                 .map(|coord| [coord.x, coord.y])

@@ -28,7 +28,7 @@ use crate::{
     geometry::{edit::ApplyGeometryEdit, shape::AccessShape, GenericNode},
     graph::GenericIndex,
     layout::{
-        poly::{GetMaybeApex, MakePolyShape, PolyWeight},
+        poly::{GetMaybeApex, MakePolygon, PolyWeight},
         CompoundWeight, Layout, LayoutEdit, NodeIndex,
     },
     math::Circle,

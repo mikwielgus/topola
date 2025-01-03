@@ -30,7 +30,7 @@ use crate::{
     geometry::shape::AccessShape,
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
-        poly::{MakePolyShape, PolyWeight},
+        poly::{MakePolygon, PolyWeight},
         Layout,
     },
     triangulation::{GetTrianvertexNodeIndex, Triangulation},

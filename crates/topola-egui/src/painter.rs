@@ -5,7 +5,10 @@
 use geo::{CoordsIter, Point, Polygon};
 use rstar::AABB;
 use topola::{
-    geometry::primitive::{AccessPrimitiveShape, PrimitiveShape},
+    geometry::{
+        primitive::{AccessPrimitiveShape, PrimitiveShape},
+        shape::AccessShape,
+    },
     math::Circle,
 };
 
@@ -54,7 +57,7 @@ impl<'a> Painter<'a> {
         self.ui.painter().add(epaint_shape);
 
         if self.paint_bboxes {
-            self.paint_bbox(AccessPrimitiveShape::bbox(shape, 0.0));
+            self.paint_bbox(AccessShape::bbox(shape, 0.0));
         }
     }
 

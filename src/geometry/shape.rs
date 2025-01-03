@@ -3,13 +3,10 @@
 // SPDX-License-Identifier: MIT
 
 use enum_dispatch::enum_dispatch;
-use geo::Point;
+use geo::{Point, Polygon};
 use rstar::AABB;
 
-use crate::geometry::{
-    poly::PolyShape,
-    primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
-};
+use crate::geometry::primitive::{BendShape, DotShape, PrimitiveShape, SegShape};
 
 #[enum_dispatch]
 pub trait MeasureLength {
@@ -37,7 +34,7 @@ pub enum Shape {
     Dot(DotShape),
     Seg(SegShape),
     Bend(BendShape),
-    Poly(PolyShape),
+    Poly(Polygon),
 }
 
 impl From<PrimitiveShape> for Shape {

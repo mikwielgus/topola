@@ -166,10 +166,7 @@ impl AccessShape for SegShape {
     }
 
     fn bbox_without_margin(&self) -> AABB<[f64; 2]> {
-        super::poly::PolyShape {
-            polygon: self.polygon(),
-        }
-        .bbox_without_margin()
+        self.polygon().bbox_without_margin()
     }
 }
 
