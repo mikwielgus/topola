@@ -14,7 +14,7 @@ use crate::{
         rules::AccessRules,
         Drawing,
     },
-    geometry::{AccessDotWeight, GetPos, GetWidth, SetPos},
+    geometry::{AccessDotWeight, GetSetPos, GetWidth},
     graph::{GenericIndex, GetPetgraphIndex},
     math::Circle,
 };
@@ -47,7 +47,7 @@ impl TryFrom<PrimitiveIndex> for DotIndex {
     }
 }
 
-#[enum_dispatch(GetPos, SetPos, GetWidth, GetLayer)]
+#[enum_dispatch(GetSetPos, GetWidth, GetLayer)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum DotWeight {
     Fixed(FixedDotWeight),
@@ -87,13 +87,11 @@ pub struct FixedDotWeight {
 impl_fixed_weight!(FixedDotWeight, FixedDot, FixedDotIndex);
 impl AccessDotWeight<PrimitiveWeight> for FixedDotWeight {}
 
-impl GetPos for FixedDotWeight {
+impl GetSetPos for FixedDotWeight {
     fn pos(&self) -> Point {
         self.circle.pos
     }
-}
 
-impl SetPos for FixedDotWeight {
     fn set_pos(&mut self, pos: Point) {
         self.circle.pos = pos
     }
@@ -115,13 +113,11 @@ pub struct LooseDotWeight {
 impl_loose_weight!(LooseDotWeight, LooseDot, LooseDotIndex);
 impl AccessDotWeight<PrimitiveWeight> for LooseDotWeight {}
 
-impl GetPos for LooseDotWeight {
+impl GetSetPos for LooseDotWeight {
     fn pos(&self) -> Point {
         self.circle.pos
     }
-}
 
-impl SetPos for LooseDotWeight {
     fn set_pos(&mut self, pos: Point) {
         self.circle.pos = pos
     }

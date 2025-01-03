@@ -17,7 +17,7 @@ use crate::{
         seg::SegIndex,
         Drawing,
     },
-    geometry::GetPos,
+    geometry::GetSetPos,
     graph::{GenericIndex, GetPetgraphIndex},
     layout::CompoundWeight,
 };

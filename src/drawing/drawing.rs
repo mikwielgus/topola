@@ -16,7 +16,7 @@ use crate::geometry::{
     recording_with_rtree::RecordingGeometryWithRtree,
     with_rtree::BboxedIndex,
     AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
-    GetOffset, GetPos, GetWidth,
+    GetOffset, GetSetPos, GetWidth,
 };
 use crate::graph::{GenericIndex, GetPetgraphIndex};
 use crate::math::NoTangents;

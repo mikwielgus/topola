@@ -32,12 +32,8 @@ use crate::{
 };
 
 #[enum_dispatch]
-pub trait GetPos {
+pub trait GetSetPos {
     fn pos(&self) -> Point;
-}
-
-#[enum_dispatch]
-pub trait SetPos {
     fn set_pos(&mut self, pos: Point);
 }
 
@@ -70,7 +66,7 @@ pub enum GenericNode<P, C> {
     Compound(C),
 }
 
-pub trait AccessDotWeight<PW>: GetPos + SetPos + GetWidth + Into<PW> + Copy {}
+pub trait AccessDotWeight<PW>: GetSetPos + GetWidth + Into<PW> + Copy {}
 pub trait AccessSegWeight<PW>: GetWidth + Into<PW> + Copy {}
 pub trait AccessBendWeight<PW>: GetOffset + SetOffset + GetWidth + Into<PW> + Copy {}
 
