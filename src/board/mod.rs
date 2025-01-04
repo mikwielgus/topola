@@ -10,9 +10,9 @@ pub mod mesadata {
     pub use specctra_core::mesadata::AccessMesadata;
 }
 
-use std::{cmp::Ordering, collections::HashMap};
+use std::{cmp::Ordering, collections::BTreeMap};
 
-use bimap::BiHashMap;
+use bimap::BiBTreeMap;
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
@@ -35,7 +35,7 @@ use crate::{
 };
 
 /// Represents a band between two pins.
-#[derive(Debug, Hash, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, PartialOrd, Ord, PartialEq, Serialize)]
 pub struct BandName(String, String);
 
 impl BandName {
@@ -60,9 +60,9 @@ pub struct Board<M> {
     layout: Layout<M>,
     // TODO: Simplify access logic to these members so that `#[getter(skip)]`s can be removed.
     #[getter(skip)]
-    node_to_pinname: HashMap<NodeIndex, String>,
+    node_to_pinname: BTreeMap<NodeIndex, String>,
     #[getter(skip)]
-    band_bandname: BiHashMap<BandUid, BandName>,
+    band_bandname: BiBTreeMap<BandUid, BandName>,
 }
 
 impl<M> Board<M> {
@@ -70,8 +70,8 @@ impl<M> Board<M> {
     pub fn new(layout: Layout<M>) -> Self {
         Self {
             layout,
-            node_to_pinname: HashMap::new(),
-            band_bandname: BiHashMap::new(),
+            node_to_pinname: BTreeMap::new(),
+            band_bandname: BiBTreeMap::new(),
         }
     }
 

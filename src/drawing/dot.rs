@@ -20,7 +20,7 @@ use crate::{
 };
 
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum DotIndex {
     Fixed(FixedDotIndex),
     Loose(LooseDotIndex),

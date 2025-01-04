@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::hash_map::Entry as HashMapEntry;
-use std::hash::Hash;
+use std::collections::btree_map::Entry as BTreeMapEntry;
 
 use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
@@ -33,10 +32,10 @@ impl<
         SW: AccessSegWeight<PW> + GetLayer,
         BW: AccessBendWeight<PW> + GetLayer,
         CW: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Hash + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
+        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
+        DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
     > RecordingGeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
     pub fn new(layer_count: usize) -> Self {
@@ -316,23 +315,23 @@ impl<
     }
 }
 
-fn edit_remove_from_map<I, T>(
-    map: &mut std::collections::HashMap<I, (Option<T>, Option<T>)>,
+fn edit_remove_from_map<I: Ord, T>(
+    map: &mut std::collections::BTreeMap<I, (Option<T>, Option<T>)>,
     index: I,
     data: T,
 ) where
-    I: core::cmp::Eq + Hash,
+    I: core::cmp::Eq + Ord,
 {
     let to_be_inserted = (Some(data), None);
     match map.entry(index) {
-        HashMapEntry::Occupied(mut occ) => {
+        BTreeMapEntry::Occupied(mut occ) => {
             if let (None, Some(_)) = occ.get() {
                 occ.remove();
             } else {
                 *occ.get_mut() = to_be_inserted;
             }
         }
-        HashMapEntry::Vacant(vac) => {
+        BTreeMapEntry::Vacant(vac) => {
             vac.insert(to_be_inserted);
         }
     }
@@ -344,10 +343,10 @@ impl<
         SW: AccessSegWeight<PW> + GetLayer,
         BW: AccessBendWeight<PW> + GetLayer,
         CW: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Hash + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Eq + Hash + Copy,
+        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
+        DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
     > ApplyGeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>
     for RecordingGeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {

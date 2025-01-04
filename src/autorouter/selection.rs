@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::HashSet;
+use std::collections::BTreeSet;
 
 use rstar::AABB;
 use serde::{Deserialize, Serialize};
@@ -10,12 +10,12 @@ use serde::{Deserialize, Serialize};
 use crate::{
     board::{mesadata::AccessMesadata, BandName, Board},
     drawing::graph::{GetLayer, MakePrimitive, PrimitiveIndex},
-    geometry::{compound::ManageCompounds, GenericNode},
+    geometry::GenericNode,
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{poly::PolyWeight, CompoundWeight, NodeIndex},
 };
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct PinSelector {
     pub pin: String,
     pub layer: String,
@@ -58,7 +58,7 @@ impl PinSelector {
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct PinSelection(HashSet<PinSelector>);
+pub struct PinSelection(BTreeSet<PinSelector>);
 
 impl PinSelection {
     pub fn new() -> Self {
@@ -87,7 +87,7 @@ impl PinSelection {
     }
 }
 
-#[derive(Debug, Clone, Hash, Eq, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct BandSelector {
     pub band: BandName,
 }
@@ -118,7 +118,7 @@ impl BandSelector {
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct BandSelection(HashSet<BandSelector>);
+pub struct BandSelection(BTreeSet<BandSelector>);
 
 impl BandSelection {
     pub fn new() -> Self {

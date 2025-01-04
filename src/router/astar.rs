@@ -3,10 +3,8 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::hash_map::Entry::{Occupied, Vacant};
-use std::collections::{BinaryHeap, HashMap, VecDeque};
+use std::collections::{btree_map::Entry, BTreeMap, BinaryHeap, VecDeque};
 
-use std::hash::Hash;
 use std::ops::ControlFlow;
 
 use petgraph::algo::Measure;
@@ -63,19 +61,19 @@ impl<K: PartialOrd, T> Ord for MinScored<K, T> {
 pub struct PathTracker<G>
 where
     G: GraphBase,
-    G::NodeId: Eq + Hash,
+    G::NodeId: Eq + Ord,
 {
-    came_from: HashMap<G::NodeId, G::NodeId>,
+    came_from: BTreeMap<G::NodeId, G::NodeId>,
 }
 
 impl<G> PathTracker<G>
 where
     G: GraphBase,
-    G::NodeId: Eq + Hash,
+    G::NodeId: Eq + Ord,
 {
     fn new() -> PathTracker<G> {
         PathTracker {
-            came_from: HashMap::new(),
+            came_from: BTreeMap::new(),
         }
     }
 
@@ -101,7 +99,7 @@ where
 pub trait AstarStrategy<G, K, R>
 where
     G: GraphBase,
-    G::NodeId: Eq + Hash,
+    G::NodeId: Eq + Ord,
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
     K: Measure + Copy,
 {
@@ -122,14 +120,14 @@ pub trait MakeEdgeRef: IntoEdgeReferences {
 pub struct Astar<G, K>
 where
     G: GraphBase,
-    G::NodeId: Eq + Hash,
+    G::NodeId: Eq + Ord,
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
     K: Measure + Copy,
 {
     pub graph: G,
     pub visit_next: BinaryHeap<MinScored<K, G::NodeId>>,
-    pub scores: HashMap<G::NodeId, K>,
-    pub estimate_scores: HashMap<G::NodeId, K>,
+    pub scores: BTreeMap<G::NodeId, K>,
+    pub estimate_scores: BTreeMap<G::NodeId, K>,
     pub path_tracker: PathTracker<G>,
     pub maybe_curr_node: Option<G::NodeId>,
     // FIXME: To work around edge references borrowing from the graph we collect then reiterate over tem.
@@ -154,7 +152,7 @@ pub enum AstarError {
 impl<G, K> Astar<G, K>
 where
     G: GraphBase,
-    G::NodeId: Eq + Hash,
+    G::NodeId: Eq + Ord,
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
     K: Measure + Copy,
 {
@@ -162,8 +160,8 @@ where
         let mut this = Self {
             graph,
             visit_next: BinaryHeap::new(),
-            scores: HashMap::new(),
-            estimate_scores: HashMap::new(),
+            scores: BTreeMap::new(),
+            estimate_scores: BTreeMap::new(),
             path_tracker: PathTracker::<G>::new(),
             maybe_curr_node: None,
             edge_ids: VecDeque::new(),
@@ -182,7 +180,7 @@ impl<G, K, R, S: AstarStrategy<G, K, R>> Step<S, (K, Vec<G::NodeId>, R), AstarCo
     for Astar<G, K>
 where
     G: GraphBase,
-    G::NodeId: Eq + Hash,
+    G::NodeId: Eq + Ord,
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
     K: Measure + Copy,
 {
@@ -209,7 +207,7 @@ where
                     let next_score = node_score + edge_cost;
 
                     match self.scores.entry(next) {
-                        Occupied(mut entry) => {
+                        Entry::Occupied(mut entry) => {
                             // No need to add neighbors that we have already reached through a
                             // shorter path than now.
                             if *entry.get() <= next_score {
@@ -217,7 +215,7 @@ where
                             }
                             entry.insert(next_score);
                         }
-                        Vacant(entry) => {
+                        Entry::Vacant(entry) => {
                             entry.insert(next_score);
                         }
                     }
@@ -248,7 +246,7 @@ where
         }
 
         match self.estimate_scores.entry(node) {
-            Occupied(mut entry) => {
+            Entry::Occupied(mut entry) => {
                 // If the node has already been visited with an equal or lower score than
                 // now, then we do not need to re-visit it.
                 if *entry.get() <= estimate_score {
@@ -256,7 +254,7 @@ where
                 }
                 entry.insert(estimate_score);
             }
-            Vacant(entry) => {
+            Entry::Vacant(entry) => {
                 entry.insert(estimate_score);
             }
         }

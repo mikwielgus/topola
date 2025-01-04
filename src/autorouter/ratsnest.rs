@@ -7,7 +7,7 @@
 //! structures for representing graph nodes and edges with associated metadata,
 //! as well as functions for constructing and manipulating these graphs.
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use enum_dispatch::enum_dispatch;
 use geo::Point;
@@ -27,7 +27,7 @@ use crate::{
         primitive::MakePrimitiveShape,
         rules::AccessRules,
     },
-    geometry::{compound::ManageCompounds, shape::AccessShape},
+    geometry::shape::AccessShape,
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
         poly::{MakePolyShape, PolyWeight},
@@ -92,7 +92,7 @@ impl Ratsnest {
             graph: UnGraph::default(),
         };
 
-        let mut triangulations = HashMap::new();
+        let mut triangulations = BTreeMap::new();
         let node_bound = layout.drawing().geometry().graph().node_bound();
 
         for layer in 0..layout.drawing().layer_count() {

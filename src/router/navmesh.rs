@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 use enum_dispatch::enum_dispatch;
 use geo::Point;
@@ -37,7 +37,7 @@ use crate::{
 
 use super::RouterOptions;
 
-#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct NavvertexIndex(NodeIndex<usize>);
 
 impl GetPetgraphIndex for NavvertexIndex {
@@ -50,7 +50,7 @@ impl GetPetgraphIndex for NavvertexIndex {
 /// counterclockwise. Unlike their constituents, binavvertices are themselves
 /// not considered navvertices.
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
-#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinavvertexNodeIndex {
     FixedDot(FixedDotIndex),
     FixedBend(FixedBendIndex),
@@ -84,7 +84,7 @@ impl From<BinavvertexNodeIndex> for GearIndex {
 ///
 /// The name "trianvertex" is a shortening of "triangulation vertex".
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
-#[derive(Debug, Hash, Clone, Copy, PartialEq, Eq)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 enum TrianvertexNodeIndex {
     FixedDot(FixedDotIndex),
     FixedBend(FixedBendIndex),
@@ -210,8 +210,7 @@ impl Navmesh {
         let mut origin_navvertex = None;
         let mut destination_navvertex = None;
 
-        // `HashMap` is obviously suboptimal here.
-        let mut map = HashMap::new();
+        let mut map = BTreeMap::new();
 
         for trianvertex in triangulation.node_identifiers() {
             if trianvertex == origin.into() {
@@ -302,7 +301,7 @@ impl Navmesh {
 
     fn add_node_to_graph_and_map_as_binavvertex(
         graph: &mut UnGraph<NavvertexWeight, (), usize>,
-        map: &mut HashMap<TrianvertexNodeIndex, Vec<(NodeIndex<usize>, NodeIndex<usize>)>>,
+        map: &mut BTreeMap<TrianvertexNodeIndex, Vec<(NodeIndex<usize>, NodeIndex<usize>)>>,
         trianvertex: TrianvertexNodeIndex,
         node: BinavvertexNodeIndex,
     ) {

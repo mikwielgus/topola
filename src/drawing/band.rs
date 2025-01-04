@@ -2,9 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-// FIXME (implement Hash for BandUid and such)
-#![allow(clippy::derived_hash_with_manual_eq)]
-
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
@@ -22,7 +19,7 @@ use super::{
     Drawing,
 };
 
-#[derive(Debug, Hash, Clone, Copy)]
+#[derive(Clone, Copy, Debug, Ord, PartialOrd)]
 pub struct BandUid(pub BandTermsegIndex, pub BandTermsegIndex);
 
 impl BandUid {
@@ -45,7 +42,7 @@ impl PartialEq for BandUid {
 impl Eq for BandUid {}
 
 #[enum_dispatch(GetPetgraphIndex)]
-#[derive(Debug, Hash, Clone, Copy)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum BandTermsegIndex {
     Straight(LoneLooseSegIndex),
     Bended(SeqLooseSegIndex),

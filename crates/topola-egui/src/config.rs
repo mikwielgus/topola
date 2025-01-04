@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::HashMap;
+use std::collections::BTreeMap;
 
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 #[serde(default)]
@@ -28,7 +28,7 @@ pub struct Colors {
 #[derive(Clone, Debug, PartialEq, serde::Deserialize, serde::Serialize)]
 pub struct LayerColors {
     default: LayerColor,
-    colors: HashMap<String, LayerColor>,
+    colors: BTreeMap<String, LayerColor>,
 }
 
 impl LayerColors {
@@ -54,7 +54,7 @@ impl Default for Config {
                         normal: egui::Color32::from_rgb(255, 255, 255),
                         highlighted: egui::Color32::from_rgb(255, 255, 255),
                     },
-                    colors: HashMap::from([
+                    colors: BTreeMap::from([
                         (
                             "F.Cu".to_string(),
                             LayerColor {
@@ -106,7 +106,7 @@ impl Default for Config {
                         normal: egui::Color32::from_rgb(0, 0, 0),
                         highlighted: egui::Color32::from_rgb(0, 0, 0),
                     },
-                    colors: HashMap::from([
+                    colors: BTreeMap::from([
                         (
                             "F.Cu".to_string(),
                             LayerColor {

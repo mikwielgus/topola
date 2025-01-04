@@ -6,8 +6,9 @@
 //! Design DSN file, creating the [`Board`] object from the file, as well as
 //! exporting the session file
 
+use std::collections::{btree_map::Entry as BTreeMapEntry, BTreeMap};
+
 use geo::{point, Point, Rotate};
-use std::collections::{hash_map::Entry as HashMapEntry, HashMap};
 
 use crate::{
     board::{mesadata::AccessMesadata, Board},
@@ -73,7 +74,7 @@ impl SpecctraDesign {
         let mesadata = board.mesadata();
         let drawing = board.layout().drawing();
 
-        let mut net_outs = HashMap::<usize, structure::NetOut>::new();
+        let mut net_outs = BTreeMap::<usize, structure::NetOut>::new();
         for index in drawing.primitive_nodes() {
             let primitive = index.primitive(drawing);
 
@@ -131,8 +132,8 @@ impl SpecctraDesign {
                 };
 
                 let net_out = match net_outs.entry(net) {
-                    HashMapEntry::Occupied(occ) => occ.into_mut(),
-                    HashMapEntry::Vacant(vac) => vac.insert(structure::NetOut {
+                    BTreeMapEntry::Occupied(occ) => occ.into_mut(),
+                    BTreeMapEntry::Vacant(vac) => vac.insert(structure::NetOut {
                         name: mesadata
                             .net_netname(net)
                             .ok_or_else(|| {
@@ -208,7 +209,7 @@ impl SpecctraDesign {
             })
             // flatten the nested iters into a single stream of tuples
             .flatten()
-            .collect::<HashMap<String, usize>>();
+            .collect::<BTreeMap<String, usize>>();
 
         // add pins from components
         for component in &self.pcb.placement.components {

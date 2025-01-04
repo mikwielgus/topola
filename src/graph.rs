@@ -2,10 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::{
-    hash::{Hash, Hasher},
-    marker::PhantomData,
-};
+use std::{cmp::Ordering, marker::PhantomData};
 
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
@@ -50,6 +47,8 @@ impl<W> core::clone::Clone for GenericIndex<W> {
     }
 }
 
+impl<W> core::marker::Copy for GenericIndex<W> {}
+
 impl<W> core::fmt::Debug for GenericIndex<W> {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
         f.debug_tuple("GenericIndex")
@@ -65,12 +64,17 @@ impl<W> PartialEq for GenericIndex<W> {
     }
 }
 
-impl<W> core::marker::Copy for GenericIndex<W> {}
 impl<W> Eq for GenericIndex<W> {}
 
-impl<W> Hash for GenericIndex<W> {
-    fn hash<H: Hasher>(&self, state: &mut H) {
-        self.node_index.hash(state)
+impl<W> PartialOrd for GenericIndex<W> {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        self.node_index.partial_cmp(&other.node_index)
+    }
+}
+
+impl<W> Ord for GenericIndex<W> {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.node_index.cmp(&other.node_index)
     }
 }
 

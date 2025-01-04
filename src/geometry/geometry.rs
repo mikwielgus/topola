@@ -64,7 +64,7 @@ pub enum GeometryLabel {
     Compound,
 }
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, Hash, Deserialize, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum GenericNode<P, C> {
     Primitive(P),
     Compound(C),

@@ -5,8 +5,8 @@
 //! Module for handling Specctra's mesadata - design rules, as well as layers
 //! or net properties
 
-use bimap::BiHashMap;
-use std::collections::HashMap;
+use bimap::BiBTreeMap;
+use std::collections::BTreeMap;
 
 use crate::{
     rules::{AccessRules, Conditions},
@@ -74,22 +74,22 @@ pub struct SpecctraMesadata {
     // net class name -> rule
     /// A map from net class names to their specific `SpecctraRule` constraints.
     /// These rules are applied to all nets belonging to the respective net clas
-    class_rules: HashMap<String, SpecctraRule>,
+    class_rules: BTreeMap<String, SpecctraRule>,
 
     // layername <-> layer for Layout
     /// A bidirectional map between layer indices and layer names, allowing translation
     /// between index-based layers in the layout and user-defined layer names.
-    pub layer_layername: BiHashMap<usize, String>,
+    pub layer_layername: BiBTreeMap<usize, String>,
 
     // netname <-> net for Layout
     /// A bidirectional map between network indices and network names in the PCB layout,
     /// providing an easy way to reference nets by name or index.
-    pub net_netname: BiHashMap<usize, String>,
+    pub net_netname: BiBTreeMap<usize, String>,
 
     // net -> netclass
     /// A map that associates network indices with their respective net class names.
     /// This is used to apply net class-specific routing rules to each net.
-    net_netclass: HashMap<usize, String>,
+    net_netclass: BTreeMap<usize, String>,
 }
 
 impl SpecctraMesadata {
@@ -98,7 +98,7 @@ impl SpecctraMesadata {
     /// This function extracts the necessary metadata from the `Pcb` struct, such as
     /// layer-to-layer name mappings, net-to-net name mappings, and net class rules.
     pub fn from_pcb(pcb: &Pcb) -> Self {
-        let layer_layername = BiHashMap::from_iter(
+        let layer_layername = BiBTreeMap::from_iter(
             pcb.structure
                 .layers
                 .iter()
@@ -119,11 +119,11 @@ impl SpecctraMesadata {
             tmp.sort_unstable();
             tmp.dedup();
 
-            BiHashMap::from_iter(tmp.into_iter().cloned().enumerate())
+            BiBTreeMap::from_iter(tmp.into_iter().cloned().enumerate())
         };
 
-        let mut net_netclass = HashMap::new();
-        let class_rules = HashMap::from_iter(
+        let mut net_netclass = BTreeMap::new();
+        let class_rules = BTreeMap::from_iter(
             pcb.network
                 .classes
                 .iter()

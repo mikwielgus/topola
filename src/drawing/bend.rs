@@ -18,7 +18,7 @@ use crate::{
 use petgraph::stable_graph::NodeIndex;
 
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum BendIndex {
     Fixed(FixedBendIndex),
     Loose(LooseBendIndex),
