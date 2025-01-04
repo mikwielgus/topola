@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
+use core::{cmp, ops};
 use geo::algorithm::line_measures::{Distance, Euclidean};
 use geo::{geometry::Point, point, Line};
 pub use specctra_core::math::{Circle, PointWithRotation};
@@ -97,18 +98,139 @@ pub fn between_vectors(p: Point, from: Point, to: Point) -> bool {
     }
 }
 
-/// Computes the (directed) angle between the positive X axis and the vector.
-///
-/// The result is measured counterclockwise and normalized into range (-pi, pi] (like atan2).
-pub fn vector_angle(vector: Point) -> f64 {
-    vector.y().atan2(vector.x())
+/// An angle that is measured counterclockwise and normalized into range (-pi, pi] (like atan2).
+#[derive(Clone, Copy, Debug)]
+pub struct NormalizedAngle(f64);
+
+impl cmp::PartialOrd for NormalizedAngle {
+    #[inline(always)]
+    fn partial_cmp(&self, oth: &Self) -> Option<cmp::Ordering> {
+        Some(self.cmp(oth))
+    }
+}
+
+impl cmp::Ord for NormalizedAngle {
+    #[inline(always)]
+    fn cmp(&self, oth: &Self) -> cmp::Ordering {
+        self.0.total_cmp(&oth.0)
+    }
+}
+
+impl cmp::PartialEq for NormalizedAngle {
+    fn eq(&self, oth: &Self) -> bool {
+        self.cmp(oth) == cmp::Ordering::Equal
+    }
+}
+
+impl cmp::Eq for NormalizedAngle {}
+
+impl NormalizedAngle {
+    pub const ZERO: Self = Self(0.0);
+
+    fn normalize_single_step(mut angle: f64) -> Self {
+        use core::f64::consts::{PI, TAU};
+        if !(angle.is_nan() || angle.is_infinite()) {
+            if angle <= -PI {
+                angle += TAU;
+            }
+            if angle > PI {
+                angle -= TAU;
+            }
+            assert!((-PI..PI).contains(&(-angle)));
+        }
+        Self(angle)
+    }
+
+    /// Computes the (directed) angle between the positive X axis and the vector.
+    #[inline]
+    pub fn atan2(pt: Point) -> Self {
+        NormalizedAngle(pt.0.x.atan2(pt.0.y))
+    }
+
+    #[must_use]
+    pub fn non_negative(self) -> f64 {
+        let mut angle = self.0;
+        if angle < 0.0 {
+            angle + core::f64::consts::TAU
+        } else {
+            angle
+        }
+    }
+
+    /// Rotate this angle by 180°
+    #[must_use]
+    pub fn flip(self) -> Self {
+        Self::normalize_single_step(self.0 + core::f64::consts::PI)
+    }
+}
+
+impl From<f64> for NormalizedAngle {
+    fn from(mut angle: f64) -> Self {
+        use core::f64::consts::{PI, TAU};
+        if !(angle.is_nan() || angle.is_infinite()) {
+            while angle <= -PI {
+                angle += TAU;
+            }
+            while angle > PI {
+                angle -= TAU;
+            }
+            debug_assert!((-PI..PI).contains(&(-angle)));
+        }
+        Self(angle)
+    }
+}
+
+impl ops::Deref for NormalizedAngle {
+    type Target = f64;
+
+    #[inline(always)]
+    fn deref(&self) -> &f64 {
+        &self.0
+    }
+}
+
+impl ops::Add for NormalizedAngle {
+    type Output = Self;
+
+    fn add(self, oth: Self) -> Self {
+        Self::normalize_single_step(self.0 + oth.0)
+    }
+}
+
+impl ops::AddAssign for NormalizedAngle {
+    fn add_assign(&mut self, oth: Self) {
+        *self = Self::normalize_single_step(self.0 + oth.0);
+    }
+}
+
+impl ops::Sub for NormalizedAngle {
+    type Output = Self;
+
+    fn sub(self, oth: Self) -> Self {
+        Self::normalize_single_step(self.0 - oth.0)
+    }
+}
+
+impl ops::SubAssign for NormalizedAngle {
+    fn sub_assign(&mut self, oth: Self) {
+        *self = Self::normalize_single_step(self.0 - oth.0);
+    }
+}
+
+impl ops::MulAssign<f64> for NormalizedAngle {
+    fn mul_assign(&mut self, oth: f64) {
+        *self = (self.0 * oth).into();
+    }
 }
 
 /// Computes the (directed) angle between two vectors.
 ///
 /// The result is measured counterclockwise and normalized into range (-pi, pi] (like atan2).
-pub fn angle_between(v1: Point, v2: Point) -> f64 {
-    cross_product(v1, v2).atan2(dot_product(v1, v2))
+pub fn angle_between(v1: Point, v2: Point) -> NormalizedAngle {
+    NormalizedAngle::atan2(geo::point! {
+        x: dot_product(v1, v2),
+        y: cross_product(v1, v2)
+    })
 }
 
 pub fn seq_cross_product(start: Point, stop: Point, reference: Point) -> f64 {
