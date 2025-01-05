@@ -11,39 +11,35 @@ use crate::{
         graph::{GetMaybeNet, IsInLayer},
         primitive::MakePrimitiveShape,
         rules::AccessRules,
+        Drawing,
     },
     geometry::primitive::{DotShape, PrimitiveShape},
     graph::{GenericIndex, GetPetgraphIndex},
-    layout::{CompoundWeight, Layout},
+    layout::CompoundWeight,
     math::Circle,
 };
 
 #[derive(Debug)]
 pub struct Via<'a, R> {
     pub index: GenericIndex<ViaWeight>,
-    layout: &'a Layout<R>,
+    drawing: &'a Drawing<CompoundWeight, R>,
 }
 
 impl<'a, R> Via<'a, R> {
-    pub fn new(index: GenericIndex<ViaWeight>, layout: &'a Layout<R>) -> Self {
-        Self { index, layout }
+    pub fn new(index: GenericIndex<ViaWeight>, drawing: &'a Drawing<CompoundWeight, R>) -> Self {
+        Self { index, drawing }
     }
 }
 
 impl<'a, R: AccessRules> GetMaybeNet for Via<'a, R> {
     fn maybe_net(&self) -> Option<usize> {
-        self.layout
-            .drawing()
-            .compound_weight(self.index.into())
-            .maybe_net()
+        self.drawing.compound_weight(self.index.into()).maybe_net()
     }
 }
 
 impl<'a, R: AccessRules> MakePrimitiveShape for Via<'a, R> {
     fn shape(&self) -> PrimitiveShape {
-        if let CompoundWeight::Via(weight) =
-            self.layout.drawing().compound_weight(self.index.into())
-        {
+        if let CompoundWeight::Via(weight) = self.drawing.compound_weight(self.index.into()) {
             weight.shape()
         } else {
             unreachable!();

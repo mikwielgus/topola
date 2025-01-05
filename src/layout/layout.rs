@@ -343,11 +343,11 @@ impl<R: AccessRules> Layout<R> {
     }
 
     pub fn poly(&self, index: GenericIndex<PolyWeight>) -> Poly<R> {
-        Poly::new(index, self)
+        Poly::new(index, self.drawing())
     }
 
     pub fn via(&self, index: GenericIndex<ViaWeight>) -> Via<R> {
-        Via::new(index, self)
+        Via::new(index, self.drawing())
     }
 }
 

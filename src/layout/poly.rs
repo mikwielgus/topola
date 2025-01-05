@@ -15,10 +15,11 @@ use crate::{
         primitive::GetLimbs,
         rules::AccessRules,
         seg::SegIndex,
+        Drawing,
     },
     geometry::GetPos,
     graph::{GenericIndex, GetPetgraphIndex},
-    layout::{CompoundWeight, Layout},
+    layout::CompoundWeight,
 };
 
 #[enum_dispatch]
@@ -34,31 +35,28 @@ pub trait GetMaybeApex {
 #[derive(Debug)]
 pub struct Poly<'a, R> {
     pub index: GenericIndex<PolyWeight>,
-    layout: &'a Layout<R>,
+    drawing: &'a Drawing<CompoundWeight, R>,
 }
 
 impl<'a, R: AccessRules> Poly<'a, R> {
-    pub fn new(index: GenericIndex<PolyWeight>, layout: &'a Layout<R>) -> Self {
-        Self { index, layout }
+    pub fn new(index: GenericIndex<PolyWeight>, drawing: &'a Drawing<CompoundWeight, R>) -> Self {
+        Self { index, drawing }
     }
 
     fn is_apex(&self, dot: FixedDotIndex) -> bool {
         !self
-            .layout
-            .drawing()
+            .drawing
             .primitive(dot)
             .segs()
             .iter()
             .any(|seg| matches!(seg, SegIndex::Fixed(..)))
-            && self.layout.drawing().primitive(dot).bends().is_empty()
+            && self.drawing.primitive(dot).bends().is_empty()
     }
 }
 
 impl<'a, R: AccessRules> GetLayer for Poly<'a, R> {
     fn layer(&self) -> usize {
-        if let CompoundWeight::Poly(weight) =
-            self.layout.drawing().compound_weight(self.index.into())
-        {
+        if let CompoundWeight::Poly(weight) = self.drawing.compound_weight(self.index.into()) {
             weight.layer()
         } else {
             unreachable!();
@@ -68,10 +66,7 @@ impl<'a, R: AccessRules> GetLayer for Poly<'a, R> {
 
 impl<'a, R: AccessRules> GetMaybeNet for Poly<'a, R> {
     fn maybe_net(&self) -> Option<usize> {
-        self.layout
-            .drawing()
-            .compound_weight(self.index.into())
-            .maybe_net()
+        self.drawing.compound_weight(self.index.into()).maybe_net()
     }
 }
 
@@ -79,8 +74,7 @@ impl<'a, R: AccessRules> MakePolygon for Poly<'a, R> {
     fn shape(&self) -> Polygon {
         Polygon::new(
             LineString::from(
-                self.layout
-                    .drawing()
+                self.drawing
                     .geometry()
                     .compound_members(self.index.into())
                     .filter_map(|primitive_node| {
@@ -91,13 +85,7 @@ impl<'a, R: AccessRules> MakePolygon for Poly<'a, R> {
                         if self.is_apex(dot) {
                             None
                         } else {
-                            Some(
-                                self.layout
-                                    .drawing()
-                                    .geometry()
-                                    .dot_weight(dot.into())
-                                    .pos(),
-                            )
+                            Some(self.drawing.geometry().dot_weight(dot.into()).pos())
                         }
                     })
                     .collect::<Vec<Point>>(),
@@ -109,8 +97,7 @@ impl<'a, R: AccessRules> MakePolygon for Poly<'a, R> {
 
 impl<'a, R: AccessRules> GetMaybeApex for Poly<'a, R> {
     fn maybe_apex(&self) -> Option<FixedDotIndex> {
-        self.layout
-            .drawing()
+        self.drawing
             .geometry()
             .compound_members(self.index.into())
             .find_map(|primitive_node| {
