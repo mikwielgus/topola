@@ -15,7 +15,7 @@ use crate::{
         cane::Cane,
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         gear::GearIndex,
-        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+        graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
         primitive::MakePrimitiveShape,
         rules::AccessRules,
         seg::{
@@ -34,7 +34,7 @@ use crate::{
 
 /// Represents a weight for various compounds
 #[derive(Debug, Clone, Copy)]
-#[enum_dispatch(GetMaybeNet)]
+#[enum_dispatch(GetMaybeNet, IsInLayer)]
 pub enum CompoundWeight {
     /// Represents the weight of a polygon compound, includes its basic [`Layout`] information
     Poly(PolyWeight),
@@ -316,25 +316,6 @@ impl<R: AccessRules> Layout<R> {
         self.drawing
             .geometry()
             .compound_members(GenericIndex::new(poly.petgraph_index()))
-    }
-
-    pub fn is_node_in_layer(&self, index: NodeIndex, active_layer: usize) -> bool {
-        use crate::drawing::graph::GetLayer;
-        match index {
-            NodeIndex::Primitive(primitive) => {
-                primitive.primitive(&self.drawing).layer() == active_layer
-            }
-            NodeIndex::Compound(compound) => match self.drawing.compound_weight(compound) {
-                CompoundWeight::Poly(_) => {
-                    self.poly(GenericIndex::<PolyWeight>::new(compound.petgraph_index()))
-                        .layer()
-                        == active_layer
-                }
-                CompoundWeight::Via(weight) => {
-                    weight.from_layer >= active_layer && weight.to_layer <= active_layer
-                }
-            },
-        }
     }
 
     pub fn node_shape(&self, index: NodeIndex) -> Shape {

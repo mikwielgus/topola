@@ -208,7 +208,7 @@ impl Selection {
                         &AABB::<[f64; 3]>::from_corners([-INF, -INF, -INF], [INF, INF, INF]),
                     ) {
                         let node = geom.data;
-                        if layout.is_node_in_layer(node, active_layer) {
+                        if layout.drawing().is_node_in_layer(node, active_layer) {
                             if let Some(rsel) = ResolvedSelector::try_from_node(board, node) {
                                 let rseli = selectors.entry(rsel).or_default();
                                 rseli.0.insert(node);
@@ -236,7 +236,7 @@ impl Selection {
                         ),
                     ) {
                         let node = geom.data;
-                        if layout.is_node_in_layer(node, active_layer)
+                        if layout.drawing().is_node_in_layer(node, active_layer)
                             && kind.matches(aabb, &layout.node_shape(node))
                         {
                             if let Some(rsel) = ResolvedSelector::try_from_node(board, node) {

@@ -1022,6 +1022,23 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         self.recording_geometry_with_rtree.compounds(node)
     }
 
+    pub fn is_node_in_layer(
+        &self,
+        index: GenericNode<PrimitiveIndex, GenericIndex<CW>>,
+        active_layer: usize,
+    ) -> bool
+    where
+        CW: super::graph::IsInLayer,
+    {
+        use super::graph::GetLayer;
+        match index {
+            GenericNode::Primitive(primitive) => primitive.primitive(self).layer() == active_layer,
+            GenericNode::Compound(compound) => {
+                self.compound_weight(compound).is_in_layer(active_layer)
+            }
+        }
+    }
+
     fn are_connectable(&self, node1: PrimitiveIndex, node2: PrimitiveIndex) -> bool {
         if let (Some(node1_net_id), Some(node2_net_id)) = (
             node1.primitive(self).maybe_net(),

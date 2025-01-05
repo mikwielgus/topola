@@ -7,7 +7,11 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    drawing::{graph::GetMaybeNet, primitive::MakePrimitiveShape, rules::AccessRules},
+    drawing::{
+        graph::{GetMaybeNet, IsInLayer},
+        primitive::MakePrimitiveShape,
+        rules::AccessRules,
+    },
     geometry::primitive::{DotShape, PrimitiveShape},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{CompoundWeight, Layout},
@@ -64,6 +68,12 @@ impl From<GenericIndex<ViaWeight>> for GenericIndex<CompoundWeight> {
 impl GetMaybeNet for ViaWeight {
     fn maybe_net(&self) -> Option<usize> {
         self.maybe_net
+    }
+}
+
+impl IsInLayer for ViaWeight {
+    fn is_in_layer(&self, layer: usize) -> bool {
+        self.from_layer >= layer && self.to_layer <= layer
     }
 }
 

@@ -29,6 +29,18 @@ pub trait GetLayer {
 }
 
 #[enum_dispatch]
+pub trait IsInLayer {
+    fn is_in_layer(&self, layer: usize) -> bool;
+}
+
+impl<T: GetLayer> IsInLayer for T {
+    #[inline]
+    fn is_in_layer(&self, layer: usize) -> bool {
+        self.layer() == layer
+    }
+}
+
+#[enum_dispatch]
 pub trait GetMaybeNet {
     fn maybe_net(&self) -> Option<usize>;
 }

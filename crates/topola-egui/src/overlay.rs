@@ -131,6 +131,7 @@ impl Overlay {
             board.layout().node_shape(geom.data).contains_point(at)
                 && board
                     .layout()
+                    .drawing()
                     .is_node_in_layer(geom.data, self.active_layer)
         }) {
             self.selection.toggle_at_node(board, geom.data);
