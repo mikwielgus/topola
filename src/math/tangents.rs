@@ -7,7 +7,7 @@ use geo::{geometry::Point, point, Line};
 use specctra_core::math::Circle;
 use thiserror::Error;
 
-use super::seq_cross_product;
+use super::seq_perp_dot_product;
 
 #[derive(Error, Debug, Clone, Copy, PartialEq)]
 #[error("no tangents for {0:?} and {1:?}")] // TODO add real error message
@@ -101,7 +101,7 @@ pub fn tangent_segments(
         .filter_map(move |tangent_point_pair| {
             if let Some(cw1) = cw1 {
                 let cross1 =
-                    seq_cross_product(tangent_point_pair.0, tangent_point_pair.1, circle1.pos);
+                    seq_perp_dot_product(tangent_point_pair.0, tangent_point_pair.1, circle1.pos);
 
                 if (cw1 && cross1 <= 0.0) || (!cw1 && cross1 >= 0.0) {
                     return None;
@@ -110,7 +110,7 @@ pub fn tangent_segments(
 
             if let Some(cw2) = cw2 {
                 let cross2 =
-                    seq_cross_product(tangent_point_pair.0, tangent_point_pair.1, circle2.pos);
+                    seq_perp_dot_product(tangent_point_pair.0, tangent_point_pair.1, circle2.pos);
 
                 if (cw2 && cross2 >= 0.0) || (!cw2 && cross2 <= 0.0) {
                     return None;

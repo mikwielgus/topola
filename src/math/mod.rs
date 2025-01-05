@@ -87,12 +87,12 @@ pub fn intersect_circle_segment(circle: &Circle, segment: &Line) -> Vec<Point> {
 }
 
 pub fn between_vectors(p: Point, from: Point, to: Point) -> bool {
-    let cross = cross_product(from, to);
+    let cross = perp_dot_product(from, to);
 
     if cross > 0.0 {
-        cross_product(from, p) >= 0.0 && cross_product(p, to) >= 0.0
+        perp_dot_product(from, p) >= 0.0 && perp_dot_product(p, to) >= 0.0
     } else if cross < 0.0 {
-        cross_product(from, p) >= 0.0 || cross_product(p, to) >= 0.0
+        perp_dot_product(from, p) >= 0.0 || perp_dot_product(p, to) >= 0.0
     } else {
         false
     }
@@ -229,22 +229,24 @@ impl ops::MulAssign<f64> for NormalizedAngle {
 pub fn angle_between(v1: Point, v2: Point) -> NormalizedAngle {
     NormalizedAngle::atan2(geo::point! {
         x: dot_product(v1, v2),
-        y: cross_product(v1, v2)
+        y: perp_dot_product(v1, v2)
     })
 }
 
-pub fn seq_cross_product(start: Point, stop: Point, reference: Point) -> f64 {
+pub fn seq_perp_dot_product(start: Point, stop: Point, reference: Point) -> f64 {
     let dx1 = stop.x() - start.x();
     let dy1 = stop.y() - start.y();
     let dx2 = reference.x() - stop.x();
     let dy2 = reference.y() - stop.y();
-    cross_product((dx1, dy1).into(), (dx2, dy2).into())
+    perp_dot_product((dx1, dy1).into(), (dx2, dy2).into())
 }
 
 pub fn dot_product(v1: Point, v2: Point) -> f64 {
     v1.x() * v2.x() + v1.y() * v2.y()
 }
 
-pub fn cross_product(v1: Point, v2: Point) -> f64 {
+/// This is often called [perp dot product](https://mathworld.wolfram.com/PerpDotProduct.html),
+/// or "2D cross product".
+pub fn perp_dot_product(v1: Point, v2: Point) -> f64 {
     v1.x() * v2.y() - v1.y() * v2.x()
 }
