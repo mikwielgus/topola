@@ -26,6 +26,11 @@ pub trait AccessShape: MeasureLength {
             [aabb.upper()[0] + margin, aabb.upper()[1] + margin],
         )
     }
+
+    fn intersects_with_bbox(&self, bbox: &AABB<[f64; 2]>) -> bool {
+        use rstar::Envelope;
+        bbox.intersection_area(&self.bbox_without_margin()) > 0.0
+    }
 }
 
 #[enum_dispatch(MeasureLength, AccessShape)]

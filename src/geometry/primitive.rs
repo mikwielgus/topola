@@ -161,12 +161,19 @@ impl AccessShape for SegShape {
         (self.from + self.to) / 2.0
     }
 
+    #[inline]
     fn contains_point(&self, p: Point) -> bool {
         self.polygon().contains(&p)
     }
 
+    #[inline]
     fn bbox_without_margin(&self) -> AABB<[f64; 2]> {
         self.polygon().bbox_without_margin()
+    }
+
+    #[inline]
+    fn intersects_with_bbox(&self, bbox: &AABB<[f64; 2]>) -> bool {
+        self.polygon().intersects_with_bbox(bbox)
     }
 }
 

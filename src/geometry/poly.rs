@@ -2,7 +2,10 @@
 //
 // SPDX-License-Identifier: MIT
 
-use geo::algorithm::line_measures::{Euclidean, Length};
+use geo::algorithm::{
+    line_measures::{Euclidean, Length},
+    Intersects,
+};
 use geo::{Centroid, Contains, Point, Polygon};
 use rstar::AABB;
 
@@ -38,5 +41,9 @@ impl AccessShape for Polygon {
                 .collect::<Vec<_>>()
                 .iter(),
         )
+    }
+
+    fn intersects_with_bbox(&self, bbox: &AABB<[f64; 2]>) -> bool {
+        geo::Rect::new(bbox.lower(), bbox.upper()).intersects(self)
     }
 }
