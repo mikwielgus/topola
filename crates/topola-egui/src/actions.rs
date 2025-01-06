@@ -4,7 +4,9 @@
 
 use crate::{
     action::{Action, Switch, Trigger},
+    menu_bar::MenuBar,
     translator::Translator,
+    viewport::Viewport,
 };
 
 use egui::{Context, Ui};
@@ -151,6 +153,73 @@ impl EditActions {
             self.remove_bands.button(ctx, ui);
             //});
         })
+    }
+}
+
+pub struct ViewActions {
+    pub zoom_to_fit: Switch,
+    pub show_ratsnest: Switch,
+    pub show_navmesh: Switch,
+    pub show_bboxes: Switch,
+    pub show_origin_destination: Switch,
+    pub show_appearance_panel: Switch,
+}
+
+impl ViewActions {
+    pub fn new(tr: &Translator) -> Self {
+        Self {
+            zoom_to_fit: Action::new_keyless(tr.text("tr-menu-view-zoom-to-fit")).into_switch(),
+            show_ratsnest: Action::new_keyless(tr.text("tr-menu-view-show-ratsnest")).into_switch(),
+            show_navmesh: Action::new_keyless(tr.text("tr-menu-view-show-navmesh")).into_switch(),
+            show_bboxes: Action::new_keyless(tr.text("tr-menu-view-show-bboxes")).into_switch(),
+            show_origin_destination: Action::new_keyless(
+                tr.text("tr-menu-view-show-origin-destination"),
+            )
+            .into_switch(),
+            show_appearance_panel: Action::new_keyless(tr.text("tr-menu-view-show-layer-manager"))
+                .into_switch(),
+        }
+    }
+
+    pub fn render_menu(
+        &mut self,
+        ctx: &Context,
+        ui: &mut Ui,
+        tr: &Translator,
+        menu_bar: &mut MenuBar,
+        viewport: &mut Viewport,
+    ) {
+        ui.toggle_value(
+            &mut viewport.scheduled_zoom_to_fit,
+            tr.text("tr-menu-view-zoom-to-fit"),
+        );
+
+        ui.separator();
+
+        //ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
+        ui.checkbox(
+            &mut menu_bar.show_ratsnest,
+            tr.text("tr-menu-view-show-ratsnest"),
+        );
+        ui.checkbox(
+            &mut menu_bar.show_navmesh,
+            tr.text("tr-menu-view-show-navmesh"),
+        );
+        ui.checkbox(
+            &mut menu_bar.show_bboxes,
+            tr.text("tr-menu-view-show-bboxes"),
+        );
+        ui.checkbox(
+            &mut menu_bar.show_origin_destination,
+            tr.text("tr-menu-view-show-origin-destination"),
+        );
+
+        ui.separator();
+
+        ui.checkbox(
+            &mut menu_bar.show_appearance_panel,
+            tr.text("tr-menu-view-show-layer-manager"),
+        );
     }
 }
 
@@ -302,6 +371,7 @@ impl HelpActions {
 pub struct Actions {
     pub file: FileActions,
     pub edit: EditActions,
+    pub view: ViewActions,
     pub place: PlaceActions,
     pub route: RouteActions,
     pub inspect: InspectActions,
@@ -313,6 +383,7 @@ impl Actions {
         Self {
             file: FileActions::new(tr),
             edit: EditActions::new(tr),
+            view: ViewActions::new(tr),
             place: PlaceActions::new(tr),
             route: RouteActions::new(tr),
             inspect: InspectActions::new(tr),

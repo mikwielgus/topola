@@ -2,20 +2,17 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::{borrow::Cow, ops::ControlFlow, path::Path, sync::mpsc::Sender};
+use std::{ops::ControlFlow, path::Path, sync::mpsc::Sender};
 
 use topola::{
     autorouter::{
         execution::Command, invoker::InvokerError, selection::Selection, AutorouterOptions,
     },
-    interactor::activity::{ActivityContext, ActivityStepperWithStatus, InteractiveInput},
     router::RouterOptions,
     specctra::{design::SpecctraDesign, ParseError, ParseErrorContext as SpecctraLoadingError},
-    stepper::Abort,
 };
 
 use crate::{
-    action::{Action, Switch, Trigger},
     actions::Actions,
     app::{execute, handle_file},
     translator::Translator,
@@ -96,7 +93,17 @@ impl MenuBar {
                         )
                     });
 
-                    self.update_view_menu(ctx, ui, tr, viewport);
+                    ui.menu_button(tr.text("tr-menu-view"), |ui| {
+                        actions.view.render_menu(ctx, ui, tr, self, viewport);
+
+                        ui.separator();
+
+                        ui.label(tr.text("tr-menu-view-frame-timestep"));
+                        ui.add(
+                            egui::widgets::Slider::new(&mut self.frame_timestep, 0.0..=3.0)
+                                .suffix(" s"),
+                        );
+                    });
 
                     // NOTE: we could disable the entire range of menus below
                     // when no workspace is loaded, but that would disrupt "hover-scrolling"
@@ -281,48 +288,6 @@ impl MenuBar {
                 Ok::<(), InvokerError>(())
             })
             .inner
-    }
-
-    pub fn update_view_menu(
-        &mut self,
-        _ctx: &egui::Context,
-        ui: &mut egui::Ui,
-        tr: &Translator,
-        viewport: &mut Viewport,
-    ) {
-        ui.menu_button(tr.text("tr-menu-view"), |ui| {
-            ui.toggle_value(
-                &mut viewport.scheduled_zoom_to_fit,
-                tr.text("tr-menu-view-zoom-to-fit"),
-            );
-
-            ui.separator();
-
-            //ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-            ui.checkbox(
-                &mut self.show_ratsnest,
-                tr.text("tr-menu-view-show-ratsnest"),
-            );
-            ui.checkbox(&mut self.show_navmesh, tr.text("tr-menu-view-show-navmesh"));
-            ui.checkbox(&mut self.show_bboxes, tr.text("tr-menu-view-show-bboxes"));
-            ui.checkbox(
-                &mut self.show_origin_destination,
-                tr.text("tr-menu-view-show-origin-destination"),
-            );
-
-            ui.separator();
-
-            ui.checkbox(
-                &mut self.show_appearance_panel,
-                tr.text("tr-menu-view-show-layer-manager"),
-            );
-
-            ui.separator();
-            //});
-
-            ui.label(tr.text("tr-menu-view-frame-timestep"));
-            ui.add(egui::widgets::Slider::new(&mut self.frame_timestep, 0.0..=3.0).suffix(" s"));
-        });
     }
 
     pub fn update_preferences_menu(ctx: &egui::Context, ui: &mut egui::Ui, tr: &mut Translator) {

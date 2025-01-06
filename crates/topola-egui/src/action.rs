@@ -4,7 +4,7 @@
 
 pub struct Action {
     name: String,
-    shortcut: egui::KeyboardShortcut,
+    shortcut: Option<egui::KeyboardShortcut>,
 }
 
 pub struct Trigger {
@@ -20,16 +20,27 @@ impl Action {
     pub fn new(name: String, modifiers: egui::Modifiers, key: egui::Key) -> Self {
         Self {
             name,
-            shortcut: egui::KeyboardShortcut::new(modifiers, key),
+            shortcut: Some(egui::KeyboardShortcut::new(modifiers, key)),
+        }
+    }
+
+    pub fn new_keyless(name: String) -> Self {
+        Self {
+            name,
+            shortcut: None,
         }
     }
 
     fn widget_text(&self) -> String {
-        format!(
-            "{} ({})",
-            self.name,
-            self.shortcut.format(&egui::ModifierNames::NAMES, false)
-        )
+        if let Some(shortcut) = self.shortcut {
+            format!(
+                "{} ({})",
+                self.name,
+                shortcut.format(&egui::ModifierNames::NAMES, false)
+            )
+        } else {
+            format!("{}", self.name)
+        }
     }
 
     #[inline]
@@ -61,8 +72,10 @@ impl Trigger {
     }
 
     fn consume_key(&mut self, ctx: &egui::Context, _ui: &mut egui::Ui) {
-        if ctx.input_mut(|i| i.consume_shortcut(&self.action.shortcut)) {
-            self.triggered = true;
+        if let Some(shortcut) = self.action.shortcut {
+            if ctx.input_mut(|i| i.consume_shortcut(&shortcut)) {
+                self.triggered = true;
+            }
         }
     }
 
@@ -82,8 +95,10 @@ impl Switch {
         _ui: &mut egui::Ui,
         selected: &mut bool,
     ) -> bool {
-        if ctx.input_mut(|i| i.consume_shortcut(&self.action.shortcut)) {
-            *selected = !*selected;
+        if let Some(shortcut) = self.action.shortcut {
+            if ctx.input_mut(|i| i.consume_shortcut(&shortcut)) {
+                *selected = !*selected;
+            }
         }
 
         *selected
