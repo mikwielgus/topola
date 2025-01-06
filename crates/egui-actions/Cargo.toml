@@ -1,0 +1,17 @@
+# SPDX-FileCopyrightText: 2024 Topola contributors
+#
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "egui-actions"
+version = "0.1.0"
+edition = "2021"
+
+[lib]
+proc-macro = true
+
+[dependencies]
+egui = "0.29"
+proc-macro2 = "1.0"
+quote = "1.0"
+syn = "2.0"

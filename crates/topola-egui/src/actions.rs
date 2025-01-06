@@ -8,6 +8,7 @@ use crate::{
 };
 
 use egui::{Context, Ui};
+use egui_actions::Actions;
 use topola::autorouter::AutorouterOptions;
 
 pub struct FileActions {
@@ -299,6 +300,7 @@ impl HelpActions {
     }
 }
 
+#[derive(Actions)]
 pub struct Actions {
     pub file: FileActions,
     pub edit: EditActions,
@@ -306,17 +308,4 @@ pub struct Actions {
     pub route: RouteActions,
     pub inspect: InspectActions,
     pub help: HelpActions,
-}
-
-impl Actions {
-    pub fn new(tr: &Translator) -> Self {
-        Self {
-            file: FileActions::new(tr),
-            edit: EditActions::new(tr),
-            place: PlaceActions::new(tr),
-            route: RouteActions::new(tr),
-            inspect: InspectActions::new(tr),
-            help: HelpActions::new(tr),
-        }
-    }
 }

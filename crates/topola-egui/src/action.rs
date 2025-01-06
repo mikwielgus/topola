@@ -32,7 +32,6 @@ impl Action {
         )
     }
 
-    #[inline]
     pub fn into_trigger(self) -> Trigger {
         Trigger {
             action: self,
@@ -40,7 +39,6 @@ impl Action {
         }
     }
 
-    #[inline(always)]
     pub fn into_switch(self) -> Switch {
         Switch { action: self }
     }
