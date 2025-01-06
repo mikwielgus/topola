@@ -15,6 +15,7 @@ use topola::{
 };
 
 use crate::{
+    action::{Action, Switch, Trigger},
     actions::Actions,
     app::{execute, handle_file},
     translator::Translator,

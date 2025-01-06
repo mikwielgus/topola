@@ -17,7 +17,6 @@ xdg-portal = ["rfd/async-std", "rfd/xdg-portal"]
 [dependencies]
 derive-getters.workspace = true
 egui = "0.29"
-egui-actions.path = "../egui-actions"
 fluent-templates = "0.11"
 geo.workspace = true
 icu_experimental = "0.2"
