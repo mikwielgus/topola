@@ -21,7 +21,7 @@ use cli::Cli;
 fn main() -> Result<(), std::io::Error> {
     let args = Cli::parse();
     let design_file = File::open(&args.input)?;
-    let mut design_bufread = BufReader::new(design_file);
+    let design_bufread = BufReader::new(design_file);
 
     let design =
         SpecctraDesign::load(design_bufread).expect("File failed to parse as Specctra DSN");
@@ -58,7 +58,9 @@ fn main() -> Result<(), std::io::Error> {
         .output
         .unwrap_or_else(|| args.input.clone().with_extension("ses"));
     let mut file = File::create(output_filename).unwrap();
-    design.write_ses(invoker.autorouter().board(), &mut file);
+    design
+        .write_ses(invoker.autorouter().board(), &mut file)
+        .expect("Failed to write Specctra Session file");
 
     Ok(())
 }
