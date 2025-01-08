@@ -274,6 +274,78 @@ impl Viewport {
                             }
                         }
 
+                        if menu_bar.show_topo_navmesh {
+                            if let Some(navmesh) = workspace.overlay.planar_incr_navmesh() {
+                                // calculate dual node position approximations
+                                use std::collections::BTreeMap;
+                                use topola::geometry::shape::AccessShape;
+                                use topola::router::planar_incr_embed::NavmeshIndex;
+                                let mut map = BTreeMap::new();
+                                let resolve_primal = |p: &topola::layout::NodeIndex| {
+                                    board.layout().node_shape(*p).center()
+                                };
+                                let root_bbox3d =
+                                    board.layout().drawing().rtree().root().envelope();
+
+                                let root_bbox = AABB::<[f64; 2]>::from_corners(
+                                    [root_bbox3d.lower()[0], root_bbox3d.lower()[1]].into(),
+                                    [root_bbox3d.upper()[0], root_bbox3d.upper()[1]].into(),
+                                );
+
+                                for (nidx, node) in &*navmesh.nodes {
+                                    if let NavmeshIndex::Dual(didx) = nidx {
+                                        map.insert(
+                                            didx,
+                                            geo::point! { x: node.pos.x, y: node.pos.y },
+                                        );
+                                    }
+                                }
+                                for (eidx, edge) in &*navmesh.edges {
+                                    // TODO: display edge contents, too
+                                    let (a, b) = eidx.clone().into();
+                                    let mut got_primal = false;
+                                    let a_pos = match a {
+                                        NavmeshIndex::Primal(p) => {
+                                            got_primal = true;
+                                            resolve_primal(&p)
+                                        }
+                                        NavmeshIndex::Dual(d) => match map.get(&d) {
+                                            None => continue,
+                                            Some(x) => x.clone(),
+                                        },
+                                    };
+                                    let b_pos = match b {
+                                        NavmeshIndex::Primal(p) => {
+                                            got_primal = true;
+                                            resolve_primal(&p)
+                                        }
+                                        NavmeshIndex::Dual(d) => match map.get(&d) {
+                                            None => continue,
+                                            Some(x) => x.clone(),
+                                        },
+                                    };
+                                    let edge_len = navmesh.edge_paths[edge.1].len();
+                                    use egui::Color32;
+                                    let stroke = if edge_len == 0 {
+                                        egui::Stroke::new(
+                                            1.0,
+                                            if got_primal {
+                                                Color32::from_rgb(255, 175, 0)
+                                            } else {
+                                                Color32::from_rgb(159, 255, 33)
+                                            },
+                                        )
+                                    } else {
+                                        egui::Stroke::new(
+                                            1.5 + (edge_len as f32).atan(),
+                                            Color32::from_rgb(250, 250, 0),
+                                        )
+                                    };
+                                    painter.paint_edge(a_pos, b_pos, stroke);
+                                }
+                            }
+                        }
+
                         if menu_bar.show_bboxes {
                             let root_bbox3d = board.layout().drawing().rtree().root().envelope();
 

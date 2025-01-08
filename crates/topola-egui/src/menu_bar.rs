@@ -25,6 +25,7 @@ pub struct MenuBar {
     pub is_placing_via: bool,
     pub show_ratsnest: bool,
     pub show_navmesh: bool,
+    pub show_topo_navmesh: bool,
     pub show_bboxes: bool,
     pub show_origin_destination: bool,
     pub show_appearance_panel: bool,
@@ -45,6 +46,7 @@ impl MenuBar {
             is_placing_via: false,
             show_ratsnest: true,
             show_navmesh: false,
+            show_topo_navmesh: false,
             show_bboxes: false,
             show_origin_destination: false,
             show_appearance_panel: true,
@@ -249,6 +251,15 @@ impl MenuBar {
                         workspace
                             .overlay
                             .select_all(board, &workspace.appearance_panel);
+                    } else if actions
+                        .edit
+                        .recalculate_topo_navmesh
+                        .consume_key_triggered(ctx, ui)
+                    {
+                        let board = workspace.interactor.invoker().autorouter().board();
+                        workspace
+                            .overlay
+                            .recalculate_topo_navmesh(board, &workspace.appearance_panel);
                     } else if actions.place.place_via.consume_key_enabled(
                         ctx,
                         ui,

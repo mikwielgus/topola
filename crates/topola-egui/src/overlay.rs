@@ -13,9 +13,23 @@ use topola::{
     },
     board::{AccessMesadata, Board},
     geometry::shape::AccessShape,
+    layout::NodeIndex,
+    router::planar_incr_embed,
 };
 
 use crate::appearance_panel::AppearancePanel;
+
+#[derive(Clone, Copy, Debug)]
+pub struct PieNavmeshBase;
+
+impl planar_incr_embed::NavmeshBase for PieNavmeshBase {
+    type PrimalNodeIndex = NodeIndex;
+    type EtchedPath = planar_incr_embed::navmesh::EdgeIndex<NodeIndex>;
+    type GapComment = ();
+    type Scalar = f64;
+}
+
+pub type PieNavmesh = planar_incr_embed::navmesh::Navmesh<PieNavmeshBase>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SelectionMode {
@@ -27,6 +41,7 @@ pub enum SelectionMode {
 pub struct Overlay {
     ratsnest: Ratsnest,
     selection: Selection,
+    planar_incr_navmesh: Option<PieNavmesh>,
     reselect_bbox: Option<(SelectionMode, Point)>,
 }
 
@@ -37,6 +52,7 @@ impl Overlay {
         Ok(Self {
             ratsnest: Ratsnest::new(board.layout())?,
             selection: Selection::new(),
+            planar_incr_navmesh: None,
             reselect_bbox: None,
         })
     }
@@ -61,6 +77,58 @@ impl Overlay {
     pub fn unselect_all(&mut self) {
         self.selection = Selection::new();
         self.reselect_bbox = None;
+    }
+
+    pub fn recalculate_topo_navmesh(
+        &mut self,
+        board: &Board<impl AccessMesadata>,
+        appearance_panel: &AppearancePanel,
+    ) {
+        use spade::Triangulation;
+        use topola::router::planar_incr_embed::navmesh::TrianVertex;
+
+        if let Ok(triangulation) =
+            spade::DelaunayTriangulation::<TrianVertex<NodeIndex, f64>>::bulk_load(
+                board
+                    .layout()
+                    .drawing()
+                    .rtree()
+                    .locate_in_envelope_intersecting(&AABB::<[f64; 3]>::from_corners(
+                        [
+                            -f64::INFINITY,
+                            -f64::INFINITY,
+                            appearance_panel.active_layer as f64,
+                        ],
+                        [
+                            f64::INFINITY,
+                            f64::INFINITY,
+                            appearance_panel.active_layer as f64,
+                        ],
+                    ))
+                    .map(|&geom| geom.data)
+                    .filter_map(|node| {
+                        board
+                            .layout()
+                            .center_of_compoundless_node(node)
+                            .map(|pos| (node, pos))
+                    })
+                    .map(|(idx, pos)| TrianVertex {
+                        idx,
+                        pos: spade::mitigate_underflow(spade::Point2 {
+                            x: pos.x(),
+                            y: pos.y(),
+                        }),
+                    })
+                    .collect(),
+            )
+        {
+            self.planar_incr_navmesh = Some(
+                planar_incr_embed::navmesh::NavmeshSer::<PieNavmeshBase>::from_triangulation(
+                    &triangulation,
+                )
+                .into(),
+            );
+        }
     }
 
     pub fn drag_start(
@@ -165,6 +233,10 @@ impl Overlay {
 
     pub fn selection(&self) -> &Selection {
         &self.selection
+    }
+
+    pub fn planar_incr_navmesh(&self) -> Option<&PieNavmesh> {
+        self.planar_incr_navmesh.as_ref()
     }
 
     /// Returns the currently selected bounding box of a bounding-box reselect

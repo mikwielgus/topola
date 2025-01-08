@@ -82,6 +82,7 @@ pub struct EditActions {
     pub abort: Trigger,
     pub select_all: Trigger,
     pub unselect_all: Trigger,
+    pub recalculate_topo_navmesh: Trigger,
     pub remove_bands: Trigger,
 }
 
@@ -118,6 +119,10 @@ impl EditActions {
                 egui::Key::A,
             )
             .into_trigger(),
+            recalculate_topo_navmesh: Action::new_keyless(
+                tr.text("tr-menu-edit-recalculate-topo-navmesh"),
+            )
+            .into_trigger(),
             remove_bands: Action::new(
                 tr.text("tr-menu-edit-remove-bands"),
                 egui::Modifiers::NONE,
@@ -146,6 +151,7 @@ impl EditActions {
 
             self.select_all.button(ctx, ui);
             self.unselect_all.button(ctx, ui);
+            self.recalculate_topo_navmesh.button(ctx, ui);
 
             ui.separator();
 
@@ -204,6 +210,10 @@ impl ViewActions {
         ui.checkbox(
             &mut menu_bar.show_navmesh,
             tr.text("tr-menu-view-show-navmesh"),
+        );
+        ui.checkbox(
+            &mut menu_bar.show_topo_navmesh,
+            tr.text("tr-menu-view-show-topo-navmesh"),
         );
         ui.checkbox(
             &mut menu_bar.show_bboxes,

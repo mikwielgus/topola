@@ -15,12 +15,14 @@ tr-menu-edit-redo = Redo
 tr-menu-edit-abort = Abort
 tr-menu-edit-select-all = Select All
 tr-menu-edit-unselect-all = Unselect All
+tr-menu-edit-recalculate-topo-navmesh = Recalculate Topological Navmesh
 tr-menu-edit-remove-bands = Remove Bands
 
 tr-menu-view = View
 tr-menu-view-zoom-to-fit = Zoom to Fit
 tr-menu-view-show-ratsnest = Show Ratsnest
 tr-menu-view-show-navmesh = Show Navmesh
+tr-menu-view-show-topo-navmesh = Show Topological Navmesh
 tr-menu-view-show-bboxes = Show BBoxes
 tr-menu-view-show-origin-destination = Show Origin–Destination
 tr-menu-view-show-layer-manager = Show Layer Manager

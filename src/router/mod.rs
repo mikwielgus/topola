@@ -12,3 +12,5 @@ mod router;
 
 pub use route::RouteStepper;
 pub use router::*;
+
+pub use planar_incr_embed;
