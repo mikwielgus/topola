@@ -2,7 +2,8 @@
 
 tr-menu-file = File
 tr-menu-file-open = Open
-tr-menu-open-specctra-session-file = Specctra session file
+tr-menu-open-specctra-design-file = Specctra design file (*.dsn)
+tr-menu-open-specctra-session-file = Specctra session file (*.ses)
 tr-menu-file-export-session-file = Export Session File
 tr-menu-file-import-history = Import History
 tr-menu-file-export-history = Export History

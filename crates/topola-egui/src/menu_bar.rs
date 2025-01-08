@@ -148,7 +148,9 @@ impl MenuBar {
                 if actions.file.open_design.consume_key_triggered(ctx, ui) {
                     // NOTE: On Linux, this requires Zenity to be installed on your system.
                     let ctx = ctx.clone();
-                    let task = rfd::AsyncFileDialog::new().pick_file();
+                    let task = rfd::AsyncFileDialog::new()
+                        .add_filter(tr.text("tr-menu-open-specctra-design-file"), &["dsn"])
+                        .pick_file();
 
                     execute(async move {
                         if let Some(file_handle) = task.await {
