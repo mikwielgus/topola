@@ -23,7 +23,9 @@ fn main() -> Result<(), std::io::Error> {
     let design_file = File::open(&args.input)?;
     let mut design_bufread = BufReader::new(design_file);
 
-    let design = SpecctraDesign::load(design_bufread).unwrap();
+    let design =
+        SpecctraDesign::load(design_bufread).expect("File failed to parse as Specctra DSN");
+
     let board = design.make_board(&mut LayoutEdit::new());
 
     let history = if let Some(commands_filename) = args.commands {
