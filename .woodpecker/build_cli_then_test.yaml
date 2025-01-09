@@ -43,11 +43,11 @@ steps:
       RUST_BACKTRACE: 1
       CARGO_TERM_COLOR: always
     commands:
-      # Only run tests for stable channel to avoid straining Codeberg's CI.
-      - test "$CHANNEL" = "stable"
       - cargo test --verbose --no-default-features --features "$FEATURES"
     when:
       event: [pull_request, push, tag]
+      # Only run tests for stable channel to avoid straining Codeberg's CI.
+      evaluate: 'CHANNEL == "stable"'
       path:
         include:
           - '.woodpecker/*.yaml'
