@@ -20,6 +20,21 @@ steps:
       - cargo build -p topola-cli --no-default-features --features "$FEATURES" --
     when:
       event: [pull_request, push, tag]
+      path:
+        include:
+          - '.woodpecker/*.yaml'
+          - '*.toml'
+          - 'crates/**'
+          - 'src/**'
+          - 'tests/**'
+          - 'examples/**'
+        exclude:
+          - 'assets/**'
+          - 'LICENSES/**'
+          - 'locales/**'
+          - '*.md'
+        ignore_message: '[ALL]'
+        on_empty: false
 
   # Testing is a step instead of a separate flow to reduce Codeberg's CI usage.
   test:
@@ -31,3 +46,20 @@ steps:
       # Only run tests for stable channel to avoid straining Codeberg's CI.
       - test "$CHANNEL" = "stable"
       - cargo test --verbose --no-default-features --features "$FEATURES"
+    when:
+      event: [pull_request, push, tag]
+      path:
+        include:
+          - '.woodpecker/*.yaml'
+          - '*.toml'
+          - 'crates/**'
+          - 'src/**'
+          - 'tests/**'
+          - 'examples/**'
+        exclude:
+          - 'assets/**'
+          - 'LICENSES/**'
+          - 'locales/**'
+          - '*.md'
+        ignore_message: '[ALL]'
+        on_empty: false

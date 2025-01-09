@@ -24,3 +24,18 @@ steps:
       - trunk build
     when:
       event: [pull_request, push, tag]
+      path:
+        include:
+          - '.woodpecker/*.yaml'
+          - '*.toml'
+          - 'crates/**'
+          - 'src/**'
+          - 'tests/**'
+          - 'examples/**'
+        exclude:
+          - 'assets/**'
+          - 'LICENSES/**'
+          - 'locales/**'
+          - '*.md'
+        ignore_message: '[ALL]'
+        on_empty: false
