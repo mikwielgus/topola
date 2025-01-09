@@ -42,3 +42,7 @@ tr-error-failed-to-parse-as-history-json = bestand niet geparseerd als Geschiede
 tr-error-unable-to-initialize-overlay = kan overlay niet initialiseren
 tr-error-unable-to-initialize-autorouter = autorouter kan niet worden geïnitialiseerd
 tr-module-invoker = Aanroeper
+tr-menu-help = Hulp
+tr-menu-preferences = Voorkeuren
+tr-menu-place = Plaats
+tr-menu-edit-select-all = Alles selecteren
