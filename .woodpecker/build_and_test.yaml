@@ -5,9 +5,9 @@
 matrix:
   include:
     - CHANNEL: stable
-      FEATURES: disable_contracts,xdg-portal
+      FEATURES: disable_contracts
     - CHANNEL: nightly
-      FEATURES: xdg-portal
+      FEATURES:
 
 steps:
   build_cli:
@@ -73,7 +73,7 @@ steps:
       CARGO_TERM_COLOR: always
     commands:
       - rustup default "$CHANNEL"
-      - cargo build -p topola-egui --no-default-features --features "$FEATURES"
+      - cargo build -p topola-egui --no-default-features --features "$FEATURES,xdg-portal"
     when:
       event: [pull_request, push, tag]
       path:
