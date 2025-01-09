@@ -266,7 +266,8 @@ impl BendShape {
     }
 
     pub fn start_angle(&self) -> f64 {
-        *math::NormalizedAngle::atan2(self.from - self.inner_circle.pos)
+        let r = self.from - self.inner_circle.pos;
+        math::vector_angle(r)
     }
 
     pub fn spanned_angle(&self) -> f64 {
@@ -279,7 +280,11 @@ impl BendShape {
 
         // atan2 returns values normalized into the range (-pi, pi]
         // so for angles below 0 we add 1 winding to get a nonnegative angle
-        angle.non_negative()
+        if angle < 0.0 {
+            angle + TAU
+        } else {
+            angle
+        }
     }
 
     /// Render this bend as a list of points on its circle.
