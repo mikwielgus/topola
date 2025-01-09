@@ -101,7 +101,7 @@ steps:
     commands:
       - apt-get -y install curl
       - curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
-      - cargo binstall -j4 --no-confirm trunk
+      - cargo binstall --no-confirm trunk
       - rustup default "$CHANNEL"
       - rustup target add wasm32-unknown-unknown
       - trunk build
