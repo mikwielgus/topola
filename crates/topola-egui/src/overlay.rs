@@ -25,6 +25,8 @@ use topola::{
     },
 };
 
+use crate::appearance_panel::AppearancePanel;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SelectionMode {
     Addition,
@@ -55,9 +57,14 @@ impl Overlay {
         core::mem::replace(&mut self.selection, Selection::new())
     }
 
-    pub fn select_all(&mut self, board: &Board<impl AccessMesadata>) {
+    pub fn select_all(
+        &mut self,
+        board: &Board<impl AccessMesadata>,
+        appearance_panel: &AppearancePanel,
+    ) {
         self.select_all_in_bbox(
             board,
+            appearance_panel,
             &AABB::from_corners([-INF, -INF], [INF, INF]),
             BboxSelectionKind::CompletelyInside,
         );
@@ -71,6 +78,7 @@ impl Overlay {
     pub fn drag_start(
         &mut self,
         board: &Board<impl AccessMesadata>,
+        appearance_panel: &AppearancePanel,
         at: Point,
         modifiers: &egui::Modifiers,
     ) {
@@ -87,7 +95,12 @@ impl Overlay {
         }
     }
 
-    pub fn drag_stop(&mut self, board: &Board<impl AccessMesadata>, at: Point) {
+    pub fn drag_stop(
+        &mut self,
+        board: &Board<impl AccessMesadata>,
+        appearance_panel: &AppearancePanel,
+        at: Point,
+    ) {
         if let Some((selmode, bsk, aabb)) = self.get_bbox_reselect(at) {
             // handle bounding box selection
             self.reselect_bbox = None;
@@ -95,25 +108,30 @@ impl Overlay {
             match selmode {
                 SelectionMode::Substitution => {
                     self.selection = Selection::new();
-                    self.select_all_in_bbox(board, &aabb, bsk);
+                    self.select_all_in_bbox(board, appearance_panel, &aabb, bsk);
                 }
                 SelectionMode::Addition => {
-                    self.select_all_in_bbox(board, &aabb, bsk);
+                    self.select_all_in_bbox(board, appearance_panel, &aabb, bsk);
                 }
                 SelectionMode::Toggling => {
                     let old_selection = self.take_selection();
-                    self.select_all_in_bbox(board, &aabb, bsk);
+                    self.select_all_in_bbox(board, appearance_panel, &aabb, bsk);
                     self.selection ^= &old_selection;
                 }
             }
         }
     }
 
-    pub fn click(&mut self, board: &Board<impl AccessMesadata>, at: Point) {
+    pub fn click(
+        &mut self,
+        board: &Board<impl AccessMesadata>,
+        appearance_panel: &AppearancePanel,
+        at: Point,
+    ) {
         if self.reselect_bbox.is_some() {
             // handle bounding box selection (takes precendence over other interactions)
             // this is mostly in order to allow the user to recover from a missed/dropped drag_stop event
-            self.drag_stop(board, at);
+            self.drag_stop(board, appearance_panel, at);
             return;
         }
 
@@ -141,11 +159,12 @@ impl Overlay {
     pub fn select_all_in_bbox(
         &mut self,
         board: &Board<impl AccessMesadata>,
+        appearance_panel: &AppearancePanel,
         aabb: &AABB<[f64; 2]>,
         bsk: BboxSelectionKind,
     ) {
         self.selection
-            .select_all_in_bbox(board, aabb, self.active_layer, bsk);
+            .select_all_in_bbox(board, aabb, &appearance_panel.visible[..], bsk);
     }
 
     pub fn ratsnest(&self) -> &Ratsnest {

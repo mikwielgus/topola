@@ -246,7 +246,9 @@ impl MenuBar {
                         workspace.overlay.unselect_all();
                     } else if actions.edit.select_all.consume_key_triggered(ctx, ui) {
                         let board = workspace.interactor.invoker().autorouter().board();
-                        workspace.overlay.select_all(board);
+                        workspace
+                            .overlay
+                            .select_all(board, &workspace.appearance_panel);
                     } else if actions.place.place_via.consume_key_enabled(
                         ctx,
                         ui,

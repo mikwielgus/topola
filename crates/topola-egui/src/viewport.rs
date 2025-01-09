@@ -90,16 +90,17 @@ impl Viewport {
                                     maybe_net: Some(1234),
                                 }));
                             } else {
-                                overlay.click(board, latest_point);
+                                overlay.click(board, layers, latest_point);
                             }
                         } else if response.drag_started_by(egui::PointerButton::Primary) {
                             overlay.drag_start(
                                 board,
+                                layers,
                                 latest_point,
                                 &response.ctx.input(|i| i.modifiers),
                             );
                         } else if response.drag_stopped_by(egui::PointerButton::Primary) {
-                            overlay.drag_stop(board, latest_point);
+                            overlay.drag_stop(board, layers, latest_point);
                         } else if let Some((_, bsk, cur_bbox)) =
                             overlay.get_bbox_reselect(latest_point)
                         {

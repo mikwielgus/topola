@@ -28,7 +28,7 @@ use crate::{
         collect::Collect,
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         gear::{GearIndex, GetNextGear},
-        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+        graph::{GetLayer, GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
         guide::Guide,
         loose::{GetPrevNextLoose, Loose, LooseIndex},
         primitive::{
@@ -1035,6 +1035,24 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
             GenericNode::Primitive(primitive) => primitive.primitive(self).layer() == active_layer,
             GenericNode::Compound(compound) => {
                 self.compound_weight(compound).is_in_layer(active_layer)
+            }
+        }
+    }
+
+    pub fn is_node_in_any_layer_of(
+        &self,
+        index: GenericNode<PrimitiveIndex, GenericIndex<CW>>,
+        layers: &[bool],
+    ) -> bool
+    where
+        CW: IsInLayer,
+    {
+        match index {
+            GenericNode::Primitive(primitive) => {
+                primitive.primitive(self).is_in_any_layer_of(layers)
+            }
+            GenericNode::Compound(compound) => {
+                self.compound_weight(compound).is_in_any_layer_of(layers)
             }
         }
     }

@@ -69,7 +69,14 @@ impl GetMaybeNet for ViaWeight {
 
 impl IsInLayer for ViaWeight {
     fn is_in_layer(&self, layer: usize) -> bool {
-        self.from_layer >= layer && self.to_layer <= layer
+        (self.from_layer..=self.to_layer).contains(&layer)
+    }
+
+    fn is_in_any_layer_of(&self, layers: &[bool]) -> bool {
+        layers
+            .get(self.from_layer..=core::cmp::min(self.to_layer, layers.len()))
+            .map(|i| i.iter().any(|j| *j))
+            .unwrap_or(false)
     }
 }
 

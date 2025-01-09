@@ -31,12 +31,18 @@ pub trait GetLayer {
 #[enum_dispatch]
 pub trait IsInLayer {
     fn is_in_layer(&self, layer: usize) -> bool;
+
+    fn is_in_any_layer_of(&self, layers: &[bool]) -> bool;
 }
 
 impl<T: GetLayer> IsInLayer for T {
     #[inline]
     fn is_in_layer(&self, layer: usize) -> bool {
         self.layer() == layer
+    }
+
+    fn is_in_any_layer_of(&self, layers: &[bool]) -> bool {
+        *layers.get(self.layer()).unwrap_or(&false)
     }
 }
 
