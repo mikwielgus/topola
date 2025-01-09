@@ -12,8 +12,8 @@ topological router in Rust.
 The project is funded by the [NLnet Foundation](https://nlnet.nl/) from
 the [NGI0 Entrust](https://nlnet.nl/entrust/) fund.
 
-<img src="./assets/nlnet_banner.png" alt="NLnet Foundation banner" width="200"/>
-<img src="./assets/ngi0_entrust_banner.svg" alt="NGI0 Entrust banner" width="200"/>
+<img src="./assets/logos/nlnet/nlnet.png" alt="NLnet Foundation banner" width="200"/>
+<img src="./assets/logos/ngi0/entrust.svg" alt="NGI0 Entrust banner" width="200"/>
 
 ## Chat
 
@@ -84,7 +84,7 @@ from the second leftmost dot on the left to the second rightmost dot on
 the right, displacing the previous trace so that there's space for the
 new one. Same happens for the remaining dots. The dots, traces and
 barrier are all solid red. The background is black but also very
-slightly white and blue.](./assets/screencasts/pre-egui_shoving_around.gif "Shoving traces under other traces")
+slightly white and blue.](./assets/screencasts/pre-egui_squeezing_through_under_bends.gif "Squeezing through under bends")
 
 ![Animation showing three red-colored traces pass around a barrier.
 Trace bends are not aligned to a grid unlike most PCB layouts these days
