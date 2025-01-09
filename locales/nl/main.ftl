@@ -47,3 +47,4 @@ tr-menu-preferences = Voorkeuren
 tr-menu-place = Plaats
 tr-menu-edit-select-all = Alles selecteren
 tr-menu-edit-unselect-all = Alles deselecteren
+tr-menu-open-specctra-design-file = Specctra ontwerpbestand (*.dsn)
