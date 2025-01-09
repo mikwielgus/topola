@@ -5,9 +5,9 @@
 matrix:
   include:
     - CHANNEL: stable
-      FEATURES: disable_contracts
+      FEATURES: disable_contracts,xdg-portal
     - CHANNEL: nightly
-      FEATURES:
+      FEATURES: xdg-portal
 
 steps:
   build_cli:
