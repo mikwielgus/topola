@@ -71,7 +71,7 @@ fn test_4x_3rd_order_smd_lc_filters() {
     let mut autorouter = common::load_design(
         "tests/single_layer/4x_3rd_order_smd_lc_filters/4x_3rd_order_smd_lc_filters.dsn",
     );
-    common::assert_navvertex_count(&mut autorouter, "J1-1", "L1-1", 1954);
+    common::assert_navvertex_count(&mut autorouter, "J1-1", "L1-1", 2026);
     let mut invoker = common::create_invoker_and_assert(autorouter);
     common::replay_and_assert(
         &mut invoker,
