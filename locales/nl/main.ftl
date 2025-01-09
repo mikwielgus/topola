@@ -46,3 +46,4 @@ tr-menu-help = Hulp
 tr-menu-preferences = Voorkeuren
 tr-menu-place = Plaats
 tr-menu-edit-select-all = Alles selecteren
+tr-menu-edit-unselect-all = Alles deselecteren
