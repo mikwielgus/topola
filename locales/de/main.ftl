@@ -1,7 +1,7 @@
 tr-menu-edit-undo = Rückgängig
 tr-menu-edit-redo = Vorwärts
 tr-menu-view-show-layer-manager = Zeige Ebenen-Verwaltung
-tr-menu-open-specctra-session-file = Specctra-Sitzungsdatei
+tr-menu-open-specctra-session-file = Specctra-Sitzungsdatei (*.ses)
 tr-menu-view-frame-timestep = Rahmen-Zeitschritt
 tr-menu-file = Datei
 tr-menu-edit = Bearbeiten
@@ -47,3 +47,4 @@ tr-menu-preferences-set-language = Sprache wählen
 tr-menu-route-routed-band-width = Routen-Bandbreite
 tr-menu-edit-select-all = Alles auswählen
 tr-menu-edit-unselect-all = Alles abwählen
+tr-menu-open-specctra-design-file = Specctra-Designdatei (*.dsn)
