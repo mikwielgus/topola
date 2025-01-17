@@ -44,6 +44,6 @@ tr-menu-edit-select-all = Zaznacz wszystko
 tr-menu-open-specctra-design-file = Plik projektu Specctra (*.dsn)
 tr-module-specctra-dsn-file-loader = Ładowanie plików Specctra DSN
 tr-menu-view-frame-timestep = Odstęp czasowy klatki
-tr-error-failed-to-parse-as-history-json = Nie udało się sparować pliku jako History JSON
+tr-error-failed-to-parse-as-history-json = nie udało się sparować pliku jako History JSON
 tr-menu-route-routed-band-width = Trasowana szerokość pasma
 tr-module-invoker = Wywoływacz
