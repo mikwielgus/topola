@@ -329,7 +329,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     ) -> Result<LooseBendIndex, DrawingException> {
         // It makes no sense to wrap something around or under one of its connectables.
         //
-        if let Some(net) = weight.maybe_net {
+        if let Some(net) = weight.maybe_net() {
             if let Some(around_net) = around.primitive(self).maybe_net() {
                 if net == around_net {
                     return Err(AlreadyConnected(net, around.into()).into());

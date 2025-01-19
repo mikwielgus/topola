@@ -476,7 +476,7 @@ impl<'a, CW: Copy, R: AccessRules> GetLimbs for LooseBend<'a, CW, R> {}
 
 impl<'a, CW: Copy, R: AccessRules> GetOffset for LooseBend<'a, CW, R> {
     fn offset(&self) -> f64 {
-        self.weight().offset
+        self.weight().offset()
     }
 }
 

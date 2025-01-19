@@ -80,45 +80,37 @@ impl TryFrom<PrimitiveWeight> for SegWeight {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct FixedSegWeight {
+pub struct FixedSegWeight(pub GeneralSegWeight);
+impl_weight_forward!(FixedSegWeight, FixedSeg, FixedSegIndex);
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct LoneLooseSegWeight(pub GeneralSegWeight);
+impl_weight_forward!(LoneLooseSegWeight, LoneLooseSeg, LoneLooseSegIndex);
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct SeqLooseSegWeight(pub GeneralSegWeight);
+impl_weight_forward!(SeqLooseSegWeight, SeqLooseSeg, SeqLooseSegIndex);
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GeneralSegWeight {
     pub width: f64,
     pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 
-impl_fixed_weight!(FixedSegWeight, FixedSeg, FixedSegIndex);
-
-impl GetWidth for FixedSegWeight {
-    fn width(&self) -> f64 {
-        self.width
+impl GetLayer for GeneralSegWeight {
+    fn layer(&self) -> usize {
+        self.layer
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct LoneLooseSegWeight {
-    pub width: f64,
-    pub layer: usize,
-    pub maybe_net: Option<usize>,
-}
-
-impl_loose_weight!(LoneLooseSegWeight, LoneLooseSeg, LoneLooseSegIndex);
-
-impl GetWidth for LoneLooseSegWeight {
-    fn width(&self) -> f64 {
-        self.width
+impl GetMaybeNet for GeneralSegWeight {
+    fn maybe_net(&self) -> Option<usize> {
+        self.maybe_net
     }
 }
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct SeqLooseSegWeight {
-    pub width: f64,
-    pub layer: usize,
-    pub maybe_net: Option<usize>,
-}
-
-impl_loose_weight!(SeqLooseSegWeight, SeqLooseSeg, SeqLooseSegIndex);
-
-impl GetWidth for SeqLooseSegWeight {
+impl GetWidth for GeneralSegWeight {
     fn width(&self) -> f64 {
         self.width
     }

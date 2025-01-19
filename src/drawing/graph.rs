@@ -59,23 +59,29 @@ pub trait MakePrimitive {
     ) -> Primitive<'a, CW, R>;
 }
 
-macro_rules! impl_weight {
-    ($weight_struct:ident, $weight_variant:ident, $index_struct:ident) => {
+macro_rules! impl_weight_forward {
+    ($weight_struct:ty, $weight_variant:ident, $index_struct:ident) => {
         impl Retag<PrimitiveIndex> for $weight_struct {
             fn retag(&self, index: NodeIndex<usize>) -> PrimitiveIndex {
                 PrimitiveIndex::$weight_variant($index_struct::new(index))
             }
         }
 
-        impl<'a> GetLayer for $weight_struct {
+        impl GetLayer for $weight_struct {
             fn layer(&self) -> usize {
-                self.layer
+                self.0.layer()
             }
         }
 
-        impl<'a> GetMaybeNet for $weight_struct {
+        impl GetMaybeNet for $weight_struct {
             fn maybe_net(&self) -> Option<usize> {
-                self.maybe_net
+                self.0.maybe_net()
+            }
+        }
+
+        impl GetWidth for $weight_struct {
+            fn width(&self) -> f64 {
+                self.0.width()
             }
         }
 
@@ -89,18 +95,6 @@ macro_rules! impl_weight {
                 Primitive::$weight_variant(GenericPrimitive::new(*self, drawing))
             }
         }
-    };
-}
-
-macro_rules! impl_fixed_weight {
-    ($weight_struct:ident, $weight_variant:ident, $index_struct:ident) => {
-        impl_weight!($weight_struct, $weight_variant, $index_struct);
-    };
-}
-
-macro_rules! impl_loose_weight {
-    ($weight_struct:ident, $weight_variant:ident, $index_struct:ident) => {
-        impl_weight!($weight_struct, $weight_variant, $index_struct);
     };
 }
 

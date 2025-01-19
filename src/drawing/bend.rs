@@ -74,57 +74,71 @@ impl TryFrom<PrimitiveWeight> for BendWeight {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct FixedBendWeight {
-    pub width: f64,
-    pub offset: f64,
-    pub layer: usize,
-    pub maybe_net: Option<usize>,
-}
-
-impl_fixed_weight!(FixedBendWeight, FixedBend, FixedBendIndex);
+pub struct FixedBendWeight(pub GeneralBendWeight);
+impl_weight_forward!(FixedBendWeight, FixedBend, FixedBendIndex);
 
 impl GetOffset for FixedBendWeight {
     fn offset(&self) -> f64 {
-        self.offset
+        self.0.offset()
     }
 }
 
 impl SetOffset for FixedBendWeight {
     fn set_offset(&mut self, offset: f64) {
-        self.offset = offset
-    }
-}
-
-impl GetWidth for FixedBendWeight {
-    fn width(&self) -> f64 {
-        self.width
+        self.0.set_offset(offset);
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct LooseBendWeight {
+pub struct LooseBendWeight(pub GeneralBendWeight);
+impl_weight_forward!(LooseBendWeight, LooseBend, LooseBendIndex);
+
+impl GetOffset for LooseBendWeight {
+    fn offset(&self) -> f64 {
+        self.0.offset()
+    }
+}
+
+impl SetOffset for LooseBendWeight {
+    fn set_offset(&mut self, offset: f64) {
+        self.0.set_offset(offset);
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GeneralBendWeight {
     pub width: f64,
     pub offset: f64,
     pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 
-impl GetOffset for LooseBendWeight {
+impl GetLayer for GeneralBendWeight {
+    fn layer(&self) -> usize {
+        self.layer
+    }
+}
+
+impl GetMaybeNet for GeneralBendWeight {
+    fn maybe_net(&self) -> Option<usize> {
+        self.maybe_net
+    }
+}
+
+impl GetOffset for GeneralBendWeight {
     fn offset(&self) -> f64 {
         self.offset
     }
 }
 
-impl SetOffset for LooseBendWeight {
+impl SetOffset for GeneralBendWeight {
     fn set_offset(&mut self, offset: f64) {
         self.offset = offset
     }
 }
 
-impl GetWidth for LooseBendWeight {
+impl GetWidth for GeneralBendWeight {
     fn width(&self) -> f64 {
         self.width
     }
 }
-
-impl_loose_weight!(LooseBendWeight, LooseBend, LooseBendIndex);

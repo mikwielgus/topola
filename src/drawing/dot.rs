@@ -76,50 +76,61 @@ impl TryFrom<PrimitiveWeight> for DotWeight {
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct FixedDotWeight {
-    pub circle: Circle,
-    pub layer: usize,
-    pub maybe_net: Option<usize>,
-}
-
-impl_fixed_weight!(FixedDotWeight, FixedDot, FixedDotIndex);
+pub struct FixedDotWeight(pub GeneralDotWeight);
+impl_weight_forward!(FixedDotWeight, FixedDot, FixedDotIndex);
 
 impl GetSetPos for FixedDotWeight {
     fn pos(&self) -> Point {
-        self.circle.pos
+        self.0.pos()
     }
-
     fn set_pos(&mut self, pos: Point) {
-        self.circle.pos = pos
-    }
-}
-
-impl GetWidth for FixedDotWeight {
-    fn width(&self) -> f64 {
-        self.circle.r * 2.0
+        self.0.set_pos(pos);
     }
 }
 
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub struct LooseDotWeight {
+pub struct LooseDotWeight(pub GeneralDotWeight);
+impl_weight_forward!(LooseDotWeight, LooseDot, LooseDotIndex);
+
+impl GetSetPos for LooseDotWeight {
+    fn pos(&self) -> Point {
+        self.0.pos()
+    }
+    fn set_pos(&mut self, pos: Point) {
+        self.0.set_pos(pos);
+    }
+}
+
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct GeneralDotWeight {
     pub circle: Circle,
     pub layer: usize,
     pub maybe_net: Option<usize>,
 }
 
-impl_loose_weight!(LooseDotWeight, LooseDot, LooseDotIndex);
+impl GetLayer for GeneralDotWeight {
+    fn layer(&self) -> usize {
+        self.layer
+    }
+}
 
-impl GetSetPos for LooseDotWeight {
+impl GetMaybeNet for GeneralDotWeight {
+    fn maybe_net(&self) -> Option<usize> {
+        self.maybe_net
+    }
+}
+
+impl GetSetPos for GeneralDotWeight {
     fn pos(&self) -> Point {
         self.circle.pos
     }
 
     fn set_pos(&mut self, pos: Point) {
-        self.circle.pos = pos
+        self.circle.pos = pos;
     }
 }
 
-impl GetWidth for LooseDotWeight {
+impl GetWidth for GeneralDotWeight {
     fn width(&self) -> f64 {
         self.circle.r * 2.0
     }

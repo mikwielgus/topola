@@ -12,7 +12,10 @@ use crate::{
     drawing::{
         band::BandTermsegIndex,
         bend::{BendIndex, BendWeight, LooseBendWeight},
-        dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+        dot::{
+            DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, GeneralDotWeight, LooseDotIndex,
+            LooseDotWeight,
+        },
         gear::GearIndex,
         graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
         primitive::MakePrimitiveShape,
@@ -99,11 +102,11 @@ impl<R: AccessRules> Layout<R> {
         for layer in weight.from_layer..=weight.to_layer {
             match self.drawing.add_fixed_dot(
                 recorder,
-                FixedDotWeight {
+                FixedDotWeight(GeneralDotWeight {
                     circle: weight.circle,
                     layer,
                     maybe_net: weight.maybe_net,
-                },
+                }),
             ) {
                 Ok(dot) => {
                     self.drawing.add_to_compound(recorder, dot, compound);

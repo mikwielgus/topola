@@ -11,14 +11,14 @@ use thiserror::Error;
 use crate::{
     drawing::{
         band::BandTermsegIndex,
-        bend::{BendIndex, LooseBendWeight},
-        dot::{DotIndex, FixedDotIndex, LooseDotIndex, LooseDotWeight},
+        bend::{BendIndex, GeneralBendWeight, LooseBendWeight},
+        dot::{DotIndex, FixedDotIndex, GeneralDotWeight, LooseDotIndex, LooseDotWeight},
         gear::GearIndex,
         graph::{GetLayer, GetMaybeNet, MakePrimitive},
         head::{CaneHead, GetFace, Head},
         primitive::GetOtherJoint,
         rules::AccessRules,
-        seg::{LoneLooseSegWeight, SeqLooseSegWeight},
+        seg::{GeneralSegWeight, LoneLooseSegWeight, SeqLooseSegWeight},
         DrawingException, Guide, Infringement,
     },
     layout::{Layout, LayoutEdit},
@@ -98,11 +98,11 @@ impl<R: AccessRules> Draw for Layout<R> {
                     recorder,
                     dot,
                     into,
-                    LoneLooseSegWeight {
+                    LoneLooseSegWeight(GeneralSegWeight {
                         width,
                         layer,
                         maybe_net,
-                    },
+                    }),
                 )
                 .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?,
             ),
@@ -111,11 +111,11 @@ impl<R: AccessRules> Draw for Layout<R> {
                     recorder,
                     into.into(),
                     dot,
-                    SeqLooseSegWeight {
+                    SeqLooseSegWeight(GeneralSegWeight {
                         width,
                         layer,
                         maybe_net,
-                    },
+                    }),
                 )
                 .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?,
             ),
@@ -279,25 +279,25 @@ impl<R: AccessRules> DrawPrivate for Layout<R> {
             recorder,
             head.face(),
             around,
-            LooseDotWeight {
+            LooseDotWeight(GeneralDotWeight {
                 circle: Circle {
                     pos: to,
                     r: width / 2.0,
                 },
                 layer,
                 maybe_net,
-            },
-            SeqLooseSegWeight {
+            }),
+            SeqLooseSegWeight(GeneralSegWeight {
                 width,
                 layer,
                 maybe_net,
-            },
-            LooseBendWeight {
+            }),
+            LooseBendWeight(GeneralBendWeight {
                 width,
                 offset,
                 layer,
                 maybe_net,
-            },
+            }),
             cw,
         )?;
         Ok(CaneHead {

@@ -18,7 +18,7 @@ use crate::{
     drawing::{
         band::BandUid,
         bend::{BendIndex, BendWeight},
-        dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight},
+        dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, GeneralDotWeight},
         graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight},
         seg::{FixedSegIndex, FixedSegWeight, SegIndex, SegWeight},
         Collect,
@@ -246,14 +246,14 @@ impl<M: AccessMesadata> Board<M> {
         } else {
             self.add_poly_fixed_dot_infringably(
                 recorder,
-                FixedDotWeight {
+                FixedDotWeight(GeneralDotWeight {
                     circle: Circle {
                         pos: resolved_poly.shape().center(),
                         r: 100.0,
                     },
                     layer: resolved_poly.layer(),
                     maybe_net: resolved_poly.maybe_net(),
-                },
+                }),
                 poly,
             )
         }

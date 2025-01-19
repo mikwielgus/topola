@@ -10,7 +10,7 @@ use crate::{
     board::AccessMesadata,
     drawing::{
         band::BandTermsegIndex,
-        dot::{FixedDotIndex, FixedDotWeight},
+        dot::{FixedDotIndex, FixedDotWeight, GeneralDotWeight},
     },
     layout::LayoutEdit,
     math::Circle,
@@ -34,14 +34,14 @@ impl PointrouteExecutionStepper {
     ) -> Result<Self, AutorouterError> {
         let destination = autorouter.board.add_fixed_dot_infringably(
             &mut LayoutEdit::new(),
-            FixedDotWeight {
+            FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
                     pos: point,
                     r: options.router_options.routed_band_width / 2.0,
                 },
                 layer: 0,
                 maybe_net: None,
-            },
+            }),
             None,
         );
 

@@ -82,7 +82,7 @@ impl<CW: Copy, R: AccessRules> Guide for Drawing<CW, R> {
     ) -> Result<Line, NoTangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle = Circle {
-            pos: self.primitive(into).weight().circle.pos,
+            pos: self.primitive(into).weight().0.circle.pos,
             r: 0.0,
         };
 
