@@ -16,7 +16,7 @@ use crate::geometry::{
     recording_with_rtree::RecordingGeometryWithRtree,
     with_rtree::BboxedIndex,
     AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
-    GetOffset, GetSetPos, GetWidth,
+    GetLayer, GetOffset, GetSetPos, GetWidth,
 };
 use crate::graph::{GenericIndex, GetPetgraphIndex};
 use crate::math::NoTangents;
@@ -28,7 +28,7 @@ use crate::{
         collect::Collect,
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         gear::{GearIndex, GetNextGear},
-        graph::{GetLayer, GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+        graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
         guide::Guide,
         loose::{GetPrevNextLoose, Loose, LooseIndex},
         primitive::{
@@ -1039,7 +1039,6 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     where
         CW: super::graph::IsInLayer,
     {
-        use super::graph::GetLayer;
         match index {
             GenericNode::Primitive(primitive) => primitive.primitive(self).layer() == active_layer,
             GenericNode::Compound(compound) => {

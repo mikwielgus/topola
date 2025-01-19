@@ -8,17 +8,14 @@ use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
 use rstar::RTree;
 
-use crate::{
-    drawing::graph::{GetLayer, Retag},
-    graph::{GenericIndex, GetPetgraphIndex},
-};
+use crate::graph::{GenericIndex, GetPetgraphIndex};
 
 use super::{
     compound::ManageCompounds,
     edit::{ApplyGeometryEdit, GeometryEdit},
     with_rtree::{BboxedIndex, GeometryWithRtree},
     AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
-    GetWidth,
+    GetLayer, GetWidth, Retag,
 };
 
 #[derive(Debug)]

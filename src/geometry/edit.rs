@@ -4,12 +4,9 @@
 
 use std::{collections::BTreeMap, marker::PhantomData};
 
-use crate::{
-    drawing::graph::{GetLayer, Retag},
-    graph::{GenericIndex, GetPetgraphIndex},
-};
+use crate::graph::{GenericIndex, GetPetgraphIndex};
 
-use super::{AccessBendWeight, AccessDotWeight, AccessSegWeight, GetWidth};
+use super::{AccessBendWeight, AccessDotWeight, AccessSegWeight, GetLayer, GetWidth, Retag};
 
 pub trait ApplyGeometryEdit<
     PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<Index = PI> + Copy,

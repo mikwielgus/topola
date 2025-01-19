@@ -9,11 +9,11 @@ use crate::{
     drawing::{
         bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-        graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight, Retag},
+        graph::{GetMaybeNet, PrimitiveIndex, PrimitiveWeight},
         seg::{FixedSegWeight, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex, SeqLooseSegWeight},
         Drawing,
     },
-    geometry::{primitive::PrimitiveShape, GenericNode, GetOffset, GetWidth},
+    geometry::{primitive::PrimitiveShape, GenericNode, GetLayer, GetOffset, GetWidth, Retag},
     graph::{GenericIndex, GetPetgraphIndex},
 };
 

@@ -5,7 +5,10 @@
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
-use crate::graph::{GenericIndex, GetPetgraphIndex};
+use crate::{
+    geometry::GetLayer,
+    graph::{GenericIndex, GetPetgraphIndex},
+};
 
 use super::{
     bend::{FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
@@ -18,16 +21,6 @@ use super::{
     },
     Drawing,
 };
-
-pub trait Retag {
-    type Index: Sized + GetPetgraphIndex + PartialEq + Copy;
-    fn retag(&self, index: NodeIndex<usize>) -> Self::Index;
-}
-
-#[enum_dispatch]
-pub trait GetLayer {
-    fn layer(&self) -> usize;
-}
 
 #[enum_dispatch]
 pub trait IsInLayer {
@@ -119,7 +112,7 @@ pub enum PrimitiveWeight {
     LooseBend(LooseBendWeight),
 }
 
-impl Retag for PrimitiveWeight {
+impl crate::geometry::Retag for PrimitiveWeight {
     type Index = PrimitiveIndex;
 
     fn retag(&self, index: NodeIndex<usize>) -> PrimitiveIndex {

@@ -19,11 +19,11 @@ use crate::{
         band::BandUid,
         bend::{BendIndex, BendWeight},
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, GeneralDotWeight},
-        graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight},
+        graph::{GetMaybeNet, PrimitiveIndex, PrimitiveWeight},
         seg::{FixedSegIndex, FixedSegWeight, SegIndex, SegWeight},
         Collect,
     },
-    geometry::{edit::ApplyGeometryEdit, shape::AccessShape, GenericNode},
+    geometry::{edit::ApplyGeometryEdit, shape::AccessShape, GenericNode, GetLayer},
     graph::GenericIndex,
     layout::{
         poly::{GetMaybeApex, MakePolygon, PolyWeight},

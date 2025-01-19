@@ -6,12 +6,12 @@ use enum_dispatch::enum_dispatch;
 
 use crate::{
     drawing::{
-        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
         primitive::{GenericPrimitive, Primitive},
         rules::AccessRules,
         Drawing,
     },
-    geometry::GetWidth,
+    geometry::{GetLayer, GetWidth},
     graph::{GenericIndex, GetPetgraphIndex},
 };
 

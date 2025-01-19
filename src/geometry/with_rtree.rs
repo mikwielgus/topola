@@ -9,12 +9,11 @@ use petgraph::stable_graph::StableDiGraph;
 use rstar::{primitives::GeomWithData, Envelope, RTree, RTreeObject, AABB};
 
 use crate::{
-    drawing::graph::{GetLayer, Retag},
     geometry::{
         compound::ManageCompounds,
         primitive::{AccessPrimitiveShape, PrimitiveShape},
         AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
-        GetWidth,
+        GetLayer, GetWidth, Retag,
     },
     graph::{GenericIndex, GetPetgraphIndex},
 };

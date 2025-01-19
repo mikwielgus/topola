@@ -14,12 +14,12 @@ use crate::{
     board::{AccessMesadata, Board},
     drawing::{
         dot::{FixedDotWeight, GeneralDotWeight},
-        graph::{GetLayer, GetMaybeNet, MakePrimitive},
+        graph::{GetMaybeNet, MakePrimitive},
         primitive::MakePrimitiveShape,
         seg::{FixedSegWeight, GeneralSegWeight},
         Drawing,
     },
-    geometry::{primitive::PrimitiveShape, GetWidth},
+    geometry::{primitive::PrimitiveShape, GetLayer, GetWidth},
     layout::{poly::SolidPolyWeight, Layout, LayoutEdit},
     math::{Circle, PointWithRotation},
     specctra::{

@@ -10,12 +10,12 @@ use serde::{Deserialize, Serialize};
 use crate::{
     board::{AccessMesadata, BandName, Board, ResolvedSelector},
     drawing::{
-        graph::{GetLayer, MakePrimitive, PrimitiveIndex},
+        graph::{MakePrimitive, PrimitiveIndex},
         Collect,
     },
     geometry::{
         shape::{AccessShape, Shape},
-        GenericNode,
+        GenericNode, GetLayer,
     },
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{poly::PolyWeight, CompoundWeight, NodeIndex},

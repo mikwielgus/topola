@@ -9,12 +9,12 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     drawing::{
-        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
         primitive::{GenericPrimitive, Primitive},
         rules::AccessRules,
         Drawing,
     },
-    geometry::{GetSetPos, GetWidth},
+    geometry::{GetLayer, GetSetPos, GetWidth},
     graph::{GenericIndex, GetPetgraphIndex},
     math::Circle,
 };

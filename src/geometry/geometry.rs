@@ -11,15 +11,15 @@ use petgraph::{
     Direction::{self, Incoming},
 };
 use serde::{Deserialize, Serialize};
+use specctra_core::rules::AccessRules;
 
 use crate::{
     drawing::{
-        bend::BendWeight,
-        dot::DotWeight,
-        graph::{PrimitiveWeight, Retag},
+        bend::{BendWeight, FixedBendWeight, LooseBendWeight},
+        dot::{DotWeight, FixedDotWeight, LooseDotWeight},
+        graph::PrimitiveWeight,
         primitive::Primitive,
-        rules::AccessRules,
-        seg::SegWeight,
+        seg::{FixedSegWeight, LoneLooseSegWeight, SegWeight, SeqLooseSegWeight},
     },
     geometry::{
         compound::ManageCompounds,
@@ -28,6 +28,16 @@ use crate::{
     graph::{GenericIndex, GetPetgraphIndex},
     math::Circle,
 };
+
+pub trait Retag {
+    type Index: Sized + GetPetgraphIndex + PartialEq + Copy;
+    fn retag(&self, index: NodeIndex<usize>) -> Self::Index;
+}
+
+#[enum_dispatch]
+pub trait GetLayer {
+    fn layer(&self) -> usize;
+}
 
 #[enum_dispatch]
 pub trait GetSetPos {

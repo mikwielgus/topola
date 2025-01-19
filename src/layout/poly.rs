@@ -11,13 +11,13 @@ use geo::{LineString, Point, Polygon};
 use crate::{
     drawing::{
         dot::FixedDotIndex,
-        graph::{GetLayer, GetMaybeNet, PrimitiveIndex},
+        graph::{GetMaybeNet, PrimitiveIndex},
         primitive::GetLimbs,
         rules::AccessRules,
         seg::SegIndex,
         Drawing,
     },
-    geometry::GetSetPos,
+    geometry::{GetLayer, GetSetPos},
     graph::{GenericIndex, GetPetgraphIndex},
     layout::CompoundWeight,
 };
