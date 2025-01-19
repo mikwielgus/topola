@@ -9,7 +9,7 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     drawing::{
-        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight, Retag},
+        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
         primitive::{GenericPrimitive, Primitive},
         rules::AccessRules,
         Drawing,

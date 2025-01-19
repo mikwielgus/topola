@@ -113,7 +113,7 @@ impl<PW, DW, SW, BW, CW, PI, DI, SI, BI> Geometry<PW, DW, SW, BW, CW, PI, DI, SI
 }
 
 impl<
-        PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
+        PW: GetWidth + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<Index = PI> + Copy,
         DW: AccessDotWeight + Into<PW>,
         SW: AccessSegWeight + Into<PW>,
         BW: AccessBendWeight + Into<PW>,

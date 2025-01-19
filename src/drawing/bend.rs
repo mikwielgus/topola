@@ -6,7 +6,7 @@ use enum_dispatch::enum_dispatch;
 
 use crate::{
     drawing::{
-        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight, Retag},
+        graph::{GetLayer, GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
         primitive::{GenericPrimitive, Primitive},
         rules::AccessRules,
         Drawing,

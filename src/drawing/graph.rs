@@ -5,7 +5,7 @@
 use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
-use crate::{drawing::Drawing, graph::GetPetgraphIndex};
+use crate::graph::{GenericIndex, GetPetgraphIndex};
 
 use super::{
     bend::{FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
@@ -16,11 +16,12 @@ use super::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
         SeqLooseSegWeight,
     },
+    Drawing,
 };
 
-#[enum_dispatch]
-pub trait Retag<PrimitiveIndex> {
-    fn retag(&self, index: NodeIndex<usize>) -> PrimitiveIndex;
+pub trait Retag {
+    type Index: Sized + GetPetgraphIndex + PartialEq + Copy;
+    fn retag(&self, index: NodeIndex<usize>) -> Self::Index;
 }
 
 #[enum_dispatch]
@@ -61,12 +62,6 @@ pub trait MakePrimitive {
 
 macro_rules! impl_weight_forward {
     ($weight_struct:ty, $weight_variant:ident, $index_struct:ident) => {
-        impl Retag<PrimitiveIndex> for $weight_struct {
-            fn retag(&self, index: NodeIndex<usize>) -> PrimitiveIndex {
-                PrimitiveIndex::$weight_variant($index_struct::new(index))
-            }
-        }
-
         impl GetLayer for $weight_struct {
             fn layer(&self) -> usize {
                 self.0.layer()
@@ -112,7 +107,7 @@ pub enum PrimitiveIndex {
     LooseBend(LooseBendIndex),
 }
 
-#[enum_dispatch(GetWidth, GetLayer, Retag<PrimitiveIndex>)]
+#[enum_dispatch(GetWidth, GetLayer)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PrimitiveWeight {
     FixedDot(FixedDotWeight),
@@ -122,4 +117,28 @@ pub enum PrimitiveWeight {
     SeqLooseSeg(SeqLooseSegWeight),
     FixedBend(FixedBendWeight),
     LooseBend(LooseBendWeight),
+}
+
+impl Retag for PrimitiveWeight {
+    type Index = PrimitiveIndex;
+
+    fn retag(&self, index: NodeIndex<usize>) -> PrimitiveIndex {
+        macro_rules! match_self {
+            ($self:expr, $($kind:ident),*,) => {{
+                match $self {
+                    $(PrimitiveWeight::$kind(_) => PrimitiveIndex::$kind(GenericIndex::new(index))),*
+                }
+            }}
+        }
+        match_self!(
+            self,
+            FixedDot,
+            LooseDot,
+            FixedSeg,
+            LoneLooseSeg,
+            SeqLooseSeg,
+            FixedBend,
+            LooseBend,
+        )
+    }
 }

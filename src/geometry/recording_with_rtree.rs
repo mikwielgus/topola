@@ -27,7 +27,7 @@ pub struct RecordingGeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
 }
 
 impl<
-        PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
+        PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<Index = PI> + Copy,
         DW: AccessDotWeight + Into<PW> + GetLayer,
         SW: AccessSegWeight + Into<PW> + GetLayer,
         BW: AccessBendWeight + Into<PW> + GetLayer,
@@ -338,7 +338,7 @@ fn edit_remove_from_map<I: Ord, T>(
 }
 
 impl<
-        PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<PI> + Copy,
+        PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<Index = PI> + Copy,
         DW: AccessDotWeight + Into<PW> + GetLayer,
         SW: AccessSegWeight + Into<PW> + GetLayer,
         BW: AccessBendWeight + Into<PW> + GetLayer,
