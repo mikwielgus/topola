@@ -1,5 +1,5 @@
 tr-menu-file = Dosya
-tr-menu-open-specctra-session-file = Specctra oturum dosyası
+tr-menu-open-specctra-session-file = Specctra oturum dosyası (*.ses)
 tr-menu-file-export-session-file = Oturum Dosyasını Dışa Aktar
 tr-menu-file-import-history = Geçmişi İçe Aktar
 tr-menu-file-export-history = Geçmişi Dışa Aktar
@@ -42,3 +42,8 @@ tr-menu-edit-undo = Geri al
 tr-menu-edit-redo = Yeniden yap
 tr-menu-edit-abort = İptal et
 tr-menu-view = Görüntüle
+tr-menu-open-specctra-design-file = Specctra tasarım dosyası (*.dsn)
+tr-menu-preferences = Tercihler
+tr-menu-preferences-set-language = Dili Ayarla
+tr-menu-edit-select-all = Tümünü Seç
+tr-menu-edit-unselect-all = Tümünün Seçimini Kaldır
