@@ -24,11 +24,16 @@ pub trait GetPrevNextLoose {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex>;
 
     fn prev_loose(&self, maybe_next: Option<LooseIndex>) -> Option<LooseIndex> {
-        if maybe_next.is_some() {
-            self.next_loose(maybe_next)
-        } else {
-            self.next_loose(self.next_loose(None))
-        }
+        // `next_loose` and `prev_loose` do exactly the same thing
+        // when `maybe_*` is `Some(_)`,
+        // but otherwise, they start in opposite direction, here by going via:
+        let maybe_prev = maybe_next.or_else(|| {
+            let default_neighbor = self.next_loose(None);
+            // * normally, one would retrieve the next element via `default_neighbor.next_loose(self)`
+            // * `self.next_loose(default_neighbor)` on the other hand inverts the direction we're iterating towards.
+            default_neighbor
+        });
+        self.next_loose(maybe_prev)
     }
 }
 
