@@ -45,10 +45,11 @@ repository on [GitHub](https://github.com/mikwielgus/topola).
 
 ## Licence
 
-Topola is licensed under the [MIT licence](LICENSE). Files present in
+Topola is licensed under the [MIT licence](LICENSES/MIT.txt). Files present in
 the `assets/` directory are dual-licensed as under MIT or
-[Creative Commons Attribution 4.0 International](https://creativecommons.org/licenses/by/4.0/)
-licence.
+[Creative Commons Attribution 4.0 International](LICENSES/CC-BY-4.0.txt)
+licence. The file `crates/planar-incr-embed/src/math.rs` is dual-licensed as under
+MIT or [Apache 2.0](LICENSES/Apache-2.0.txt) license.
 
 ## Gallery
 

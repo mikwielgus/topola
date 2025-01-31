@@ -10,14 +10,13 @@ use crate::{
         bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         graph::{GetMaybeNet, PrimitiveIndex, PrimitiveWeight},
+        rules::{AccessRules, Conditions, GetConditions},
         seg::{FixedSegWeight, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex, SeqLooseSegWeight},
         Drawing,
     },
     geometry::{primitive::PrimitiveShape, GenericNode, GetLayer, GetOffset, GetWidth, Retag},
     graph::{GenericIndex, GetPetgraphIndex},
 };
-
-use specctra_core::rules::{AccessRules, Conditions, GetConditions};
 
 #[enum_dispatch]
 pub trait GetDrawing<'a, R: AccessRules> {
@@ -171,16 +170,16 @@ pub enum Primitive<'a, CW: Copy, R: AccessRules> {
     LooseBend(LooseBend<'a, CW, R>),
 }
 
-impl<'a, CW: Copy, R: AccessRules> specctra_core::rules::GetConditions for Primitive<'a, CW, R> {
-    fn conditions(&self) -> specctra_core::rules::Conditions {
+impl<'a, CW: Copy, R: AccessRules> GetConditions<'a> for &Primitive<'a, CW, R> {
+    fn conditions(self) -> Option<Conditions<'a>> {
         match self {
-            Self::FixedDot(x) => x.conditions(),
-            Self::LooseDot(x) => x.conditions(),
-            Self::FixedSeg(x) => x.conditions(),
-            Self::LoneLooseSeg(x) => x.conditions(),
-            Self::SeqLooseSeg(x) => x.conditions(),
-            Self::FixedBend(x) => x.conditions(),
-            Self::LooseBend(x) => x.conditions(),
+            Primitive::FixedDot(x) => x.conditions(),
+            Primitive::LooseDot(x) => x.conditions(),
+            Primitive::FixedSeg(x) => x.conditions(),
+            Primitive::LoneLooseSeg(x) => x.conditions(),
+            Primitive::SeqLooseSeg(x) => x.conditions(),
+            Primitive::FixedBend(x) => x.conditions(),
+            Primitive::LooseBend(x) => x.conditions(),
         }
     }
 }
@@ -240,16 +239,16 @@ where
     }
 }
 
-impl<'a, W, CW: Copy, R: AccessRules> GetConditions for GenericPrimitive<'a, W, CW, R>
+impl<'a, W, CW: Copy, R: AccessRules> GetConditions<'a> for &GenericPrimitive<'a, W, CW, R>
 where
     GenericPrimitive<'a, W, CW, R>: GetMaybeNet,
 {
-    fn conditions(&self) -> Conditions {
-        Conditions {
-            maybe_net: self.maybe_net(),
-            maybe_region: Some("A".to_string()),
-            maybe_layer: Some("F.Cu".to_string()),
-        }
+    fn conditions(self) -> Option<Conditions<'a>> {
+        self.maybe_net().map(|net| Conditions {
+            net,
+            maybe_region: Some("A".into()),
+            maybe_layer: Some("F.Cu".into()),
+        })
     }
 }
 

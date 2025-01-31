@@ -981,8 +981,12 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
 
                 let epsilon = 1.0;
                 inflated_shape = node.primitive(self).shape().inflate(
-                    (self.rules.clearance(&conditions, &infringee_conditions) - epsilon)
-                        .clamp(0.0, f64::INFINITY),
+                    match (&conditions, infringee_conditions) {
+                        (None, _) | (_, None) => 0.0,
+                        (Some(lhs), Some(rhs)) => {
+                            (self.rules.clearance(lhs, &rhs) - epsilon).clamp(0.0, f64::INFINITY)
+                        }
+                    },
                 );
 
                 inflated_shape

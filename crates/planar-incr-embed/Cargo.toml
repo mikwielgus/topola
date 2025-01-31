@@ -1,0 +1,33 @@
+# SPDX-FileCopyrightText: 2024 Topola contributors
+#
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "planar-incr-embed"
+version = "0.1.0"
+edition = "2021"
+license = "MIT"
+
+[features]
+serde = ["dep:serde", "spade/serde"]
+
+[dependencies]
+log.workspace = true
+num-traits = "0.2"
+peeking_take_while = "1.0"
+spade.workspace = true
+thiserror.workspace = true
+
+[dependencies.serde]
+workspace = true
+optional = true
+
+[dev-dependencies]
+ron = "0.8"
+
+[dev-dependencies.insta]
+version = "1.42"
+features = ["json"]
+
+[dev-dependencies.serde]
+workspace = true

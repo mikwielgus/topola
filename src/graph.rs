@@ -80,6 +80,13 @@ impl<W> Ord for GenericIndex<W> {
     }
 }
 
+impl<W> core::hash::Hash for GenericIndex<W> {
+    #[inline]
+    fn hash<H: core::hash::Hasher>(&self, state: &mut H) {
+        self.node_index.hash(state);
+    }
+}
+
 impl<W> GetPetgraphIndex for GenericIndex<W> {
     #[inline]
     fn petgraph_index(&self) -> NodeIndex<usize> {

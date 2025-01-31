@@ -8,11 +8,9 @@
 
 pub use specctra_core::mesadata::AccessMesadata;
 
-use std::{cmp::Ordering, collections::BTreeMap};
-
 use bimap::BiBTreeMap;
 use derive_getters::Getters;
-use serde::{Deserialize, Serialize};
+use std::collections::BTreeMap;
 
 use crate::{
     drawing::{
@@ -33,21 +31,7 @@ use crate::{
 };
 
 /// Represents a band between two pins.
-#[derive(Clone, Debug, Deserialize, Eq, PartialOrd, Ord, PartialEq, Serialize)]
-pub struct BandName(String, String);
-
-impl BandName {
-    /// Creates a new [`BandName`] and manages their order.
-    ///
-    /// This function ensures that the two pin names are sorted in lexicographical order, so that the smaller name always comes first.
-    pub fn new(pinname1: String, pinname2: String) -> Self {
-        if pinname1.cmp(&pinname2) == Ordering::Greater {
-            BandName(pinname2, pinname1)
-        } else {
-            BandName(pinname1, pinname2)
-        }
-    }
-}
+pub type BandName = planar_incr_embed::navmesh::OrderedPair<String>;
 
 #[derive(Clone, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub enum ResolvedSelector<'a> {
@@ -284,14 +268,17 @@ impl<M: AccessMesadata> Board<M> {
             .unwrap()
             .to_string();
         self.band_bandname
-            .insert(band, BandName::new(source_pinname, target_pinname));
+            .insert(band, BandName::from((source_pinname, target_pinname)));
     }
 
     /// Finds a band between two pin names.
     pub fn band_between_pins(&self, pinname1: &str, pinname2: &str) -> Option<BandUid> {
         self.band_bandname
             // note: it doesn't matter in what order pinnames are given, the constructor sorts them
-            .get_by_right(&BandName::new(pinname1.to_string(), pinname2.to_string()))
+            .get_by_right(&BandName::from((
+                pinname1.to_string(),
+                pinname2.to_string(),
+            )))
             .copied()
     }
 

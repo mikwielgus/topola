@@ -205,7 +205,7 @@ pub fn assert_band_length(
     rel_err: f64,
 ) {
     let band = board.band_between_pins(source_pin, target_pin).unwrap();
-    let band_length = band.0.ref_(board.layout().drawing()).length();
+    let band_length = band[false].ref_(board.layout().drawing()).length();
     assert!(
         (band_length - expected_length).abs() < expected_length * rel_err,
         "band_length = {}, expected_length = {}, epsilon = {}",

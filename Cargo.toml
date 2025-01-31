@@ -34,7 +34,7 @@ features = ["serde-1"]
 
 [workspace.dependencies.serde]
 version = "1"
-features = ["derive"]
+features = ["derive", "rc"]
 
 [package]
 name = "topola"
@@ -58,6 +58,10 @@ rstar.workspace = true
 serde.workspace = true
 spade.workspace = true
 thiserror.workspace = true
+
+[dependencies.planar-incr-embed]
+path = "crates/planar-incr-embed"
+features = ["serde"]
 
 [dependencies.specctra-core]
 path = "crates/specctra-core"

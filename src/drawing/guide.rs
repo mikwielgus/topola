@@ -97,7 +97,8 @@ impl<CW: Copy, R: AccessRules> Guide for Drawing<CW, R> {
         width: f64,
     ) -> Result<(Line, Line), NoTangents> {
         let from_circle = self.head_circle(head, width);
-        let to_circle = self.dot_circle(around, width, &self.conditions(head.face().into()));
+        let to_circle =
+            self.dot_circle(around, width, self.conditions(head.face().into()).as_ref());
 
         let from_cw = self.head_cw(head);
         let tangents: Vec<Line> =
@@ -113,16 +114,17 @@ impl<CW: Copy, R: AccessRules> Guide for Drawing<CW, R> {
         width: f64,
     ) -> Result<Line, NoTangents> {
         let from_circle = self.head_circle(head, width);
-        let to_circle = self.dot_circle(around, width, &self.conditions(head.face().into()));
+        let to_circle =
+            self.dot_circle(around, width, self.conditions(head.face().into()).as_ref());
 
         let from_cw = self.head_cw(head);
         math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
     }
 
     fn head_around_dot_offset(&self, head: &Head, around: DotIndex, _width: f64) -> f64 {
-        self.rules().clearance(
-            &self.conditions(around.into()),
-            &self.conditions(head.face().into()),
+        self.clearance(
+            self.conditions(around.into()).as_ref(),
+            self.conditions(head.face().into()).as_ref(),
         )
     }
 
@@ -133,7 +135,8 @@ impl<CW: Copy, R: AccessRules> Guide for Drawing<CW, R> {
         width: f64,
     ) -> Result<(Line, Line), NoTangents> {
         let from_circle = self.head_circle(head, width);
-        let to_circle = self.bend_circle(around, width, &self.conditions(head.face().into()));
+        let to_circle =
+            self.bend_circle(around, width, self.conditions(head.face().into()).as_ref());
 
         let from_cw = self.head_cw(head);
         let tangents: Vec<Line> =
@@ -149,16 +152,17 @@ impl<CW: Copy, R: AccessRules> Guide for Drawing<CW, R> {
         width: f64,
     ) -> Result<Line, NoTangents> {
         let from_circle = self.head_circle(head, width);
-        let to_circle = self.bend_circle(around, width, &self.conditions(head.face().into()));
+        let to_circle =
+            self.bend_circle(around, width, self.conditions(head.face().into()).as_ref());
 
         let from_cw = self.head_cw(head);
         math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
     }
 
     fn head_around_bend_offset(&self, head: &Head, around: BendIndex, _width: f64) -> f64 {
-        self.rules().clearance(
-            &self.conditions(head.face().into()),
-            &self.conditions(around.into()),
+        self.clearance(
+            self.conditions(head.face().into()).as_ref(),
+            self.conditions(around.into()).as_ref(),
         )
     }
 
@@ -196,18 +200,37 @@ impl<CW: Copy, R: AccessRules> Guide for Drawing<CW, R> {
 }
 
 trait GuidePrivate {
+    fn clearance(&self, lhs: Option<&Conditions<'_>>, rhs: Option<&Conditions<'_>>) -> f64;
+
     fn head_circle(&self, head: &Head, width: f64) -> Circle;
 
-    fn bend_circle(&self, bend: BendIndex, width: f64, guide_conditions: &Conditions) -> Circle;
+    fn bend_circle(
+        &self,
+        bend: BendIndex,
+        width: f64,
+        guide_conditions: Option<&Conditions<'_>>,
+    ) -> Circle;
 
-    fn dot_circle(&self, dot: DotIndex, width: f64, guide_conditions: &Conditions) -> Circle;
+    fn dot_circle(
+        &self,
+        dot: DotIndex,
+        width: f64,
+        guide_conditions: Option<&Conditions<'_>>,
+    ) -> Circle;
 
     fn rear(&self, head: CaneHead) -> DotIndex;
 
-    fn conditions(&self, node: PrimitiveIndex) -> Conditions;
+    fn conditions(&self, node: PrimitiveIndex) -> Option<Conditions<'_>>;
 }
 
 impl<CW: Copy, R: AccessRules> GuidePrivate for Drawing<CW, R> {
+    fn clearance(&self, lhs: Option<&Conditions<'_>>, rhs: Option<&Conditions<'_>>) -> f64 {
+        match (lhs, rhs) {
+            (None, _) | (_, None) => 0.0,
+            (Some(lhs), Some(rhs)) => self.rules().clearance(lhs, rhs),
+        }
+    }
+
     fn head_circle(&self, head: &Head, width: f64) -> Circle {
         match *head {
             Head::Bare(head) => Circle {
@@ -216,19 +239,28 @@ impl<CW: Copy, R: AccessRules> GuidePrivate for Drawing<CW, R> {
             },
             Head::Cane(head) => {
                 if let Some(inner) = self.primitive(head.cane.bend).inner() {
-                    self.bend_circle(inner.into(), width, &self.conditions(head.face().into()))
+                    self.bend_circle(
+                        inner.into(),
+                        width,
+                        self.conditions(head.face().into()).as_ref(),
+                    )
                 } else {
                     self.dot_circle(
                         self.primitive(head.cane.bend).core().into(),
                         width,
-                        &self.conditions(head.face().into()),
+                        self.conditions(head.face().into()).as_ref(),
                     )
                 }
             }
         }
     }
 
-    fn bend_circle(&self, bend: BendIndex, width: f64, guide_conditions: &Conditions) -> Circle {
+    fn bend_circle(
+        &self,
+        bend: BendIndex,
+        width: f64,
+        guide_conditions: Option<&Conditions<'_>>,
+    ) -> Circle {
         let outer_circle = match bend.primitive(self).shape() {
             PrimitiveShape::Bend(shape) => shape.outer_circle(),
             _ => unreachable!(),
@@ -238,21 +270,22 @@ impl<CW: Copy, R: AccessRules> GuidePrivate for Drawing<CW, R> {
             pos: outer_circle.pos,
             r: outer_circle.r
                 + width / 2.0
-                + self
-                    .rules()
-                    .clearance(&self.conditions(bend.into()), guide_conditions),
+                + self.clearance(self.conditions(bend.into()).as_ref(), guide_conditions),
         }
     }
 
-    fn dot_circle(&self, dot: DotIndex, width: f64, guide_conditions: &Conditions) -> Circle {
+    fn dot_circle(
+        &self,
+        dot: DotIndex,
+        width: f64,
+        guide_conditions: Option<&Conditions<'_>>,
+    ) -> Circle {
         let shape = dot.primitive(self).shape();
         Circle {
             pos: shape.center(),
             r: shape.width() / 2.0
                 + width / 2.0
-                + self
-                    .rules()
-                    .clearance(&self.conditions(dot.into()), guide_conditions),
+                + self.clearance(self.conditions(dot.into()).as_ref(), guide_conditions),
         }
     }
 
@@ -261,7 +294,7 @@ impl<CW: Copy, R: AccessRules> GuidePrivate for Drawing<CW, R> {
             .other_joint(head.cane.dot.into())
     }
 
-    fn conditions(&self, node: PrimitiveIndex) -> Conditions {
+    fn conditions(&self, node: PrimitiveIndex) -> Option<Conditions<'_>> {
         node.primitive(self).conditions()
     }
 }

@@ -2,18 +2,35 @@
 //
 // SPDX-License-Identifier: MIT
 
-pub trait GetConditions {
-    fn conditions(&self) -> Conditions;
+use std::borrow::Cow;
+
+pub trait GetConditions<'a> {
+    fn conditions(self) -> Option<Conditions<'a>>;
 }
 
-#[derive(Debug, Default)]
-pub struct Conditions {
-    pub maybe_net: Option<usize>,
-    pub maybe_region: Option<String>,
-    pub maybe_layer: Option<String>,
+#[derive(
+    Clone,
+    Debug,
+    Default,
+    PartialEq,
+    Eq,
+    PartialOrd,
+    Ord,
+    Hash,
+    serde::Deserialize,
+    serde::Serialize,
+)]
+pub struct Conditions<'a> {
+    pub net: usize,
+
+    #[serde(borrow)]
+    pub maybe_region: Option<Cow<'a, str>>,
+
+    #[serde(borrow)]
+    pub maybe_layer: Option<Cow<'a, str>>,
 }
 
 pub trait AccessRules {
-    fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64;
+    fn clearance(&self, conditions1: &Conditions<'_>, conditions2: &Conditions<'_>) -> f64;
     fn largest_clearance(&self, net: Option<usize>) -> f64;
 }

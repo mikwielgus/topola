@@ -15,7 +15,12 @@ SPDX-FileCopyrightText = "2024 Topola contributors"
 SPDX-License-Identifier = "MIT"
 
 [[annotations]]
-path = ["tests/single_layer/**", "tests/multilayer/**"]
+path = [
+    "crates/planar-incr-embed/tests/**",
+    "crates/planar-incr-embed/src/planarr/snapshots/**",
+    "tests/single_layer/**",
+    "tests/multilayer/**"
+]
 SPDX-FileCopyrightText = "2024 Topola contributors"
 SPDX-License-Identifier = "MIT"
 

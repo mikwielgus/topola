@@ -1,0 +1,233 @@
+(
+    nodes: {
+        Dual(Inner(1)): (
+            neighs: [
+                Primal(Primitive(FixedDot(2))),
+                Dual(Inner(6)),
+                Primal(Primitive(FixedDot(4))),
+                Dual(Inner(2)),
+                Primal(Primitive(FixedDot(10))),
+                Dual(Inner(3)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: None,
+        ),
+        Dual(Inner(2)): (
+            neighs: [
+                Dual(Inner(5)),
+                Primal(Primitive(FixedDot(8))),
+                Dual(Inner(4)),
+                Primal(Primitive(FixedDot(10))),
+                Dual(Inner(1)),
+                Primal(Primitive(FixedDot(4))),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: None,
+        ),
+        Dual(Inner(3)): (
+            neighs: [
+                Primal(Primitive(FixedDot(2))),
+                Dual(Inner(1)),
+                Primal(Primitive(FixedDot(10))),
+                Dual(Inner(4)),
+                Primal(Primitive(FixedDot(6))),
+                Dual(Outer(13)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: None,
+        ),
+        Dual(Inner(4)): (
+            neighs: [
+                Primal(Primitive(FixedDot(10))),
+                Dual(Inner(2)),
+                Primal(Primitive(FixedDot(8))),
+                Dual(Outer(15)),
+                Primal(Primitive(FixedDot(6))),
+                Dual(Inner(3)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: None,
+        ),
+        Dual(Inner(5)): (
+            neighs: [
+                Dual(Outer(19)),
+                Primal(Primitive(FixedDot(8))),
+                Dual(Inner(2)),
+                Primal(Primitive(FixedDot(4))),
+                Dual(Inner(6)),
+                Primal(Primitive(FixedDot(0))),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: None,
+        ),
+        Dual(Inner(6)): (
+            neighs: [
+                Primal(Primitive(FixedDot(0))),
+                Dual(Inner(5)),
+                Primal(Primitive(FixedDot(4))),
+                Dual(Inner(1)),
+                Primal(Primitive(FixedDot(2))),
+                Dual(Outer(21)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: None,
+        ),
+        Dual(Outer(13)): (
+            neighs: [
+                Dual(Outer(21)),
+                Dual(Inner(3)),
+                Primal(Primitive(FixedDot(6))),
+                Dual(Outer(15)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: Some((
+                x: -0.000000000014551915228366852,
+                y: -13970.0,
+            )),
+        ),
+        Dual(Outer(15)): (
+            neighs: [
+                Primal(Primitive(FixedDot(8))),
+                Dual(Outer(19)),
+                Dual(Outer(13)),
+                Dual(Inner(4)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: Some((
+                x: -7620.0,
+                y: 635.0,
+            )),
+        ),
+        Dual(Outer(19)): (
+            neighs: [
+                Dual(Outer(15)),
+                Dual(Inner(5)),
+                Primal(Primitive(FixedDot(0))),
+                Dual(Outer(21)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: Some((
+                x: 0.000000000014551915228366852,
+                y: 13970.0,
+            )),
+        ),
+        Dual(Outer(21)): (
+            neighs: [
+                Dual(Outer(19)),
+                Dual(Inner(6)),
+                Primal(Primitive(FixedDot(2))),
+                Dual(Outer(13)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: Some((
+                x: 7620.0,
+                y: -635.0,
+            )),
+        ),
+        Primal(Primitive(FixedDot(0))): (
+            neighs: [
+                Dual(Outer(19)),
+                Dual(Inner(5)),
+                Dual(Inner(6)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: None,
+        ),
+        Primal(Primitive(FixedDot(2))): (
+            neighs: [
+                Dual(Outer(21)),
+                Dual(Inner(6)),
+                Dual(Inner(1)),
+                Dual(Inner(3)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: None,
+        ),
+        Primal(Primitive(FixedDot(4))): (
+            neighs: [
+                Dual(Inner(6)),
+                Dual(Inner(5)),
+                Dual(Inner(2)),
+                Dual(Inner(1)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: None,
+        ),
+        Primal(Primitive(FixedDot(6))): (
+            neighs: [
+                Dual(Inner(4)),
+                Dual(Outer(13)),
+                Dual(Inner(3)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: None,
+        ),
+        Primal(Primitive(FixedDot(8))): (
+            neighs: [
+                Dual(Inner(2)),
+                Dual(Inner(5)),
+                Dual(Outer(15)),
+                Dual(Inner(4)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: None,
+        ),
+        Primal(Primitive(FixedDot(10))): (
+            neighs: [
+                Dual(Inner(2)),
+                Dual(Inner(4)),
+                Dual(Inner(3)),
+                Dual(Inner(1)),
+            ],
+            pos: (x: 0.0, y: 0.0),
+            open_direction: None,
+        ),
+    },
+    edges: {
+        (Dual(Inner(1)), Dual(Inner(2))): ((), []),
+        (Dual(Inner(1)), Dual(Inner(3))): ((), []),
+        (Dual(Inner(1)), Dual(Inner(6))): ((), []),
+        (Dual(Inner(1)), Primal(Primitive(FixedDot(2)))): ((), []),
+        (Dual(Inner(1)), Primal(Primitive(FixedDot(4)))): ((), []),
+        (Dual(Inner(1)), Primal(Primitive(FixedDot(10)))): ((), []),
+        (Dual(Inner(2)), Dual(Inner(4))): ((), [
+            Normal((Primitive(FixedDot(0)), Primitive(FixedDot(6)))),
+        ]),
+        (Dual(Inner(2)), Dual(Inner(5))): ((), [
+            Normal((Primitive(FixedDot(0)), Primitive(FixedDot(6)))),
+        ]),
+        (Dual(Inner(2)), Primal(Primitive(FixedDot(4)))): ((), []),
+        (Dual(Inner(2)), Primal(Primitive(FixedDot(8)))): ((), []),
+        (Dual(Inner(2)), Primal(Primitive(FixedDot(10)))): ((), []),
+        (Dual(Inner(3)), Dual(Inner(4))): ((), []),
+        (Dual(Inner(3)), Dual(Outer(13))): ((), []),
+        (Dual(Inner(3)), Primal(Primitive(FixedDot(2)))): ((), []),
+        (Dual(Inner(3)), Primal(Primitive(FixedDot(6)))): ((), []),
+        (Dual(Inner(3)), Primal(Primitive(FixedDot(10)))): ((), []),
+        (Dual(Inner(4)), Dual(Outer(15))): ((), []),
+        (Dual(Inner(4)), Primal(Primitive(FixedDot(6)))): ((), [
+            Normal((Primitive(FixedDot(0)), Primitive(FixedDot(6)))),
+        ]),
+        (Dual(Inner(4)), Primal(Primitive(FixedDot(8)))): ((), []),
+        (Dual(Inner(4)), Primal(Primitive(FixedDot(10)))): ((), []),
+        (Dual(Inner(5)), Dual(Inner(6))): ((), []),
+        (Dual(Inner(5)), Dual(Outer(19))): ((), []),
+        (Dual(Inner(5)), Primal(Primitive(FixedDot(0)))): ((), [
+            Normal((Primitive(FixedDot(0)), Primitive(FixedDot(6)))),
+        ]),
+        (Dual(Inner(5)), Primal(Primitive(FixedDot(4)))): ((), []),
+        (Dual(Inner(5)), Primal(Primitive(FixedDot(8)))): ((), []),
+        (Dual(Inner(6)), Dual(Outer(21))): ((), []),
+        (Dual(Inner(6)), Primal(Primitive(FixedDot(0)))): ((), []),
+        (Dual(Inner(6)), Primal(Primitive(FixedDot(2)))): ((), []),
+        (Dual(Inner(6)), Primal(Primitive(FixedDot(4)))): ((), []),
+        (Dual(Outer(13)), Dual(Outer(15))): ((), []),
+        (Dual(Outer(13)), Dual(Outer(21))): ((), []),
+        (Dual(Outer(13)), Primal(Primitive(FixedDot(6)))): ((), []),
+        (Dual(Outer(15)), Dual(Outer(19))): ((), []),
+        (Dual(Outer(15)), Primal(Primitive(FixedDot(8)))): ((), []),
+        (Dual(Outer(19)), Dual(Outer(21))): ((), []),
+        (Dual(Outer(19)), Primal(Primitive(FixedDot(0)))): ((), []),
+        (Dual(Outer(21)), Primal(Primitive(FixedDot(2)))): ((), []),
+    }
+)

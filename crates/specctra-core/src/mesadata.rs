@@ -178,19 +178,11 @@ impl SpecctraMesadata {
 }
 
 impl AccessRules for SpecctraMesadata {
-    fn clearance(&self, conditions1: &Conditions, conditions2: &Conditions) -> f64 {
-        let (Some(net1), Some(net2)) = (conditions1.maybe_net, conditions2.maybe_net) else {
-            return 0.0;
-        };
+    fn clearance(&self, conditions1: &Conditions<'_>, conditions2: &Conditions<'_>) -> f64 {
+        let clr1 = self.get_rule(conditions1.net).clearance;
+        let clr2 = self.get_rule(conditions2.net).clearance;
 
-        let clr1 = self.get_rule(net1).clearance;
-        let clr2 = self.get_rule(net2).clearance;
-
-        if clr1 > clr2 {
-            clr1
-        } else {
-            clr2
-        }
+        f64::max(clr1, clr2)
     }
 
     fn largest_clearance(&self, _maybe_net: Option<usize>) -> f64 {

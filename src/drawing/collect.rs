@@ -27,10 +27,10 @@ pub trait Collect {
 
 impl<CW: Copy, R: AccessRules> Collect for Drawing<CW, R> {
     fn loose_band_uid(&self, start_loose: LooseIndex) -> BandUid {
-        BandUid::new(
+        BandUid::from((
             self.loose_band_first_seg(start_loose),
             self.loose_band_last_seg(start_loose),
-        )
+        ))
     }
 
     fn bend_bow(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex> {

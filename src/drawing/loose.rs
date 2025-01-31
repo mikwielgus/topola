@@ -12,12 +12,11 @@ use crate::{
         dot::{DotIndex, LooseDotIndex},
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::{GetJoints, LoneLooseSeg, LooseBend, LooseDot, Primitive, SeqLooseSeg},
+        rules::AccessRules,
         seg::{LoneLooseSegIndex, SeqLooseSegIndex},
     },
     graph::GetPetgraphIndex,
 };
-
-use super::rules::AccessRules;
 
 #[enum_dispatch]
 pub trait GetPrevNextLoose {

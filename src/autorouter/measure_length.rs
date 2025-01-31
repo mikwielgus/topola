@@ -43,7 +43,7 @@ impl MeasureLengthExecutionStepper {
             let mut length = 0.0;
 
             for selector in self.selection.selectors() {
-                let band = autorouter.board.bandname_band(&selector.band).unwrap().0;
+                let band = autorouter.board.bandname_band(&selector.band).unwrap()[false];
                 length += band.ref_(autorouter.board.layout().drawing()).length();
             }
 

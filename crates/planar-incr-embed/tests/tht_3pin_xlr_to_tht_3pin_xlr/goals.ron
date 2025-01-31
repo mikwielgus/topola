@@ -1,0 +1,5 @@
+[
+  (Primitive(FixedDot(0)), Primitive(FixedDot(6))),
+  (Primitive(FixedDot(2)), Primitive(FixedDot(8))),
+  (Primitive(FixedDot(4)), Primitive(FixedDot(10)))
+]

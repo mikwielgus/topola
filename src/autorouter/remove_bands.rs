@@ -41,7 +41,7 @@ impl RemoveBandsExecutionStepper {
 
             let mut edit = LayoutEdit::new();
             for selector in self.selection.selectors() {
-                let band = autorouter.board.bandname_band(&selector.band).unwrap().0;
+                let band = autorouter.board.bandname_band(&selector.band).unwrap()[false];
                 autorouter.board.layout_mut().remove_band(&mut edit, band);
             }
             Ok(Some(edit))

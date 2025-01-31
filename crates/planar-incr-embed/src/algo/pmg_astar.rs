@@ -1,0 +1,494 @@
+// SPDX-FileCopyrightText: 2025 Topola contributors
+// SPDX-FileCopyrightText: 2021 petgraph contributors
+//
+// SPDX-License-Identifier: MIT
+//
+//! planar multi-goal A*-like path search implementation
+
+use crate::{
+    algo::{Goal, PreparedGoal},
+    navmesh::{EdgeIndex, EdgePaths, Navmesh, NavmeshRef, NavmeshRefMut},
+    Edge, NavmeshBase, NavmeshIndex, RelaxedPath,
+};
+
+use alloc::collections::{BTreeMap, BinaryHeap};
+use alloc::{boxed::Box, sync::Arc, vec::Vec};
+use core::{cmp::Ordering, ops::ControlFlow};
+use num_traits::float::TotalOrder;
+
+/// A walk task
+#[derive(Clone, Debug)]
+pub struct Task<B: NavmeshBase> {
+    /// index of current goal
+    pub goal_idx: usize,
+
+    /// costs / weights accumulated so far
+    pub costs: B::Scalar,
+
+    /// estimated minimal costs until goal
+    pub estimated_remaining: B::Scalar,
+
+    /// estimated minimal costs for all remaining goals after this one
+    pub estimated_remaining_goals: B::Scalar,
+
+    /// the current navmesh edge paths
+    pub edge_paths: Box<[EdgePaths<B::EtchedPath, B::GapComment>]>,
+
+    /// the currently selected node
+    pub selected_node: NavmeshIndex<B::PrimalNodeIndex>,
+
+    /// the previously selected node
+    pub prev_node: NavmeshIndex<B::PrimalNodeIndex>,
+
+    /// the introduction position re: `selected_node`
+    pub cur_intro: usize,
+}
+
+/// Results after a [`Task`] is done.
+#[derive(Clone, Debug)]
+pub struct TaskResult<B: NavmeshBase> {
+    /// index of current goal
+    pub goal_idx: usize,
+
+    /// costs / weights accumulated so far
+    pub costs: B::Scalar,
+
+    /// the current navmesh edges
+    pub edge_paths: Box<[EdgePaths<B::EtchedPath, B::GapComment>]>,
+
+    /// the previously selected node
+    pub prev_node: NavmeshIndex<B::PrimalNodeIndex>,
+
+    /// the introduction position re: `target`
+    pub cur_intro: usize,
+}
+
+/// The main path search data structure
+#[derive(Clone, Debug)]
+pub struct PmgAstar<B: NavmeshBase> {
+    /// task queue, ordered by costs ascending
+    pub queue: BinaryHeap<Task<B>>,
+
+    // constant data
+    pub nodes:
+        Arc<BTreeMap<NavmeshIndex<B::PrimalNodeIndex>, crate::Node<B::PrimalNodeIndex, B::Scalar>>>,
+    pub edges: Arc<
+        BTreeMap<EdgeIndex<NavmeshIndex<B::PrimalNodeIndex>>, (Edge<B::PrimalNodeIndex>, usize)>,
+    >,
+    pub goals: Box<[PreparedGoal<B>]>,
+}
+
+impl<B: NavmeshBase> Task<B>
+where
+    B::Scalar: num_traits::Float,
+{
+    fn edge_paths_count(&self) -> usize {
+        self.edge_paths.iter().map(|i| i.len()).sum::<usize>()
+    }
+
+    fn estimated_full_costs(&self) -> B::Scalar {
+        self.costs + self.estimated_remaining + self.estimated_remaining_goals
+    }
+}
+
+impl<B: NavmeshBase> PartialEq for Task<B>
+where
+    B::PrimalNodeIndex: Ord,
+    B::EtchedPath: PartialOrd,
+    B::GapComment: PartialOrd,
+    B::Scalar: num_traits::Float + num_traits::float::TotalOrder + PartialOrd,
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.estimated_full_costs()
+            .total_cmp(&other.estimated_full_costs())
+            == Ordering::Equal
+            && self.goal_idx == other.goal_idx
+            && other.edge_paths_count() == self.edge_paths_count()
+            && self.selected_node == other.selected_node
+            && self.prev_node == other.prev_node
+            && self.cur_intro == other.cur_intro
+            && self
+                .edge_paths
+                .partial_cmp(&other.edge_paths)
+                .map(|i| i == Ordering::Equal)
+                .unwrap_or(true)
+    }
+}
+
+impl<B: NavmeshBase> Eq for Task<B>
+where
+    B::PrimalNodeIndex: Ord,
+    B::EtchedPath: PartialOrd,
+    B::GapComment: PartialOrd,
+    B::Scalar: num_traits::Float + num_traits::float::TotalOrder + PartialOrd,
+{
+}
+
+// tasks are ordered such that smaller costs and higher goal indices are ordered as being larger (better)
+impl<B: NavmeshBase> Ord for Task<B>
+where
+    B::PrimalNodeIndex: Ord,
+    B::EtchedPath: PartialOrd,
+    B::GapComment: PartialOrd,
+    B::Scalar: num_traits::Float + num_traits::float::TotalOrder + PartialOrd,
+{
+    fn cmp(&self, other: &Self) -> Ordering {
+        // smaller costs are better
+        other
+            .estimated_full_costs()
+            .total_cmp(&self.estimated_full_costs())
+            // higher goal index is better
+            .then_with(|| self.goal_idx.cmp(&other.goal_idx))
+            // less inserted paths in edges are better
+            .then_with(|| other.edge_paths_count().cmp(&self.edge_paths_count()))
+            // tie-break on the rest
+            .then_with(|| self.selected_node.cmp(&other.selected_node))
+            .then_with(|| self.prev_node.cmp(&other.prev_node))
+            .then_with(|| self.cur_intro.cmp(&other.cur_intro))
+            .then_with(|| {
+                self.edge_paths
+                    .partial_cmp(&other.edge_paths)
+                    .unwrap_or(Ordering::Equal)
+            })
+    }
+}
+
+impl<B: NavmeshBase> PartialOrd for Task<B>
+where
+    B::PrimalNodeIndex: Ord,
+    B::EtchedPath: PartialOrd,
+    B::GapComment: PartialOrd,
+    B::Scalar: num_traits::Float + num_traits::float::TotalOrder + PartialOrd,
+{
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl<B: NavmeshBase<Scalar = Scalar>, Scalar: num_traits::Float + core::iter::Sum> PmgAstar<B> {
+    fn estimate_remaining_goals_costs(&self, start_goal_idx: usize) -> Scalar {
+        self.goals
+            .get(start_goal_idx + 1..)
+            .map(|rgoals| rgoals.iter().map(|i| i.minimal_costs).sum())
+            .unwrap_or_else(Scalar::zero)
+    }
+}
+
+impl<B: NavmeshBase> PreparedGoal<B>
+where
+    B::GapComment: Clone,
+    B::Scalar: num_traits::Float + core::iter::Sum,
+{
+    /// start processing the goal
+    fn start_pmga<'a, F: Fn(NavmeshRef<B>) -> Option<B::Scalar>>(
+        &'a self,
+        navmesh: NavmeshRef<'a, B>,
+        goal_idx: usize,
+        env: &'a PmgAstar<B>,
+        evaluate_navmesh: &'a F,
+    ) -> Option<impl Iterator<Item = Task<B>> + 'a> {
+        let source = NavmeshIndex::Primal(self.source.clone());
+        let estimated_remaining_goals = env.estimate_remaining_goals_costs(goal_idx);
+        Some(
+            navmesh
+                .node_data(&source)?
+                .neighs
+                .iter()
+                .filter_map({
+                    let source = source.clone();
+                    move |neigh| {
+                        navmesh
+                            .resolve_edge_data(source.clone(), neigh.clone())
+                            .map(|(_, epi)| {
+                                let edge_len = navmesh.access_edge_paths(epi).len();
+                                (neigh, epi, edge_len)
+                            })
+                    }
+                })
+                .flat_map(move |(neigh, epi, edge_len)| {
+                    let source = source.clone();
+                    // A*-like remaining costs estimation
+                    let estimated_remaining =
+                        self.estimate_costs_for_source::<B::GapComment>(navmesh, neigh);
+                    (0..=edge_len).filter_map(move |i| {
+                        let mut edge_paths = Box::from(navmesh.edge_paths);
+                        let mut navmesh = NavmeshRefMut {
+                            nodes: navmesh.nodes,
+                            edges: navmesh.edges,
+                            edge_paths: &mut edge_paths,
+                        };
+                        navmesh.access_edge_paths_mut(epi).with_borrow_mut(|mut j| {
+                            j.insert(i, RelaxedPath::Normal(self.label.clone()))
+                        });
+                        evaluate_navmesh(navmesh.as_ref()).map(|costs| Task {
+                            goal_idx,
+                            costs,
+                            estimated_remaining,
+                            estimated_remaining_goals,
+                            edge_paths,
+                            selected_node: neigh.clone(),
+                            prev_node: source.clone(),
+                            cur_intro: edge_len - i,
+                        })
+                    })
+                }),
+        )
+    }
+}
+
+impl<B: NavmeshBase> Task<B>
+where
+    B::EtchedPath: PartialOrd,
+    B::GapComment: Clone + PartialOrd,
+    B::Scalar: num_traits::Float + num_traits::float::TotalOrder,
+{
+    pub fn run<F>(
+        self,
+        env: &mut PmgAstar<B>,
+        evaluate_navmesh: F,
+    ) -> ControlFlow<TaskResult<B>, (Self, Vec<NavmeshIndex<B::PrimalNodeIndex>>)>
+    where
+        F: Fn(NavmeshRef<B>) -> Option<B::Scalar>,
+    {
+        if let NavmeshIndex::Primal(primal) = &self.selected_node {
+            if env.goals[self.goal_idx].target.contains(primal) {
+                let Self {
+                    goal_idx,
+                    costs,
+                    estimated_remaining: _,
+                    estimated_remaining_goals: _,
+                    edge_paths,
+                    prev_node,
+                    cur_intro,
+                    selected_node: _,
+                } = self;
+                return ControlFlow::Break(TaskResult {
+                    goal_idx,
+                    costs,
+                    edge_paths,
+                    prev_node,
+                    cur_intro,
+                });
+            } else {
+                panic!("wrong primal node selected");
+            }
+        }
+        let forks = self.progress(env, evaluate_navmesh);
+        ControlFlow::Continue((self, forks))
+    }
+
+    /// progress to the next step, splitting the task into new tasks (make sure to call `done` beforehand)
+    fn progress<F>(
+        &self,
+        env: &mut PmgAstar<B>,
+        evaluate_navmesh: F,
+    ) -> Vec<NavmeshIndex<B::PrimalNodeIndex>>
+    where
+        F: Fn(NavmeshRef<B>) -> Option<B::Scalar>,
+    {
+        let goal_idx = self.goal_idx;
+        let navmesh = NavmeshRef {
+            nodes: &env.nodes,
+            edges: &env.edges,
+            edge_paths: &self.edge_paths,
+        };
+        let goal = &env.goals[goal_idx];
+        let Some((_, other_ends)) = navmesh.planarr_find_all_other_ends(
+            &self.selected_node,
+            &self.prev_node,
+            self.cur_intro,
+            true,
+        ) else {
+            return Vec::new();
+        };
+
+        let mut ret = Vec::new();
+
+        env.queue
+            .extend(other_ends.filter_map(|(neigh, stop_data)| {
+                if let NavmeshIndex::Primal(primal) = &neigh {
+                    if !goal.target.contains(primal) {
+                        return None;
+                    }
+                }
+                // A*-like remaining costs estimation
+                let estimated_remaining =
+                    goal.estimate_costs_for_source::<B::GapComment>(navmesh, &neigh);
+                let mut edge_paths = self.edge_paths.clone();
+                let mut navmesh = NavmeshRefMut {
+                    nodes: &env.nodes,
+                    edges: &env.edges,
+                    edge_paths: &mut edge_paths,
+                };
+                let cur_intro = navmesh
+                    .edge_data_mut(self.selected_node.clone(), neigh.clone())
+                    .unwrap()
+                    .with_borrow_mut(|mut x| {
+                        x.insert(
+                            stop_data.insert_pos,
+                            RelaxedPath::Normal(goal.label.clone()),
+                        );
+                        x.len() - stop_data.insert_pos - 1
+                    });
+                ret.push(neigh.clone());
+                evaluate_navmesh(navmesh.as_ref()).map(|costs| Task {
+                    goal_idx,
+                    costs,
+                    estimated_remaining,
+                    estimated_remaining_goals: self.estimated_remaining_goals,
+                    edge_paths,
+                    selected_node: neigh.clone(),
+                    prev_node: self.selected_node.clone(),
+                    cur_intro,
+                })
+            }));
+
+        ret
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub struct IntermedResult<B: NavmeshBase> {
+    pub edge_paths: Box<[EdgePaths<B::EtchedPath, B::GapComment>]>,
+
+    pub goal_idx: usize,
+    pub forks: Vec<NavmeshIndex<B::PrimalNodeIndex>>,
+    pub selected_node: NavmeshIndex<B::PrimalNodeIndex>,
+
+    pub maybe_finished_goal: Option<B::Scalar>,
+}
+
+impl<B> PmgAstar<B>
+where
+    B: NavmeshBase,
+    B::EtchedPath: PartialOrd,
+    B::GapComment: Clone + PartialOrd,
+    B::Scalar: Default
+        + core::fmt::Debug
+        + core::iter::Sum
+        + num_traits::Float
+        + num_traits::float::TotalOrder,
+{
+    /// * `evaluate_navmesh` calculates the exact cost of a given navmesh (lower cost is better)
+    pub fn new<F>(
+        navmesh: &Navmesh<B>,
+        goals: Vec<Goal<B::PrimalNodeIndex, B::EtchedPath>>,
+        evaluate_navmesh: F,
+    ) -> Self
+    where
+        F: Fn(NavmeshRef<B>) -> Option<B::Scalar>,
+    {
+        let mut this = Self {
+            queue: BinaryHeap::new(),
+            goals: goals
+                .into_iter()
+                .map({
+                    let navmesh = navmesh.as_ref();
+                    move |i| i.prepare(navmesh)
+                })
+                .collect(),
+            nodes: navmesh.nodes.clone(),
+            edges: navmesh.edges.clone(),
+        };
+
+        // fill queue with first goal
+        if let Some(first_goal) = this.goals.first() {
+            this.queue = {
+                let navmesh = NavmeshRef {
+                    nodes: &this.nodes,
+                    edges: &this.edges,
+                    edge_paths: &navmesh.edge_paths,
+                };
+                let tmp = if let Some(iter) =
+                    first_goal.start_pmga(navmesh, 0, &this, &evaluate_navmesh)
+                {
+                    iter.collect()
+                } else {
+                    BinaryHeap::new()
+                };
+                tmp
+            };
+        }
+
+        this
+    }
+
+    pub fn queue_len(&self) -> usize {
+        self.queue.len()
+    }
+
+    /// run one step of the path-search
+    pub fn step<F>(
+        &mut self,
+        evaluate_navmesh: F,
+    ) -> ControlFlow<
+        Option<(B::Scalar, Box<[EdgePaths<B::EtchedPath, B::GapComment>]>)>,
+        IntermedResult<B>,
+    >
+    where
+        B::PrimalNodeIndex: core::fmt::Debug,
+        F: Fn(NavmeshRef<B>) -> Option<B::Scalar>,
+    {
+        let Some(task) = self.queue.pop() else {
+            log::info!("found no complete result");
+            return ControlFlow::Break(None);
+        };
+        ControlFlow::Continue(match task.run(self, &evaluate_navmesh) {
+            ControlFlow::Break(taskres) => {
+                let next_goal_idx = taskres.goal_idx + 1;
+                let navmesh = NavmeshRef {
+                    nodes: &self.nodes,
+                    edges: &self.edges,
+                    edge_paths: &taskres.edge_paths,
+                };
+                let edge_count = taskres.edge_paths.iter().map(|i| i.len()).sum::<usize>();
+                match self.goals.get(next_goal_idx) {
+                    None => {
+                        // done with all goals
+                        log::info!(
+                            "found result with {} edges and costs {:?}",
+                            edge_count,
+                            taskres.costs
+                        );
+                        return ControlFlow::Break(Some((taskres.costs, taskres.edge_paths)));
+                    }
+                    Some(next_goal) => {
+                        // prepare next goal
+                        log::debug!(
+                            "found partial result (goal {}) with {} edges and costs {:?}",
+                            taskres.goal_idx,
+                            edge_count,
+                            taskres.costs,
+                        );
+                        let mut tmp = if let Some(iter) =
+                            next_goal.start_pmga(navmesh, next_goal_idx, self, &evaluate_navmesh)
+                        {
+                            iter.collect()
+                        } else {
+                            BinaryHeap::new()
+                        };
+                        let forks = tmp.iter().map(|i| i.selected_node.clone()).collect();
+                        self.queue.append(&mut tmp);
+                        IntermedResult {
+                            goal_idx: taskres.goal_idx,
+                            forks,
+                            edge_paths: taskres.edge_paths,
+                            selected_node: NavmeshIndex::Primal(next_goal.source.clone()),
+                            maybe_finished_goal: Some(taskres.costs),
+                        }
+                    }
+                }
+            }
+            ControlFlow::Continue((task, forks)) => {
+                // task got further branched
+                IntermedResult {
+                    goal_idx: task.goal_idx,
+                    forks,
+                    edge_paths: task.edge_paths,
+                    selected_node: task.selected_node,
+                    maybe_finished_goal: None,
+                }
+            }
+        })
+    }
+}
