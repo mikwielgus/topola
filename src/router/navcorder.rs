@@ -38,7 +38,6 @@ pub trait Navcorder {
         _navmesh: &Navmesh,
         navcord: &mut NavcordStepper,
         target: FixedDotIndex,
-        width: f64,
     ) -> Result<BandTermsegIndex, NavcorderException>;
 
     fn rework_path(
@@ -46,7 +45,6 @@ pub trait Navcorder {
         navmesh: &Navmesh,
         navcord: &mut NavcordStepper,
         path: &[NavvertexIndex],
-        width: f64,
     ) -> Result<(), NavcorderException>;
 
     fn path(
@@ -54,7 +52,6 @@ pub trait Navcorder {
         navmesh: &Navmesh,
         navcord: &mut NavcordStepper,
         path: &[NavvertexIndex],
-        width: f64,
     ) -> Result<(), NavcorderException>;
 
     fn undo_path(&mut self, navcord: &mut NavcordStepper, step_count: usize);
@@ -76,9 +73,8 @@ impl<R: AccessRules> Navcorder for Layout<R> {
         _navmesh: &Navmesh,
         navcord: &mut NavcordStepper,
         target: FixedDotIndex,
-        width: f64,
     ) -> Result<BandTermsegIndex, NavcorderException> {
-        Ok(self.finish_in_dot(&mut navcord.recorder, navcord.head, target, width)?)
+        Ok(self.finish_in_dot(&mut navcord.recorder, navcord.head, target, navcord.width)?)
     }
 
     #[debug_requires(path[0] == navcord.path[0])]
@@ -88,7 +84,6 @@ impl<R: AccessRules> Navcorder for Layout<R> {
         navmesh: &Navmesh,
         navcord: &mut NavcordStepper,
         path: &[NavvertexIndex],
-        width: f64,
     ) -> Result<(), NavcorderException> {
         let prefix_length = navcord
             .path
@@ -99,7 +94,7 @@ impl<R: AccessRules> Navcorder for Layout<R> {
 
         let length = navcord.path.len();
         self.undo_path(navcord, length - prefix_length);
-        self.path(navmesh, navcord, &path[prefix_length..], width)
+        self.path(navmesh, navcord, &path[prefix_length..])
     }
 
     #[debug_ensures(ret.is_ok() -> navcord.path.len() == old(navcord.path.len() + path.len()))]
@@ -108,14 +103,12 @@ impl<R: AccessRules> Navcorder for Layout<R> {
         navmesh: &Navmesh,
         navcord: &mut NavcordStepper,
         path: &[NavvertexIndex],
-        width: f64,
     ) -> Result<(), NavcorderException> {
         for (i, vertex) in path.iter().enumerate() {
             if let Err(err) = navcord.step(&mut NavcordStepContext {
                 layout: self,
                 navmesh,
                 to: *vertex,
-                width,
             }) {
                 self.undo_path(navcord, i);
                 return Err(err);

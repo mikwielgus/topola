@@ -60,19 +60,16 @@ impl NavcordStepper {
         navmesh: &Navmesh,
         head: Head,
         around: NavvertexIndex,
-        width: f64,
     ) -> Result<CaneHead, NavcorderException> {
-        let cw = self
-            .maybe_cw(navmesh, around)
-            .ok_or(NavcorderException::CannotWrap)?;
+        let cw = Self::maybe_cw(navmesh, around).ok_or(NavcorderException::CannotWrap)?;
 
-        match self.binavvertex(navmesh, around) {
+        match Self::binavvertex(navmesh, around) {
             BinavvertexNodeIndex::FixedDot(dot) => {
-                self.wrap_around_fixed_dot(layout, head, dot, cw, width)
+                self.wrap_around_fixed_dot(layout, head, dot, cw)
             }
             BinavvertexNodeIndex::FixedBend(_fixed_bend) => todo!(),
             BinavvertexNodeIndex::LooseBend(loose_bend) => {
-                self.wrap_around_loose_bend(layout, head, loose_bend, cw, width)
+                self.wrap_around_loose_bend(layout, head, loose_bend, cw)
             }
         }
     }
@@ -83,9 +80,8 @@ impl NavcordStepper {
         head: Head,
         around: FixedDotIndex,
         cw: bool,
-        width: f64,
     ) -> Result<CaneHead, NavcorderException> {
-        Ok(layout.cane_around_dot(&mut self.recorder, head, around, cw, width)?)
+        Ok(layout.cane_around_dot(&mut self.recorder, head, around, cw, self.width)?)
     }
 
     fn wrap_around_loose_bend(
@@ -94,20 +90,15 @@ impl NavcordStepper {
         head: Head,
         around: LooseBendIndex,
         cw: bool,
-        width: f64,
     ) -> Result<CaneHead, NavcorderException> {
-        Ok(layout.cane_around_bend(&mut self.recorder, head, around.into(), cw, width)?)
+        Ok(layout.cane_around_bend(&mut self.recorder, head, around.into(), cw, self.width)?)
     }
 
-    fn binavvertex(&self, navmesh: &Navmesh, navvertex: NavvertexIndex) -> BinavvertexNodeIndex {
+    fn binavvertex(navmesh: &Navmesh, navvertex: NavvertexIndex) -> BinavvertexNodeIndex {
         navmesh.node_weight(navvertex).unwrap().node
     }
 
-    fn primitive(&self, navmesh: &Navmesh, navvertex: NavvertexIndex) -> PrimitiveIndex {
-        self.binavvertex(navmesh, navvertex).into()
-    }
-
-    fn maybe_cw(&self, navmesh: &Navmesh, navvertex: NavvertexIndex) -> Option<bool> {
+    fn maybe_cw(navmesh: &Navmesh, navvertex: NavvertexIndex) -> Option<bool> {
         navmesh.node_weight(navvertex).unwrap().maybe_cw
     }
 }
@@ -116,7 +107,6 @@ pub struct NavcordStepContext<'a, R> {
     pub layout: &'a mut Layout<R>,
     pub navmesh: &'a Navmesh,
     pub to: NavvertexIndex,
-    pub width: f64,
 }
 
 impl NavcordStepper {
@@ -128,13 +118,7 @@ impl NavcordStepper {
         input: &mut NavcordStepContext<'_, R>,
     ) -> Result<(), NavcorderException> {
         self.head = self
-            .wrap(
-                input.layout,
-                input.navmesh,
-                self.head,
-                input.to,
-                input.width,
-            )?
+            .wrap(input.layout, input.navmesh, self.head, input.to)?
             .into();
         self.path.push(input.to);
 

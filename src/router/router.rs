@@ -91,15 +91,12 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
         tracker: &PathTracker<Navmesh>,
     ) -> Option<BandTermsegIndex> {
         let new_path = tracker.reconstruct_path_to(vertex);
-        let width = self.navcord.width;
 
         self.layout
-            .rework_path(navmesh, self.navcord, &new_path[..], width)
+            .rework_path(navmesh, self.navcord, &new_path[..])
             .unwrap();
 
-        self.layout
-            .finish(navmesh, self.navcord, self.target, width)
-            .ok()
+        self.layout.finish(navmesh, self.navcord, self.target).ok()
     }
 
     fn place_probe(&mut self, navmesh: &Navmesh, edge: NavmeshEdgeReference) -> Option<f64> {
@@ -109,12 +106,10 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
 
         let prev_bihead_length = self.bihead_length();
 
-        let width = self.navcord.width;
         let result = self.navcord.step(&mut NavcordStepContext {
             layout: self.layout,
             navmesh,
             to: edge.target(),
-            width,
         });
 
         let probe_length = self.bihead_length() - prev_bihead_length;
