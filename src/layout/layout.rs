@@ -12,7 +12,6 @@ use crate::{
     drawing::{
         band::BandTermsegIndex,
         bend::{BendIndex, BendWeight, LooseBendWeight},
-        cane::Cane,
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         gear::GearIndex,
         graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
@@ -22,7 +21,7 @@ use crate::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
             SegWeight, SeqLooseSegIndex, SeqLooseSegWeight,
         },
-        Drawing, DrawingEdit, DrawingException, Infringement,
+        Cane, Drawing, DrawingEdit, DrawingException, Infringement,
     },
     geometry::{edit::ApplyGeometryEdit, shape::Shape, GenericNode},
     graph::{GenericIndex, GetPetgraphIndex},

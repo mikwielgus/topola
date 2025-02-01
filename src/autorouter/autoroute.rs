@@ -10,11 +10,11 @@ use std::ops::ControlFlow;
 use petgraph::graph::EdgeIndex;
 
 use crate::{
-    board::mesadata::AccessMesadata,
-    drawing::{band::BandTermsegIndex, collect::Collect, graph::PrimitiveIndex},
+    board::AccessMesadata,
+    drawing::{band::BandTermsegIndex, graph::PrimitiveIndex, Collect},
     geometry::primitive::PrimitiveShape,
     layout::LayoutEdit,
-    router::{navcord::NavcordStepper, navmesh::Navmesh, route::RouteStepper, Router},
+    router::{navcord::NavcordStepper, navmesh::Navmesh, RouteStepper, Router},
     stepper::Step,
 };
 

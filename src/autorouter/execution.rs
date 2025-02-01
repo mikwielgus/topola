@@ -8,7 +8,7 @@ use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    board::mesadata::AccessMesadata,
+    board::AccessMesadata,
     layout::{via::ViaWeight, LayoutEdit},
     stepper::Step,
 };

@@ -5,7 +5,7 @@
 //! Provides functionality to remove bands from the layout.
 
 use crate::{
-    board::mesadata::AccessMesadata,
+    board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     layout::LayoutEdit,

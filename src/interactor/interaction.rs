@@ -8,7 +8,7 @@ use thiserror::Error;
 
 use crate::{
     autorouter::invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
-    board::mesadata::AccessMesadata,
+    board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     router::{navcord::NavcordStepper, navmesh::Navmesh},

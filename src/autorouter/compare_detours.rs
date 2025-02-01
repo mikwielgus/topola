@@ -10,7 +10,7 @@ use std::ops::ControlFlow;
 use petgraph::graph::EdgeIndex;
 
 use crate::{
-    board::mesadata::AccessMesadata,
+    board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::{primitive::PrimitiveShape, shape::MeasureLength},
     graph::MakeRef,

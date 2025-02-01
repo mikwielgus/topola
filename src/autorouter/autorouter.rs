@@ -10,7 +10,7 @@ use spade::InsertionError;
 use thiserror::Error;
 
 use crate::{
-    board::{mesadata::AccessMesadata, Board},
+    board::{AccessMesadata, Board},
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
     layout::{via::ViaWeight, LayoutEdit},
     router::{astar::AstarError, navmesh::NavmeshError, RouterOptions},

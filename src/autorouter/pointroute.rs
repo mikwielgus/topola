@@ -7,14 +7,14 @@ use std::ops::ControlFlow;
 use geo::Point;
 
 use crate::{
-    board::mesadata::AccessMesadata,
+    board::AccessMesadata,
     drawing::{
         band::BandTermsegIndex,
         dot::{FixedDotIndex, FixedDotWeight},
     },
     layout::LayoutEdit,
     math::Circle,
-    router::{route::RouteStepper, Router},
+    router::{RouteStepper, Router},
     stepper::Step,
 };
 

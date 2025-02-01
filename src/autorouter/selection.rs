@@ -8,10 +8,10 @@ use rstar::AABB;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    board::{mesadata::AccessMesadata, BandName, Board, ResolvedSelector},
+    board::{AccessMesadata, BandName, Board, ResolvedSelector},
     drawing::{
-        collect::Collect,
         graph::{GetLayer, MakePrimitive, PrimitiveIndex},
+        Collect,
     },
     geometry::{
         shape::{AccessShape, Shape},

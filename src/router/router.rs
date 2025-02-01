@@ -12,11 +12,10 @@ use crate::{
         band::BandTermsegIndex,
         dot::{DotIndex, FixedDotIndex},
         graph::{MakePrimitive, PrimitiveIndex},
-        guide::Guide,
         head::GetFace,
         primitive::MakePrimitiveShape,
         rules::AccessRules,
-        Collision, DrawingException, Infringement,
+        Collision, DrawingException, Guide, Infringement,
     },
     geometry::{
         primitive::PrimitiveShape,

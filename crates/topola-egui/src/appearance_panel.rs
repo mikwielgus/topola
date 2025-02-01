@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use topola::board::{mesadata::AccessMesadata, Board};
+use topola::board::{AccessMesadata, Board};
 
 pub struct AppearancePanel {
     // TODO:

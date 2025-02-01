@@ -13,7 +13,7 @@ use topola::{
         execution::Command,
         invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles, Invoker},
     },
-    board::mesadata::AccessMesadata,
+    board::AccessMesadata,
     drawing::{
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::MakePrimitiveShape,

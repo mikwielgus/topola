@@ -11,7 +11,7 @@ use std::collections::{btree_map::Entry as BTreeMapEntry, BTreeMap};
 use geo::{point, Point, Rotate};
 
 use crate::{
-    board::{mesadata::AccessMesadata, Board},
+    board::{AccessMesadata, Board},
     drawing::{
         dot::FixedDotWeight,
         graph::{GetLayer, GetMaybeNet, MakePrimitive},

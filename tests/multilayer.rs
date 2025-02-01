@@ -4,7 +4,7 @@
 
 use topola::{
     autorouter::{execution::Command, invoker::InvokerError, AutorouterError},
-    board::mesadata::AccessMesadata,
+    board::AccessMesadata,
     layout::via::ViaWeight,
     math::Circle,
 };

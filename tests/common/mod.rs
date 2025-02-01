@@ -11,7 +11,7 @@ use topola::{
         invoker::{Invoker, InvokerError},
         Autorouter,
     },
-    board::{mesadata::AccessMesadata, Board},
+    board::{AccessMesadata, Board},
     drawing::{
         dot::FixedDotIndex,
         graph::{GetLayer, GetMaybeNet},

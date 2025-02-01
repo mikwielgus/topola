@@ -7,7 +7,8 @@ pub mod draw;
 pub mod navcord;
 pub mod navcorder;
 pub mod navmesh;
-pub mod route;
-pub mod router;
+mod route;
+mod router;
 
+pub use route::RouteStepper;
 pub use router::*;

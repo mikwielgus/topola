@@ -11,7 +11,7 @@ use topola::{
         ratsnest::Ratsnest,
         selection::{BboxSelectionKind, Selection},
     },
-    board::{mesadata::AccessMesadata, Board},
+    board::{AccessMesadata, Board},
     drawing::{
         graph::{GetLayer, MakePrimitive},
         primitive::MakePrimitiveShape,

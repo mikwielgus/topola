@@ -14,7 +14,7 @@ use crate::{
             GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles, Invoker, InvokerError,
         },
     },
-    board::mesadata::AccessMesadata,
+    board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     interactor::interaction::{InteractionError, InteractionStepper},

@@ -6,9 +6,7 @@
 //! between nodes, pins, and bands, as well as handle metadata and geometric data
 //! for layout construction.
 
-pub mod mesadata {
-    pub use specctra_core::mesadata::AccessMesadata;
-}
+pub use specctra_core::mesadata::AccessMesadata;
 
 use std::{cmp::Ordering, collections::BTreeMap};
 
@@ -17,14 +15,13 @@ use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    board::mesadata::AccessMesadata,
     drawing::{
         band::BandUid,
         bend::{BendIndex, BendWeight},
-        collect::Collect,
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight},
         graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight},
         seg::{FixedSegIndex, FixedSegWeight, SegIndex, SegWeight},
+        Collect,
     },
     geometry::{edit::ApplyGeometryEdit, shape::AccessShape, GenericNode},
     graph::GenericIndex,

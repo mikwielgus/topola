@@ -13,7 +13,7 @@ use crate::{
         invoker::{Invoker, InvokerError},
         Autorouter,
     },
-    board::{mesadata::AccessMesadata, Board},
+    board::{AccessMesadata, Board},
     interactor::activity::{
         ActivityContext, ActivityError, ActivityStepperWithStatus, InteractiveInput,
     },

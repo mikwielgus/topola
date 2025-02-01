@@ -12,7 +12,7 @@ use enum_dispatch::enum_dispatch;
 use thiserror::Error;
 
 use crate::{
-    board::mesadata::AccessMesadata,
+    board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::{edit::ApplyGeometryEdit, primitive::PrimitiveShape},
     router::{navcord::NavcordStepper, navmesh::Navmesh},
