@@ -12,6 +12,7 @@ use crate::{
         band::BandTermsegIndex,
         dot::{DotIndex, FixedDotIndex},
         graph::{MakePrimitive, PrimitiveIndex},
+        guide::Guide,
         head::GetFace,
         primitive::MakePrimitiveShape,
         rules::AccessRules,
@@ -74,7 +75,6 @@ impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
                 DotIndex::Loose(face) => self
                     .layout
                     .drawing()
-                    .guide()
                     .rear_head(face)
                     .ref_(self.layout.drawing())
                     .length(),

@@ -22,7 +22,7 @@ use crate::{
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
         DrawingException, Infringement,
     },
-    layout::{CompoundWeight, Layout, LayoutEdit},
+    layout::{Layout, LayoutEdit},
     math::{Circle, NoTangents},
 };
 
@@ -71,7 +71,7 @@ pub trait Draw {
 
 impl<R: AccessRules> Draw for Layout<R> {
     fn start(&mut self, from: LooseDotIndex) -> Head {
-        self.guide().cane_head(from).into()
+        self.drawing().cane_head(from).into()
     }
 
     #[debug_ensures(ret.is_ok() -> self.drawing().node_count() == old(self.drawing().node_count() + 1))]
@@ -84,7 +84,7 @@ impl<R: AccessRules> Draw for Layout<R> {
         width: f64,
     ) -> Result<BandTermsegIndex, DrawException> {
         let tangent = self
-            .guide()
+            .drawing()
             .head_into_dot_segment(&head, into, width)
             .map_err(Into::<DrawException>::into)?;
         let head = self
@@ -134,10 +134,10 @@ impl<R: AccessRules> Draw for Layout<R> {
         width: f64,
     ) -> Result<CaneHead, DrawException> {
         let tangent = self
-            .guide()
+            .drawing()
             .head_around_dot_segment(&head, around.into(), cw, width)?;
         let offset = self
-            .guide()
+            .drawing()
             .head_around_dot_offset(&head, around.into(), width);
         self.cane_around(
             recorder,
@@ -163,9 +163,9 @@ impl<R: AccessRules> Draw for Layout<R> {
         width: f64,
     ) -> Result<CaneHead, DrawException> {
         let tangent = self
-            .guide()
+            .drawing()
             .head_around_bend_segment(&head, around, cw, width)?;
-        let offset = self.guide().head_around_bend_offset(&head, around, width);
+        let offset = self.drawing().head_around_bend_offset(&head, around, width);
 
         self.cane_around(
             recorder,
@@ -189,7 +189,7 @@ impl<R: AccessRules> Draw for Layout<R> {
             .other_joint(head.cane.dot.into());
 
         self.remove_cane(recorder, &head.cane, head.face);
-        Some(self.guide().head(prev_dot))
+        Some(self.drawing().head(prev_dot))
     }
 }
 
@@ -225,8 +225,6 @@ trait DrawPrivate {
         width: f64,
         offset: f64,
     ) -> Result<CaneHead, DrawingException>;
-
-    fn guide(&self) -> Guide<CompoundWeight, Self::R>;
 }
 
 impl<R: AccessRules> DrawPrivate for Layout<R> {
@@ -307,9 +305,5 @@ impl<R: AccessRules> DrawPrivate for Layout<R> {
             face: self.drawing().primitive(cane.bend).other_joint(cane.dot),
             cane,
         })
-    }
-
-    fn guide(&self) -> Guide<CompoundWeight, R> {
-        Guide::new(self.drawing())
     }
 }

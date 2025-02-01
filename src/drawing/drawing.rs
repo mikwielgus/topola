@@ -540,12 +540,11 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
             let rail_primitive = self.primitive(rail);
             let joints = rail_primitive.joints();
 
-            let guide = Guide::new(self);
-            let from_head = guide.rear_head(joints.1);
-            let to_head = guide.rear_head(joints.0);
+            let from_head = self.rear_head(joints.1);
+            let to_head = self.rear_head(joints.0);
 
             if let Some(inner) = rail_primitive.inner() {
-                let from = guide
+                let from = self
                     .head_around_bend_segment(
                         &from_head,
                         inner.into(),
@@ -553,7 +552,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                         self.primitive(rail).width(),
                     )?
                     .end_point();
-                let to = guide
+                let to = self
                     .head_around_bend_segment(
                         &to_head,
                         inner.into(),
@@ -561,7 +560,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                         self.primitive(rail).width(),
                     )?
                     .end_point();
-                let offset = guide.head_around_bend_offset(
+                let offset = self.head_around_bend_offset(
                     &from_head,
                     inner.into(),
                     self.primitive(rail).width(),
@@ -590,7 +589,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                 // Update offsets in case the rule conditions changed.
             } else {
                 let core = rail_primitive.core();
-                let from = guide
+                let from = self
                     .head_around_dot_segment(
                         &from_head,
                         core.into(),
@@ -598,7 +597,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                         self.primitive(rail).width(),
                     )?
                     .end_point();
-                let to = guide
+                let to = self
                     .head_around_dot_segment(
                         &to_head,
                         core.into(),
@@ -606,7 +605,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                         self.primitive(rail).width(),
                     )?
                     .end_point();
-                let offset = guide.head_around_dot_offset(
+                let offset = self.head_around_dot_offset(
                     &from_head,
                     core.into(),
                     self.primitive(rail).width(),
@@ -1103,10 +1102,6 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     pub fn rules_mut(&mut self) -> &mut R {
         &mut self.rules
-    }
-
-    pub fn guide(&self) -> Guide<CW, R> {
-        Guide::new(self)
     }
 
     pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W, CW, R> {
