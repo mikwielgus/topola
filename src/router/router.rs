@@ -43,7 +43,7 @@ pub struct RouterOptions {
 
 #[derive(Debug)]
 pub struct RouterAstarStrategy<'a, R> {
-    pub navcorder: Navcorder<'a, R>,
+    pub layout: &'a mut Layout<R>,
     pub navcord: &'a mut NavcordStepper,
     pub target: FixedDotIndex,
     pub probe_ghosts: Vec<PrimitiveShape>,
@@ -52,12 +52,12 @@ pub struct RouterAstarStrategy<'a, R> {
 
 impl<'a, R> RouterAstarStrategy<'a, R> {
     pub fn new(
-        navcorder: Navcorder<'a, R>,
+        layout: &'a mut Layout<R>,
         navcord: &'a mut NavcordStepper,
         target: FixedDotIndex,
     ) -> Self {
         Self {
-            navcorder,
+            layout,
             navcord,
             target,
             probe_ghosts: vec![],
@@ -68,19 +68,15 @@ impl<'a, R> RouterAstarStrategy<'a, R> {
 
 impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
     fn bihead_length(&self) -> f64 {
-        self.navcord
-            .head
-            .ref_(self.navcorder.layout.drawing())
-            .length()
+        self.navcord.head.ref_(self.layout.drawing()).length()
             + match self.navcord.head.face() {
                 DotIndex::Fixed(..) => 0.0,
                 DotIndex::Loose(face) => self
-                    .navcorder
                     .layout
                     .drawing()
                     .guide()
                     .rear_head(face)
-                    .ref_(self.navcorder.layout.drawing())
+                    .ref_(self.layout.drawing())
                     .length(),
             }
     }
@@ -98,11 +94,11 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
         let new_path = tracker.reconstruct_path_to(vertex);
         let width = self.navcord.width;
 
-        self.navcorder
+        self.layout
             .rework_path(navmesh, self.navcord, &new_path[..], width)
             .unwrap();
 
-        self.navcorder
+        self.layout
             .finish(navmesh, self.navcord, self.target, width)
             .ok()
     }
@@ -116,7 +112,7 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
 
         let width = self.navcord.width;
         let result = self.navcord.step(&mut NavcordStepContext {
-            navcorder: &mut self.navcorder,
+            layout: self.layout,
             navmesh,
             to: edge.target(),
             width,
@@ -154,16 +150,15 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
     }
 
     fn remove_probe(&mut self, _navmesh: &Navmesh) {
-        self.navcord.step_back(&mut self.navcorder);
+        self.navcord.step_back(&mut self.layout);
     }
 
     fn estimate_cost(&mut self, navmesh: &Navmesh, vertex: NavvertexIndex) -> f64 {
         let start_point = PrimitiveIndex::from(navmesh.node_weight(vertex).unwrap().node)
-            .primitive(self.navcorder.layout.drawing())
+            .primitive(self.layout.drawing())
             .shape()
             .center();
         let end_point = self
-            .navcorder
             .layout
             .drawing()
             .primitive(self.target)

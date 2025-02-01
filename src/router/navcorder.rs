@@ -24,19 +24,44 @@ pub enum NavcorderException {
     CannotWrap,
 }
 
-#[derive(Debug)]
-pub struct Navcorder<'a, R> {
-    pub layout: &'a mut Layout<R>,
+pub trait Navcorder {
+    fn start(
+        &mut self,
+        recorder: LayoutEdit,
+        source: FixedDotIndex,
+        source_navvertex: NavvertexIndex,
+        width: f64,
+    ) -> NavcordStepper;
+
+    fn finish(
+        &mut self,
+        _navmesh: &Navmesh,
+        navcord: &mut NavcordStepper,
+        target: FixedDotIndex,
+        width: f64,
+    ) -> Result<BandTermsegIndex, NavcorderException>;
+
+    fn rework_path(
+        &mut self,
+        navmesh: &Navmesh,
+        navcord: &mut NavcordStepper,
+        path: &[NavvertexIndex],
+        width: f64,
+    ) -> Result<(), NavcorderException>;
+
+    fn path(
+        &mut self,
+        navmesh: &Navmesh,
+        navcord: &mut NavcordStepper,
+        path: &[NavvertexIndex],
+        width: f64,
+    ) -> Result<(), NavcorderException>;
+
+    fn undo_path(&mut self, navcord: &mut NavcordStepper, step_count: usize);
 }
 
-impl<'a, R> Navcorder<'a, R> {
-    pub fn new(layout: &mut Layout<R>) -> Navcorder<R> {
-        Navcorder { layout }
-    }
-}
-
-impl<'a, R: AccessRules> Navcorder<'a, R> {
-    pub fn start(
+impl<R: AccessRules> Navcorder for Layout<R> {
+    fn start(
         &mut self,
         recorder: LayoutEdit,
         source: FixedDotIndex,
@@ -46,21 +71,19 @@ impl<'a, R: AccessRules> Navcorder<'a, R> {
         NavcordStepper::new(recorder, source, source_navvertex, width)
     }
 
-    pub fn finish(
+    fn finish(
         &mut self,
         _navmesh: &Navmesh,
         navcord: &mut NavcordStepper,
         target: FixedDotIndex,
         width: f64,
     ) -> Result<BandTermsegIndex, NavcorderException> {
-        Ok(self
-            .layout
-            .finish_in_dot(&mut navcord.recorder, navcord.head, target, width)?)
+        Ok(self.finish_in_dot(&mut navcord.recorder, navcord.head, target, width)?)
     }
 
     #[debug_requires(path[0] == navcord.path[0])]
     #[debug_ensures(ret.is_ok() -> navcord.path.len() == path.len())]
-    pub fn rework_path(
+    fn rework_path(
         &mut self,
         navmesh: &Navmesh,
         navcord: &mut NavcordStepper,
@@ -80,7 +103,7 @@ impl<'a, R: AccessRules> Navcorder<'a, R> {
     }
 
     #[debug_ensures(ret.is_ok() -> navcord.path.len() == old(navcord.path.len() + path.len()))]
-    pub fn path(
+    fn path(
         &mut self,
         navmesh: &Navmesh,
         navcord: &mut NavcordStepper,
@@ -89,7 +112,7 @@ impl<'a, R: AccessRules> Navcorder<'a, R> {
     ) -> Result<(), NavcorderException> {
         for (i, vertex) in path.iter().enumerate() {
             if let Err(err) = navcord.step(&mut NavcordStepContext {
-                navcorder: self,
+                layout: self,
                 navmesh,
                 to: *vertex,
                 width,
@@ -103,7 +126,7 @@ impl<'a, R: AccessRules> Navcorder<'a, R> {
     }
 
     #[debug_ensures(navcord.path.len() == old(navcord.path.len() - step_count))]
-    pub fn undo_path(&mut self, navcord: &mut NavcordStepper, step_count: usize) {
+    fn undo_path(&mut self, navcord: &mut NavcordStepper, step_count: usize) {
         for _ in 0..step_count {
             let _ = navcord.step_back(self);
         }

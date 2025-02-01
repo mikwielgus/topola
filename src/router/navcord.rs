@@ -13,12 +13,12 @@ use crate::{
         head::{BareHead, CaneHead, Head},
         rules::AccessRules,
     },
-    layout::LayoutEdit,
+    layout::{Layout, LayoutEdit},
 };
 
 use super::{
     draw::Draw,
-    navcorder::{Navcorder, NavcorderException},
+    navcorder::NavcorderException,
     navmesh::{BinavvertexNodeIndex, Navmesh, NavvertexIndex},
 };
 
@@ -56,7 +56,7 @@ impl NavcordStepper {
 
     fn wrap(
         &mut self,
-        navcorder: &mut Navcorder<impl AccessRules>,
+        layout: &mut Layout<impl AccessRules>,
         navmesh: &Navmesh,
         head: Head,
         around: NavvertexIndex,
@@ -68,39 +68,35 @@ impl NavcordStepper {
 
         match self.binavvertex(navmesh, around) {
             BinavvertexNodeIndex::FixedDot(dot) => {
-                self.wrap_around_fixed_dot(navcorder, head, dot, cw, width)
+                self.wrap_around_fixed_dot(layout, head, dot, cw, width)
             }
             BinavvertexNodeIndex::FixedBend(_fixed_bend) => todo!(),
             BinavvertexNodeIndex::LooseBend(loose_bend) => {
-                self.wrap_around_loose_bend(navcorder, head, loose_bend, cw, width)
+                self.wrap_around_loose_bend(layout, head, loose_bend, cw, width)
             }
         }
     }
 
     fn wrap_around_fixed_dot(
         &mut self,
-        navcorder: &mut Navcorder<impl AccessRules>,
+        layout: &mut Layout<impl AccessRules>,
         head: Head,
         around: FixedDotIndex,
         cw: bool,
         width: f64,
     ) -> Result<CaneHead, NavcorderException> {
-        Ok(navcorder
-            .layout
-            .cane_around_dot(&mut self.recorder, head, around, cw, width)?)
+        Ok(layout.cane_around_dot(&mut self.recorder, head, around, cw, width)?)
     }
 
     fn wrap_around_loose_bend(
         &mut self,
-        navcorder: &mut Navcorder<impl AccessRules>,
+        layout: &mut Layout<impl AccessRules>,
         head: Head,
         around: LooseBendIndex,
         cw: bool,
         width: f64,
     ) -> Result<CaneHead, NavcorderException> {
-        Ok(navcorder
-            .layout
-            .cane_around_bend(&mut self.recorder, head, around.into(), cw, width)?)
+        Ok(layout.cane_around_bend(&mut self.recorder, head, around.into(), cw, width)?)
     }
 
     fn binavvertex(&self, navmesh: &Navmesh, navvertex: NavvertexIndex) -> BinavvertexNodeIndex {
@@ -116,9 +112,9 @@ impl NavcordStepper {
     }
 }
 
-pub struct NavcordStepContext<'a: 'b, 'b, R> {
-    pub navcorder: &'b mut Navcorder<'a, R>,
-    pub navmesh: &'b Navmesh,
+pub struct NavcordStepContext<'a, R> {
+    pub layout: &'a mut Layout<R>,
+    pub navmesh: &'a Navmesh,
     pub to: NavvertexIndex,
     pub width: f64,
 }
@@ -127,13 +123,13 @@ impl NavcordStepper {
     #[debug_ensures(ret.is_ok() -> matches!(self.head, Head::Cane(..)))]
     #[debug_ensures(ret.is_ok() -> self.path.len() == old(self.path.len() + 1))]
     #[debug_ensures(ret.is_err() -> self.path.len() == old(self.path.len()))]
-    pub fn step<'a, 'b, R: AccessRules>(
+    pub fn step<R: AccessRules>(
         &mut self,
-        input: &mut NavcordStepContext<'a, 'b, R>,
+        input: &mut NavcordStepContext<'_, R>,
     ) -> Result<(), NavcorderException> {
         self.head = self
             .wrap(
-                input.navcorder,
+                input.layout,
                 input.navmesh,
                 self.head,
                 input.to,
@@ -146,15 +142,12 @@ impl NavcordStepper {
     }
 
     #[debug_ensures(self.path.len() == old(self.path.len() - 1))]
-    pub fn step_back<'a, R: AccessRules>(
+    pub fn step_back<R: AccessRules>(
         &mut self,
-        navcorder: &mut Navcorder<'a, R>,
+        layout: &mut Layout<R>,
     ) -> Result<(), NavcorderException> {
         if let Head::Cane(head) = self.head {
-            self.head = navcorder
-                .layout
-                .undo_cane(&mut self.recorder, head)
-                .unwrap();
+            self.head = layout.undo_cane(&mut self.recorder, head).unwrap();
         } else {
             panic!();
         }

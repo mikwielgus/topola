@@ -53,10 +53,10 @@ impl RouteStepper {
         let source_navvertex = navmesh.origin_navvertex();
         let target = navmesh.destination();
 
-        let mut navcorder = Navcorder::new(router.layout_mut());
-        let mut navcord = navcorder.start(recorder, source, source_navvertex, width);
+        let layout = router.layout_mut();
+        let mut navcord = layout.start(recorder, source, source_navvertex, width);
 
-        let mut strategy = RouterAstarStrategy::new(navcorder, &mut navcord, target);
+        let mut strategy = RouterAstarStrategy::new(layout, &mut navcord, target);
         let astar = Astar::new(navmesh, source_navvertex, &mut strategy);
         let ghosts = vec![];
         let obstacles = vec![];
@@ -81,9 +81,9 @@ impl<'a, R: AccessRules> Step<Router<'a, R>, BandTermsegIndex> for RouteStepper 
         &mut self,
         router: &mut Router<R>,
     ) -> Result<ControlFlow<BandTermsegIndex>, AstarError> {
-        let navcorder = Navcorder::new(router.layout_mut());
+        let layout = router.layout_mut();
         let target = self.astar.graph.destination();
-        let mut strategy = RouterAstarStrategy::new(navcorder, &mut self.navcord, target);
+        let mut strategy = RouterAstarStrategy::new(layout, &mut self.navcord, target);
 
         let result = match self.astar.step(&mut strategy)? {
             ControlFlow::Continue(..) => Ok(ControlFlow::Continue(())),
