@@ -9,7 +9,10 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     board::{mesadata::AccessMesadata, BandName, Board, ResolvedSelector},
-    drawing::graph::{GetLayer, MakePrimitive, PrimitiveIndex},
+    drawing::{
+        collect::Collect,
+        graph::{GetLayer, MakePrimitive, PrimitiveIndex},
+    },
     geometry::{
         shape::{AccessShape, Shape},
         GenericNode,
@@ -123,10 +126,7 @@ impl BandSelector {
             _ => return None,
         };
 
-        Self::try_from_uid(
-            board,
-            &board.layout().drawing().collect().loose_band_uid(loose),
-        )
+        Self::try_from_uid(board, &board.layout().drawing().loose_band_uid(loose))
     }
 
     pub fn try_from_uid(

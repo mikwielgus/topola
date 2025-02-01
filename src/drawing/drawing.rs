@@ -571,20 +571,20 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                     recorder,
                     joints.0.into(),
                     from,
-                    Some(&self.collect().bend_outer_bows(rail)),
+                    Some(&self.bend_outer_bows(rail)),
                 )?;
                 self.move_dot_with_infringables(
                     recorder,
                     joints.1.into(),
                     to,
-                    Some(&self.collect().bend_outer_bows(rail)),
+                    Some(&self.bend_outer_bows(rail)),
                 )?;
 
                 self.shift_bend_with_infringables(
                     recorder,
                     rail.into(),
                     offset,
-                    Some(&self.collect().bend_outer_bows(rail)),
+                    Some(&self.bend_outer_bows(rail)),
                 )?;
 
                 // Update offsets in case the rule conditions changed.
@@ -616,20 +616,20 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                     recorder,
                     joints.0.into(),
                     from,
-                    Some(&self.collect().bend_outer_bows(rail)),
+                    Some(&self.bend_outer_bows(rail)),
                 )?;
                 self.move_dot_with_infringables(
                     recorder,
                     joints.1.into(),
                     to,
-                    Some(&self.collect().bend_outer_bows(rail)),
+                    Some(&self.bend_outer_bows(rail)),
                 )?;
 
                 self.shift_bend_with_infringables(
                     recorder,
                     rail.into(),
                     offset,
-                    Some(&self.collect().bend_outer_bows(rail)),
+                    Some(&self.bend_outer_bows(rail)),
                 )?;
             }
 
@@ -1107,10 +1107,6 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
 
     pub fn guide(&self) -> Guide<CW, R> {
         Guide::new(self)
-    }
-
-    pub fn collect(&self) -> Collect<CW, R> {
-        Collect::new(self)
     }
 
     pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<W, CW, R> {

@@ -21,6 +21,7 @@ use crate::{
     drawing::{
         band::BandUid,
         bend::{BendIndex, BendWeight},
+        collect::Collect,
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight},
         graph::{GetLayer, GetMaybeNet, PrimitiveIndex, PrimitiveWeight},
         seg::{FixedSegIndex, FixedSegWeight, SegIndex, SegWeight},
@@ -90,7 +91,7 @@ impl<'a> ResolvedSelector<'a> {
             Some(ResolvedSelector::Pin { pin_name, layer })
         } else if let Some(loose) = loose {
             Some(ResolvedSelector::Band {
-                band_uid: board.layout().drawing().collect().loose_band_uid(loose),
+                band_uid: board.layout().drawing().loose_band_uid(loose),
             })
         } else {
             None

@@ -11,7 +11,7 @@ use crate::{
         rules::AccessRules,
         Drawing,
     },
-    geometry::{AccessSegWeight, GetWidth},
+    geometry::GetWidth,
     graph::{GenericIndex, GetPetgraphIndex},
 };
 

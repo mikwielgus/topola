@@ -11,7 +11,7 @@ use petgraph::graph::EdgeIndex;
 
 use crate::{
     board::mesadata::AccessMesadata,
-    drawing::{band::BandTermsegIndex, graph::PrimitiveIndex},
+    drawing::{band::BandTermsegIndex, collect::Collect, graph::PrimitiveIndex},
     geometry::primitive::PrimitiveShape,
     layout::LayoutEdit,
     router::{navcord::NavcordStepper, navmesh::Navmesh, route::RouteStepper, Router},
@@ -118,7 +118,6 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
             .board
             .layout()
             .drawing()
-            .collect()
             .loose_band_uid(band_termseg.into());
 
         autorouter

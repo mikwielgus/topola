@@ -11,7 +11,7 @@ use crate::{
         rules::AccessRules,
         Drawing,
     },
-    geometry::{AccessBendWeight, GetOffset, GetWidth, SetOffset},
+    geometry::{GetOffset, GetWidth, SetOffset},
     graph::{GenericIndex, GetPetgraphIndex},
 };
 
