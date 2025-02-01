@@ -85,13 +85,9 @@ impl NavcordStepper {
         cw: bool,
         width: f64,
     ) -> Result<CaneHead, NavcorderException> {
-        Ok(Draw::new(navcorder.layout).cane_around_dot(
-            &mut self.recorder,
-            head,
-            around,
-            cw,
-            width,
-        )?)
+        Ok(navcorder
+            .layout
+            .cane_around_dot(&mut self.recorder, head, around, cw, width)?)
     }
 
     fn wrap_around_loose_bend(
@@ -102,13 +98,9 @@ impl NavcordStepper {
         cw: bool,
         width: f64,
     ) -> Result<CaneHead, NavcorderException> {
-        Ok(Draw::new(navcorder.layout).cane_around_bend(
-            &mut self.recorder,
-            head,
-            around.into(),
-            cw,
-            width,
-        )?)
+        Ok(navcorder
+            .layout
+            .cane_around_bend(&mut self.recorder, head, around.into(), cw, width)?)
     }
 
     fn binavvertex(&self, navmesh: &Navmesh, navvertex: NavvertexIndex) -> BinavvertexNodeIndex {
@@ -159,7 +151,8 @@ impl NavcordStepper {
         navcorder: &mut Navcorder<'a, R>,
     ) -> Result<(), NavcorderException> {
         if let Head::Cane(head) = self.head {
-            self.head = Draw::new(navcorder.layout)
+            self.head = navcorder
+                .layout
                 .undo_cane(&mut self.recorder, head)
                 .unwrap();
         } else {

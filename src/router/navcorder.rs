@@ -53,12 +53,9 @@ impl<'a, R: AccessRules> Navcorder<'a, R> {
         target: FixedDotIndex,
         width: f64,
     ) -> Result<BandTermsegIndex, NavcorderException> {
-        Ok(Draw::new(self.layout).finish_in_dot(
-            &mut navcord.recorder,
-            navcord.head,
-            target,
-            width,
-        )?)
+        Ok(self
+            .layout
+            .finish_in_dot(&mut navcord.recorder, navcord.head, target, width)?)
     }
 
     #[debug_requires(path[0] == navcord.path[0])]

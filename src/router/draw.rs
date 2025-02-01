@@ -1,6 +1,8 @@
 // SPDX-FileCopyrightText: 2024 Topola contributors
 //
 // SPDX-License-Identifier: MIT
+//! router module's routines for drawing and erasing the primitives
+//! to pull out or contract the currently routed band.
 
 use contracts_try::debug_ensures;
 use geo::Point;
@@ -20,7 +22,7 @@ use crate::{
         seg::{LoneLooseSegWeight, SeqLooseSegWeight},
         DrawingException, Infringement,
     },
-    layout::{Layout, LayoutEdit},
+    layout::{CompoundWeight, Layout, LayoutEdit},
     math::{Circle, NoTangents},
 };
 
@@ -35,25 +37,46 @@ pub enum DrawException {
     CannotWrapAround(GearIndex, #[source] DrawingException),
 }
 
-/// This struct is a simple wrapper whose sole purpose is to have a separate
-/// file for the router module's routines for drawing and erasing the primitives
-/// to pull out or contract the currently routed band.
-pub struct Draw<'a, R> {
-    layout: &'a mut Layout<R>,
+pub trait Draw {
+    fn start(&mut self, from: LooseDotIndex) -> Head;
+
+    fn finish_in_dot(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        head: Head,
+        into: FixedDotIndex,
+        width: f64,
+    ) -> Result<BandTermsegIndex, DrawException>;
+
+    fn cane_around_dot(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        head: Head,
+        around: FixedDotIndex,
+        cw: bool,
+        width: f64,
+    ) -> Result<CaneHead, DrawException>;
+
+    fn cane_around_bend(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        head: Head,
+        around: BendIndex,
+        cw: bool,
+        width: f64,
+    ) -> Result<CaneHead, DrawException>;
+
+    fn undo_cane(&mut self, recorder: &mut LayoutEdit, head: CaneHead) -> Option<Head>;
 }
 
-impl<'a, R: AccessRules> Draw<'a, R> {
-    pub fn new(layout: &'a mut Layout<R>) -> Self {
-        Self { layout }
-    }
-
-    pub fn start(&mut self, from: LooseDotIndex) -> Head {
+impl<R: AccessRules> Draw for Layout<R> {
+    fn start(&mut self, from: LooseDotIndex) -> Head {
         self.guide().cane_head(from).into()
     }
 
-    #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
-    pub fn finish_in_dot(
+    #[debug_ensures(ret.is_ok() -> self.drawing().node_count() == old(self.drawing().node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.drawing().node_count() == old(self.drawing().node_count()))]
+    fn finish_in_dot(
         &mut self,
         recorder: &mut LayoutEdit,
         head: Head,
@@ -67,44 +90,42 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         let head = self
             .extend_head(recorder, head, tangent.start_point())
             .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
-        let layer = head.face().primitive(self.layout.drawing()).layer();
-        let maybe_net = head.face().primitive(self.layout.drawing()).maybe_net();
+        let layer = head.face().primitive(self.drawing()).layer();
+        let maybe_net = head.face().primitive(self.drawing()).maybe_net();
 
         Ok(match head.face() {
             DotIndex::Fixed(dot) => BandTermsegIndex::Straight(
-                self.layout
-                    .add_lone_loose_seg(
-                        recorder,
-                        dot,
-                        into,
-                        LoneLooseSegWeight {
-                            width,
-                            layer,
-                            maybe_net,
-                        },
-                    )
-                    .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?,
+                self.add_lone_loose_seg(
+                    recorder,
+                    dot,
+                    into,
+                    LoneLooseSegWeight {
+                        width,
+                        layer,
+                        maybe_net,
+                    },
+                )
+                .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?,
             ),
             DotIndex::Loose(dot) => BandTermsegIndex::Bended(
-                self.layout
-                    .add_seq_loose_seg(
-                        recorder,
-                        into.into(),
-                        dot,
-                        SeqLooseSegWeight {
-                            width,
-                            layer,
-                            maybe_net,
-                        },
-                    )
-                    .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?,
+                self.add_seq_loose_seg(
+                    recorder,
+                    into.into(),
+                    dot,
+                    SeqLooseSegWeight {
+                        width,
+                        layer,
+                        maybe_net,
+                    },
+                )
+                .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?,
             ),
         })
     }
 
-    #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 4))]
-    #[debug_ensures(ret.is_err() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
-    pub fn cane_around_dot(
+    #[debug_ensures(ret.is_ok() -> self.drawing().node_count() == old(self.drawing().node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.drawing().node_count() == old(self.drawing().node_count()))]
+    fn cane_around_dot(
         &mut self,
         recorder: &mut LayoutEdit,
         head: Head,
@@ -131,9 +152,9 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         .map_err(|err| DrawException::CannotWrapAround(around.into(), err))
     }
 
-    #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 4))]
-    #[debug_ensures(ret.is_err() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
-    pub fn cane_around_bend(
+    #[debug_ensures(ret.is_ok() -> self.drawing().node_count() == old(self.drawing().node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.drawing().node_count() == old(self.drawing().node_count()))]
+    fn cane_around_bend(
         &mut self,
         recorder: &mut LayoutEdit,
         head: Head,
@@ -159,8 +180,60 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         .map_err(|err| DrawException::CannotWrapAround(around.into(), err))
     }
 
-    #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 4))]
-    #[debug_ensures(ret.is_err() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
+    #[debug_ensures(ret.is_some() -> self.drawing().node_count() == old(self.drawing().node_count() - 4))]
+    #[debug_ensures(ret.is_none() -> self.drawing().node_count() == old(self.drawing().node_count()))]
+    fn undo_cane(&mut self, recorder: &mut LayoutEdit, head: CaneHead) -> Option<Head> {
+        let prev_dot = self
+            .drawing()
+            .primitive(head.cane.seg)
+            .other_joint(head.cane.dot.into());
+
+        self.remove_cane(recorder, &head.cane, head.face);
+        Some(self.guide().head(prev_dot))
+    }
+}
+
+trait DrawPrivate {
+    type R;
+
+    fn cane_around(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        head: Head,
+        around: GearIndex,
+        from: Point,
+        to: Point,
+        cw: bool,
+        width: f64,
+        offset: f64,
+    ) -> Result<CaneHead, DrawingException>;
+
+    fn extend_head(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        head: Head,
+        to: Point,
+    ) -> Result<Head, Infringement>;
+
+    fn cane(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        head: Head,
+        around: GearIndex,
+        to: Point,
+        cw: bool,
+        width: f64,
+        offset: f64,
+    ) -> Result<CaneHead, DrawingException>;
+
+    fn guide(&self) -> Guide<CompoundWeight, Self::R>;
+}
+
+impl<R: AccessRules> DrawPrivate for Layout<R> {
+    type R = R;
+
+    #[debug_ensures(ret.is_ok() -> self.drawing().node_count() == old(self.drawing().node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.drawing().node_count() == old(self.drawing().node_count()))]
     fn cane_around(
         &mut self,
         recorder: &mut LayoutEdit,
@@ -176,7 +249,7 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         self.cane(recorder, head, around, to, cw, width, offset)
     }
 
-    #[debug_ensures(self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
+    #[debug_ensures(self.drawing().node_count() == old(self.drawing().node_count()))]
     fn extend_head(
         &mut self,
         recorder: &mut LayoutEdit,
@@ -184,15 +257,15 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         to: Point,
     ) -> Result<Head, Infringement> {
         if let Head::Cane(head) = head {
-            self.layout.move_dot(recorder, head.face.into(), to)?;
+            self.move_dot(recorder, head.face.into(), to)?;
             Ok(Head::Cane(head))
         } else {
             Ok(head)
         }
     }
 
-    #[debug_ensures(ret.is_ok() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() + 4))]
-    #[debug_ensures(ret.is_err() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.drawing().node_count() == old(self.drawing().node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.drawing().node_count() == old(self.drawing().node_count()))]
     fn cane(
         &mut self,
         recorder: &mut LayoutEdit,
@@ -203,9 +276,9 @@ impl<'a, R: AccessRules> Draw<'a, R> {
         width: f64,
         offset: f64,
     ) -> Result<CaneHead, DrawingException> {
-        let layer = head.face().primitive(self.layout.drawing()).layer();
-        let maybe_net = head.face().primitive(self.layout.drawing()).maybe_net();
-        let cane = self.layout.insert_cane(
+        let layer = head.face().primitive(self.drawing()).layer();
+        let maybe_net = head.face().primitive(self.drawing()).maybe_net();
+        let cane = self.insert_cane(
             recorder,
             head.face(),
             around,
@@ -231,29 +304,12 @@ impl<'a, R: AccessRules> Draw<'a, R> {
             cw,
         )?;
         Ok(CaneHead {
-            face: self
-                .layout
-                .drawing()
-                .primitive(cane.bend)
-                .other_joint(cane.dot),
+            face: self.drawing().primitive(cane.bend).other_joint(cane.dot),
             cane,
         })
     }
 
-    #[debug_ensures(ret.is_some() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count() - 4))]
-    #[debug_ensures(ret.is_none() -> self.layout.drawing().node_count() == old(self.layout.drawing().node_count()))]
-    pub fn undo_cane(&mut self, recorder: &mut LayoutEdit, head: CaneHead) -> Option<Head> {
-        let prev_dot = self
-            .layout
-            .drawing()
-            .primitive(head.cane.seg)
-            .other_joint(head.cane.dot.into());
-
-        self.layout.remove_cane(recorder, &head.cane, head.face);
-        Some(self.guide().head(prev_dot))
-    }
-
-    fn guide(&self) -> Guide<impl Copy, R> {
-        Guide::new(self.layout.drawing())
+    fn guide(&self) -> Guide<CompoundWeight, R> {
+        Guide::new(self.drawing())
     }
 }
