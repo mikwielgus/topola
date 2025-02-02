@@ -42,7 +42,7 @@ pub struct NavvertexIndex(NodeIndex<usize>);
 
 impl core::fmt::Debug for NavvertexIndex {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        core::fmt::Display::fmt(&self.0.index(), f)
+        write!(f, "NavvertexIndex({})", self.0.index())
     }
 }
 
