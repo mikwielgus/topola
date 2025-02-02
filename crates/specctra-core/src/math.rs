@@ -2,20 +2,30 @@
 //
 // SPDX-License-Identifier: MIT
 
-use core::ops::Sub;
+use core::{fmt, ops::Sub};
 use geo_types::geometry::Point;
 use serde::{Deserialize, Serialize};
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct Circle {
     pub pos: Point,
     pub r: f64,
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Serialize, Deserialize)]
+#[derive(Clone, Copy, PartialEq, Serialize, Deserialize)]
 pub struct PointWithRotation {
     pub pos: Point,
     pub rot: f64,
+}
+
+impl fmt::Debug for Circle {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("Circle")
+            .field("x", &self.pos.0.x)
+            .field("y", &self.pos.0.y)
+            .field("r", &self.r)
+            .finish()
+    }
 }
 
 impl Circle {
@@ -49,6 +59,16 @@ impl Sub for Circle {
             pos: self.pos - other.pos,
             r: self.r,
         }
+    }
+}
+
+impl fmt::Debug for PointWithRotation {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.debug_struct("PointWithRotation")
+            .field("x", &self.pos.0.x)
+            .field("y", &self.pos.0.y)
+            .field("rot", &self.rot)
+            .finish()
     }
 }
 

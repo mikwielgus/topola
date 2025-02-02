@@ -37,8 +37,14 @@ use crate::{
 
 use super::RouterOptions;
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
 pub struct NavvertexIndex(NodeIndex<usize>);
+
+impl core::fmt::Debug for NavvertexIndex {
+    fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
+        core::fmt::Display::fmt(&self.0.index(), f)
+    }
+}
 
 impl GetPetgraphIndex for NavvertexIndex {
     fn petgraph_index(&self) -> NodeIndex<usize> {

@@ -7,6 +7,7 @@ use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 
+use core::fmt;
 use rstar::{RTree, AABB};
 use thiserror::Error;
 
@@ -44,8 +45,7 @@ use crate::{
     graph::MakeRef,
 };
 
-#[enum_dispatch]
-#[derive(Error, Debug, Clone, Copy)]
+#[derive(Clone, Copy, Error)]
 pub enum DrawingException {
     #[error(transparent)]
     NoTangents(#[from] NoTangents),
@@ -55,6 +55,17 @@ pub enum DrawingException {
     Collision(#[from] Collision),
     #[error(transparent)]
     AlreadyConnected(#[from] AlreadyConnected),
+}
+
+impl fmt::Debug for DrawingException {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::NoTangents(this) => fmt::Debug::fmt(this, f),
+            Self::Infringement(this) => fmt::Debug::fmt(this, f),
+            Self::Collision(this) => fmt::Debug::fmt(this, f),
+            Self::AlreadyConnected(this) => fmt::Debug::fmt(this, f),
+        }
+    }
 }
 
 // TODO add real error messages + these should eventually use Display

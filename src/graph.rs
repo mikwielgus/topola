@@ -29,6 +29,7 @@ pub struct GenericIndex<W> {
 }
 
 impl<W> GenericIndex<W> {
+    #[inline]
     pub fn new(index: NodeIndex<usize>) -> Self {
         Self {
             node_index: index,
@@ -50,10 +51,9 @@ impl<W> core::clone::Clone for GenericIndex<W> {
 impl<W> core::marker::Copy for GenericIndex<W> {}
 
 impl<W> core::fmt::Debug for GenericIndex<W> {
+    #[inline]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        f.debug_tuple("GenericIndex")
-            .field(&self.node_index.index())
-            .finish()
+        core::fmt::Display::fmt(&self.node_index.index(), f)
     }
 }
 
@@ -67,18 +67,21 @@ impl<W> PartialEq for GenericIndex<W> {
 impl<W> Eq for GenericIndex<W> {}
 
 impl<W> PartialOrd for GenericIndex<W> {
+    #[inline]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
         self.node_index.partial_cmp(&other.node_index)
     }
 }
 
 impl<W> Ord for GenericIndex<W> {
+    #[inline]
     fn cmp(&self, other: &Self) -> Ordering {
         self.node_index.cmp(&other.node_index)
     }
 }
 
 impl<W> GetPetgraphIndex for GenericIndex<W> {
+    #[inline]
     fn petgraph_index(&self) -> NodeIndex<usize> {
         self.node_index
     }
