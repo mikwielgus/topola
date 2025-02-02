@@ -61,9 +61,12 @@ impl NavcordStepper {
         head: Head,
         around: NavvertexIndex,
     ) -> Result<CaneHead, NavcorderException> {
-        let cw = Self::maybe_cw(navmesh, around).ok_or(NavcorderException::CannotWrap)?;
+        let around_node_weight = navmesh.node_weight(around).unwrap();
+        let cw = around_node_weight
+            .maybe_cw
+            .ok_or(NavcorderException::CannotWrap)?;
 
-        match Self::binavvertex(navmesh, around) {
+        match around_node_weight.node {
             BinavvertexNodeIndex::FixedDot(dot) => {
                 self.wrap_around_fixed_dot(layout, head, dot, cw)
             }
@@ -92,14 +95,6 @@ impl NavcordStepper {
         cw: bool,
     ) -> Result<CaneHead, NavcorderException> {
         Ok(layout.cane_around_bend(&mut self.recorder, head, around.into(), cw, self.width)?)
-    }
-
-    fn binavvertex(navmesh: &Navmesh, navvertex: NavvertexIndex) -> BinavvertexNodeIndex {
-        navmesh.node_weight(navvertex).unwrap().node
-    }
-
-    fn maybe_cw(navmesh: &Navmesh, navvertex: NavvertexIndex) -> Option<bool> {
-        navmesh.node_weight(navvertex).unwrap().maybe_cw
     }
 }
 
