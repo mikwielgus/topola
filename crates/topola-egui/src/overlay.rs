@@ -38,7 +38,6 @@ pub struct Overlay {
     ratsnest: Ratsnest,
     selection: Selection,
     reselect_bbox: Option<(SelectionMode, Point)>,
-    active_layer: usize,
 }
 
 const INF: f64 = f64::INFINITY;
@@ -49,7 +48,6 @@ impl Overlay {
             ratsnest: Ratsnest::new(board.layout())?,
             selection: Selection::new(),
             reselect_bbox: None,
-            active_layer: 0,
         })
     }
 
@@ -147,10 +145,14 @@ impl Overlay {
 
         if let Some(geom) = geoms.iter().find(|&&geom| {
             board.layout().node_shape(geom.data).contains_point(at)
+                // TODO: fix which layers to query
                 && board
                     .layout()
                     .drawing()
-                    .is_node_in_layer(geom.data, self.active_layer)
+                    // This should use:
+                    // `.is_node_in_any_layer_of(geom.data, &appearance_panel.visible[..])`
+                    // instead, but that doesn't work reliably
+                    .is_node_in_layer(geom.data, 0)
         }) {
             self.selection.toggle_at_node(board, geom.data);
         }
