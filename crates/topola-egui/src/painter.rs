@@ -74,6 +74,7 @@ impl<'a> Painter<'a> {
             self.transform * rect,
             egui::Rounding::ZERO,
             egui::Stroke::new(1.0, color),
+            egui::StrokeKind::Inside,
         ));
     }
 

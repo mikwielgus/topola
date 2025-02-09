@@ -16,8 +16,8 @@ xdg-portal = ["rfd/async-std", "rfd/xdg-portal"]
 
 [dependencies]
 derive-getters.workspace = true
-egui = "0.30"
-fluent-templates = "0.12"
+egui = "0.31"
+fluent-templates = "0.13"
 geo.workspace = true
 icu_experimental = "0.2"
 icu_locale_core = "2.0.0-beta1"
@@ -38,7 +38,7 @@ version = "0.9"
 features = ["macros", "serde"]
 
 [dependencies.eframe]
-version = "0.30"
+version = "0.31"
 default-features = false
 features = ["accesskit", "default_fonts", "glow", "persistence", "wayland", "x11"]
 
@@ -47,7 +47,7 @@ version = "0.15"
 default-features = false
 
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-futures-lite = "2.5"
+futures-lite = "2.6"
 env_logger = "0.11"
 
 [target.'cfg(target_arch = "wasm32")'.dependencies]
