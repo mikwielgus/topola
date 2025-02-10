@@ -13,7 +13,6 @@ use topola::{
     },
     board::{AccessMesadata, Board},
     drawing::{
-        dot::FixedDotIndex,
         graph::{GetLayer, GetMaybeNet},
     },
     geometry::{shape::MeasureLength, GenericNode},
@@ -178,8 +177,8 @@ pub fn assert_single_layer_groundless_autoroute(
 
         if let Some(netname) = autorouter.board().layout().rules().net_netname(net) {
             // We don't route ground.
-            let mut org = unionfind.find(origin_dot.petgraph_index());
-            let mut desc = unionfind.find(destination_dot.petgraph_index());
+            let org = unionfind.find(origin_dot.petgraph_index());
+            let desc = unionfind.find(destination_dot.petgraph_index());
 
             if netname != "GND" {
                 assert_eq!(org, desc);

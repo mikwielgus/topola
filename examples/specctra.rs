@@ -19,8 +19,8 @@ fn main() -> Result<(), std::io::Error> {
     let invoker = Invoker::new(Autorouter::new(board).unwrap());
 
     let mut file = File::create("example.ses").unwrap();
-    design.write_ses(invoker.autorouter().board(), &mut file);
+    design.write_ses(invoker.autorouter().board(), &mut file).unwrap();
 
-    let filename = design.get_name();
+    //let filename = design.get_name();
     Ok(())
 }

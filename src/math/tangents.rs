@@ -2,8 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use geo::algorithm::line_measures::{Distance, Euclidean};
-use geo::{geometry::Point, point, Line};
+use geo::{geometry::Point, Line};
 use specctra_core::math::Circle;
 use thiserror::Error;
 

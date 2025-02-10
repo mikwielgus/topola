@@ -209,10 +209,6 @@ impl<'a, W, CW: Copy, R: AccessRules> GenericPrimitive<'a, W, CW, R> {
             unreachable!()
         }
     }
-
-    fn primitive<WW>(&self, index: GenericIndex<WW>) -> GenericPrimitive<WW, CW, R> {
-        GenericPrimitive::new(index, self.drawing)
-    }
 }
 
 impl<'a, W, CW: Copy, R: AccessRules> GetInterior<PrimitiveIndex>

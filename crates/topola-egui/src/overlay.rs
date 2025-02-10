@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 use geo::Point;
-use rstar::{Point as _, AABB};
+use rstar::AABB;
 use spade::InsertionError;
 
 use topola::{
@@ -12,17 +12,7 @@ use topola::{
         selection::{BboxSelectionKind, Selection},
     },
     board::{AccessMesadata, Board},
-    drawing::{
-        graph::{GetLayer, MakePrimitive},
-        primitive::MakePrimitiveShape,
-    },
-    geometry::shape::{AccessShape, Shape},
-    graph::{GenericIndex, GetPetgraphIndex},
-    layout::{
-        poly::{MakePolygon, PolyWeight},
-        via::ViaWeight,
-        CompoundWeight, Layout, NodeIndex,
-    },
+    geometry::shape::AccessShape,
 };
 
 use crate::appearance_panel::AppearancePanel;
@@ -75,8 +65,8 @@ impl Overlay {
 
     pub fn drag_start(
         &mut self,
-        board: &Board<impl AccessMesadata>,
-        appearance_panel: &AppearancePanel,
+        _board: &Board<impl AccessMesadata>,
+        _appearance_panel: &AppearancePanel,
         at: Point,
         modifiers: &egui::Modifiers,
     ) {

@@ -18,7 +18,7 @@ impl StatusBar {
     pub fn update(
         &mut self,
         ctx: &egui::Context,
-        tr: &Translator,
+        _tr: &Translator,
         viewport: &Viewport,
         maybe_activity: Option<&ActivityStepperWithStatus>,
     ) {

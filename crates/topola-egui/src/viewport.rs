@@ -11,7 +11,7 @@ use rstar::{Envelope, AABB};
 use topola::{
     autorouter::{
         execution::Command,
-        invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles, Invoker},
+        invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
     },
     board::AccessMesadata,
     drawing::{

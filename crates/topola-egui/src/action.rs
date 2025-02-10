@@ -78,10 +78,6 @@ impl Trigger {
             }
         }
     }
-
-    fn triggered(&self) -> bool {
-        self.triggered
-    }
 }
 
 impl Switch {

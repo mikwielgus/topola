@@ -294,13 +294,13 @@ impl MenuBar {
             .inner
     }
 
-    pub fn update_preferences_menu(ctx: &egui::Context, ui: &mut egui::Ui, tr: &mut Translator) {
+    pub fn update_preferences_menu(_ctx: &egui::Context, ui: &mut egui::Ui, tr: &mut Translator) {
         ui.menu_button(tr.text("tr-menu-preferences"), |ui| {
             ui.menu_button(tr.text("tr-menu-preferences-set-language"), |ui| {
                 use icu_experimental::displaynames::{
                     DisplayNamesOptions, Fallback, LocaleDisplayNamesFormatter,
                 };
-                use icu_locale_core::{locale, LanguageIdentifier, Locale};
+                use icu_locale_core::Locale;
 
                 let mut display_names_options: DisplayNamesOptions = Default::default();
                 display_names_options.fallback = Fallback::None;

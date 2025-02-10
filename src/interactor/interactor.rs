@@ -87,7 +87,7 @@ impl<M: AccessMesadata> Interactor<M> {
                 invoker: &mut self.invoker,
             }) {
                 Ok(ControlFlow::Continue(())) => ControlFlow::Continue(()),
-                Ok(ControlFlow::Break(msg)) => ControlFlow::Break(Ok(())),
+                Ok(ControlFlow::Break(_msg)) => ControlFlow::Break(Ok(())),
                 Err(err) => {
                     self.activity = None;
                     ControlFlow::Break(Err(err))

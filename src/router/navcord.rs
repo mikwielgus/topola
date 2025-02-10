@@ -9,7 +9,6 @@ use crate::{
     drawing::{
         bend::LooseBendIndex,
         dot::FixedDotIndex,
-        graph::PrimitiveIndex,
         head::{BareHead, CaneHead, Head},
         rules::AccessRules,
     },

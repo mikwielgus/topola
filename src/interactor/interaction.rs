@@ -35,14 +35,14 @@ impl<'a, M: AccessMesadata> Step<ActivityContext<'a, M>, String> for Interaction
 
     fn step(
         &mut self,
-        context: &mut ActivityContext<M>,
+        _context: &mut ActivityContext<M>,
     ) -> Result<ControlFlow<String>, InteractionError> {
         Ok(ControlFlow::Break(String::from("")))
     }
 }
 
 impl<'a, M: AccessMesadata> Abort<ActivityContext<'a, M>> for InteractionStepper {
-    fn abort(&mut self, context: &mut ActivityContext<M>) {
+    fn abort(&mut self, _context: &mut ActivityContext<M>) {
         todo!();
     }
 }

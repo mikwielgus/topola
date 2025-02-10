@@ -6,7 +6,7 @@ use geo::{CoordsIter, Point, Polygon};
 use rstar::AABB;
 use topola::{
     geometry::{
-        primitive::{AccessPrimitiveShape, PrimitiveShape},
+        primitive::PrimitiveShape,
         shape::AccessShape,
     },
     math::Circle,
@@ -72,7 +72,7 @@ impl<'a> Painter<'a> {
         };
         self.ui.painter().add(egui::Shape::rect_stroke(
             self.transform * rect,
-            egui::Rounding::ZERO,
+            egui::CornerRadius::ZERO,
             egui::Stroke::new(1.0, color),
             egui::StrokeKind::Inside,
         ));

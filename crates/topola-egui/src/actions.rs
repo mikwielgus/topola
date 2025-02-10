@@ -183,7 +183,7 @@ impl ViewActions {
 
     pub fn render_menu(
         &mut self,
-        ctx: &Context,
+        _ctx: &Context,
         ui: &mut Ui,
         tr: &Translator,
         menu_bar: &mut MenuBar,

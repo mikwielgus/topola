@@ -87,6 +87,7 @@ fn test_4x_3rd_order_smd_lc_filters() {
 // FIXME: This test fails indeterministically.
 // NOTE: Disabled until determinism is fixed.
 //#[test]
+#[allow(unused)]
 fn test_tht_3pin_xlr_to_tht_3pin_xlr() {
     let mut autorouter = common::load_design(
         "tests/single_layer/tht_3pin_xlr_to_tht_3pin_xlr/tht_3pin_xlr_to_tht_3pin_xlr.dsn",
@@ -106,8 +107,8 @@ fn test_tht_3pin_xlr_to_tht_3pin_xlr() {
 
 #[test]
 fn test_smd_non_rectangular_buck_converter() {
-    let mut path = "tests/single_layer/smd_non_rectangular_buck_converter/smd_non_rectangular_buck_converter.dsn";
-    let mut autorouter = common::load_design(&path);
+    let path = "tests/single_layer/smd_non_rectangular_buck_converter/smd_non_rectangular_buck_converter.dsn";
+    let autorouter = common::load_design(&path);
 
     let mut invoker = common::create_invoker_and_assert(autorouter);
 

@@ -21,7 +21,6 @@ use crate::{
 use super::{Autorouter, AutorouterError, AutorouterOptions};
 
 pub struct PointrouteExecutionStepper {
-    point: Point,
     route: RouteStepper,
     options: AutorouterOptions,
 }
@@ -49,7 +48,6 @@ impl PointrouteExecutionStepper {
         let mut router = Router::new(autorouter.board.layout_mut(), options.router_options);
 
         Ok(Self {
-            point,
             route: router.route(
                 LayoutEdit::new(),
                 origin,

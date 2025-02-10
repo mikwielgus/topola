@@ -4,7 +4,6 @@
 
 use contracts_try::{debug_ensures, debug_invariant};
 use derive_getters::Getters;
-use enum_dispatch::enum_dispatch;
 use geo::Point;
 
 use core::fmt;
