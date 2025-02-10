@@ -5,10 +5,7 @@
 use geo::{CoordsIter, Point, Polygon};
 use rstar::AABB;
 use topola::{
-    geometry::{
-        primitive::PrimitiveShape,
-        shape::AccessShape,
-    },
+    geometry::{primitive::PrimitiveShape, shape::AccessShape},
     math::Circle,
 };
 

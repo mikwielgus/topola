@@ -12,9 +12,7 @@ use topola::{
         Autorouter,
     },
     board::{AccessMesadata, Board},
-    drawing::{
-        graph::{GetLayer, GetMaybeNet},
-    },
+    drawing::graph::{GetLayer, GetMaybeNet},
     geometry::{shape::MeasureLength, GenericNode},
     graph::{GetPetgraphIndex, MakeRef},
     layout::LayoutEdit,
