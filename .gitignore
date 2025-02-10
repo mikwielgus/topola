@@ -28,6 +28,7 @@ fp-info-cache
 
 # Lockfiles
 *.lck
+.#*
 
 # ---> Topola
 *.ses
