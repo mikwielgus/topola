@@ -45,3 +45,4 @@ tr-menu-preferences = Preferências
 tr-module-history-file-loader = Carregador de arquivo Hisrórico
 tr-menu-inspect = Inspecionar
 tr-menu-route-options-wrap-around-bands = Embrulhar sobre as Bandas
+tr-menu-edit-select-all = Selecionar Todos
