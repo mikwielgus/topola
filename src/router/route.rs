@@ -85,9 +85,17 @@ impl<'a, R: AccessRules> Step<Router<'a, R>, BandTermsegIndex> for RouteStepper 
         let target = self.astar.graph.destination();
         let mut strategy = RouterAstarStrategy::new(layout, &mut self.navcord, target);
 
-        let result = match self.astar.step(&mut strategy)? {
-            ControlFlow::Continue(..) => Ok(ControlFlow::Continue(())),
-            ControlFlow::Break((_cost, _path, band)) => Ok(ControlFlow::Break(band)),
+        let result = match self.astar.step(&mut strategy) {
+            Ok(ControlFlow::Continue(..)) => Ok(ControlFlow::Continue(())),
+            Ok(ControlFlow::Break((_cost, _path, band))) => Ok(ControlFlow::Break(band)),
+            Err(e) => {
+                // NOTE(fogti): The 1 instead 0 is because the first element in the path
+                // is the source navvertex. See also: `NavcordStepper::new`.
+                for _ in 1..self.navcord.path.len() {
+                    self.navcord.step_back(layout);
+                }
+                Err(e)
+            }
         };
 
         self.ghosts = strategy.probe_ghosts;
