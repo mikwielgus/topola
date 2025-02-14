@@ -279,40 +279,12 @@ pub struct Padstack {
     pub attach: Option<bool>,
 }
 
-// TODO: derive for enums if more than this single one is needed
-#[derive(Debug, Clone, PartialEq)]
+#[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
 pub enum Shape {
     Circle(Circle),
     Rect(Rect),
     Path(Path),
     Polygon(Polygon),
-}
-
-impl<R: std::io::BufRead> ReadDsn<R> for Shape {
-    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
-        let ctx = tokenizer.context();
-        let name = tokenizer.consume_token()?.expect_any_start()?;
-        let value = match name.as_str() {
-            "circle" => Ok(Shape::Circle(tokenizer.read_value()?)),
-            "rect" => Ok(Shape::Rect(tokenizer.read_value()?)),
-            "path" => Ok(Shape::Path(tokenizer.read_value()?)),
-            "polygon" => Ok(Shape::Polygon(tokenizer.read_value()?)),
-            _ => Err(ParseError::Expected("a different keyword").add_context(ctx)),
-        };
-        tokenizer.consume_token()?.expect_end()?;
-        value
-    }
-}
-
-impl<W: std::io::Write> WriteSes<W> for Shape {
-    fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), std::io::Error> {
-        match self {
-            Self::Circle(inner) => writer.write_named("circle", inner),
-            Self::Rect(inner) => writer.write_named("rect", inner),
-            Self::Path(inner) => writer.write_named("path", inner),
-            Self::Polygon(inner) => writer.write_named("polygon", inner),
-        }
-    }
 }
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]

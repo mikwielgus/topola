@@ -2,11 +2,11 @@
 //
 // SPDX-License-Identifier: MIT
 
-use proc_macro2::TokenStream;
+use proc_macro2::{Span, TokenStream};
 use quote::quote;
 use syn::ext::IdentExt;
 use syn::Type::Path;
-use syn::{Data, DeriveInput, Field, Fields};
+use syn::{punctuated::Punctuated, Data, DeriveInput, Field, Fields, Ident, Variant};
 
 use crate::parse_attributes;
 use crate::FieldType;
@@ -41,6 +41,17 @@ fn impl_body(data: &Data) -> TokenStream {
             }
             _ => unimplemented!(),
         },
+        Data::Enum(data) => {
+            let variants = data.variants.iter().map(impl_variant);
+
+            quote! {
+                match self {
+                    #(#variants)*
+                }
+
+                Ok(())
+            }
+        }
         _ => unimplemented!(),
     }
 }
@@ -85,5 +96,32 @@ fn impl_field(field: &Field) -> TokenStream {
                 writer.write_named(stringify!(#name_str), &self.#name)?;
             }
         }
+    }
+}
+
+fn impl_variant(variant: &Variant) -> TokenStream {
+    let name = &variant.ident;
+    let mut name_str = name.unraw().to_string();
+    name_str.make_ascii_lowercase();
+
+    match &variant.fields {
+        Fields::Unnamed(fields) => {
+            let names: Vec<_> = (0..fields.unnamed.len())
+                .map(|i| Ident::new(&format!("inner__{}", i), Span::mixed_site()))
+                .collect();
+            let mut select = Punctuated::<_, syn::Token![,]>::new();
+            for i in &names {
+                select.push(i.clone());
+            }
+            let fields = names.into_iter().map(|name| {
+                quote! { writer.write_value(#name)?; }
+            });
+            quote! { Self::#name(#select) => {
+                writer.write_token(ListToken::Start { name: #name_str.to_string() })?;
+                #(#fields)*
+                writer.write_token(ListToken::End)?;
+            }, }
+        }
+        _ => unimplemented!(),
     }
 }

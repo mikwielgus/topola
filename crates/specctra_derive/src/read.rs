@@ -6,7 +6,7 @@ use proc_macro2::TokenStream;
 use quote::quote;
 use syn::ext::IdentExt;
 use syn::Type::Path;
-use syn::{Data, DeriveInput, Field, Fields};
+use syn::{Data, DeriveInput, Field, Fields, Variant};
 
 use crate::parse_attributes;
 use crate::FieldType;
@@ -40,8 +40,19 @@ fn impl_body(data: &Data) -> TokenStream {
             }
             _ => unimplemented!(),
         },
-        Data::Enum(_data) => {
-            todo!();
+        Data::Enum(data) => {
+            let (variantnames, variants): (TokenStream, TokenStream) =
+                data.variants.iter().map(impl_variant).unzip();
+            quote! {
+                let ctx = tokenizer.context();
+                let name = tokenizer.consume_token()?.expect_any_start()?;
+                let value = Ok(match name.as_str() {
+                    #variants
+                    _ => return Err(ParseError::ExpectedStartOfListOneOf(&[#variantnames]).add_context(ctx)),
+                });
+                tokenizer.consume_token()?.expect_end()?;
+                value
+            }
         }
         _ => unimplemented!(),
     }
@@ -87,4 +98,36 @@ fn impl_field(field: &Field) -> TokenStream {
             }
         }
     }
+}
+
+fn impl_variant(variant: &Variant) -> (TokenStream, TokenStream) {
+    let name = &variant.ident;
+    let mut name_str = name.unraw().to_string();
+    name_str.make_ascii_lowercase();
+
+    let inner = match &variant.fields {
+        Fields::Unnamed(fields) => {
+            let all_parts =
+                core::iter::repeat(quote! { tokenizer.read_value()?, }).take(fields.unnamed.len());
+            quote! { Self::#name(#(#all_parts)*) }
+        }
+        Fields::Named(fields) => {
+            let fields = fields.named.iter().map(impl_field);
+
+            quote! {
+                Self::#name {
+                    #(#fields)*
+                }
+            }
+        }
+        Fields::Unit => unimplemented!(),
+    };
+    (
+        quote! {
+            #name_str,
+        },
+        quote! {
+            #name_str => #inner,
+        },
+    )
 }

@@ -15,6 +15,8 @@ pub enum ParseError {
     Expected(&'static str),
     #[error("expected \"({0}\"")]
     ExpectedStartOfList(&'static str),
+    #[error("expected one of: {0:?}")]
+    ExpectedStartOfListOneOf(&'static [&'static str]),
     #[error("expected \")\"")]
     ExpectedEndOfList,
     #[error("expected leaf value")]
