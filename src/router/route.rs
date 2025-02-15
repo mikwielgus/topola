@@ -84,8 +84,11 @@ impl<'a, R: AccessRules> Step<Router<'a, R>, BandTermsegIndex> for RouteStepper 
         let layout = router.layout_mut();
         let target = self.astar.graph.destination();
         let mut strategy = RouterAstarStrategy::new(layout, &mut self.navcord, target);
+        let result = self.astar.step(&mut strategy);
+        self.ghosts = strategy.probe_ghosts;
+        self.obstacles = strategy.probe_obstacles;
 
-        let result = match self.astar.step(&mut strategy) {
+        match result {
             Ok(ControlFlow::Continue(..)) => Ok(ControlFlow::Continue(())),
             Ok(ControlFlow::Break((_cost, _path, band))) => Ok(ControlFlow::Break(band)),
             Err(e) => {
@@ -96,10 +99,6 @@ impl<'a, R: AccessRules> Step<Router<'a, R>, BandTermsegIndex> for RouteStepper 
                 }
                 Err(e)
             }
-        };
-
-        self.ghosts = strategy.probe_ghosts;
-        self.obstacles = strategy.probe_obstacles;
-        result
+        }
     }
 }
