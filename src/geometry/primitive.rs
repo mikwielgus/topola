@@ -6,7 +6,7 @@ use std::f64::consts::TAU;
 
 use enum_dispatch::enum_dispatch;
 use geo::algorithm::line_measures::{Distance, Euclidean};
-use geo::{point, polygon, Contains, Intersects, Point, Polygon, Rotate};
+use geo::{point, polygon, Contains, Intersects, Line, Point, Polygon, Rotate};
 use rstar::{RTreeObject, AABB};
 
 use crate::{
@@ -147,6 +147,13 @@ impl SegShape {
         let p4 = self.to - normal * (self.width / 2.);
 
         polygon![p1.0, p2.0, p3.0, p4.0]
+    }
+
+    pub fn middle_line(&self) -> Line {
+        Line {
+            start: self.from.into(),
+            end: self.to.into(),
+        }
     }
 }
 

@@ -57,6 +57,19 @@ impl From<LooseIndex> for PrimitiveIndex {
     }
 }
 
+impl TryFrom<PrimitiveIndex> for LooseIndex {
+    type Error = ();
+    fn try_from(primitive: PrimitiveIndex) -> Result<LooseIndex, ()> {
+        match primitive {
+            PrimitiveIndex::LooseDot(dot) => Ok(dot.into()),
+            PrimitiveIndex::LoneLooseSeg(seg) => Ok(seg.into()),
+            PrimitiveIndex::SeqLooseSeg(seg) => Ok(seg.into()),
+            PrimitiveIndex::LooseBend(bend) => Ok(bend.into()),
+            _ => Err(()),
+        }
+    }
+}
+
 #[enum_dispatch(GetPrevNextLoose, GetDrawing, GetPetgraphIndex)]
 pub enum Loose<'a, CW: Copy, R: AccessRules> {
     Dot(LooseDot<'a, CW, R>),

@@ -6,20 +6,13 @@ use geo::{geometry::Point, Line};
 use specctra_core::math::Circle;
 use thiserror::Error;
 
-use super::seq_perp_dot_product;
+use super::{seq_perp_dot_product, NormalLine};
 
 #[derive(Error, Debug, Clone, Copy, PartialEq)]
 #[error("no tangents for {0:?} and {1:?}")] // TODO add real error message
 pub struct NoTangents(pub Circle, pub Circle);
 
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub struct CanonicalLine {
-    pub a: f64,
-    pub b: f64,
-    pub c: f64,
-}
-
-fn _tangent(center: Point, r1: f64, r2: f64) -> Result<CanonicalLine, ()> {
+fn _tangent(center: Point, r1: f64, r2: f64) -> Result<NormalLine, ()> {
     let epsilon = 1e-9;
     let dr = r2 - r1;
     let norm = center.x() * center.x() + center.y() * center.y();
@@ -31,15 +24,15 @@ fn _tangent(center: Point, r1: f64, r2: f64) -> Result<CanonicalLine, ()> {
 
     let sqrt_discriminant = f64::sqrt(f64::abs(discriminant));
 
-    Ok(CanonicalLine {
-        a: (center.x() * dr + center.y() * sqrt_discriminant) / norm,
-        b: (center.y() * dr - center.x() * sqrt_discriminant) / norm,
-        c: r1,
+    Ok(NormalLine {
+        x: (center.x() * dr + center.y() * sqrt_discriminant) / norm,
+        y: (center.y() * dr - center.x() * sqrt_discriminant) / norm,
+        offset: r1,
     })
 }
 
-fn _tangents(circle1: Circle, circle2: Circle) -> Result<[CanonicalLine; 4], ()> {
-    let mut tgs: [CanonicalLine; 4] = [
+fn _tangents(circle1: Circle, circle2: Circle) -> Result<[NormalLine; 4], ()> {
+    let mut tgs: [NormalLine; 4] = [
         _tangent((circle2 - circle1).pos, -circle1.r, -circle2.r)?,
         _tangent((circle2 - circle1).pos, -circle1.r, circle2.r)?,
         _tangent((circle2 - circle1).pos, circle1.r, -circle2.r)?,
@@ -47,18 +40,18 @@ fn _tangents(circle1: Circle, circle2: Circle) -> Result<[CanonicalLine; 4], ()>
     ];
 
     for tg in tgs.iter_mut() {
-        tg.c -= tg.a * circle1.pos.x() + tg.b * circle1.pos.y();
+        tg.offset -= tg.x * circle1.pos.x() + tg.y * circle1.pos.y();
     }
 
     Ok(tgs)
 }
 
-fn cast_point_to_canonical_line(pt: Point, line: CanonicalLine) -> Point {
+fn cast_point_to_canonical_line(pt: Point, line: NormalLine) -> Point {
     (
-        (line.b * (line.b * pt.x() - line.a * pt.y()) - line.a * line.c)
-            / (line.a * line.a + line.b * line.b),
-        (line.a * (-line.b * pt.x() + line.a * pt.y()) - line.b * line.c)
-            / (line.a * line.a + line.b * line.b),
+        (line.y * (line.y * pt.x() - line.x * pt.y()) - line.x * line.offset)
+            / (line.x * line.x + line.y * line.y),
+        (line.x * (-line.y * pt.x() + line.x * pt.y()) - line.y * line.offset)
+            / (line.x * line.x + line.y * line.y),
     )
         .into()
 }

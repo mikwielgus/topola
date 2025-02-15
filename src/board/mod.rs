@@ -62,13 +62,7 @@ impl<'a> ResolvedSelector<'a> {
         let (layer, loose) = match node {
             NodeIndex::Primitive(primitive) => (
                 primitive.primitive(board.layout().drawing()).layer(),
-                match primitive {
-                    PrimitiveIndex::LooseDot(dot) => Some(dot.into()),
-                    PrimitiveIndex::LoneLooseSeg(seg) => Some(seg.into()),
-                    PrimitiveIndex::SeqLooseSeg(seg) => Some(seg.into()),
-                    PrimitiveIndex::LooseBend(bend) => Some(bend.into()),
-                    _ => None,
-                },
+                primitive.try_into().ok(),
             ),
             NodeIndex::Compound(compound) => {
                 match board.layout().drawing().compound_weight(compound) {

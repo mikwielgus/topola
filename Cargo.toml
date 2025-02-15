@@ -52,6 +52,7 @@ contracts-try = "0.7"
 derive-getters.workspace = true
 enum_dispatch = "0.3"
 geo.workspace = true
+log.workspace = true
 petgraph.workspace = true
 rstar.workspace = true
 serde.workspace = true

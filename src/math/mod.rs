@@ -9,6 +9,95 @@ pub use specctra_core::math::{Circle, PointWithRotation};
 mod tangents;
 pub use tangents::*;
 
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub enum LineIntersection {
+    Empty,
+    Overlapping,
+    Point(Point),
+}
+
+/// A line in normal form: `x0*y + y0*y + offset = 0`
+#[derive(Clone, Copy, Debug, PartialEq)]
+pub struct NormalLine {
+    pub x: f64,
+    pub y: f64,
+    pub offset: f64,
+}
+
+impl From<Line> for NormalLine {
+    fn from(l: Line) -> Self {
+        // the normal vector is perpendicular to the line
+        let normal = geo::point! {
+            x: l.dy(),
+            y: -l.dx(),
+        };
+        Self {
+            x: normal.0.x,
+            y: normal.0.y,
+            offset: -perp_dot_product(l.end.into(), l.start.into()),
+        }
+    }
+}
+
+impl NormalLine {
+    pub fn evaluate_at(&self, pt: Point) -> f64 {
+        self.x * pt.x() + self.y * pt.y() + self.offset
+    }
+
+    pub fn angle(&self) -> f64 {
+        self.y.atan2(self.x)
+    }
+
+    pub fn make_normal_unit(&mut self) {
+        let normal_len = self.y.hypot(self.x);
+        if normal_len > (f64::EPSILON * 16.0) {
+            self.x /= normal_len;
+            self.y /= normal_len;
+            self.offset /= normal_len;
+        }
+    }
+
+    pub fn intersects(&self, b: &Self) -> LineIntersection {
+        const ALMOST_ZERO: f64 = f64::EPSILON * 16.0;
+        let (mut a, mut b) = (*self, *b);
+        let _ = (a.make_normal_unit(), b.make_normal_unit());
+        let apt = geo::point! { x: a.x, y: a.y };
+        let bpt = geo::point! { x: b.x, y: b.y };
+        let det = perp_dot_product(apt, bpt);
+        let rpx = -b.y * a.offset + a.y * b.offset;
+        let rpy = b.x * a.offset - a.x * b.offset;
+
+        if det.abs() > ALMOST_ZERO {
+            LineIntersection::Point(geo::point! { x: rpx, y: rpy } / det)
+        } else if rpx.abs() <= ALMOST_ZERO && rpy.abs() <= ALMOST_ZERO {
+            LineIntersection::Overlapping
+        } else {
+            LineIntersection::Empty
+        }
+    }
+
+    /// project the point `pt` onto this line, and generate a new line which is orthogonal
+    /// to `self`, and goes through `pt`.
+    #[inline]
+    pub fn orthogonal_through(&self, pt: &Point) -> Self {
+        Self {
+            // recover the original parallel vector
+            x: -self.y,
+            y: self.x,
+            offset: -self.x * pt.0.y + self.y * pt.0.x,
+        }
+    }
+
+    pub fn segment_interval(&self, line: &Line) -> core::ops::RangeInclusive<f64> {
+        // recover the original parallel vector
+        let parv = geo::point! {
+            x: -self.y,
+            y: self.x,
+        };
+        dot_product(parv, line.start.into())..=dot_product(parv, line.end.into())
+    }
+}
+
 pub fn intersect_circles(circle1: &Circle, circle2: &Circle) -> Vec<Point> {
     let delta = circle2.pos - circle1.pos;
     let d = Euclidean::distance(&circle2.pos, &circle1.pos);

@@ -10,7 +10,7 @@ use rstar::AABB;
 
 use crate::{
     drawing::{
-        band::BandTermsegIndex,
+        band::{BandTermsegIndex, BandUid},
         bend::{BendIndex, BendWeight, LooseBendWeight},
         dot::{
             DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, GeneralDotWeight, LooseDotIndex,
@@ -18,20 +18,28 @@ use crate::{
         },
         gear::GearIndex,
         graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
-        primitive::MakePrimitiveShape,
+        loose::LooseIndex,
+        primitive::{GetWeight, MakePrimitiveShape, Primitive},
         rules::AccessRules,
         seg::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
             SegWeight, SeqLooseSegIndex, SeqLooseSegWeight,
         },
-        Cane, Drawing, DrawingEdit, DrawingException, Infringement,
+        Cane, Collect, Drawing, DrawingEdit, DrawingException, Infringement,
     },
-    geometry::{edit::ApplyGeometryEdit, shape::Shape, GenericNode},
+    geometry::{
+        compound::ManageCompounds,
+        edit::ApplyGeometryEdit,
+        primitive::{AccessPrimitiveShape, PrimitiveShape, SegShape},
+        shape::{AccessShape, Shape},
+        GenericNode, GetSetPos,
+    },
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
         poly::{MakePolygon, Poly, PolyWeight},
         via::{Via, ViaWeight},
     },
+    math::{LineIntersection, NormalLine},
 };
 
 /// Represents a weight for various compounds
@@ -334,6 +342,119 @@ impl<R: AccessRules> Layout<R> {
                     .into(),
             },
         }
+    }
+
+    /// Checks if a node is not a primitive part of a compound, and if yes, returns its center
+    pub fn center_of_compoundless_node(&self, node: NodeIndex) -> Option<Point> {
+        match node {
+            NodeIndex::Primitive(primitive) => {
+                if self
+                    .drawing()
+                    .geometry()
+                    .compounds(GenericIndex::<()>::new(primitive.petgraph_index()))
+                    .next()
+                    .is_some()
+                {
+                    return None;
+                }
+                match primitive.primitive(self.drawing()) {
+                    Primitive::FixedDot(dot) => Some(dot.weight().pos()),
+                    // Primitive::LooseDot(dot) => Some(dot.weight().pos()),
+                    _ => None,
+                }
+            }
+            NodeIndex::Compound(_) => Some(self.node_shape(node).center()),
+        }
+    }
+
+    /// Finds all bands on `layer` between `left` and `right`
+    /// (usually assuming `left` and `right` are neighbors in a Delaunay triangulation)
+    /// and returns them ordered from `left` to `right`.
+    pub fn bands_between_nodes(
+        &self,
+        layer: usize,
+        left: NodeIndex,
+        right: NodeIndex,
+    ) -> Vec<BandUid> {
+        assert_ne!(left, right);
+        let left_pos = self.node_shape(left).center();
+        let right_pos = self.node_shape(right).center();
+        let ltr_line = geo::Line {
+            start: left_pos.into(),
+            end: right_pos.into(),
+        };
+        let fake_seg = SegShape {
+            from: left_pos.into(),
+            to: right_pos.into(),
+            width: f64::EPSILON * 16.0,
+        };
+        let mut orig_hline = NormalLine::from(ltr_line);
+        orig_hline.make_normal_unit();
+        let orig_hline = orig_hline;
+        let location_denom = orig_hline.segment_interval(&ltr_line);
+        let location_start = location_denom.start();
+        let location_denom = location_denom.end() - location_denom.start();
+
+        let mut bands: Vec<_> = self
+            .drawing
+            .rtree()
+            .locate_in_envelope_intersecting(&{
+                let aabb_init = AABB::from_corners(
+                    [left_pos.x(), left_pos.y()],
+                    [right_pos.x(), right_pos.y()],
+                );
+                AABB::from_corners(
+                    [aabb_init.lower()[0], aabb_init.lower()[1], layer as f64],
+                    [aabb_init.upper()[0], aabb_init.upper()[1], layer as f64],
+                )
+            })
+            // TODO: handle non-loose entries (bends, segs)
+            .filter_map(|geom| match geom.data {
+                NodeIndex::Primitive(prim) => LooseIndex::try_from(prim).ok(),
+                NodeIndex::Compound(_) => None,
+            })
+            .map(|loose| {
+                let prim: PrimitiveIndex = loose.into();
+                let shape = prim.primitive(&self.drawing).shape();
+                (loose, shape)
+            })
+            .filter_map(|(loose, shape)| {
+                let band_uid = self.drawing.loose_band_uid(loose);
+                let loose_hline = orig_hline.orthogonal_through(&match shape {
+                    PrimitiveShape::Seg(seg) => {
+                        let seg_hline = NormalLine::from(seg.middle_line());
+                        match orig_hline.intersects(&seg_hline) {
+                            LineIntersection::Empty => return None,
+                            LineIntersection::Overlapping => shape.center(),
+                            LineIntersection::Point(pt) => pt,
+                        }
+                    }
+                    _ => {
+                        if !fake_seg.intersects(&shape) {
+                            return None;
+                        }
+                        shape.center()
+                    }
+                });
+                let location = (loose_hline.offset - location_start) / location_denom;
+                log::trace!(
+                    "intersection ({:?}) with {:?} is at {:?}",
+                    band_uid,
+                    shape,
+                    location
+                );
+                (0.0..=1.0)
+                    .contains(&location)
+                    .then_some((location, band_uid))
+            })
+            .collect();
+        bands.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
+
+        // TODO: handle "loops" of bands, or multiple primitives from the band crossing the segment
+        // both in the case of "edge" of a primitive/loose, and in case the band actually goes into a segment
+        // and then again out of it.
+
+        bands.into_iter().map(|(_, band_uid)| band_uid).collect()
     }
 
     pub fn rules(&self) -> &R {
