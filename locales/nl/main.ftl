@@ -48,3 +48,5 @@ tr-menu-place = Plaats
 tr-menu-edit-select-all = Alles selecteren
 tr-menu-edit-unselect-all = Alles deselecteren
 tr-menu-open-specctra-design-file = Specctra ontwerpbestand (*.dsn)
+tr-menu-edit-recalculate-topo-navmesh = Topologische Navmesh herberekenen
+tr-menu-view-show-topo-navmesh = Toon Topologisch Navmesh
