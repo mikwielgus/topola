@@ -48,3 +48,5 @@ tr-menu-route-routed-band-width = Routen-Bandbreite
 tr-menu-edit-select-all = Alles auswählen
 tr-menu-edit-unselect-all = Alles abwählen
 tr-menu-open-specctra-design-file = Specctra-Designdatei (*.dsn)
+tr-menu-edit-recalculate-topo-navmesh = Topologisches Navmesh neuberechnen
+tr-menu-view-show-topo-navmesh = Topologisches Navmesh anzeigen
