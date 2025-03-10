@@ -20,21 +20,6 @@ steps:
       - cargo build -j4 -p topola-cli --no-default-features --features "$FEATURES" --
     when:
       event: [pull_request, push, tag]
-      path:
-        include:
-          - '.woodpecker/*.yaml'
-          - '*.toml'
-          - 'crates/**'
-          - 'src/**'
-          - 'tests/**'
-          - 'examples/**'
-        exclude:
-          - 'assets/**'
-          - 'LICENSES/**'
-          - 'locales/**'
-          - '*.md'
-        ignore_message: '[ALL]'
-        on_empty: false
 
   # Testing is a step instead of a separate flow to reduce Codeberg's CI usage.
   test:
@@ -49,21 +34,6 @@ steps:
       event: [pull_request, push, tag]
       # Only run tests for stable channel to avoid straining Codeberg's CI.
       evaluate: 'CHANNEL == "stable"'
-      path:
-        include:
-          - '.woodpecker/*.yaml'
-          - '*.toml'
-          - 'crates/**'
-          - 'src/**'
-          - 'tests/**'
-          - 'examples/**'
-        exclude:
-          - 'assets/**'
-          - 'LICENSES/**'
-          - 'locales/**'
-          - '*.md'
-        ignore_message: '[ALL]'
-        on_empty: false
 
   # Step instead of a separate flow to reduce Codeberg's CI usage.
   build_egui:
@@ -76,21 +46,6 @@ steps:
       - cargo build -j4 -p topola-egui --no-default-features --features "$FEATURES,xdg-portal"
     when:
       event: [pull_request, push, tag]
-      path:
-        include:
-          - '.woodpecker/*.yaml'
-          - '*.toml'
-          - 'crates/**'
-          - 'src/**'
-          - 'tests/**'
-          - 'examples/**'
-        exclude:
-          - 'assets/**'
-          - 'LICENSES/**'
-          - 'locales/**'
-          - '*.md'
-        ignore_message: '[ALL]'
-        on_empty: false
 
   # Step instead of a separate flow to reduce Codeberg's CI usage.
   build_wasm:
@@ -107,18 +62,3 @@ steps:
       - trunk build
     when:
       event: [pull_request, push, tag]
-      path:
-        include:
-          - '.woodpecker/*.yaml'
-          - '*.toml'
-          - 'crates/**'
-          - 'src/**'
-          - 'tests/**'
-          - 'examples/**'
-        exclude:
-          - 'assets/**'
-          - 'LICENSES/**'
-          - 'locales/**'
-          - '*.md'
-        ignore_message: '[ALL]'
-        on_empty: false
