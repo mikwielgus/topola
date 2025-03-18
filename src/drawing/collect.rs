@@ -10,7 +10,7 @@ use super::{
     gear::{GearIndex, GetNextGear},
     graph::PrimitiveIndex,
     loose::{GetPrevNextLoose, LooseIndex},
-    primitive::{GetInnerOuter, GetJoints},
+    primitive::GetJoints,
     rules::AccessRules,
     Drawing,
 };

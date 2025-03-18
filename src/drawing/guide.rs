@@ -17,7 +17,7 @@ use super::{
     dot::{DotIndex, FixedDotIndex, LooseDotIndex},
     graph::{MakePrimitive, PrimitiveIndex},
     head::{BareHead, CaneHead, GetFace, Head},
-    primitive::{GetCore, GetInnerOuter, GetJoints, GetOtherJoint, GetWeight, MakePrimitiveShape},
+    primitive::{GetCore, GetJoints, GetOtherJoint, GetWeight, MakePrimitiveShape},
     rules::{AccessRules, Conditions, GetConditions},
     Drawing,
 };

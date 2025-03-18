@@ -32,8 +32,7 @@ use crate::{
         guide::Guide,
         loose::{GetPrevNextLoose, Loose, LooseIndex},
         primitive::{
-            GenericPrimitive, GetCore, GetInnerOuter, GetJoints, GetLimbs, GetOtherJoint,
-            MakePrimitiveShape,
+            GenericPrimitive, GetCore, GetJoints, GetLimbs, GetOtherJoint, MakePrimitiveShape,
         },
         rules::{AccessRules, GetConditions},
         seg::{

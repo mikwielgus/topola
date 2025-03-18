@@ -18,9 +18,9 @@ use crate::{
     graph::{GenericIndex, GetPetgraphIndex},
 };
 
-#[enum_dispatch]
-pub trait GetDrawing<'a, R: AccessRules> {
-    fn drawing(&self) -> &Drawing<impl Copy, R>;
+pub trait GetDrawing {
+    type Rules: AccessRules;
+    fn drawing(&self) -> &Drawing<impl Copy, Self::Rules>;
 }
 
 #[enum_dispatch]
@@ -55,8 +55,12 @@ pub trait GetInterior<T> {
     fn interior(&self) -> Vec<T>;
 }
 
-pub trait GetOtherJoint<F: GetPetgraphIndex, T: GetPetgraphIndex + Into<F>>:
-    GetJoints<F, T>
+pub trait GetOtherJoint<F, T>: GetJoints<F, T> {
+    fn other_joint(&self, end: F) -> F;
+}
+
+impl<F: GetPetgraphIndex, T: GetPetgraphIndex + Into<F>, S: GetJoints<F, T>> GetOtherJoint<F, T>
+    for S
 {
     fn other_joint(&self, end: F) -> F {
         let joints = self.joints();
@@ -72,7 +76,7 @@ pub trait GetJoints<F, T> {
     fn joints(&self) -> (F, T);
 }
 
-pub trait GetFirstGear<'a, R: AccessRules>: GetDrawing<'a, R> + GetPetgraphIndex {
+pub trait GetFirstGear: GetDrawing + GetPetgraphIndex {
     fn first_gear(&self) -> Option<LooseBendIndex> {
         self.drawing()
             .geometry()
@@ -85,7 +89,11 @@ pub trait GetBendIndex {
     fn bend_index(&self) -> BendIndex;
 }
 
-pub trait GetCore<'a, R: AccessRules>: GetDrawing<'a, R> + GetBendIndex {
+pub trait GetCore: GetBendIndex {
+    fn core(&self) -> FixedDotIndex;
+}
+
+impl<'a, S: GetDrawing + GetBendIndex> GetCore for S {
     fn core(&self) -> FixedDotIndex {
         FixedDotIndex::new(
             self.drawing()
@@ -93,22 +101,6 @@ pub trait GetCore<'a, R: AccessRules>: GetDrawing<'a, R> + GetBendIndex {
                 .core(self.bend_index())
                 .petgraph_index(),
         )
-    }
-}
-
-pub trait GetInnerOuter<'a, R: AccessRules>: GetDrawing<'a, R> + GetBendIndex {
-    fn inner(&self) -> Option<LooseBendIndex> {
-        self.drawing()
-            .geometry()
-            .inner(self.bend_index())
-            .map(|ni| LooseBendIndex::new(ni.petgraph_index()))
-    }
-
-    fn outer(&self) -> Option<LooseBendIndex> {
-        self.drawing()
-            .geometry()
-            .outer(self.bend_index())
-            .map(|ni| LooseBendIndex::new(ni.petgraph_index()))
     }
 }
 
@@ -218,7 +210,8 @@ impl<'a, W, CW: Copy, R: AccessRules> GetInterior<PrimitiveIndex>
     }
 }
 
-impl<'a, W, CW: Copy, R: AccessRules> GetDrawing<'a, R> for GenericPrimitive<'a, W, CW, R> {
+impl<'a, W, CW: Copy, R: AccessRules> GetDrawing for GenericPrimitive<'a, W, CW, R> {
+    type Rules = R;
     fn drawing(&self) -> &Drawing<impl Copy, R> {
         self.drawing
     }
@@ -277,7 +270,7 @@ impl<'a, CW: Copy, R: AccessRules> GetLimbs for FixedDot<'a, CW, R> {
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetFirstGear<'a, R> for FixedDot<'a, CW, R> {}
+impl<'a, CW: Copy, R: AccessRules> GetFirstGear for FixedDot<'a, CW, R> {}
 
 pub type LooseDot<'a, CW, R> = GenericPrimitive<'a, LooseDotWeight, CW, R>;
 impl_loose_primitive!(LooseDot, LooseDotWeight);
@@ -342,11 +335,6 @@ impl<'a, CW: Copy, R: AccessRules> GetJoints<FixedDotIndex, FixedDotIndex> for F
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetOtherJoint<FixedDotIndex, FixedDotIndex>
-    for FixedSeg<'a, CW, R>
-{
-}
-
 pub type LoneLooseSeg<'a, CW, R> = GenericPrimitive<'a, LoneLooseSegWeight, CW, R>;
 impl_loose_primitive!(LoneLooseSeg, LoneLooseSegWeight);
 
@@ -368,11 +356,6 @@ impl<'a, CW: Copy, R: AccessRules> GetJoints<FixedDotIndex, FixedDotIndex>
             FixedDotIndex::new(to.petgraph_index()),
         )
     }
-}
-
-impl<'a, CW: Copy, R: AccessRules> GetOtherJoint<FixedDotIndex, FixedDotIndex>
-    for LoneLooseSeg<'a, CW, R>
-{
 }
 
 pub type SeqLooseSeg<'a, CW, R> = GenericPrimitive<'a, SeqLooseSegWeight, CW, R>;
@@ -408,11 +391,6 @@ impl<'a, CW: Copy, R: AccessRules> GetJoints<DotIndex, LooseDotIndex> for SeqLoo
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetOtherJoint<DotIndex, LooseDotIndex>
-    for SeqLooseSeg<'a, CW, R>
-{
-}
-
 pub type FixedBend<'a, CW, R> = GenericPrimitive<'a, FixedBendWeight, CW, R>;
 impl_fixed_primitive!(FixedBend, FixedBendWeight);
 
@@ -442,13 +420,8 @@ impl<'a, CW: Copy, R: AccessRules> GetJoints<FixedDotIndex, FixedDotIndex>
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetOtherJoint<FixedDotIndex, FixedDotIndex>
-    for FixedBend<'a, CW, R>
-{
-}
-impl<'a, CW: Copy, R: AccessRules> GetFirstGear<'a, R> for FixedBend<'a, CW, R> {}
-impl<'a, CW: Copy, R: AccessRules> GetCore<'a, R> for FixedBend<'a, CW, R> {} // TODO: Fixed bends don't have cores actually.
-                                                                              //impl<'a, R: QueryRules> GetInnerOuter for FixedBend<'a, CW, R> {}
+impl<'a, CW: Copy, R: AccessRules> GetFirstGear for FixedBend<'a, CW, R> {}
+//impl<'a, R: QueryRules> GetInnerOuter for FixedBend<'a, CW, R> {}
 
 pub type LooseBend<'a, CW, R> = GenericPrimitive<'a, LooseBendWeight, CW, R>;
 impl_loose_primitive!(LooseBend, LooseBendWeight);
@@ -491,9 +464,18 @@ impl<'a, CW: Copy, R: AccessRules> GetJoints<LooseDotIndex, LooseDotIndex>
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetOtherJoint<LooseDotIndex, LooseDotIndex>
-    for LooseBend<'a, CW, R>
-{
+impl<'a, CW: Copy, R: AccessRules> LooseBend<'a, CW, R> {
+    pub fn inner(&self) -> Option<LooseBendIndex> {
+        self.drawing()
+            .geometry()
+            .inner(self.bend_index())
+            .map(|ni| LooseBendIndex::new(ni.petgraph_index()))
+    }
+
+    pub fn outer(&self) -> Option<LooseBendIndex> {
+        self.drawing()
+            .geometry()
+            .outer(self.bend_index())
+            .map(|ni| LooseBendIndex::new(ni.petgraph_index()))
+    }
 }
-impl<'a, CW: Copy, R: AccessRules> GetCore<'a, R> for LooseBend<'a, CW, R> {}
-impl<'a, CW: Copy, R: AccessRules> GetInnerOuter<'a, R> for LooseBend<'a, CW, R> {}
