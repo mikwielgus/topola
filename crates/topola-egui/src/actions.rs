@@ -56,16 +56,16 @@ impl FileActions {
         }
     }
 
-    pub fn render_menu(&mut self, ctx: &Context, ui: &mut Ui, _have_workspace: bool) {
+    pub fn render_menu(&mut self, ctx: &Context, ui: &mut Ui, have_workspace: bool) {
         self.open_design.button(ctx, ui);
-        //ui.add_enabled_ui(have_workspace, |ui| {
-        self.export_session.button(ctx, ui);
+        ui.add_enabled_ui(have_workspace, |ui| {
+            self.export_session.button(ctx, ui);
 
-        ui.separator();
+            ui.separator();
 
-        self.import_history.button(ctx, ui);
-        self.export_history.button(ctx, ui);
-        //});
+            self.import_history.button(ctx, ui);
+            self.export_history.button(ctx, ui);
+        });
 
         ui.separator();
 
@@ -137,7 +137,7 @@ impl EditActions {
         ctx: &Context,
         ui: &mut Ui,
         have_workspace: bool,
-        _workspace_activities_enabled: bool,
+        workspace_activities_enabled: bool,
     ) -> egui::InnerResponse<()> {
         ui.add_enabled_ui(have_workspace, |ui| {
             self.undo.button(ctx, ui);
@@ -155,9 +155,9 @@ impl EditActions {
 
             ui.separator();
 
-            //ui.add_enabled_ui(workspace_activities_enabled, |ui| {
-            self.remove_bands.button(ctx, ui);
-            //});
+            ui.add_enabled_ui(workspace_activities_enabled, |ui| {
+                self.remove_bands.button(ctx, ui);
+            });
         })
     }
 }
@@ -194,6 +194,7 @@ impl ViewActions {
         tr: &Translator,
         menu_bar: &mut MenuBar,
         viewport: &mut Viewport,
+        have_workspace: bool,
     ) {
         ui.toggle_value(
             &mut viewport.scheduled_zoom_to_fit,
@@ -202,27 +203,28 @@ impl ViewActions {
 
         ui.separator();
 
-        //ui.add_enabled_ui(maybe_workspace.is_some(), |ui| {
-        ui.checkbox(
-            &mut menu_bar.show_ratsnest,
-            tr.text("tr-menu-view-show-ratsnest"),
-        );
-        ui.checkbox(
-            &mut menu_bar.show_navmesh,
-            tr.text("tr-menu-view-show-navmesh"),
-        );
-        ui.checkbox(
-            &mut menu_bar.show_topo_navmesh,
-            tr.text("tr-menu-view-show-topo-navmesh"),
-        );
-        ui.checkbox(
-            &mut menu_bar.show_bboxes,
-            tr.text("tr-menu-view-show-bboxes"),
-        );
-        ui.checkbox(
-            &mut menu_bar.show_origin_destination,
-            tr.text("tr-menu-view-show-origin-destination"),
-        );
+        ui.add_enabled_ui(have_workspace, |ui| {
+            ui.checkbox(
+                &mut menu_bar.show_ratsnest,
+                tr.text("tr-menu-view-show-ratsnest"),
+            );
+            ui.checkbox(
+                &mut menu_bar.show_navmesh,
+                tr.text("tr-menu-view-show-navmesh"),
+            );
+            ui.checkbox(
+                &mut menu_bar.show_topo_navmesh,
+                tr.text("tr-menu-view-show-topo-navmesh"),
+            );
+            ui.checkbox(
+                &mut menu_bar.show_bboxes,
+                tr.text("tr-menu-view-show-bboxes"),
+            );
+            ui.checkbox(
+                &mut menu_bar.show_origin_destination,
+                tr.text("tr-menu-view-show-origin-destination"),
+            );
+        });
 
         ui.separator();
 
@@ -284,13 +286,13 @@ impl RouteActions {
         ui: &mut Ui,
         tr: &Translator,
         have_workspace: bool,
-        _workspace_activities_enabled: bool,
+        workspace_activities_enabled: bool,
         autorouter_options: &mut AutorouterOptions,
     ) -> egui::InnerResponse<()> {
         ui.add_enabled_ui(have_workspace, |ui| {
-            //ui.add_enabled_ui(workspace_activities_enabled, |ui| {
-            self.autoroute.button(ctx, ui);
-            //});
+            ui.add_enabled_ui(workspace_activities_enabled, |ui| {
+                self.autoroute.button(ctx, ui);
+            });
             ui.separator();
 
             ui.label(tr.text("tr-menu-route-routed-band-width"));

@@ -96,7 +96,14 @@ impl MenuBar {
                     });
 
                     ui.menu_button(tr.text("tr-menu-view"), |ui| {
-                        actions.view.render_menu(ctx, ui, tr, self, viewport);
+                        actions.view.render_menu(
+                            ctx,
+                            ui,
+                            tr,
+                            self,
+                            viewport,
+                            maybe_workspace.is_some(),
+                        );
 
                         ui.separator();
 
