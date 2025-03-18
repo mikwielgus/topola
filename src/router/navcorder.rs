@@ -12,7 +12,7 @@ use crate::{
 
 use super::{
     draw::{Draw, DrawException},
-    navcord::{NavcordStepContext, NavcordStepper},
+    navcord::NavcordStepper,
     navmesh::{Navmesh, NavvertexIndex},
 };
 
@@ -105,11 +105,7 @@ impl<R: AccessRules> Navcorder for Layout<R> {
         path: &[NavvertexIndex],
     ) -> Result<(), NavcorderException> {
         for (i, vertex) in path.iter().enumerate() {
-            if let Err(err) = navcord.step(&mut NavcordStepContext {
-                layout: self,
-                navmesh,
-                to: *vertex,
-            }) {
+            if let Err(err) = navcord.step(self, navmesh, *vertex) {
                 self.undo_path(navcord, i);
                 return Err(err);
             }

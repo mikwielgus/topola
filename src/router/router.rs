@@ -28,7 +28,7 @@ use crate::{
 use super::{
     astar::{AstarStrategy, PathTracker},
     draw::DrawException,
-    navcord::{NavcordStepContext, NavcordStepper},
+    navcord::NavcordStepper,
     navcorder::{Navcorder, NavcorderException},
     navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
     route::RouteStepper,
@@ -105,13 +105,7 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
         }
 
         let prev_bihead_length = self.bihead_length();
-
-        let result = self.navcord.step(&mut NavcordStepContext {
-            layout: self.layout,
-            navmesh,
-            to: edge.target(),
-        });
-
+        let result = self.navcord.step(self.layout, navmesh, edge.target());
         let probe_length = self.bihead_length() - prev_bihead_length;
 
         match result {

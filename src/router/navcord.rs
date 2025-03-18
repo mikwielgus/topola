@@ -7,7 +7,6 @@ use petgraph::data::DataMap;
 
 use crate::{
     drawing::{
-        bend::LooseBendIndex,
         dot::FixedDotIndex,
         head::{BareHead, CaneHead, Head},
         rules::AccessRules,
@@ -67,54 +66,29 @@ impl NavcordStepper {
 
         match around_node_weight.node {
             BinavvertexNodeIndex::FixedDot(dot) => {
-                self.wrap_around_fixed_dot(layout, head, dot, cw)
+                layout.cane_around_dot(&mut self.recorder, head, dot, cw, self.width)
             }
-            BinavvertexNodeIndex::FixedBend(_fixed_bend) => todo!(),
+            BinavvertexNodeIndex::FixedBend(fixed_bend) => {
+                layout.cane_around_bend(&mut self.recorder, head, fixed_bend.into(), cw, self.width)
+            }
             BinavvertexNodeIndex::LooseBend(loose_bend) => {
-                self.wrap_around_loose_bend(layout, head, loose_bend, cw)
+                layout.cane_around_bend(&mut self.recorder, head, loose_bend.into(), cw, self.width)
             }
         }
+        .map_err(NavcorderException::CannotDraw)
     }
 
-    fn wrap_around_fixed_dot(
-        &mut self,
-        layout: &mut Layout<impl AccessRules>,
-        head: Head,
-        around: FixedDotIndex,
-        cw: bool,
-    ) -> Result<CaneHead, NavcorderException> {
-        Ok(layout.cane_around_dot(&mut self.recorder, head, around, cw, self.width)?)
-    }
-
-    fn wrap_around_loose_bend(
-        &mut self,
-        layout: &mut Layout<impl AccessRules>,
-        head: Head,
-        around: LooseBendIndex,
-        cw: bool,
-    ) -> Result<CaneHead, NavcorderException> {
-        Ok(layout.cane_around_bend(&mut self.recorder, head, around.into(), cw, self.width)?)
-    }
-}
-
-pub struct NavcordStepContext<'a, R> {
-    pub layout: &'a mut Layout<R>,
-    pub navmesh: &'a Navmesh,
-    pub to: NavvertexIndex,
-}
-
-impl NavcordStepper {
     #[debug_ensures(ret.is_ok() -> matches!(self.head, Head::Cane(..)))]
     #[debug_ensures(ret.is_ok() -> self.path.len() == old(self.path.len() + 1))]
     #[debug_ensures(ret.is_err() -> self.path.len() == old(self.path.len()))]
     pub fn step<R: AccessRules>(
         &mut self,
-        input: &mut NavcordStepContext<'_, R>,
+        layout: &mut Layout<R>,
+        navmesh: &Navmesh,
+        to: NavvertexIndex,
     ) -> Result<(), NavcorderException> {
-        self.head = self
-            .wrap(input.layout, input.navmesh, self.head, input.to)?
-            .into();
-        self.path.push(input.to);
+        self.head = self.wrap(layout, navmesh, self.head, to)?.into();
+        self.path.push(to);
 
         Ok(())
     }
@@ -127,7 +101,8 @@ impl NavcordStepper {
         if let Head::Cane(head) = self.head {
             self.head = layout.undo_cane(&mut self.recorder, head).unwrap();
         } else {
-            panic!();
+            // "can't unwrap"
+            return Err(NavcorderException::CannotWrap);
         }
 
         self.path.pop();
