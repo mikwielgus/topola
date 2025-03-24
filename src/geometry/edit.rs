@@ -33,6 +33,10 @@ pub struct GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     primitive_weight_marker: PhantomData<PW>,
 }
 
+fn swap_tuple_inplace<D>(x: &mut (D, D)) {
+    core::mem::swap(&mut x.0, &mut x.1);
+}
+
 impl<
         PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<Index = PI> + Copy,
         DW: AccessDotWeight + Into<PW> + GetLayer,
@@ -55,33 +59,54 @@ impl<
         }
     }
 
+    pub fn reverse_inplace(&mut self) {
+        self.dots.values_mut().for_each(swap_tuple_inplace);
+        self.segs.values_mut().for_each(swap_tuple_inplace);
+        self.bends.values_mut().for_each(swap_tuple_inplace);
+        self.compounds.values_mut().for_each(swap_tuple_inplace);
+    }
+
     pub fn reverse(&self) -> Self {
-        Self {
-            dots: self
-                .dots
-                .clone()
-                .into_iter()
-                .map(|(k, v)| (k, (v.1, v.0)))
-                .collect(),
-            segs: self
-                .segs
-                .clone()
-                .into_iter()
-                .map(|(k, v)| (k, (v.1, v.0)))
-                .collect(),
-            bends: self
-                .bends
-                .clone()
-                .into_iter()
-                .map(|(k, v)| (k, (v.1, v.0)))
-                .collect(),
-            compounds: self
-                .compounds
-                .clone()
-                .into_iter()
-                .map(|(k, v)| (k, (v.1, v.0)))
-                .collect(),
-            primitive_weight_marker: PhantomData,
+        let mut rev = self.clone();
+        rev.reverse_inplace();
+        rev
+    }
+}
+
+fn apply_btmap<I: Copy + Eq + Ord, D: Clone>(
+    main: &mut BTreeMap<I, (Option<D>, Option<D>)>,
+    edit: &BTreeMap<I, (Option<D>, Option<D>)>,
+) {
+    use std::collections::btree_map::Entry;
+    for (index, (old, new)) in edit {
+        match main.entry(*index) {
+            Entry::Vacant(vac) => {
+                vac.insert((old.clone(), new.clone()));
+            }
+            Entry::Occupied(mut occ) => {
+                occ.get_mut().1 = new.clone();
+            }
         }
+    }
+}
+
+impl<
+        PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<Index = PI> + Copy,
+        DW: AccessDotWeight + Into<PW> + GetLayer,
+        SW: AccessSegWeight + Into<PW> + GetLayer,
+        BW: AccessBendWeight + Into<PW> + GetLayer,
+        CW: Copy,
+        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
+        DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+    > ApplyGeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>
+    for GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>
+{
+    fn apply(&mut self, edit: &GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>) {
+        apply_btmap(&mut self.dots, &edit.dots);
+        apply_btmap(&mut self.segs, &edit.segs);
+        apply_btmap(&mut self.bends, &edit.bends);
+        apply_btmap(&mut self.compounds, &edit.compounds);
     }
 }
