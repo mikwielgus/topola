@@ -41,10 +41,7 @@ impl<W> GenericIndex<W> {
 impl<W> core::clone::Clone for GenericIndex<W> {
     #[inline]
     fn clone(&self) -> Self {
-        Self {
-            node_index: self.node_index,
-            marker: PhantomData,
-        }
+        *self
     }
 }
 
@@ -67,9 +64,9 @@ impl<W> PartialEq for GenericIndex<W> {
 impl<W> Eq for GenericIndex<W> {}
 
 impl<W> PartialOrd for GenericIndex<W> {
-    #[inline]
+    #[inline(always)]
     fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
-        self.node_index.partial_cmp(&other.node_index)
+        Some(self.cmp(other))
     }
 }
 

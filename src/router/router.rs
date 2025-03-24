@@ -66,7 +66,7 @@ impl<'a, R> RouterAstarStrategy<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
+impl<R: AccessRules> RouterAstarStrategy<'_, R> {
     fn bihead_length(&self) -> f64 {
         self.navcord.head.ref_(self.layout.drawing()).length()
             + match self.navcord.head.face() {
@@ -81,8 +81,8 @@ impl<'a, R: AccessRules> RouterAstarStrategy<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
-    for RouterAstarStrategy<'a, R>
+impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
+    for RouterAstarStrategy<'_, R>
 {
     fn is_goal(
         &mut self,
@@ -138,7 +138,7 @@ impl<'a, R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
     }
 
     fn remove_probe(&mut self, _navmesh: &Navmesh) {
-        self.navcord.step_back(&mut self.layout);
+        self.navcord.step_back(self.layout);
     }
 
     fn estimate_cost(&mut self, navmesh: &Navmesh, vertex: NavvertexIndex) -> f64 {

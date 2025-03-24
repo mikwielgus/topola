@@ -31,13 +31,13 @@ impl<'a, R> Via<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> GetMaybeNet for Via<'a, R> {
+impl<R: AccessRules> GetMaybeNet for Via<'_, R> {
     fn maybe_net(&self) -> Option<usize> {
         self.drawing.compound_weight(self.index.into()).maybe_net()
     }
 }
 
-impl<'a, R: AccessRules> MakePrimitiveShape for Via<'a, R> {
+impl<R: AccessRules> MakePrimitiveShape for Via<'_, R> {
     fn shape(&self) -> PrimitiveShape {
         if let CompoundWeight::Via(weight) = self.drawing.compound_weight(self.index.into()) {
             weight.shape()

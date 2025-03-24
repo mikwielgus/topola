@@ -292,11 +292,10 @@ impl<
 }
 
 impl<
-        'a,
         I: Copy + PartialEq + GetPetgraphIndex + std::fmt::Debug,
         VW: GetTrianvertexNodeIndex<I> + HasPosition,
         EW: Default,
-    > visit::NodeIndexable for &'a Triangulation<I, VW, EW>
+    > visit::NodeIndexable for &Triangulation<I, VW, EW>
 {
     fn node_bound(&self) -> usize {
         //spade::Triangulation::num_vertices(&self.triangulation)

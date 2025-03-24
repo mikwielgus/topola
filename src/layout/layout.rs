@@ -384,8 +384,8 @@ impl<R: AccessRules> Layout<R> {
             end: right_pos.into(),
         };
         let fake_seg = SegShape {
-            from: left_pos.into(),
-            to: right_pos.into(),
+            from: left_pos,
+            to: right_pos,
             width: f64::EPSILON * 16.0,
         };
         let mut orig_hline = NormalLine::from(ltr_line);

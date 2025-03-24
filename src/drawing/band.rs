@@ -54,7 +54,7 @@ impl<'a, CW, R> BandRef<'a, CW, R> {
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> MeasureLength for BandRef<'a, CW, R> {
+impl<CW: Copy, R: AccessRules> MeasureLength for BandRef<'_, CW, R> {
     fn length(&self) -> f64 {
         match self.first_seg {
             BandTermsegIndex::Straight(seg) => {

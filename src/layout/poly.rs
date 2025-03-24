@@ -54,7 +54,7 @@ impl<'a, R: AccessRules> Poly<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> GetLayer for Poly<'a, R> {
+impl<R: AccessRules> GetLayer for Poly<'_, R> {
     fn layer(&self) -> usize {
         if let CompoundWeight::Poly(weight) = self.drawing.compound_weight(self.index.into()) {
             weight.layer()
@@ -64,13 +64,13 @@ impl<'a, R: AccessRules> GetLayer for Poly<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> GetMaybeNet for Poly<'a, R> {
+impl<R: AccessRules> GetMaybeNet for Poly<'_, R> {
     fn maybe_net(&self) -> Option<usize> {
         self.drawing.compound_weight(self.index.into()).maybe_net()
     }
 }
 
-impl<'a, R: AccessRules> MakePolygon for Poly<'a, R> {
+impl<R: AccessRules> MakePolygon for Poly<'_, R> {
     fn shape(&self) -> Polygon {
         Polygon::new(
             LineString::from(
@@ -95,7 +95,7 @@ impl<'a, R: AccessRules> MakePolygon for Poly<'a, R> {
     }
 }
 
-impl<'a, R: AccessRules> GetMaybeApex for Poly<'a, R> {
+impl<R: AccessRules> GetMaybeApex for Poly<'_, R> {
     fn maybe_apex(&self) -> Option<FixedDotIndex> {
         self.drawing
             .geometry()

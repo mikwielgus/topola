@@ -27,10 +27,10 @@ pub trait GetPrevNextLoose {
         // when `maybe_*` is `Some(_)`,
         // but otherwise, they start in opposite direction, here by going via:
         let maybe_prev = maybe_next.or_else(|| {
-            let default_neighbor = self.next_loose(None);
+            // default_neighbor =
+            self.next_loose(None)
             // * normally, one would retrieve the next element via `default_neighbor.next_loose(self)`
             // * `self.next_loose(default_neighbor)` on the other hand inverts the direction we're iterating towards.
-            default_neighbor
         });
         self.next_loose(maybe_prev)
     }
@@ -88,7 +88,7 @@ impl<'a, CW: Copy, R: AccessRules> Loose<'a, CW, R> {
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for LooseDot<'a, CW, R> {
+impl<CW: Copy, R: AccessRules> GetPrevNextLoose for LooseDot<'_, CW, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let bend = self.bend();
 
@@ -104,13 +104,13 @@ impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for LooseDot<'a, CW, R> {
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for LoneLooseSeg<'a, CW, R> {
+impl<CW: Copy, R: AccessRules> GetPrevNextLoose for LoneLooseSeg<'_, CW, R> {
     fn next_loose(&self, _maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         None
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for SeqLooseSeg<'a, CW, R> {
+impl<CW: Copy, R: AccessRules> GetPrevNextLoose for SeqLooseSeg<'_, CW, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let joints = self.joints();
         let Some(prev) = maybe_prev else {
@@ -128,7 +128,7 @@ impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for SeqLooseSeg<'a, CW, R> {
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetPrevNextLoose for LooseBend<'a, CW, R> {
+impl<CW: Copy, R: AccessRules> GetPrevNextLoose for LooseBend<'_, CW, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let joints = self.joints();
 

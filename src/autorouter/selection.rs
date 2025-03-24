@@ -96,7 +96,7 @@ impl PinSelection {
     }
 
     pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
-        PinSelector::try_from_node(board, node).map_or(false, |selector| self.0.contains(&selector))
+        PinSelector::try_from_node(board, node).is_some_and(|selector| self.0.contains(&selector))
     }
 
     pub fn selectors(&self) -> impl Iterator<Item = &PinSelector> {
@@ -148,8 +148,7 @@ impl BandSelection {
     }
 
     pub fn contains_node(&self, board: &Board<impl AccessMesadata>, node: NodeIndex) -> bool {
-        BandSelector::try_from_node(board, node)
-            .map_or(false, |selector| self.0.contains(&selector))
+        BandSelector::try_from_node(board, node).is_some_and(|selector| self.0.contains(&selector))
     }
 
     pub fn selectors(&self) -> impl Iterator<Item = &BandSelector> {
@@ -222,7 +221,7 @@ impl Selection {
                     // 2. restrict to complete matches, return associated keys
                     selectors
                         .into_iter()
-                        .filter(|(_, nis)| &nis.0 == &nis.1)
+                        .filter(|(_, nis)| nis.0 == nis.1)
                         .map(|(k, _)| k)
                         .collect::<BTreeSet<_>>()
                 }

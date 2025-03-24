@@ -72,19 +72,19 @@ impl<'a, CW: Copy, R: AccessRules> GearRef<'a, CW, R> {
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetNextGear for FixedDot<'a, CW, R> {
+impl<CW: Copy, R: AccessRules> GetNextGear for FixedDot<'_, CW, R> {
     fn next_gear(&self) -> Option<LooseBendIndex> {
         self.first_gear()
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetNextGear for LooseBend<'a, CW, R> {
+impl<CW: Copy, R: AccessRules> GetNextGear for LooseBend<'_, CW, R> {
     fn next_gear(&self) -> Option<LooseBendIndex> {
         self.outer()
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> GetNextGear for FixedBend<'a, CW, R> {
+impl<CW: Copy, R: AccessRules> GetNextGear for FixedBend<'_, CW, R> {
     fn next_gear(&self) -> Option<LooseBendIndex> {
         self.first_gear()
     }

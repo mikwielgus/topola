@@ -97,6 +97,12 @@ pub struct Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     bend_index_marker: PhantomData<BI>,
 }
 
+impl<PW, DW, SW, BW, CW, PI, DI, SI, BI> Default for Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<PW, DW, SW, BW, CW, PI, DI, SI, BI> Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     pub fn new() -> Self {
         Self {

@@ -74,7 +74,7 @@ impl RouteStepper {
     }
 }
 
-impl<'a, R: AccessRules> Step<Router<'a, R>, BandTermsegIndex> for RouteStepper {
+impl<R: AccessRules> Step<Router<'_, R>, BandTermsegIndex> for RouteStepper {
     type Error = AstarError;
 
     fn step(

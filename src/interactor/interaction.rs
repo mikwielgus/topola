@@ -30,7 +30,7 @@ pub enum InteractionStepper {
     // - interactively moving a footprint.
 }
 
-impl<'a, M: AccessMesadata> Step<ActivityContext<'a, M>, String> for InteractionStepper {
+impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for InteractionStepper {
     type Error = InteractionError;
 
     fn step(
@@ -41,7 +41,7 @@ impl<'a, M: AccessMesadata> Step<ActivityContext<'a, M>, String> for Interaction
     }
 }
 
-impl<'a, M: AccessMesadata> Abort<ActivityContext<'a, M>> for InteractionStepper {
+impl<M: AccessMesadata> Abort<ActivityContext<'_, M>> for InteractionStepper {
     fn abort(&mut self, _context: &mut ActivityContext<M>) {
         todo!();
     }

@@ -312,13 +312,11 @@ impl<
     }
 }
 
-fn edit_remove_from_map<I: Ord, T>(
+fn edit_remove_from_map<I: Eq + Ord, T>(
     map: &mut std::collections::BTreeMap<I, (Option<T>, Option<T>)>,
     index: I,
     data: T,
-) where
-    I: core::cmp::Eq + Ord,
-{
+) {
     let to_be_inserted = (Some(data), None);
     match map.entry(index) {
         BTreeMapEntry::Occupied(mut occ) => {

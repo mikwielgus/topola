@@ -82,13 +82,13 @@ impl<'a, CW, R> HeadRef<'a, CW, R> {
     }
 }
 
-impl<'a, CW, R> GetFace for HeadRef<'a, CW, R> {
+impl<CW, R> GetFace for HeadRef<'_, CW, R> {
     fn face(&self) -> DotIndex {
         self.head.face()
     }
 }
 
-impl<'a, CW: Copy, R: AccessRules> MeasureLength for HeadRef<'a, CW, R> {
+impl<CW: Copy, R: AccessRules> MeasureLength for HeadRef<'_, CW, R> {
     fn length(&self) -> f64 {
         match self.head {
             Head::Bare(..) => 0.0,
