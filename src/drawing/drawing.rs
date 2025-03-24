@@ -91,7 +91,6 @@ pub struct Collision(pub PrimitiveShape, pub PrimitiveIndex);
 pub struct AlreadyConnected(pub usize, pub PrimitiveIndex);
 
 pub type DrawingEdit<CW> = GeometryEdit<
-    PrimitiveWeight,
     DotWeight,
     SegWeight,
     BendWeight,
@@ -1120,7 +1119,6 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
 
 impl<CW: Copy, R: AccessRules>
     ApplyGeometryEdit<
-        PrimitiveWeight,
         DotWeight,
         SegWeight,
         BendWeight,

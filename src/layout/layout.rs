@@ -17,7 +17,7 @@ use crate::{
             LooseDotWeight,
         },
         gear::GearIndex,
-        graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+        graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex},
         loose::LooseIndex,
         primitive::{GetWeight, MakePrimitiveShape, Primitive},
         rules::AccessRules,
@@ -476,7 +476,6 @@ impl<R: AccessRules> Layout<R> {
 
 impl<R: AccessRules>
     ApplyGeometryEdit<
-        PrimitiveWeight,
         DotWeight,
         SegWeight,
         BendWeight,

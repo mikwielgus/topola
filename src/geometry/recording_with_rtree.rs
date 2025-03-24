@@ -55,7 +55,7 @@ impl<
 
     pub fn add_dot<W: AccessDotWeight + Into<PW> + GetLayer>(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         weight: W,
     ) -> GenericIndex<W>
     where
@@ -76,7 +76,7 @@ impl<
 
     pub fn add_seg<W: AccessSegWeight + Into<PW> + GetLayer>(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         from: DI,
         to: DI,
         weight: W,
@@ -102,7 +102,7 @@ impl<
 
     pub fn add_bend<W: AccessBendWeight + Into<PW> + GetLayer>(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         from: DI,
         to: DI,
         core: DI,
@@ -129,7 +129,7 @@ impl<
 
     pub fn add_compound(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         weight: CW,
     ) -> GenericIndex<CW> {
         let compound = self.geometry_with_rtree.add_compound(weight);
@@ -141,7 +141,7 @@ impl<
 
     pub fn add_to_compound<W>(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         primitive: GenericIndex<W>,
         compound: GenericIndex<CW>,
     ) {
@@ -165,7 +165,7 @@ impl<
 
     pub fn remove_dot(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         dot: DI,
     ) -> Result<(), ()> {
         let weight = self.geometry_with_rtree.geometry().dot_weight(dot);
@@ -176,7 +176,7 @@ impl<
 
     pub fn remove_seg(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         seg: SI,
     ) {
         let geometry = self.geometry_with_rtree.geometry();
@@ -188,7 +188,7 @@ impl<
 
     pub fn remove_bend(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         bend: BI,
     ) {
         let geometry = self.geometry_with_rtree.geometry();
@@ -205,7 +205,7 @@ impl<
 
     pub fn remove_compound(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         compound: GenericIndex<CW>,
     ) {
         let geometry = self.geometry_with_rtree.geometry();
@@ -217,7 +217,7 @@ impl<
 
     pub fn move_dot(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         dot: DI,
         to: Point,
     ) {
@@ -234,7 +234,7 @@ impl<
 
     fn modify_bend<F>(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         bend: BI,
         f: F,
     ) where
@@ -264,7 +264,7 @@ impl<
 
     pub fn shift_bend(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         bend: BI,
         offset: f64,
     ) {
@@ -275,7 +275,7 @@ impl<
 
     pub fn flip_bend(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         bend: BI,
     ) {
         self.modify_bend(recorder, bend, |geometry_with_rtree, bend| {
@@ -285,7 +285,7 @@ impl<
 
     pub fn reattach_bend(
         &mut self,
-        recorder: &mut GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
+        recorder: &mut GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>,
         bend: BI,
         maybe_new_inner: Option<BI>,
     ) {
@@ -352,10 +352,10 @@ impl<
         DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
         SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
         BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-    > ApplyGeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>
+    > ApplyGeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>
     for RecordingGeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
 {
-    fn apply(&mut self, edit: &GeometryEdit<PW, DW, SW, BW, CW, PI, DI, SI, BI>) {
+    fn apply(&mut self, edit: &GeometryEdit<DW, SW, BW, CW, PI, DI, SI, BI>) {
         for (compound, (maybe_old_data, ..)) in &edit.compounds {
             if maybe_old_data.is_some() {
                 self.geometry_with_rtree.remove_compound(*compound);

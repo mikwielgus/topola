@@ -17,7 +17,7 @@ use crate::{
         band::BandUid,
         bend::{BendIndex, BendWeight},
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, GeneralDotWeight},
-        graph::{GetMaybeNet, PrimitiveIndex, PrimitiveWeight},
+        graph::{GetMaybeNet, PrimitiveIndex},
         seg::{FixedSegIndex, FixedSegWeight, SegIndex, SegWeight},
         Collect,
     },
@@ -288,7 +288,6 @@ impl<M: AccessMesadata> Board<M> {
 
 impl<M: AccessMesadata>
     ApplyGeometryEdit<
-        PrimitiveWeight,
         DotWeight,
         SegWeight,
         BendWeight,
