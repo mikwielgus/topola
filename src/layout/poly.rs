@@ -27,15 +27,22 @@ pub trait MakePolygon {
     fn shape(&self) -> Polygon;
 }
 
-#[enum_dispatch]
-pub trait GetMaybeApex {
-    fn maybe_apex(&self) -> Option<FixedDotIndex>;
-}
-
 #[derive(Debug)]
 pub struct Poly<'a, R> {
     pub index: GenericIndex<PolyWeight>,
     drawing: &'a Drawing<CompoundWeight, R>,
+}
+
+pub(super) fn is_apex<'a, R: AccessRules>(
+    drawing: &'a Drawing<CompoundWeight, R>,
+    dot: FixedDotIndex,
+) -> bool {
+    !drawing
+        .primitive(dot)
+        .segs()
+        .iter()
+        .any(|seg| matches!(seg, SegIndex::Fixed(..)))
+        && drawing.primitive(dot).bends().is_empty()
 }
 
 impl<'a, R: AccessRules> Poly<'a, R> {
@@ -44,13 +51,23 @@ impl<'a, R: AccessRules> Poly<'a, R> {
     }
 
     fn is_apex(&self, dot: FixedDotIndex) -> bool {
-        !self
-            .drawing
-            .primitive(dot)
-            .segs()
-            .iter()
-            .any(|seg| matches!(seg, SegIndex::Fixed(..)))
-            && self.drawing.primitive(dot).bends().is_empty()
+        is_apex(self.drawing, dot)
+    }
+
+    pub fn apex(&self) -> FixedDotIndex {
+        self.drawing
+            .geometry()
+            .compound_members(self.index.into())
+            .find_map(|primitive_node| {
+                if let PrimitiveIndex::FixedDot(dot) = primitive_node {
+                    if self.is_apex(dot) {
+                        return Some(dot);
+                    }
+                }
+
+                None
+            })
+            .unwrap()
     }
 }
 
@@ -92,23 +109,6 @@ impl<R: AccessRules> MakePolygon for Poly<'_, R> {
             ),
             vec![],
         )
-    }
-}
-
-impl<R: AccessRules> GetMaybeApex for Poly<'_, R> {
-    fn maybe_apex(&self) -> Option<FixedDotIndex> {
-        self.drawing
-            .geometry()
-            .compound_members(self.index.into())
-            .find_map(|primitive_node| {
-                if let PrimitiveIndex::FixedDot(dot) = primitive_node {
-                    if self.is_apex(dot) {
-                        return Some(dot);
-                    }
-                }
-
-                None
-            })
     }
 }
 

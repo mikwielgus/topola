@@ -32,14 +32,14 @@ use crate::{
         edit::ApplyGeometryEdit,
         primitive::{AccessPrimitiveShape, PrimitiveShape, SegShape},
         shape::{AccessShape, Shape},
-        GenericNode, GetSetPos,
+        GenericNode, GetLayer, GetSetPos,
     },
     graph::{GenericIndex, GetPetgraphIndex},
     layout::{
-        poly::{MakePolygon, Poly, PolyWeight},
+        poly::{is_apex, MakePolygon, Poly, PolyWeight},
         via::{Via, ViaWeight},
     },
-    math::{LineIntersection, NormalLine},
+    math::{Circle, LineIntersection, NormalLine},
 };
 
 /// Represents a weight for various compounds
@@ -269,6 +269,48 @@ impl<R: AccessRules> Layout<R> {
                 .add_compound(recorder, CompoundWeight::Poly(weight))
                 .petgraph_index(),
         )
+    }
+
+    /// insert a polygon based upon the border nodes, and computes + returns the
+    /// associated apex
+    pub fn add_poly_with_nodes(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        weight: PolyWeight,
+        nodes: &[PrimitiveIndex],
+    ) -> (GenericIndex<PolyWeight>, FixedDotIndex) {
+        let layer = weight.layer();
+        let maybe_net = weight.maybe_net();
+        let poly = self.add_poly(recorder, weight);
+        let poly_compound = poly.into();
+
+        for i in nodes {
+            self.drawing.add_to_compound(
+                recorder,
+                GenericIndex::<()>::new(i.petgraph_index()),
+                poly_compound,
+            );
+        }
+
+        let shape = self.poly(poly).shape();
+        let apex = self.add_fixed_dot_infringably(
+            recorder,
+            FixedDotWeight(GeneralDotWeight {
+                circle: Circle {
+                    pos: shape.center(),
+                    r: 100.0,
+                },
+                layer,
+                maybe_net,
+            }),
+        );
+
+        // maybe this should be a different edge kind
+        self.drawing.add_to_compound(recorder, apex, poly_compound);
+
+        assert!(is_apex(&self.drawing, apex));
+
+        (poly, apex)
     }
 
     pub fn remove_band(

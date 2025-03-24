@@ -456,14 +456,8 @@ impl SpecctraDesign {
         maybe_net: Option<usize>,
         maybe_pin: Option<String>,
     ) {
-        let poly = board.add_poly(
-            recorder,
-            SolidPolyWeight { layer, maybe_net }.into(),
-            maybe_pin,
-        );
-
         // Corners.
-        let dot_1_1 = board.add_poly_fixed_dot_infringably(
+        let dot_1_1 = board.add_fixed_dot_infringably(
             recorder,
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
@@ -473,9 +467,9 @@ impl SpecctraDesign {
                 layer,
                 maybe_net,
             }),
-            poly,
+            None,
         );
-        let dot_2_1 = board.add_poly_fixed_dot_infringably(
+        let dot_2_1 = board.add_fixed_dot_infringably(
             recorder,
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
@@ -485,9 +479,9 @@ impl SpecctraDesign {
                 layer,
                 maybe_net,
             }),
-            poly,
+            None,
         );
-        let dot_2_2 = board.add_poly_fixed_dot_infringably(
+        let dot_2_2 = board.add_fixed_dot_infringably(
             recorder,
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
@@ -497,9 +491,9 @@ impl SpecctraDesign {
                 layer,
                 maybe_net,
             }),
-            poly,
+            None,
         );
-        let dot_1_2 = board.add_poly_fixed_dot_infringably(
+        let dot_1_2 = board.add_fixed_dot_infringably(
             recorder,
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
@@ -509,10 +503,10 @@ impl SpecctraDesign {
                 layer,
                 maybe_net,
             }),
-            poly,
+            None,
         );
         // Sides.
-        board.add_poly_fixed_seg_infringably(
+        let seg1 = board.add_fixed_seg_infringably(
             recorder,
             dot_1_1,
             dot_2_1,
@@ -521,9 +515,9 @@ impl SpecctraDesign {
                 layer,
                 maybe_net,
             }),
-            poly,
+            None,
         );
-        board.add_poly_fixed_seg_infringably(
+        let seg2 = board.add_fixed_seg_infringably(
             recorder,
             dot_2_1,
             dot_2_2,
@@ -532,9 +526,9 @@ impl SpecctraDesign {
                 layer,
                 maybe_net,
             }),
-            poly,
+            None,
         );
-        board.add_poly_fixed_seg_infringably(
+        let seg3 = board.add_fixed_seg_infringably(
             recorder,
             dot_2_2,
             dot_1_2,
@@ -543,9 +537,9 @@ impl SpecctraDesign {
                 layer,
                 maybe_net,
             }),
-            poly,
+            None,
         );
-        board.add_poly_fixed_seg_infringably(
+        let seg4 = board.add_fixed_seg_infringably(
             recorder,
             dot_1_2,
             dot_1_1,
@@ -554,7 +548,23 @@ impl SpecctraDesign {
                 layer,
                 maybe_net,
             }),
-            poly,
+            None,
+        );
+
+        board.add_poly_with_nodes(
+            recorder,
+            SolidPolyWeight { layer, maybe_net }.into(),
+            maybe_pin,
+            &[
+                dot_1_1.into(),
+                dot_1_2.into(),
+                dot_2_2.into(),
+                dot_2_1.into(),
+                seg1.into(),
+                seg2.into(),
+                seg3.into(),
+                seg4.into(),
+            ],
         );
     }
 
@@ -634,14 +644,10 @@ impl SpecctraDesign {
         maybe_net: Option<usize>,
         maybe_pin: Option<String>,
     ) {
-        let poly = board.add_poly(
-            recorder,
-            SolidPolyWeight { layer, maybe_net }.into(),
-            maybe_pin,
-        );
+        let mut nodes = Vec::with_capacity(coords.len() * 2 - 1);
 
         // add the first coordinate in the wire path as a dot and save its index
-        let mut prev_index = board.add_poly_fixed_dot_infringably(
+        let mut prev_index = board.add_fixed_dot_infringably(
             recorder,
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
@@ -651,14 +657,13 @@ impl SpecctraDesign {
                 layer,
                 maybe_net,
             }),
-            // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
-            //GenericIndex::new(poly.petgraph_index()).into(),
-            poly,
+            None,
         );
+        nodes.push(prev_index.into());
 
         // iterate through path coords starting from the second
         for coord in coords.iter().skip(1) {
-            let index = board.add_poly_fixed_dot_infringably(
+            let index = board.add_fixed_dot_infringably(
                 recorder,
                 FixedDotWeight(GeneralDotWeight {
                     circle: Circle {
@@ -668,26 +673,38 @@ impl SpecctraDesign {
                     layer,
                     maybe_net,
                 }),
-                // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
-                poly,
+                None,
             );
+            nodes.push(index.into());
 
             // add a seg between the current and previous coords
-            let _ = board.add_poly_fixed_seg_infringably(
-                recorder,
-                prev_index,
-                index,
-                FixedSegWeight(GeneralSegWeight {
-                    width,
-                    layer,
-                    maybe_net,
-                }),
-                // TODO: This manual retagging shouldn't be necessary, `.into()` should suffice.
-                poly,
+            nodes.push(
+                board
+                    .add_fixed_seg_infringably(
+                        recorder,
+                        prev_index,
+                        index,
+                        FixedSegWeight(GeneralSegWeight {
+                            width,
+                            layer,
+                            maybe_net,
+                        }),
+                        None,
+                    )
+                    .into(),
             );
 
             prev_index = index;
         }
+
+        // assumption: the last coord and the first coord are equal
+
+        board.add_poly_with_nodes(
+            recorder,
+            SolidPolyWeight { layer, maybe_net }.into(),
+            maybe_pin,
+            &nodes[..],
+        );
     }
 
     fn pos(place: PointWithRotation, pin: PointWithRotation, x: f64, y: f64) -> Point {

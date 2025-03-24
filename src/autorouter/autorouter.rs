@@ -77,7 +77,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => self.board.poly_apex(&mut LayoutEdit::new(), poly),
+            RatvertexIndex::Poly(poly) => self.board.layout().poly(poly).apex(),
         };
 
         PointrouteExecutionStepper::new(self, origin_dot, point, options)
@@ -195,7 +195,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => self.board.poly_apex(&mut LayoutEdit::new(), poly),
+            RatvertexIndex::Poly(poly) => self.board.layout().poly(poly).apex(),
         };
 
         let target_dot = match self
@@ -206,7 +206,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => self.board.poly_apex(&mut LayoutEdit::new(), poly),
+            RatvertexIndex::Poly(poly) => self.board.layout().poly(poly).apex(),
         };
 
         (source_dot, target_dot)

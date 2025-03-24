@@ -16,18 +16,14 @@ use crate::{
     drawing::{
         band::BandUid,
         bend::{BendIndex, BendWeight},
-        dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, GeneralDotWeight},
-        graph::{GetMaybeNet, PrimitiveIndex},
+        dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight},
+        graph::PrimitiveIndex,
         seg::{FixedSegIndex, FixedSegWeight, SegIndex, SegWeight},
         Collect,
     },
-    geometry::{edit::ApplyGeometryEdit, shape::AccessShape, GenericNode, GetLayer},
+    geometry::{edit::ApplyGeometryEdit, GenericNode, GetLayer},
     graph::GenericIndex,
-    layout::{
-        poly::{GetMaybeApex, MakePolygon, PolyWeight},
-        CompoundWeight, Layout, LayoutEdit, NodeIndex,
-    },
-    math::Circle,
+    layout::{poly::PolyWeight, CompoundWeight, Layout, LayoutEdit, NodeIndex},
 };
 
 /// Represents a band between two pins.
@@ -122,27 +118,6 @@ impl<M: AccessMesadata> Board<M> {
         dot
     }
 
-    /// Adds a fixed segment between two dots with an optional pin name.
-    ///
-    /// Adds the segment to the layout and maps the pin name to the created segment if provided.
-    pub fn add_poly_fixed_dot_infringably(
-        &mut self,
-        recorder: &mut LayoutEdit,
-        weight: FixedDotWeight,
-        poly: GenericIndex<PolyWeight>,
-    ) -> FixedDotIndex {
-        let dot = self
-            .layout
-            .add_poly_fixed_dot_infringably(recorder, weight, poly);
-
-        if let Some(pin) = self.node_pinname(&GenericNode::Compound(poly.into())) {
-            self.node_to_pinname
-                .insert(GenericNode::Primitive(dot.into()), pin.to_string());
-        }
-
-        dot
-    }
-
     /// Adds a fixed segment associated with a polygon in the layout.
     ///
     /// Adds the segment to the layout and updates the internal mapping if necessary.
@@ -166,73 +141,32 @@ impl<M: AccessMesadata> Board<M> {
         seg
     }
 
-    /// Adds a fixed segment associated with a polygon in the layout.
-    ///
-    /// Adds the segment to the layout and updates the internal mapping if necessary.
-    pub fn add_poly_fixed_seg_infringably(
-        &mut self,
-        recorder: &mut LayoutEdit,
-        from: FixedDotIndex,
-        to: FixedDotIndex,
-        weight: FixedSegWeight,
-        poly: GenericIndex<PolyWeight>,
-    ) -> FixedSegIndex {
-        let seg = self
-            .layout
-            .add_poly_fixed_seg_infringably(recorder, from, to, weight, poly);
-
-        if let Some(pin) = self.node_pinname(&GenericNode::Compound(poly.into())) {
-            self.node_to_pinname
-                .insert(GenericNode::Primitive(seg.into()), pin.to_string());
-        }
-
-        seg
-    }
-
     /// Adds a new polygon to the layout with an optional pin name.
     ///
     /// Inserts the polygon into the layout and, if a pin name is provided, maps it to the created polygon's node.
-    pub fn add_poly(
+    pub fn add_poly_with_nodes(
         &mut self,
         recorder: &mut LayoutEdit,
         weight: PolyWeight,
         maybe_pin: Option<String>,
+        nodes: &[PrimitiveIndex],
     ) -> GenericIndex<PolyWeight> {
-        let poly = self.layout.add_poly(recorder, weight);
+        let (poly, apex) = self.layout.add_poly_with_nodes(recorder, weight, nodes);
 
         if let Some(pin) = maybe_pin {
+            for i in nodes {
+                self.node_to_pinname
+                    .insert(GenericNode::Primitive(*i), pin.clone());
+            }
+
+            self.node_to_pinname
+                .insert(GenericNode::Primitive(apex.into()), pin.clone());
+
             self.node_to_pinname
                 .insert(GenericNode::Compound(poly.into()), pin);
         }
 
         poly
-    }
-
-    /// Retrieves or creates the apex (center point) of a polygon in the layout.
-    ///
-    /// If the polygon already has an apex, returns it. Otherwise, creates and returns a new fixed dot as the apex.
-    pub fn poly_apex(
-        &mut self,
-        recorder: &mut LayoutEdit,
-        poly: GenericIndex<PolyWeight>,
-    ) -> FixedDotIndex {
-        let resolved_poly = self.layout.poly(poly);
-        if let Some(apex) = resolved_poly.maybe_apex() {
-            apex
-        } else {
-            self.add_poly_fixed_dot_infringably(
-                recorder,
-                FixedDotWeight(GeneralDotWeight {
-                    circle: Circle {
-                        pos: resolved_poly.shape().center(),
-                        r: 100.0,
-                    },
-                    layer: resolved_poly.layer(),
-                    maybe_net: resolved_poly.maybe_net(),
-                }),
-                poly,
-            )
-        }
     }
 
     /// Returns the pin name associated with a given node.
