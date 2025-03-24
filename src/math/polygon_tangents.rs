@@ -8,6 +8,24 @@ use super::{
 };
 use geo::{algorithm::Centroid, Point, Polygon};
 
+pub fn is_poly_convex_hull_cw<I>(poly_ext_hull: &[(Point, I)], pivot: usize) -> bool {
+    let len = poly_ext_hull.len();
+    if pivot >= len {
+        return false;
+    }
+
+    let prev = poly_ext_hull[(len + pivot - 1) % len].0 .0;
+    let curr = poly_ext_hull[pivot].0 .0;
+    let next = poly_ext_hull[(pivot + 1) % len].0 .0;
+
+    // see also: https://en.wikipedia.org/w/index.php?title=Curve_orientation&oldid=1250027587#Orientation_of_a_simple_polygon
+    #[rustfmt::skip]
+    let det = (curr.x * next.y + prev.x * curr.y + prev.y * next.x)
+            - (curr.y * next.x + prev.y * curr.x + prev.x * next.y);
+
+    det < 0.
+}
+
 #[derive(Clone, Debug, thiserror::Error, PartialEq)]
 pub enum PolyTangentException<I> {
     #[error("trying to target empty polygon")]

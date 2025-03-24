@@ -12,23 +12,10 @@ use topola::{
         selection::{BboxSelectionKind, Selection},
     },
     board::{AccessMesadata, Board},
-    layout::NodeIndex,
-    router::planar_incr_embed,
+    router::ng::{calculate_navmesh as ng_calculate_navmesh, PieNavmesh},
 };
 
 use crate::appearance_panel::AppearancePanel;
-
-#[derive(Clone, Copy, Debug)]
-pub struct PieNavmeshBase;
-
-impl planar_incr_embed::NavmeshBase for PieNavmeshBase {
-    type PrimalNodeIndex = NodeIndex;
-    type EtchedPath = planar_incr_embed::navmesh::EdgeIndex<NodeIndex>;
-    type GapComment = ();
-    type Scalar = f64;
-}
-
-pub type PieNavmesh = planar_incr_embed::navmesh::Navmesh<PieNavmeshBase>;
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum SelectionMode {
@@ -81,48 +68,10 @@ impl Overlay {
     pub fn recalculate_topo_navmesh(
         &mut self,
         board: &Board<impl AccessMesadata>,
-        appearance_panel: &AppearancePanel,
+        active_layer: usize,
     ) {
-        use spade::Triangulation;
-        use topola::router::planar_incr_embed::navmesh::TrianVertex;
-
-        let Some(active_layer) = appearance_panel.active_layer else {
-            return;
-        };
-
-        if let Ok(triangulation) =
-            spade::DelaunayTriangulation::<TrianVertex<NodeIndex, f64>>::bulk_load(
-                board
-                    .layout()
-                    .drawing()
-                    .rtree()
-                    .locate_in_envelope_intersecting(&AABB::<[f64; 3]>::from_corners(
-                        [-f64::INFINITY, -f64::INFINITY, active_layer as f64],
-                        [f64::INFINITY, f64::INFINITY, active_layer as f64],
-                    ))
-                    .map(|&geom| geom.data)
-                    .filter_map(|node| {
-                        board
-                            .layout()
-                            .apex_of_compoundless_node(node, active_layer)
-                            .map(|(_, pos)| (node, pos))
-                    })
-                    .map(|(idx, pos)| TrianVertex {
-                        idx,
-                        pos: spade::mitigate_underflow(spade::Point2 {
-                            x: pos.x(),
-                            y: pos.y(),
-                        }),
-                    })
-                    .collect(),
-            )
-        {
-            self.planar_incr_navmesh = Some(
-                planar_incr_embed::navmesh::NavmeshSer::<PieNavmeshBase>::from_triangulation(
-                    &triangulation,
-                )
-                .into(),
-            );
+        if let Ok(pien) = ng_calculate_navmesh(board, active_layer) {
+            self.planar_incr_navmesh = Some(pien);
         }
     }
 

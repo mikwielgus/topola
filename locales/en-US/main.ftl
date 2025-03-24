@@ -36,6 +36,7 @@ tr-menu-place-place-route-plan = Place Route Plan
 
 tr-menu-route = Route
 tr-menu-route-autoroute = Autoroute
+tr-menu-route-topo-autoroute = Topological single-layer Autoroute
 tr-menu-route-routed-band-width = Routed Band Width
 
 tr-menu-help = Help
@@ -64,6 +65,10 @@ tr-menu-preferences-set-language = Set Language
 tr-dialog-error-messages = Error Messages
 tr-dialog-error-messages-reset = Reset Messages
 tr-dialog-error-messages-discard = Discard
+
+tr-dialog-init-topo-navmesh = Initialize Topological Navmesh
+tr-choose-active-layer-to-use = Choose active layer to use!
+tr-dialog-init-topo-navmesh-submit = Run
 
 tr-module-specctra-dsn-file-loader = Specctra DSN file loader
 tr-module-history-file-loader = History file loader

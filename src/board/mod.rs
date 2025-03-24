@@ -20,11 +20,12 @@ use crate::{
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight},
         graph::PrimitiveIndex,
         seg::{FixedSegIndex, FixedSegWeight, SegIndex, SegWeight},
-        Collect,
+        Collect, DrawingException,
     },
     geometry::{edit::ApplyGeometryEdit, GenericNode, GetLayer},
     graph::{GenericIndex, MakeRef},
     layout::{poly::PolyWeight, CompoundEntryLabel, CompoundWeight, Layout, LayoutEdit, NodeIndex},
+    router::ng::EtchedPath,
 };
 
 /// Represents a band between two pins.
@@ -77,6 +78,7 @@ impl<'a> ResolvedSelector<'a> {
 #[derive(Debug, Getters)]
 pub struct Board<M> {
     layout: Layout<M>,
+    bands_by_id: BiBTreeMap<EtchedPath, BandUid>,
     // TODO: Simplify access logic to these members so that `#[getter(skip)]`s can be removed.
     #[getter(skip)]
     node_to_pinname: BTreeMap<NodeIndex, String>,
@@ -89,6 +91,7 @@ impl<M> Board<M> {
     pub fn new(layout: Layout<M>) -> Self {
         Self {
             layout,
+            bands_by_id: BiBTreeMap::new(),
             node_to_pinname: BTreeMap::new(),
             band_bandname: BiBTreeMap::new(),
         }
@@ -216,6 +219,10 @@ impl<M: AccessMesadata> Board<M> {
         if self.band_bandname.get_by_right(&bandname).is_some() {
             false
         } else {
+            let ep = EtchedPath {
+                end_points: (source, target).into(),
+            };
+            self.bands_by_id.insert(ep, band);
             self.band_bandname.insert(band, bandname);
             true
         }
@@ -233,6 +240,46 @@ impl<M: AccessMesadata> Board<M> {
             .node_pinname(&GenericNode::Primitive(target.into()))
             .unwrap();
         self.band_between_pins(source_pinname, target_pinname)
+    }
+
+    /// Removes the band between the two nodes
+    pub fn remove_band_between_nodes(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        source: FixedDotIndex,
+        target: FixedDotIndex,
+    ) -> Result<(), DrawingException> {
+        let ep = EtchedPath {
+            end_points: (source, target).into(),
+        };
+        let source_pinname = self
+            .node_pinname(&GenericNode::Primitive(source.into()))
+            .unwrap()
+            .to_string();
+        let target_pinname = self
+            .node_pinname(&GenericNode::Primitive(target.into()))
+            .unwrap()
+            .to_string();
+        self.band_bandname
+            .remove_by_right(&BandName::from((source_pinname, target_pinname)));
+        if let Some((_, uid)) = self.bands_by_id.remove_by_left(&ep) {
+            let (from, _) = uid.into();
+            self.layout.remove_band(recorder, from)?;
+        }
+        Ok(())
+    }
+
+    /// Removes the band between two nodes given by [`BandUid`]
+    pub fn remove_band_by_id(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        uid: BandUid,
+    ) -> Result<(), DrawingException> {
+        if let Some(ep) = self.bands_by_id.get_by_right(&uid) {
+            let (source, target) = ep.end_points.into();
+            self.remove_band_between_nodes(recorder, source, target)?;
+        }
+        Ok(())
     }
 
     /// Finds a band between two pin names.

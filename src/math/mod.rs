@@ -15,6 +15,9 @@ pub use polygon_tangents::*;
 mod tangents;
 pub use tangents::*;
 
+mod tunnel;
+pub use tunnel::*;
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RotationSense {
     Counterclockwise,

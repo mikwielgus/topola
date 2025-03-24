@@ -6,11 +6,10 @@ pub mod draw;
 pub mod navcord;
 pub mod navcorder;
 pub mod navmesh;
+pub mod ng;
 mod route;
 mod router;
 pub mod thetastar;
 
 pub use route::RouteStepper;
 pub use router::*;
-
-pub use planar_incr_embed;

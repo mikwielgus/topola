@@ -9,15 +9,19 @@ use std::{cmp::Ordering, ops::ControlFlow};
 use contracts_try::debug_requires;
 use derive_getters::{Dissolve, Getters};
 use enum_dispatch::enum_dispatch;
+use geo::geometry::LineString;
 use thiserror::Error;
 
 use crate::{
     board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::{edit::ApplyGeometryEdit, primitive::PrimitiveShape},
+    graph::GenericIndex,
+    layout::poly::PolyWeight,
     router::{
         navcord::Navcord,
         navmesh::{Navmesh, NavnodeIndex},
+        ng,
         thetastar::ThetastarStepper,
     },
     stepper::Step,
@@ -61,6 +65,30 @@ pub trait GetGhosts {
     }
 }
 
+/// Getter for the polygonal blockers (polygonal regions which block routing)
+#[enum_dispatch]
+pub trait GetPolygonalBlockers {
+    fn polygonal_blockers(&self) -> &[LineString] {
+        &[]
+    }
+}
+
+/// Getter for the polygons around which some routing happens
+#[enum_dispatch]
+pub trait GetActivePolygons {
+    fn active_polygons(&self) -> &[GenericIndex<PolyWeight>] {
+        &[]
+    }
+}
+
+/// Getter trait to obtain Topological/Planar Navigation Mesh
+#[enum_dispatch]
+pub trait GetMaybeTopoNavmesh {
+    fn maybe_topo_navmesh(&self) -> Option<ng::pie::navmesh::NavmeshRef<'_, ng::PieNavmeshBase>> {
+        None
+    }
+}
+
 /// Trait for getting the obstacles that prevented Topola from creating
 /// new objects (the shapes of these objects can be obtained with the above
 /// `GetGhosts` trait), for the purpose of displaying these obstacles on the
@@ -72,9 +100,9 @@ pub trait GetObstacles {
     }
 }
 
-#[enum_dispatch]
 /// Trait for getting text strings with debug information attached to navmesh
 /// edges and vertices.
+#[enum_dispatch]
 pub trait GetNavmeshDebugTexts {
     fn navnode_debug_text(&self, _navnode: NavnodeIndex) -> Option<&str> {
         None
@@ -107,7 +135,7 @@ pub struct Invoker<M> {
     pub(super) ongoing_command: Option<Command>,
 }
 
-impl<M: AccessMesadata> Invoker<M> {
+impl<M: AccessMesadata + Clone> Invoker<M> {
     /// Creates a new instance of Invoker with the given autorouter instance
     pub fn new(autorouter: Autorouter<M>) -> Self {
         Self::new_with_history(autorouter, History::new())
@@ -144,14 +172,17 @@ impl<M: AccessMesadata> Invoker<M> {
     /// Pass given command to be executed.
     ///
     /// Function used to set given [`Command`] to ongoing state, dispatch and execute it.
-    pub fn execute_stepper(&mut self, command: Command) -> Result<ExecutionStepper, InvokerError> {
+    pub fn execute_stepper(
+        &mut self,
+        command: Command,
+    ) -> Result<ExecutionStepper<M>, InvokerError> {
         let execute = self.dispatch_command(&command);
         self.ongoing_command = Some(command);
         execute
     }
 
     #[debug_requires(self.ongoing_command.is_none())]
-    fn dispatch_command(&mut self, command: &Command) -> Result<ExecutionStepper, InvokerError> {
+    fn dispatch_command(&mut self, command: &Command) -> Result<ExecutionStepper<M>, InvokerError> {
         Ok(match command {
             Command::Autoroute(selection, options) => {
                 let mut ratlines = self.autorouter.selected_ratlines(selection);
@@ -171,6 +202,31 @@ impl<M: AccessMesadata> Invoker<M> {
                 }
 
                 ExecutionStepper::Autoroute(self.autorouter.autoroute_ratlines(ratlines, *options)?)
+            }
+            Command::TopoAutoroute {
+                selection,
+                allowed_edges,
+                active_layer,
+                routed_band_width,
+            } => {
+                let ratlines = self.autorouter.selected_ratlines(selection);
+
+                // TODO: consider "presort by pairwise detours"
+
+                ExecutionStepper::TopoAutoroute(
+                    self.autorouter.topo_autoroute_ratlines(
+                        ratlines,
+                        allowed_edges.clone(),
+                        self.autorouter
+                            .board
+                            .layout()
+                            .rules()
+                            .layername_layer(active_layer)
+                            .unwrap(),
+                        *routed_band_width,
+                        None,
+                    )?,
+                )
             }
             Command::PlaceVia(weight) => {
                 ExecutionStepper::PlaceVia(self.autorouter.place_via(*weight)?)

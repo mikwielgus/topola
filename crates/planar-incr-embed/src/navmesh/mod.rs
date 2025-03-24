@@ -205,11 +205,11 @@ impl<B: NavmeshBase> Navmesh<B> {
     }
 }
 
-pub(crate) fn resolve_edge_data<PNI: Ord, EP>(
-    edges: &BTreeMap<EdgeIndex<NavmeshIndex<PNI>>, (Edge<PNI>, usize)>,
+pub(crate) fn resolve_edge_data<PNI: Ord, EP, T>(
+    edges: &BTreeMap<EdgeIndex<NavmeshIndex<PNI>>, (Edge<PNI>, T)>,
     from_node: NavmeshIndex<PNI>,
     to_node: NavmeshIndex<PNI>,
-) -> Option<(Edge<&PNI>, MaybeReversed<usize, EP>)> {
+) -> Option<(Edge<&PNI>, MaybeReversed<&T, EP>)> {
     let reversed = from_node > to_node;
     let edge_idx: EdgeIndex<NavmeshIndex<PNI>> = (from_node, to_node).into();
     let edge = edges.get(&edge_idx)?;
@@ -217,9 +217,101 @@ pub(crate) fn resolve_edge_data<PNI: Ord, EP>(
     if reversed {
         data.flip();
     }
-    let mut ret = MaybeReversed::new(edge.1);
+    let mut ret = MaybeReversed::new(&edge.1);
     ret.reversed = reversed;
     Some((data, ret))
+}
+
+pub(crate) fn resolve_edge_data_mut<PNI: Ord, EP, T>(
+    edges: &mut BTreeMap<EdgeIndex<NavmeshIndex<PNI>>, (Edge<PNI>, T)>,
+    from_node: NavmeshIndex<PNI>,
+    to_node: NavmeshIndex<PNI>,
+) -> Option<(Edge<&PNI>, MaybeReversed<&mut T, EP>)> {
+    let reversed = from_node > to_node;
+    let edge_idx: EdgeIndex<NavmeshIndex<PNI>> = (from_node, to_node).into();
+    let edge = edges.get_mut(&edge_idx)?;
+    let mut data = edge.0.as_ref();
+    if reversed {
+        data.flip();
+    }
+    let mut ret = MaybeReversed::new(&mut edge.1);
+    ret.reversed = reversed;
+    Some((data, ret))
+}
+
+impl<B: NavmeshBase> NavmeshSer<B> {
+    pub fn edge_data(
+        &self,
+        from_node: NavmeshIndex<B::PrimalNodeIndex>,
+        to_node: NavmeshIndex<B::PrimalNodeIndex>,
+    ) -> Option<
+        MaybeReversed<
+            &Arc<[RelaxedPath<B::EtchedPath, B::GapComment>]>,
+            RelaxedPath<B::EtchedPath, B::GapComment>,
+        >,
+    > {
+        resolve_edge_data(&self.edges, from_node, to_node).map(|(_, item)| item)
+    }
+
+    pub fn edge_data_mut(
+        &mut self,
+        from_node: NavmeshIndex<B::PrimalNodeIndex>,
+        to_node: NavmeshIndex<B::PrimalNodeIndex>,
+    ) -> Option<
+        MaybeReversed<
+            &mut Arc<[RelaxedPath<B::EtchedPath, B::GapComment>]>,
+            RelaxedPath<B::EtchedPath, B::GapComment>,
+        >,
+    > {
+        resolve_edge_data_mut(&mut self.edges, from_node, to_node).map(|(_, item)| item)
+    }
+
+    /// See [`find_other_end`](planarr::find_other_end).
+    pub fn planarr_find_other_end(
+        &self,
+        node: &NavmeshIndex<B::PrimalNodeIndex>,
+        start: &NavmeshIndex<B::PrimalNodeIndex>,
+        pos: usize,
+        already_inserted_at_start: bool,
+        stop: &NavmeshIndex<B::PrimalNodeIndex>,
+    ) -> Option<(usize, planarr::OtherEnd)> {
+        planarr::find_other_end(
+            self.nodes[node].neighs.iter().map(move |neigh| {
+                let edge = self
+                    .edge_data(node.clone(), neigh.clone())
+                    .expect("unable to resolve neighbor");
+                (neigh.clone(), edge)
+            }),
+            start,
+            pos,
+            already_inserted_at_start,
+            stop,
+        )
+    }
+
+    /// See [`find_all_other_ends`](planarr::find_all_other_ends).
+    pub fn planarr_find_all_other_ends<'a>(
+        &'a self,
+        node: &'a NavmeshIndex<B::PrimalNodeIndex>,
+        start: &'a NavmeshIndex<B::PrimalNodeIndex>,
+        pos: usize,
+        already_inserted_at_start: bool,
+    ) -> Option<(
+        usize,
+        impl Iterator<Item = (NavmeshIndex<B::PrimalNodeIndex>, planarr::OtherEnd)> + 'a,
+    )> {
+        planarr::find_all_other_ends(
+            self.nodes[node].neighs.iter().map(move |neigh| {
+                let edge = self
+                    .edge_data(node.clone(), neigh.clone())
+                    .expect("unable to resolve neighbor");
+                (neigh.clone(), edge)
+            }),
+            start,
+            pos,
+            already_inserted_at_start,
+        )
+    }
 }
 
 /// Removes a path (weak or normal) with the given label from the navmesh
@@ -273,7 +365,8 @@ impl<'a, B: NavmeshBase + 'a> NavmeshRefMut<'a, B> {
         Edge<&B::PrimalNodeIndex>,
         MaybeReversed<usize, RelaxedPath<B::EtchedPath, B::GapComment>>,
     )> {
-        resolve_edge_data(self.edges, from_node, to_node)
+        resolve_edge_data::<_, B::EtchedPath, _>(self.edges, from_node, to_node)
+            .map(|(edge, mayrev)| (edge, mayrev.map(|i: &usize| *i)))
     }
 
     /// Removes a path (weak or normal) with the given label from the navmesh
@@ -309,7 +402,8 @@ impl<'a, B: NavmeshBase + 'a> NavmeshRef<'a, B> {
         Edge<&B::PrimalNodeIndex>,
         MaybeReversed<usize, RelaxedPath<B::EtchedPath, B::GapComment>>,
     )> {
-        resolve_edge_data(self.edges, from_node, to_node)
+        resolve_edge_data::<_, B::EtchedPath, _>(self.edges, from_node, to_node)
+            .map(|(edge, mayrev)| (edge, mayrev.map(|i: &usize| *i)))
     }
 
     #[inline(always)]

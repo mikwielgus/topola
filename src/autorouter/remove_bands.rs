@@ -9,6 +9,7 @@ use crate::{board::AccessMesadata, layout::LayoutEdit};
 use super::{
     invoker::{
         GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
+        GetPolygonalBlockers,
     },
     selection::BandSelection,
     Autorouter, AutorouterError,
@@ -37,8 +38,11 @@ impl RemoveBandsExecutionStepper {
 
             let mut edit = LayoutEdit::new();
             for selector in self.selection.selectors() {
-                let band = autorouter.board.bandname_band(&selector.band).unwrap()[false];
-                autorouter.board.layout_mut().remove_band(&mut edit, band);
+                let band = *autorouter.board.bandname_band(&selector.band).unwrap();
+                autorouter
+                    .board
+                    .remove_band_by_id(&mut edit, band)
+                    .map_err(|_| AutorouterError::CouldNotRemoveBand(band[false]))?;
             }
             Ok(Some(edit))
         } else {
@@ -47,8 +51,9 @@ impl RemoveBandsExecutionStepper {
     }
 }
 
-impl GetMaybeThetastarStepper for RemoveBandsExecutionStepper {}
-impl GetMaybeNavcord for RemoveBandsExecutionStepper {}
 impl GetGhosts for RemoveBandsExecutionStepper {}
-impl GetObstacles for RemoveBandsExecutionStepper {}
+impl GetMaybeNavcord for RemoveBandsExecutionStepper {}
+impl GetMaybeThetastarStepper for RemoveBandsExecutionStepper {}
 impl GetNavmeshDebugTexts for RemoveBandsExecutionStepper {}
+impl GetObstacles for RemoveBandsExecutionStepper {}
+impl GetPolygonalBlockers for RemoveBandsExecutionStepper {}

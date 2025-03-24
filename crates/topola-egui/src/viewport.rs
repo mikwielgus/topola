@@ -10,7 +10,8 @@ use petgraph::{
 use rstar::{Envelope, AABB};
 use topola::{
     autorouter::invoker::{
-        GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
+        GetActivePolygons, GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper,
+        GetMaybeTopoNavmesh, GetNavmeshDebugTexts, GetObstacles, GetPolygonalBlockers,
     },
     board::AccessMesadata,
     drawing::{
@@ -26,6 +27,7 @@ use topola::{
     layout::poly::MakePolygon,
     math::{Circle, RotationSense},
     router::navmesh::NavnodeIndex,
+    router::ng::pie,
 };
 
 use crate::{
@@ -184,6 +186,12 @@ impl Viewport {
                         let layers = &mut workspace.appearance_panel;
                         let overlay = &mut workspace.overlay;
                         let board = workspace.interactor.invoker().autorouter().board();
+                        let active_polygons = workspace
+                            .interactor
+                            .maybe_activity()
+                            .as_ref()
+                            .map(|i| i.active_polygons())
+                            .unwrap_or_default();
 
                         for i in (0..layers.visible.len()).rev() {
                             if layers.visible[i] {
@@ -231,6 +239,7 @@ impl Viewport {
                                     let color = if overlay
                                         .selection()
                                         .contains_node(board, GenericNode::Compound(poly.into()))
+                                        || active_polygons.iter().find(|&&i| i == poly).is_some()
                                     {
                                         config
                                             .colors(ctx)
@@ -402,14 +411,26 @@ impl Viewport {
                         }
 
                         if menu_bar.show_topo_navmesh {
-                            if let Some(navmesh) = workspace.overlay.planar_incr_navmesh() {
+                            if let Some(navmesh) = workspace
+                                .interactor
+                                .maybe_activity()
+                                .as_ref()
+                                .and_then(|i| i.maybe_topo_navmesh())
+                                .or_else(|| {
+                                    workspace
+                                        .overlay
+                                        .planar_incr_navmesh()
+                                        .as_ref()
+                                        .map(|navmesh| navmesh.as_ref())
+                                })
+                            {
                                 // calculate dual node position approximations
                                 use std::collections::BTreeMap;
                                 use topola::geometry::shape::AccessShape;
-                                use topola::router::planar_incr_embed::NavmeshIndex;
+                                use topola::router::ng::pie::NavmeshIndex;
                                 let mut map = BTreeMap::new();
-                                let resolve_primal = |p: &topola::layout::NodeIndex| {
-                                    board.layout().node_shape(*p).center()
+                                let resolve_primal = |p: &topola::drawing::dot::FixedDotIndex| {
+                                    (*p).primitive(board.layout().drawing()).shape().center()
                                 };
 
                                 for (nidx, node) in &*navmesh.nodes {
@@ -444,24 +465,58 @@ impl Viewport {
                                             Some(&x) => x,
                                         },
                                     };
-                                    let edge_len = navmesh.edge_paths[edge.1].len();
+                                    let lhs_pos = edge.0.lhs.map(|i| resolve_primal(&i));
+                                    let rhs_pos = edge.0.rhs.map(|i| resolve_primal(&i));
                                     use egui::Color32;
-                                    let stroke = if edge_len == 0 {
-                                        egui::Stroke::new(
-                                            1.0,
-                                            if got_primal {
-                                                Color32::from_rgb(255, 175, 0)
-                                            } else {
-                                                Color32::from_rgb(159, 255, 33)
-                                            },
-                                        )
-                                    } else {
-                                        egui::Stroke::new(
-                                            1.5 + (edge_len as f32).atan(),
-                                            Color32::from_rgb(250, 250, 0),
-                                        )
+                                    let make_stroke = |len: usize| {
+                                        if len == 0 {
+                                            egui::Stroke::new(
+                                                0.5,
+                                                if got_primal {
+                                                    Color32::from_rgb(255, 175, 0)
+                                                } else {
+                                                    Color32::from_rgb(159, 255, 33)
+                                                },
+                                            )
+                                        } else {
+                                            egui::Stroke::new(
+                                                1.0 + (len as f32).atan(),
+                                                Color32::from_rgb(250, 250, 0),
+                                            )
+                                        }
                                     };
-                                    painter.paint_edge(a_pos, b_pos, stroke);
+                                    if let (Some(lhs), Some(rhs)) = (lhs_pos, rhs_pos) {
+                                        let edge_lens = navmesh.edge_paths[edge.1]
+                                            .split(|x| x == &pie::RelaxedPath::Weak(()))
+                                            .collect::<Vec<_>>();
+                                        assert_eq!(edge_lens.len(), 3);
+                                        let middle = (a_pos + b_pos) / 2.0;
+                                        let mut offset_lhs = lhs - middle;
+                                        offset_lhs /= offset_lhs.dot(offset_lhs).sqrt() / 50.0;
+                                        let mut offset_rhs = rhs - middle;
+                                        offset_rhs /= offset_rhs.dot(offset_rhs).sqrt() / 50.0;
+                                        painter.paint_edge(
+                                            a_pos + offset_lhs,
+                                            b_pos + offset_lhs,
+                                            make_stroke(edge_lens[0].len()),
+                                        );
+                                        painter.paint_edge(
+                                            a_pos,
+                                            b_pos,
+                                            make_stroke(edge_lens[1].len()),
+                                        );
+                                        painter.paint_edge(
+                                            a_pos + offset_rhs,
+                                            b_pos + offset_rhs,
+                                            make_stroke(edge_lens[2].len()),
+                                        );
+                                    } else {
+                                        let edge_len = navmesh.edge_paths[edge.1]
+                                            .iter()
+                                            .filter(|i| matches!(i, pie::RelaxedPath::Normal(_)))
+                                            .count();
+                                        painter.paint_edge(a_pos, b_pos, make_stroke(edge_len));
+                                    }
                                 }
                             }
                         }
@@ -476,7 +531,7 @@ impl Viewport {
                         }
 
                         if let Some(activity) = workspace.interactor.maybe_activity() {
-                            for ghost in activity.ghosts().iter() {
+                            for ghost in activity.ghosts() {
                                 painter
                                     .paint_primitive(ghost, egui::Color32::from_rgb(75, 75, 150));
                             }
@@ -487,6 +542,13 @@ impl Viewport {
                                 painter.paint_linestring(
                                     &rp.lines,
                                     egui::Color32::from_rgb(245, 182, 66),
+                                );
+                            }
+
+                            for linestring in activity.polygonal_blockers() {
+                                painter.paint_linestring(
+                                    linestring,
+                                    egui::Color32::from_rgb(115, 0, 255),
                                 );
                             }
 

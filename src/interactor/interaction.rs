@@ -7,8 +7,8 @@ use thiserror::Error;
 
 use crate::{
     autorouter::invoker::{
-        GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
-        Invoker,
+        GetActivePolygons, GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper,
+        GetMaybeTopoNavmesh, GetNavmeshDebugTexts, GetObstacles, GetPolygonalBlockers, Invoker,
     },
     board::AccessMesadata,
     stepper::{Abort, OnEvent, Step},
@@ -67,8 +67,11 @@ impl<M: AccessMesadata> OnEvent<ActivityContext<'_, M>, InteractiveEvent> for In
     }
 }
 
+impl GetActivePolygons for InteractionStepper {}
 impl GetGhosts for InteractionStepper {}
-impl GetMaybeThetastarStepper for InteractionStepper {}
 impl GetMaybeNavcord for InteractionStepper {}
+impl GetMaybeThetastarStepper for InteractionStepper {}
+impl GetMaybeTopoNavmesh for InteractionStepper {}
 impl GetNavmeshDebugTexts for InteractionStepper {}
 impl GetObstacles for InteractionStepper {}
+impl GetPolygonalBlockers for InteractionStepper {}

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::{ops::ControlFlow, path::Path, sync::mpsc::Sender};
+use std::{collections::BTreeSet, ops::ControlFlow, path::Path, sync::mpsc::Sender};
 
 use topola::{
     autorouter::{
@@ -274,17 +274,22 @@ impl MenuBar {
                         .recalculate_topo_navmesh
                         .consume_key_triggered(ctx, ui)
                     {
-                        let board = workspace.interactor.invoker().autorouter().board();
-                        workspace
-                            .overlay
-                            .recalculate_topo_navmesh(board, &workspace.appearance_panel);
+                        if let Some(active_layer) = workspace.appearance_panel.active_layer {
+                            let board = workspace.interactor.invoker().autorouter().board();
+                            workspace
+                                .overlay
+                                .recalculate_topo_navmesh(board, active_layer);
+                        }
                     } else if actions.place.place_via.consume_key_enabled(
                         ctx,
                         ui,
                         &mut self.is_placing_via,
                     ) {
                     } else if workspace_activities_enabled {
-                        let mut schedule = |op: fn(Selection, AutorouterOptions) -> Command| {
+                        fn schedule<F: FnOnce(Selection) -> Command>(
+                            workspace: &mut Workspace,
+                            op: F,
+                        ) {
                             let mut selection = workspace.overlay.take_selection();
                             if let Some(active_layer) = workspace.appearance_panel.active_layer {
                                 let active_layer = workspace
@@ -301,14 +306,34 @@ impl MenuBar {
                                     .0
                                     .retain(|i| i.layer == active_layer);
                             }
-                            workspace
-                                .interactor
-                                .schedule(op(selection, self.autorouter_options));
-                        };
+                            workspace.interactor.schedule(op(selection));
+                        }
+                        let opts = self.autorouter_options;
                         if actions.edit.remove_bands.consume_key_triggered(ctx, ui) {
-                            schedule(|selection, _| Command::RemoveBands(selection.band_selection));
+                            schedule(workspace, |selection| {
+                                Command::RemoveBands(selection.band_selection)
+                            })
+                        } else if actions.route.topo_autoroute.consume_key_triggered(ctx, ui) {
+                            if let Some(active_layer) = workspace.appearance_panel.active_layer {
+                                let active_layer = workspace
+                                    .interactor
+                                    .invoker()
+                                    .autorouter()
+                                    .board()
+                                    .layout()
+                                    .rules()
+                                    .layer_layername(active_layer)
+                                    .expect("unknown active layer")
+                                    .to_string();
+                                schedule(workspace, |selection| Command::TopoAutoroute {
+                                    selection: selection.pin_selection,
+                                    allowed_edges: BTreeSet::new(),
+                                    active_layer,
+                                    routed_band_width: opts.router_options.routed_band_width,
+                                });
+                            }
                         } else if actions.route.autoroute.consume_key_triggered(ctx, ui) {
-                            schedule(|selection, opts| {
+                            schedule(workspace, |selection| {
                                 Command::Autoroute(selection.pin_selection, opts)
                             });
                         } else if actions
@@ -316,7 +341,7 @@ impl MenuBar {
                             .compare_detours
                             .consume_key_triggered(ctx, ui)
                         {
-                            schedule(|selection, opts| {
+                            schedule(workspace, |selection| {
                                 Command::CompareDetours(selection.pin_selection, opts)
                             });
                         } else if actions
@@ -324,7 +349,7 @@ impl MenuBar {
                             .measure_length
                             .consume_key_triggered(ctx, ui)
                         {
-                            schedule(|selection, _| {
+                            schedule(workspace, |selection| {
                                 Command::MeasureLength(selection.band_selection)
                             });
                         } else if actions

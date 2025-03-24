@@ -16,6 +16,7 @@
 #![cfg_attr(not(feature = "disable_contracts"), feature(try_blocks))]
 // TODO: fix all occurences
 #![allow(unused_must_use)]
+#![allow(clippy::too_many_arguments)]
 
 pub mod graph;
 #[macro_use]

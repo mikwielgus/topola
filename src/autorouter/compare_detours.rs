@@ -22,6 +22,7 @@ use super::{
     autoroute::{AutorouteContinueStatus, AutorouteExecutionStepper},
     invoker::{
         GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
+        GetPolygonalBlockers,
     },
     Autorouter, AutorouterError, AutorouterOptions,
 };
@@ -119,6 +120,8 @@ impl GetGhosts for CompareDetoursExecutionStepper {
         self.autoroute.ghosts()
     }
 }
+
+impl GetPolygonalBlockers for CompareDetoursExecutionStepper {}
 
 impl GetObstacles for CompareDetoursExecutionStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {

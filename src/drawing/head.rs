@@ -36,6 +36,15 @@ impl<'a, CW: 'a, Cel: 'a, R: 'a> MakeRef<'a, Drawing<CW, Cel, R>> for Head {
     }
 }
 
+impl Head {
+    pub fn maybe_cane(&self) -> Option<Cane> {
+        match self {
+            Head::Bare(..) => None,
+            Head::Cane(head) => Some(head.cane),
+        }
+    }
+}
+
 /// The head is bare when the routed band is not pulled out (i.e. is of zero
 /// length). This happens on the first routing step and when the routed band
 /// was completely retracted due to the routing algorithm backtracking. In these

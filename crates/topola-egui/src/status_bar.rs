@@ -15,12 +15,12 @@ impl StatusBar {
         Self {}
     }
 
-    pub fn update(
+    pub fn update<M>(
         &mut self,
         ctx: &egui::Context,
         _tr: &Translator,
         viewport: &Viewport,
-        maybe_activity: Option<&ActivityStepperWithStatus>,
+        maybe_activity: Option<&ActivityStepperWithStatus<M>>,
     ) {
         egui::TopBottomPanel::bottom("status_bar").show(ctx, |ui| {
             let latest_pos = viewport.transform.inverse()

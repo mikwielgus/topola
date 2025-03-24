@@ -27,10 +27,10 @@ use crate::{
 /// Structure that manages the invoker and activities
 pub struct Interactor<M> {
     invoker: Invoker<M>,
-    activity: Option<ActivityStepperWithStatus>,
+    activity: Option<ActivityStepperWithStatus<M>>,
 }
 
-impl<M: AccessMesadata> Interactor<M> {
+impl<M: AccessMesadata + Clone> Interactor<M> {
     /// Create a new instance of Interactor with the given Board instance
     pub fn new(board: Board<M>) -> Result<Self, InsertionError> {
         Ok(Self {
@@ -135,7 +135,7 @@ impl<M: AccessMesadata> Interactor<M> {
     }
 
     /// Returns the currently running activity
-    pub fn maybe_activity(&self) -> &Option<ActivityStepperWithStatus> {
+    pub fn maybe_activity(&self) -> &Option<ActivityStepperWithStatus<M>> {
         &self.activity
     }
 }

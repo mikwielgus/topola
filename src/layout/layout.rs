@@ -2,10 +2,13 @@
 //
 // SPDX-License-Identifier: MIT
 
+use core::iter;
+
 use contracts_try::debug_ensures;
 use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
+use planar_incr_embed::RelaxedPath;
 use rstar::AABB;
 
 use crate::{
@@ -376,6 +379,8 @@ impl<R: AccessRules> Layout<R> {
         }
     }
 
+    // TODO: computation of bands between outer node and direction towards "outside"
+
     /// Finds all bands on `layer` between `left` and `right`
     /// (usually assuming `left` and `right` are neighbors in a Delaunay triangulation)
     /// and returns them ordered from `left` to `right`.
@@ -384,7 +389,7 @@ impl<R: AccessRules> Layout<R> {
         layer: usize,
         left: NodeIndex,
         right: NodeIndex,
-    ) -> Vec<BandUid> {
+    ) -> impl Iterator<Item = (BandUid, LooseIndex)> {
         assert_ne!(left, right);
         let left_pos = self.node_shape(left).center();
         let right_pos = self.node_shape(right).center();
@@ -454,7 +459,16 @@ impl<R: AccessRules> Layout<R> {
                 );
                 (0.0..=1.0)
                     .contains(&location)
-                    .then_some((location, band_uid))
+                    .then_some((location, band_uid, loose))
+            })
+            .filter(|(_, band_uid, _)| {
+                // filter entries which are connected to either lhs or rhs (and possibly both)
+                let (bts1, bts2) = band_uid.into();
+                let (bts1, bts2) = (bts1.petgraph_index(), bts2.petgraph_index());
+                let geometry = self.drawing.geometry();
+                [(bts1, left), (bts1, right), (bts2, left), (bts2, right)]
+                    .iter()
+                    .all(|&(x, y)| !geometry.is_joined_with(x, y))
             })
             .collect();
         bands.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
@@ -463,7 +477,88 @@ impl<R: AccessRules> Layout<R> {
         // both in the case of "edge" of a primitive/loose, and in case the band actually goes into a segment
         // and then again out of it.
 
-        bands.into_iter().map(|(_, band_uid)| band_uid).collect()
+        bands
+            .into_iter()
+            .map(|(_, band_uid, loose)| (band_uid, loose))
+    }
+
+    fn does_compound_have_core(&self, primary: NodeIndex, core: DotIndex) -> bool {
+        let core: PrimitiveIndex = core.into();
+        match primary {
+            GenericNode::Primitive(pi) => pi == core,
+            GenericNode::Compound(compound) => self
+                .drawing
+                .geometry()
+                .compound_members(compound)
+                .any(|(_, pi)| pi == core),
+        }
+    }
+
+    /// Finds all bands on `layer` between `left` and `right`
+    /// (usually assuming `left` and `right` are neighbors in a Delaunay triangulation)
+    /// and returns them ordered from `left` to `right`.
+    pub fn bands_between_nodes_with_alignment(
+        &self,
+        layer: usize,
+        left: NodeIndex,
+        right: NodeIndex,
+    ) -> impl Iterator<Item = RelaxedPath<BandUid, ()>> + '_ {
+        let mut alignment_idx: u8 = 0;
+
+        // resolve end-points possibly to compounds such that
+        // `does_compound_have_core` produces correct results.
+        let maybe_to_compound = |x: NodeIndex| match x {
+            GenericNode::Primitive(pi) => self
+                .drawing
+                .geometry()
+                .compounds(pi)
+                .next()
+                .map(|(_, idx)| idx),
+            GenericNode::Compound(compound) => Some(compound),
+        };
+        let resolve_node =
+            |x: NodeIndex| maybe_to_compound(x).map(GenericNode::Compound).unwrap_or(x);
+        let (left, right) = (resolve_node(left), resolve_node(right));
+
+        self.bands_between_nodes(layer, left, right)
+            .map(move |(band_uid, loose)| {
+                // first, tag entry with core
+                let maybe_core = match loose {
+                    LooseIndex::Bend(lbi) => Some(self.drawing.geometry().core(lbi.into())),
+                    _ => None,
+                };
+                Some((band_uid, maybe_core))
+            })
+            .chain(iter::once(None))
+            .flat_map(move |item| {
+                // insert alignment pseudo-paths if necessary
+                let alignment_incr = match item {
+                    Some((_, maybe_core)) => match (alignment_idx, maybe_core) {
+                        (0, Some(core)) if self.does_compound_have_core(left, core) => 0,
+                        (_, Some(core)) if self.does_compound_have_core(left, core) => {
+                            panic!("invalid band ordering")
+                        }
+
+                        (_, Some(core)) if self.does_compound_have_core(right, core) => 2u8
+                            .checked_sub(alignment_idx)
+                            .expect("invalid band ordering"),
+
+                        (0, _) => 1,
+                        (1, _) => 0,
+                        _ => panic!("invalid band ordering"),
+                    },
+                    None => 2u8
+                        .checked_sub(alignment_idx)
+                        .expect("invalid band ordering"),
+                };
+
+                alignment_idx += alignment_incr;
+
+                iter::repeat_n(RelaxedPath::Weak(()), alignment_incr.into()).chain(
+                    item.map(|(band_uid, _)| RelaxedPath::Normal(band_uid))
+                        .into_iter(),
+                )
+            })
     }
 
     pub fn rules(&self) -> &R {

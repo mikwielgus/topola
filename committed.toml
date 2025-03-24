@@ -5,6 +5,7 @@
 subject_length = 80
 line_length = 100
 style = "conventional"
+merge_commit = false
 
 # Should be the same as the list of directories in crates/ and src/.
 allowed_scopes = [
@@ -61,10 +62,15 @@ allowed_scopes = [
   "math/cyclic_search",
   "math/polygon_tangents",
   "math/tangents",
+  "math/tunnel",
   "router/draw",
   "router/navcord",
   "router/navcorder",
   "router/navmesh",
+  "router/ng/eval",
+  "router/ng/floating",
+  "router/ng/poly",
+  "router/ng/router",
   "router/route",
   "router/router",
   "router/thetastar",
@@ -72,5 +78,3 @@ allowed_scopes = [
   "stepper",
   "triangulation",
 ]
-
-merge_commit = false

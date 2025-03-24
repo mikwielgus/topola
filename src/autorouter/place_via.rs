@@ -14,6 +14,7 @@ use crate::{
 use super::{
     invoker::{
         GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
+        GetPolygonalBlockers,
     },
     Autorouter, AutorouterError,
 };
@@ -51,8 +52,9 @@ impl PlaceViaExecutionStepper {
     }
 }
 
-impl GetMaybeThetastarStepper for PlaceViaExecutionStepper {}
-impl GetMaybeNavcord for PlaceViaExecutionStepper {}
 impl GetGhosts for PlaceViaExecutionStepper {}
-impl GetObstacles for PlaceViaExecutionStepper {}
+impl GetMaybeNavcord for PlaceViaExecutionStepper {}
+impl GetMaybeThetastarStepper for PlaceViaExecutionStepper {}
 impl GetNavmeshDebugTexts for PlaceViaExecutionStepper {}
+impl GetObstacles for PlaceViaExecutionStepper {}
+impl GetPolygonalBlockers for PlaceViaExecutionStepper {}

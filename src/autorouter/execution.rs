@@ -2,21 +2,23 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::ops::ControlFlow;
+use std::{collections::BTreeSet, ops::ControlFlow};
 
 use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     board::AccessMesadata,
-    layout::{via::ViaWeight, LayoutEdit},
+    graph::GenericIndex,
+    layout::{poly::PolyWeight, via::ViaWeight, LayoutEdit},
+    router::ng,
     stepper::{Abort, Step},
 };
 
 use super::{
     autoroute::AutorouteExecutionStepper,
     compare_detours::CompareDetoursExecutionStepper,
-    invoker::{Invoker, InvokerError},
+    invoker::{GetActivePolygons, GetMaybeTopoNavmesh, Invoker, InvokerError},
     measure_length::MeasureLengthExecutionStepper,
     place_via::PlaceViaExecutionStepper,
     remove_bands::RemoveBandsExecutionStepper,
@@ -29,6 +31,13 @@ type Type = PinSelection;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     Autoroute(PinSelection, AutorouterOptions),
+    TopoAutoroute {
+        selection: PinSelection,
+        #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
+        allowed_edges: BTreeSet<ng::PieEdgeIndex>,
+        active_layer: String,
+        routed_band_width: f64,
+    },
     PlaceVia(ViaWeight),
     RemoveBands(BandSelection),
     CompareDetours(Type, AutorouterOptions),
@@ -39,19 +48,21 @@ pub enum Command {
     GetMaybeThetastarStepper,
     GetMaybeNavcord,
     GetGhosts,
+    GetPolygonalBlockers,
     GetObstacles,
     GetNavmeshDebugTexts
 )]
-pub enum ExecutionStepper {
+pub enum ExecutionStepper<M> {
     Autoroute(AutorouteExecutionStepper),
+    TopoAutoroute(ng::AutorouteExecutionStepper<M>),
     PlaceVia(PlaceViaExecutionStepper),
     RemoveBands(RemoveBandsExecutionStepper),
     CompareDetours(CompareDetoursExecutionStepper),
     MeasureLength(MeasureLengthExecutionStepper),
 }
 
-impl ExecutionStepper {
-    fn step_catch_err<M: AccessMesadata>(
+impl<M: AccessMesadata + Clone> ExecutionStepper<M> {
+    fn step_catch_err(
         &mut self,
         autorouter: &mut Autorouter<M>,
     ) -> Result<ControlFlow<(Option<LayoutEdit>, String)>, InvokerError> {
@@ -62,6 +73,29 @@ impl ExecutionStepper {
                     ControlFlow::Break((edit, "finished autorouting".to_string()))
                 }
             },
+            ExecutionStepper::TopoAutoroute(autoroute) => {
+                let ret = match autoroute.step() {
+                    ControlFlow::Continue(()) => ControlFlow::Continue(()),
+                    ControlFlow::Break(false) => {
+                        ControlFlow::Break((None, "topo-autorouting failed".to_string()))
+                    }
+                    ControlFlow::Break(true) => {
+                        for (ep, band) in &autoroute.last_bands {
+                            let (source, target) = ep.end_points.into();
+                            autorouter
+                                .board
+                                .try_set_band_between_nodes(source, target, *band);
+                        }
+                        ControlFlow::Break((
+                            Some(autoroute.last_recorder.clone()),
+                            "finished topo-autorouting".to_string(),
+                        ))
+                    }
+                };
+                // TODO: maintain topo-navmesh just like layout
+                *autorouter.board.layout_mut() = autoroute.last_layout.clone();
+                ret
+            }
             ExecutionStepper::PlaceVia(place_via) => {
                 let edit = place_via.doit(autorouter)?;
                 ControlFlow::Break((edit, "finished placing via".to_string()))
@@ -90,7 +124,7 @@ impl ExecutionStepper {
     }
 }
 
-impl<M: AccessMesadata> Step<Invoker<M>, String> for ExecutionStepper {
+impl<M: AccessMesadata + Clone> Step<Invoker<M>, String> for ExecutionStepper<M> {
     type Error = InvokerError;
 
     fn step(&mut self, invoker: &mut Invoker<M>) -> Result<ControlFlow<String>, InvokerError> {
@@ -111,9 +145,36 @@ impl<M: AccessMesadata> Step<Invoker<M>, String> for ExecutionStepper {
     }
 }
 
-impl<M: AccessMesadata> Abort<Invoker<M>> for ExecutionStepper {
-    fn abort(&mut self, context: &mut Invoker<M>) {
-        // TODO: fix this
-        self.finish(context);
+impl<M: AccessMesadata + Clone> Abort<Invoker<M>> for ExecutionStepper<M> {
+    fn abort(&mut self, invoker: &mut Invoker<M>) {
+        match self {
+            ExecutionStepper::TopoAutoroute(autoroute) => {
+                autoroute.abort(&mut ());
+                // TODO: maintain topo-navmesh just like layout
+                *invoker.autorouter.board.layout_mut() = autoroute.last_layout.clone();
+            }
+            execution => {
+                // TODO
+                execution.finish(invoker);
+            }
+        }
+    }
+}
+
+impl<M> GetActivePolygons for ExecutionStepper<M> {
+    fn active_polygons(&self) -> &[GenericIndex<PolyWeight>] {
+        match self {
+            ExecutionStepper::TopoAutoroute(autoroute) => autoroute.active_polygons(),
+            _ => &[],
+        }
+    }
+}
+
+impl<M> GetMaybeTopoNavmesh for ExecutionStepper<M> {
+    fn maybe_topo_navmesh(&self) -> Option<ng::pie::navmesh::NavmeshRef<'_, ng::PieNavmeshBase>> {
+        match self {
+            ExecutionStepper::TopoAutoroute(autoroute) => autoroute.maybe_topo_navmesh(),
+            _ => None,
+        }
     }
 }

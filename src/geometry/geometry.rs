@@ -228,6 +228,25 @@ impl<
         );
     }
 
+    pub fn is_joined_with<I>(&self, seg: I, node: GenericNode<PI, GenericIndex<CW>>) -> bool
+    where
+        I: Copy + GetPetgraphIndex,
+        CW: Clone,
+        Cel: Copy,
+    {
+        match node {
+            GenericNode::Primitive(prim) => self
+                .graph
+                .find_edge_undirected(seg.petgraph_index(), prim.petgraph_index())
+                .map_or(false, |(eidx, _direction)| {
+                    matches!(self.graph.edge_weight(eidx).unwrap(), GeometryLabel::Joined)
+                }),
+            GenericNode::Compound(comp) => self
+                .compound_members(comp)
+                .any(|(_cel, i)| self.is_joined_with(seg, GenericNode::Primitive(i))),
+        }
+    }
+
     pub fn add_bend<W: AccessBendWeight + Into<PW>>(
         &mut self,
         from: DI,

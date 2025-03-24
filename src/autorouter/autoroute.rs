@@ -23,6 +23,7 @@ use crate::{
 use super::{
     invoker::{
         GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
+        GetPolygonalBlockers,
     },
     Autorouter, AutorouterError, AutorouterOptions,
 };
@@ -186,6 +187,8 @@ impl GetGhosts for AutorouteExecutionStepper {
         self.route.as_ref().map_or(&[], |route| route.ghosts())
     }
 }
+
+impl GetPolygonalBlockers for AutorouteExecutionStepper {}
 
 impl GetObstacles for AutorouteExecutionStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {

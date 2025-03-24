@@ -17,7 +17,7 @@ use crate::{
 ///
 /// This trait implements generic function for accessing or modifying different
 /// compounds of board parts like nets or layers
-pub trait AccessMesadata: AccessRules {
+pub trait AccessMesadata: AccessRules + std::panic::RefUnwindSafe {
     /// Renames a layer based on its index.
     fn bename_layer(&mut self, layer: usize, layername: String);
 

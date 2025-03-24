@@ -7,6 +7,7 @@ use geo::Point;
 use petgraph::graph::{EdgeIndex, NodeIndex};
 use serde::{Deserialize, Serialize};
 use spade::InsertionError;
+use std::collections::BTreeSet;
 use thiserror::Error;
 
 use crate::{
@@ -14,7 +15,7 @@ use crate::{
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
     graph::MakeRef,
     layout::{via::ViaWeight, LayoutEdit},
-    router::{navmesh::NavmeshError, thetastar::ThetastarError, RouterOptions},
+    router::{navmesh::NavmeshError, ng, thetastar::ThetastarError, RouterOptions},
     triangulation::GetTrianvertexNodeIndex,
 };
 
@@ -43,6 +44,8 @@ pub enum AutorouterError {
     Navmesh(#[from] NavmeshError),
     #[error("routing failed: {0}")]
     Thetastar(#[from] ThetastarError),
+    #[error(transparent)]
+    Spade(#[from] spade::InsertionError),
     #[error("could not place via")]
     CouldNotPlaceVia(#[from] Infringement),
     #[error("could not remove band")]
@@ -130,6 +133,95 @@ impl<M: AccessMesadata> Autorouter<M> {
         }
 
         Ok(())
+    }
+
+    pub fn topo_autoroute(
+        &mut self,
+        selection: &PinSelection,
+        allowed_edges: BTreeSet<ng::PieEdgeIndex>,
+        active_layer: usize,
+        width: f64,
+        init_navmesh: Option<ng::PieNavmesh>,
+    ) -> Result<ng::AutorouteExecutionStepper<M>, AutorouterError>
+    where
+        M: Clone,
+    {
+        self.topo_autoroute_ratlines(
+            self.selected_ratlines(selection),
+            allowed_edges,
+            active_layer,
+            width,
+            init_navmesh,
+        )
+    }
+
+    pub(super) fn topo_autoroute_ratlines(
+        &mut self,
+        ratlines: Vec<EdgeIndex<usize>>,
+        allowed_edges: BTreeSet<ng::PieEdgeIndex>,
+        active_layer: usize,
+        width: f64,
+        init_navmesh: Option<ng::PieNavmesh>,
+    ) -> Result<ng::AutorouteExecutionStepper<M>, AutorouterError>
+    where
+        M: Clone,
+    {
+        let navmesh = if let Some(x) = init_navmesh {
+            x
+        } else {
+            ng::calculate_navmesh(&self.board, active_layer)?
+        };
+
+        let mut got_any_valid_goals = false;
+
+        use ng::pie::NavmeshIndex;
+
+        let ret = ng::AutorouteExecutionStepper::new(
+            self.board.layout(),
+            &navmesh,
+            self.board
+                .bands_by_id()
+                .iter()
+                .map(|(&k, &v)| (k, v))
+                .collect(),
+            active_layer,
+            allowed_edges,
+            ratlines.into_iter().filter_map(|ratline| {
+                let (source, target) = self.ratline_endpoints(ratline);
+
+                if navmesh
+                    .as_ref()
+                    .node_data(&NavmeshIndex::Primal(source))
+                    .is_none()
+                    || navmesh
+                        .as_ref()
+                        .node_data(&NavmeshIndex::Primal(target))
+                        .is_none()
+                {
+                    // e.g. due to wrong active layer
+                    return None;
+                }
+
+                if self.board.band_between_nodes(source, target).is_some() {
+                    // already connected
+                    return None;
+                }
+
+                got_any_valid_goals = true;
+
+                Some(ng::Goal {
+                    source,
+                    target,
+                    width,
+                })
+            }),
+        );
+
+        if !got_any_valid_goals {
+            Err(AutorouterError::NothingToRoute)
+        } else {
+            Ok(ret)
+        }
     }
 
     pub fn place_via(

@@ -2,27 +2,31 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::ops::ControlFlow;
+use core::ops::ControlFlow;
 
 use enum_dispatch::enum_dispatch;
-use geo::Point;
+use geo::geometry::{LineString, Point};
 use thiserror::Error;
 
 use crate::{
     autorouter::{
         execution::ExecutionStepper,
         invoker::{
-            GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts,
-            GetObstacles, Invoker, InvokerError,
+            GetActivePolygons, GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper,
+            GetMaybeTopoNavmesh, GetNavmeshDebugTexts, GetObstacles, GetPolygonalBlockers, Invoker,
+            InvokerError,
         },
     },
     board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
+    graph::GenericIndex,
     interactor::interaction::{InteractionError, InteractionStepper},
+    layout::poly::PolyWeight,
     router::{
         navcord::Navcord,
         navmesh::{Navmesh, NavnodeIndex},
+        ng,
         thetastar::ThetastarStepper,
     },
     stepper::{Abort, OnEvent, Step},
@@ -70,18 +74,21 @@ pub enum ActivityError {
 
 /// An activity is either an interaction or an execution
 #[enum_dispatch(
-    GetMaybeThetastarStepper,
-    GetMaybeNavcord,
+    GetActivePolygons,
     GetGhosts,
+    GetMaybeNavcord,
+    GetMaybeThetastarStepper,
+    GetMaybeTopoNavmesh,
+    GetNavmeshDebugTexts,
     GetObstacles,
-    GetNavmeshDebugTexts
+    GetPolygonalBlockers
 )]
-pub enum ActivityStepper {
+pub enum ActivityStepper<M> {
     Interaction(InteractionStepper),
-    Execution(ExecutionStepper),
+    Execution(ExecutionStepper<M>),
 }
 
-impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for ActivityStepper {
+impl<M: AccessMesadata + Clone> Step<ActivityContext<'_, M>, String> for ActivityStepper<M> {
     type Error = ActivityError;
 
     fn step(
@@ -95,7 +102,7 @@ impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for ActivityStepper
     }
 }
 
-impl<M: AccessMesadata> Abort<Invoker<M>> for ActivityStepper {
+impl<M: AccessMesadata + Clone> Abort<Invoker<M>> for ActivityStepper<M> {
     fn abort(&mut self, context: &mut Invoker<M>) {
         match self {
             ActivityStepper::Interaction(interaction) => interaction.abort(context),
@@ -104,7 +111,7 @@ impl<M: AccessMesadata> Abort<Invoker<M>> for ActivityStepper {
     }
 }
 
-impl<M: AccessMesadata> OnEvent<ActivityContext<'_, M>, InteractiveEvent> for ActivityStepper {
+impl<M: AccessMesadata> OnEvent<ActivityContext<'_, M>, InteractiveEvent> for ActivityStepper<M> {
     type Output = Result<(), InteractionError>;
 
     fn on_event(
@@ -120,27 +127,27 @@ impl<M: AccessMesadata> OnEvent<ActivityContext<'_, M>, InteractiveEvent> for Ac
 }
 
 /// An ActivityStepper that preserves its status
-pub struct ActivityStepperWithStatus {
-    activity: ActivityStepper,
+pub struct ActivityStepperWithStatus<M> {
+    activity: ActivityStepper<M>,
     maybe_status: Option<ControlFlow<String>>,
 }
 
-impl ActivityStepperWithStatus {
-    pub fn new_execution(execution: ExecutionStepper) -> ActivityStepperWithStatus {
+impl<M> ActivityStepperWithStatus<M> {
+    pub fn new_execution(execution: ExecutionStepper<M>) -> Self {
         Self {
             activity: ActivityStepper::Execution(execution),
             maybe_status: None,
         }
     }
 
-    pub fn new_interaction(interaction: InteractionStepper) -> ActivityStepperWithStatus {
+    pub fn new_interaction(interaction: InteractionStepper) -> Self {
         Self {
             activity: ActivityStepper::Interaction(interaction),
             maybe_status: None,
         }
     }
 
-    pub fn activity(&self) -> &ActivityStepper {
+    pub fn activity(&self) -> &ActivityStepper<M> {
         &self.activity
     }
 
@@ -149,7 +156,9 @@ impl ActivityStepperWithStatus {
     }
 }
 
-impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for ActivityStepperWithStatus {
+impl<M: AccessMesadata + Clone> Step<ActivityContext<'_, M>, String>
+    for ActivityStepperWithStatus<M>
+{
     type Error = ActivityError;
 
     fn step(
@@ -162,15 +171,15 @@ impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for ActivityStepper
     }
 }
 
-impl<M: AccessMesadata> Abort<Invoker<M>> for ActivityStepperWithStatus {
+impl<M: AccessMesadata + Clone> Abort<Invoker<M>> for ActivityStepperWithStatus<M> {
     fn abort(&mut self, context: &mut Invoker<M>) {
         self.maybe_status = Some(ControlFlow::Break(String::from("aborted")));
         self.activity.abort(context);
     }
 }
 
-impl<M: AccessMesadata> OnEvent<ActivityContext<'_, M>, InteractiveEvent>
-    for ActivityStepperWithStatus
+impl<M: AccessMesadata + Clone> OnEvent<ActivityContext<'_, M>, InteractiveEvent>
+    for ActivityStepperWithStatus<M>
 {
     type Output = Result<(), InteractionError>;
 
@@ -183,31 +192,49 @@ impl<M: AccessMesadata> OnEvent<ActivityContext<'_, M>, InteractiveEvent>
     }
 }
 
-impl GetMaybeThetastarStepper for ActivityStepperWithStatus {
+impl<M> GetActivePolygons for ActivityStepperWithStatus<M> {
+    fn active_polygons(&self) -> &[GenericIndex<PolyWeight>] {
+        self.activity.active_polygons()
+    }
+}
+
+impl<M> GetMaybeThetastarStepper for ActivityStepperWithStatus<M> {
     fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
         self.activity.maybe_thetastar()
     }
 }
 
-impl GetMaybeNavcord for ActivityStepperWithStatus {
+impl<M> GetMaybeTopoNavmesh for ActivityStepperWithStatus<M> {
+    fn maybe_topo_navmesh(&self) -> Option<ng::pie::navmesh::NavmeshRef<'_, ng::PieNavmeshBase>> {
+        self.activity.maybe_topo_navmesh()
+    }
+}
+
+impl<M> GetMaybeNavcord for ActivityStepperWithStatus<M> {
     fn maybe_navcord(&self) -> Option<&Navcord> {
         self.activity.maybe_navcord()
     }
 }
 
-impl GetGhosts for ActivityStepperWithStatus {
+impl<M> GetGhosts for ActivityStepperWithStatus<M> {
     fn ghosts(&self) -> &[PrimitiveShape] {
         self.activity.ghosts()
     }
 }
 
-impl GetObstacles for ActivityStepperWithStatus {
+impl<M> GetPolygonalBlockers for ActivityStepperWithStatus<M> {
+    fn polygonal_blockers(&self) -> &[LineString] {
+        self.activity.polygonal_blockers()
+    }
+}
+
+impl<M> GetObstacles for ActivityStepperWithStatus<M> {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.activity.obstacles()
     }
 }
 
-impl GetNavmeshDebugTexts for ActivityStepperWithStatus {
+impl<M> GetNavmeshDebugTexts for ActivityStepperWithStatus<M> {
     fn navnode_debug_text(&self, navnode: NavnodeIndex) -> Option<&str> {
         self.activity.navnode_debug_text(navnode)
     }

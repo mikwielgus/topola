@@ -13,6 +13,7 @@ use crate::{
 use super::{
     invoker::{
         GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
+        GetPolygonalBlockers,
     },
     selection::BandSelection,
     Autorouter, AutorouterError,
@@ -53,8 +54,9 @@ impl MeasureLengthExecutionStepper {
     }
 }
 
-impl GetMaybeThetastarStepper for MeasureLengthExecutionStepper {}
-impl GetMaybeNavcord for MeasureLengthExecutionStepper {}
 impl GetGhosts for MeasureLengthExecutionStepper {}
-impl GetObstacles for MeasureLengthExecutionStepper {}
+impl GetMaybeNavcord for MeasureLengthExecutionStepper {}
+impl GetMaybeThetastarStepper for MeasureLengthExecutionStepper {}
 impl GetNavmeshDebugTexts for MeasureLengthExecutionStepper {}
+impl GetObstacles for MeasureLengthExecutionStepper {}
+impl GetPolygonalBlockers for MeasureLengthExecutionStepper {}
