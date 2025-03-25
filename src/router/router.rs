@@ -81,9 +81,7 @@ impl<R: AccessRules> RouterAstarStrategy<'_, R> {
     }
 }
 
-impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex>
-    for RouterAstarStrategy<'_, R>
-{
+impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAstarStrategy<'_, R> {
     fn is_goal(
         &mut self,
         navmesh: &Navmesh,
