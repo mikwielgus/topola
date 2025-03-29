@@ -4,6 +4,7 @@
 
 use std::ops::ControlFlow;
 
+use enum_dispatch::enum_dispatch;
 use geo::Point;
 use thiserror::Error;
 
@@ -43,6 +44,7 @@ pub enum ActivityError {
 }
 
 /// An activity is either an interaction or an execution
+#[enum_dispatch(GetMaybeNavmesh, GetMaybeNavcord, GetGhosts, GetObstacles)]
 pub enum ActivityStepper {
     Interaction(InteractionStepper),
     Execution(ExecutionStepper),
@@ -70,46 +72,6 @@ impl<M: AccessMesadata> Abort<ActivityContext<'_, M>> for ActivityStepper {
                 execution.finish(context.invoker);
             } // TODO.
         };
-    }
-}
-
-impl GetMaybeNavmesh for ActivityStepper {
-    /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
-    fn maybe_navmesh(&self) -> Option<&Navmesh> {
-        match self {
-            ActivityStepper::Interaction(interaction) => interaction.maybe_navmesh(),
-            ActivityStepper::Execution(execution) => execution.maybe_navmesh(),
-        }
-    }
-}
-
-impl GetMaybeNavcord for ActivityStepper {
-    /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
-    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
-        match self {
-            ActivityStepper::Interaction(interaction) => interaction.maybe_navcord(),
-            ActivityStepper::Execution(execution) => execution.maybe_navcord(),
-        }
-    }
-}
-
-impl GetGhosts for ActivityStepper {
-    /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
-    fn ghosts(&self) -> &[PrimitiveShape] {
-        match self {
-            ActivityStepper::Interaction(interaction) => interaction.ghosts(),
-            ActivityStepper::Execution(execution) => execution.ghosts(),
-        }
-    }
-}
-
-impl GetObstacles for ActivityStepper {
-    /// Implemented manually instead of with `enum_dispatch` because it doesn't work across crates.
-    fn obstacles(&self) -> &[PrimitiveIndex] {
-        match self {
-            ActivityStepper::Interaction(interaction) => interaction.obstacles(),
-            ActivityStepper::Execution(execution) => execution.obstacles(),
-        }
     }
 }
 
