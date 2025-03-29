@@ -15,7 +15,7 @@ use crate::{
         head::GetFace,
         primitive::MakePrimitiveShape,
         rules::AccessRules,
-        Collision, DrawingException, Guide, Infringement,
+        Guide,
     },
     geometry::{
         primitive::PrimitiveShape,
@@ -116,18 +116,8 @@ impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAst
                         DrawException::CannotWrapAround(.., layout_err) => layout_err,
                     };
 
-                    let (ghost, obstacle) = match layout_err {
-                        DrawingException::NoTangents(..) => return None,
-                        DrawingException::Infringement(Infringement(ghost, obstacle)) => {
-                            (ghost, obstacle)
-                        }
-                        DrawingException::Collision(Collision(ghost, obstacle)) => {
-                            (ghost, obstacle)
-                        }
-                        DrawingException::AlreadyConnected(..) => return None,
-                    };
-
-                    self.probe_ghosts = vec![ghost];
+                    let (ghost, obstacle) = layout_err.maybe_ghost_and_obstacle()?;
+                    self.probe_ghosts = vec![*ghost];
                     self.probe_obstacles = vec![obstacle];
                 }
                 None

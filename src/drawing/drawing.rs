@@ -66,6 +66,17 @@ impl fmt::Debug for DrawingException {
     }
 }
 
+impl DrawingException {
+    pub fn maybe_ghost_and_obstacle(&self) -> Option<(&PrimitiveShape, PrimitiveIndex)> {
+        match self {
+            Self::NoTangents(_) => None,
+            Self::Infringement(Infringement(ghost, obstacle)) => Some((ghost, *obstacle)),
+            Self::Collision(Collision(ghost, obstacle)) => Some((ghost, *obstacle)),
+            Self::AlreadyConnected(_) => None,
+        }
+    }
+}
+
 // TODO add real error messages + these should eventually use Display
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{0:?} infringes on {1:?}")]
