@@ -540,95 +540,50 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
 
             let from_head = self.rear_head(joints.1);
             let to_head = self.rear_head(joints.0);
+            let rail_width = rail_primitive.width();
 
-            if let Some(inner) = rail_primitive.inner() {
+            let (from, to, offset) = if let Some(inner) = rail_primitive.inner() {
                 let from = self
-                    .head_around_bend_segment(
-                        &from_head,
-                        inner.into(),
-                        true,
-                        self.primitive(rail).width(),
-                    )?
+                    .head_around_bend_segment(&from_head, inner.into(), true, rail_width)?
                     .end_point();
                 let to = self
-                    .head_around_bend_segment(
-                        &to_head,
-                        inner.into(),
-                        false,
-                        self.primitive(rail).width(),
-                    )?
+                    .head_around_bend_segment(&to_head, inner.into(), false, rail_width)?
                     .end_point();
-                let offset = self.head_around_bend_offset(
-                    &from_head,
-                    inner.into(),
-                    self.primitive(rail).width(),
-                );
-
-                self.move_dot_with_infringables(
-                    recorder,
-                    joints.0.into(),
-                    from,
-                    Some(&self.bend_outer_bows(rail)),
-                )?;
-                self.move_dot_with_infringables(
-                    recorder,
-                    joints.1.into(),
-                    to,
-                    Some(&self.bend_outer_bows(rail)),
-                )?;
-
-                self.shift_bend_with_infringables(
-                    recorder,
-                    rail.into(),
-                    offset,
-                    Some(&self.bend_outer_bows(rail)),
-                )?;
-
-                // Update offsets in case the rule conditions changed.
+                let offset = self.head_around_bend_offset(&from_head, inner.into(), rail_width);
+                (from, to, offset)
             } else {
                 let core = rail_primitive.core();
                 let from = self
-                    .head_around_dot_segment(
-                        &from_head,
-                        core.into(),
-                        true,
-                        self.primitive(rail).width(),
-                    )?
+                    .head_around_dot_segment(&from_head, core.into(), true, rail_width)?
                     .end_point();
                 let to = self
-                    .head_around_dot_segment(
-                        &to_head,
-                        core.into(),
-                        false,
-                        self.primitive(rail).width(),
-                    )?
+                    .head_around_dot_segment(&to_head, core.into(), false, rail_width)?
                     .end_point();
-                let offset = self.head_around_dot_offset(
-                    &from_head,
-                    core.into(),
-                    self.primitive(rail).width(),
-                );
+                let offset = self.head_around_dot_offset(&from_head, core.into(), rail_width);
+                (from, to, offset)
+            };
 
-                self.move_dot_with_infringables(
-                    recorder,
-                    joints.0.into(),
-                    from,
-                    Some(&self.bend_outer_bows(rail)),
-                )?;
-                self.move_dot_with_infringables(
-                    recorder,
-                    joints.1.into(),
-                    to,
-                    Some(&self.bend_outer_bows(rail)),
-                )?;
+            self.move_dot_with_infringables(
+                recorder,
+                joints.0.into(),
+                from,
+                Some(&self.bend_outer_bows(rail)),
+            )?;
+            self.move_dot_with_infringables(
+                recorder,
+                joints.1.into(),
+                to,
+                Some(&self.bend_outer_bows(rail)),
+            )?;
 
-                self.shift_bend_with_infringables(
-                    recorder,
-                    rail.into(),
-                    offset,
-                    Some(&self.bend_outer_bows(rail)),
-                )?;
-            }
+            self.shift_bend_with_infringables(
+                recorder,
+                rail.into(),
+                offset,
+                Some(&self.bend_outer_bows(rail)),
+            )?;
+
+            // Update offsets in case the rule conditions changed.
 
             maybe_rail = self.primitive(rail).outer();
         }
