@@ -534,14 +534,11 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         }
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn update_this_and_outward_bows(
+    fn update_this_and_outward_bows_intern(
         &mut self,
         recorder: &mut DrawingEdit<CW>,
         around: LooseBendIndex,
     ) -> Result<(), DrawingException> {
-        // FIXME: Fail gracefully on infringement.
         let mut maybe_rail = Some(around);
 
         while let Some(rail) = maybe_rail {
@@ -592,6 +589,24 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         }
 
         Ok(())
+    }
+
+    #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
+    fn update_this_and_outward_bows(
+        &mut self,
+        recorder: &mut DrawingEdit<CW>,
+        around: LooseBendIndex,
+    ) -> Result<(), DrawingException> {
+        let mut temp_recorder = DrawingEdit::new();
+        let ret = self.update_this_and_outward_bows_intern(&mut temp_recorder, around);
+        if ret.is_ok() {
+            recorder.apply(&temp_recorder);
+        } else {
+            temp_recorder.reverse_inplace();
+            self.recording_geometry_with_rtree.apply(&temp_recorder);
+        }
+        ret
     }
 
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() + 4))]
