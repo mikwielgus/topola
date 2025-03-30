@@ -19,7 +19,7 @@ fuzz_target!(|data: &str| {
         let mut dat = Vec::new();
         {
             let mut lw = ListWriter::new(&mut dat);
-            let _ = lw.write_value(&val).unwrap();
+            lw.write_value(&val).unwrap();
         }
 
         let cursor = std::io::Cursor::new(dat);

@@ -39,7 +39,7 @@ impl Action {
                 shortcut.format(&egui::ModifierNames::NAMES, false)
             )
         } else {
-            format!("{}", self.name)
+            self.name.clone()
         }
     }
 

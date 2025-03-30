@@ -34,7 +34,7 @@ pub struct LayerColors {
 impl LayerColors {
     pub fn color(&self, layername: Option<&str>) -> &LayerColor {
         layername
-            .and_then(|layername| Some(self.colors.get(layername).unwrap_or(&self.default)))
+            .map(|layername| self.colors.get(layername).unwrap_or(&self.default))
             .unwrap_or(&self.default)
     }
 }

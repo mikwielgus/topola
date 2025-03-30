@@ -232,26 +232,18 @@ impl Viewport {
                                             }
                                         }
 
-                                        let stroke =
-                                            'blk: {
-                                                if let (Some(source_pos), Some(target_pos)) = (
-                                                    activity
-                                                        .maybe_navcord()
-                                                        .map(|navcord| {
-                                                            navcord.path.iter().position(|node| {
-                                                                *node == edge.source()
-                                                            })
-                                                        })
-                                                        .flatten(),
-                                                    activity
-                                                        .maybe_navcord()
-                                                        .map(|navcord| {
-                                                            navcord.path.iter().position(|node| {
-                                                                *node == edge.target()
-                                                            })
-                                                        })
-                                                        .flatten(),
-                                                ) {
+                                        let stroke = 'blk: {
+                                            if let Some(navcord) = activity.maybe_navcord() {
+                                                if let (Some(source_pos), Some(target_pos)) =
+                                                    (
+                                                        navcord.path.iter().position(|node| {
+                                                            *node == edge.source()
+                                                        }),
+                                                        navcord.path.iter().position(|node| {
+                                                            *node == edge.target()
+                                                        }),
+                                                    )
+                                                {
                                                     if target_pos == source_pos + 1
                                                         || source_pos == target_pos + 1
                                                     {
@@ -261,12 +253,13 @@ impl Viewport {
                                                         );
                                                     }
                                                 }
+                                            }
 
-                                                egui::Stroke::new(
-                                                    1.0,
-                                                    egui::Color32::from_rgb(125, 125, 125),
-                                                )
-                                            };
+                                            egui::Stroke::new(
+                                                1.0,
+                                                egui::Color32::from_rgb(125, 125, 125),
+                                            )
+                                        };
 
                                         painter.paint_edge(from, to, stroke);
                                     }
@@ -284,13 +277,6 @@ impl Viewport {
                                 let resolve_primal = |p: &topola::layout::NodeIndex| {
                                     board.layout().node_shape(*p).center()
                                 };
-                                let root_bbox3d =
-                                    board.layout().drawing().rtree().root().envelope();
-
-                                let root_bbox = AABB::<[f64; 2]>::from_corners(
-                                    [root_bbox3d.lower()[0], root_bbox3d.lower()[1]].into(),
-                                    [root_bbox3d.upper()[0], root_bbox3d.upper()[1]].into(),
-                                );
 
                                 for (nidx, node) in &*navmesh.nodes {
                                     if let NavmeshIndex::Dual(didx) = nidx {
@@ -302,7 +288,7 @@ impl Viewport {
                                 }
                                 for (eidx, edge) in &*navmesh.edges {
                                     // TODO: display edge contents, too
-                                    let (a, b) = eidx.clone().into();
+                                    let (a, b) = (*eidx).into();
                                     let mut got_primal = false;
                                     let a_pos = match a {
                                         NavmeshIndex::Primal(p) => {
@@ -311,7 +297,7 @@ impl Viewport {
                                         }
                                         NavmeshIndex::Dual(d) => match map.get(&d) {
                                             None => continue,
-                                            Some(x) => x.clone(),
+                                            Some(&x) => x,
                                         },
                                     };
                                     let b_pos = match b {
@@ -321,7 +307,7 @@ impl Viewport {
                                         }
                                         NavmeshIndex::Dual(d) => match map.get(&d) {
                                             None => continue,
-                                            Some(x) => x.clone(),
+                                            Some(&x) => x,
                                         },
                                     };
                                     let edge_len = navmesh.edge_paths[edge.1].len();
@@ -348,10 +334,9 @@ impl Viewport {
 
                         if menu_bar.show_bboxes {
                             let root_bbox3d = board.layout().drawing().rtree().root().envelope();
-
                             let root_bbox = AABB::<[f64; 2]>::from_corners(
-                                [root_bbox3d.lower()[0], root_bbox3d.lower()[1]].into(),
-                                [root_bbox3d.upper()[0], root_bbox3d.upper()[1]].into(),
+                                [root_bbox3d.lower()[0], root_bbox3d.lower()[1]],
+                                [root_bbox3d.upper()[0], root_bbox3d.upper()[1]],
                             );
                             painter.paint_bbox(root_bbox);
                         }
@@ -359,7 +344,7 @@ impl Viewport {
                         if let Some(activity) = workspace.interactor.maybe_activity() {
                             for ghost in activity.ghosts().iter() {
                                 painter
-                                    .paint_primitive(&ghost, egui::Color32::from_rgb(75, 75, 150));
+                                    .paint_primitive(ghost, egui::Color32::from_rgb(75, 75, 150));
                             }
 
                             if let Some(navmesh) = activity.maybe_navmesh() {
@@ -420,8 +405,8 @@ impl Viewport {
                                 };
 
                             self.transform.translation = egui::Vec2::new(
-                                viewport_rect.center()[0] as f32,
-                                viewport_rect.center()[1] as f32,
+                                viewport_rect.center()[0],
+                                viewport_rect.center()[1],
                             ) - (self.transform.scaling
                                 * egui::Pos2::new(
                                     root_bbox.center()[0] as f32,
