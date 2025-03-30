@@ -1,0 +1,27 @@
+---
+source: crates/planar-incr-embed/src/planarr/tests.rs
+expression: "s_.find_all_other_ends(&0, 0, false).unwrap().1.collect::<Vec<_>>()"
+---
+[
+  [
+    1,
+    {
+      "section_idx": 1,
+      "insert_pos": 2
+    }
+  ],
+  [
+    2,
+    {
+      "section_idx": 2,
+      "insert_pos": 0
+    }
+  ],
+  [
+    2,
+    {
+      "section_idx": 2,
+      "insert_pos": 1
+    }
+  ]
+]

@@ -180,25 +180,29 @@ where
     // 2. handle rest
     Some((
         start_idx,
-        it.filter_map(move |(section_idx, (ni, eps))| {
+        it.flat_map(move |(section_idx, (ni, eps))| {
             // find possible insertion point
             // (at most one of `eps.len()+1` positions)
-            let mut pos = if stack.is_empty() { Some(0) } else { None };
-            for (n, i) in eps.iter().enumerate() {
-                handle_lifo_relaxed(&mut stack, i);
-                if pos.is_none() && stack.is_empty() {
-                    pos = Some(n + 1);
-                }
-            }
-            pos.map(|insert_pos| {
-                (
-                    ni,
-                    OtherEnd {
-                        section_idx,
-                        insert_pos,
-                    },
-                )
-            })
+            (if stack.is_empty() { Some(0) } else { None })
+                .into_iter()
+                .chain(eps.iter().enumerate().filter_map(|(n, i)| {
+                    handle_lifo_relaxed(&mut stack, i);
+                    if stack.is_empty() {
+                        Some(n + 1)
+                    } else {
+                        None
+                    }
+                }))
+                .map(move |insert_pos| {
+                    (
+                        ni.clone(),
+                        OtherEnd {
+                            section_idx,
+                            insert_pos,
+                        },
+                    )
+                })
+                .collect::<Vec<_>>()
         }),
     ))
 }

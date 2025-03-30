@@ -148,3 +148,20 @@ fn simple01() {
     assert_eq!(s_.insert_path(&1, 2, &2, 'd'), Ok(1));
     assert_compact_json_snapshot!(s.0);
 }
+
+#[test]
+fn weak00() {
+    let mut s = PlanarArrangement::<_, _, ()>::from_node_indices(0..3);
+    let mut s_ = s.as_mut();
+    s_.0[2].1.reversed = true;
+    s_.0[2].1.with_borrow_mut(|j| {
+        j.inner.push(RelaxedPath::Weak(()));
+    });
+    assert_eq!(s_.insert_path(&0, 0, &1, 'a'), Ok(0));
+    assert_eq!(s_.insert_path(&0, 0, &1, 'b'), Ok(0));
+    assert_compact_json_snapshot!(s_
+        .find_all_other_ends(&0, 0, false)
+        .unwrap()
+        .1
+        .collect::<Vec<_>>());
+}
