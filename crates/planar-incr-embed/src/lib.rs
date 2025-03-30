@@ -48,6 +48,16 @@ impl<PNI> Edge<PNI> {
     }
 }
 
+impl<PNI: Clone> Edge<&PNI> {
+    #[inline]
+    pub fn to_owned(&self) -> Edge<PNI> {
+        Edge {
+            lhs: self.lhs.cloned(),
+            rhs: self.rhs.cloned(),
+        }
+    }
+}
+
 #[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, Hash)]
 #[cfg_attr(
     any(test, feature = "serde"),

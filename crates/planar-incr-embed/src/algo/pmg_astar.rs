@@ -7,6 +7,7 @@
 
 use crate::{
     algo::{Goal, PreparedGoal},
+    mayrev::MaybeReversed,
     navmesh::{EdgeIndex, EdgePaths, Navmesh, NavmeshRef, NavmeshRefMut},
     Edge, NavmeshBase, NavmeshIndex, RelaxedPath,
 };
@@ -69,19 +70,28 @@ pub struct TaskResult<B: NavmeshBase, Ctx> {
     pub context: Ctx,
 }
 
+#[derive(Clone, Debug, PartialEq)]
+pub struct InsertionInfo<B: NavmeshBase> {
+    pub prev_node: NavmeshIndex<B::PrimalNodeIndex>,
+    pub cur_node: NavmeshIndex<B::PrimalNodeIndex>,
+    pub edge_meta: Edge<B::PrimalNodeIndex>,
+    pub epi: MaybeReversed<usize, RelaxedPath<B::EtchedPath, B::GapComment>>,
+
+    /// the introduction position re: `prev_node` -edge-> `cur_node`
+    pub intro: usize,
+
+    pub maybe_new_goal: Option<B::EtchedPath>,
+}
+
 pub trait EvaluateNavmesh<B: NavmeshBase, Ctx>:
-    Fn(NavmeshRef<B>, &Ctx, EdgeIndex<NavmeshIndex<B::PrimalNodeIndex>>) -> Option<(B::Scalar, Ctx)>
+    FnMut(NavmeshRef<B>, &Ctx, InsertionInfo<B>) -> Option<(B::Scalar, Ctx)>
 {
 }
 
 impl<B, Ctx, F> EvaluateNavmesh<B, Ctx> for F
 where
     B: NavmeshBase,
-    F: Fn(
-        NavmeshRef<B>,
-        &Ctx,
-        EdgeIndex<NavmeshIndex<B::PrimalNodeIndex>>,
-    ) -> Option<(B::Scalar, Ctx)>,
+    F: FnMut(NavmeshRef<B>, &Ctx, InsertionInfo<B>) -> Option<(B::Scalar, Ctx)>,
 {
 }
 
@@ -200,68 +210,83 @@ impl<B: NavmeshBase<Scalar = Scalar>, Scalar: num_traits::Float + core::iter::Su
 
 impl<B: NavmeshBase> PreparedGoal<B>
 where
-    B::GapComment: Clone,
-    B::Scalar: num_traits::Float + core::iter::Sum,
+    B::EtchedPath: PartialOrd,
+    B::GapComment: PartialOrd + Clone,
+    B::Scalar: num_traits::Float + num_traits::float::TotalOrder + core::iter::Sum,
 {
     /// start processing the goal
-    fn start_pmga<'a, Ctx, F: EvaluateNavmesh<B, Ctx>>(
-        &'a self,
-        navmesh: NavmeshRef<'a, B>,
+    fn start_pmga<Ctx, F: EvaluateNavmesh<B, Ctx>>(
+        &self,
+        navmesh: NavmeshRef<'_, B>,
         goal_idx: usize,
-        env: &'a PmgAstar<B, Ctx>,
-        context: &'a Ctx,
-        evaluate_navmesh: &'a F,
-    ) -> Option<impl Iterator<Item = Task<B, Ctx>> + 'a> {
+        env: &PmgAstar<B, Ctx>,
+        context: &Ctx,
+        evaluate_navmesh: &mut F,
+    ) -> BinaryHeap<Task<B, Ctx>> {
         let source = NavmeshIndex::Primal(self.source.clone());
         let estimated_remaining_goals = env.estimate_remaining_goals_costs(goal_idx);
-        Some(
-            navmesh
-                .node_data(&source)?
-                .neighs
-                .iter()
-                .filter_map({
-                    let source = source.clone();
-                    move |neigh| {
-                        navmesh
-                            .resolve_edge_data(source.clone(), neigh.clone())
-                            .map(|(_, epi)| {
-                                let edge_len = navmesh.access_edge_paths(epi).len();
-                                (neigh, epi, edge_len)
-                            })
-                    }
-                })
-                .flat_map(move |(neigh, epi, edge_len)| {
-                    let eidx = EdgeIndex::from((source.clone(), neigh.clone()));
-                    let source = source.clone();
-                    // A*-like remaining costs estimation
-                    let estimated_remaining =
-                        self.estimate_costs_for_source::<B::GapComment>(navmesh, neigh);
-                    (0..=edge_len).filter_map(move |i| {
-                        let mut edge_paths = Box::from(navmesh.edge_paths);
-                        let mut navmesh = NavmeshRefMut {
-                            nodes: navmesh.nodes,
-                            edges: navmesh.edges,
-                            edge_paths: &mut edge_paths,
-                        };
-                        navmesh.access_edge_paths_mut(epi).with_borrow_mut(|mut j| {
-                            j.insert(i, RelaxedPath::Normal(self.label.clone()))
-                        });
-                        evaluate_navmesh(navmesh.as_ref(), context, eidx.clone()).map(
-                            |(costs, context)| Task {
-                                goal_idx,
-                                costs,
-                                estimated_remaining,
-                                estimated_remaining_goals,
-                                edge_paths,
-                                selected_node: neigh.clone(),
-                                prev_node: source.clone(),
-                                cur_intro: edge_len - i,
-                                context,
-                            },
-                        )
+        let neighs = match navmesh.node_data(&source) {
+            None => return BinaryHeap::new(),
+            Some(x) => &x.neighs,
+        };
+
+        let mut ret = BinaryHeap::new();
+
+        // NOTE: this uses a `for` loop to get around borrowing problems with `evaluate_navmesh`
+        for (neigh, emeta, epi, edge_len) in neighs.iter().filter_map({
+            let source = source.clone();
+            move |neigh| {
+                navmesh
+                    .resolve_edge_data(source.clone(), neigh.clone())
+                    .map(|(emeta, epi)| {
+                        let edge_len = navmesh.access_edge_paths(epi).len();
+                        (neigh, emeta.to_owned(), epi, edge_len)
                     })
-                }),
-        )
+            }
+        }) {
+            let source = source.clone();
+            // A*-like remaining costs estimation
+            let estimated_remaining =
+                self.estimate_costs_for_source::<B::GapComment>(navmesh, neigh);
+            for i in 0..=edge_len {
+                let mut edge_paths = Box::from(navmesh.edge_paths);
+                let mut navmesh = NavmeshRefMut {
+                    nodes: navmesh.nodes,
+                    edges: navmesh.edges,
+                    edge_paths: &mut edge_paths,
+                };
+                navmesh
+                    .access_edge_paths_mut(epi)
+                    .with_borrow_mut(|mut j| j.insert(i, RelaxedPath::Normal(self.label.clone())));
+                if let Some(new_task) = (*evaluate_navmesh)(
+                    navmesh.as_ref(),
+                    context,
+                    InsertionInfo {
+                        prev_node: source.clone(),
+                        cur_node: neigh.clone(),
+                        edge_meta: emeta.clone(),
+                        epi,
+                        intro: i,
+                        maybe_new_goal: Some(self.label.clone()),
+                    },
+                )
+                .map(|(costs, context)| Task {
+                    goal_idx,
+                    costs,
+                    estimated_remaining,
+                    estimated_remaining_goals,
+                    edge_paths,
+                    selected_node: neigh.clone(),
+                    prev_node: source.clone(),
+                    cur_intro: edge_len - i,
+                    context,
+                }) {
+                    ret.push(new_task);
+                }
+            }
+        }
+
+        ret
     }
 }
 
@@ -309,7 +334,7 @@ where
     fn progress<F: EvaluateNavmesh<B, Ctx>>(
         &self,
         env: &mut PmgAstar<B, Ctx>,
-        evaluate_navmesh: F,
+        mut evaluate_navmesh: F,
     ) -> Vec<NavmeshIndex<B::PrimalNodeIndex>> {
         let goal_idx = self.goal_idx;
         let navmesh = NavmeshRef {
@@ -345,30 +370,40 @@ where
                     edges: &env.edges,
                     edge_paths: &mut edge_paths,
                 };
-                let eidx = EdgeIndex::from((self.selected_node.clone(), neigh.clone()));
-                let cur_intro = navmesh
-                    .edge_data_mut(self.selected_node.clone(), neigh.clone())
-                    .unwrap()
-                    .with_borrow_mut(|mut x| {
-                        x.insert(
-                            stop_data.insert_pos,
-                            RelaxedPath::Normal(goal.label.clone()),
-                        );
-                        x.len() - stop_data.insert_pos - 1
-                    });
+                let (edge_meta, epi) = navmesh
+                    .resolve_edge_data(self.selected_node.clone(), neigh.clone())
+                    .unwrap();
+                let edge_meta = edge_meta.to_owned();
+                let cur_intro = navmesh.access_edge_paths_mut(epi).with_borrow_mut(|mut x| {
+                    x.insert(
+                        stop_data.insert_pos,
+                        RelaxedPath::Normal(goal.label.clone()),
+                    );
+                    x.len() - stop_data.insert_pos - 1
+                });
                 ret.push(neigh.clone());
-                evaluate_navmesh(navmesh.as_ref(), &self.context, eidx).map(|(costs, context)| {
-                    Task {
-                        goal_idx,
-                        costs,
-                        estimated_remaining,
-                        estimated_remaining_goals: self.estimated_remaining_goals,
-                        edge_paths,
-                        selected_node: neigh.clone(),
+                evaluate_navmesh(
+                    navmesh.as_ref(),
+                    &self.context,
+                    InsertionInfo {
                         prev_node: self.selected_node.clone(),
-                        cur_intro,
-                        context,
-                    }
+                        cur_node: neigh.clone(),
+                        edge_meta,
+                        epi,
+                        intro: stop_data.insert_pos,
+                        maybe_new_goal: None,
+                    },
+                )
+                .map(|(costs, context)| Task {
+                    goal_idx,
+                    costs,
+                    estimated_remaining,
+                    estimated_remaining_goals: self.estimated_remaining_goals,
+                    edge_paths,
+                    selected_node: neigh.clone(),
+                    prev_node: self.selected_node.clone(),
+                    cur_intro,
+                    context,
                 })
             }));
 
@@ -405,7 +440,7 @@ where
         navmesh: &Navmesh<B>,
         goals: Vec<Goal<B::PrimalNodeIndex, B::EtchedPath>>,
         context: &Ctx,
-        evaluate_navmesh: F,
+        mut evaluate_navmesh: F,
     ) -> Self {
         let mut this = Self {
             queue: BinaryHeap::new(),
@@ -428,14 +463,7 @@ where
                     edges: &this.edges,
                     edge_paths: &navmesh.edge_paths,
                 };
-                let tmp = if let Some(iter) =
-                    first_goal.start_pmga(navmesh, 0, &this, context, &evaluate_navmesh)
-                {
-                    iter.collect()
-                } else {
-                    BinaryHeap::new()
-                };
-                tmp
+                first_goal.start_pmga(navmesh, 0, &this, context, &mut evaluate_navmesh)
             };
         }
 
@@ -449,7 +477,7 @@ where
     /// run one step of the path-search
     pub fn step<F: EvaluateNavmesh<B, Ctx>>(
         &mut self,
-        evaluate_navmesh: F,
+        mut evaluate_navmesh: F,
     ) -> ControlFlow<
         Option<(
             B::Scalar,
@@ -465,7 +493,7 @@ where
             log::info!("found no complete result");
             return ControlFlow::Break(None);
         };
-        ControlFlow::Continue(match task.run(self, &evaluate_navmesh) {
+        ControlFlow::Continue(match task.run(self, &mut evaluate_navmesh) {
             ControlFlow::Break(taskres) => {
                 let next_goal_idx = taskres.goal_idx + 1;
                 let navmesh = NavmeshRef {
@@ -496,17 +524,13 @@ where
                             edge_count,
                             taskres.costs,
                         );
-                        let mut tmp = if let Some(iter) = next_goal.start_pmga(
+                        let mut tmp = next_goal.start_pmga(
                             navmesh,
                             next_goal_idx,
                             self,
                             &taskres.context,
-                            &evaluate_navmesh,
-                        ) {
-                            iter.collect()
-                        } else {
-                            BinaryHeap::new()
-                        };
+                            &mut evaluate_navmesh,
+                        );
                         let forks = tmp.iter().map(|i| i.selected_node.clone()).collect();
                         self.queue.append(&mut tmp);
                         IntermedResult {
