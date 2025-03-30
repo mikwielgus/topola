@@ -97,6 +97,17 @@ pub struct Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     bend_index_marker: PhantomData<BI>,
 }
 
+impl<PW: Clone, DW, SW, BW, CW: Clone, PI, DI, SI, BI> Clone
+    for Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI>
+{
+    fn clone(&self) -> Self {
+        Self {
+            graph: self.graph.clone(),
+            ..Self::new()
+        }
+    }
+}
+
 impl<PW, DW, SW, BW, CW, PI, DI, SI, BI> Default for Geometry<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     fn default() -> Self {
         Self::new()

@@ -23,6 +23,16 @@ pub struct RecordingGeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     geometry_with_rtree: GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>,
 }
 
+impl<PW: Clone, DW, SW, BW, CW: Clone, PI: Clone, DI, SI, BI> Clone
+    for RecordingGeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
+{
+    fn clone(&self) -> Self {
+        Self {
+            geometry_with_rtree: self.geometry_with_rtree.clone(),
+        }
+    }
+}
+
 impl<
         PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<Index = PI> + Copy,
         DW: AccessDotWeight + Into<PW> + GetLayer,

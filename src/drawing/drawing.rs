@@ -102,7 +102,7 @@ pub type DrawingEdit<CW> = GeometryEdit<
     BendIndex,
 >;
 
-#[derive(Debug, Getters)]
+#[derive(Clone, Debug, Getters)]
 pub struct Drawing<CW, R> {
     recording_geometry_with_rtree: RecordingGeometryWithRtree<
         PrimitiveWeight,

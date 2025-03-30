@@ -45,6 +45,18 @@ pub struct GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI> {
     layer_count: usize,
 }
 
+impl<PW: Clone, DW, SW, BW, CW: Clone, PI: Clone, DI, SI, BI> Clone
+    for GeometryWithRtree<PW, DW, SW, BW, CW, PI, DI, SI, BI>
+{
+    fn clone(&self) -> Self {
+        Self {
+            geometry: self.geometry.clone(),
+            rtree: self.rtree.clone(),
+            layer_count: self.layer_count,
+        }
+    }
+}
+
 #[debug_invariant(self.test_envelopes())]
 #[debug_invariant(self.geometry.graph().node_count() == self.rtree.size())]
 impl<

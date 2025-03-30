@@ -56,7 +56,7 @@ pub enum CompoundWeight {
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<CompoundWeight>>;
 pub type LayoutEdit = DrawingEdit<CompoundWeight>;
 
-#[derive(Debug, Getters)]
+#[derive(Clone, Debug, Getters)]
 /// Structure for managing the Layout design
 pub struct Layout<R> {
     drawing: Drawing<CompoundWeight, R>,

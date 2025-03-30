@@ -37,7 +37,7 @@ pub trait AccessMesadata: AccessRules {
     fn netname_net(&self, netname: &str) -> Option<usize>;
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 /// [`SpecctraRule`] represents the basic routing constraints used by an auto-router, such as
 /// the Topola auto-router, in a PCB design process. This struct defines two key design
 /// rules: the width of the trace and the minimum clearance between electrical features.
@@ -62,7 +62,7 @@ impl SpecctraRule {
     }
 }
 
-#[derive(Debug)]
+#[derive(Clone, Debug)]
 /// [`SpecctraMesadata`] holds the metadata required by the Specctra auto-router to
 /// understand and enforce design rules across various net classes and layers in a PCB layout.
 /// This struct encapsulates information about rules for individual nets, net classes,
