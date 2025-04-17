@@ -638,7 +638,7 @@ impl SpecctraDesign {
         board: &mut Board<SpecctraMesadata>,
         place: PointWithRotation,
         pin: PointWithRotation,
-        coords: &[structure::Point],
+        mut coords: &[structure::Point],
         width: f64,
         layer: usize,
         maybe_net: Option<usize>,
@@ -647,7 +647,7 @@ impl SpecctraDesign {
         let mut nodes = Vec::with_capacity(coords.len() * 2 - 1);
 
         // add the first coordinate in the wire path as a dot and save its index
-        let mut prev_index = board.add_fixed_dot_infringably(
+        let first_index = board.add_fixed_dot_infringably(
             recorder,
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
@@ -659,10 +659,23 @@ impl SpecctraDesign {
             }),
             None,
         );
-        nodes.push(prev_index.into());
+        nodes.push(first_index.into());
+        let mut prev_index = first_index;
+
+        if approx::abs_diff_eq!(coords[0].x, coords.last().unwrap().x)
+            && approx::abs_diff_eq!(coords[0].y, coords.last().unwrap().y)
+        {
+            coords = &coords[..coords.len() - 1];
+        }
+
+        let seg_weight = FixedSegWeight(GeneralSegWeight {
+            width,
+            layer,
+            maybe_net,
+        });
 
         // iterate through path coords starting from the second
-        for coord in coords.iter().skip(1) {
+        for coord in &coords[1..] {
             let index = board.add_fixed_dot_infringably(
                 recorder,
                 FixedDotWeight(GeneralDotWeight {
@@ -680,24 +693,19 @@ impl SpecctraDesign {
             // add a seg between the current and previous coords
             nodes.push(
                 board
-                    .add_fixed_seg_infringably(
-                        recorder,
-                        prev_index,
-                        index,
-                        FixedSegWeight(GeneralSegWeight {
-                            width,
-                            layer,
-                            maybe_net,
-                        }),
-                        None,
-                    )
+                    .add_fixed_seg_infringably(recorder, prev_index, index, seg_weight, None)
                     .into(),
             );
 
             prev_index = index;
         }
 
-        // assumption: the last coord and the first coord are equal
+        // add a seg between the last and first coords
+        nodes.push(
+            board
+                .add_fixed_seg_infringably(recorder, prev_index, first_index, seg_weight, None)
+                .into(),
+        );
 
         board.add_poly_with_nodes(
             recorder,

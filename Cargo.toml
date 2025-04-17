@@ -47,6 +47,7 @@ default = ["disable_contracts"]
 disable_contracts = ["contracts-try/disable_contracts"]
 
 [dependencies]
+approx = "0.5"
 bimap.workspace = true
 contracts-try = "0.7"
 derive-getters.workspace = true
