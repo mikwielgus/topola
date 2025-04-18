@@ -14,9 +14,8 @@ repos:
     rev: v5.0.2
     hooks:
     -   id: reuse-lint-file
--   repo: https://github.com/compilerla/conventional-pre-commit
-    rev: v3.4.0
+-   repo: https://github.com/crate-ci/committed
+    rev: v1.1.7
     hooks:
-    -   id: conventional-pre-commit
+    -   id: committed
         stages: [commit-msg]
-        args: []

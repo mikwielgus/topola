@@ -9,6 +9,8 @@ steps:
       RUST_BACKTRACE: 1
       CARGO_TERM_COLOR: always
     commands:
+      - cargo install committed
+      - committed develop..HEAD
       - rustup component add rustfmt
       - cargo fmt --all -- --check
     when:

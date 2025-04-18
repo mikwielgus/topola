@@ -1,0 +1,73 @@
+# SPDX-FileCopyrightText: 2025 Topola contributors
+#
+# SPDX-License-Identifier: MIT
+
+subject_length = 80
+line_length = 100
+style = "conventional"
+
+# Should be the same as the list of directories in crates/ and src/.
+allowed_scopes = [
+  # Generated using `ls crates | awk '{ print "\"" $1 "\","; }' | sort`.
+  "planar-incr-embed",
+  "specctra-core",
+  "specctra_derive",
+  "topola-cli",
+  "topola-egui",
+
+  # Generated using
+  # `find src -type f | awk '!/lib.rs|mod.rs/ { print "\"" substr($1, 1 + 4, length($1) - 4 - 3) "\","; }' | sort`.
+  "autorouter/autoroute",
+  "autorouter/autorouter",
+  "autorouter/compare_detours",
+  "autorouter/execution",
+  "autorouter/history",
+  "autorouter/invoker",
+  "autorouter/measure_length",
+  "autorouter/place_via",
+  "autorouter/pointroute",
+  "autorouter/ratsnest",
+  "autorouter/remove_bands",
+  "autorouter/selection",
+  "drawing/band",
+  "drawing/bend",
+  "drawing/cane",
+  "drawing/collect",
+  "drawing/dot",
+  "drawing/drawing",
+  "drawing/gear",
+  "drawing/graph",
+  "drawing/guide",
+  "drawing/head",
+  "drawing/loose",
+  "drawing/primitive",
+  "drawing/seg",
+  "geometry/compound",
+  "geometry/edit",
+  "geometry/geometry",
+  "geometry/poly",
+  "geometry/primitive",
+  "geometry/recording_with_rtree",
+  "geometry/shape",
+  "geometry/with_rtree",
+  "graph",
+  "interactor/activity",
+  "interactor/interaction",
+  "interactor/interactor",
+  "layout/layout",
+  "layout/poly",
+  "layout/via",
+  "math/tangents",
+  "router/astar",
+  "router/draw",
+  "router/navcord",
+  "router/navcorder",
+  "router/navmesh",
+  "router/route",
+  "router/router",
+  "specctra/design",
+  "stepper",
+  "triangulation"
+]
+
+merge_commit = false
