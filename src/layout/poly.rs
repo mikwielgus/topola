@@ -6,22 +6,22 @@
 
 use enum_dispatch::enum_dispatch;
 
-use geo::{LineString, Point, Polygon};
+use geo::{algorithm::ConvexHull, IsConvex, LineString, Point, Polygon};
 
 use crate::{
     drawing::{
-        dot::FixedDotIndex,
+        dot::{FixedDotIndex, FixedDotWeight, GeneralDotWeight},
         graph::{GetMaybeNet, PrimitiveIndex},
         primitive::GetLimbs,
+        rules::AccessRules,
         seg::SegIndex,
         Drawing,
     },
-    geometry::{compound::ManageCompounds, GetLayer, GetSetPos},
+    geometry::{compound::ManageCompounds, shape::AccessShape, GetLayer, GetSetPos},
     graph::{GenericIndex, GetPetgraphIndex, MakeRef},
-    layout::{CompoundEntryKind, CompoundWeight},
+    layout::{CompoundEntryKind, CompoundWeight, Layout, LayoutEdit},
+    math::Circle,
 };
-
-use super::Layout;
 
 #[enum_dispatch]
 pub trait MakePolygon {
@@ -41,10 +41,102 @@ impl<'a, R: 'a> MakeRef<'a, Layout<R>> for GenericIndex<PolyWeight> {
     }
 }
 
-pub(super) fn is_apex<R>(
-    drawing: &Drawing<CompoundWeight, CompoundEntryKind, R>,
-    dot: FixedDotIndex,
-) -> bool {
+pub(super) fn add_poly_with_nodes_intern<R: AccessRules>(
+    layout: &mut Layout<R>,
+    recorder: &mut LayoutEdit,
+    poly: GenericIndex<PolyWeight>,
+    nodes: &[PrimitiveIndex],
+    layer: usize,
+    maybe_net: Option<usize>,
+) -> FixedDotIndex {
+    let poly_compound = poly.into();
+
+    for i in nodes {
+        layout.drawing.add_to_compound(
+            recorder,
+            GenericIndex::<()>::new(i.petgraph_index()),
+            CompoundEntryKind::Normal,
+            poly_compound,
+        );
+    }
+
+    let shape = poly.ref_(layout).shape();
+    let apex = layout.add_fixed_dot_infringably(
+        recorder,
+        FixedDotWeight(GeneralDotWeight {
+            circle: Circle {
+                pos: shape.center(),
+                r: 100.0,
+            },
+            layer,
+            maybe_net,
+        }),
+    );
+
+    if !shape.exterior().is_convex() {
+        // create a temporary RTree to speed up lookups from O(n²) to O(n log n)
+        #[derive(Clone, Copy)]
+        struct Rto {
+            pt: Point,
+            idx: PrimitiveIndex,
+        }
+        impl rstar::RTreeObject for Rto {
+            type Envelope = rstar::AABB<[f64; 2]>;
+            fn envelope(&self) -> rstar::AABB<[f64; 2]> {
+                rstar::AABB::from_point([self.pt.x(), self.pt.y()])
+            }
+        }
+        impl rstar::PointDistance for Rto {
+            fn distance_2(&self, point: &[f64; 2]) -> f64 {
+                let d_x = self.pt.0.x - point[0];
+                let d_y = self.pt.0.y - point[1];
+                d_x * d_x + d_y * d_y
+            }
+        }
+
+        let mut temp_rtree = rstar::RTree::<Rto>::new();
+
+        for &idx in nodes {
+            let PrimitiveIndex::FixedDot(dot) = idx else {
+                continue;
+            };
+
+            let pt = layout.drawing.geometry().dot_weight(dot.into()).pos();
+            temp_rtree.insert(Rto { pt, idx });
+        }
+
+        // compute the convex hull
+        let convex_hull_exterior = shape.exterior().convex_hull().into_inner().0;
+        for pt in convex_hull_exterior {
+            // note that the convex hull should be a strict subset of the points
+            // on the exterior of `shape`
+            assert!(temp_rtree.pop_nearest_neighbor(&[pt.x, pt.y]).is_some());
+        }
+
+        // mark all elements which aren't in the convex hull
+        for Rto { idx, .. } in temp_rtree {
+            layout.drawing.add_to_compound(
+                recorder,
+                GenericIndex::<()>::new(idx.petgraph_index()),
+                CompoundEntryKind::NotInConvexHull,
+                poly_compound,
+            );
+        }
+    }
+
+    // maybe this should be a different edge kind
+    layout.drawing.add_to_compound(
+        recorder,
+        apex,
+        CompoundEntryKind::NotInConvexHull,
+        poly_compound,
+    );
+
+    assert!(is_apex(&layout.drawing, apex));
+    apex
+}
+
+fn is_apex<R>(drawing: &Drawing<CompoundWeight, CompoundEntryKind, R>, dot: FixedDotIndex) -> bool {
     !drawing
         .primitive(dot)
         .segs()

@@ -5,7 +5,7 @@
 use contracts_try::debug_ensures;
 use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
-use geo::{algorithm::ConvexHull, IsConvex, Point};
+use geo::Point;
 use rstar::AABB;
 
 use crate::{
@@ -36,10 +36,10 @@ use crate::{
     },
     graph::{GenericIndex, GetPetgraphIndex, MakeRef},
     layout::{
-        poly::{is_apex, MakePolygon, PolyWeight},
+        poly::{add_poly_with_nodes_intern, MakePolygon, PolyWeight},
         via::{Via, ViaWeight},
     },
-    math::{Circle, LineIntersection, NormalLine, RotationSense},
+    math::{LineIntersection, NormalLine, RotationSense},
 };
 
 /// Represents a weight for various compounds
@@ -65,7 +65,7 @@ pub type LayoutEdit = DrawingEdit<CompoundWeight, CompoundEntryKind>;
 #[derive(Clone, Debug, Getters)]
 /// Structure for managing the Layout design
 pub struct Layout<R> {
-    drawing: Drawing<CompoundWeight, CompoundEntryKind, R>,
+    pub(super) drawing: Drawing<CompoundWeight, CompoundEntryKind, R>,
 }
 
 impl<R> Layout<R> {
@@ -236,92 +236,10 @@ impl<R: AccessRules> Layout<R> {
         let layer = weight.layer();
         let maybe_net = weight.maybe_net();
         let poly = self.add_poly(recorder, weight);
-        let poly_compound = poly.into();
-
-        for i in nodes {
-            self.drawing.add_to_compound(
-                recorder,
-                GenericIndex::<()>::new(i.petgraph_index()),
-                CompoundEntryKind::Normal,
-                poly_compound,
-            );
-        }
-
-        let shape = poly.ref_(self).shape();
-        let apex = self.add_fixed_dot_infringably(
-            recorder,
-            FixedDotWeight(GeneralDotWeight {
-                circle: Circle {
-                    pos: shape.center(),
-                    r: 100.0,
-                },
-                layer,
-                maybe_net,
-            }),
-        );
-
-        if !shape.exterior().is_convex() {
-            // create a temporary RTree to speed up lookups from O(n²) to O(n log n)
-            #[derive(Clone, Copy)]
-            struct Rto {
-                pt: Point,
-                idx: PrimitiveIndex,
-            }
-            impl rstar::RTreeObject for Rto {
-                type Envelope = rstar::AABB<[f64; 2]>;
-                fn envelope(&self) -> rstar::AABB<[f64; 2]> {
-                    rstar::AABB::from_point([self.pt.x(), self.pt.y()])
-                }
-            }
-            impl rstar::PointDistance for Rto {
-                fn distance_2(&self, point: &[f64; 2]) -> f64 {
-                    let d_x = self.pt.0.x - point[0];
-                    let d_y = self.pt.0.y - point[1];
-                    d_x * d_x + d_y * d_y
-                }
-            }
-
-            let mut temp_rtree = rstar::RTree::<Rto>::new();
-
-            for &idx in nodes {
-                let PrimitiveIndex::FixedDot(dot) = idx else {
-                    continue;
-                };
-
-                let pt = self.drawing.geometry().dot_weight(dot.into()).pos();
-                temp_rtree.insert(Rto { pt, idx });
-            }
-
-            // compute the convex hull
-            let convex_hull_exterior = shape.exterior().convex_hull().into_inner().0;
-            for pt in convex_hull_exterior {
-                // note that the convex hull should be a strict subset of the points
-                // on the exterior of `shape`
-                assert!(temp_rtree.pop_nearest_neighbor(&[pt.x, pt.y]).is_some());
-            }
-
-            // mark all elements which aren't in the convex hull
-            for Rto { idx, .. } in temp_rtree {
-                self.drawing.add_to_compound(
-                    recorder,
-                    GenericIndex::<()>::new(idx.petgraph_index()),
-                    CompoundEntryKind::NotInConvexHull,
-                    poly_compound,
-                );
-            }
-        }
-
-        // maybe this should be a different edge kind
-        self.drawing.add_to_compound(
-            recorder,
-            apex,
-            CompoundEntryKind::NotInConvexHull,
-            poly_compound,
-        );
-
-        assert!(is_apex(&self.drawing, apex));
-
-        (poly, apex)
+        (
+            poly,
+            add_poly_with_nodes_intern(self, recorder, poly, nodes, layer, maybe_net),
+        )
     }
 
     pub fn remove_band(
