@@ -43,7 +43,7 @@ use crate::{
 };
 
 /// Represents a weight for various compounds
-#[derive(Debug, Clone, Copy)]
+#[derive(Clone, Copy, Debug)]
 #[enum_dispatch(GetMaybeNet, IsInLayer)]
 pub enum CompoundWeight {
     /// Represents the weight of a polygon compound, includes its basic [`Layout`] information
@@ -153,32 +153,6 @@ impl<R: AccessRules> Layout<R> {
         self.drawing.add_fixed_dot_infringably(recorder, weight)
     }
 
-    pub fn add_poly_fixed_dot(
-        &mut self,
-        recorder: &mut LayoutEdit,
-        weight: FixedDotWeight,
-        poly: GenericIndex<PolyWeight>,
-    ) -> Result<FixedDotIndex, Infringement> {
-        let maybe_dot = self.drawing.add_fixed_dot(recorder, weight);
-
-        if let Ok(dot) = maybe_dot {
-            self.drawing.add_to_compound(recorder, dot, poly.into());
-        }
-
-        maybe_dot
-    }
-
-    pub fn add_poly_fixed_dot_infringably(
-        &mut self,
-        recorder: &mut LayoutEdit,
-        weight: FixedDotWeight,
-        poly: GenericIndex<PolyWeight>,
-    ) -> FixedDotIndex {
-        let dot = self.drawing.add_fixed_dot_infringably(recorder, weight);
-        self.drawing.add_to_compound(recorder, dot, poly.into());
-        dot
-    }
-
     pub fn add_fixed_seg(
         &mut self,
         recorder: &mut LayoutEdit,
@@ -198,36 +172,6 @@ impl<R: AccessRules> Layout<R> {
     ) -> FixedSegIndex {
         self.drawing
             .add_fixed_seg_infringably(recorder, from, to, weight)
-    }
-
-    pub fn add_poly_fixed_seg(
-        &mut self,
-        recorder: &mut LayoutEdit,
-        from: FixedDotIndex,
-        to: FixedDotIndex,
-        weight: FixedSegWeight,
-        poly: GenericIndex<PolyWeight>,
-    ) -> Result<FixedSegIndex, Infringement> {
-        let maybe_seg = self.add_fixed_seg(recorder, from, to, weight);
-
-        if let Ok(seg) = maybe_seg {
-            self.drawing.add_to_compound(recorder, seg, poly.into());
-        }
-
-        maybe_seg
-    }
-
-    pub fn add_poly_fixed_seg_infringably(
-        &mut self,
-        recorder: &mut LayoutEdit,
-        from: FixedDotIndex,
-        to: FixedDotIndex,
-        weight: FixedSegWeight,
-        poly: GenericIndex<PolyWeight>,
-    ) -> FixedSegIndex {
-        let seg = self.add_fixed_seg_infringably(recorder, from, to, weight);
-        self.drawing.add_to_compound(recorder, seg, poly.into());
-        seg
     }
 
     pub fn add_lone_loose_seg(
