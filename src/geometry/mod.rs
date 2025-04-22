@@ -6,7 +6,7 @@
 mod geometry;
 pub mod compound;
 pub mod edit;
-mod poly;
+mod polygon;
 pub mod primitive;
 pub mod recording_with_rtree;
 pub mod shape;
