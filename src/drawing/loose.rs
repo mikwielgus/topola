@@ -70,15 +70,15 @@ impl TryFrom<PrimitiveIndex> for LooseIndex {
 }
 
 #[enum_dispatch(GetPrevNextLoose, GetDrawing, GetPetgraphIndex)]
-pub enum Loose<'a, CW: Copy, R: AccessRules> {
-    Dot(LooseDot<'a, CW, R>),
-    LoneSeg(LoneLooseSeg<'a, CW, R>),
-    SeqSeg(SeqLooseSeg<'a, CW, R>),
-    Bend(LooseBend<'a, CW, R>),
+pub enum Loose<'a, CW, Cek, R> {
+    Dot(LooseDot<'a, CW, Cek, R>),
+    LoneSeg(LoneLooseSeg<'a, CW, Cek, R>),
+    SeqSeg(SeqLooseSeg<'a, CW, Cek, R>),
+    Bend(LooseBend<'a, CW, Cek, R>),
 }
 
-impl<'a, CW: Copy, R: AccessRules> Loose<'a, CW, R> {
-    pub fn new(index: LooseIndex, drawing: &'a Drawing<CW, R>) -> Self {
+impl<'a, CW, Cek, R> Loose<'a, CW, Cek, R> {
+    pub fn new(index: LooseIndex, drawing: &'a Drawing<CW, Cek, R>) -> Self {
         match index {
             LooseIndex::Dot(dot) => drawing.primitive(dot).into(),
             LooseIndex::LoneSeg(seg) => drawing.primitive(seg).into(),
@@ -88,7 +88,7 @@ impl<'a, CW: Copy, R: AccessRules> Loose<'a, CW, R> {
     }
 }
 
-impl<CW: Copy, R: AccessRules> GetPrevNextLoose for LooseDot<'_, CW, R> {
+impl<CW, Cek, R> GetPrevNextLoose for LooseDot<'_, CW, Cek, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let bend = self.bend();
 
@@ -104,13 +104,13 @@ impl<CW: Copy, R: AccessRules> GetPrevNextLoose for LooseDot<'_, CW, R> {
     }
 }
 
-impl<CW: Copy, R: AccessRules> GetPrevNextLoose for LoneLooseSeg<'_, CW, R> {
+impl<CW, Cek, R> GetPrevNextLoose for LoneLooseSeg<'_, CW, Cek, R> {
     fn next_loose(&self, _maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         None
     }
 }
 
-impl<CW: Copy, R: AccessRules> GetPrevNextLoose for SeqLooseSeg<'_, CW, R> {
+impl<CW, Cek, R> GetPrevNextLoose for SeqLooseSeg<'_, CW, Cek, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let joints = self.joints();
         let Some(prev) = maybe_prev else {
@@ -128,7 +128,7 @@ impl<CW: Copy, R: AccessRules> GetPrevNextLoose for SeqLooseSeg<'_, CW, R> {
     }
 }
 
-impl<CW: Copy, R: AccessRules> GetPrevNextLoose for LooseBend<'_, CW, R> {
+impl<CW, Cek, R> GetPrevNextLoose for LooseBend<'_, CW, Cek, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let joints = self.joints();
 

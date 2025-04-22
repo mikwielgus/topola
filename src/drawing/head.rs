@@ -29,8 +29,9 @@ pub enum Head {
     Cane(CaneHead),
 }
 
-impl<'a, CW, R> MakeRef<'a, HeadRef<'a, CW, R>, Drawing<CW, R>> for Head {
-    fn ref_(&self, drawing: &'a Drawing<CW, R>) -> HeadRef<'a, CW, R> {
+impl<'a, CW: 'a, Cek: 'a, R: 'a> MakeRef<'a, Drawing<CW, Cek, R>> for Head {
+    type Output = HeadRef<'a, CW, Cek, R>;
+    fn ref_(&self, drawing: &'a Drawing<CW, Cek, R>) -> HeadRef<'a, CW, Cek, R> {
         HeadRef::new(*self, drawing)
     }
 }
@@ -71,24 +72,24 @@ impl GetFace for CaneHead {
     }
 }
 
-pub struct HeadRef<'a, CW, R> {
+pub struct HeadRef<'a, CW, Cek, R> {
     head: Head,
-    drawing: &'a Drawing<CW, R>,
+    drawing: &'a Drawing<CW, Cek, R>,
 }
 
-impl<'a, CW, R> HeadRef<'a, CW, R> {
-    pub fn new(head: Head, drawing: &'a Drawing<CW, R>) -> Self {
+impl<'a, CW, Cek, R> HeadRef<'a, CW, Cek, R> {
+    pub fn new(head: Head, drawing: &'a Drawing<CW, Cek, R>) -> Self {
         Self { drawing, head }
     }
 }
 
-impl<CW, R> GetFace for HeadRef<'_, CW, R> {
+impl<CW, Cek, R> GetFace for HeadRef<'_, CW, Cek, R> {
     fn face(&self) -> DotIndex {
         self.head.face()
     }
 }
 
-impl<CW: Copy, R: AccessRules> MeasureLength for HeadRef<'_, CW, R> {
+impl<CW: Clone, Cek: Copy, R: AccessRules> MeasureLength for HeadRef<'_, CW, Cek, R> {
     fn length(&self) -> f64 {
         match self.head {
             Head::Bare(..) => 0.0,

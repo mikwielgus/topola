@@ -108,7 +108,7 @@ impl Ratsnest {
 
             for node in layout.drawing().layer_primitive_nodes(layer) {
                 if let PrimitiveIndex::FixedDot(dot) = node {
-                    if layout.polys(dot).next().is_none() {
+                    if layout.drawing().compounds(dot).next().is_none() {
                         handle_rvw(
                             layout.drawing().primitive(dot).maybe_net(),
                             RatvertexIndex::FixedDot(dot),

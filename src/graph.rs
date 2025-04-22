@@ -8,8 +8,9 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 use serde::{Deserialize, Serialize};
 
-pub trait MakeRef<'a, R: 'a, C> {
-    fn ref_(&self, context: &'a C) -> R;
+pub trait MakeRef<'a, C> {
+    type Output: 'a;
+    fn ref_(&self, context: &'a C) -> Self::Output;
 }
 
 #[enum_dispatch]

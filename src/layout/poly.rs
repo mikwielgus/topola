@@ -13,13 +13,12 @@ use crate::{
         dot::FixedDotIndex,
         graph::{GetMaybeNet, PrimitiveIndex},
         primitive::GetLimbs,
-        rules::AccessRules,
         seg::SegIndex,
         Drawing,
     },
-    geometry::{GetLayer, GetSetPos},
+    geometry::{compound::ManageCompounds, GetLayer, GetSetPos},
     graph::{GenericIndex, GetPetgraphIndex, MakeRef},
-    layout::CompoundWeight,
+    layout::{CompoundEntryKind, CompoundWeight},
 };
 
 use super::Layout;
@@ -32,17 +31,18 @@ pub trait MakePolygon {
 #[derive(Debug)]
 pub struct PolyRef<'a, R> {
     pub index: GenericIndex<PolyWeight>,
-    drawing: &'a Drawing<CompoundWeight, R>,
+    drawing: &'a Drawing<CompoundWeight, CompoundEntryKind, R>,
 }
 
-impl<'a, R: AccessRules> MakeRef<'a, PolyRef<'a, R>, Layout<R>> for GenericIndex<PolyWeight> {
+impl<'a, R: 'a> MakeRef<'a, Layout<R>> for GenericIndex<PolyWeight> {
+    type Output = PolyRef<'a, R>;
     fn ref_(&self, layout: &'a Layout<R>) -> PolyRef<'a, R> {
         PolyRef::new(*self, layout.drawing())
     }
 }
 
-pub(super) fn is_apex<'a, R: AccessRules>(
-    drawing: &'a Drawing<CompoundWeight, R>,
+pub(super) fn is_apex<R>(
+    drawing: &Drawing<CompoundWeight, CompoundEntryKind, R>,
     dot: FixedDotIndex,
 ) -> bool {
     !drawing
@@ -53,8 +53,11 @@ pub(super) fn is_apex<'a, R: AccessRules>(
         && drawing.primitive(dot).bends().is_empty()
 }
 
-impl<'a, R: AccessRules> PolyRef<'a, R> {
-    pub fn new(index: GenericIndex<PolyWeight>, drawing: &'a Drawing<CompoundWeight, R>) -> Self {
+impl<'a, R> PolyRef<'a, R> {
+    pub fn new(
+        index: GenericIndex<PolyWeight>,
+        drawing: &'a Drawing<CompoundWeight, CompoundEntryKind, R>,
+    ) -> Self {
         Self { index, drawing }
     }
 
@@ -66,7 +69,7 @@ impl<'a, R: AccessRules> PolyRef<'a, R> {
         self.drawing
             .geometry()
             .compound_members(self.index.into())
-            .find_map(|primitive_node| {
+            .find_map(|(_kind, primitive_node)| {
                 if let PrimitiveIndex::FixedDot(dot) = primitive_node {
                     if self.is_apex(dot) {
                         return Some(dot);
@@ -79,7 +82,7 @@ impl<'a, R: AccessRules> PolyRef<'a, R> {
     }
 }
 
-impl<R: AccessRules> GetLayer for PolyRef<'_, R> {
+impl<R> GetLayer for PolyRef<'_, R> {
     fn layer(&self) -> usize {
         if let CompoundWeight::Poly(weight) = self.drawing.compound_weight(self.index.into()) {
             weight.layer()
@@ -89,20 +92,20 @@ impl<R: AccessRules> GetLayer for PolyRef<'_, R> {
     }
 }
 
-impl<R: AccessRules> GetMaybeNet for PolyRef<'_, R> {
+impl<R> GetMaybeNet for PolyRef<'_, R> {
     fn maybe_net(&self) -> Option<usize> {
         self.drawing.compound_weight(self.index.into()).maybe_net()
     }
 }
 
-impl<R: AccessRules> MakePolygon for PolyRef<'_, R> {
+impl<R> MakePolygon for PolyRef<'_, R> {
     fn shape(&self) -> Polygon {
         Polygon::new(
             LineString::from(
                 self.drawing
                     .geometry()
                     .compound_members(self.index.into())
-                    .filter_map(|primitive_node| {
+                    .filter_map(|(_kind, primitive_node)| {
                         let PrimitiveIndex::FixedDot(dot) = primitive_node else {
                             return None;
                         };

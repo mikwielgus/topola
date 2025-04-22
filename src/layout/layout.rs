@@ -52,18 +52,20 @@ pub enum CompoundWeight {
     Via(ViaWeight),
 }
 
+pub type CompoundEntryKind = ();
+
 /// The alias to differ node types
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<CompoundWeight>>;
-pub type LayoutEdit = DrawingEdit<CompoundWeight>;
+pub type LayoutEdit = DrawingEdit<CompoundWeight, CompoundEntryKind>;
 
 #[derive(Clone, Debug, Getters)]
 /// Structure for managing the Layout design
 pub struct Layout<R> {
-    drawing: Drawing<CompoundWeight, R>,
+    drawing: Drawing<CompoundWeight, CompoundEntryKind, R>,
 }
 
 impl<R> Layout<R> {
-    pub fn new(drawing: Drawing<CompoundWeight, R>) -> Self {
+    pub fn new(drawing: Drawing<CompoundWeight, CompoundEntryKind, R>) -> Self {
         Self { drawing }
     }
 }
@@ -117,12 +119,11 @@ impl<R: AccessRules> Layout<R> {
                 }),
             ) {
                 Ok(dot) => {
-                    self.drawing.add_to_compound(recorder, dot, compound);
+                    self.drawing.add_to_compound(recorder, dot, (), compound);
                     dots.push(dot);
                 }
                 Err(err) => {
                     // Remove inserted dots.
-
                     self.drawing.remove_compound(recorder, compound);
 
                     for dot in dots.iter().rev() {
@@ -232,6 +233,7 @@ impl<R: AccessRules> Layout<R> {
             self.drawing.add_to_compound(
                 recorder,
                 GenericIndex::<()>::new(i.petgraph_index()),
+                (),
                 poly_compound,
             );
         }
@@ -250,7 +252,8 @@ impl<R: AccessRules> Layout<R> {
         );
 
         // maybe this should be a different edge kind
-        self.drawing.add_to_compound(recorder, apex, poly_compound);
+        self.drawing
+            .add_to_compound(recorder, apex, (), poly_compound);
 
         assert!(is_apex(&self.drawing, apex));
 
@@ -263,13 +266,6 @@ impl<R: AccessRules> Layout<R> {
         band: BandTermsegIndex,
     ) -> Result<(), DrawingException> {
         self.drawing.remove_band(recorder, band)
-    }
-
-    pub fn polys<W: 'static>(
-        &self,
-        node: GenericIndex<W>,
-    ) -> impl Iterator<Item = GenericIndex<CompoundWeight>> + '_ {
-        self.drawing.compounds(node)
     }
 
     pub fn poly_nodes(&self) -> impl Iterator<Item = GenericIndex<PolyWeight>> + '_ {
@@ -308,7 +304,7 @@ impl<R: AccessRules> Layout<R> {
     pub fn poly_members(
         &self,
         poly: GenericIndex<PolyWeight>,
-    ) -> impl Iterator<Item = PrimitiveIndex> + '_ {
+    ) -> impl Iterator<Item = ((), PrimitiveIndex)> + '_ {
         self.drawing
             .geometry()
             .compound_members(GenericIndex::new(poly.petgraph_index()))
@@ -464,6 +460,7 @@ impl<R: AccessRules>
         SegWeight,
         BendWeight,
         CompoundWeight,
+        CompoundEntryKind,
         PrimitiveIndex,
         DotIndex,
         SegIndex,

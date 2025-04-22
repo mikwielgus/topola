@@ -37,24 +37,28 @@ impl From<BandTermsegIndex> for LooseIndex {
     }
 }
 
-impl<'a, CW, R> MakeRef<'a, BandRef<'a, CW, R>, Drawing<CW, R>> for BandTermsegIndex {
-    fn ref_(&self, drawing: &'a Drawing<CW, R>) -> BandRef<'a, CW, R> {
+impl<'a, CW: 'a, Cek: 'a, R: 'a> MakeRef<'a, Drawing<CW, Cek, R>> for BandTermsegIndex {
+    type Output = BandRef<'a, CW, Cek, R>;
+    fn ref_(&self, drawing: &'a Drawing<CW, Cek, R>) -> BandRef<'a, CW, Cek, R> {
         BandRef::new(*self, drawing)
     }
 }
 
-pub struct BandRef<'a, CW, R> {
+pub struct BandRef<'a, CW, Cek, R> {
     first_seg: BandTermsegIndex,
-    drawing: &'a Drawing<CW, R>,
+    drawing: &'a Drawing<CW, Cek, R>,
 }
 
-impl<'a, CW, R> BandRef<'a, CW, R> {
-    pub fn new(first_seg: BandTermsegIndex, drawing: &'a Drawing<CW, R>) -> BandRef<'a, CW, R> {
+impl<'a, CW: 'a, Cek: 'a, R: 'a> BandRef<'a, CW, Cek, R> {
+    pub fn new(
+        first_seg: BandTermsegIndex,
+        drawing: &'a Drawing<CW, Cek, R>,
+    ) -> BandRef<'a, CW, Cek, R> {
         Self { first_seg, drawing }
     }
 }
 
-impl<CW: Copy, R: AccessRules> MeasureLength for BandRef<'_, CW, R> {
+impl<CW: Clone, Cek: Copy, R: AccessRules> MeasureLength for BandRef<'_, CW, Cek, R> {
     fn length(&self) -> f64 {
         match self.first_seg {
             BandTermsegIndex::Straight(seg) => {
