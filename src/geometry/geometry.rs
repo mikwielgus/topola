@@ -8,7 +8,7 @@ use geo::Point;
 use petgraph::{
     stable_graph::{NodeIndex, StableDiGraph},
     visit::EdgeRef,
-    Direction::{self, Incoming},
+    Direction::{Incoming, Outgoing},
 };
 use serde::{Deserialize, Serialize};
 
@@ -410,21 +410,13 @@ impl<
 
     fn core_weight(&self, bend: BI) -> DW {
         self.graph
-            .neighbors(bend.petgraph_index())
-            .filter(|ni| {
-                matches!(
-                    self.graph
-                        .edge_weight(self.graph.find_edge(bend.petgraph_index(), *ni).unwrap())
-                        .unwrap(),
-                    GeometryLabel::Core
-                )
-            })
-            .map(|ni| {
-                self.primitive_weight(ni)
+            .edges_directed(bend.petgraph_index(), Outgoing)
+            .find(|edge| matches!(edge.weight(), GeometryLabel::Core))
+            .map(|edge| {
+                self.primitive_weight(edge.target())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
-            .next()
             .unwrap()
     }
 
@@ -444,7 +436,7 @@ impl<
                     GeometryLabel::Joined
                 )
             })
-            .map(|ni| self.primitive_weight(ni).retag(ni))
+            .map(|ni| self.primitive_index(ni))
     }
 
     pub fn joined_segs(&self, dot: DI) -> impl Iterator<Item = SI> + '_ {
@@ -456,43 +448,30 @@ impl<
     }
 
     fn joints(&self, node: PI) -> (DI, DI) {
+        let lhs = self
+            .graph
+            .edges_directed(node.petgraph_index(), Incoming)
+            .find(|edge| matches!(edge.weight(), GeometryLabel::Joined))
+            .map(|edge| edge.source());
+        let rhs = self
+            .graph
+            .edges_directed(node.petgraph_index(), Outgoing)
+            .find(|edge| matches!(edge.weight(), GeometryLabel::Joined))
+            .map(|edge| edge.target());
+
         (
-            self.graph
-                .neighbors_directed(node.petgraph_index(), Direction::Incoming)
-                .find(move |ni| {
-                    matches!(
-                        self.graph
-                            .edge_weight(
-                                self.graph
-                                    .find_edge_undirected(node.petgraph_index(), *ni)
-                                    .unwrap()
-                                    .0,
-                            )
-                            .unwrap(),
-                        GeometryLabel::Joined
-                    )
-                })
-                .map(|ni| self.primitive_weight(ni).retag(ni))
-                .map(|pi| pi.try_into().unwrap_or_else(|_| unreachable!()))
-                .unwrap(),
-            self.graph
-                .neighbors_directed(node.petgraph_index(), Direction::Outgoing)
-                .find(move |ni| {
-                    matches!(
-                        self.graph
-                            .edge_weight(
-                                self.graph
-                                    .find_edge_undirected(node.petgraph_index(), *ni)
-                                    .unwrap()
-                                    .0,
-                            )
-                            .unwrap(),
-                        GeometryLabel::Joined
-                    )
-                })
-                .map(|ni| self.primitive_weight(ni).retag(ni))
-                .map(|pi| pi.try_into().unwrap_or_else(|_| unreachable!()))
-                .unwrap(),
+            lhs.map(|ni| {
+                self.primitive_index(ni)
+                    .try_into()
+                    .unwrap_or_else(|_| unreachable!())
+            })
+            .unwrap(),
+            rhs.map(|ni| {
+                self.primitive_index(ni)
+                    .try_into()
+                    .unwrap_or_else(|_| unreachable!())
+            })
+            .unwrap(),
         )
     }
 
@@ -502,6 +481,14 @@ impl<
 
     pub fn bend_joints(&self, bend: BI) -> (DI, DI) {
         self.joints(bend.into())
+    }
+}
+
+impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+    Geometry<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+{
+    fn primitive_index(&self, index: NodeIndex<usize>) -> PI {
+        self.primitive_weight(index).retag(index)
     }
 }
 
@@ -520,83 +507,47 @@ impl<
 {
     pub fn first_rail(&self, node: NodeIndex<usize>) -> Option<BI> {
         self.graph
-            .neighbors_directed(node, Incoming)
-            .filter(|ni| {
-                matches!(
-                    self.graph
-                        .edge_weight(self.graph.find_edge(*ni, node).unwrap())
-                        .unwrap(),
-                    GeometryLabel::Core
-                )
-            })
-            .map(|ni| {
-                self.primitive_weight(ni)
-                    .retag(ni)
+            .edges_directed(node, Incoming)
+            .find(|edge| matches!(edge.weight(), GeometryLabel::Core))
+            .map(|edge| {
+                self.primitive_index(edge.source())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
-            .next()
     }
 
     pub fn core(&self, bend: BI) -> DI {
         self.graph
-            .neighbors(bend.petgraph_index())
-            .filter(|ni| {
-                matches!(
-                    self.graph
-                        .edge_weight(self.graph.find_edge(bend.petgraph_index(), *ni).unwrap())
-                        .unwrap(),
-                    GeometryLabel::Core
-                )
-            })
-            .map(|ni| {
-                self.primitive_weight(ni)
-                    .retag(ni)
+            .edges_directed(bend.petgraph_index(), Outgoing)
+            .find(|edge| matches!(edge.weight(), GeometryLabel::Core))
+            .map(|edge| {
+                self.primitive_index(edge.target())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
-            .next()
             .unwrap()
     }
 
     pub fn inner(&self, bend: BI) -> Option<BI> {
         self.graph
-            .neighbors_directed(bend.petgraph_index(), Incoming)
-            .filter(|ni| {
-                matches!(
-                    self.graph
-                        .edge_weight(self.graph.find_edge(*ni, bend.petgraph_index()).unwrap())
-                        .unwrap(),
-                    GeometryLabel::Outer
-                )
-            })
-            .map(|ni| {
-                self.primitive_weight(ni)
-                    .retag(ni)
+            .edges_directed(bend.petgraph_index(), Incoming)
+            .find(|edge| matches!(edge.weight(), GeometryLabel::Outer))
+            .map(|edge| {
+                self.primitive_index(edge.source())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
-            .next()
     }
 
     pub fn outer(&self, bend: BI) -> Option<BI> {
         self.graph
-            .neighbors(bend.petgraph_index())
-            .filter(|ni| {
-                matches!(
-                    self.graph
-                        .edge_weight(self.graph.find_edge(bend.petgraph_index(), *ni).unwrap())
-                        .unwrap(),
-                    GeometryLabel::Outer
-                )
-            })
-            .map(|ni| {
-                self.primitive_weight(ni)
-                    .retag(ni)
+            .edges_directed(bend.petgraph_index(), Outgoing)
+            .find(|edge| matches!(edge.weight(), GeometryLabel::Outer))
+            .map(|edge| {
+                self.primitive_index(edge.target())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
-            .next()
     }
 }
 
@@ -640,14 +591,10 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cek: Copy, PI: Copy, D
         compound: GenericIndex<CW>,
     ) -> impl Iterator<Item = (Cek, Self::GeneralIndex)> + '_ {
         self.graph
-            .neighbors_directed(compound.petgraph_index(), Incoming)
-            .filter_map(move |ni| {
-                if let GeometryLabel::Compound(entry_kind) = *self
-                    .graph
-                    .edge_weight(self.graph.find_edge(ni, compound.petgraph_index()).unwrap())
-                    .unwrap()
-                {
-                    Some((entry_kind, self.primitive_weight(ni).retag(ni)))
+            .edges_directed(compound.petgraph_index(), Incoming)
+            .filter_map(|edge| {
+                if let GeometryLabel::Compound(entry_kind) = *edge.weight() {
+                    Some((entry_kind, self.primitive_index(edge.source())))
                 } else {
                     None
                 }
@@ -659,14 +606,10 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cek: Copy, PI: Copy, D
         I: Copy + GetPetgraphIndex,
     {
         self.graph
-            .neighbors(node.petgraph_index())
-            .filter_map(move |ni| {
-                if let GeometryLabel::Compound(entry_kind) = *self
-                    .graph
-                    .edge_weight(self.graph.find_edge(node.petgraph_index(), ni).unwrap())
-                    .unwrap()
-                {
-                    Some((entry_kind, GenericIndex::new(ni)))
+            .edges_directed(node.petgraph_index(), Outgoing)
+            .filter_map(|edge| {
+                if let GeometryLabel::Compound(entry_kind) = *edge.weight() {
+                    Some((entry_kind, GenericIndex::new(edge.target())))
                 } else {
                     None
                 }
