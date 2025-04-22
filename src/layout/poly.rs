@@ -61,18 +61,16 @@ impl<'a, R> PolyRef<'a, R> {
         Self { index, drawing }
     }
 
-    fn is_apex(&self, dot: FixedDotIndex) -> bool {
-        is_apex(self.drawing, dot)
-    }
-
     pub fn apex(&self) -> FixedDotIndex {
         self.drawing
             .geometry()
             .compound_members(self.index.into())
-            .find_map(|(_kind, primitive_node)| {
-                if let PrimitiveIndex::FixedDot(dot) = primitive_node {
-                    if self.is_apex(dot) {
-                        return Some(dot);
+            .find_map(|(kind, primitive_node)| {
+                if kind == CompoundEntryKind::NotInConvexHull {
+                    if let PrimitiveIndex::FixedDot(dot) = primitive_node {
+                        if is_apex(self.drawing, dot) {
+                            return Some(dot);
+                        }
                     }
                 }
 
@@ -110,7 +108,7 @@ impl<R> MakePolygon for PolyRef<'_, R> {
                             return None;
                         };
 
-                        if self.is_apex(dot) {
+                        if is_apex(self.drawing, dot) {
                             None
                         } else {
                             Some(self.drawing.geometry().dot_weight(dot.into()).pos())

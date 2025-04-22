@@ -5,7 +5,7 @@
 use contracts_try::debug_ensures;
 use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
-use geo::Point;
+use geo::{algorithm::ConvexHull, IsConvex, Point};
 use rstar::AABB;
 
 use crate::{
@@ -52,7 +52,11 @@ pub enum CompoundWeight {
     Via(ViaWeight),
 }
 
-pub type CompoundEntryKind = ();
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
+pub enum CompoundEntryKind {
+    Normal,
+    NotInConvexHull,
+}
 
 /// The alias to differ node types
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<CompoundWeight>>;
@@ -119,7 +123,12 @@ impl<R: AccessRules> Layout<R> {
                 }),
             ) {
                 Ok(dot) => {
-                    self.drawing.add_to_compound(recorder, dot, (), compound);
+                    self.drawing.add_to_compound(
+                        recorder,
+                        dot,
+                        CompoundEntryKind::Normal,
+                        compound,
+                    );
                     dots.push(dot);
                 }
                 Err(err) => {
@@ -233,7 +242,7 @@ impl<R: AccessRules> Layout<R> {
             self.drawing.add_to_compound(
                 recorder,
                 GenericIndex::<()>::new(i.petgraph_index()),
-                (),
+                CompoundEntryKind::Normal,
                 poly_compound,
             );
         }
@@ -251,9 +260,64 @@ impl<R: AccessRules> Layout<R> {
             }),
         );
 
+        if !shape.exterior().is_convex() {
+            // create a temporary RTree to speed up lookups from O(n²) to O(n log n)
+            #[derive(Clone, Copy)]
+            struct Rto {
+                pt: Point,
+                idx: PrimitiveIndex,
+            }
+            impl rstar::RTreeObject for Rto {
+                type Envelope = rstar::AABB<[f64; 2]>;
+                fn envelope(&self) -> rstar::AABB<[f64; 2]> {
+                    rstar::AABB::from_point([self.pt.x(), self.pt.y()])
+                }
+            }
+            impl rstar::PointDistance for Rto {
+                fn distance_2(&self, point: &[f64; 2]) -> f64 {
+                    let d_x = self.pt.0.x - point[0];
+                    let d_y = self.pt.0.y - point[1];
+                    d_x * d_x + d_y * d_y
+                }
+            }
+
+            let mut temp_rtree = rstar::RTree::<Rto>::new();
+
+            for &idx in nodes {
+                let PrimitiveIndex::FixedDot(dot) = idx else {
+                    continue;
+                };
+
+                let pt = self.drawing.geometry().dot_weight(dot.into()).pos();
+                temp_rtree.insert(Rto { pt, idx });
+            }
+
+            // compute the convex hull
+            let convex_hull_exterior = shape.exterior().convex_hull().into_inner().0;
+            for pt in convex_hull_exterior {
+                // note that the convex hull should be a strict subset of the points
+                // on the exterior of `shape`
+                assert!(temp_rtree.pop_nearest_neighbor(&[pt.x, pt.y]).is_some());
+            }
+
+            // mark all elements which aren't in the convex hull
+            for Rto { idx, .. } in temp_rtree {
+                self.drawing.add_to_compound(
+                    recorder,
+                    GenericIndex::<()>::new(idx.petgraph_index()),
+                    CompoundEntryKind::NotInConvexHull,
+                    poly_compound,
+                );
+            }
+        }
+
         // maybe this should be a different edge kind
-        self.drawing
-            .add_to_compound(recorder, apex, (), poly_compound);
+        self.drawing.add_to_compound(
+            recorder,
+            apex,
+            CompoundEntryKind::NotInConvexHull,
+            poly_compound,
+        );
 
         assert!(is_apex(&self.drawing, apex));
 
@@ -304,7 +368,7 @@ impl<R: AccessRules> Layout<R> {
     pub fn poly_members(
         &self,
         poly: GenericIndex<PolyWeight>,
-    ) -> impl Iterator<Item = ((), PrimitiveIndex)> + '_ {
+    ) -> impl Iterator<Item = (CompoundEntryKind, PrimitiveIndex)> + '_ {
         self.drawing
             .geometry()
             .compound_members(GenericIndex::new(poly.petgraph_index()))
