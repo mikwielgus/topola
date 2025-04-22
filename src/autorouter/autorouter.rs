@@ -12,6 +12,7 @@ use thiserror::Error;
 use crate::{
     board::{AccessMesadata, Board},
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
+    graph::MakeRef,
     layout::{via::ViaWeight, LayoutEdit},
     router::{astar::AstarError, navmesh::NavmeshError, RouterOptions},
     triangulation::GetTrianvertexNodeIndex,
@@ -77,7 +78,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => self.board.layout().poly(poly).apex(),
+            RatvertexIndex::Poly(poly) => poly.ref_(self.board.layout()).apex(),
         };
 
         PointrouteExecutionStepper::new(self, origin_dot, point, options)
@@ -195,7 +196,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => self.board.layout().poly(poly).apex(),
+            RatvertexIndex::Poly(poly) => poly.ref_(self.board.layout()).apex(),
         };
 
         let target_dot = match self
@@ -206,7 +207,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             .node_index()
         {
             RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => self.board.layout().poly(poly).apex(),
+            RatvertexIndex::Poly(poly) => poly.ref_(self.board.layout()).apex(),
         };
 
         (source_dot, target_dot)

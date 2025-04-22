@@ -19,6 +19,7 @@ use topola::{
         primitive::MakePrimitiveShape,
     },
     geometry::{shape::AccessShape, GenericNode},
+    graph::MakeRef,
     layout::{poly::MakePolygon, via::ViaWeight},
     math::Circle,
 };
@@ -176,7 +177,7 @@ impl Viewport {
                                             .normal
                                     };
 
-                                    painter.paint_polygon(&board.layout().poly(poly).shape(), color)
+                                    painter.paint_polygon(&poly.ref_(board.layout()).shape(), color)
                                 }
                             }
                         }

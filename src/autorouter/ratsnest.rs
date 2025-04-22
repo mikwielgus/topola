@@ -28,7 +28,7 @@ use crate::{
         rules::AccessRules,
     },
     geometry::shape::AccessShape,
-    graph::{GenericIndex, GetPetgraphIndex},
+    graph::{GenericIndex, GetPetgraphIndex, MakeRef},
     layout::{
         poly::{MakePolygon, PolyWeight},
         Layout,
@@ -122,7 +122,7 @@ impl Ratsnest {
                 handle_rvw(
                     layout.drawing().compound_weight(poly.into()).maybe_net(),
                     RatvertexIndex::Poly(poly),
-                    layout.poly(poly).shape().center(),
+                    poly.ref_(layout).shape().center(),
                 )?;
             }
         }

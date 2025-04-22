@@ -34,9 +34,9 @@ use crate::{
         shape::{AccessShape, Shape},
         GenericNode, GetLayer, GetSetPos,
     },
-    graph::{GenericIndex, GetPetgraphIndex},
+    graph::{GenericIndex, GetPetgraphIndex, MakeRef},
     layout::{
-        poly::{is_apex, MakePolygon, Poly, PolyWeight},
+        poly::{is_apex, MakePolygon, PolyWeight},
         via::{Via, ViaWeight},
     },
     math::{Circle, LineIntersection, NormalLine},
@@ -292,7 +292,7 @@ impl<R: AccessRules> Layout<R> {
             );
         }
 
-        let shape = self.poly(poly).shape();
+        let shape = poly.ref_(self).shape();
         let apex = self.add_fixed_dot_infringably(
             recorder,
             FixedDotWeight(GeneralDotWeight {
@@ -374,10 +374,12 @@ impl<R: AccessRules> Layout<R> {
         match index {
             NodeIndex::Primitive(primitive) => primitive.primitive(&self.drawing).shape().into(),
             NodeIndex::Compound(compound) => match self.drawing.compound_weight(compound) {
-                CompoundWeight::Poly(_) => self
-                    .poly(GenericIndex::<PolyWeight>::new(compound.petgraph_index()))
-                    .shape()
-                    .into(),
+                CompoundWeight::Poly(_) => {
+                    GenericIndex::<PolyWeight>::new(compound.petgraph_index())
+                        .ref_(self)
+                        .shape()
+                        .into()
+                }
                 CompoundWeight::Via(_) => self
                     .via(GenericIndex::<ViaWeight>::new(compound.petgraph_index()))
                     .shape()
@@ -505,10 +507,6 @@ impl<R: AccessRules> Layout<R> {
 
     pub fn rules_mut(&mut self) -> &mut R {
         self.drawing.rules_mut()
-    }
-
-    pub fn poly(&self, index: GenericIndex<PolyWeight>) -> Poly<R> {
-        Poly::new(index, self.drawing())
     }
 
     pub fn via(&self, index: GenericIndex<ViaWeight>) -> Via<R> {

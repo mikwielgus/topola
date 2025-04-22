@@ -22,7 +22,7 @@ use crate::{
         Collect,
     },
     geometry::{edit::ApplyGeometryEdit, GenericNode, GetLayer},
-    graph::GenericIndex,
+    graph::{GenericIndex, MakeRef},
     layout::{poly::PolyWeight, CompoundWeight, Layout, LayoutEdit, NodeIndex},
 };
 
@@ -47,9 +47,8 @@ impl<'a> ResolvedSelector<'a> {
             NodeIndex::Compound(compound) => {
                 match board.layout().drawing().compound_weight(compound) {
                     CompoundWeight::Poly(..) => (
-                        board
-                            .layout()
-                            .poly(GenericIndex::<PolyWeight>::new(compound.petgraph_index()))
+                        GenericIndex::<PolyWeight>::new(compound.petgraph_index())
+                            .ref_(board.layout())
                             .layer(),
                         None,
                     ),

@@ -18,9 +18,11 @@ use crate::{
         Drawing,
     },
     geometry::{GetLayer, GetSetPos},
-    graph::{GenericIndex, GetPetgraphIndex},
+    graph::{GenericIndex, GetPetgraphIndex, MakeRef},
     layout::CompoundWeight,
 };
+
+use super::Layout;
 
 #[enum_dispatch]
 pub trait MakePolygon {
@@ -28,9 +30,15 @@ pub trait MakePolygon {
 }
 
 #[derive(Debug)]
-pub struct Poly<'a, R> {
+pub struct PolyRef<'a, R> {
     pub index: GenericIndex<PolyWeight>,
     drawing: &'a Drawing<CompoundWeight, R>,
+}
+
+impl<'a, R: AccessRules> MakeRef<'a, PolyRef<'a, R>, Layout<R>> for GenericIndex<PolyWeight> {
+    fn ref_(&self, layout: &'a Layout<R>) -> PolyRef<'a, R> {
+        PolyRef::new(*self, layout.drawing())
+    }
 }
 
 pub(super) fn is_apex<'a, R: AccessRules>(
@@ -45,7 +53,7 @@ pub(super) fn is_apex<'a, R: AccessRules>(
         && drawing.primitive(dot).bends().is_empty()
 }
 
-impl<'a, R: AccessRules> Poly<'a, R> {
+impl<'a, R: AccessRules> PolyRef<'a, R> {
     pub fn new(index: GenericIndex<PolyWeight>, drawing: &'a Drawing<CompoundWeight, R>) -> Self {
         Self { index, drawing }
     }
@@ -71,7 +79,7 @@ impl<'a, R: AccessRules> Poly<'a, R> {
     }
 }
 
-impl<R: AccessRules> GetLayer for Poly<'_, R> {
+impl<R: AccessRules> GetLayer for PolyRef<'_, R> {
     fn layer(&self) -> usize {
         if let CompoundWeight::Poly(weight) = self.drawing.compound_weight(self.index.into()) {
             weight.layer()
@@ -81,13 +89,13 @@ impl<R: AccessRules> GetLayer for Poly<'_, R> {
     }
 }
 
-impl<R: AccessRules> GetMaybeNet for Poly<'_, R> {
+impl<R: AccessRules> GetMaybeNet for PolyRef<'_, R> {
     fn maybe_net(&self) -> Option<usize> {
         self.drawing.compound_weight(self.index.into()).maybe_net()
     }
 }
 
-impl<R: AccessRules> MakePolygon for Poly<'_, R> {
+impl<R: AccessRules> MakePolygon for PolyRef<'_, R> {
     fn shape(&self) -> Polygon {
         Polygon::new(
             LineString::from(
