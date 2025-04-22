@@ -6,7 +6,10 @@
 
 use enum_dispatch::enum_dispatch;
 
-use geo::{algorithm::ConvexHull, IsConvex, LineString, Point, Polygon};
+use geo::{
+    algorithm::{Centroid, ConvexHull},
+    IsConvex, LineString, Point, Polygon,
+};
 
 use crate::{
     drawing::{
@@ -17,7 +20,7 @@ use crate::{
         seg::SegIndex,
         Drawing,
     },
-    geometry::{compound::ManageCompounds, shape::AccessShape, GetLayer, GetSetPos},
+    geometry::{compound::ManageCompounds, GetLayer, GetSetPos},
     graph::{GenericIndex, GetPetgraphIndex, MakeRef},
     layout::{CompoundEntryKind, CompoundWeight, Layout, LayoutEdit},
     math::Circle,
@@ -49,23 +52,56 @@ pub(super) fn add_poly_with_nodes_intern<R: AccessRules>(
     layer: usize,
     maybe_net: Option<usize>,
 ) -> FixedDotIndex {
-    let poly_compound = poly.into();
+    #[derive(Clone, Copy)]
+    struct Rto {
+        pt: Point,
+        idx: PrimitiveIndex,
+    }
+    impl rstar::RTreeObject for Rto {
+        type Envelope = rstar::AABB<[f64; 2]>;
+        fn envelope(&self) -> rstar::AABB<[f64; 2]> {
+            rstar::AABB::from_point([self.pt.x(), self.pt.y()])
+        }
+    }
+    impl rstar::PointDistance for Rto {
+        fn distance_2(&self, point: &[f64; 2]) -> f64 {
+            let d_x = self.pt.0.x - point[0];
+            let d_y = self.pt.0.y - point[1];
+            d_x * d_x + d_y * d_y
+        }
+    }
 
-    for i in nodes {
+    let poly_compound = poly.into();
+    let mut shape = Vec::with_capacity((nodes.len() + 1) / 2);
+
+    // create a temporary RTree to speed up lookups from O(n²) to O(n log n)
+    let mut temp_rtree = rstar::RTree::<Rto>::new();
+
+    for &idx in nodes {
         layout.drawing.add_to_compound(
             recorder,
-            GenericIndex::<()>::new(i.petgraph_index()),
+            GenericIndex::<()>::new(idx.petgraph_index()),
             CompoundEntryKind::Normal,
             poly_compound,
         );
+
+        let PrimitiveIndex::FixedDot(dot) = idx else {
+            continue;
+        };
+
+        // we don't have an apex yet
+        let pt = layout.drawing.geometry().dot_weight(dot.into()).pos();
+        shape.push(pt.0);
+        temp_rtree.insert(Rto { pt, idx });
     }
 
-    let shape = poly.ref_(layout).shape();
+    let shape = Polygon::new(LineString(shape), Vec::new()).into_inner().0;
+
     let apex = layout.add_fixed_dot_infringably(
         recorder,
         FixedDotWeight(GeneralDotWeight {
             circle: Circle {
-                pos: shape.center(),
+                pos: shape.centroid().unwrap(),
                 r: 100.0,
             },
             layer,
@@ -73,40 +109,9 @@ pub(super) fn add_poly_with_nodes_intern<R: AccessRules>(
         }),
     );
 
-    if !shape.exterior().is_convex() {
-        // create a temporary RTree to speed up lookups from O(n²) to O(n log n)
-        #[derive(Clone, Copy)]
-        struct Rto {
-            pt: Point,
-            idx: PrimitiveIndex,
-        }
-        impl rstar::RTreeObject for Rto {
-            type Envelope = rstar::AABB<[f64; 2]>;
-            fn envelope(&self) -> rstar::AABB<[f64; 2]> {
-                rstar::AABB::from_point([self.pt.x(), self.pt.y()])
-            }
-        }
-        impl rstar::PointDistance for Rto {
-            fn distance_2(&self, point: &[f64; 2]) -> f64 {
-                let d_x = self.pt.0.x - point[0];
-                let d_y = self.pt.0.y - point[1];
-                d_x * d_x + d_y * d_y
-            }
-        }
-
-        let mut temp_rtree = rstar::RTree::<Rto>::new();
-
-        for &idx in nodes {
-            let PrimitiveIndex::FixedDot(dot) = idx else {
-                continue;
-            };
-
-            let pt = layout.drawing.geometry().dot_weight(dot.into()).pos();
-            temp_rtree.insert(Rto { pt, idx });
-        }
-
+    if !shape.is_convex() {
         // compute the convex hull
-        let convex_hull_exterior = shape.exterior().convex_hull().into_inner().0;
+        let convex_hull_exterior = shape.convex_hull().into_inner().0;
         for pt in convex_hull_exterior {
             // note that the convex hull should be a strict subset of the points
             // on the exterior of `shape`
@@ -191,7 +196,7 @@ impl<R> GetMaybeNet for PolyRef<'_, R> {
 impl<R> MakePolygon for PolyRef<'_, R> {
     fn shape(&self) -> Polygon {
         Polygon::new(
-            LineString::from(
+            LineString(
                 self.drawing
                     .geometry()
                     .compound_members(self.index.into())
@@ -203,10 +208,10 @@ impl<R> MakePolygon for PolyRef<'_, R> {
                         if is_apex(self.drawing, dot) {
                             None
                         } else {
-                            Some(self.drawing.geometry().dot_weight(dot.into()).pos())
+                            Some(self.drawing.geometry().dot_weight(dot.into()).pos().0)
                         }
                     })
-                    .collect::<Vec<Point>>(),
+                    .collect(),
             ),
             vec![],
         )
