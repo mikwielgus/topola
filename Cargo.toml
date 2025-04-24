@@ -70,6 +70,7 @@ features = ["rstar"]
 
 [dev-dependencies]
 serde_json.workspace = true
+proptest = "1.6"
 
 [package.metadata.docs.rs]
 cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]

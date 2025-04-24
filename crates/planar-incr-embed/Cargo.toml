@@ -24,10 +24,8 @@ optional = true
 
 [dev-dependencies]
 ron = "0.8"
+serde.workspace = true
 
 [dev-dependencies.insta]
 version = "1.42"
 features = ["json"]
-
-[dev-dependencies.serde]
-workspace = true

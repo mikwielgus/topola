@@ -6,6 +6,12 @@ use geo::algorithm::line_measures::{Distance, Euclidean};
 use geo::{geometry::Point, point, Line};
 pub use specctra_core::math::{Circle, PointWithRotation};
 
+mod cyclic_search;
+pub use cyclic_search::*;
+
+mod polygon_tangents;
+pub use polygon_tangents::*;
+
 mod tangents;
 pub use tangents::*;
 
