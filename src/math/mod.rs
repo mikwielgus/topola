@@ -199,7 +199,10 @@ pub fn intersect_circle_segment(circle: &Circle, segment: &Line) -> Vec<Point> {
 /// `from` and `to`.
 pub fn between_vectors(p: Point, from: Point, to: Point) -> bool {
     let cross = perp_dot_product(from, to);
+    between_vectors_cached(p, from, to, cross)
+}
 
+fn between_vectors_cached(p: Point, from: Point, to: Point, cross: f64) -> bool {
     if cross > 0.0 {
         perp_dot_product(from, p) >= 0.0 && perp_dot_product(p, to) >= 0.0
     } else if cross < 0.0 {

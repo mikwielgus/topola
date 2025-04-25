@@ -2,7 +2,9 @@
 //
 // SPDX-License-Identifier: MIT
 
-use super::{between_vectors, cyclic_breadth_partition_search};
+use super::{
+    between_vectors, between_vectors_cached, cyclic_breadth_partition_search, perp_dot_product,
+};
 use geo::Point;
 
 #[derive(Clone, Debug, thiserror::Error, PartialEq)]
@@ -15,6 +17,79 @@ pub enum PolyTangentException<I> {
         poly_ext: Box<[(Point, I)]>,
         origin: Point,
     },
+}
+
+/// Caches the `perp_dot_product` call in [`between_vectors`]
+pub struct CachedPolyExt<I>(pub Box<[(Point, I, f64)]>, bool);
+
+impl<I: Copy + Eq> CachedPolyExt<I> {
+    pub fn new(poly_ext: &[(Point, I)], poly_ext_is_cw: bool) -> Self {
+        assert!(!poly_ext.is_empty());
+        Self(
+            poly_ext
+                .iter()
+                .enumerate()
+                .map(|(i, &(cur, index))| {
+                    let prev = poly_ext[(poly_ext.len() + i - 1) % poly_ext.len()].0;
+                    let next = poly_ext[(i + 1) % poly_ext.len()].0;
+                    let cross = perp_dot_product(cur - prev, cur - next);
+                    (cur, index, cross)
+                })
+                .collect(),
+            poly_ext_is_cw,
+        )
+    }
+
+    /// Calculates the tangents to the polygon exterior going through point `origin`.
+    pub fn tangent_points(&self, origin: Point) -> Option<(I, I)> {
+        let poly_ext = &self.0;
+        debug_assert!(!poly_ext.is_empty());
+
+        let (pos_false, pos_true) =
+            cyclic_breadth_partition_search(0..poly_ext.len(), &|i: usize| {
+                let prev = &poly_ext[(poly_ext.len() + i - 1) % poly_ext.len()];
+                let cur = &poly_ext[i];
+                let next = &poly_ext[(i + 1) % poly_ext.len()];
+
+                // local coordinate system with origin at `cur.0`.
+                between_vectors_cached(cur.0 - origin, cur.0 - prev.0, cur.0 - next.0, cur.2)
+            });
+
+        let (mut pos_false, mut pos_true) =
+            if let (Some(pos_false), Some(pos_true)) = (pos_false, pos_true) {
+                (pos_false, pos_true)
+            } else {
+                return None;
+            };
+
+        // * `pos_false` points to the maximum
+        // * `pos_true`  points to the minimum
+
+        // NOTE: although pos_{false,true} are vertex indices, they are actually
+        // referring to the "critical" segment(s) (pos_false, pos_false + 1) (and resp. for pos_true).
+        // because that is where the `between_vectors` result flips.
+        // These critical segments are independent of CW/CCW.
+
+        // if `poly_ext` is oriented CCW, then
+        // * `pos_false` will be one too early, and
+        // * `pos_true`  will be correct.
+
+        // if `poly_ext` is oriented CW, then
+        // * `pos_false` will be correct.
+        // * `pos_true`  will be one too early, and
+
+        // TODO: can we (without too much overhead) determine if `poly_ext` is CW or CCW?
+
+        if self.1 {
+            pos_true += 1;
+            pos_true %= poly_ext.len();
+        } else {
+            pos_false += 1;
+            pos_false %= poly_ext.len();
+        }
+
+        Some((poly_ext[pos_true].1, poly_ext[pos_false].1))
+    }
 }
 
 /// Calculates the tangents to the polygon exterior `poly_ext` oriented `cw?=poly_ext_is_cw`
