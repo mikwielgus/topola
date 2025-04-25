@@ -60,7 +60,7 @@ impl<M: AccessMesadata> Interactor<M> {
 
     /// Abort the currently running execution or activity
     pub fn abort(&mut self) {
-        if let Some(ref mut activity) = self.activity {
+        if let Some(ref mut activity) = self.activity.take() {
             activity.abort(&mut ActivityContext::<M> {
                 interactive_input: &InteractiveInput {
                     pointer_pos: [0.0, 0.0].into(),
@@ -87,7 +87,10 @@ impl<M: AccessMesadata> Interactor<M> {
                 invoker: &mut self.invoker,
             }) {
                 Ok(ControlFlow::Continue(())) => ControlFlow::Continue(()),
-                Ok(ControlFlow::Break(_msg)) => ControlFlow::Break(Ok(())),
+                Ok(ControlFlow::Break(_msg)) => {
+                    self.activity = None;
+                    ControlFlow::Break(Ok(()))
+                }
                 Err(err) => {
                     self.activity = None;
                     ControlFlow::Break(Err(err))
