@@ -16,7 +16,7 @@ pub enum LineIntersection {
     Point(Point),
 }
 
-/// A line in normal form: `x0*y + y0*y + offset = 0`
+/// A line in the normal form: `x0*y + y0*y + offset = 0`.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct NormalLine {
     pub x: f64,
@@ -57,6 +57,7 @@ impl NormalLine {
         }
     }
 
+    /// Calculate the intersection between two lines.
     pub fn intersects(&self, b: &Self) -> LineIntersection {
         const ALMOST_ZERO: f64 = f64::EPSILON * 16.0;
         let (mut a, mut b) = (*self, *b);
@@ -76,7 +77,7 @@ impl NormalLine {
         }
     }
 
-    /// project the point `pt` onto this line, and generate a new line which is orthogonal
+    /// Project the point `pt` onto this line, and generate a new line which is orthogonal
     /// to `self`, and goes through `pt`.
     #[inline]
     pub fn orthogonal_through(&self, pt: &Point) -> Self {
@@ -98,6 +99,10 @@ impl NormalLine {
     }
 }
 
+/// Calculates the intersection of two circles, `circle1` and `circle2`.
+///
+/// Returns a `Vec` holding zero, one, or two calculated intersection points,
+/// depending on how many exist.
 pub fn intersect_circles(circle1: &Circle, circle2: &Circle) -> Vec<Point> {
     let delta = circle2.pos - circle1.pos;
     let d = Euclidean::distance(&circle2.pos, &circle1.pos);
@@ -128,6 +133,10 @@ pub fn intersect_circles(circle1: &Circle, circle2: &Circle) -> Vec<Point> {
     [p + r, p - r].into()
 }
 
+/// Calculate the intersection between circle `circle` and line segment `segment`.
+///
+/// Returns a `Vec` holding zero, one, or two calculated intersection points,
+/// depending on how many exist.
 pub fn intersect_circle_segment(circle: &Circle, segment: &Line) -> Vec<Point> {
     let delta: Point = segment.delta().into();
     let from = segment.start_point();
@@ -174,6 +183,8 @@ pub fn intersect_circle_segment(circle: &Circle, segment: &Line) -> Vec<Point> {
     v
 }
 
+/// Returns `true` the point `p` is between the supporting lines of vectors
+/// `from` and `to`.
 pub fn between_vectors(p: Point, from: Point, to: Point) -> bool {
     let cross = perp_dot_product(from, to);
 
@@ -186,20 +197,21 @@ pub fn between_vectors(p: Point, from: Point, to: Point) -> bool {
     }
 }
 
-/// Computes the (directed) angle between the positive X axis and the vector.
+/// Calculates the (directed) angle between the positive X axis and vector `vector`.
 ///
 /// The result is measured counterclockwise and normalized into range (-pi, pi] (like atan2).
 pub fn vector_angle(vector: Point) -> f64 {
     vector.y().atan2(vector.x())
 }
 
-/// Computes the (directed) angle between two vectors.
+/// Calculates the (directed) angle between vectors `v1` and `v2`.
 ///
 /// The result is measured counterclockwise and normalized into range (-pi, pi] (like atan2).
 pub fn angle_between(v1: Point, v2: Point) -> f64 {
     perp_dot_product(v1, v2).atan2(dot_product(v1, v2))
 }
 
+/// Calculates the perp dot product of vectors `start - reference` and `stop - reference`.
 pub fn seq_perp_dot_product(start: Point, stop: Point, reference: Point) -> f64 {
     let dx1 = stop.x() - start.x();
     let dy1 = stop.y() - start.y();
@@ -208,12 +220,21 @@ pub fn seq_perp_dot_product(start: Point, stop: Point, reference: Point) -> f64 
     perp_dot_product((dx1, dy1).into(), (dx2, dy2).into())
 }
 
+/// Calculates the dot product of vectors `v1` and `v2`.
 pub fn dot_product(v1: Point, v2: Point) -> f64 {
     v1.x() * v2.x() + v1.y() * v2.y()
 }
 
-/// This is often called [perp dot product](https://mathworld.wolfram.com/PerpDotProduct.html),
-/// or "2D cross product".
+/// Calculates the perp dot product of vectors `v1` and `v2`.
+///
+/// This is defined as the dot product of `v1` rotated counterclockwise by 90
+/// degrees and `v2`. This is the same as the magnitude of the cross product of `v1`
+/// with `v2`.
+///
+/// It is not uncommon in codebases with planar geometry to call the perp dot
+/// product simply "cross product", ignoring the distinction between vector
+/// and its magnitude, since the resulting vector is always perpendicular to
+/// the plane anyway.
 pub fn perp_dot_product(v1: Point, v2: Point) -> f64 {
     v1.x() * v2.y() - v1.y() * v2.x()
 }
