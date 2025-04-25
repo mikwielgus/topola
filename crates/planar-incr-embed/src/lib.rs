@@ -20,7 +20,7 @@ pub mod math;
 pub mod mayrev;
 pub mod navmesh;
 pub mod planarr;
-mod utils;
+pub mod utils;
 
 use alloc::boxed::Box;
 use core::fmt;

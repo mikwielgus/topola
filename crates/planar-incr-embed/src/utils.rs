@@ -38,7 +38,10 @@ where
     (start_idx, it_first.chain(iter.take_while(not_is_start)))
 }
 
-pub fn euclidean_distance<Scalar>(a: &spade::Point2<Scalar>, b: &spade::Point2<Scalar>) -> Scalar
+pub(crate) fn euclidean_distance<Scalar>(
+    a: &spade::Point2<Scalar>,
+    b: &spade::Point2<Scalar>,
+) -> Scalar
 where
     Scalar: num_traits::Float,
 {
