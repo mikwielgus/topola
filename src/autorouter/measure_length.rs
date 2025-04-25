@@ -35,7 +35,7 @@ impl MeasureLengthExecutionStepper {
 
     pub fn doit(
         &mut self,
-        autorouter: &mut Autorouter<impl AccessMesadata>,
+        autorouter: &Autorouter<impl AccessMesadata>,
     ) -> Result<f64, AutorouterError> {
         let length = if let Some(length) = self.maybe_length {
             length

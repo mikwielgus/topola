@@ -176,16 +176,13 @@ impl<M: AccessMesadata> Autorouter<M> {
     }
 
     pub fn measure_length(
-        &mut self,
+        &self,
         selection: &BandSelection,
     ) -> Result<MeasureLengthExecutionStepper, AutorouterError> {
         MeasureLengthExecutionStepper::new(selection)
     }
 
-    pub fn ratline_endpoints(
-        &mut self,
-        ratline: EdgeIndex<usize>,
-    ) -> (FixedDotIndex, FixedDotIndex) {
+    pub fn ratline_endpoints(&self, ratline: EdgeIndex<usize>) -> (FixedDotIndex, FixedDotIndex) {
         let (source, target) = self.ratsnest.graph().edge_endpoints(ratline).unwrap();
 
         let source_dot = match self
