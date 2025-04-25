@@ -7,6 +7,7 @@
 
 use alloc::collections::BTreeMap;
 use alloc::{boxed::Box, sync::Arc, vec::Vec};
+use core::mem::take;
 
 use crate::{mayrev::MaybeReversed, planarr, Edge, NavmeshBase, NavmeshIndex, Node, RelaxedPath};
 
@@ -256,6 +257,22 @@ impl<'a, B: NavmeshBase + 'a> NavmeshRefMut<'a, B> {
         MaybeReversed<usize, RelaxedPath<B::EtchedPath, B::GapComment>>,
     )> {
         resolve_edge_data(self.edges, from_node, to_node)
+    }
+
+    /// Removes a path (weak or normal) with the given label from the navmesh
+    pub fn remove_path(&mut self, label: &RelaxedPath<B::EtchedPath, B::GapComment>)
+    where
+        B::GapComment: PartialEq,
+    {
+        let mut updated_indices = Vec::new();
+        for i in &mut *self.edge_paths {
+            updated_indices.clear();
+            updated_indices.extend(i[..].iter().filter(|&j| j != label).cloned());
+
+            if updated_indices.len() != i.len() {
+                *i = take(&mut updated_indices).into_boxed_slice().into();
+            }
+        }
     }
 
     /// ## Panics
