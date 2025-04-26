@@ -109,7 +109,7 @@ impl MenuBar {
 
                         ui.label(tr.text("tr-menu-view-frame-timestep"));
                         ui.add(
-                            egui::widgets::Slider::new(&mut self.frame_timestep, 0.0..=3.0)
+                            egui::widgets::Slider::new(&mut self.frame_timestep, 0.001..=3.0)
                                 .suffix(" s"),
                         );
                     });
