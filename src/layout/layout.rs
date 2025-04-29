@@ -39,7 +39,7 @@ use crate::{
         poly::{is_apex, MakePolygon, PolyWeight},
         via::{Via, ViaWeight},
     },
-    math::{Circle, LineIntersection, NormalLine},
+    math::{Circle, LineIntersection, NormalLine, RotationSense},
 };
 
 /// Represents a weight for various compounds
@@ -78,7 +78,7 @@ impl<R: AccessRules> Layout<R> {
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
-        cw: bool,
+        sense: RotationSense,
     ) -> Result<Cane, DrawingException> {
         self.drawing.insert_cane(
             recorder,
@@ -87,7 +87,7 @@ impl<R: AccessRules> Layout<R> {
             dot_weight,
             seg_weight,
             bend_weight,
-            cw,
+            sense,
         )
     }
 

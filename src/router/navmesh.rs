@@ -31,6 +31,7 @@ use crate::{
     geometry::{shape::AccessShape, GetLayer},
     graph::{GetPetgraphIndex, MakeRef},
     layout::Layout,
+    math::RotationSense,
     router::astar::MakeEdgeRef,
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
@@ -136,7 +137,7 @@ pub struct NavvertexWeight {
     /// one is clockwise (`Some(true)`), the other counterclockwise (`Some(false)`).
     /// The origin and destination nodes however have
     /// only one corresponding navmesh vertex each (`None`).
-    pub maybe_cw: Option<bool>,
+    pub maybe_sense: Option<RotationSense>,
 }
 
 #[derive(Error, Debug, Clone)]
@@ -222,7 +223,7 @@ impl Navmesh {
             if trianvertex == origin.into() {
                 let navvertex = graph.add_node(NavvertexWeight {
                     node: trianvertex.into(),
-                    maybe_cw: None,
+                    maybe_sense: None,
                 });
 
                 origin_navvertex = Some(navvertex);
@@ -230,7 +231,7 @@ impl Navmesh {
             } else if trianvertex == destination.into() {
                 let navvertex = graph.add_node(NavvertexWeight {
                     node: trianvertex.into(),
-                    maybe_cw: None,
+                    maybe_sense: None,
                 });
 
                 destination_navvertex = Some(navvertex);
@@ -313,12 +314,12 @@ impl Navmesh {
     ) {
         let navvertex1 = graph.add_node(NavvertexWeight {
             node,
-            maybe_cw: Some(false),
+            maybe_sense: Some(RotationSense::Counterclockwise),
         });
 
         let navvertex2 = graph.add_node(NavvertexWeight {
             node,
-            maybe_cw: Some(true),
+            maybe_sense: Some(RotationSense::Clockwise),
         });
 
         map.get_mut(&trianvertex)

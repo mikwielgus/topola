@@ -10,14 +10,6 @@ use core::fmt;
 use rstar::{RTree, AABB};
 use thiserror::Error;
 
-use crate::geometry::{
-    edit::{ApplyGeometryEdit, GeometryEdit},
-    primitive::{AccessPrimitiveShape, PrimitiveShape},
-    recording_with_rtree::RecordingGeometryWithRtree,
-    with_rtree::BboxedIndex,
-    AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
-    GetLayer, GetOffset, GetSetPos, GetWidth,
-};
 use crate::graph::{GenericIndex, GetPetgraphIndex};
 use crate::math::NoTangents;
 use crate::{
@@ -41,6 +33,17 @@ use crate::{
         },
     },
     graph::MakeRef,
+};
+use crate::{
+    geometry::{
+        edit::{ApplyGeometryEdit, GeometryEdit},
+        primitive::{AccessPrimitiveShape, PrimitiveShape},
+        recording_with_rtree::RecordingGeometryWithRtree,
+        with_rtree::BboxedIndex,
+        AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
+        GetLayer, GetOffset, GetSetPos, GetWidth,
+    },
+    math::RotationSense,
 };
 
 #[derive(Clone, Copy, Error)]
@@ -498,7 +501,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
-        cw: bool,
+        sense: RotationSense,
     ) -> Result<Cane, DrawingException> {
         let maybe_next_gear = around.ref_(self).next_gear();
         let cane = self.add_cane_with_infringables(
@@ -508,7 +511,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
             dot_weight,
             seg_weight,
             bend_weight,
-            cw,
+            sense,
             Some(&[]),
         )?;
 
@@ -551,14 +554,34 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
 
             let (from, to, offset) = if let Some(inner) = rail_primitive.inner() {
                 let inner = inner.into();
-                let from = self.head_around_bend_segment(&from_head, inner, true, width)?;
-                let to = self.head_around_bend_segment(&to_head, inner, false, width)?;
+                let from = self.head_around_bend_segment(
+                    &from_head,
+                    inner,
+                    RotationSense::Clockwise,
+                    width,
+                )?;
+                let to = self.head_around_bend_segment(
+                    &to_head,
+                    inner,
+                    RotationSense::Counterclockwise,
+                    width,
+                )?;
                 let offset = self.head_around_bend_offset(&from_head, inner, width);
                 (from, to, offset)
             } else {
                 let core = rail_primitive.core().into();
-                let from = self.head_around_dot_segment(&from_head, core, true, width)?;
-                let to = self.head_around_dot_segment(&to_head, core, false, width)?;
+                let from = self.head_around_dot_segment(
+                    &from_head,
+                    core,
+                    RotationSense::Clockwise,
+                    width,
+                )?;
+                let to = self.head_around_dot_segment(
+                    &to_head,
+                    core,
+                    RotationSense::Counterclockwise,
+                    width,
+                )?;
                 let offset = self.head_around_dot_offset(&from_head, core, width);
                 (from, to, offset)
             };
@@ -621,7 +644,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
-        cw: bool,
+        sense: RotationSense,
     ) -> Result<Cane, DrawingException> {
         self.add_cane_with_infringables(
             recorder,
@@ -630,7 +653,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
             dot_weight,
             seg_weight,
             bend_weight,
-            cw,
+            sense,
             Some(&[]),
         )
     }
@@ -647,7 +670,7 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
         dot_weight: LooseDotWeight,
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
-        cw: bool,
+        sense: RotationSense,
         infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<Cane, DrawingException> {
         let seg_to = self.add_dot_with_infringables(recorder, dot_weight, infringables)?;
@@ -667,7 +690,10 @@ impl<CW: Copy, R: AccessRules> Drawing<CW, R> {
                     .remove_dot(recorder, seg_to.into());
             })?;
 
-        let (bend_from, bend_to) = if cw { (to, seg_to) } else { (seg_to, to) };
+        let (bend_from, bend_to) = match sense {
+            RotationSense::Counterclockwise => (seg_to, to),
+            RotationSense::Clockwise => (to, seg_to),
+        };
 
         let bend = self
             .add_loose_bend_with_infringables(

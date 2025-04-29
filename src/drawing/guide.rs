@@ -9,7 +9,7 @@ use crate::{
         primitive::{AccessPrimitiveShape, PrimitiveShape},
         shape::AccessShape,
     },
-    math::{self, Circle, NoTangents},
+    math::{self, Circle, NoTangents, RotationSense},
 };
 
 use super::{
@@ -41,7 +41,7 @@ pub trait Guide {
         &self,
         head: &Head,
         around: DotIndex,
-        cw: bool,
+        sense: RotationSense,
         width: f64,
     ) -> Result<Line, NoTangents>;
 
@@ -58,13 +58,13 @@ pub trait Guide {
         &self,
         head: &Head,
         around: BendIndex,
-        cw: bool,
+        sense: RotationSense,
         width: f64,
     ) -> Result<Line, NoTangents>;
 
     fn head_around_bend_offset(&self, head: &Head, around: BendIndex, _width: f64) -> f64;
 
-    fn head_cw(&self, head: &Head) -> Option<bool>;
+    fn head_sense(&self, head: &Head) -> Option<RotationSense>;
 
     fn cane_head(&self, face: LooseDotIndex) -> CaneHead;
 
@@ -86,8 +86,8 @@ impl<CW: Copy, R: AccessRules> Guide for Drawing<CW, R> {
             r: 0.0,
         };
 
-        let from_cw = self.head_cw(head);
-        math::tangent_segment(from_circle, from_cw, to_circle, None)
+        let from_sense = self.head_sense(head);
+        math::tangent_segment(from_circle, from_sense, to_circle, None)
     }
 
     fn head_around_dot_segments(
@@ -100,9 +100,9 @@ impl<CW: Copy, R: AccessRules> Guide for Drawing<CW, R> {
         let to_circle =
             self.dot_circle(around, width, self.conditions(head.face().into()).as_ref());
 
-        let from_cw = self.head_cw(head);
+        let from_sense = self.head_sense(head);
         let tangents: Vec<Line> =
-            math::tangent_segments(from_circle, from_cw, to_circle, None)?.collect();
+            math::tangent_segments(from_circle, from_sense, to_circle, None)?.collect();
         Ok((tangents[0], tangents[1]))
     }
 
@@ -110,15 +110,15 @@ impl<CW: Copy, R: AccessRules> Guide for Drawing<CW, R> {
         &self,
         head: &Head,
         around: DotIndex,
-        cw: bool,
+        sense: RotationSense,
         width: f64,
     ) -> Result<Line, NoTangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle =
             self.dot_circle(around, width, self.conditions(head.face().into()).as_ref());
 
-        let from_cw = self.head_cw(head);
-        math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
+        let from_sense = self.head_sense(head);
+        math::tangent_segment(from_circle, from_sense, to_circle, Some(sense))
     }
 
     fn head_around_dot_offset(&self, head: &Head, around: DotIndex, _width: f64) -> f64 {
@@ -138,9 +138,9 @@ impl<CW: Copy, R: AccessRules> Guide for Drawing<CW, R> {
         let to_circle =
             self.bend_circle(around, width, self.conditions(head.face().into()).as_ref());
 
-        let from_cw = self.head_cw(head);
+        let from_sense = self.head_sense(head);
         let tangents: Vec<Line> =
-            math::tangent_segments(from_circle, from_cw, to_circle, None)?.collect();
+            math::tangent_segments(from_circle, from_sense, to_circle, None)?.collect();
         Ok((tangents[0], tangents[1]))
     }
 
@@ -148,15 +148,15 @@ impl<CW: Copy, R: AccessRules> Guide for Drawing<CW, R> {
         &self,
         head: &Head,
         around: BendIndex,
-        cw: bool,
+        sense: RotationSense,
         width: f64,
     ) -> Result<Line, NoTangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle =
             self.bend_circle(around, width, self.conditions(head.face().into()).as_ref());
 
-        let from_cw = self.head_cw(head);
-        math::tangent_segment(from_circle, from_cw, to_circle, Some(cw))
+        let from_sense = self.head_sense(head);
+        math::tangent_segment(from_circle, from_sense, to_circle, Some(sense))
     }
 
     fn head_around_bend_offset(&self, head: &Head, around: BendIndex, _width: f64) -> f64 {
@@ -166,14 +166,14 @@ impl<CW: Copy, R: AccessRules> Guide for Drawing<CW, R> {
         )
     }
 
-    fn head_cw(&self, head: &Head) -> Option<bool> {
+    fn head_sense(&self, head: &Head) -> Option<RotationSense> {
         if let Head::Cane(head) = head {
             let joints = self.primitive(head.cane.bend).joints();
 
             if head.face() == joints.0.into() {
-                Some(false)
+                Some(RotationSense::Counterclockwise)
             } else {
-                Some(true)
+                Some(RotationSense::Clockwise)
             }
         } else {
             None

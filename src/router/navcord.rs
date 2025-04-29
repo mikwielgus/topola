@@ -60,20 +60,28 @@ impl NavcordStepper {
         around: NavvertexIndex,
     ) -> Result<CaneHead, NavcorderException> {
         let around_node_weight = navmesh.node_weight(around).unwrap();
-        let cw = around_node_weight
-            .maybe_cw
+        let sense = around_node_weight
+            .maybe_sense
             .ok_or(NavcorderException::CannotWrap)?;
 
         match around_node_weight.node {
             BinavvertexNodeIndex::FixedDot(dot) => {
-                layout.cane_around_dot(&mut self.recorder, head, dot, cw, self.width)
+                layout.cane_around_dot(&mut self.recorder, head, dot, sense, self.width)
             }
-            BinavvertexNodeIndex::FixedBend(fixed_bend) => {
-                layout.cane_around_bend(&mut self.recorder, head, fixed_bend.into(), cw, self.width)
-            }
-            BinavvertexNodeIndex::LooseBend(loose_bend) => {
-                layout.cane_around_bend(&mut self.recorder, head, loose_bend.into(), cw, self.width)
-            }
+            BinavvertexNodeIndex::FixedBend(fixed_bend) => layout.cane_around_bend(
+                &mut self.recorder,
+                head,
+                fixed_bend.into(),
+                sense,
+                self.width,
+            ),
+            BinavvertexNodeIndex::LooseBend(loose_bend) => layout.cane_around_bend(
+                &mut self.recorder,
+                head,
+                loose_bend.into(),
+                sense,
+                self.width,
+            ),
         }
         .map_err(NavcorderException::CannotDraw)
     }

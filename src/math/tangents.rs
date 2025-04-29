@@ -6,7 +6,7 @@ use geo::{geometry::Point, Line};
 use specctra_core::math::Circle;
 use thiserror::Error;
 
-use super::{seq_perp_dot_product, NormalLine};
+use super::{seq_perp_dot_product, NormalLine, RotationSense};
 
 #[derive(Error, Debug, Clone, Copy, PartialEq)]
 #[error("no tangents for {0:?} and {1:?}")] // TODO add real error message
@@ -84,27 +84,31 @@ fn tangent_point_pairs(
 
 pub fn tangent_segments(
     circle1: Circle,
-    cw1: Option<bool>,
+    maybe_sense1: Option<RotationSense>,
     circle2: Circle,
-    cw2: Option<bool>,
+    maybe_sense2: Option<RotationSense>,
 ) -> Result<impl Iterator<Item = Line>, NoTangents> {
     Ok(tangent_point_pairs(circle1, circle2)?
         .into_iter()
         .filter_map(move |tangent_point_pair| {
-            if let Some(cw1) = cw1 {
+            if let Some(sense1) = maybe_sense1 {
                 let cross1 =
                     seq_perp_dot_product(tangent_point_pair.0, tangent_point_pair.1, circle1.pos);
 
-                if (cw1 && cross1 <= 0.0) || (!cw1 && cross1 >= 0.0) {
+                if (sense1 == RotationSense::Clockwise && cross1 <= 0.0)
+                    || (sense1 == RotationSense::Counterclockwise && cross1 >= 0.0)
+                {
                     return None;
                 }
             }
 
-            if let Some(cw2) = cw2 {
+            if let Some(sense2) = maybe_sense2 {
                 let cross2 =
                     seq_perp_dot_product(tangent_point_pair.0, tangent_point_pair.1, circle2.pos);
 
-                if (cw2 && cross2 >= 0.0) || (!cw2 && cross2 <= 0.0) {
+                if (sense2 == RotationSense::Clockwise && cross2 >= 0.0)
+                    || (sense2 == RotationSense::Counterclockwise && cross2 <= 0.0)
+                {
                     return None;
                 }
             }
@@ -115,11 +119,13 @@ pub fn tangent_segments(
 
 pub fn tangent_segment(
     circle1: Circle,
-    cw1: Option<bool>,
+    maybe_sense1: Option<RotationSense>,
     circle2: Circle,
-    cw2: Option<bool>,
+    maybe_sense2: Option<RotationSense>,
 ) -> Result<Line, NoTangents> {
-    Ok(tangent_segments(circle1, cw1, circle2, cw2)?
-        .next()
-        .unwrap())
+    Ok(
+        tangent_segments(circle1, maybe_sense1, circle2, maybe_sense2)?
+            .next()
+            .unwrap(),
+    )
 }

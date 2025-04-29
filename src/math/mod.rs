@@ -10,6 +10,12 @@ mod tangents;
 pub use tangents::*;
 
 #[derive(Clone, Copy, Debug, PartialEq)]
+pub enum RotationSense {
+    Counterclockwise,
+    Clockwise,
+}
+
+#[derive(Clone, Copy, Debug, PartialEq)]
 pub enum LineIntersection {
     Empty,
     Overlapping,

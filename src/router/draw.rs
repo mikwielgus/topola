@@ -23,7 +23,7 @@ use crate::{
     },
     geometry::GetLayer,
     layout::{Layout, LayoutEdit},
-    math::{Circle, NoTangents},
+    math::{Circle, NoTangents, RotationSense},
 };
 
 #[derive(Error, Debug, Clone, Copy)]
@@ -53,7 +53,7 @@ pub trait Draw {
         recorder: &mut LayoutEdit,
         head: Head,
         around: FixedDotIndex,
-        cw: bool,
+        sense: RotationSense,
         width: f64,
     ) -> Result<CaneHead, DrawException>;
 
@@ -62,7 +62,7 @@ pub trait Draw {
         recorder: &mut LayoutEdit,
         head: Head,
         around: BendIndex,
-        cw: bool,
+        sense: RotationSense,
         width: f64,
     ) -> Result<CaneHead, DrawException>;
 
@@ -130,12 +130,12 @@ impl<R: AccessRules> Draw for Layout<R> {
         recorder: &mut LayoutEdit,
         head: Head,
         around: FixedDotIndex,
-        cw: bool,
+        sense: RotationSense,
         width: f64,
     ) -> Result<CaneHead, DrawException> {
         let tangent = self
             .drawing()
-            .head_around_dot_segment(&head, around.into(), cw, width)?;
+            .head_around_dot_segment(&head, around.into(), sense, width)?;
         let offset = self
             .drawing()
             .head_around_dot_offset(&head, around.into(), width);
@@ -145,7 +145,7 @@ impl<R: AccessRules> Draw for Layout<R> {
             around.into(),
             tangent.start_point(),
             tangent.end_point(),
-            cw,
+            sense,
             width,
             offset,
         )
@@ -159,12 +159,12 @@ impl<R: AccessRules> Draw for Layout<R> {
         recorder: &mut LayoutEdit,
         head: Head,
         around: BendIndex,
-        cw: bool,
+        sense: RotationSense,
         width: f64,
     ) -> Result<CaneHead, DrawException> {
         let tangent = self
             .drawing()
-            .head_around_bend_segment(&head, around, cw, width)?;
+            .head_around_bend_segment(&head, around, sense, width)?;
         let offset = self.drawing().head_around_bend_offset(&head, around, width);
 
         self.cane_around(
@@ -173,7 +173,7 @@ impl<R: AccessRules> Draw for Layout<R> {
             around.into(),
             tangent.start_point(),
             tangent.end_point(),
-            cw,
+            sense,
             width,
             offset,
         )
@@ -203,7 +203,7 @@ trait DrawPrivate {
         around: GearIndex,
         from: Point,
         to: Point,
-        cw: bool,
+        sense: RotationSense,
         width: f64,
         offset: f64,
     ) -> Result<CaneHead, DrawingException>;
@@ -221,7 +221,7 @@ trait DrawPrivate {
         head: Head,
         around: GearIndex,
         to: Point,
-        cw: bool,
+        sense: RotationSense,
         width: f64,
         offset: f64,
     ) -> Result<CaneHead, DrawingException>;
@@ -239,12 +239,12 @@ impl<R: AccessRules> DrawPrivate for Layout<R> {
         around: GearIndex,
         from: Point,
         to: Point,
-        cw: bool,
+        sense: RotationSense,
         width: f64,
         offset: f64,
     ) -> Result<CaneHead, DrawingException> {
         let head = self.extend_head(recorder, head, from)?;
-        self.cane(recorder, head, around, to, cw, width, offset)
+        self.cane(recorder, head, around, to, sense, width, offset)
     }
 
     #[debug_ensures(self.drawing().node_count() == old(self.drawing().node_count()))]
@@ -270,7 +270,7 @@ impl<R: AccessRules> DrawPrivate for Layout<R> {
         head: Head,
         around: GearIndex,
         to: Point,
-        cw: bool,
+        sense: RotationSense,
         width: f64,
         offset: f64,
     ) -> Result<CaneHead, DrawingException> {
@@ -299,7 +299,7 @@ impl<R: AccessRules> DrawPrivate for Layout<R> {
                 layer,
                 maybe_net,
             }),
-            cw,
+            sense,
         )?;
         Ok(CaneHead {
             face: self.drawing().primitive(cane.bend).other_joint(cane.dot),

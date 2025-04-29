@@ -21,7 +21,7 @@ use topola::{
     geometry::{shape::AccessShape, GenericNode},
     graph::MakeRef,
     layout::{poly::MakePolygon, via::ViaWeight},
-    math::Circle,
+    math::{Circle, RotationSense},
 };
 
 use crate::{config::Config, menu_bar::MenuBar, painter::Painter, workspace::Workspace};
@@ -213,23 +213,25 @@ impl Viewport {
                                         .shape()
                                         .center();
 
-                                        if let Some(from_cw) =
-                                            navmesh.node_weight(edge.source()).unwrap().maybe_cw
+                                        if let Some(from_sense) =
+                                            navmesh.node_weight(edge.source()).unwrap().maybe_sense
                                         {
-                                            if from_cw {
-                                                from -= [0.0, 150.0].into();
-                                            } else {
-                                                from += [0.0, 150.0].into();
-                                            }
+                                            from += match from_sense {
+                                                RotationSense::Counterclockwise => {
+                                                    [0.0, 150.0].into()
+                                                }
+                                                RotationSense::Clockwise => [-0.0, -150.0].into(),
+                                            };
                                         }
 
-                                        if let Some(to_cw) =
-                                            navmesh.node_weight(edge.target()).unwrap().maybe_cw
+                                        if let Some(to_sense) =
+                                            navmesh.node_weight(edge.target()).unwrap().maybe_sense
                                         {
-                                            if to_cw {
-                                                to -= [0.0, 150.0].into();
-                                            } else {
-                                                to += [0.0, 150.0].into();
+                                            to += match to_sense {
+                                                RotationSense::Counterclockwise => {
+                                                    [0.0, 150.0].into()
+                                                }
+                                                RotationSense::Clockwise => [-0.0, -150.0].into(),
                                             }
                                         }
 
