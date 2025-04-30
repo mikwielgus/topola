@@ -23,7 +23,7 @@ use crate::{
     },
     geometry::{edit::ApplyGeometryEdit, GenericNode, GetLayer},
     graph::{GenericIndex, MakeRef},
-    layout::{poly::PolyWeight, CompoundEntryKind, CompoundWeight, Layout, LayoutEdit, NodeIndex},
+    layout::{poly::PolyWeight, CompoundEntryLabel, CompoundWeight, Layout, LayoutEdit, NodeIndex},
 };
 
 /// Represents a band between two pins.
@@ -225,7 +225,7 @@ impl<M: AccessMesadata>
         SegWeight,
         BendWeight,
         CompoundWeight,
-        CompoundEntryKind,
+        CompoundEntryLabel,
         PrimitiveIndex,
         DotIndex,
         SegIndex,

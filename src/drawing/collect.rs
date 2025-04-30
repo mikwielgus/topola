@@ -25,7 +25,7 @@ pub trait Collect {
     fn wraparounded_bows(&self, around: GearIndex) -> Vec<PrimitiveIndex>;
 }
 
-impl<CW: Clone, Cek: Copy, R: AccessRules> Collect for Drawing<CW, Cek, R> {
+impl<CW: Clone, Cel: Copy, R: AccessRules> Collect for Drawing<CW, Cel, R> {
     fn loose_band_uid(&self, start_loose: LooseIndex) -> BandUid {
         BandUid::from((
             self.loose_band_first_seg(start_loose),
@@ -92,7 +92,7 @@ trait CollectPrivate {
     fn loose_band_last_seg(&self, start_loose: LooseIndex) -> BandTermsegIndex;
 }
 
-impl<CW: Clone, Cek: Copy, R: AccessRules> CollectPrivate for Drawing<CW, Cek, R> {
+impl<CW: Clone, Cel: Copy, R: AccessRules> CollectPrivate for Drawing<CW, Cel, R> {
     fn loose_band_first_seg(&self, start_loose: LooseIndex) -> BandTermsegIndex {
         if let LooseIndex::LoneSeg(seg) = start_loose {
             return BandTermsegIndex::Straight(seg);

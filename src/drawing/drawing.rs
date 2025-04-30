@@ -93,12 +93,12 @@ pub struct Collision(pub PrimitiveShape, pub PrimitiveIndex);
 #[error("{1:?} is already connected to net {0}")]
 pub struct AlreadyConnected(pub usize, pub PrimitiveIndex);
 
-pub type DrawingEdit<CW, Cek> = GeometryEdit<
+pub type DrawingEdit<CW, Cel> = GeometryEdit<
     DotWeight,
     SegWeight,
     BendWeight,
     CW,
-    Cek,
+    Cel,
     PrimitiveIndex,
     DotIndex,
     SegIndex,
@@ -106,14 +106,14 @@ pub type DrawingEdit<CW, Cek> = GeometryEdit<
 >;
 
 #[derive(Clone, Debug, Getters)]
-pub struct Drawing<CW, Cek, R> {
+pub struct Drawing<CW, Cel, R> {
     recording_geometry_with_rtree: RecordingGeometryWithRtree<
         PrimitiveWeight,
         DotWeight,
         SegWeight,
         BendWeight,
         CW,
-        Cek,
+        Cel,
         PrimitiveIndex,
         DotIndex,
         SegIndex,
@@ -122,7 +122,7 @@ pub struct Drawing<CW, Cek, R> {
     rules: R,
 }
 
-impl<CW, Cek, R> Drawing<CW, Cek, R> {
+impl<CW, Cel, R> Drawing<CW, Cel, R> {
     pub fn geometry(
         &self,
     ) -> &Geometry<
@@ -131,7 +131,7 @@ impl<CW, Cek, R> Drawing<CW, Cek, R> {
         SegWeight,
         BendWeight,
         CW,
-        Cek,
+        Cel,
         PrimitiveIndex,
         DotIndex,
         SegIndex,
@@ -148,11 +148,11 @@ impl<CW, Cek, R> Drawing<CW, Cek, R> {
         &mut self.rules
     }
 
-    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<'_, W, CW, Cek, R> {
+    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<'_, W, CW, Cel, R> {
         GenericPrimitive::new(index, self)
     }
 
-    pub fn loose(&self, index: LooseIndex) -> Loose<'_, CW, Cek, R> {
+    pub fn loose(&self, index: LooseIndex) -> Loose<'_, CW, Cel, R> {
         Loose::new(index, self)
     }
 
@@ -165,7 +165,7 @@ impl<CW, Cek, R> Drawing<CW, Cek, R> {
     }
 }
 
-impl<CW: Clone, Cek: Copy, R> Drawing<CW, Cek, R> {
+impl<CW: Clone, Cel: Copy, R> Drawing<CW, Cel, R> {
     pub fn compound_weight(&self, compound: GenericIndex<CW>) -> &CW {
         self.recording_geometry_with_rtree.compound_weight(compound)
     }
@@ -173,13 +173,13 @@ impl<CW: Clone, Cek: Copy, R> Drawing<CW, Cek, R> {
     pub fn compounds<'a, W: 'a>(
         &'a self,
         node: GenericIndex<W>,
-    ) -> impl Iterator<Item = (Cek, GenericIndex<CW>)> + 'a {
+    ) -> impl Iterator<Item = (Cel, GenericIndex<CW>)> + 'a {
         self.recording_geometry_with_rtree.compounds(node)
     }
 }
 
 #[debug_invariant(self.test_if_looses_dont_infringe_each_other())]
-impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
+impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     pub fn new(rules: R, layer_count: usize) -> Self {
         Self {
             recording_geometry_with_rtree: RecordingGeometryWithRtree::new(layer_count),
@@ -189,7 +189,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
 
     pub fn remove_band(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         band: BandTermsegIndex,
     ) -> Result<(), DrawingException> {
         match band {
@@ -266,7 +266,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     pub fn add_fixed_dot(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         weight: FixedDotWeight,
     ) -> Result<FixedDotIndex, Infringement> {
         self.add_dot_with_infringables(recorder, weight, Some(&[]))
@@ -274,7 +274,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
 
     #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() - 1))]
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    pub fn remove_fixed_dot(&mut self, recorder: &mut DrawingEdit<CW, Cek>, dot: FixedDotIndex) {
+    pub fn remove_fixed_dot(&mut self, recorder: &mut DrawingEdit<CW, Cel>, dot: FixedDotIndex) {
         self.recording_geometry_with_rtree
             .remove_dot(recorder, dot.into());
     }
@@ -283,7 +283,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     pub fn add_fixed_dot_infringably(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         weight: FixedDotWeight,
     ) -> FixedDotIndex {
         self.add_dot_infringably(recorder, weight)
@@ -293,7 +293,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
     fn add_dot_with_infringables<W: AccessDotWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         weight: W,
         infringables: Option<&[PrimitiveIndex]>,
     ) -> Result<GenericIndex<W>, Infringement>
@@ -311,7 +311,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     pub fn add_fixed_seg(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
@@ -323,7 +323,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count() + 2))]
     pub fn add_fixed_seg_infringably(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
@@ -337,7 +337,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     pub fn add_lone_loose_seg(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: LoneLooseSegWeight,
@@ -353,7 +353,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     pub fn add_seq_loose_seg(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         from: DotIndex,
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
@@ -368,7 +368,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     fn add_seg_with_infringables<W: AccessSegWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         from: DotIndex,
         to: DotIndex,
         weight: W,
@@ -390,7 +390,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     fn add_loose_bend_with_infringables(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         from: LooseDotIndex,
         to: LooseDotIndex,
         around: GearIndex,
@@ -455,7 +455,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     fn add_core_bend_with_infringables<W: AccessBendWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         from: DotIndex,
         to: DotIndex,
         core: FixedDotIndex,
@@ -479,7 +479,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     fn add_outer_bend_with_infringables(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         from: LooseDotIndex,
         to: LooseDotIndex,
         inner: BendIndex,
@@ -525,7 +525,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
 
     #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    pub fn flip_bend(&mut self, recorder: &mut DrawingEdit<CW, Cek>, bend: FixedBendIndex) {
+    pub fn flip_bend(&mut self, recorder: &mut DrawingEdit<CW, Cel>, bend: FixedBendIndex) {
         self.recording_geometry_with_rtree
             .flip_bend(recorder, bend.into());
     }
@@ -536,7 +536,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
         || self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count() + 1))]
     fn reattach_bend(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         bend: LooseBendIndex,
         maybe_new_inner: Option<LooseBendIndex>,
     ) {
@@ -553,7 +553,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     pub fn insert_cane(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         from: DotIndex,
         around: GearIndex,
         dot_weight: LooseDotWeight,
@@ -597,7 +597,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
 
     fn update_this_and_outward_bows_intern(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         around: LooseBendIndex,
     ) -> Result<(), DrawingException> {
         let mut maybe_rail = Some(around);
@@ -676,7 +676,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     fn update_this_and_outward_bows(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         around: LooseBendIndex,
     ) -> Result<(), DrawingException> {
         let mut temp_recorder = DrawingEdit::new();
@@ -696,7 +696,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     pub fn add_cane(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         from: DotIndex,
         around: GearIndex,
         dot_weight: LooseDotWeight,
@@ -722,7 +722,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     fn add_cane_with_infringables(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         from: DotIndex,
         around: GearIndex,
         dot_weight: LooseDotWeight,
@@ -781,7 +781,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() - 4))]
     pub fn remove_cane(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         cane: &Cane,
         face: LooseDotIndex,
     ) {
@@ -818,7 +818,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     pub fn move_dot(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         dot: DotIndex,
         to: Point,
     ) -> Result<(), Infringement> {
@@ -832,7 +832,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     fn move_dot_with_infringables(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         dot: DotIndex,
         to: Point,
         infringables: Option<&[PrimitiveIndex]>,
@@ -868,7 +868,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     fn shift_bend_with_infringables(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         bend: BendIndex,
         offset: f64,
         infringables: Option<&[PrimitiveIndex]>,
@@ -910,12 +910,12 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     }
 }
 
-impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
+impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     fn add_dot_infringably<W: AccessDotWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         weight: W,
     ) -> GenericIndex<W>
     where
@@ -928,7 +928,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count() + 2))]
     fn add_seg_infringably<W: AccessSegWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         from: DotIndex,
         to: DotIndex,
         weight: W,
@@ -942,7 +942,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
 
     pub fn add_compound(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         weight: CW,
     ) -> GenericIndex<CW> {
         self.recording_geometry_with_rtree
@@ -951,7 +951,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
 
     pub fn remove_compound(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         compound: GenericIndex<CW>,
     ) {
         self.recording_geometry_with_rtree
@@ -960,13 +960,17 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
 
     pub fn add_to_compound<W>(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         primitive: GenericIndex<W>,
-        entry_kind: Cek,
+        entry_label: Cel,
         compound: GenericIndex<CW>,
     ) {
-        self.recording_geometry_with_rtree
-            .add_to_compound(recorder, primitive, entry_kind, compound);
+        self.recording_geometry_with_rtree.add_to_compound(
+            recorder,
+            primitive,
+            entry_label,
+            compound,
+        );
     }
 
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
@@ -974,7 +978,7 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() - 1))]
     fn fail_and_remove_if_infringes_except(
         &mut self,
-        recorder: &mut DrawingEdit<CW, Cek>,
+        recorder: &mut DrawingEdit<CW, Cel>,
         node: PrimitiveIndex,
         maybe_except: Option<&[PrimitiveIndex]>,
     ) -> Result<(), Infringement> {
@@ -1172,20 +1176,20 @@ impl<CW: Clone, Cek: Copy, R: AccessRules> Drawing<CW, Cek, R> {
     }
 }
 
-impl<CW: Clone, Cek: Copy, R: AccessRules>
+impl<CW: Clone, Cel: Copy, R: AccessRules>
     ApplyGeometryEdit<
         DotWeight,
         SegWeight,
         BendWeight,
         CW,
-        Cek,
+        Cel,
         PrimitiveIndex,
         DotIndex,
         SegIndex,
         BendIndex,
-    > for Drawing<CW, Cek, R>
+    > for Drawing<CW, Cel, R>
 {
-    fn apply(&mut self, edit: &DrawingEdit<CW, Cek>) {
+    fn apply(&mut self, edit: &DrawingEdit<CW, Cel>) {
         self.recording_geometry_with_rtree.apply(edit);
     }
 }

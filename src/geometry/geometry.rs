@@ -60,11 +60,11 @@ pub trait SetOffset: GetOffset {
 }
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq)]
-pub enum GeometryLabel<Cek> {
+pub enum GeometryLabel<Cel> {
     Joined,
     Outer,
     Core,
-    Compound(Cek),
+    Compound(Cel),
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
@@ -83,8 +83,8 @@ pub trait AccessBendWeight: SetOffset + GetWidth + Copy {}
 impl<T: SetOffset + GetWidth + Copy> AccessBendWeight for T {}
 
 #[derive(Debug)]
-pub struct Geometry<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI> {
-    graph: StableDiGraph<GenericNode<PW, CW>, GeometryLabel<Cek>, usize>,
+pub struct Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI> {
+    graph: StableDiGraph<GenericNode<PW, CW>, GeometryLabel<Cel>, usize>,
     primitive_weight_marker: PhantomData<PW>,
     dot_weight_marker: PhantomData<DW>,
     seg_weight_marker: PhantomData<SW>,
@@ -96,8 +96,8 @@ pub struct Geometry<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI> {
     bend_index_marker: PhantomData<BI>,
 }
 
-impl<PW: Clone, DW, SW, BW, CW: Clone, Cek: Clone, PI, DI, SI, BI> Clone
-    for Geometry<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+impl<PW: Clone, DW, SW, BW, CW: Clone, Cel: Clone, PI, DI, SI, BI> Clone
+    for Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     fn clone(&self) -> Self {
         Self {
@@ -107,15 +107,15 @@ impl<PW: Clone, DW, SW, BW, CW: Clone, Cek: Clone, PI, DI, SI, BI> Clone
     }
 }
 
-impl<PW, DW, SW, BW, CW, Cek: Clone, PI, DI, SI, BI> Default
-    for Geometry<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+impl<PW, DW, SW, BW, CW, Cel: Clone, PI, DI, SI, BI> Default
+    for Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     fn default() -> Self {
         Self::new()
     }
 }
 
-impl<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI> Geometry<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI> {
+impl<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI> Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI> {
     pub fn new() -> Self {
         Self {
             graph: StableDiGraph::default(),
@@ -135,7 +135,7 @@ impl<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI> Geometry<PW, DW, SW, BW, CW, Cek, 
     // field that actually contains data...
 
     #[inline(always)]
-    pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel<Cek>, usize> {
+    pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel<Cel>, usize> {
         &self.graph
     }
 
@@ -157,12 +157,12 @@ impl<
         SW: AccessSegWeight + Into<PW>,
         BW: AccessBendWeight + Into<PW>,
         CW,
-        Cek,
+        Cel,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,
         SI: GetPetgraphIndex + Into<PI> + Copy,
         BI: GetPetgraphIndex + Into<PI> + Copy,
-    > Geometry<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+    > Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     pub fn add_dot<W: AccessDotWeight + Into<PW>>(&mut self, weight: W) -> GenericIndex<W> {
         GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())))
@@ -484,8 +484,8 @@ impl<
     }
 }
 
-impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
-    Geometry<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
+    Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     fn primitive_index(&self, index: NodeIndex<usize>) -> PI {
         self.primitive_weight(index).retag(index)
@@ -498,12 +498,12 @@ impl<
         SW,
         BW,
         CW,
-        Cek,
+        Cel,
         PI: TryInto<DI> + TryInto<SI> + TryInto<BI>,
         DI,
         SI,
         BI: GetPetgraphIndex,
-    > Geometry<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+    > Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     pub fn first_rail(&self, node: NodeIndex<usize>) -> Option<BI> {
         self.graph
@@ -551,11 +551,11 @@ impl<
     }
 }
 
-impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cek: Copy, PI: Copy, DI, SI, BI>
-    ManageCompounds<CW> for Geometry<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cel: Copy, PI: Copy, DI, SI, BI>
+    ManageCompounds<CW> for Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     type GeneralIndex = PI;
-    type EntryKind = Cek;
+    type EntryLabel = Cel;
 
     fn add_compound(&mut self, weight: CW) -> GenericIndex<CW> {
         GenericIndex::<CW>::new(self.graph.add_node(GenericNode::Compound(weight)))
@@ -565,14 +565,14 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cek: Copy, PI: Copy, D
         self.graph.remove_node(compound.petgraph_index());
     }
 
-    fn add_to_compound<I>(&mut self, primitive: I, entry_kind: Cek, compound: GenericIndex<CW>)
+    fn add_to_compound<I>(&mut self, primitive: I, entry_label: Cel, compound: GenericIndex<CW>)
     where
         I: Copy + GetPetgraphIndex,
     {
         self.graph.update_edge(
             primitive.petgraph_index(),
             compound.petgraph_index(),
-            GeometryLabel::Compound(entry_kind),
+            GeometryLabel::Compound(entry_label),
         );
     }
 
@@ -589,27 +589,27 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cek: Copy, PI: Copy, D
     fn compound_members(
         &self,
         compound: GenericIndex<CW>,
-    ) -> impl Iterator<Item = (Cek, Self::GeneralIndex)> + '_ {
+    ) -> impl Iterator<Item = (Cel, Self::GeneralIndex)> + '_ {
         self.graph
             .edges_directed(compound.petgraph_index(), Incoming)
             .filter_map(|edge| {
-                if let GeometryLabel::Compound(entry_kind) = *edge.weight() {
-                    Some((entry_kind, self.primitive_index(edge.source())))
+                if let GeometryLabel::Compound(entry_label) = *edge.weight() {
+                    Some((entry_label, self.primitive_index(edge.source())))
                 } else {
                     None
                 }
             })
     }
 
-    fn compounds<I>(&self, node: I) -> impl Iterator<Item = (Cek, GenericIndex<CW>)>
+    fn compounds<I>(&self, node: I) -> impl Iterator<Item = (Cel, GenericIndex<CW>)>
     where
         I: Copy + GetPetgraphIndex,
     {
         self.graph
             .edges_directed(node.petgraph_index(), Outgoing)
             .filter_map(|edge| {
-                if let GeometryLabel::Compound(entry_kind) = *edge.weight() {
-                    Some((entry_kind, GenericIndex::new(edge.target())))
+                if let GeometryLabel::Compound(entry_label) = *edge.weight() {
+                    Some((entry_label, GenericIndex::new(edge.target())))
                 } else {
                     None
                 }

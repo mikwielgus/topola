@@ -15,20 +15,20 @@ use crate::{
     },
     geometry::primitive::{DotShape, PrimitiveShape},
     graph::{GenericIndex, GetPetgraphIndex},
-    layout::{CompoundEntryKind, CompoundWeight},
+    layout::{CompoundEntryLabel, CompoundWeight},
     math::Circle,
 };
 
 #[derive(Debug)]
 pub struct Via<'a, R> {
     pub index: GenericIndex<ViaWeight>,
-    drawing: &'a Drawing<CompoundWeight, CompoundEntryKind, R>,
+    drawing: &'a Drawing<CompoundWeight, CompoundEntryLabel, R>,
 }
 
 impl<'a, R> Via<'a, R> {
     pub fn new(
         index: GenericIndex<ViaWeight>,
-        drawing: &'a Drawing<CompoundWeight, CompoundEntryKind, R>,
+        drawing: &'a Drawing<CompoundWeight, CompoundEntryLabel, R>,
     ) -> Self {
         Self { index, drawing }
     }

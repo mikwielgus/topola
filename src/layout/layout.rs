@@ -53,23 +53,23 @@ pub enum CompoundWeight {
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub enum CompoundEntryKind {
+pub enum CompoundEntryLabel {
     Normal,
     NotInConvexHull,
 }
 
 /// The alias to differ node types
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<CompoundWeight>>;
-pub type LayoutEdit = DrawingEdit<CompoundWeight, CompoundEntryKind>;
+pub type LayoutEdit = DrawingEdit<CompoundWeight, CompoundEntryLabel>;
 
 #[derive(Clone, Debug, Getters)]
 /// Structure for managing the Layout design
 pub struct Layout<R> {
-    pub(super) drawing: Drawing<CompoundWeight, CompoundEntryKind, R>,
+    pub(super) drawing: Drawing<CompoundWeight, CompoundEntryLabel, R>,
 }
 
 impl<R> Layout<R> {
-    pub fn new(drawing: Drawing<CompoundWeight, CompoundEntryKind, R>) -> Self {
+    pub fn new(drawing: Drawing<CompoundWeight, CompoundEntryLabel, R>) -> Self {
         Self { drawing }
     }
 }
@@ -126,7 +126,7 @@ impl<R: AccessRules> Layout<R> {
                     self.drawing.add_to_compound(
                         recorder,
                         dot,
-                        CompoundEntryKind::Normal,
+                        CompoundEntryLabel::Normal,
                         compound,
                     );
                     dots.push(dot);
@@ -286,7 +286,7 @@ impl<R: AccessRules> Layout<R> {
     pub fn poly_members(
         &self,
         poly: GenericIndex<PolyWeight>,
-    ) -> impl Iterator<Item = (CompoundEntryKind, PrimitiveIndex)> + '_ {
+    ) -> impl Iterator<Item = (CompoundEntryLabel, PrimitiveIndex)> + '_ {
         self.drawing
             .geometry()
             .compound_members(GenericIndex::new(poly.petgraph_index()))
@@ -442,7 +442,7 @@ impl<R: AccessRules>
         SegWeight,
         BendWeight,
         CompoundWeight,
-        CompoundEntryKind,
+        CompoundEntryLabel,
         PrimitiveIndex,
         DotIndex,
         SegIndex,

@@ -73,7 +73,7 @@ pub trait Guide {
     fn head(&self, face: DotIndex) -> Head;
 }
 
-impl<CW: Clone, Cek: Copy, R: AccessRules> Guide for Drawing<CW, Cek, R> {
+impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
     fn head_into_dot_segment(
         &self,
         head: &Head,
@@ -223,7 +223,7 @@ trait GuidePrivate {
     fn conditions(&self, node: PrimitiveIndex) -> Option<Conditions<'_>>;
 }
 
-impl<CW: Clone, Cek: Copy, R: AccessRules> GuidePrivate for Drawing<CW, Cek, R> {
+impl<CW: Clone, Cel: Copy, R: AccessRules> GuidePrivate for Drawing<CW, Cel, R> {
     fn clearance(&self, lhs: Option<&Conditions<'_>>, rhs: Option<&Conditions<'_>>) -> f64 {
         match (lhs, rhs) {
             (None, _) | (_, None) => 0.0,

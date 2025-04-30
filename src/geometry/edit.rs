@@ -13,23 +13,23 @@ pub trait ApplyGeometryEdit<
     SW: AccessSegWeight + GetLayer,
     BW: AccessBendWeight + GetLayer,
     CW: Clone,
-    Cek: Copy,
+    Cel: Copy,
     PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
     DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
     SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
     BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
 >
 {
-    fn apply(&mut self, edit: &GeometryEdit<DW, SW, BW, CW, Cek, PI, DI, SI, BI>);
+    fn apply(&mut self, edit: &GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>);
 }
 
 #[derive(Debug, Clone)]
-pub struct GeometryEdit<DW, SW, BW, CW, Cek, PI, DI, SI, BI> {
+pub struct GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI> {
     pub(super) dots: BTreeMap<DI, (Option<DW>, Option<DW>)>,
     pub(super) segs: BTreeMap<SI, (Option<((DI, DI), SW)>, Option<((DI, DI), SW)>)>,
     pub(super) bends: BTreeMap<BI, (Option<((DI, DI, DI), BW)>, Option<((DI, DI, DI), BW)>)>,
     pub(super) compounds:
-        BTreeMap<GenericIndex<CW>, (Option<(Vec<(Cek, PI)>, CW)>, Option<(Vec<(Cek, PI)>, CW)>)>,
+        BTreeMap<GenericIndex<CW>, (Option<(Vec<(Cel, PI)>, CW)>, Option<(Vec<(Cel, PI)>, CW)>)>,
 }
 
 fn swap_tuple_inplace<D>(x: &mut (D, D)) {
@@ -41,12 +41,12 @@ impl<
         SW: AccessSegWeight + GetLayer,
         BW: AccessBendWeight + GetLayer,
         CW: Clone,
-        Cek: Copy,
+        Cel: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
         DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
         SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
         BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-    > GeometryEdit<DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+    > GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     pub fn new() -> Self {
         Self {
@@ -93,15 +93,15 @@ impl<
         SW: AccessSegWeight + GetLayer,
         BW: AccessBendWeight + GetLayer,
         CW: Clone,
-        Cek: Copy,
+        Cel: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
         DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
         SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
         BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-    > ApplyGeometryEdit<DW, SW, BW, CW, Cek, PI, DI, SI, BI>
-    for GeometryEdit<DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+    > ApplyGeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>
+    for GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
-    fn apply(&mut self, edit: &GeometryEdit<DW, SW, BW, CW, Cek, PI, DI, SI, BI>) {
+    fn apply(&mut self, edit: &GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>) {
         apply_btmap(&mut self.dots, &edit.dots);
         apply_btmap(&mut self.segs, &edit.segs);
         apply_btmap(&mut self.bends, &edit.bends);

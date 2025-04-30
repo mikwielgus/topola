@@ -39,14 +39,14 @@ impl RTreeObject for Bbox {
 pub type BboxedIndex<I> = GeomWithData<Bbox, I>;
 
 #[derive(Debug, Getters)]
-pub struct GeometryWithRtree<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI> {
-    geometry: Geometry<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>,
+pub struct GeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI> {
+    geometry: Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>,
     rtree: RTree<BboxedIndex<GenericNode<PI, GenericIndex<CW>>>>,
     layer_count: usize,
 }
 
-impl<PW: Clone, DW, SW, BW, CW: Clone, Cek: Clone, PI: Clone, DI, SI, BI> Clone
-    for GeometryWithRtree<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+impl<PW: Clone, DW, SW, BW, CW: Clone, Cel: Clone, PI: Clone, DI, SI, BI> Clone
+    for GeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     fn clone(&self) -> Self {
         Self {
@@ -57,10 +57,10 @@ impl<PW: Clone, DW, SW, BW, CW: Clone, Cek: Clone, PI: Clone, DI, SI, BI> Clone
     }
 }
 
-impl<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
-    GeometryWithRtree<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+impl<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
+    GeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
-    pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel<Cek>, usize> {
+    pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel<Cel>, usize> {
         self.geometry.graph()
     }
 }
@@ -73,12 +73,12 @@ impl<
         SW: AccessSegWeight + Into<PW> + GetLayer,
         BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Clone,
-        Cek: Copy,
+        Cel: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,
         SI: GetPetgraphIndex + Into<PI> + Copy,
         BI: GetPetgraphIndex + Into<PI> + Copy,
-    > GeometryWithRtree<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+    > GeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     pub fn new(layer_count: usize) -> Self {
         Self {
@@ -181,12 +181,12 @@ impl<
     pub fn add_to_compound<W>(
         &mut self,
         primitive: GenericIndex<W>,
-        entry_kind: Cek,
+        entry_label: Cel,
         compound: GenericIndex<CW>,
     ) {
         self.rtree.remove(&self.make_compound_bbox(compound));
         self.geometry
-            .add_to_compound(primitive, entry_kind, compound);
+            .add_to_compound(primitive, entry_label, compound);
         self.rtree.insert(self.make_compound_bbox(compound));
     }
 
@@ -293,12 +293,12 @@ impl<
         SW: AccessSegWeight + Into<PW> + GetLayer,
         BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Clone,
-        Cek: Copy,
+        Cel: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,
         SI: GetPetgraphIndex + Into<PI> + Copy,
         BI: GetPetgraphIndex + Into<PI> + Copy,
-    > GeometryWithRtree<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+    > GeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     fn init_dot_bbox(&mut self, dot: DI) {
         self.rtree.insert(self.make_dot_bbox(dot));
@@ -363,7 +363,7 @@ impl<
     ) -> BboxedIndex<GenericNode<PI, GenericIndex<CW>>> {
         let mut aabb = AABB::<[f64; 3]>::new_empty();
 
-        // NOTE(fogti): perhaps allow `entry_kind` to specify if it
+        // NOTE(fogti): perhaps allow `entry_label` to specify if it
         // should be considered part of the bounding box or not
         for (_, member) in self.geometry.compound_members(compound) {
             aabb.merge(&self.make_bbox(member).geom().aabb);
@@ -422,15 +422,15 @@ impl<
         SW: AccessSegWeight + Into<PW> + GetLayer,
         BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Clone,
-        Cek: Copy,
+        Cel: Copy,
         PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
         DI: GetPetgraphIndex + Into<PI> + Copy,
         SI: GetPetgraphIndex + Into<PI> + Copy,
         BI: GetPetgraphIndex + Into<PI> + Copy,
-    > ManageCompounds<CW> for GeometryWithRtree<PW, DW, SW, BW, CW, Cek, PI, DI, SI, BI>
+    > ManageCompounds<CW> for GeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     type GeneralIndex = PI;
-    type EntryKind = Cek;
+    type EntryLabel = Cel;
 
     fn add_compound(&mut self, weight: CW) -> GenericIndex<CW> {
         let compound = self.geometry.add_compound(weight);
@@ -443,11 +443,11 @@ impl<
         self.geometry.remove_compound(compound);
     }
 
-    fn add_to_compound<I>(&mut self, primitive: I, kind: Cek, compound: GenericIndex<CW>)
+    fn add_to_compound<I>(&mut self, primitive: I, label: Cel, compound: GenericIndex<CW>)
     where
         I: Copy + GetPetgraphIndex,
     {
-        self.geometry.add_to_compound(primitive, kind, compound);
+        self.geometry.add_to_compound(primitive, label, compound);
     }
 
     fn compound_weight(&self, compound: GenericIndex<CW>) -> &CW {
@@ -457,11 +457,11 @@ impl<
     fn compound_members(
         &self,
         compound: GenericIndex<CW>,
-    ) -> impl Iterator<Item = (Cek, Self::GeneralIndex)> {
+    ) -> impl Iterator<Item = (Cel, Self::GeneralIndex)> {
         self.geometry.compound_members(compound)
     }
 
-    fn compounds<I>(&self, node: I) -> impl Iterator<Item = (Cek, GenericIndex<CW>)>
+    fn compounds<I>(&self, node: I) -> impl Iterator<Item = (Cel, GenericIndex<CW>)>
     where
         I: Copy + GetPetgraphIndex,
     {

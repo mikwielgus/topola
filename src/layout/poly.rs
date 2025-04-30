@@ -22,7 +22,7 @@ use crate::{
     },
     geometry::{compound::ManageCompounds, GetLayer, GetSetPos},
     graph::{GenericIndex, GetPetgraphIndex, MakeRef},
-    layout::{CompoundEntryKind, CompoundWeight, Layout, LayoutEdit},
+    layout::{CompoundEntryLabel, CompoundWeight, Layout, LayoutEdit},
     math::Circle,
 };
 
@@ -34,7 +34,7 @@ pub trait MakePolygon {
 #[derive(Debug)]
 pub struct PolyRef<'a, R> {
     pub index: GenericIndex<PolyWeight>,
-    drawing: &'a Drawing<CompoundWeight, CompoundEntryKind, R>,
+    drawing: &'a Drawing<CompoundWeight, CompoundEntryLabel, R>,
 }
 
 impl<'a, R: 'a> MakeRef<'a, Layout<R>> for GenericIndex<PolyWeight> {
@@ -81,7 +81,7 @@ pub(super) fn add_poly_with_nodes_intern<R: AccessRules>(
         layout.drawing.add_to_compound(
             recorder,
             GenericIndex::<()>::new(idx.petgraph_index()),
-            CompoundEntryKind::Normal,
+            CompoundEntryLabel::Normal,
             poly_compound,
         );
 
@@ -123,17 +123,17 @@ pub(super) fn add_poly_with_nodes_intern<R: AccessRules>(
             layout.drawing.add_to_compound(
                 recorder,
                 GenericIndex::<()>::new(idx.petgraph_index()),
-                CompoundEntryKind::NotInConvexHull,
+                CompoundEntryLabel::NotInConvexHull,
                 poly_compound,
             );
         }
     }
 
-    // maybe this should be a different edge kind
+    // maybe this should be a different edge label
     layout.drawing.add_to_compound(
         recorder,
         apex,
-        CompoundEntryKind::NotInConvexHull,
+        CompoundEntryLabel::NotInConvexHull,
         poly_compound,
     );
 
@@ -141,7 +141,10 @@ pub(super) fn add_poly_with_nodes_intern<R: AccessRules>(
     apex
 }
 
-fn is_apex<R>(drawing: &Drawing<CompoundWeight, CompoundEntryKind, R>, dot: FixedDotIndex) -> bool {
+fn is_apex<R>(
+    drawing: &Drawing<CompoundWeight, CompoundEntryLabel, R>,
+    dot: FixedDotIndex,
+) -> bool {
     !drawing
         .primitive(dot)
         .segs()
@@ -153,7 +156,7 @@ fn is_apex<R>(drawing: &Drawing<CompoundWeight, CompoundEntryKind, R>, dot: Fixe
 impl<'a, R> PolyRef<'a, R> {
     pub fn new(
         index: GenericIndex<PolyWeight>,
-        drawing: &'a Drawing<CompoundWeight, CompoundEntryKind, R>,
+        drawing: &'a Drawing<CompoundWeight, CompoundEntryLabel, R>,
     ) -> Self {
         Self { index, drawing }
     }
@@ -162,8 +165,8 @@ impl<'a, R> PolyRef<'a, R> {
         self.drawing
             .geometry()
             .compound_members(self.index.into())
-            .find_map(|(kind, primitive_node)| {
-                if kind == CompoundEntryKind::NotInConvexHull {
+            .find_map(|(label, primitive_node)| {
+                if label == CompoundEntryLabel::NotInConvexHull {
                     if let PrimitiveIndex::FixedDot(dot) = primitive_node {
                         if is_apex(self.drawing, dot) {
                             return Some(dot);
@@ -200,7 +203,7 @@ impl<R> MakePolygon for PolyRef<'_, R> {
                 self.drawing
                     .geometry()
                     .compound_members(self.index.into())
-                    .filter_map(|(_kind, primitive_node)| {
+                    .filter_map(|(_label, primitive_node)| {
                         let PrimitiveIndex::FixedDot(dot) = primitive_node else {
                             return None;
                         };

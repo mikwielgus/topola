@@ -30,10 +30,10 @@ pub enum GearIndex {
     LooseBend(LooseBendIndex),
 }
 
-impl<'a, CW: 'a, Cek: 'a, R: 'a> MakeRef<'a, Drawing<CW, Cek, R>> for GearIndex {
-    type Output = GearRef<'a, CW, Cek, R>;
-    fn ref_(&self, drawing: &'a Drawing<CW, Cek, R>) -> GearRef<'a, CW, Cek, R> {
-        GearRef::<'a, CW, Cek, R>::new(*self, drawing)
+impl<'a, CW: 'a, Cel: 'a, R: 'a> MakeRef<'a, Drawing<CW, Cel, R>> for GearIndex {
+    type Output = GearRef<'a, CW, Cel, R>;
+    fn ref_(&self, drawing: &'a Drawing<CW, Cel, R>) -> GearRef<'a, CW, Cel, R> {
+        GearRef::<'a, CW, Cel, R>::new(*self, drawing)
     }
 }
 
@@ -57,14 +57,14 @@ impl From<BendIndex> for GearIndex {
 }
 
 #[enum_dispatch(GetNextGear, GetDrawing, GetPetgraphIndex)]
-pub enum GearRef<'a, CW, Cek, R> {
-    FixedDot(FixedDot<'a, CW, Cek, R>),
-    FixedBend(FixedBend<'a, CW, Cek, R>),
-    LooseBend(LooseBend<'a, CW, Cek, R>),
+pub enum GearRef<'a, CW, Cel, R> {
+    FixedDot(FixedDot<'a, CW, Cel, R>),
+    FixedBend(FixedBend<'a, CW, Cel, R>),
+    LooseBend(LooseBend<'a, CW, Cel, R>),
 }
 
-impl<'a, CW, Cek, R> GearRef<'a, CW, Cek, R> {
-    pub fn new(index: GearIndex, drawing: &'a Drawing<CW, Cek, R>) -> Self {
+impl<'a, CW, Cel, R> GearRef<'a, CW, Cel, R> {
+    pub fn new(index: GearIndex, drawing: &'a Drawing<CW, Cel, R>) -> Self {
         match index {
             GearIndex::FixedDot(dot) => drawing.primitive(dot).into(),
             GearIndex::FixedBend(bend) => drawing.primitive(bend).into(),
@@ -73,19 +73,19 @@ impl<'a, CW, Cek, R> GearRef<'a, CW, Cek, R> {
     }
 }
 
-impl<CW, Cek, R> GetNextGear for FixedDot<'_, CW, Cek, R> {
+impl<CW, Cel, R> GetNextGear for FixedDot<'_, CW, Cel, R> {
     fn next_gear(&self) -> Option<LooseBendIndex> {
         self.first_gear()
     }
 }
 
-impl<CW, Cek, R> GetNextGear for LooseBend<'_, CW, Cek, R> {
+impl<CW, Cel, R> GetNextGear for LooseBend<'_, CW, Cel, R> {
     fn next_gear(&self) -> Option<LooseBendIndex> {
         self.outer()
     }
 }
 
-impl<CW, Cek, R> GetNextGear for FixedBend<'_, CW, Cek, R> {
+impl<CW, Cel, R> GetNextGear for FixedBend<'_, CW, Cel, R> {
     fn next_gear(&self) -> Option<LooseBendIndex> {
         self.first_gear()
     }

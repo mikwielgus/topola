@@ -6,11 +6,11 @@ use crate::graph::{GenericIndex, GetPetgraphIndex};
 
 pub trait ManageCompounds<CW: Clone> {
     type GeneralIndex: Copy;
-    type EntryKind: Copy;
+    type EntryLabel: Copy;
 
     fn add_compound(&mut self, weight: CW) -> GenericIndex<CW>;
     fn remove_compound(&mut self, compound: GenericIndex<CW>);
-    fn add_to_compound<I>(&mut self, node: I, kind: Self::EntryKind, compound: GenericIndex<CW>)
+    fn add_to_compound<I>(&mut self, node: I, label: Self::EntryLabel, compound: GenericIndex<CW>)
     where
         I: Copy + GetPetgraphIndex;
 
@@ -19,9 +19,9 @@ pub trait ManageCompounds<CW: Clone> {
     fn compound_members(
         &self,
         compound: GenericIndex<CW>,
-    ) -> impl Iterator<Item = (Self::EntryKind, Self::GeneralIndex)> + '_;
+    ) -> impl Iterator<Item = (Self::EntryLabel, Self::GeneralIndex)> + '_;
 
-    fn compounds<I>(&self, node: I) -> impl Iterator<Item = (Self::EntryKind, GenericIndex<CW>)>
+    fn compounds<I>(&self, node: I) -> impl Iterator<Item = (Self::EntryLabel, GenericIndex<CW>)>
     where
         I: Copy + GetPetgraphIndex;
 }

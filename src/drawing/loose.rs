@@ -70,15 +70,15 @@ impl TryFrom<PrimitiveIndex> for LooseIndex {
 }
 
 #[enum_dispatch(GetPrevNextLoose, GetDrawing, GetPetgraphIndex)]
-pub enum Loose<'a, CW, Cek, R> {
-    Dot(LooseDot<'a, CW, Cek, R>),
-    LoneSeg(LoneLooseSeg<'a, CW, Cek, R>),
-    SeqSeg(SeqLooseSeg<'a, CW, Cek, R>),
-    Bend(LooseBend<'a, CW, Cek, R>),
+pub enum Loose<'a, CW, Cel, R> {
+    Dot(LooseDot<'a, CW, Cel, R>),
+    LoneSeg(LoneLooseSeg<'a, CW, Cel, R>),
+    SeqSeg(SeqLooseSeg<'a, CW, Cel, R>),
+    Bend(LooseBend<'a, CW, Cel, R>),
 }
 
-impl<'a, CW, Cek, R> Loose<'a, CW, Cek, R> {
-    pub fn new(index: LooseIndex, drawing: &'a Drawing<CW, Cek, R>) -> Self {
+impl<'a, CW, Cel, R> Loose<'a, CW, Cel, R> {
+    pub fn new(index: LooseIndex, drawing: &'a Drawing<CW, Cel, R>) -> Self {
         match index {
             LooseIndex::Dot(dot) => drawing.primitive(dot).into(),
             LooseIndex::LoneSeg(seg) => drawing.primitive(seg).into(),
@@ -88,7 +88,7 @@ impl<'a, CW, Cek, R> Loose<'a, CW, Cek, R> {
     }
 }
 
-impl<CW, Cek, R> GetPrevNextLoose for LooseDot<'_, CW, Cek, R> {
+impl<CW, Cel, R> GetPrevNextLoose for LooseDot<'_, CW, Cel, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let bend = self.bend();
 
@@ -104,13 +104,13 @@ impl<CW, Cek, R> GetPrevNextLoose for LooseDot<'_, CW, Cek, R> {
     }
 }
 
-impl<CW, Cek, R> GetPrevNextLoose for LoneLooseSeg<'_, CW, Cek, R> {
+impl<CW, Cel, R> GetPrevNextLoose for LoneLooseSeg<'_, CW, Cel, R> {
     fn next_loose(&self, _maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         None
     }
 }
 
-impl<CW, Cek, R> GetPrevNextLoose for SeqLooseSeg<'_, CW, Cek, R> {
+impl<CW, Cel, R> GetPrevNextLoose for SeqLooseSeg<'_, CW, Cel, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let joints = self.joints();
         let Some(prev) = maybe_prev else {
@@ -128,7 +128,7 @@ impl<CW, Cek, R> GetPrevNextLoose for SeqLooseSeg<'_, CW, Cek, R> {
     }
 }
 
-impl<CW, Cek, R> GetPrevNextLoose for LooseBend<'_, CW, Cek, R> {
+impl<CW, Cel, R> GetPrevNextLoose for LooseBend<'_, CW, Cel, R> {
     fn next_loose(&self, maybe_prev: Option<LooseIndex>) -> Option<LooseIndex> {
         let joints = self.joints();
 
