@@ -11,11 +11,15 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{primitive::PrimitiveShape, shape::MeasureLength as MeasureLengthTrait},
     graph::MakeRef,
-    router::{navcord::NavcordStepper, navmesh::Navmesh},
+    router::{
+        navcord::NavcordStepper,
+        navmesh::{Navmesh, NavvertexIndex},
+    },
 };
 
 use super::{
-    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
+    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles},
+    remove_bands::RemoveBandsExecutionStepper,
     selection::BandSelection,
     Autorouter, AutorouterError,
 };
@@ -76,5 +80,15 @@ impl GetGhosts for MeasureLengthExecutionStepper {
 impl GetObstacles for MeasureLengthExecutionStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         &[]
+    }
+}
+
+impl GetNavmeshDebugTexts for MeasureLengthExecutionStepper {
+    fn navvertex_debug_text(&self, _navvertex: NavvertexIndex) -> Option<&str> {
+        None
+    }
+
+    fn navedge_debug_text(&self, _navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
+        None
     }
 }

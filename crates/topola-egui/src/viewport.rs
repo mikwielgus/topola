@@ -11,7 +11,9 @@ use rstar::{Envelope, AABB};
 use topola::{
     autorouter::{
         execution::Command,
-        invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
+        invoker::{
+            GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles,
+        },
     },
     board::AccessMesadata,
     drawing::{
@@ -22,6 +24,7 @@ use topola::{
     graph::MakeRef,
     layout::{poly::MakePolygon, via::ViaWeight},
     math::{Circle, RotationSense},
+    router::navmesh::NavvertexIndex,
 };
 
 use crate::{config::Config, menu_bar::MenuBar, painter::Painter, workspace::Workspace};
@@ -265,6 +268,50 @@ impl Viewport {
                                         };
 
                                         painter.paint_edge(from, to, stroke);
+
+                                        if let Some(text) = activity
+                                            .navedge_debug_text((edge.source(), edge.target()))
+                                        {
+                                            painter.paint_text(
+                                                (from + to) / 2.0,
+                                                egui::Align2::LEFT_BOTTOM,
+                                                text,
+                                                egui::Color32::from_rgb(255, 255, 255),
+                                            );
+                                        }
+                                    }
+
+                                    for index in navmesh.graph().node_indices() {
+                                        let navvertex = NavvertexIndex(index);
+                                        if let Some(text) = activity.navvertex_debug_text(navvertex)
+                                        {
+                                            let mut pos = PrimitiveIndex::from(
+                                                navmesh.node_weight(navvertex).unwrap().node,
+                                            )
+                                            .primitive(board.layout().drawing())
+                                            .shape()
+                                            .center();
+
+                                            pos += match navmesh
+                                                .node_weight(navvertex)
+                                                .unwrap()
+                                                .maybe_sense
+                                            {
+                                                Some(RotationSense::Counterclockwise) => {
+                                                    [0.0, 150.0].into()
+                                                }
+                                                Some(RotationSense::Clockwise) => {
+                                                    [-0.0, -150.0].into()
+                                                }
+                                                None => [0.0, 0.0].into(),
+                                            };
+                                            painter.paint_text(
+                                                pos,
+                                                egui::Align2::LEFT_BOTTOM,
+                                                text,
+                                                egui::Color32::from_rgb(255, 255, 255),
+                                            );
+                                        }
                                     }
                                 }
                             }

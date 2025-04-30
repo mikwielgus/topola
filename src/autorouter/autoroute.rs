@@ -14,12 +14,16 @@ use crate::{
     drawing::{band::BandTermsegIndex, graph::PrimitiveIndex, Collect},
     geometry::primitive::PrimitiveShape,
     layout::LayoutEdit,
-    router::{navcord::NavcordStepper, navmesh::Navmesh, RouteStepper, Router},
+    router::{
+        navcord::NavcordStepper,
+        navmesh::{Navmesh, NavvertexIndex},
+        RouteStepper, Router,
+    },
     stepper::Step,
 };
 
 use super::{
-    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
+    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles},
     Autorouter, AutorouterError, AutorouterOptions,
 };
 
@@ -159,29 +163,37 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
 }
 
 impl GetMaybeNavmesh for AutorouteExecutionStepper {
-    /// Retrieves an optional reference to the navigation mesh from the current route.
     fn maybe_navmesh(&self) -> Option<&Navmesh> {
         self.route.as_ref().map(|route| route.navmesh())
     }
 }
 
 impl GetMaybeNavcord for AutorouteExecutionStepper {
-    /// Retrieves an optional reference to the navcord from the current route.
     fn maybe_navcord(&self) -> Option<&NavcordStepper> {
         self.route.as_ref().map(|route| route.navcord())
     }
 }
 
 impl GetGhosts for AutorouteExecutionStepper {
-    /// Retrieves ghost shapes from the current route.
     fn ghosts(&self) -> &[PrimitiveShape] {
         self.route.as_ref().map_or(&[], |route| route.ghosts())
     }
 }
 
 impl GetObstacles for AutorouteExecutionStepper {
-    /// Retrieves obstacles encountered during routing.
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.route.as_ref().map_or(&[], |route| route.obstacles())
+    }
+}
+
+impl GetNavmeshDebugTexts for AutorouteExecutionStepper {
+    fn navvertex_debug_text(&self, _navvertex: NavvertexIndex) -> Option<&str> {
+        // Add debug text here.
+        None
+    }
+
+    fn navedge_debug_text(&self, _navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
+        // Add debug text here.
+        None
     }
 }

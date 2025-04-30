@@ -114,4 +114,25 @@ impl<'a> Painter<'a> {
             stroke,
         ));
     }
+
+    pub fn paint_text(
+        &mut self,
+        pos: Point,
+        anchor: egui::Align2,
+        text: &str,
+        color: egui::epaint::Color32,
+    ) {
+        let text = self.ui.painter().fonts(|fonts| {
+            egui::Shape::text(
+                fonts,
+                self.transform
+                    .mul_pos([pos.x() as f32, -pos.y() as f32].into()),
+                anchor,
+                text,
+                egui::FontId::default(),
+                color,
+            )
+        });
+        self.ui.painter().add(text);
+    }
 }

@@ -39,7 +39,7 @@ use crate::{
 use super::RouterOptions;
 
 #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
-pub struct NavvertexIndex(NodeIndex<usize>);
+pub struct NavvertexIndex(pub NodeIndex<usize>);
 
 impl core::fmt::Debug for NavvertexIndex {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
@@ -152,7 +152,7 @@ pub enum NavmeshError {
 /// when going directly to destination) on the layout for each leap and
 /// along-edge crossing.
 ///
-/// The name "navmesh" is a shortening of "navigation mesh".
+/// The name "navmesh" is a blend of "navigation mesh".
 #[derive(Debug, Clone)]
 pub struct Navmesh {
     graph: UnGraph<NavvertexWeight, (), usize>,

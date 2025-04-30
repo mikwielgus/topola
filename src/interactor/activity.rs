@@ -12,14 +12,18 @@ use crate::{
     autorouter::{
         execution::ExecutionStepper,
         invoker::{
-            GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles, Invoker, InvokerError,
+            GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles,
+            Invoker, InvokerError,
         },
     },
     board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     interactor::interaction::{InteractionError, InteractionStepper},
-    router::{navcord::NavcordStepper, navmesh::Navmesh},
+    router::{
+        navcord::NavcordStepper,
+        navmesh::{Navmesh, NavvertexIndex},
+    },
     stepper::{Abort, Step},
 };
 
@@ -44,7 +48,13 @@ pub enum ActivityError {
 }
 
 /// An activity is either an interaction or an execution
-#[enum_dispatch(GetMaybeNavmesh, GetMaybeNavcord, GetGhosts, GetObstacles)]
+#[enum_dispatch(
+    GetMaybeNavmesh,
+    GetMaybeNavcord,
+    GetGhosts,
+    GetObstacles,
+    GetNavmeshDebugTexts
+)]
 pub enum ActivityStepper {
     Interaction(InteractionStepper),
     Execution(ExecutionStepper),
@@ -135,5 +145,15 @@ impl GetGhosts for ActivityStepperWithStatus {
 impl GetObstacles for ActivityStepperWithStatus {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.activity.obstacles()
+    }
+}
+
+impl GetNavmeshDebugTexts for ActivityStepperWithStatus {
+    fn navvertex_debug_text(&self, navvertex: NavvertexIndex) -> Option<&str> {
+        self.activity.navvertex_debug_text(navvertex)
+    }
+
+    fn navedge_debug_text(&self, navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
+        self.activity.navedge_debug_text(navedge)
     }
 }

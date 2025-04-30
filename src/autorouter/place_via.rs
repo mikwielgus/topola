@@ -11,11 +11,14 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     layout::{via::ViaWeight, LayoutEdit},
-    router::{navcord::NavcordStepper, navmesh::Navmesh},
+    router::{
+        navcord::NavcordStepper,
+        navmesh::{Navmesh, NavvertexIndex},
+    },
 };
 
 use super::{
-    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
+    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles},
     Autorouter, AutorouterError,
 };
 
@@ -73,5 +76,15 @@ impl GetGhosts for PlaceViaExecutionStepper {
 impl GetObstacles for PlaceViaExecutionStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         &[]
+    }
+}
+
+impl GetNavmeshDebugTexts for PlaceViaExecutionStepper {
+    fn navvertex_debug_text(&self, _navvertex: NavvertexIndex) -> Option<&str> {
+        None
+    }
+
+    fn navedge_debug_text(&self, _navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
+        None
     }
 }

@@ -7,11 +7,16 @@ use std::ops::ControlFlow;
 use thiserror::Error;
 
 use crate::{
-    autorouter::invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
+    autorouter::invoker::{
+        GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles,
+    },
     board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
-    router::{navcord::NavcordStepper, navmesh::Navmesh},
+    router::{
+        navcord::NavcordStepper,
+        navmesh::{Navmesh, NavvertexIndex},
+    },
     stepper::{Abort, Step},
 };
 
@@ -67,6 +72,16 @@ impl GetGhosts for InteractionStepper {
 
 impl GetObstacles for InteractionStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
+        todo!()
+    }
+}
+
+impl GetNavmeshDebugTexts for InteractionStepper {
+    fn navvertex_debug_text(&self, navvertex: NavvertexIndex) -> Option<&str> {
+        todo!()
+    }
+
+    fn navedge_debug_text(&self, navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
         todo!()
     }
 }

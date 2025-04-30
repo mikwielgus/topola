@@ -19,7 +19,7 @@ use crate::{
     translator::Translator,
 };
 
-/// A loaded design and associated structures
+/// A loaded design and associated structures.
 pub struct Workspace {
     pub design: SpecctraDesign,
     pub appearance_panel: AppearancePanel,
@@ -50,7 +50,7 @@ impl Workspace {
             interactor: Interactor::new(board).map_err(|err| {
                 format!(
                     "{}; {}",
-                    tr.text("tr-error_unable-to-initialize-overlay"),
+                    tr.text("tr-error-unable-to-initialize-overlay"),
                     err
                 )
             })?,

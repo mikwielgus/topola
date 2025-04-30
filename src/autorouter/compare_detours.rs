@@ -14,13 +14,17 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{primitive::PrimitiveShape, shape::MeasureLength},
     graph::MakeRef,
-    router::{navcord::NavcordStepper, navmesh::Navmesh},
+    router::{
+        navcord::NavcordStepper,
+        navmesh::{Navmesh, NavvertexIndex},
+    },
     stepper::Step,
 };
 
 use super::{
     autoroute::{AutorouteContinueStatus, AutorouteExecutionStepper},
-    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetObstacles},
+    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles},
+    remove_bands::RemoveBandsExecutionStepper,
     Autorouter, AutorouterError, AutorouterOptions,
 };
 
@@ -121,5 +125,15 @@ impl GetGhosts for CompareDetoursExecutionStepper {
 impl GetObstacles for CompareDetoursExecutionStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.autoroute.obstacles()
+    }
+}
+
+impl GetNavmeshDebugTexts for CompareDetoursExecutionStepper {
+    fn navvertex_debug_text(&self, _navvertex: NavvertexIndex) -> Option<&str> {
+        None
+    }
+
+    fn navedge_debug_text(&self, _navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
+        None
     }
 }
