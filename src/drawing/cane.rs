@@ -43,7 +43,9 @@ impl GetInterior<PrimitiveIndex> for Cane {
     }
 }
 
-impl GetJoints<SeqLooseSegIndex, LooseBendIndex> for Cane {
+impl GetJoints for Cane {
+    type F = SeqLooseSegIndex;
+    type T = LooseBendIndex;
     fn joints(&self) -> (SeqLooseSegIndex, LooseBendIndex) {
         (self.seg, self.bend)
     }

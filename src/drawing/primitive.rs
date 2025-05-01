@@ -26,8 +26,9 @@ pub trait GetDrawing {
 }
 
 #[enum_dispatch]
-pub trait GetWeight<W> {
-    fn weight(&self) -> W;
+pub trait GetWeight {
+    type Weight;
+    fn weight(&self) -> Self::Weight;
 }
 
 #[enum_dispatch]
@@ -57,13 +58,18 @@ pub trait GetInterior<T> {
     fn interior(&self) -> Vec<T>;
 }
 
-pub trait GetOtherJoint<F, T>: GetJoints<F, T> {
-    fn other_joint(&self, end: F) -> F;
+pub trait GetOtherJoint: GetJoints {
+    type J;
+    fn other_joint(&self, end: Self::J) -> Self::J;
 }
 
-impl<F: GetPetgraphIndex, T: GetPetgraphIndex + Into<F>, S: GetJoints<F, T>> GetOtherJoint<F, T>
-    for S
+impl<F, S> GetOtherJoint for S
+where
+    F: GetPetgraphIndex,
+    S: GetJoints<F = F>,
+    <S as GetJoints>::T: GetPetgraphIndex + Into<F>,
 {
+    type J = F;
     fn other_joint(&self, end: F) -> F {
         let joints = self.joints();
         if joints.0.petgraph_index() != end.petgraph_index() {
@@ -74,8 +80,10 @@ impl<F: GetPetgraphIndex, T: GetPetgraphIndex + Into<F>, S: GetJoints<F, T>> Get
     }
 }
 
-pub trait GetJoints<F, T> {
-    fn joints(&self) -> (F, T);
+pub trait GetJoints {
+    type F;
+    type T;
+    fn joints(&self) -> (Self::F, Self::T);
 }
 
 pub trait GetFirstGear: GetDrawing + GetPetgraphIndex {
@@ -108,7 +116,8 @@ impl<S: GetDrawing + GetBendIndex> GetCore for S {
 
 macro_rules! impl_primitive {
     ($primitive_struct:ident, $weight_struct:ident) => {
-        impl<CW, Cel, R> GetWeight<$weight_struct> for $primitive_struct<'_, CW, Cel, R> {
+        impl<CW, Cel, R> GetWeight for $primitive_struct<'_, CW, Cel, R> {
+            type Weight = $weight_struct;
             fn weight(&self) -> $weight_struct {
                 if let PrimitiveWeight::$primitive_struct(weight) = self.tagged_weight() {
                     weight
@@ -225,7 +234,7 @@ impl<W, CW, Cel, R> GetPetgraphIndex for GenericPrimitive<'_, W, CW, Cel, R> {
 
 impl<'a, W: GetWidth, CW, Cel, R> GetWidth for GenericPrimitive<'a, W, CW, Cel, R>
 where
-    GenericPrimitive<'a, W, CW, Cel, R>: GetWeight<W>,
+    GenericPrimitive<'a, W, CW, Cel, R>: GetWeight<Weight = W>,
 {
     fn width(&self) -> f64 {
         self.weight().width()
@@ -325,7 +334,9 @@ impl<CW, Cel, R> MakePrimitiveShape for FixedSeg<'_, CW, Cel, R> {
 
 impl<CW, Cel, R> GetLimbs for FixedSeg<'_, CW, Cel, R> {}
 
-impl<CW, Cel, R> GetJoints<FixedDotIndex, FixedDotIndex> for FixedSeg<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetJoints for FixedSeg<'_, CW, Cel, R> {
+    type F = FixedDotIndex;
+    type T = FixedDotIndex;
     fn joints(&self) -> (FixedDotIndex, FixedDotIndex) {
         let (from, to) = self.drawing.geometry().seg_joints(self.index.into());
         (
@@ -346,7 +357,9 @@ impl<CW, Cel, R> MakePrimitiveShape for LoneLooseSeg<'_, CW, Cel, R> {
 
 impl<CW, Cel, R> GetLimbs for LoneLooseSeg<'_, CW, Cel, R> {}
 
-impl<CW, Cel, R> GetJoints<FixedDotIndex, FixedDotIndex> for LoneLooseSeg<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetJoints for LoneLooseSeg<'_, CW, Cel, R> {
+    type F = FixedDotIndex;
+    type T = FixedDotIndex;
     fn joints(&self) -> (FixedDotIndex, FixedDotIndex) {
         let (from, to) = self.drawing.geometry().seg_joints(self.index.into());
         (
@@ -367,7 +380,9 @@ impl<CW, Cel, R> MakePrimitiveShape for SeqLooseSeg<'_, CW, Cel, R> {
 
 impl<CW, Cel, R> GetLimbs for SeqLooseSeg<'_, CW, Cel, R> {}
 
-impl<CW, Cel, R> GetJoints<DotIndex, LooseDotIndex> for SeqLooseSeg<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetJoints for SeqLooseSeg<'_, CW, Cel, R> {
+    type F = DotIndex;
+    type T = LooseDotIndex;
     fn joints(&self) -> (DotIndex, LooseDotIndex) {
         let joints = self.drawing.geometry().seg_joints(self.index.into());
         if let DotWeight::Fixed(..) = self.drawing.geometry().dot_weight(joints.0) {
@@ -406,7 +421,9 @@ impl<CW, Cel, R> MakePrimitiveShape for FixedBend<'_, CW, Cel, R> {
 
 impl<CW, Cel, R> GetLimbs for FixedBend<'_, CW, Cel, R> {}
 
-impl<CW, Cel, R> GetJoints<FixedDotIndex, FixedDotIndex> for FixedBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetJoints for FixedBend<'_, CW, Cel, R> {
+    type F = FixedDotIndex;
+    type T = FixedDotIndex;
     fn joints(&self) -> (FixedDotIndex, FixedDotIndex) {
         let (from, to) = self.drawing.geometry().bend_joints(self.index.into());
         (
@@ -448,7 +465,9 @@ impl<CW, Cel, R> GetOffset for LooseBend<'_, CW, Cel, R> {
     }
 }
 
-impl<CW, Cel, R> GetJoints<LooseDotIndex, LooseDotIndex> for LooseBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetJoints for LooseBend<'_, CW, Cel, R> {
+    type F = LooseDotIndex;
+    type T = LooseDotIndex;
     fn joints(&self) -> (LooseDotIndex, LooseDotIndex) {
         let (from, to) = self.drawing.geometry().bend_joints(self.index.into());
         (
