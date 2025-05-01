@@ -24,7 +24,6 @@ use crate::{
 use super::{
     autoroute::{AutorouteContinueStatus, AutorouteExecutionStepper},
     invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles},
-    remove_bands::RemoveBandsExecutionStepper,
     Autorouter, AutorouterError, AutorouterOptions,
 };
 

@@ -19,7 +19,6 @@ use crate::{
 
 use super::{
     invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles},
-    remove_bands::RemoveBandsExecutionStepper,
     selection::BandSelection,
     Autorouter, AutorouterError,
 };
