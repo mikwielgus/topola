@@ -501,7 +501,15 @@ where
                     edges: &self.edges,
                     edge_paths: &taskres.edge_paths,
                 };
-                let edge_count = taskres.edge_paths.iter().map(|i| i.len()).sum::<usize>();
+                let edge_count = taskres
+                    .edge_paths
+                    .iter()
+                    .map(|i| {
+                        i.iter()
+                            .filter(|j| matches!(j, RelaxedPath::Normal(_)))
+                            .count()
+                    })
+                    .sum::<usize>();
                 match self.goals.get(next_goal_idx) {
                     None => {
                         // done with all goals
