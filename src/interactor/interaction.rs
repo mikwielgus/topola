@@ -77,11 +77,11 @@ impl GetObstacles for InteractionStepper {
 }
 
 impl GetNavmeshDebugTexts for InteractionStepper {
-    fn navvertex_debug_text(&self, navvertex: NavvertexIndex) -> Option<&str> {
+    fn navvertex_debug_text(&self, _navvertex: NavvertexIndex) -> Option<&str> {
         todo!()
     }
 
-    fn navedge_debug_text(&self, navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
+    fn navedge_debug_text(&self, _navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
         todo!()
     }
 }
