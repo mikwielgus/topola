@@ -506,9 +506,13 @@ impl<
     > Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     pub fn first_rail(&self, node: NodeIndex<usize>) -> Option<BI> {
+        self.all_rails(node).next()
+    }
+
+    pub fn all_rails(&self, node: NodeIndex<usize>) -> impl Iterator<Item = BI> + '_ {
         self.graph
             .edges_directed(node, Incoming)
-            .find(|edge| matches!(edge.weight(), GeometryLabel::Core))
+            .filter(|edge| matches!(edge.weight(), GeometryLabel::Core))
             .map(|edge| {
                 self.primitive_index(edge.source())
                     .try_into()
