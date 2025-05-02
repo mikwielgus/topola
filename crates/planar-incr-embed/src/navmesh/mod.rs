@@ -222,6 +222,23 @@ pub(crate) fn resolve_edge_data<PNI: Ord, EP>(
     Some((data, ret))
 }
 
+/// Removes a path (weak or normal) with the given label from the navmesh
+pub fn remove_path<EP, GC>(edge_paths: &mut [EdgePaths<EP, GC>], label: &RelaxedPath<EP, GC>)
+where
+    EP: Clone + Eq,
+    GC: Clone + PartialEq,
+{
+    let mut updated_indices = Vec::new();
+    for i in edge_paths {
+        updated_indices.clear();
+        updated_indices.extend(i[..].iter().filter(|&j| j != label).cloned());
+
+        if updated_indices.len() != i.len() {
+            *i = take(&mut updated_indices).into_boxed_slice().into();
+        }
+    }
+}
+
 impl<'a, B: NavmeshBase + 'a> NavmeshRefMut<'a, B> {
     #[inline(always)]
     pub fn as_ref(&'a self) -> NavmeshRef<'a, B> {
@@ -264,15 +281,7 @@ impl<'a, B: NavmeshBase + 'a> NavmeshRefMut<'a, B> {
     where
         B::GapComment: PartialEq,
     {
-        let mut updated_indices = Vec::new();
-        for i in &mut *self.edge_paths {
-            updated_indices.clear();
-            updated_indices.extend(i[..].iter().filter(|&j| j != label).cloned());
-
-            if updated_indices.len() != i.len() {
-                *i = take(&mut updated_indices).into_boxed_slice().into();
-            }
-        }
+        remove_path(&mut self.edge_paths[..], label);
     }
 
     /// ## Panics
