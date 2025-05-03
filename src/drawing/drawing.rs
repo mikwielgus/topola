@@ -81,10 +81,33 @@ impl DrawingException {
 }
 
 // TODO add real error messages + these should eventually use Display
+
+/// An infringement occurs when there is an intersection of shapes formed by
+/// inflating the shapes of two non-connectable primitives by their clearances.
+///
+/// Infringement exceptions are never raised for two same-net primitives, since
+/// having the same net implies being connectable.
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{0:?} infringes on {1:?}")]
 pub struct Infringement(pub PrimitiveShape, pub PrimitiveIndex);
 
+/// A collision is a special case of infringement where the uninflated shapes of
+/// two primitives themselves intersect. In other words, collision detection is
+/// a specialized infringement detection where clearances are set to 0.
+///
+/// Collisions are raised in different situations than infringements, typically
+/// when the usual infringement detection could not be performed to avoid
+/// false positives. Hence, the exception handling code should handle both
+/// infringements and collisions similarly and should not assume that collisions
+/// will be subsumed into infringements.
+///
+/// Unlike infringements, collision exceptions can be raised for two same-net
+/// primitives.
+///
+/// For instance, a collision exception is raised when the currently routed band
+/// forms a self-intersecting loop. An infringement exception cannot be raised
+/// in such case because the primitives of a single band all belong to the same
+/// net, making them connectable and thus uninfringable.
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{0:?} collides with {1:?}")]
 pub struct Collision(pub PrimitiveShape, pub PrimitiveIndex);
