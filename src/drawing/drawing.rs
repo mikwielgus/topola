@@ -269,7 +269,11 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         recorder: &mut DrawingEdit<CW, Cel>,
         weight: FixedDotWeight,
     ) -> Result<FixedDotIndex, Infringement> {
-        self.add_dot_with_infringables(recorder, weight, Some(&[]))
+        self.add_dot_with_infringement_filtering(
+            recorder,
+            weight,
+            &|_drawing, _infringer, _infringee| true,
+        )
     }
 
     #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() - 1))]
@@ -291,17 +295,17 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
 
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
-    fn add_dot_with_infringables<W: AccessDotWeight + Into<PrimitiveWeight> + GetLayer>(
+    fn add_dot_with_infringement_filtering<W: AccessDotWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
         weight: W,
-        infringables: Option<&[PrimitiveIndex]>,
+        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<GenericIndex<W>, Infringement>
     where
         GenericIndex<W>: Into<PrimitiveIndex> + Copy,
     {
         let dot = self.add_dot_infringably(recorder, weight);
-        self.fail_and_remove_if_infringes_except(recorder, dot.into(), infringables)?;
+        self.fail_and_remove_if_infringes_except(recorder, dot.into(), predicate)?;
 
         Ok(dot)
     }
@@ -316,7 +320,13 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         to: FixedDotIndex,
         weight: FixedSegWeight,
     ) -> Result<FixedSegIndex, Infringement> {
-        self.add_seg_with_infringables(recorder, from.into(), to.into(), weight, Some(&[]))
+        self.add_seg_with_infringables(
+            recorder,
+            from.into(),
+            to.into(),
+            weight,
+            &|_drawing, _infringer, _infringee| true,
+        )
     }
 
     #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() + 1))]
@@ -342,8 +352,13 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         to: FixedDotIndex,
         weight: LoneLooseSegWeight,
     ) -> Result<LoneLooseSegIndex, Infringement> {
-        let seg =
-            self.add_seg_with_infringables(recorder, from.into(), to.into(), weight, Some(&[]))?;
+        let seg = self.add_seg_with_infringables(
+            recorder,
+            from.into(),
+            to.into(),
+            weight,
+            &|_drawing, _infringer, _infringee| true,
+        )?;
         Ok(seg)
     }
 
@@ -358,7 +373,13 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
     ) -> Result<SeqLooseSegIndex, Infringement> {
-        let seg = self.add_seg_with_infringables(recorder, from, to.into(), weight, Some(&[]))?;
+        let seg = self.add_seg_with_infringables(
+            recorder,
+            from,
+            to.into(),
+            weight,
+            &|_drawing, _infringer, _infringee| true,
+        )?;
         Ok(seg)
     }
 
@@ -372,13 +393,13 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         from: DotIndex,
         to: DotIndex,
         weight: W,
-        infringables: Option<&[PrimitiveIndex]>,
+        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<GenericIndex<W>, Infringement>
     where
         GenericIndex<W>: Into<PrimitiveIndex> + Copy,
     {
         let seg = self.add_seg_infringably(recorder, from, to, weight);
-        self.fail_and_remove_if_infringes_except(recorder, seg.into(), infringables)?;
+        self.fail_and_remove_if_infringes_except(recorder, seg.into(), predicate)?;
 
         Ok(seg)
     }
@@ -395,7 +416,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         to: LooseDotIndex,
         around: GearIndex,
         weight: LooseBendWeight,
-        infringables: Option<&[PrimitiveIndex]>,
+        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<LooseBendIndex, DrawingException> {
         // It makes no sense to wrap something around or under one of its connectables.
         //
@@ -423,7 +444,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                     to.into(),
                     core,
                     weight,
-                    infringables,
+                    predicate,
                 )
                 .map_err(Into::into),
             GearIndex::FixedBend(around) => self
@@ -433,7 +454,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                     to,
                     around.into(),
                     weight,
-                    infringables,
+                    predicate,
                 )
                 .map_err(Into::into),
             GearIndex::LooseBend(around) => self
@@ -443,7 +464,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                     to,
                     around.into(),
                     weight,
-                    infringables,
+                    predicate,
                 )
                 .map_err(Into::into),
         }
@@ -460,7 +481,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         to: DotIndex,
         core: FixedDotIndex,
         weight: W,
-        infringables: Option<&[PrimitiveIndex]>,
+        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<GenericIndex<W>, Infringement>
     where
         GenericIndex<W>: Into<PrimitiveIndex> + Copy,
@@ -469,7 +490,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             self.recording_geometry_with_rtree
                 .add_bend(recorder, from, to, core.into(), weight);
 
-        self.fail_and_remove_if_infringes_except(recorder, bend.into(), infringables)?;
+        self.fail_and_remove_if_infringes_except(recorder, bend.into(), predicate)?;
         Ok(bend)
     }
 
@@ -484,7 +505,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         to: LooseDotIndex,
         inner: BendIndex,
         weight: LooseBendWeight,
-        infringables: Option<&[PrimitiveIndex]>,
+        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<GenericIndex<LooseBendWeight>, Infringement> {
         let core = *self
             .recording_geometry_with_rtree
@@ -519,7 +540,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         self.recording_geometry_with_rtree
             .reattach_bend(recorder, bend.into(), Some(inner));
 
-        self.fail_and_remove_if_infringes_except(recorder, bend.into(), infringables)?;
+        self.fail_and_remove_if_infringes_except(recorder, bend.into(), predicate)?;
         Ok(bend)
     }
 
@@ -562,7 +583,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         sense: RotationSense,
     ) -> Result<Cane, DrawingException> {
         let maybe_next_gear = around.ref_(self).next_gear();
-        let cane = self.add_cane_with_infringables(
+        let cane = self.add_cane_with_infringement_filtering(
             recorder,
             from,
             around,
@@ -570,7 +591,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             seg_weight,
             bend_weight,
             sense,
-            Some(&[]),
+            &|_drawing, _infringer, _infringee| true,
         )?;
 
         if let Some(next_gear) = maybe_next_gear {
@@ -644,24 +665,26 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 (from, to, offset)
             };
 
-            self.move_dot_with_infringables(
+            let rail_outer_bows = self.bend_outer_bows(rail);
+
+            self.move_dot_with_infringement_filtering(
                 recorder,
                 joints.0.into(),
                 from.end_point(),
-                Some(&self.bend_outer_bows(rail)),
+                &|_drawing, _infringer, infringee| rail_outer_bows.contains(&infringee),
             )?;
-            self.move_dot_with_infringables(
+            self.move_dot_with_infringement_filtering(
                 recorder,
                 joints.1.into(),
                 to.end_point(),
-                Some(&self.bend_outer_bows(rail)),
+                &|_drawing, _infringer, infringee| rail_outer_bows.contains(&infringee),
             )?;
 
             self.shift_bend_with_infringables(
                 recorder,
                 rail.into(),
                 offset,
-                Some(&self.bend_outer_bows(rail)),
+                &|_drawing, _infringer, infringee| rail_outer_bows.contains(&infringee),
             )?;
 
             // Update offsets in case the rule conditions changed.
@@ -704,7 +727,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         bend_weight: LooseBendWeight,
         sense: RotationSense,
     ) -> Result<Cane, DrawingException> {
-        self.add_cane_with_infringables(
+        self.add_cane_with_infringement_filtering(
             recorder,
             from,
             around,
@@ -712,7 +735,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             seg_weight,
             bend_weight,
             sense,
-            Some(&[]),
+            &|_drawing, _infringer, _infringee| true,
         )
     }
 
@@ -720,7 +743,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().edge_count() >= old(self.recording_geometry_with_rtree.graph().edge_count() + 5))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn add_cane_with_infringables(
+    fn add_cane_with_infringement_filtering(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
         from: DotIndex,
@@ -729,18 +752,18 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         sense: RotationSense,
-        infringables: Option<&[PrimitiveIndex]>,
+        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<Cane, DrawingException> {
-        let seg_to = self.add_dot_with_infringables(recorder, dot_weight, infringables)?;
+        let seg_to = self.add_dot_with_infringement_filtering(recorder, dot_weight, predicate)?;
         let seg = self
-            .add_seg_with_infringables(recorder, from, seg_to.into(), seg_weight, infringables)
+            .add_seg_with_infringables(recorder, from, seg_to.into(), seg_weight, predicate)
             .inspect_err(|_| {
                 self.recording_geometry_with_rtree
                     .remove_dot(recorder, seg_to.into());
             })?;
 
         let to = self
-            .add_dot_with_infringables(recorder, dot_weight, infringables)
+            .add_dot_with_infringement_filtering(recorder, dot_weight, predicate)
             .inspect_err(|_| {
                 self.recording_geometry_with_rtree
                     .remove_seg(recorder, seg.into());
@@ -760,7 +783,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 bend_to,
                 around,
                 bend_weight,
-                infringables,
+                predicate,
             )
             .inspect_err(|_| {
                 self.recording_geometry_with_rtree
@@ -823,19 +846,29 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         to: Point,
     ) -> Result<(), Infringement> {
         match dot {
-            DotIndex::Fixed(..) => self.move_dot_with_infringables(recorder, dot, to, Some(&[])),
-            DotIndex::Loose(..) => self.move_dot_with_infringables(recorder, dot, to, Some(&[])),
+            DotIndex::Fixed(..) => self.move_dot_with_infringement_filtering(
+                recorder,
+                dot,
+                to,
+                &|_drawing, _infringer, _infringee| true,
+            ),
+            DotIndex::Loose(..) => self.move_dot_with_infringement_filtering(
+                recorder,
+                dot,
+                to,
+                &|_drawing, _infringer, _infringee| true,
+            ),
         }
     }
 
     #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn move_dot_with_infringables(
+    fn move_dot_with_infringement_filtering(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
         dot: DotIndex,
         to: Point,
-        infringables: Option<&[PrimitiveIndex]>,
+        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<(), Infringement> {
         let old_pos = self
             .recording_geometry_with_rtree
@@ -846,7 +879,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             .move_dot(recorder, dot, to);
 
         for limb in dot.primitive(self).limbs() {
-            if let Some(infringement) = self.detect_infringement_except(limb, infringables) {
+            if let Some(infringement) = self.detect_infringement_except(limb, predicate) {
                 // Restore original state.
                 self.recording_geometry_with_rtree
                     .move_dot(recorder, dot, old_pos);
@@ -854,7 +887,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             }
         }
 
-        if let Some(infringement) = self.detect_infringement_except(dot.into(), infringables) {
+        if let Some(infringement) = self.detect_infringement_except(dot.into(), predicate) {
             // Restore original state.
             self.recording_geometry_with_rtree
                 .move_dot(recorder, dot, old_pos);
@@ -871,7 +904,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         recorder: &mut DrawingEdit<CW, Cel>,
         bend: BendIndex,
         offset: f64,
-        infringables: Option<&[PrimitiveIndex]>,
+        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<(), Infringement> {
         let old_offset = self
             .recording_geometry_with_rtree
@@ -881,7 +914,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         self.recording_geometry_with_rtree
             .shift_bend(recorder, bend, offset);
 
-        if let Some(infringement) = self.detect_infringement_except(bend.into(), infringables) {
+        if let Some(infringement) = self.detect_infringement_except(bend.into(), predicate) {
             // Restore original state.
             self.recording_geometry_with_rtree
                 .shift_bend(recorder, bend, old_offset);
@@ -980,9 +1013,9 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
         node: PrimitiveIndex,
-        maybe_except: Option<&[PrimitiveIndex]>,
+        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<(), Infringement> {
-        if let Some(infringement) = self.detect_infringement_except(node, maybe_except) {
+        if let Some(infringement) = self.detect_infringement_except(node, predicate) {
             if let Ok(dot) = node.try_into() {
                 self.recording_geometry_with_rtree.remove_dot(recorder, dot);
             } else if let Ok(seg) = node.try_into() {
@@ -998,26 +1031,24 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
 
     fn detect_infringement_except(
         &self,
-        node: PrimitiveIndex,
-        maybe_except: Option<&[PrimitiveIndex]>,
+        infringer: PrimitiveIndex,
+        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Option<Infringement> {
         self.find_infringement(
-            node,
-            self.locate_possible_infringers(node)
-                .filter_map(|n| {
-                    if let GenericNode::Primitive(primitive_node) = n {
+            infringer,
+            self.locate_possible_infringees(infringer)
+                .filter_map(|infringee_node| {
+                    if let GenericNode::Primitive(primitive_node) = infringee_node {
                         Some(primitive_node)
                     } else {
                         None
                     }
                 })
-                .filter(|primitive_node| {
-                    maybe_except.is_some_and(|except| !except.contains(primitive_node))
-                }),
+                .filter(|infringee| predicate(&self, infringer, *infringee)),
         )
     }
 
-    fn locate_possible_infringers(
+    fn locate_possible_infringees(
         &self,
         node: PrimitiveIndex,
     ) -> impl Iterator<Item = GenericNode<PrimitiveIndex, GenericIndex<CW>>> + '_ {
@@ -1128,11 +1159,11 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     }
 
     fn are_connectable(&self, node1: PrimitiveIndex, node2: PrimitiveIndex) -> bool {
-        if let (Some(node1_net_id), Some(node2_net_id)) = (
+        if let (Some(node1_net), Some(node2_net)) = (
             node1.primitive(self).maybe_net(),
             node2.primitive(self).maybe_net(),
         ) {
-            node1_net_id == node2_net_id
+            node1_net == node2_net
         } else {
             true
         }
@@ -1153,7 +1184,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             .any(|node| {
                 self.find_infringement(
                     node,
-                    self.locate_possible_infringers(node)
+                    self.locate_possible_infringees(node)
                         .filter_map(|n| {
                             if let GenericNode::Primitive(primitive_node) = n {
                                 Some(primitive_node)
