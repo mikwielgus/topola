@@ -606,8 +606,29 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 })?;
         }
 
-        // Segs must not cross.
-        if let Some(collision) = self.detect_collision(cane.seg.into()) {
+        // Check if the cane's seg collides with:
+        // - Different-net primitives,
+        // - Same-net loose segs.
+        //
+        // This solves two problems:
+        //
+        // It prevents the currently routed band from forming a
+        // self-intersecting loop.
+        //
+        // And it prevents the currently routed band from infringing already
+        // routed bands wrapped around the same core. This can happen because
+        // when the band is squeezed through under bends the outward bows
+        // of these bends are excluded from infringement detection to avoid
+        // false positives (the code where this exception is made is in
+        // `.update_this_and_outward_bows_intern(...)`).
+        //
+        // XXX: Possible problem: What if there could be a collision due
+        // to bend's length being zero? We may or may not want to create an
+        // exception for this case, at least until we switch to our exact
+        // lineocircular kernel Cyrk.
+        if let Some(collision) =
+            self.detect_collision_except(cane.seg.into(), &|_drawing, _collider, _collidee| true)
+        {
             let joint = self.primitive(cane.bend).other_joint(cane.dot);
             self.remove_cane(recorder, &cane, joint);
             Err(collision.into())
@@ -924,21 +945,36 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(())
     }
 
-    fn detect_collision(&self, node: PrimitiveIndex) -> Option<Collision> {
-        let shape = node.primitive(self).shape();
+    fn detect_collision_except(
+        &self,
+        collider: PrimitiveIndex,
+        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
+    ) -> Option<Collision> {
+        let shape = collider.primitive(self).shape();
 
         self.recording_geometry_with_rtree
             .rtree()
             .locate_in_envelope_intersecting(&shape.full_height_envelope_3d(0.0, 2))
             .filter_map(|wrapper| {
-                if let GenericNode::Primitive(primitive_node) = wrapper.data {
-                    Some(primitive_node)
+                if let GenericNode::Primitive(collidee) = wrapper.data {
+                    Some(collidee)
                 } else {
                     None
                 }
             })
-            .filter(|primitive_node| !self.are_connectable(node, *primitive_node))
-            .find(|primitive_node| shape.intersects(&primitive_node.primitive(self).shape()))
+            // NOTE: Collisions can happen between two same-net loose
+            // segs, so these cases in particular are not filtered out
+            // here, unlike what is done in infringement code.
+            .filter(|collidee| {
+                collider != *collidee
+                    && (!self.are_connectable(collider, *collidee)
+                        || ((matches!(collider, PrimitiveIndex::LoneLooseSeg(..))
+                            || matches!(collider, PrimitiveIndex::SeqLooseSeg(..)))
+                            && (matches!(collidee, PrimitiveIndex::LoneLooseSeg(..))
+                                || matches!(collidee, PrimitiveIndex::SeqLooseSeg(..)))))
+            })
+            .filter(|collidee| predicate(&self, collider, *collidee))
+            .find(|collidee| shape.intersects(&collidee.primitive(self).shape()))
             .map(|collidee| Collision(shape, collidee))
     }
 }
@@ -1069,18 +1105,18 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
 
     fn find_infringement(
         &self,
-        node: PrimitiveIndex,
+        infringer: PrimitiveIndex,
         it: impl Iterator<Item = PrimitiveIndex>,
     ) -> Option<Infringement> {
-        let mut inflated_shape = node.primitive(self).shape(); // Unused temporary value just for initialization.
-        let conditions = node.primitive(self).conditions();
+        let mut inflated_shape = infringer.primitive(self).shape(); // Unused temporary value just for initialization.
+        let conditions = infringer.primitive(self).conditions();
 
-        it.filter(|primitive_node| !self.are_connectable(node, *primitive_node))
+        it.filter(|infringee| !self.are_connectable(infringer, *infringee))
             .find_map(|primitive_node| {
                 let infringee_conditions = primitive_node.primitive(self).conditions();
 
                 let epsilon = 1.0;
-                inflated_shape = node.primitive(self).shape().inflate(
+                inflated_shape = infringer.primitive(self).shape().inflate(
                     match (&conditions, infringee_conditions) {
                         (None, _) | (_, None) => 0.0,
                         (Some(lhs), Some(rhs)) => {
