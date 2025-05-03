@@ -81,12 +81,16 @@ impl Trigger {
 }
 
 impl Switch {
-    pub fn toggle_widget(&self, _ctx: &egui::Context, ui: &mut egui::Ui, selected: &mut bool) {
+    pub fn toggle_widget(&self, ui: &mut egui::Ui, selected: &mut bool) {
         ui.toggle_value(selected, self.action.widget_text());
     }
 
+    pub fn checkbox(&self, ui: &mut egui::Ui, selected: &mut bool) {
+        ui.checkbox(selected, self.action.widget_text());
+    }
+
     pub fn consume_key_enabled(
-        &mut self,
+        &self,
         ctx: &egui::Context,
         _ui: &mut egui::Ui,
         selected: &mut bool,

@@ -27,10 +27,14 @@ use topola::{
     router::navmesh::NavvertexIndex,
 };
 
-use crate::{config::Config, menu_bar::MenuBar, painter::Painter, workspace::Workspace};
+use crate::{
+    actions::Actions, config::Config, menu_bar::MenuBar, painter::Painter, workspace::Workspace,
+};
 
 pub struct Viewport {
     pub transform: egui::emath::TSTransform,
+    /// how much should a single arrow key press scroll
+    pub kbd_scroll_delta_factor: f32,
     pub scheduled_zoom_to_fit: bool,
 }
 
@@ -38,6 +42,7 @@ impl Viewport {
     pub fn new() -> Self {
         Self {
             transform: egui::emath::TSTransform::new([0.0, 0.0].into(), 0.01),
+            kbd_scroll_delta_factor: 5.0,
             scheduled_zoom_to_fit: false,
         }
     }
@@ -52,6 +57,7 @@ impl Viewport {
         egui::CentralPanel::default()
             .show(ctx, |ui| {
                 egui::Frame::canvas(ui.style()).show(ui, |ui| {
+                    // TODO: only request re-render if anything changed
                     ui.ctx().request_repaint();
 
                     let (id, viewport_rect) = ui.allocate_space(ui.available_size());
@@ -68,7 +74,52 @@ impl Viewport {
 
                     self.transform.translation +=
                         latest_pos.to_vec2() * (old_scaling - self.transform.scaling);
-                    self.transform.translation += ctx.input(|i| i.smooth_scroll_delta);
+
+                    // disable built-in behavior of arrow keys
+                    if response.has_focus() {
+                        response.ctx.memory_mut(|m| {
+                            // we are only allowed to modify the focus lock filter if we have focus
+                            m.set_focus_lock_filter(
+                                id,
+                                egui::EventFilter {
+                                    horizontal_arrows: true,
+                                    vertical_arrows: true,
+                                    ..Default::default()
+                                },
+                            );
+                        });
+                    }
+
+                    self.transform.translation += ctx.input_mut(|i| {
+                        // handle scrolling
+                        let mut scroll_delta = core::mem::take(&mut i.smooth_scroll_delta);
+
+                        // arrow keys
+                        let kbd_sdf = self.kbd_scroll_delta_factor;
+                        let mut pressed = |key| {
+                            i.consume_shortcut(&egui::KeyboardShortcut::new(
+                                egui::Modifiers::SHIFT,
+                                key,
+                            ))
+                        };
+                        use egui::Key;
+                        scroll_delta.y += if pressed(Key::ArrowDown) {
+                            kbd_sdf
+                        } else if pressed(Key::ArrowUp) {
+                            -kbd_sdf
+                        } else {
+                            0.0
+                        };
+                        scroll_delta.x += if pressed(Key::ArrowRight) {
+                            kbd_sdf
+                        } else if pressed(Key::ArrowLeft) {
+                            -kbd_sdf
+                        } else {
+                            0.0
+                        };
+
+                        scroll_delta
+                    });
 
                     let mut painter = Painter::new(ui, self.transform, menu_bar.show_bboxes);
 

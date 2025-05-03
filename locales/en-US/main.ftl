@@ -26,6 +26,7 @@ tr-menu-view-show-topo-navmesh = Show Topological Navmesh
 tr-menu-view-show-bboxes = Show BBoxes
 tr-menu-view-show-origin-destination = Show Origin–Destination
 tr-menu-view-show-layer-manager = Show Layer Manager
+tr-menu-view-kdb-scroll-delta-factor = Keyboard scroll delta factor
 tr-menu-view-frame-timestep = Frame Timestep
 
 tr-menu-place = Place

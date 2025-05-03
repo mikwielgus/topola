@@ -166,6 +166,7 @@ pub struct ViewActions {
     pub zoom_to_fit: Switch,
     pub show_ratsnest: Switch,
     pub show_navmesh: Switch,
+    pub show_topo_navmesh: Switch,
     pub show_bboxes: Switch,
     pub show_origin_destination: Switch,
     pub show_appearance_panel: Switch,
@@ -177,6 +178,8 @@ impl ViewActions {
             zoom_to_fit: Action::new_keyless(tr.text("tr-menu-view-zoom-to-fit")).into_switch(),
             show_ratsnest: Action::new_keyless(tr.text("tr-menu-view-show-ratsnest")).into_switch(),
             show_navmesh: Action::new_keyless(tr.text("tr-menu-view-show-navmesh")).into_switch(),
+            show_topo_navmesh: Action::new_keyless(tr.text("tr-menu-view-show-topo-navmesh"))
+                .into_switch(),
             show_bboxes: Action::new_keyless(tr.text("tr-menu-view-show-bboxes")).into_switch(),
             show_origin_destination: Action::new_keyless(
                 tr.text("tr-menu-view-show-origin-destination"),
@@ -196,42 +199,30 @@ impl ViewActions {
         viewport: &mut Viewport,
         have_workspace: bool,
     ) {
-        ui.toggle_value(
-            &mut viewport.scheduled_zoom_to_fit,
-            tr.text("tr-menu-view-zoom-to-fit"),
-        );
+        self.zoom_to_fit
+            .toggle_widget(ui, &mut viewport.scheduled_zoom_to_fit);
 
         ui.separator();
-
         ui.add_enabled_ui(have_workspace, |ui| {
-            ui.checkbox(
-                &mut menu_bar.show_ratsnest,
-                tr.text("tr-menu-view-show-ratsnest"),
-            );
-            ui.checkbox(
-                &mut menu_bar.show_navmesh,
-                tr.text("tr-menu-view-show-navmesh"),
-            );
-            ui.checkbox(
-                &mut menu_bar.show_topo_navmesh,
-                tr.text("tr-menu-view-show-topo-navmesh"),
-            );
-            ui.checkbox(
-                &mut menu_bar.show_bboxes,
-                tr.text("tr-menu-view-show-bboxes"),
-            );
-            ui.checkbox(
-                &mut menu_bar.show_origin_destination,
-                tr.text("tr-menu-view-show-origin-destination"),
-            );
+            self.show_ratsnest.checkbox(ui, &mut menu_bar.show_ratsnest);
+            self.show_navmesh.checkbox(ui, &mut menu_bar.show_navmesh);
+            self.show_topo_navmesh
+                .checkbox(ui, &mut menu_bar.show_topo_navmesh);
+            self.show_bboxes.checkbox(ui, &mut menu_bar.show_bboxes);
+            self.show_origin_destination
+                .checkbox(ui, &mut menu_bar.show_origin_destination);
         });
 
         ui.separator();
+        self.show_appearance_panel
+            .checkbox(ui, &mut menu_bar.show_appearance_panel);
 
-        ui.checkbox(
-            &mut menu_bar.show_appearance_panel,
-            tr.text("tr-menu-view-show-layer-manager"),
-        );
+        ui.separator();
+        ui.label(tr.text("tr-menu-view-kdb-scroll-delta-factor"));
+        ui.add(egui::widgets::Slider::new(
+            &mut viewport.kbd_scroll_delta_factor,
+            1.0..=100.0,
+        ));
     }
 }
 
@@ -259,7 +250,7 @@ impl PlaceActions {
         is_placing_via: &mut bool,
     ) -> egui::InnerResponse<()> {
         ui.add_enabled_ui(have_workspace, |ui| {
-            self.place_via.toggle_widget(ctx, ui, is_placing_via);
+            self.place_via.toggle_widget(ui, is_placing_via);
         })
     }
 }
