@@ -109,6 +109,13 @@ impl MenuBar {
 
                         ui.label(tr.text("tr-menu-view-frame-timestep"));
                         ui.add(
+                            // NOTE: Frame timestep slider's minimal value
+                            // should not go down to zero seconds because this
+                            // will leave no time for the GUI to update until
+                            // the currently performed action finishes, which
+                            // may leave the GUI unresponsive during that time,
+                            // or even freeze the application if the action
+                            // fails to end in reasonable time.
                             egui::widgets::Slider::new(&mut self.frame_timestep, 0.001..=3.0)
                                 .suffix(" s"),
                         );

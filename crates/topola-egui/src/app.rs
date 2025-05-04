@@ -64,13 +64,17 @@ impl App {
             translator: Translator::new(langid),
             ..Default::default()
         };
-        // Load previous app state if one exists.
+        // Restore the persistent part of the app's state from its previous run
+        // if there is one.
         if let Some(storage) = cc.storage {
             this.config = eframe::get_value(storage, eframe::APP_KEY).unwrap_or_default()
         }
         this
     }
 
+    /// Advances the app's state by the delta time `dt`. May call
+    /// `.update_state()` more than once if the delta time is more than a multiple of
+    /// the timestep.
     fn advance_state_by_dt(&mut self, interactive_input: &InteractiveInput) {
         self.update_counter += interactive_input.dt;
 
@@ -83,7 +87,10 @@ impl App {
         }
     }
 
+    /// Advance the app's state by a single step.
     fn update_state(&mut self, interactive_input: &InteractiveInput) -> ControlFlow<()> {
+        // If a new design has been loaded from a file, create a new workspace
+        // with the design. Or handle the error if there was a failure to do so.
         if let Ok(data) = self.content_channel.1.try_recv() {
             match data {
                 Ok(design) => match Workspace::new(design, &self.translator) {
@@ -133,6 +140,9 @@ impl App {
         ControlFlow::Break(())
     }
 
+    /// Update the title displayed on the application window's frame to show the
+    /// currently opened file, if any, and other possible information about the
+    /// application state.
     #[cfg(not(target_arch = "wasm32"))]
     fn update_title(&mut self, ctx: &egui::Context) {
         if let Some(workspace) = &self.maybe_workspace {
@@ -141,10 +151,14 @@ impl App {
                 .and_then(|n| n.to_str())
             {
                 ctx.send_viewport_cmd(egui::ViewportCommand::Title(filename.to_string()));
+                // TODO: Also show file's dirty bit.
             }
         }
     }
 
+    /// Update the title displayed on the application window's frame to show the
+    /// currently opened file, if any, and other possible information about the
+    /// application state.
     #[cfg(target_arch = "wasm32")]
     fn update_title(&mut self, ctx: &egui::Context) {
         if let Some(workspace) = &self.maybe_workspace {
@@ -158,15 +172,18 @@ impl App {
                     .expect("No document");
 
                 document.set_title(filename);
+                // TODO: Also show file's dirty bit.
             }
         }
     }
 
+    /// Handle a possible locale change.
     #[cfg(not(target_arch = "wasm32"))]
     fn update_locale(&mut self) {
         // I don't know any equivalent of changing the lang property in desktop.
     }
 
+    /// Handle a possible locale change.
     #[cfg(target_arch = "wasm32")]
     fn update_locale(&mut self) {
         let document_element = eframe::web_sys::window()
