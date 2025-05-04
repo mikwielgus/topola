@@ -343,7 +343,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         to: FixedDotIndex,
         weight: FixedSegWeight,
     ) -> Result<FixedSegIndex, Infringement> {
-        self.add_seg_with_infringables(
+        self.add_seg_with_infringement_filtering(
             recorder,
             from.into(),
             to.into(),
@@ -375,7 +375,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         to: FixedDotIndex,
         weight: LoneLooseSegWeight,
     ) -> Result<LoneLooseSegIndex, Infringement> {
-        let seg = self.add_seg_with_infringables(
+        let seg = self.add_seg_with_infringement_filtering(
             recorder,
             from.into(),
             to.into(),
@@ -396,7 +396,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
     ) -> Result<SeqLooseSegIndex, Infringement> {
-        let seg = self.add_seg_with_infringables(
+        let seg = self.add_seg_with_infringement_filtering(
             recorder,
             from,
             to.into(),
@@ -410,7 +410,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().edge_count() >= old(self.recording_geometry_with_rtree.graph().edge_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn add_seg_with_infringables<W: AccessSegWeight + Into<PrimitiveWeight> + GetLayer>(
+    fn add_seg_with_infringement_filtering<W: AccessSegWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
         from: DotIndex,
@@ -432,7 +432,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         || self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count() + 4))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn add_loose_bend_with_infringables(
+    fn add_loose_bend_with_infringement_filtering(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
         from: LooseDotIndex,
@@ -461,7 +461,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
 
         match around {
             GearIndex::FixedDot(core) => self
-                .add_core_bend_with_infringables(
+                .add_core_bend_with_infringement_filtering(
                     recorder,
                     from.into(),
                     to.into(),
@@ -471,7 +471,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 )
                 .map_err(Into::into),
             GearIndex::FixedBend(around) => self
-                .add_outer_bend_with_infringables(
+                .add_outer_bend_with_infringement_filtering(
                     recorder,
                     from,
                     to,
@@ -481,7 +481,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 )
                 .map_err(Into::into),
             GearIndex::LooseBend(around) => self
-                .add_outer_bend_with_infringables(
+                .add_outer_bend_with_infringement_filtering(
                     recorder,
                     from,
                     to,
@@ -497,7 +497,9 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count() + 3))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn add_core_bend_with_infringables<W: AccessBendWeight + Into<PrimitiveWeight> + GetLayer>(
+    fn add_core_bend_with_infringement_filtering<
+        W: AccessBendWeight + Into<PrimitiveWeight> + GetLayer,
+    >(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
         from: DotIndex,
@@ -521,7 +523,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count() + 4))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn add_outer_bend_with_infringables(
+    fn add_outer_bend_with_infringement_filtering(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
         from: LooseDotIndex,
@@ -629,9 +631,10 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 })?;
         }
 
-        // Check if the cane's seg collides with:
+        // Raise a collision exception if the currently created cane's seg
+        // collides with:
         // - Different-net primitives,
-        // - Same-net loose segs.
+        // - Same-net loose segs if the currently created cane is non-terminal.
         //
         // This solves two problems:
         //
@@ -650,7 +653,24 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         // exception for this case, at least until we switch to our exact
         // lineocircular kernel Cyrk.
         if let Some(collision) =
-            self.detect_collision_except(cane.seg.into(), &|_drawing, _collider, _collidee| true)
+            self.detect_collision_except(cane.seg.into(), &|drawing, collider, collidee| {
+                // Check if the cane is terminal, that is, whether is starts
+                // from a fixed dot.
+                if matches!(from, DotIndex::Fixed(..)) {
+                    // Cane is initial.
+                    //
+                    // TODO: This check can only trigger during initiation of
+                    // band drawing. There probably should be an equivalent
+                    // check when band drawing is finishing into a fixed dot,
+                    // which is however implemented in a routine elsewhere in
+                    // our codebase.
+                    collider.primitive(drawing).maybe_net()
+                        != collidee.primitive(drawing).maybe_net()
+                } else {
+                    // Cane is non-initial.
+                    true
+                }
+            })
         {
             let joint = self.primitive(cane.bend).other_joint(cane.dot);
             self.remove_cane(recorder, &cane, joint);
@@ -724,7 +744,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 &|_drawing, _infringer, infringee| rail_outer_bows.contains(&infringee),
             )?;
 
-            self.shift_bend_with_infringables(
+            self.shift_bend_with_infringement_filtering(
                 recorder,
                 rail.into(),
                 offset,
@@ -800,7 +820,13 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     ) -> Result<Cane, DrawingException> {
         let seg_to = self.add_dot_with_infringement_filtering(recorder, dot_weight, predicate)?;
         let seg = self
-            .add_seg_with_infringables(recorder, from, seg_to.into(), seg_weight, predicate)
+            .add_seg_with_infringement_filtering(
+                recorder,
+                from,
+                seg_to.into(),
+                seg_weight,
+                predicate,
+            )
             .inspect_err(|_| {
                 self.recording_geometry_with_rtree
                     .remove_dot(recorder, seg_to.into());
@@ -821,7 +847,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         };
 
         let bend = self
-            .add_loose_bend_with_infringables(
+            .add_loose_bend_with_infringement_filtering(
                 recorder,
                 bend_from,
                 bend_to,
@@ -943,7 +969,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
 
     #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn shift_bend_with_infringables(
+    fn shift_bend_with_infringement_filtering(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
         bend: BendIndex,
