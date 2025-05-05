@@ -169,7 +169,7 @@ impl<R: AccessRules> Layout<R> {
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
-    ) -> Result<FixedSegIndex, Infringement> {
+    ) -> Result<FixedSegIndex, DrawingException> {
         self.drawing.add_fixed_seg(recorder, from, to, weight)
     }
 
@@ -190,7 +190,7 @@ impl<R: AccessRules> Layout<R> {
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: LoneLooseSegWeight,
-    ) -> Result<LoneLooseSegIndex, Infringement> {
+    ) -> Result<LoneLooseSegIndex, DrawingException> {
         self.drawing.add_lone_loose_seg(recorder, from, to, weight)
     }
 
@@ -200,7 +200,7 @@ impl<R: AccessRules> Layout<R> {
         from: DotIndex,
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
-    ) -> Result<SeqLooseSegIndex, Infringement> {
+    ) -> Result<SeqLooseSegIndex, DrawingException> {
         self.drawing.add_seq_loose_seg(recorder, from, to, weight)
     }
 

@@ -342,7 +342,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
-    ) -> Result<FixedSegIndex, Infringement> {
+    ) -> Result<FixedSegIndex, DrawingException> {
         self.add_seg_with_infringement_filtering(
             recorder,
             from.into(),
@@ -374,7 +374,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: LoneLooseSegWeight,
-    ) -> Result<LoneLooseSegIndex, Infringement> {
+    ) -> Result<LoneLooseSegIndex, DrawingException> {
         let seg = self.add_seg_with_infringement_filtering(
             recorder,
             from.into(),
@@ -395,7 +395,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         from: DotIndex,
         to: LooseDotIndex,
         weight: SeqLooseSegWeight,
-    ) -> Result<SeqLooseSegIndex, Infringement> {
+    ) -> Result<SeqLooseSegIndex, DrawingException> {
         let seg = self.add_seg_with_infringement_filtering(
             recorder,
             from,
@@ -403,6 +403,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             weight,
             &|_drawing, _infringer, _infringee| true,
         )?;
+
         Ok(seg)
     }
 
@@ -417,12 +418,52 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         to: DotIndex,
         weight: W,
         predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
-    ) -> Result<GenericIndex<W>, Infringement>
+    ) -> Result<GenericIndex<W>, DrawingException>
     where
         GenericIndex<W>: Into<PrimitiveIndex> + Copy,
     {
         let seg = self.add_seg_infringably(recorder, from, to, weight);
         self.fail_and_remove_if_infringes_except(recorder, seg.into(), predicate)?;
+
+        // Raise a collision exception if the currently created cane's seg
+        // collides with:
+        // - Different-net primitives,
+        // - Same-net loose segs if the currently created cane is non-terminal.
+        //
+        // This solves two problems:
+        //
+        // It prevents the currently routed band from forming a
+        // self-intersecting loop.
+        //
+        // And it prevents the currently routed band from infringing already
+        // routed bands wrapped around the same core. This can happen because
+        // when the band is squeezed through under bends the outward bows
+        // of these bends are excluded from infringement detection to avoid
+        // false positives (the code where this exception is made is in
+        // `.update_this_and_outward_bows_intern(...)`).
+        //
+        // XXX: Possible problem: What if there could be a collision due
+        // to bend's length being zero? We may or may not want to create an
+        // exception for this case, at least until we switch to our exact
+        // lineocircular kernel Cyrk.
+        if let Some(collision) =
+            self.detect_collision_except(seg.into(), &|drawing, collider, collidee| {
+                // Check whether the the seg is terminal, that is, whether at
+                // least one of its two joints is a fixed dot.
+                if matches!(from, DotIndex::Fixed(..)) || matches!(to, DotIndex::Fixed(..)) {
+                    collider.primitive(drawing).maybe_net()
+                        != collidee.primitive(drawing).maybe_net()
+                } else {
+                    // Cane is non-initial.
+                    true
+                }
+            })
+        {
+            // Restore previous state.
+            self.recording_geometry_with_rtree
+                .remove_seg(recorder, seg.into().try_into().unwrap());
+            return Err(collision.into());
+        }
 
         Ok(seg)
     }
@@ -631,53 +672,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 })?;
         }
 
-        // Raise a collision exception if the currently created cane's seg
-        // collides with:
-        // - Different-net primitives,
-        // - Same-net loose segs if the currently created cane is non-terminal.
-        //
-        // This solves two problems:
-        //
-        // It prevents the currently routed band from forming a
-        // self-intersecting loop.
-        //
-        // And it prevents the currently routed band from infringing already
-        // routed bands wrapped around the same core. This can happen because
-        // when the band is squeezed through under bends the outward bows
-        // of these bends are excluded from infringement detection to avoid
-        // false positives (the code where this exception is made is in
-        // `.update_this_and_outward_bows_intern(...)`).
-        //
-        // XXX: Possible problem: What if there could be a collision due
-        // to bend's length being zero? We may or may not want to create an
-        // exception for this case, at least until we switch to our exact
-        // lineocircular kernel Cyrk.
-        if let Some(collision) =
-            self.detect_collision_except(cane.seg.into(), &|drawing, collider, collidee| {
-                // Check if the cane is terminal, that is, whether is starts
-                // from a fixed dot.
-                if matches!(from, DotIndex::Fixed(..)) {
-                    // Cane is initial.
-                    //
-                    // TODO: This check can only trigger during initiation of
-                    // band drawing. There probably should be an equivalent
-                    // check when band drawing is finishing into a fixed dot,
-                    // which is however implemented in a routine elsewhere in
-                    // our codebase.
-                    collider.primitive(drawing).maybe_net()
-                        != collidee.primitive(drawing).maybe_net()
-                } else {
-                    // Cane is non-initial.
-                    true
-                }
-            })
-        {
-            let joint = self.primitive(cane.bend).other_joint(cane.dot);
-            self.remove_cane(recorder, &cane, joint);
-            Err(collision.into())
-        } else {
-            Ok(cane)
-        }
+        Ok(cane)
     }
 
     fn update_this_and_outward_bows_intern(
@@ -950,7 +945,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
 
         for limb in dot.primitive(self).limbs() {
             if let Some(infringement) = self.detect_infringement_except(limb, predicate) {
-                // Restore original state.
+                // Restore previous state.
                 self.recording_geometry_with_rtree
                     .move_dot(recorder, dot, old_pos);
                 return Err(infringement);
@@ -958,7 +953,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         }
 
         if let Some(infringement) = self.detect_infringement_except(dot.into(), predicate) {
-            // Restore original state.
+            // Restore previous state.
             self.recording_geometry_with_rtree
                 .move_dot(recorder, dot, old_pos);
             return Err(infringement);
@@ -985,46 +980,13 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             .shift_bend(recorder, bend, offset);
 
         if let Some(infringement) = self.detect_infringement_except(bend.into(), predicate) {
-            // Restore original state.
+            // Restore previous state.
             self.recording_geometry_with_rtree
                 .shift_bend(recorder, bend, old_offset);
             return Err(infringement);
         }
 
         Ok(())
-    }
-
-    fn detect_collision_except(
-        &self,
-        collider: PrimitiveIndex,
-        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
-    ) -> Option<Collision> {
-        let shape = collider.primitive(self).shape();
-
-        self.recording_geometry_with_rtree
-            .rtree()
-            .locate_in_envelope_intersecting(&shape.full_height_envelope_3d(0.0, 2))
-            .filter_map(|wrapper| {
-                if let GenericNode::Primitive(collidee) = wrapper.data {
-                    Some(collidee)
-                } else {
-                    None
-                }
-            })
-            // NOTE: Collisions can happen between two same-net loose
-            // segs, so these cases in particular are not filtered out
-            // here, unlike what is done in infringement code.
-            .filter(|collidee| {
-                collider != *collidee
-                    && (!self.are_connectable(collider, *collidee)
-                        || ((matches!(collider, PrimitiveIndex::LoneLooseSeg(..))
-                            || matches!(collider, PrimitiveIndex::SeqLooseSeg(..)))
-                            && (matches!(collidee, PrimitiveIndex::LoneLooseSeg(..))
-                                || matches!(collidee, PrimitiveIndex::SeqLooseSeg(..)))))
-            })
-            .filter(|collidee| predicate(&self, collider, *collidee))
-            .find(|collidee| shape.intersects(&collidee.primitive(self).shape()))
-            .map(|collidee| Collision(shape, collidee))
     }
 }
 
@@ -1178,6 +1140,39 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                     .intersects(&primitive_node.primitive(self).shape())
                     .then_some(Infringement(inflated_shape, primitive_node))
             })
+    }
+
+    fn detect_collision_except(
+        &self,
+        collider: PrimitiveIndex,
+        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
+    ) -> Option<Collision> {
+        let shape = collider.primitive(self).shape();
+
+        self.recording_geometry_with_rtree
+            .rtree()
+            .locate_in_envelope_intersecting(&shape.full_height_envelope_3d(0.0, 2))
+            .filter_map(|wrapper| {
+                if let GenericNode::Primitive(collidee) = wrapper.data {
+                    Some(collidee)
+                } else {
+                    None
+                }
+            })
+            // NOTE: Collisions can happen between two same-net loose
+            // segs, so these cases in particular are not filtered out
+            // here, unlike what is done in infringement code.
+            .filter(|&collidee| collider != collidee)
+            .filter(|&collidee| {
+                !self.are_connectable(collider, collidee)
+                    || ((matches!(collider, PrimitiveIndex::LoneLooseSeg(..))
+                        || matches!(collider, PrimitiveIndex::SeqLooseSeg(..)))
+                        && (matches!(collidee, PrimitiveIndex::LoneLooseSeg(..))
+                            || matches!(collidee, PrimitiveIndex::SeqLooseSeg(..))))
+            })
+            .filter(|collidee| predicate(&self, collider, *collidee))
+            .find(|collidee| shape.intersects(&collidee.primitive(self).shape()))
+            .map(|collidee| Collision(shape, collidee))
     }
 
     pub fn primitive_nodes(&self) -> impl Iterator<Item = PrimitiveIndex> + '_ {
