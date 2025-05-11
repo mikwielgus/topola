@@ -14,7 +14,7 @@ use crate::{
     layout::LayoutEdit,
     router::{
         astar::{Astar, AstarError},
-        navcord::NavcordStepper,
+        navcord::Navcord,
         navcorder::Navcorder,
         navmesh::{Navmesh, NavmeshError},
         Router, RouterAstarStrategy,
@@ -26,7 +26,7 @@ use crate::{
 pub struct RouteStepper {
     #[getter(skip)]
     astar: Astar<Navmesh, f64>,
-    navcord: NavcordStepper,
+    navcord: Navcord,
     ghosts: Vec<PrimitiveShape>,
     obstacles: Vec<PrimitiveIndex>,
 }

@@ -12,7 +12,7 @@ use crate::{
 
 use super::{
     draw::{Draw, DrawException},
-    navcord::NavcordStepper,
+    navcord::Navcord,
     navmesh::{Navmesh, NavvertexIndex},
 };
 
@@ -31,30 +31,30 @@ pub trait Navcorder {
         source: FixedDotIndex,
         source_navvertex: NavvertexIndex,
         width: f64,
-    ) -> NavcordStepper;
+    ) -> Navcord;
 
     fn finish(
         &mut self,
         _navmesh: &Navmesh,
-        navcord: &mut NavcordStepper,
+        navcord: &mut Navcord,
         target: FixedDotIndex,
     ) -> Result<BandTermsegIndex, NavcorderException>;
 
     fn rework_path(
         &mut self,
         navmesh: &Navmesh,
-        navcord: &mut NavcordStepper,
+        navcord: &mut Navcord,
         path: &[NavvertexIndex],
     ) -> Result<(), NavcorderException>;
 
     fn path(
         &mut self,
         navmesh: &Navmesh,
-        navcord: &mut NavcordStepper,
+        navcord: &mut Navcord,
         path: &[NavvertexIndex],
     ) -> Result<(), NavcorderException>;
 
-    fn undo_path(&mut self, navcord: &mut NavcordStepper, step_count: usize);
+    fn undo_path(&mut self, navcord: &mut Navcord, step_count: usize);
 }
 
 impl<R: AccessRules> Navcorder for Layout<R> {
@@ -64,14 +64,14 @@ impl<R: AccessRules> Navcorder for Layout<R> {
         source: FixedDotIndex,
         source_navvertex: NavvertexIndex,
         width: f64,
-    ) -> NavcordStepper {
-        NavcordStepper::new(recorder, source, source_navvertex, width)
+    ) -> Navcord {
+        Navcord::new(recorder, source, source_navvertex, width)
     }
 
     fn finish(
         &mut self,
         _navmesh: &Navmesh,
-        navcord: &mut NavcordStepper,
+        navcord: &mut Navcord,
         target: FixedDotIndex,
     ) -> Result<BandTermsegIndex, NavcorderException> {
         Ok(self.finish_in_dot(&mut navcord.recorder, navcord.head, target, navcord.width)?)
@@ -82,7 +82,7 @@ impl<R: AccessRules> Navcorder for Layout<R> {
     fn rework_path(
         &mut self,
         navmesh: &Navmesh,
-        navcord: &mut NavcordStepper,
+        navcord: &mut Navcord,
         path: &[NavvertexIndex],
     ) -> Result<(), NavcorderException> {
         let prefix_length = navcord
@@ -101,11 +101,11 @@ impl<R: AccessRules> Navcorder for Layout<R> {
     fn path(
         &mut self,
         navmesh: &Navmesh,
-        navcord: &mut NavcordStepper,
+        navcord: &mut Navcord,
         path: &[NavvertexIndex],
     ) -> Result<(), NavcorderException> {
         for (i, vertex) in path.iter().enumerate() {
-            if let Err(err) = navcord.step(self, navmesh, *vertex) {
+            if let Err(err) = navcord.step_to(self, navmesh, *vertex) {
                 self.undo_path(navcord, i);
                 return Err(err);
             }
@@ -115,7 +115,7 @@ impl<R: AccessRules> Navcorder for Layout<R> {
     }
 
     #[debug_ensures(navcord.path.len() == old(navcord.path.len() - step_count))]
-    fn undo_path(&mut self, navcord: &mut NavcordStepper, step_count: usize) {
+    fn undo_path(&mut self, navcord: &mut Navcord, step_count: usize) {
         for _ in 0..step_count {
             let _ = navcord.step_back(self);
         }

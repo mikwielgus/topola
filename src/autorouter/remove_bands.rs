@@ -10,7 +10,7 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     layout::LayoutEdit,
     router::{
-        navcord::NavcordStepper,
+        navcord::Navcord,
         navmesh::{Navmesh, NavvertexIndex},
     },
 };
@@ -61,7 +61,7 @@ impl GetMaybeNavmesh for RemoveBandsExecutionStepper {
 }
 
 impl GetMaybeNavcord for RemoveBandsExecutionStepper {
-    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
+    fn maybe_navcord(&self) -> Option<&Navcord> {
         None
     }
 }

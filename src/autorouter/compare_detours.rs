@@ -15,7 +15,7 @@ use crate::{
     geometry::{primitive::PrimitiveShape, shape::MeasureLength},
     graph::MakeRef,
     router::{
-        navcord::NavcordStepper,
+        navcord::Navcord,
         navmesh::{Navmesh, NavvertexIndex},
     },
     stepper::Step,
@@ -110,7 +110,7 @@ impl GetMaybeNavmesh for CompareDetoursExecutionStepper {
 }
 
 impl GetMaybeNavcord for CompareDetoursExecutionStepper {
-    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
+    fn maybe_navcord(&self) -> Option<&Navcord> {
         self.autoroute.maybe_navcord()
     }
 }

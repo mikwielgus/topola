@@ -21,7 +21,7 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     interactor::interaction::{InteractionError, InteractionStepper},
     router::{
-        navcord::NavcordStepper,
+        navcord::Navcord,
         navmesh::{Navmesh, NavvertexIndex},
     },
     stepper::{Abort, Step},
@@ -131,7 +131,7 @@ impl GetMaybeNavmesh for ActivityStepperWithStatus {
 }
 
 impl GetMaybeNavcord for ActivityStepperWithStatus {
-    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
+    fn maybe_navcord(&self) -> Option<&Navcord> {
         self.activity.maybe_navcord()
     }
 }

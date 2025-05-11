@@ -16,7 +16,7 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{edit::ApplyGeometryEdit, primitive::PrimitiveShape},
     router::{
-        navcord::NavcordStepper,
+        navcord::Navcord,
         navmesh::{Navmesh, NavvertexIndex},
     },
     stepper::Step,
@@ -42,7 +42,7 @@ pub trait GetMaybeNavmesh {
 #[enum_dispatch]
 /// Trait for getting the navcord to display it on the debug overlay.
 pub trait GetMaybeNavcord {
-    fn maybe_navcord(&self) -> Option<&NavcordStepper>;
+    fn maybe_navcord(&self) -> Option<&Navcord>;
 }
 
 #[enum_dispatch]

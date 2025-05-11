@@ -20,30 +20,30 @@ use super::{
     navmesh::{BinavvertexNodeIndex, Navmesh, NavvertexIndex},
 };
 
-/// The navcord (stepper) is a structure that holds the movable non-borrowing
+/// The navcord is a structure that holds the movable non-borrowing
 /// data of the currently running routing process.
 ///
 /// The name "navcord" is a shortening of "navigation cord", by analogy to
 /// "navmesh" being a shortening of "navigation mesh".
 #[derive(Debug)]
-pub struct NavcordStepper {
+pub struct Navcord {
     pub recorder: LayoutEdit,
     /// The currently attempted path.
     pub path: Vec<NavvertexIndex>,
-    /// The head of the routed band.
+    /// The head of the currently routed band.
     pub head: Head,
-    /// The width of the routed band.
+    /// The width of the currently routed band.
     pub width: f64,
 }
 
-impl NavcordStepper {
+impl Navcord {
     /// Creates a new navcord.
     pub fn new(
         recorder: LayoutEdit,
         source: FixedDotIndex,
         source_navvertex: NavvertexIndex,
         width: f64,
-    ) -> NavcordStepper {
+    ) -> Navcord {
         Self {
             recorder,
             path: vec![source_navvertex],
@@ -89,7 +89,7 @@ impl NavcordStepper {
     #[debug_ensures(ret.is_ok() -> matches!(self.head, Head::Cane(..)))]
     #[debug_ensures(ret.is_ok() -> self.path.len() == old(self.path.len() + 1))]
     #[debug_ensures(ret.is_err() -> self.path.len() == old(self.path.len()))]
-    pub fn step<R: AccessRules>(
+    pub fn step_to<R: AccessRules>(
         &mut self,
         layout: &mut Layout<R>,
         navmesh: &Navmesh,

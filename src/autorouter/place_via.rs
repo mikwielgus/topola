@@ -12,7 +12,7 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     layout::{via::ViaWeight, LayoutEdit},
     router::{
-        navcord::NavcordStepper,
+        navcord::Navcord,
         navmesh::{Navmesh, NavvertexIndex},
     },
 };
@@ -62,7 +62,7 @@ impl GetMaybeNavmesh for PlaceViaExecutionStepper {
 }
 
 impl GetMaybeNavcord for PlaceViaExecutionStepper {
-    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
+    fn maybe_navcord(&self) -> Option<&Navcord> {
         None
     }
 }

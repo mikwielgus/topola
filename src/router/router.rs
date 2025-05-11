@@ -28,7 +28,7 @@ use crate::{
 use super::{
     astar::{AstarStrategy, PathTracker},
     draw::DrawException,
-    navcord::NavcordStepper,
+    navcord::Navcord,
     navcorder::{Navcorder, NavcorderException},
     navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
     route::RouteStepper,
@@ -44,18 +44,14 @@ pub struct RouterOptions {
 #[derive(Debug)]
 pub struct RouterAstarStrategy<'a, R> {
     pub layout: &'a mut Layout<R>,
-    pub navcord: &'a mut NavcordStepper,
+    pub navcord: &'a mut Navcord,
     pub target: FixedDotIndex,
     pub probe_ghosts: Vec<PrimitiveShape>,
     pub probe_obstacles: Vec<PrimitiveIndex>,
 }
 
 impl<'a, R> RouterAstarStrategy<'a, R> {
-    pub fn new(
-        layout: &'a mut Layout<R>,
-        navcord: &'a mut NavcordStepper,
-        target: FixedDotIndex,
-    ) -> Self {
+    pub fn new(layout: &'a mut Layout<R>, navcord: &'a mut Navcord, target: FixedDotIndex) -> Self {
         Self {
             layout,
             navcord,
@@ -103,7 +99,7 @@ impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAst
         }
 
         let prev_bihead_length = self.bihead_length();
-        let result = self.navcord.step(self.layout, navmesh, edge.target());
+        let result = self.navcord.step_to(self.layout, navmesh, edge.target());
         let probe_length = self.bihead_length() - prev_bihead_length;
 
         match result {

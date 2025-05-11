@@ -12,7 +12,7 @@ use crate::{
     geometry::{primitive::PrimitiveShape, shape::MeasureLength as MeasureLengthTrait},
     graph::MakeRef,
     router::{
-        navcord::NavcordStepper,
+        navcord::Navcord,
         navmesh::{Navmesh, NavvertexIndex},
     },
 };
@@ -65,7 +65,7 @@ impl GetMaybeNavmesh for MeasureLengthExecutionStepper {
 }
 
 impl GetMaybeNavcord for MeasureLengthExecutionStepper {
-    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
+    fn maybe_navcord(&self) -> Option<&Navcord> {
         None
     }
 }

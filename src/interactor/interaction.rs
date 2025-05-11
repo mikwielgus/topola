@@ -14,7 +14,7 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     router::{
-        navcord::NavcordStepper,
+        navcord::Navcord,
         navmesh::{Navmesh, NavvertexIndex},
     },
     stepper::{Abort, Step},
@@ -59,7 +59,7 @@ impl GetMaybeNavmesh for InteractionStepper {
 }
 
 impl GetMaybeNavcord for InteractionStepper {
-    fn maybe_navcord(&self) -> Option<&NavcordStepper> {
+    fn maybe_navcord(&self) -> Option<&Navcord> {
         todo!()
     }
 }
