@@ -11,6 +11,7 @@ steps:
     commands:
       - cargo install committed
       - committed develop..HEAD
+      - committed HEAD
       - rustup component add rustfmt
       - cargo fmt --all -- --check
     when:
