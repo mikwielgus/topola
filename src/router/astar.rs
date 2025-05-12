@@ -130,18 +130,51 @@ where
     pub estimate_scores: BTreeMap<G::NodeId, K>,
     pub path_tracker: PathTracker<G>,
     pub maybe_curr_node: Option<G::NodeId>,
-    // FIXME: To work around edge references borrowing from the graph we collect then reiterate over tem.
+    // FIXME: To work around edge references borrowing from the graph we collect then reiterate over them.
     pub edge_ids: VecDeque<G::EdgeId>,
     // TODO: Rewrite this to be a well-designed state machine.
     pub is_probing: bool,
 }
 
+/// The status enum of the A* stepper returned when there is no failure or
+/// break.
+///
+/// Note that, when thinking of the A* stepper as of a state machine, the
+/// variants of the status actually correspond to state transitions, not to
+/// states themselves, since `Probing` and `ProbingButDiscarded`, and likewise
+/// `VisitSkipped` and `Visited`, would correspond to the same state.
 #[derive(Debug)]
 pub enum AstarContinueStatus {
+    /// A* has now placed a probe to measure the cost of the edge to a
+    /// neighboring node from the current position. The probed node has been
+    /// added to the priority queue, and the newly measured edge cost has been
+    /// stored in a map.
     Probing,
+    /// A* has now placed a probe, but it turned out that the probed node has
+    /// been previously reached through a path with equal or lower score, so the
+    /// probe's measurement has been discarded. The probe, however, will be only
+    /// removed in the next state just as if it was after the normal `Probing`
+    /// status.
     ProbingButDiscarded,
+    /// The probe that had been placed in the previous state has now been
+    /// removed.
+    ///
+    /// The probe is only removed in this separate state to make it possible
+    /// to pause the A* while the placed probe exists, which is very useful
+    /// for debugging.
     Probed,
+    /// A* has now attempted to visit a new node, but it turned out that it has
+    /// been previously reached through a path with an equal or lower estimated
+    /// score, so the visit to that node has been skipped.
     VisitSkipped,
+    /// A* has now visited a new node.
+    ///
+    /// Quick recap if you have been trying to remember what is the difference
+    /// between visiting and probing: when a node is visited, it is placed at
+    /// the head of the current path, whereas probing is done as part of a scan
+    /// that happens *around* the currently visited node. Suitable newly scanned
+    /// nodes are added to a priority queue, from which A* only later takes out
+    /// elements to actually visit.
     Visited,
 }
 
@@ -251,8 +284,8 @@ where
 
         match self.estimate_scores.entry(node) {
             Entry::Occupied(mut entry) => {
-                // If the node has already been visited with an equal or lower score than
-                // now, then we do not need to re-visit it.
+                // If the node has already been visited with an equal or lower
+                // estimated score than now, then we do not need to re-visit it.
                 if *entry.get() <= estimate_score {
                     return Ok(ControlFlow::Continue(AstarContinueStatus::VisitSkipped));
                 }
