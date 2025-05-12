@@ -139,7 +139,9 @@ where
 #[derive(Debug)]
 pub enum AstarContinueStatus {
     Probing,
+    ProbingButDiscarded,
     Probed,
+    VisitSkipped,
     Visited,
 }
 
@@ -211,7 +213,9 @@ where
                             // No need to add neighbors that we have already reached through a
                             // shorter path than now.
                             if *entry.get() <= next_score {
-                                return Ok(ControlFlow::Continue(AstarContinueStatus::Probed));
+                                return Ok(ControlFlow::Continue(
+                                    AstarContinueStatus::ProbingButDiscarded,
+                                ));
                             }
                             entry.insert(next_score);
                         }
@@ -250,7 +254,7 @@ where
                 // If the node has already been visited with an equal or lower score than
                 // now, then we do not need to re-visit it.
                 if *entry.get() <= estimate_score {
-                    return Ok(ControlFlow::Continue(AstarContinueStatus::Visited));
+                    return Ok(ControlFlow::Continue(AstarContinueStatus::VisitSkipped));
                 }
                 entry.insert(estimate_score);
             }
