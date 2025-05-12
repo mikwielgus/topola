@@ -117,7 +117,7 @@ pub trait MakeEdgeRef: IntoEdgeReferences {
     fn edge_ref(&self, edge_id: Self::EdgeId) -> Self::EdgeRef;
 }
 
-pub struct Astar<G, K>
+pub struct AstarStepper<G, K>
 where
     G: GraphBase,
     G::NodeId: Eq + Ord,
@@ -149,7 +149,7 @@ pub enum AstarError {
     NotFound,
 }
 
-impl<G, K> Astar<G, K>
+impl<G, K> AstarStepper<G, K>
 where
     G: GraphBase,
     G::NodeId: Eq + Ord,
@@ -177,7 +177,7 @@ where
 }
 
 impl<G, K, R, S: AstarStrategy<G, K, R>> Step<S, (K, Vec<G::NodeId>, R), AstarContinueStatus>
-    for Astar<G, K>
+    for AstarStepper<G, K>
 where
     G: GraphBase,
     G::NodeId: Eq + Ord,

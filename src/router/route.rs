@@ -13,7 +13,7 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     layout::LayoutEdit,
     router::{
-        astar::{Astar, AstarError},
+        astar::{AstarError, AstarStepper},
         navcord::Navcord,
         navcorder::Navcorder,
         navmesh::{Navmesh, NavmeshError},
@@ -25,7 +25,7 @@ use crate::{
 #[derive(Getters, Dissolve)]
 pub struct RouteStepper {
     #[getter(skip)]
-    astar: Astar<Navmesh, f64>,
+    astar: AstarStepper<Navmesh, f64>,
     navcord: Navcord,
     ghosts: Vec<PrimitiveShape>,
     obstacles: Vec<PrimitiveIndex>,
@@ -57,7 +57,7 @@ impl RouteStepper {
         let mut navcord = layout.start(recorder, source, source_navvertex, width);
 
         let mut strategy = RouterAstarStrategy::new(layout, &mut navcord, target);
-        let astar = Astar::new(navmesh, source_navvertex, &mut strategy);
+        let astar = AstarStepper::new(navmesh, source_navvertex, &mut strategy);
         let ghosts = vec![];
         let obstacles = vec![];
 
