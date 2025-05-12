@@ -16,9 +16,9 @@ use std::ops::ControlFlow;
 /// states. Advanceable data structures designed for uses where the future state
 /// intentionally *may* change from the information supplied as arguments are
 /// not considered steppers. An example of such an advanceable non-stepper is
-/// the [`navcord::Navcord`] struct, as it does not progress linearly because
-/// it branches out by on each call taking in a changeable `to` argument that
-/// affects the future states.
+/// the [`Navcord`](crate::router::navcord::Navcord) struct, as it does not progress
+/// linearly because it branches out by on each call taking in a
+/// changeable `to` argument that affects the future states.
 ///
 /// Petgraph's counterpart of this trait is its
 /// [`petgraph::visit::Walker<Context>`] trait.
