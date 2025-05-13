@@ -24,7 +24,6 @@ use crate::{
 
 #[derive(Getters, Dissolve)]
 pub struct RouteStepper {
-    #[getter(skip)]
     astar: AstarStepper<Navmesh, f64>,
     navcord: Navcord,
     ghosts: Vec<PrimitiveShape>,
@@ -67,10 +66,6 @@ impl RouteStepper {
             ghosts,
             obstacles,
         }
-    }
-
-    pub fn navmesh(&self) -> &Navmesh {
-        &self.astar.graph
     }
 }
 

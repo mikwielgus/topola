@@ -12,13 +12,16 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     layout::{via::ViaWeight, LayoutEdit},
     router::{
+        astar::AstarStepper,
         navcord::Navcord,
         navmesh::{Navmesh, NavvertexIndex},
     },
 };
 
 use super::{
-    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles},
+    invoker::{
+        GetGhosts, GetMaybeAstarStepper, GetMaybeNavcord, GetNavmeshDebugTexts, GetObstacles,
+    },
     Autorouter, AutorouterError,
 };
 
@@ -55,8 +58,8 @@ impl PlaceViaExecutionStepper {
     }
 }
 
-impl GetMaybeNavmesh for PlaceViaExecutionStepper {
-    fn maybe_navmesh(&self) -> Option<&Navmesh> {
+impl GetMaybeAstarStepper for PlaceViaExecutionStepper {
+    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>> {
         None
     }
 }

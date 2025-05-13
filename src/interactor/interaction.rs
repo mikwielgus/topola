@@ -8,12 +8,13 @@ use thiserror::Error;
 
 use crate::{
     autorouter::invoker::{
-        GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles,
+        GetGhosts, GetMaybeAstarStepper, GetMaybeNavcord, GetNavmeshDebugTexts, GetObstacles,
     },
     board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     router::{
+        astar::AstarStepper,
         navcord::Navcord,
         navmesh::{Navmesh, NavvertexIndex},
     },
@@ -52,8 +53,8 @@ impl<M: AccessMesadata> Abort<ActivityContext<'_, M>> for InteractionStepper {
     }
 }
 
-impl GetMaybeNavmesh for InteractionStepper {
-    fn maybe_navmesh(&self) -> Option<&Navmesh> {
+impl GetMaybeAstarStepper for InteractionStepper {
+    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>> {
         todo!()
     }
 }

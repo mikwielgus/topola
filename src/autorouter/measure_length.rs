@@ -12,13 +12,16 @@ use crate::{
     geometry::{primitive::PrimitiveShape, shape::MeasureLength as MeasureLengthTrait},
     graph::MakeRef,
     router::{
+        astar::AstarStepper,
         navcord::Navcord,
         navmesh::{Navmesh, NavvertexIndex},
     },
 };
 
 use super::{
-    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles},
+    invoker::{
+        GetGhosts, GetMaybeAstarStepper, GetMaybeNavcord, GetNavmeshDebugTexts, GetObstacles,
+    },
     selection::BandSelection,
     Autorouter, AutorouterError,
 };
@@ -58,8 +61,8 @@ impl MeasureLengthExecutionStepper {
     }
 }
 
-impl GetMaybeNavmesh for MeasureLengthExecutionStepper {
-    fn maybe_navmesh(&self) -> Option<&Navmesh> {
+impl GetMaybeAstarStepper for MeasureLengthExecutionStepper {
+    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>> {
         None
     }
 }

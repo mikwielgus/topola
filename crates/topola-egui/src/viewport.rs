@@ -12,7 +12,7 @@ use topola::{
     autorouter::{
         execution::Command,
         invoker::{
-            GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles,
+            GetGhosts, GetMaybeAstarStepper, GetMaybeNavcord, GetNavmeshDebugTexts, GetObstacles,
         },
     },
     board::AccessMesadata,
@@ -252,7 +252,9 @@ impl Viewport {
 
                         if menu_bar.show_navmesh {
                             if let Some(activity) = workspace.interactor.maybe_activity() {
-                                if let Some(navmesh) = activity.maybe_navmesh() {
+                                if let Some(ref navmesh) =
+                                    activity.maybe_astar().map(|astar| &astar.graph)
+                                {
                                     for edge in navmesh.edge_references() {
                                         let mut from = PrimitiveIndex::from(
                                             navmesh.node_weight(edge.source()).unwrap().node,
@@ -448,7 +450,9 @@ impl Viewport {
                                     .paint_primitive(ghost, egui::Color32::from_rgb(75, 75, 150));
                             }
 
-                            if let Some(navmesh) = activity.maybe_navmesh() {
+                            if let Some(ref navmesh) =
+                                activity.maybe_astar().map(|astar| &astar.graph)
+                            {
                                 if menu_bar.show_origin_destination {
                                     let (origin, destination) =
                                         (navmesh.origin(), navmesh.destination());

@@ -16,6 +16,7 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{edit::ApplyGeometryEdit, primitive::PrimitiveShape},
     router::{
+        astar::AstarStepper,
         navcord::Navcord,
         navmesh::{Navmesh, NavvertexIndex},
     },
@@ -33,31 +34,32 @@ use super::{
     Autorouter, AutorouterError,
 };
 
+/// Trait for getting the A* stepper to display its data on the debug overlay,
+/// most importantly the navmesh which is owned by the A* stepper.
 #[enum_dispatch]
-/// Trait for getting the navmesh to display it on the debug overlay.
-pub trait GetMaybeNavmesh {
-    fn maybe_navmesh(&self) -> Option<&Navmesh>;
+pub trait GetMaybeAstarStepper {
+    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>>;
 }
 
-#[enum_dispatch]
 /// Trait for getting the navcord to display it on the debug overlay.
+#[enum_dispatch]
 pub trait GetMaybeNavcord {
     fn maybe_navcord(&self) -> Option<&Navcord>;
 }
 
-#[enum_dispatch]
 /// Trait for getting ghosts to display on the debug overlay. Ghosts are the
 /// shapes that Topola attempted to create but failed due to them infringing on
 /// other shapes.
+#[enum_dispatch]
 pub trait GetGhosts {
     fn ghosts(&self) -> &[PrimitiveShape];
 }
 
-#[enum_dispatch]
 /// Trait for getting the obstacles that prevented Topola from creating
 /// new objects (the shapes of these objects can be obtained with the above
 /// `GetGhosts` trait), for the purpose of displaying these obstacles on the
 /// debug overlay.
+#[enum_dispatch]
 pub trait GetObstacles {
     fn obstacles(&self) -> &[PrimitiveIndex];
 }

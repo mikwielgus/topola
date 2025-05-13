@@ -10,13 +10,16 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     layout::LayoutEdit,
     router::{
+        astar::AstarStepper,
         navcord::Navcord,
         navmesh::{Navmesh, NavvertexIndex},
     },
 };
 
 use super::{
-    invoker::{GetGhosts, GetMaybeNavcord, GetMaybeNavmesh, GetNavmeshDebugTexts, GetObstacles},
+    invoker::{
+        GetGhosts, GetMaybeAstarStepper, GetMaybeNavcord, GetNavmeshDebugTexts, GetObstacles,
+    },
     selection::BandSelection,
     Autorouter, AutorouterError,
 };
@@ -54,8 +57,8 @@ impl RemoveBandsExecutionStepper {
     }
 }
 
-impl GetMaybeNavmesh for RemoveBandsExecutionStepper {
-    fn maybe_navmesh(&self) -> Option<&Navmesh> {
+impl GetMaybeAstarStepper for RemoveBandsExecutionStepper {
+    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>> {
         None
     }
 }
