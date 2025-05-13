@@ -252,9 +252,9 @@ impl Viewport {
 
                         if menu_bar.show_navmesh {
                             if let Some(activity) = workspace.interactor.maybe_activity() {
-                                if let Some(ref navmesh) =
-                                    activity.maybe_astar().map(|astar| &astar.graph)
-                                {
+                                if let Some(astar) = activity.maybe_astar() {
+                                    let navmesh = &astar.graph;
+
                                     for edge in navmesh.edge_references() {
                                         let mut from = PrimitiveIndex::from(
                                             navmesh.node_weight(edge.source()).unwrap().node,
@@ -336,35 +336,46 @@ impl Viewport {
 
                                     for index in navmesh.graph().node_indices() {
                                         let navvertex = NavvertexIndex(index);
-                                        if let Some(text) = activity.navvertex_debug_text(navvertex)
-                                        {
-                                            let mut pos = PrimitiveIndex::from(
-                                                navmesh.node_weight(navvertex).unwrap().node,
-                                            )
-                                            .primitive(board.layout().drawing())
-                                            .shape()
-                                            .center();
+                                        let mut pos = PrimitiveIndex::from(
+                                            navmesh.node_weight(navvertex).unwrap().node,
+                                        )
+                                        .primitive(board.layout().drawing())
+                                        .shape()
+                                        .center();
 
-                                            pos += match navmesh
-                                                .node_weight(navvertex)
-                                                .unwrap()
-                                                .maybe_sense
-                                            {
-                                                Some(RotationSense::Counterclockwise) => {
-                                                    [0.0, 150.0].into()
-                                                }
-                                                Some(RotationSense::Clockwise) => {
-                                                    [-0.0, -150.0].into()
-                                                }
-                                                None => [0.0, 0.0].into(),
-                                            };
-                                            painter.paint_text(
-                                                pos,
-                                                egui::Align2::LEFT_BOTTOM,
-                                                text,
-                                                egui::Color32::from_rgb(255, 255, 255),
-                                            );
-                                        }
+                                        pos += match navmesh
+                                            .node_weight(navvertex)
+                                            .unwrap()
+                                            .maybe_sense
+                                        {
+                                            Some(RotationSense::Counterclockwise) => {
+                                                [0.0, 150.0].into()
+                                            }
+                                            Some(RotationSense::Clockwise) => [-0.0, -150.0].into(),
+                                            None => [0.0, 0.0].into(),
+                                        };
+
+                                        //TODO "{astar.scores[index]} ({astar.estimate_scores[index]}) (...)"
+                                        let score_text = &astar
+                                            .scores
+                                            .get(&navvertex)
+                                            .map_or_else(String::new, |s| format!("g={:.2}", s));
+                                        let estimate_score_text = &astar
+                                            .estimate_scores
+                                            .get(&navvertex)
+                                            .map_or_else(String::new, |s| format!("(f={:.2})", s));
+                                        let debug_text =
+                                            activity.navvertex_debug_text(navvertex).unwrap_or("");
+
+                                        painter.paint_text(
+                                            pos,
+                                            egui::Align2::LEFT_BOTTOM,
+                                            &format!(
+                                                "{} {} {}",
+                                                score_text, estimate_score_text, debug_text
+                                            ),
+                                            egui::Color32::from_rgb(255, 255, 255),
+                                        );
                                     }
                                 }
                             }
