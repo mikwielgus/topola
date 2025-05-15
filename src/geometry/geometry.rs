@@ -73,6 +73,15 @@ pub enum GenericNode<P, C> {
     Compound(C),
 }
 
+impl<P: GetPetgraphIndex, C: GetPetgraphIndex> GetPetgraphIndex for GenericNode<P, C> {
+    fn petgraph_index(&self) -> NodeIndex<usize> {
+        match self {
+            Self::Primitive(x) => x.petgraph_index(),
+            Self::Compound(x) => x.petgraph_index(),
+        }
+    }
+}
+
 pub trait AccessDotWeight: GetSetPos + GetWidth + Copy {}
 impl<T: GetSetPos + GetWidth + Copy> AccessDotWeight for T {}
 

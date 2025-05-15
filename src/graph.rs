@@ -18,6 +18,13 @@ pub trait GetPetgraphIndex {
     fn petgraph_index(&self) -> NodeIndex<usize>;
 }
 
+impl GetPetgraphIndex for NodeIndex<usize> {
+    #[inline(always)]
+    fn petgraph_index(&self) -> NodeIndex<usize> {
+        *self
+    }
+}
+
 // unfortunately, as we don't want any restrictions on `W`,
 // we have to implement many traits ourselves, instead of using derive macros.
 #[derive(Deserialize, Serialize)]
@@ -40,7 +47,7 @@ impl<W> GenericIndex<W> {
 }
 
 impl<W> core::clone::Clone for GenericIndex<W> {
-    #[inline]
+    #[inline(always)]
     fn clone(&self) -> Self {
         *self
     }
