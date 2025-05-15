@@ -5,10 +5,7 @@
 use geo::Line;
 
 use crate::{
-    geometry::{
-        primitive::{AccessPrimitiveShape, PrimitiveShape},
-        shape::AccessShape,
-    },
+    geometry::{primitive::PrimitiveShape, shape::AccessShape, GetWidth},
     math::{self, Circle, NoTangents, RotationSense},
 };
 

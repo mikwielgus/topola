@@ -6,20 +6,22 @@ use std::f64::consts::TAU;
 
 use enum_dispatch::enum_dispatch;
 use geo::algorithm::line_measures::{Distance, Euclidean};
-use geo::{point, polygon, Contains, Intersects, Line, Point, Polygon, Rotate};
+use geo::{point, polygon, Contains, Intersects, Line, Point, Polygon, Rect, Rotate};
 use rstar::{RTreeObject, AABB};
 
 use crate::{
-    geometry::shape::{AccessShape, MeasureLength},
+    geometry::{
+        shape::{AccessShape, MeasureLength},
+        GetWidth,
+    },
     math::{self, Circle},
 };
 
 #[enum_dispatch]
-pub trait AccessPrimitiveShape: AccessShape {
+pub trait AccessPrimitiveShape: AccessShape + GetWidth {
     fn priority(&self) -> usize;
     fn inflate(&self, margin: f64) -> PrimitiveShape;
     fn intersects(&self, other: &PrimitiveShape) -> bool;
-    fn width(&self) -> f64;
 
     fn envelope_3d(&self, margin: f64, layer: usize) -> AABB<[f64; 3]> {
         let envelope = self.bbox(margin);
@@ -42,7 +44,7 @@ pub trait AccessPrimitiveShape: AccessShape {
     }
 }
 
-#[enum_dispatch(MeasureLength, AccessShape, AccessPrimitiveShape)]
+#[enum_dispatch(AccessShape, AccessPrimitiveShape, GetWidth, MeasureLength)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum PrimitiveShape {
     // Intentionally in different order to reorder `self.intersects(...)` properly.
@@ -73,6 +75,11 @@ impl AccessShape for DotShape {
 
     fn bbox_without_margin(&self) -> AABB<[f64; 2]> {
         self.circle.bbox(0.0)
+    }
+
+    fn intersects_with_bbox(&self, bbox: &AABB<[f64; 2]>) -> bool {
+        let bbox = Rect::new(bbox.lower(), bbox.upper());
+        Euclidean::distance(&self.circle.pos, &bbox.to_polygon()) < self.circle.r
     }
 }
 
@@ -120,7 +127,9 @@ impl AccessPrimitiveShape for DotShape {
             }
         }
     }
+}
 
+impl GetWidth for DotShape {
     fn width(&self) -> f64 {
         self.circle.r * 2.0
     }
@@ -154,6 +163,13 @@ impl SegShape {
             start: self.from.into(),
             end: self.to.into(),
         }
+    }
+}
+
+impl From<SegShape> for Polygon {
+    #[inline(always)]
+    fn from(x: SegShape) -> Polygon {
+        x.polygon()
     }
 }
 
@@ -227,7 +243,9 @@ impl AccessPrimitiveShape for SegShape {
             }
         }
     }
+}
 
+impl GetWidth for SegShape {
     fn width(&self) -> f64 {
         self.width
     }
@@ -382,7 +400,9 @@ impl AccessPrimitiveShape for BendShape {
             }
         }
     }
+}
 
+impl GetWidth for BendShape {
     fn width(&self) -> f64 {
         self.width
     }

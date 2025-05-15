@@ -12,7 +12,6 @@ use topola::{
         selection::{BboxSelectionKind, Selection},
     },
     board::{AccessMesadata, Board},
-    geometry::shape::AccessShape,
     layout::NodeIndex,
     router::planar_incr_embed,
 };
@@ -191,29 +190,14 @@ impl Overlay {
             return;
         }
 
-        let geoms: Vec<_> = board
-            .layout()
-            .drawing()
-            .rtree()
-            .locate_in_envelope_intersecting(&AABB::<[f64; 3]>::from_corners(
-                [at.x(), at.y(), -f64::INFINITY],
-                [at.x(), at.y(), f64::INFINITY],
-            ))
-            .collect();
-
-        if let Some(geom) = geoms.iter().find(|&&geom| {
-            board.layout().node_shape(geom.data).contains_point(at)
-                // TODO: fix which layers to query
-                && board
-                    .layout()
-                    .drawing()
-                    // This should use:
-                    // `.is_node_in_any_layer_of(geom.data, &appearance_panel.visible[..])`
-                    // instead, but that doesn't work reliably
-                    .is_node_in_layer(geom.data, 0)
-        }) {
-            self.selection.toggle_at_node(board, geom.data);
-        }
+        let old_selection = self.take_selection();
+        self.select_all_in_bbox(
+            board,
+            appearance_panel,
+            &AABB::from_point([at.x(), at.y()]),
+            BboxSelectionKind::MerelyIntersects,
+        );
+        self.selection ^= &old_selection;
     }
 
     pub fn select_all_in_bbox(
