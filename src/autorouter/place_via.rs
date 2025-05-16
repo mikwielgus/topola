@@ -58,36 +58,8 @@ impl PlaceViaExecutionStepper {
     }
 }
 
-impl GetMaybeAstarStepper for PlaceViaExecutionStepper {
-    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>> {
-        None
-    }
-}
-
-impl GetMaybeNavcord for PlaceViaExecutionStepper {
-    fn maybe_navcord(&self) -> Option<&Navcord> {
-        None
-    }
-}
-
-impl GetGhosts for PlaceViaExecutionStepper {
-    fn ghosts(&self) -> &[PrimitiveShape] {
-        &[]
-    }
-}
-
-impl GetObstacles for PlaceViaExecutionStepper {
-    fn obstacles(&self) -> &[PrimitiveIndex] {
-        &[]
-    }
-}
-
-impl GetNavmeshDebugTexts for PlaceViaExecutionStepper {
-    fn navvertex_debug_text(&self, _navvertex: NavvertexIndex) -> Option<&str> {
-        None
-    }
-
-    fn navedge_debug_text(&self, _navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
-        None
-    }
-}
+impl GetMaybeAstarStepper for PlaceViaExecutionStepper {}
+impl GetMaybeNavcord for PlaceViaExecutionStepper {}
+impl GetGhosts for PlaceViaExecutionStepper {}
+impl GetObstacles for PlaceViaExecutionStepper {}
+impl GetNavmeshDebugTexts for PlaceViaExecutionStepper {}

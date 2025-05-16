@@ -189,14 +189,4 @@ impl GetObstacles for AutorouteExecutionStepper {
     }
 }
 
-impl GetNavmeshDebugTexts for AutorouteExecutionStepper {
-    fn navvertex_debug_text(&self, _navvertex: NavvertexIndex) -> Option<&str> {
-        // Add debug text here.
-        None
-    }
-
-    fn navedge_debug_text(&self, _navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
-        // Add debug text here.
-        None
-    }
-}
+impl GetNavmeshDebugTexts for AutorouteExecutionStepper {}

@@ -38,13 +38,17 @@ use super::{
 /// most importantly the navmesh which is owned by the A* stepper.
 #[enum_dispatch]
 pub trait GetMaybeAstarStepper {
-    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>>;
+    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>> {
+        None
+    }
 }
 
 /// Trait for getting the navcord to display it on the debug overlay.
 #[enum_dispatch]
 pub trait GetMaybeNavcord {
-    fn maybe_navcord(&self) -> Option<&Navcord>;
+    fn maybe_navcord(&self) -> Option<&Navcord> {
+        None
+    }
 }
 
 /// Trait for getting ghosts to display on the debug overlay. Ghosts are the
@@ -52,7 +56,9 @@ pub trait GetMaybeNavcord {
 /// other shapes.
 #[enum_dispatch]
 pub trait GetGhosts {
-    fn ghosts(&self) -> &[PrimitiveShape];
+    fn ghosts(&self) -> &[PrimitiveShape] {
+        &[]
+    }
 }
 
 /// Trait for getting the obstacles that prevented Topola from creating
@@ -61,15 +67,22 @@ pub trait GetGhosts {
 /// debug overlay.
 #[enum_dispatch]
 pub trait GetObstacles {
-    fn obstacles(&self) -> &[PrimitiveIndex];
+    fn obstacles(&self) -> &[PrimitiveIndex] {
+        &[]
+    }
 }
 
 #[enum_dispatch]
 /// Trait for getting text strings with debug information attached to navmesh
 /// edges and vertices.
 pub trait GetNavmeshDebugTexts {
-    fn navvertex_debug_text(&self, navvertex: NavvertexIndex) -> Option<&str>;
-    fn navedge_debug_text(&self, navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str>;
+    fn navvertex_debug_text(&self, navvertex: NavvertexIndex) -> Option<&str> {
+        None
+    }
+
+    fn navedge_debug_text(&self, navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
+        None
+    }
 }
 
 /// Error types that can occur during the invocation of commands.

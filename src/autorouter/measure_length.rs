@@ -61,36 +61,8 @@ impl MeasureLengthExecutionStepper {
     }
 }
 
-impl GetMaybeAstarStepper for MeasureLengthExecutionStepper {
-    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>> {
-        None
-    }
-}
-
-impl GetMaybeNavcord for MeasureLengthExecutionStepper {
-    fn maybe_navcord(&self) -> Option<&Navcord> {
-        None
-    }
-}
-
-impl GetGhosts for MeasureLengthExecutionStepper {
-    fn ghosts(&self) -> &[PrimitiveShape] {
-        &[]
-    }
-}
-
-impl GetObstacles for MeasureLengthExecutionStepper {
-    fn obstacles(&self) -> &[PrimitiveIndex] {
-        &[]
-    }
-}
-
-impl GetNavmeshDebugTexts for MeasureLengthExecutionStepper {
-    fn navvertex_debug_text(&self, _navvertex: NavvertexIndex) -> Option<&str> {
-        None
-    }
-
-    fn navedge_debug_text(&self, _navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
-        None
-    }
-}
+impl GetMaybeAstarStepper for MeasureLengthExecutionStepper {}
+impl GetMaybeNavcord for MeasureLengthExecutionStepper {}
+impl GetGhosts for MeasureLengthExecutionStepper {}
+impl GetObstacles for MeasureLengthExecutionStepper {}
+impl GetNavmeshDebugTexts for MeasureLengthExecutionStepper {}

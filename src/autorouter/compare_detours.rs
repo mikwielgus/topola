@@ -130,12 +130,4 @@ impl GetObstacles for CompareDetoursExecutionStepper {
     }
 }
 
-impl GetNavmeshDebugTexts for CompareDetoursExecutionStepper {
-    fn navvertex_debug_text(&self, _navvertex: NavvertexIndex) -> Option<&str> {
-        None
-    }
-
-    fn navedge_debug_text(&self, _navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
-        None
-    }
-}
+impl GetNavmeshDebugTexts for CompareDetoursExecutionStepper {}

@@ -57,36 +57,8 @@ impl RemoveBandsExecutionStepper {
     }
 }
 
-impl GetMaybeAstarStepper for RemoveBandsExecutionStepper {
-    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>> {
-        None
-    }
-}
-
-impl GetMaybeNavcord for RemoveBandsExecutionStepper {
-    fn maybe_navcord(&self) -> Option<&Navcord> {
-        None
-    }
-}
-
-impl GetGhosts for RemoveBandsExecutionStepper {
-    fn ghosts(&self) -> &[PrimitiveShape] {
-        &[]
-    }
-}
-
-impl GetObstacles for RemoveBandsExecutionStepper {
-    fn obstacles(&self) -> &[PrimitiveIndex] {
-        &[]
-    }
-}
-
-impl GetNavmeshDebugTexts for RemoveBandsExecutionStepper {
-    fn navvertex_debug_text(&self, _navvertex: NavvertexIndex) -> Option<&str> {
-        None
-    }
-
-    fn navedge_debug_text(&self, _navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
-        None
-    }
-}
+impl GetMaybeAstarStepper for RemoveBandsExecutionStepper {}
+impl GetMaybeNavcord for RemoveBandsExecutionStepper {}
+impl GetGhosts for RemoveBandsExecutionStepper {}
+impl GetObstacles for RemoveBandsExecutionStepper {}
+impl GetNavmeshDebugTexts for RemoveBandsExecutionStepper {}
