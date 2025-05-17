@@ -10,12 +10,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     drawing::{
         band::BandTermsegIndex,
-        dot::{DotIndex, FixedDotIndex},
+        dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
-        head::GetFace,
         primitive::MakePrimitiveShape,
         rules::AccessRules,
-        Guide,
     },
     geometry::{
         primitive::PrimitiveShape,
@@ -62,21 +60,6 @@ impl<'a, R> RouterAstarStrategy<'a, R> {
     }
 }
 
-impl<R: AccessRules> RouterAstarStrategy<'_, R> {
-    fn bihead_length(&self) -> f64 {
-        self.navcord.head.ref_(self.layout.drawing()).length()
-            + match self.navcord.head.face() {
-                DotIndex::Fixed(..) => 0.0,
-                DotIndex::Loose(face) => self
-                    .layout
-                    .drawing()
-                    .rear_head(face)
-                    .ref_(self.layout.drawing())
-                    .length(),
-            }
-    }
-}
-
 impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAstarStrategy<'_, R> {
     fn is_goal(
         &mut self,
@@ -98,9 +81,12 @@ impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAst
             return None;
         }
 
-        let prev_bihead_length = self.bihead_length();
+        let old_head = self.navcord.head;
+        let prev_head_length = old_head.ref_(self.layout.drawing()).length();
         let result = self.navcord.step_to(self.layout, navmesh, edge.target());
-        let probe_length = self.bihead_length() - prev_bihead_length;
+        let probe_length = self.navcord.head.ref_(self.layout.drawing()).length()
+            + old_head.ref_(self.layout.drawing()).length()
+            - prev_head_length;
 
         match result {
             Ok(..) => Some(probe_length),
