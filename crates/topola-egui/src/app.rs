@@ -18,8 +18,8 @@ use topola::{
 };
 
 use crate::{
-    actions::Actions, config::Config, error_dialog::ErrorDialog, menu_bar::MenuBar,
-    status_bar::StatusBar, translator::Translator, viewport::Viewport, workspace::Workspace,
+    config::Config, error_dialog::ErrorDialog, menu_bar::MenuBar, status_bar::StatusBar,
+    translator::Translator, viewport::Viewport, workspace::Workspace,
 };
 
 pub struct App {

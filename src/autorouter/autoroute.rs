@@ -14,12 +14,7 @@ use crate::{
     drawing::{band::BandTermsegIndex, graph::PrimitiveIndex, Collect},
     geometry::primitive::PrimitiveShape,
     layout::LayoutEdit,
-    router::{
-        astar::AstarStepper,
-        navcord::Navcord,
-        navmesh::{Navmesh, NavvertexIndex},
-        RouteStepper, Router,
-    },
+    router::{astar::AstarStepper, navcord::Navcord, navmesh::Navmesh, RouteStepper, Router},
     stepper::Step,
 };
 

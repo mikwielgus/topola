@@ -4,17 +4,7 @@
 
 //! Provides functionality to remove bands from the layout.
 
-use crate::{
-    board::AccessMesadata,
-    drawing::graph::PrimitiveIndex,
-    geometry::primitive::PrimitiveShape,
-    layout::LayoutEdit,
-    router::{
-        astar::AstarStepper,
-        navcord::Navcord,
-        navmesh::{Navmesh, NavvertexIndex},
-    },
-};
+use crate::{board::AccessMesadata, layout::LayoutEdit};
 
 use super::{
     invoker::{

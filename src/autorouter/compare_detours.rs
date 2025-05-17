@@ -14,11 +14,7 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{primitive::PrimitiveShape, shape::MeasureLength},
     graph::MakeRef,
-    router::{
-        astar::AstarStepper,
-        navcord::Navcord,
-        navmesh::{Navmesh, NavvertexIndex},
-    },
+    router::{astar::AstarStepper, navcord::Navcord, navmesh::Navmesh},
     stepper::Step,
 };
 

@@ -27,9 +27,7 @@ use topola::{
     router::navmesh::NavvertexIndex,
 };
 
-use crate::{
-    actions::Actions, config::Config, menu_bar::MenuBar, painter::Painter, workspace::Workspace,
-};
+use crate::{config::Config, menu_bar::MenuBar, painter::Painter, workspace::Workspace};
 
 pub struct Viewport {
     pub transform: egui::emath::TSTransform,

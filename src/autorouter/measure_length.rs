@@ -7,15 +7,7 @@
 //! the length of specified band selections.
 
 use crate::{
-    board::AccessMesadata,
-    drawing::graph::PrimitiveIndex,
-    geometry::{primitive::PrimitiveShape, shape::MeasureLength as MeasureLengthTrait},
-    graph::MakeRef,
-    router::{
-        astar::AstarStepper,
-        navcord::Navcord,
-        navmesh::{Navmesh, NavvertexIndex},
-    },
+    board::AccessMesadata, geometry::shape::MeasureLength as MeasureLengthTrait, graph::MakeRef,
 };
 
 use super::{

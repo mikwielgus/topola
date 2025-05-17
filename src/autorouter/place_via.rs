@@ -8,14 +8,7 @@
 
 use crate::{
     board::AccessMesadata,
-    drawing::graph::PrimitiveIndex,
-    geometry::primitive::PrimitiveShape,
     layout::{via::ViaWeight, LayoutEdit},
-    router::{
-        astar::AstarStepper,
-        navcord::Navcord,
-        navmesh::{Navmesh, NavvertexIndex},
-    },
 };
 
 use super::{
