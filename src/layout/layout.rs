@@ -102,6 +102,10 @@ impl<R: AccessRules> Layout<R> {
         self.drawing.remove_cane(recorder, cane, face)
     }
 
+    pub fn remove_termseg(&mut self, recorder: &mut LayoutEdit, termseg: BandTermsegIndex) {
+        self.drawing.remove_termseg(recorder, termseg)
+    }
+
     #[debug_ensures(ret.is_ok() -> self.drawing.node_count() == old(self.drawing.node_count()) + weight.to_layer - weight.from_layer + 2)]
     #[debug_ensures(ret.is_err() -> self.drawing.node_count() == old(self.drawing.node_count()))]
     /// Insert [`Via`] into the [`Layout`]

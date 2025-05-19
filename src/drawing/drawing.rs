@@ -406,6 +406,17 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(seg)
     }
 
+    #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() - 1))]
+    #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count() - 2))]
+    pub fn remove_termseg(
+        &mut self,
+        recorder: &mut DrawingEdit<CW, Cel>,
+        termseg: BandTermsegIndex,
+    ) {
+        self.recording_geometry_with_rtree
+            .remove_seg(recorder, termseg.into());
+    }
+
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() + 1))]
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().edge_count() >= old(self.recording_geometry_with_rtree.graph().edge_count() + 2))]
     #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]

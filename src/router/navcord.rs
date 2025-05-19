@@ -7,6 +7,7 @@ use petgraph::data::DataMap;
 
 use crate::{
     drawing::{
+        band::BandTermsegIndex,
         dot::FixedDotIndex,
         head::{BareHead, CaneHead, Head},
         rules::AccessRules,
@@ -16,12 +17,12 @@ use crate::{
 
 use super::{
     draw::Draw,
-    navcorder::NavcorderException,
+    navcorder::{Navcorder, NavcorderException},
     navmesh::{BinavvertexNodeIndex, Navmesh, NavvertexIndex},
 };
 
-/// The navcord is a data structure that holds the movable non-borrowing data of
-/// the currently running routing process.
+/// The `Navcord` is a data structure that holds the movable non-borrowing data
+/// of the currently running routing process.
 ///
 /// Note that this data structure is not a stepper, since steppers always
 /// progress linearly, whereas `Navcord` branches out to different states
@@ -37,6 +38,8 @@ pub struct Navcord {
     pub path: Vec<NavvertexIndex>,
     /// The head of the currently routed band.
     pub head: Head,
+    /// If the band is finished, stores the termseg that was used to finish it.
+    pub final_termseg: Option<BandTermsegIndex>,
     /// The width of the currently routed band.
     pub width: f64,
 }
@@ -53,6 +56,7 @@ impl Navcord {
             recorder,
             path: vec![source_navvertex],
             head: BareHead { face: source }.into(),
+            final_termseg: None,
             width,
         }
     }
@@ -94,7 +98,6 @@ impl Navcord {
 
     /// Advance the navcord and the currently routed band by one step to the
     /// navvertex `to`.
-    #[debug_ensures(ret.is_ok() -> matches!(self.head, Head::Cane(..)))]
     #[debug_ensures(ret.is_ok() -> self.path.len() == old(self.path.len() + 1))]
     #[debug_ensures(ret.is_err() -> self.path.len() == old(self.path.len()))]
     pub fn step_to<R: AccessRules>(
@@ -103,14 +106,26 @@ impl Navcord {
         navmesh: &Navmesh,
         to: NavvertexIndex,
     ) -> Result<(), NavcorderException> {
-        self.head = self.wrap(layout, navmesh, self.head, to)?.into();
+        if to == navmesh.destination_navvertex() {
+            let to_node_weight = navmesh.node_weight(to).unwrap();
+            let BinavvertexNodeIndex::FixedDot(to_dot) = to_node_weight.node else {
+                unreachable!();
+            };
 
-        // Now that the new head has been created, push the navvertex
-        // `to` onto the currently attempted path to start from it on
-        // the next `.step_to(...)` call or retreat from it later using
+            self.final_termseg = Some(layout.finish(navmesh, self, to_dot).unwrap());
+
+            // NOTE: We don't update the head here because there is currently
+            // no head variant that consists only of a seg, and I'm not sure if
+            // there should be one.
+        } else {
+            self.head = self.wrap(layout, navmesh, self.head, to)?.into();
+        }
+
+        // Now that the new part of the trace has been created, push the
+        // navvertex `to` onto the currently attempted path to start from it
+        // on the next `.step_to(...)` call or retreat from it later using
         // `.step_back(...)`.
         self.path.push(to);
-
         Ok(())
     }
 
@@ -120,11 +135,16 @@ impl Navcord {
         &mut self,
         layout: &mut Layout<R>,
     ) -> Result<(), NavcorderException> {
-        if let Head::Cane(head) = self.head {
-            self.head = layout.undo_cane(&mut self.recorder, head).unwrap();
+        if let Some(final_termseg) = self.final_termseg {
+            layout.remove_termseg(&mut self.recorder, final_termseg);
+            self.final_termseg = None;
         } else {
-            // "can't unwrap"
-            return Err(NavcorderException::CannotWrap);
+            if let Head::Cane(head) = self.head {
+                self.head = layout.undo_cane(&mut self.recorder, head).unwrap();
+            } else {
+                // "can't unwrap"
+                return Err(NavcorderException::CannotWrap);
+            }
         }
 
         // Now that the last head of the currently routed band was deleted, pop

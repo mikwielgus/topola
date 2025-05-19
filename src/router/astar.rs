@@ -132,7 +132,7 @@ where
     pub maybe_curr_node: Option<G::NodeId>,
     // FIXME: To work around edge references borrowing from the graph we collect then reiterate over them.
     pub edge_ids: VecDeque<G::EdgeId>,
-    // TODO: Rewrite this to be a well-designed state machine.
+    // TODO: Rewrite this to be a well-designed state machine. Booleans are a code smell.
     pub is_probing: bool,
 }
 
@@ -233,7 +233,7 @@ where
 
             if let Some(edge_id) = self.edge_ids.pop_front() {
                 // This lookup can be unwrapped without fear of panic since the node was
-                // necessarily scored before adding it to `visit_next`.
+                // necessarily scored before adding it to `.visit_next`.
                 let node_score = self.scores[&curr_node];
                 let edge = (&self.graph).edge_ref(edge_id);
 

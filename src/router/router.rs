@@ -19,7 +19,7 @@ use crate::{
         primitive::PrimitiveShape,
         shape::{AccessShape, MeasureLength},
     },
-    graph::{GetPetgraphIndex, MakeRef},
+    graph::MakeRef,
     layout::{Layout, LayoutEdit},
 };
 
@@ -69,21 +69,34 @@ impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAst
     ) -> Option<BandTermsegIndex> {
         let new_path = tracker.reconstruct_path_to(vertex);
 
-        self.layout
-            .rework_path(navmesh, self.navcord, &new_path[..])
-            .unwrap();
+        if vertex == navmesh.destination_navvertex() {
+            self.layout
+                .rework_path(navmesh, self.navcord, &new_path[..new_path.len() - 1])
+                .unwrap();
 
-        self.layout.finish(navmesh, self.navcord, self.target).ok()
+            // Set navcord members for consistency. The code would probably work
+            // without this, since A* will terminate now.
+            self.navcord.final_termseg = Some(
+                self.layout
+                    .finish(navmesh, self.navcord, self.target)
+                    .unwrap(),
+            );
+            self.navcord.path.push(vertex);
+
+            self.navcord.final_termseg
+        } else {
+            self.layout
+                .rework_path(navmesh, self.navcord, &new_path[..])
+                .unwrap();
+            None
+        }
     }
 
     fn place_probe(&mut self, navmesh: &Navmesh, edge: NavmeshEdgeReference) -> Option<f64> {
-        if edge.target().petgraph_index() == self.target.petgraph_index() {
-            return None;
-        }
-
         let old_head = self.navcord.head;
         let prev_head_length = old_head.ref_(self.layout.drawing()).length();
         let result = self.navcord.step_to(self.layout, navmesh, edge.target());
+
         let probe_length = self.navcord.head.ref_(self.layout.drawing()).length()
             + old_head.ref_(self.layout.drawing()).length()
             - prev_head_length;

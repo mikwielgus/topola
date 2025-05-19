@@ -15,7 +15,7 @@ use super::{
     loose::{GetPrevNextLoose, LooseIndex},
     primitive::MakePrimitiveShape,
     rules::AccessRules,
-    seg::{LoneLooseSegIndex, SeqLooseSegIndex},
+    seg::{LoneLooseSegIndex, SegIndex, SeqLooseSegIndex},
     Drawing,
 };
 
@@ -29,10 +29,19 @@ pub enum BandTermsegIndex {
 }
 
 impl From<BandTermsegIndex> for LooseIndex {
-    fn from(terminating_seg: BandTermsegIndex) -> Self {
-        match terminating_seg {
+    fn from(termseg: BandTermsegIndex) -> Self {
+        match termseg {
             BandTermsegIndex::Straight(seg) => LooseIndex::LoneSeg(seg),
             BandTermsegIndex::Bended(seg) => LooseIndex::SeqSeg(seg),
+        }
+    }
+}
+
+impl From<BandTermsegIndex> for SegIndex {
+    fn from(termseg: BandTermsegIndex) -> Self {
+        match termseg {
+            BandTermsegIndex::Straight(seg) => SegIndex::LoneLoose(seg),
+            BandTermsegIndex::Bended(seg) => SegIndex::SeqLoose(seg),
         }
     }
 }
