@@ -10,8 +10,6 @@ use core::fmt;
 use rstar::{RTree, AABB};
 use thiserror::Error;
 
-use crate::graph::{GenericIndex, GetPetgraphIndex};
-use crate::math::NoTangents;
 use crate::{
     drawing::{
         band::BandTermsegIndex,
@@ -32,17 +30,18 @@ use crate::{
             SegWeight, SeqLooseSegIndex, SeqLooseSegWeight,
         },
     },
-    graph::MakeRef,
-};
-use crate::{
     geometry::{
         edit::{ApplyGeometryEdit, GeometryEdit},
         primitive::{AccessPrimitiveShape, PrimitiveShape},
         recording_with_rtree::RecordingGeometryWithRtree,
+        shape::MeasureLength,
         with_rtree::BboxedIndex,
         AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
         GetLayer, GetOffset, GetSetPos, GetWidth,
     },
+    graph::MakeRef,
+    graph::{GenericIndex, GetPetgraphIndex},
+    math::NoTangents,
     math::RotationSense,
 };
 
@@ -814,6 +813,9 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<Cane, DrawingException> {
         let seg_to = self.add_dot_with_infringement_filtering(recorder, dot_weight, predicate)?;
+        // we just checked that we can insert a dot there
+        let to = self.add_dot_infringably(recorder, dot_weight);
+
         let seg = self
             .add_seg_with_infringement_filtering(
                 recorder,
@@ -824,14 +826,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             )
             .inspect_err(|_| {
                 self.recording_geometry_with_rtree
-                    .remove_dot(recorder, seg_to.into());
-            })?;
-
-        let to = self
-            .add_dot_with_infringement_filtering(recorder, dot_weight, predicate)
-            .inspect_err(|_| {
-                self.recording_geometry_with_rtree
-                    .remove_seg(recorder, seg.into());
+                    .remove_dot(recorder, to.into());
                 self.recording_geometry_with_rtree
                     .remove_dot(recorder, seg_to.into());
             })?;
@@ -858,6 +853,9 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 self.recording_geometry_with_rtree
                     .remove_dot(recorder, seg_to.into());
             })?;
+
+        #[cfg(debug_assertions)]
+        approx::assert_abs_diff_eq!(bend.primitive(self).shape().length(), 0.0);
 
         Ok(Cane {
             seg,

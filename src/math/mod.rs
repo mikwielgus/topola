@@ -251,5 +251,10 @@ pub fn dot_product(v1: Point, v2: Point) -> f64 {
 /// and its magnitude, since the resulting vector is always perpendicular to
 /// the plane anyway.
 pub fn perp_dot_product(v1: Point, v2: Point) -> f64 {
+    // catch numerical rounding errors
+    if approx::relative_eq!(v1.x(), v2.x()) && approx::relative_eq!(v1.y(), v2.y()) {
+        return 0.0;
+    }
+
     v1.x() * v2.y() - v1.y() * v2.x()
 }
