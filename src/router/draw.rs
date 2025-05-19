@@ -21,7 +21,7 @@ use crate::{
         seg::{GeneralSegWeight, LoneLooseSegWeight, SeqLooseSegWeight},
         DrawingException, Guide, Infringement,
     },
-    geometry::GetLayer,
+    geometry::{GetLayer, GetSetPos},
     layout::{Layout, LayoutEdit},
     math::{Circle, NoTangents, RotationSense},
 };
@@ -87,15 +87,15 @@ impl<R: AccessRules> Draw for Layout<R> {
             .drawing()
             .head_into_dot_segment(&head, into, width)
             .map_err(Into::<DrawException>::into)?;
-        let head = self
+        let (head, prev_head_to) = self
             .extend_head(recorder, head, tangent.start_point())
             .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
         let layer = head.face().primitive(self.drawing()).layer();
         let maybe_net = head.face().primitive(self.drawing()).maybe_net();
 
-        Ok(match head.face() {
-            DotIndex::Fixed(dot) => BandTermsegIndex::Straight(
-                self.add_lone_loose_seg(
+        match head.face() {
+            DotIndex::Fixed(dot) => self
+                .add_lone_loose_seg(
                     recorder,
                     dot,
                     into,
@@ -105,10 +105,9 @@ impl<R: AccessRules> Draw for Layout<R> {
                         maybe_net,
                     }),
                 )
-                .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?,
-            ),
-            DotIndex::Loose(dot) => BandTermsegIndex::Bended(
-                self.add_seq_loose_seg(
+                .map(BandTermsegIndex::Straight),
+            DotIndex::Loose(dot) => self
+                .add_seq_loose_seg(
                     recorder,
                     into.into(),
                     dot,
@@ -118,8 +117,12 @@ impl<R: AccessRules> Draw for Layout<R> {
                         maybe_net,
                     }),
                 )
-                .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?,
-            ),
+                .map(BandTermsegIndex::Bended),
+        }
+        .map_err(|err| {
+            // move the head back to where it came from
+            self.extend_head(recorder, head, prev_head_to).unwrap();
+            DrawException::CannotFinishIn(into, err.into())
         })
     }
 
@@ -213,7 +216,7 @@ trait DrawPrivate {
         recorder: &mut LayoutEdit,
         head: Head,
         to: Point,
-    ) -> Result<Head, Infringement>;
+    ) -> Result<(Head, Point), Infringement>;
 
     fn cane(
         &mut self,
@@ -243,8 +246,12 @@ impl<R: AccessRules> DrawPrivate for Layout<R> {
         width: f64,
         offset: f64,
     ) -> Result<CaneHead, DrawingException> {
-        let head = self.extend_head(recorder, head, from)?;
+        let (head, prev_head_to) = self.extend_head(recorder, head, from)?;
         self.cane(recorder, head, around, to, sense, width, offset)
+            .inspect_err(|_| {
+                // move the head back to where it came from
+                self.extend_head(recorder, head, prev_head_to).unwrap();
+            })
     }
 
     #[debug_ensures(self.drawing().node_count() == old(self.drawing().node_count()))]
@@ -253,12 +260,16 @@ impl<R: AccessRules> DrawPrivate for Layout<R> {
         recorder: &mut LayoutEdit,
         head: Head,
         to: Point,
-    ) -> Result<Head, Infringement> {
+    ) -> Result<(Head, Point), Infringement> {
         if let Head::Cane(head) = head {
+            let old_pos = self.drawing().geometry().dot_weight(head.face.into()).pos();
             self.move_dot(recorder, head.face.into(), to)?;
-            Ok(Head::Cane(head))
+            Ok((Head::Cane(head), old_pos))
         } else {
-            Ok(head)
+            Ok((
+                head,
+                self.drawing().geometry().dot_weight(head.face()).pos(),
+            ))
         }
     }
 
