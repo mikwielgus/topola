@@ -87,43 +87,44 @@ impl<R: AccessRules> Draw for Layout<R> {
             .drawing()
             .head_into_dot_segment(&head, into, width)
             .map_err(Into::<DrawException>::into)?;
-        let (head, prev_head_to) = self
-            .extend_head(recorder, head, tangent.start_point())
-            .map_err(|err| DrawException::CannotFinishIn(into, err.into()))?;
-        let layer = head.face().primitive(self.drawing()).layer();
-        let maybe_net = head.face().primitive(self.drawing()).maybe_net();
 
-        match head.face() {
-            DotIndex::Fixed(dot) => self
-                .add_lone_loose_seg(
-                    recorder,
-                    dot,
-                    into,
-                    LoneLooseSegWeight(GeneralSegWeight {
-                        width,
-                        layer,
-                        maybe_net,
-                    }),
-                )
-                .map(BandTermsegIndex::Lone),
-            DotIndex::Loose(dot) => self
-                .add_seq_loose_seg(
-                    recorder,
-                    into.into(),
-                    dot,
-                    SeqLooseSegWeight(GeneralSegWeight {
-                        width,
-                        layer,
-                        maybe_net,
-                    }),
-                )
-                .map(BandTermsegIndex::Seq),
-        }
-        .map_err(|err| {
-            // move the head back to where it came from
-            self.extend_head(recorder, head, prev_head_to).unwrap();
-            DrawException::CannotFinishIn(into, err.into())
-        })
+        let (layer, maybe_net) = {
+            let face = head.face().primitive(self.drawing());
+            (face.layer(), face.maybe_net())
+        };
+
+        self.extend_head(
+            recorder,
+            head,
+            tangent.start_point(),
+            |this, recorder| match head.face() {
+                DotIndex::Fixed(dot) => this
+                    .add_lone_loose_seg(
+                        recorder,
+                        dot,
+                        into,
+                        LoneLooseSegWeight(GeneralSegWeight {
+                            width,
+                            layer,
+                            maybe_net,
+                        }),
+                    )
+                    .map(BandTermsegIndex::Lone),
+                DotIndex::Loose(dot) => this
+                    .add_seq_loose_seg(
+                        recorder,
+                        into.into(),
+                        dot,
+                        SeqLooseSegWeight(GeneralSegWeight {
+                            width,
+                            layer,
+                            maybe_net,
+                        }),
+                    )
+                    .map(BandTermsegIndex::Seq),
+            },
+        )
+        .map_err(|err| DrawException::CannotFinishIn(into, err.into()))
     }
 
     #[debug_ensures(ret.is_ok() -> self.drawing().node_count() == old(self.drawing().node_count() + 4))]
@@ -211,12 +212,13 @@ trait DrawPrivate {
         offset: f64,
     ) -> Result<CaneHead, DrawingException>;
 
-    fn extend_head(
+    fn extend_head<T, E: From<Infringement>>(
         &mut self,
         recorder: &mut LayoutEdit,
         head: Head,
         to: Point,
-    ) -> Result<(Head, Point), Infringement>;
+        then: impl FnOnce(&mut Self, &mut LayoutEdit) -> Result<T, E>,
+    ) -> Result<T, E>;
 
     fn cane(
         &mut self,
@@ -246,30 +248,27 @@ impl<R: AccessRules> DrawPrivate for Layout<R> {
         width: f64,
         offset: f64,
     ) -> Result<CaneHead, DrawingException> {
-        let (head, prev_head_to) = self.extend_head(recorder, head, from)?;
-        self.cane(recorder, head, around, to, sense, width, offset)
-            .inspect_err(|_| {
-                // move the head back to where it came from
-                self.extend_head(recorder, head, prev_head_to).unwrap();
-            })
+        self.extend_head(recorder, head, from, |this, recorder| {
+            this.cane(recorder, head, around, to, sense, width, offset)
+        })
     }
 
-    #[debug_ensures(self.drawing().node_count() == old(self.drawing().node_count()))]
-    fn extend_head(
+    fn extend_head<T, E: From<Infringement>>(
         &mut self,
         recorder: &mut LayoutEdit,
         head: Head,
         to: Point,
-    ) -> Result<(Head, Point), Infringement> {
+        then: impl FnOnce(&mut Self, &mut LayoutEdit) -> Result<T, E>,
+    ) -> Result<T, E> {
         if let Head::Cane(head) = head {
             let old_pos = self.drawing().geometry().dot_weight(head.face.into()).pos();
             self.move_dot(recorder, head.face.into(), to)?;
-            Ok((Head::Cane(head), old_pos))
+            then(self, recorder).inspect_err(|_| {
+                // move the head back to where it came from
+                self.move_dot(recorder, head.face.into(), old_pos).unwrap();
+            })
         } else {
-            Ok((
-                head,
-                self.drawing().geometry().dot_weight(head.face()).pos(),
-            ))
+            then(self, recorder)
         }
     }
 
