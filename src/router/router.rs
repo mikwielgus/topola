@@ -12,6 +12,7 @@ use crate::{
         band::BandTermsegIndex,
         dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
+        head::Head,
         primitive::MakePrimitiveShape,
         rules::AccessRules,
     },
@@ -75,7 +76,7 @@ impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAst
                 .unwrap();
 
             // Set navcord members for consistency. The code would probably work
-            // without this, since A* will terminate now.
+            // without this, since A* will terminate now anyway.
             self.navcord.final_termseg = Some(
                 self.layout
                     .finish(navmesh, self.navcord, self.target)
@@ -94,12 +95,24 @@ impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAst
 
     fn place_probe(&mut self, navmesh: &Navmesh, edge: NavmeshEdgeReference) -> Option<f64> {
         let old_head = self.navcord.head;
-        let prev_head_length = old_head.ref_(self.layout.drawing()).length();
         let result = self.navcord.step_to(self.layout, navmesh, edge.target());
 
-        let probe_length = self.navcord.head.ref_(self.layout.drawing()).length()
-            + old_head.ref_(self.layout.drawing()).length()
-            - prev_head_length;
+        let prev_bend_length = match old_head {
+            Head::Cane(old_cane_head) => self
+                .layout
+                .drawing()
+                .primitive(old_cane_head.cane.bend)
+                .shape()
+                .length(),
+            Head::Bare(..) => 0.0,
+        };
+
+        let probe_length = prev_bend_length
+            // NOTE: the probe's bend length is always 0 here because such is
+            // the initial state of a cane (before getting extended, but this
+            // is never done for probes). So we could as well only measure the
+            // seg's length.
+            + self.navcord.head.ref_(self.layout.drawing()).length();
 
         match result {
             Ok(..) => Some(probe_length),
