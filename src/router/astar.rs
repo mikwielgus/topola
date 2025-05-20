@@ -126,7 +126,9 @@ where
 {
     pub graph: G,
     pub visit_next: BinaryHeap<MinScored<K, G::NodeId>>,
+    /// Also known as the g-scores, or just g.
     pub scores: BTreeMap<G::NodeId, K>,
+    /// Also known as the f-scores, or just f.
     pub estimate_scores: BTreeMap<G::NodeId, K>,
     pub path_tracker: PathTracker<G>,
     pub maybe_curr_node: Option<G::NodeId>,
@@ -170,11 +172,10 @@ pub enum AstarContinueStatus {
     /// A* has now visited a new node.
     ///
     /// Quick recap if you have been trying to remember what is the difference
-    /// between visiting and probing: when a node is visited, it is placed at
-    /// the head of the current path, whereas probing is done as part of a scan
-    /// that happens *around* the currently visited node. Suitable newly scanned
-    /// nodes are added to a priority queue, from which A* only later takes out
-    /// elements to actually visit.
+    /// between probing and visiting: probing is done as part of a scan of
+    /// neighboring nodes around the currently visited node to add them to the
+    /// priority queue, whereas when a node is visited it actually *becomes* the
+    /// currently visited node.
     Visited,
 }
 

@@ -37,8 +37,8 @@ impl<'a, CW: 'a, Cel: 'a, R: 'a> MakeRef<'a, Drawing<CW, Cel, R>> for Head {
 }
 
 /// The head is bare when the routed band is not pulled out (i.e. is of zero
-/// length). This happens on the first routing step and when the routed band was
-/// completely contracted due to the routing algorithm backtracking. In these
+/// length). This happens on the first routing step and when the routed band
+/// was completely retracted due to the routing algorithm backtracking. In these
 /// situations a cane head cannot be used because there is obviously no cane
 /// behind the face, and the face itself is fixed instead of loose.
 #[derive(Debug, Clone, Copy)]
