@@ -189,7 +189,7 @@ impl<M: AccessMesadata> Board<M> {
         source: FixedDotIndex,
         target: FixedDotIndex,
         band: BandUid,
-    ) {
+    ) -> bool {
         let source_pinname = self
             .node_pinname(&GenericNode::Primitive(source.into()))
             .unwrap()
@@ -198,8 +198,27 @@ impl<M: AccessMesadata> Board<M> {
             .node_pinname(&GenericNode::Primitive(target.into()))
             .unwrap()
             .to_string();
-        self.band_bandname
-            .insert(band, BandName::from((source_pinname, target_pinname)));
+        let bandname = BandName::from((source_pinname, target_pinname));
+        if self.band_bandname.get_by_right(&bandname).is_some() {
+            false
+        } else {
+            self.band_bandname.insert(band, bandname);
+            true
+        }
+    }
+
+    pub fn band_between_nodes(
+        &self,
+        source: FixedDotIndex,
+        target: FixedDotIndex,
+    ) -> Option<BandUid> {
+        let source_pinname = self
+            .node_pinname(&GenericNode::Primitive(source.into()))
+            .unwrap();
+        let target_pinname = self
+            .node_pinname(&GenericNode::Primitive(target.into()))
+            .unwrap();
+        self.band_between_pins(source_pinname, target_pinname)
     }
 
     /// Finds a band between two pin names.

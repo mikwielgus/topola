@@ -6,7 +6,7 @@ use enum_dispatch::enum_dispatch;
 use petgraph::stable_graph::NodeIndex;
 
 use crate::{
-    geometry::shape::MeasureLength,
+    geometry::{shape::MeasureLength, GetLayer},
     graph::{GetPetgraphIndex, MakeRef},
 };
 
@@ -64,6 +64,16 @@ impl<'a, CW: 'a, Cel: 'a, R: 'a> BandRef<'a, CW, Cel, R> {
         drawing: &'a Drawing<CW, Cel, R>,
     ) -> BandRef<'a, CW, Cel, R> {
         Self { first_seg, drawing }
+    }
+}
+
+impl<CW: Clone, Cel: Copy, R: AccessRules> GetLayer for BandRef<'_, CW, Cel, R> {
+    fn layer(&self) -> usize {
+        match self.first_seg {
+            BandTermsegIndex::Straight(seg) => seg.primitive(self.drawing),
+            BandTermsegIndex::Bended(seg) => seg.primitive(self.drawing),
+        }
+        .layer()
     }
 }
 

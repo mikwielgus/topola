@@ -69,9 +69,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, (f64, f64)> for CompareDetoursExecut
         }
 
         match self.autoroute.step(autorouter)? {
-            ControlFlow::Continue(AutorouteContinueStatus::Running) => {
-                Ok(ControlFlow::Continue(()))
-            }
+            ControlFlow::Continue(
+                AutorouteContinueStatus::Running | AutorouteContinueStatus::Skipped(_),
+            ) => Ok(ControlFlow::Continue(())),
             ControlFlow::Continue(AutorouteContinueStatus::Routed(band_termseg)) => {
                 let length = band_termseg
                     .ref_(autorouter.board.layout().drawing())

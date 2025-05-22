@@ -31,6 +31,8 @@ pub enum AutorouteContinueStatus {
     Running,
     /// A specific segment has been successfully routed.
     Routed(BandTermsegIndex),
+    /// A specific segment was already routed and has been skipped.
+    Skipped(BandTermsegIndex),
 }
 
 /// Manages the autorouting process across multiple ratlines.
@@ -106,29 +108,35 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
 
         let (source, target) = autorouter.ratline_endpoints(curr_ratline);
 
-        let band_termseg = {
-            let mut router =
-                Router::new(autorouter.board.layout_mut(), self.options.router_options);
+        let ret = if let Some(band_termseg) = autorouter.board.band_between_nodes(source, target) {
+            AutorouteContinueStatus::Skipped(band_termseg[false])
+        } else {
+            let band_termseg = {
+                let mut router =
+                    Router::new(autorouter.board.layout_mut(), self.options.router_options);
 
-            let ControlFlow::Break(band_termseg) = route.step(&mut router)? else {
-                return Ok(ControlFlow::Continue(AutorouteContinueStatus::Running));
+                let ControlFlow::Break(band_termseg) = route.step(&mut router)? else {
+                    return Ok(ControlFlow::Continue(AutorouteContinueStatus::Running));
+                };
+                band_termseg
             };
-            band_termseg
+
+            let band = autorouter
+                .board
+                .layout()
+                .drawing()
+                .loose_band_uid(band_termseg.into());
+
+            autorouter
+                .ratsnest
+                .assign_band_termseg_to_ratline(self.curr_ratline.unwrap(), band_termseg);
+
+            autorouter
+                .board
+                .try_set_band_between_nodes(source, target, band);
+
+            AutorouteContinueStatus::Routed(band_termseg)
         };
-
-        let band = autorouter
-            .board
-            .layout()
-            .drawing()
-            .loose_band_uid(band_termseg.into());
-
-        autorouter
-            .ratsnest
-            .assign_band_termseg_to_ratline(self.curr_ratline.unwrap(), band_termseg);
-
-        autorouter
-            .board
-            .try_set_band_between_nodes(source, target, band);
 
         if let Some(new_ratline) = self.ratlines_iter.next() {
             let (source, target) = autorouter.ratline_endpoints(new_ratline);
@@ -154,9 +162,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
             self.curr_ratline = None;
         }
 
-        Ok(ControlFlow::Continue(AutorouteContinueStatus::Routed(
-            band_termseg,
-        )))
+        Ok(ControlFlow::Continue(ret))
     }
 }
 
