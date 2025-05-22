@@ -18,7 +18,7 @@ use crate::{
     router::{
         astar::AstarStepper,
         navcord::Navcord,
-        navmesh::{Navmesh, NavvertexIndex},
+        navmesh::{Navmesh, NavnodeIndex},
     },
     stepper::Step,
 };
@@ -76,11 +76,11 @@ pub trait GetObstacles {
 /// Trait for getting text strings with debug information attached to navmesh
 /// edges and vertices.
 pub trait GetNavmeshDebugTexts {
-    fn navvertex_debug_text(&self, _navvertex: NavvertexIndex) -> Option<&str> {
+    fn navnode_debug_text(&self, _navnode: NavnodeIndex) -> Option<&str> {
         None
     }
 
-    fn navedge_debug_text(&self, _navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
+    fn navedge_debug_text(&self, _navedge: (NavnodeIndex, NavnodeIndex)) -> Option<&str> {
         None
     }
 }

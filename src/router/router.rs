@@ -29,7 +29,7 @@ use super::{
     draw::DrawException,
     navcord::Navcord,
     navcorder::{Navcorder, NavcorderException},
-    navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavvertexIndex},
+    navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavnodeIndex},
     route::RouteStepper,
 };
 
@@ -65,12 +65,12 @@ impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAst
     fn is_goal(
         &mut self,
         navmesh: &Navmesh,
-        vertex: NavvertexIndex,
+        vertex: NavnodeIndex,
         tracker: &PathTracker<Navmesh>,
     ) -> Option<BandTermsegIndex> {
         let new_path = tracker.reconstruct_path_to(vertex);
 
-        if vertex == navmesh.destination_navvertex() {
+        if vertex == navmesh.destination_navnode() {
             self.layout
                 .rework_path(navmesh, self.navcord, &new_path[..new_path.len() - 1])
                 .unwrap();
@@ -137,7 +137,7 @@ impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAst
         self.navcord.step_back(self.layout);
     }
 
-    fn estimate_cost(&mut self, navmesh: &Navmesh, vertex: NavvertexIndex) -> f64 {
+    fn estimate_cost(&mut self, navmesh: &Navmesh, vertex: NavnodeIndex) -> f64 {
         let start_point = PrimitiveIndex::from(navmesh.node_weight(vertex).unwrap().node)
             .primitive(self.layout.drawing())
             .shape()

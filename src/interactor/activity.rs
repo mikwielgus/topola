@@ -23,7 +23,7 @@ use crate::{
     router::{
         astar::AstarStepper,
         navcord::Navcord,
-        navmesh::{Navmesh, NavvertexIndex},
+        navmesh::{Navmesh, NavnodeIndex},
     },
     stepper::{Abort, Step},
 };
@@ -150,11 +150,11 @@ impl GetObstacles for ActivityStepperWithStatus {
 }
 
 impl GetNavmeshDebugTexts for ActivityStepperWithStatus {
-    fn navvertex_debug_text(&self, navvertex: NavvertexIndex) -> Option<&str> {
-        self.activity.navvertex_debug_text(navvertex)
+    fn navnode_debug_text(&self, navnode: NavnodeIndex) -> Option<&str> {
+        self.activity.navnode_debug_text(navnode)
     }
 
-    fn navedge_debug_text(&self, navedge: (NavvertexIndex, NavvertexIndex)) -> Option<&str> {
+    fn navedge_debug_text(&self, navedge: (NavnodeIndex, NavnodeIndex)) -> Option<&str> {
         self.activity.navedge_debug_text(navedge)
     }
 }

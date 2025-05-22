@@ -18,7 +18,7 @@ use crate::{
 use super::{
     draw::Draw,
     navcorder::{Navcorder, NavcorderException},
-    navmesh::{BinavvertexNodeIndex, Navmesh, NavvertexIndex},
+    navmesh::{BinavnodeNodeIndex, Navmesh, NavnodeIndex},
 };
 
 /// The `Navcord` is a data structure that holds the movable non-borrowing data
@@ -35,7 +35,7 @@ pub struct Navcord {
     /// The layout edit which we are currently recording.
     pub recorder: LayoutEdit,
     /// The currently attempted path.
-    pub path: Vec<NavvertexIndex>,
+    pub path: Vec<NavnodeIndex>,
     /// The head of the currently routed band.
     pub head: Head,
     /// If the band is finished, stores the termseg that was used to finish it.
@@ -49,25 +49,25 @@ impl Navcord {
     pub fn new(
         recorder: LayoutEdit,
         source: FixedDotIndex,
-        source_navvertex: NavvertexIndex,
+        source_navnode: NavnodeIndex,
         width: f64,
     ) -> Navcord {
         Self {
             recorder,
-            path: vec![source_navvertex],
+            path: vec![source_navnode],
             head: BareHead { face: source }.into(),
             final_termseg: None,
             width,
         }
     }
 
-    /// From the current head `head` wrap a new head around the navvertex `around`.
+    /// From the current head `head` wrap a new head around the navnode `around`.
     fn wrap(
         &mut self,
         layout: &mut Layout<impl AccessRules>,
         navmesh: &Navmesh,
         head: Head,
-        around: NavvertexIndex,
+        around: NavnodeIndex,
     ) -> Result<CaneHead, NavcorderException> {
         let around_node_weight = navmesh.node_weight(around).unwrap();
         let sense = around_node_weight
@@ -75,17 +75,17 @@ impl Navcord {
             .ok_or(NavcorderException::CannotWrap)?;
 
         match around_node_weight.node {
-            BinavvertexNodeIndex::FixedDot(dot) => {
+            BinavnodeNodeIndex::FixedDot(dot) => {
                 layout.cane_around_dot(&mut self.recorder, head, dot, sense, self.width)
             }
-            BinavvertexNodeIndex::FixedBend(fixed_bend) => layout.cane_around_bend(
+            BinavnodeNodeIndex::FixedBend(fixed_bend) => layout.cane_around_bend(
                 &mut self.recorder,
                 head,
                 fixed_bend.into(),
                 sense,
                 self.width,
             ),
-            BinavvertexNodeIndex::LooseBend(loose_bend) => layout.cane_around_bend(
+            BinavnodeNodeIndex::LooseBend(loose_bend) => layout.cane_around_bend(
                 &mut self.recorder,
                 head,
                 loose_bend.into(),
@@ -97,18 +97,18 @@ impl Navcord {
     }
 
     /// Advance the navcord and the currently routed band by one step to the
-    /// navvertex `to`.
+    /// navnode `to`.
     #[debug_ensures(ret.is_ok() -> self.path.len() == old(self.path.len() + 1))]
     #[debug_ensures(ret.is_err() -> self.path.len() == old(self.path.len()))]
     pub fn step_to<R: AccessRules>(
         &mut self,
         layout: &mut Layout<R>,
         navmesh: &Navmesh,
-        to: NavvertexIndex,
+        to: NavnodeIndex,
     ) -> Result<(), NavcorderException> {
-        if to == navmesh.destination_navvertex() {
+        if to == navmesh.destination_navnode() {
             let to_node_weight = navmesh.node_weight(to).unwrap();
-            let BinavvertexNodeIndex::FixedDot(to_dot) = to_node_weight.node else {
+            let BinavnodeNodeIndex::FixedDot(to_dot) = to_node_weight.node else {
                 unreachable!();
             };
 
@@ -122,7 +122,7 @@ impl Navcord {
         }
 
         // Now that the new part of the trace has been created, push the
-        // navvertex `to` onto the currently attempted path to start from it
+        // navnode `to` onto the currently attempted path to start from it
         // on the next `.step_to(...)` call or retreat from it later using
         // `.step_back(...)`.
         self.path.push(to);
@@ -148,7 +148,7 @@ impl Navcord {
         }
 
         // Now that the last head of the currently routed band was deleted, pop
-        // the last navvertex from the currently attempted path so that it is up
+        // the last navnode from the currently attempted path so that it is up
         // to date.
         self.path.pop();
         Ok(())

@@ -39,54 +39,54 @@ use crate::{
 use super::RouterOptions;
 
 #[derive(Clone, Copy, Eq, Ord, PartialEq, PartialOrd)]
-pub struct NavvertexIndex(pub NodeIndex<usize>);
+pub struct NavnodeIndex(pub NodeIndex<usize>);
 
-impl core::fmt::Debug for NavvertexIndex {
+impl core::fmt::Debug for NavnodeIndex {
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        write!(f, "NavvertexIndex({})", self.0.index())
+        write!(f, "NavnodeIndex({})", self.0.index())
     }
 }
 
-impl GetPetgraphIndex for NavvertexIndex {
+impl GetPetgraphIndex for NavnodeIndex {
     fn petgraph_index(&self) -> NodeIndex<usize> {
         self.0
     }
 }
 
-/// A binavvertex is a pair of navvertices, one clockwise and the other
-/// counterclockwise. Unlike their constituents, binavvertices are themselves
-/// not considered navvertices.
+/// A binavnode is a pair of navnodes, one clockwise and the other
+/// counterclockwise. Unlike their constituents, binavnodes are themselves
+/// not considered navnodes.
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub enum BinavvertexNodeIndex {
+pub enum BinavnodeNodeIndex {
     FixedDot(FixedDotIndex),
     FixedBend(FixedBendIndex),
     LooseBend(LooseBendIndex),
 }
 
-impl From<BinavvertexNodeIndex> for PrimitiveIndex {
-    fn from(vertex: BinavvertexNodeIndex) -> Self {
+impl From<BinavnodeNodeIndex> for PrimitiveIndex {
+    fn from(vertex: BinavnodeNodeIndex) -> Self {
         match vertex {
-            BinavvertexNodeIndex::FixedDot(dot) => PrimitiveIndex::FixedDot(dot),
-            BinavvertexNodeIndex::FixedBend(bend) => PrimitiveIndex::FixedBend(bend),
-            BinavvertexNodeIndex::LooseBend(bend) => PrimitiveIndex::LooseBend(bend),
+            BinavnodeNodeIndex::FixedDot(dot) => PrimitiveIndex::FixedDot(dot),
+            BinavnodeNodeIndex::FixedBend(bend) => PrimitiveIndex::FixedBend(bend),
+            BinavnodeNodeIndex::LooseBend(bend) => PrimitiveIndex::LooseBend(bend),
         }
     }
 }
 
-impl From<BinavvertexNodeIndex> for GearIndex {
-    fn from(vertex: BinavvertexNodeIndex) -> Self {
+impl From<BinavnodeNodeIndex> for GearIndex {
+    fn from(vertex: BinavnodeNodeIndex) -> Self {
         match vertex {
-            BinavvertexNodeIndex::FixedDot(dot) => GearIndex::FixedDot(dot),
-            BinavvertexNodeIndex::FixedBend(bend) => GearIndex::FixedBend(bend),
-            BinavvertexNodeIndex::LooseBend(bend) => GearIndex::LooseBend(bend),
+            BinavnodeNodeIndex::FixedDot(dot) => GearIndex::FixedDot(dot),
+            BinavnodeNodeIndex::FixedBend(bend) => GearIndex::FixedBend(bend),
+            BinavnodeNodeIndex::LooseBend(bend) => GearIndex::LooseBend(bend),
         }
     }
 }
 
 /// Trianvertices are the vertices of the triangulation before it is converted
 /// to the navmesh by multiplying each of them into more vertices (called
-/// navvertices). Every trianvertex corresponds to one or more binavvertices on
+/// navnodes). Every trianvertex corresponds to one or more binavnodes on
 /// the navmesh.
 ///
 /// The name "trianvertex" is a shortening of "triangulation vertex".
@@ -97,11 +97,11 @@ enum TrianvertexNodeIndex {
     FixedBend(FixedBendIndex),
 }
 
-impl From<TrianvertexNodeIndex> for BinavvertexNodeIndex {
+impl From<TrianvertexNodeIndex> for BinavnodeNodeIndex {
     fn from(vertex: TrianvertexNodeIndex) -> Self {
         match vertex {
-            TrianvertexNodeIndex::FixedDot(dot) => BinavvertexNodeIndex::FixedDot(dot),
-            TrianvertexNodeIndex::FixedBend(bend) => BinavvertexNodeIndex::FixedBend(bend),
+            TrianvertexNodeIndex::FixedDot(dot) => BinavnodeNodeIndex::FixedDot(dot),
+            TrianvertexNodeIndex::FixedBend(bend) => BinavnodeNodeIndex::FixedBend(bend),
         }
     }
 }
@@ -125,15 +125,16 @@ impl HasPosition for TrianvertexWeight {
     }
 }
 
-/// The names "navvertex" and "navmesh vertex" are equivalent to "navigation vertex".
+/// The terms "navnode" and "navmesh vertex", "navmesh node", "navigation
+/// vertex", "navigation node" are all equivalent.
 ///
 /// See the following blog post for more information and a visualization of the navmesh
 /// during autorouting: <https://topola.dev/blog/2024/07/20/junejuly-2024-development-update/#advanced-debug-visualization>
 #[derive(Debug, Clone)]
-pub struct NavvertexWeight {
-    pub node: BinavvertexNodeIndex,
+pub struct NavnodeWeight {
+    pub node: BinavnodeNodeIndex,
 
-    /// There are two navvertices for each navigable node:
+    /// There are two navnodes for each navigable node:
     /// one is clockwise (`Some(true)`), the other counterclockwise (`Some(false)`).
     /// The origin and destination nodes however have
     /// only one corresponding navmesh vertex each (`None`).
@@ -155,11 +156,11 @@ pub enum NavmeshError {
 /// The name "navmesh" is a blend of "navigation mesh".
 #[derive(Debug, Clone)]
 pub struct Navmesh {
-    graph: UnGraph<NavvertexWeight, (), usize>,
+    graph: UnGraph<NavnodeWeight, (), usize>,
     origin: FixedDotIndex,
-    origin_navvertex: NavvertexIndex,
+    origin_navnode: NavnodeIndex,
     destination: FixedDotIndex,
-    destination_navvertex: NavvertexIndex,
+    destination_navnode: NavnodeIndex,
 }
 
 impl Navmesh {
@@ -213,37 +214,37 @@ impl Navmesh {
         destination: FixedDotIndex,
         options: RouterOptions,
     ) -> Result<Self, NavmeshError> {
-        let mut graph: UnGraph<NavvertexWeight, (), usize> = UnGraph::default();
-        let mut origin_navvertex = None;
-        let mut destination_navvertex = None;
+        let mut graph: UnGraph<NavnodeWeight, (), usize> = UnGraph::default();
+        let mut origin_navnode = None;
+        let mut destination_navnode = None;
 
         let mut map = BTreeMap::new();
 
         for trianvertex in triangulation.node_identifiers() {
             if trianvertex == origin.into() {
-                let navvertex = graph.add_node(NavvertexWeight {
+                let navnode = graph.add_node(NavnodeWeight {
                     node: trianvertex.into(),
                     maybe_sense: None,
                 });
 
-                origin_navvertex = Some(navvertex);
-                map.insert(trianvertex, vec![(navvertex, navvertex)]);
+                origin_navnode = Some(navnode);
+                map.insert(trianvertex, vec![(navnode, navnode)]);
             } else if trianvertex == destination.into() {
-                let navvertex = graph.add_node(NavvertexWeight {
+                let navnode = graph.add_node(NavnodeWeight {
                     node: trianvertex.into(),
                     maybe_sense: None,
                 });
 
-                destination_navvertex = Some(navvertex);
-                map.insert(trianvertex, vec![(navvertex, navvertex)]);
+                destination_navnode = Some(navnode);
+                map.insert(trianvertex, vec![(navnode, navnode)]);
             } else {
                 map.insert(trianvertex, vec![]);
 
                 let mut gear =
-                    Into::<GearIndex>::into(Into::<BinavvertexNodeIndex>::into(trianvertex));
+                    Into::<GearIndex>::into(Into::<BinavnodeNodeIndex>::into(trianvertex));
 
                 if options.squeeze_through_under_bends {
-                    Self::add_node_to_graph_and_map_as_binavvertex(
+                    Self::add_node_to_graph_and_map_as_binavnode(
                         &mut graph,
                         &mut map,
                         trianvertex,
@@ -252,7 +253,7 @@ impl Navmesh {
 
                     if options.wrap_around_bands {
                         while let Some(bend) = gear.ref_(layout.drawing()).next_gear() {
-                            Self::add_node_to_graph_and_map_as_binavvertex(
+                            Self::add_node_to_graph_and_map_as_binavnode(
                                 &mut graph,
                                 &mut map,
                                 trianvertex,
@@ -269,14 +270,14 @@ impl Navmesh {
                         gear = bend.into();
                     }
 
-                    Self::add_node_to_graph_and_map_as_binavvertex(
+                    Self::add_node_to_graph_and_map_as_binavnode(
                         &mut graph,
                         &mut map,
                         trianvertex,
                         bend.into(),
                     );
                 } else {
-                    Self::add_node_to_graph_and_map_as_binavvertex(
+                    Self::add_node_to_graph_and_map_as_binavnode(
                         &mut graph,
                         &mut map,
                         trianvertex,
@@ -287,12 +288,12 @@ impl Navmesh {
         }
 
         for edge in triangulation.edge_references() {
-            for (from_navvertex1, from_navvertex2) in map[&edge.source()].iter() {
-                for (to_navvertex1, to_navvertex2) in map[&edge.target()].iter() {
-                    graph.update_edge(*from_navvertex1, *to_navvertex1, ());
-                    graph.update_edge(*from_navvertex1, *to_navvertex2, ());
-                    graph.update_edge(*from_navvertex2, *to_navvertex1, ());
-                    graph.update_edge(*from_navvertex2, *to_navvertex2, ());
+            for (from_navnode1, from_navnode2) in map[&edge.source()].iter() {
+                for (to_navnode1, to_navnode2) in map[&edge.target()].iter() {
+                    graph.update_edge(*from_navnode1, *to_navnode1, ());
+                    graph.update_edge(*from_navnode1, *to_navnode2, ());
+                    graph.update_edge(*from_navnode2, *to_navnode1, ());
+                    graph.update_edge(*from_navnode2, *to_navnode2, ());
                 }
             }
         }
@@ -300,35 +301,35 @@ impl Navmesh {
         Ok(Self {
             graph,
             origin,
-            origin_navvertex: NavvertexIndex(origin_navvertex.unwrap()),
+            origin_navnode: NavnodeIndex(origin_navnode.unwrap()),
             destination,
-            destination_navvertex: NavvertexIndex(destination_navvertex.unwrap()),
+            destination_navnode: NavnodeIndex(destination_navnode.unwrap()),
         })
     }
 
-    fn add_node_to_graph_and_map_as_binavvertex(
-        graph: &mut UnGraph<NavvertexWeight, (), usize>,
+    fn add_node_to_graph_and_map_as_binavnode(
+        graph: &mut UnGraph<NavnodeWeight, (), usize>,
         map: &mut BTreeMap<TrianvertexNodeIndex, Vec<(NodeIndex<usize>, NodeIndex<usize>)>>,
         trianvertex: TrianvertexNodeIndex,
-        node: BinavvertexNodeIndex,
+        node: BinavnodeNodeIndex,
     ) {
-        let navvertex1 = graph.add_node(NavvertexWeight {
+        let navnode1 = graph.add_node(NavnodeWeight {
             node,
             maybe_sense: Some(RotationSense::Counterclockwise),
         });
 
-        let navvertex2 = graph.add_node(NavvertexWeight {
+        let navnode2 = graph.add_node(NavnodeWeight {
             node,
             maybe_sense: Some(RotationSense::Clockwise),
         });
 
         map.get_mut(&trianvertex)
             .unwrap()
-            .push((navvertex1, navvertex2));
+            .push((navnode1, navnode2));
     }
 
     /// Returns the navmesh's underlying petgraph graph structure.
-    pub fn graph(&self) -> &UnGraph<NavvertexWeight, (), usize> {
+    pub fn graph(&self) -> &UnGraph<NavnodeWeight, (), usize> {
         &self.graph
     }
 
@@ -337,9 +338,9 @@ impl Navmesh {
         self.origin
     }
 
-    /// Returns the navvertex of the origin node.
-    pub fn origin_navvertex(&self) -> NavvertexIndex {
-        self.origin_navvertex
+    /// Returns the navnode of the origin node.
+    pub fn origin_navnode(&self) -> NavnodeIndex {
+        self.origin_navnode
     }
 
     /// Returns the destination node.
@@ -347,19 +348,19 @@ impl Navmesh {
         self.destination
     }
 
-    /// Returns the navvertex of the destination node.
-    pub fn destination_navvertex(&self) -> NavvertexIndex {
-        self.destination_navvertex
+    /// Returns the navnode of the destination node.
+    pub fn destination_navnode(&self) -> NavnodeIndex {
+        self.destination_navnode
     }
 }
 
 impl GraphBase for Navmesh {
-    type NodeId = NavvertexIndex;
-    type EdgeId = (NavvertexIndex, NavvertexIndex);
+    type NodeId = NavnodeIndex;
+    type EdgeId = (NavnodeIndex, NavnodeIndex);
 }
 
 impl Data for Navmesh {
-    type NodeWeight = NavvertexWeight;
+    type NodeWeight = NavnodeWeight;
     type EdgeWeight = ();
 }
 
@@ -375,13 +376,13 @@ impl DataMap for Navmesh {
 
 #[derive(Debug, Clone, Copy)]
 pub struct NavmeshEdgeReference {
-    from: NavvertexIndex,
-    to: NavvertexIndex,
+    from: NavnodeIndex,
+    to: NavnodeIndex,
 }
 
 impl EdgeRef for NavmeshEdgeReference {
-    type NodeId = NavvertexIndex;
-    type EdgeId = (NavvertexIndex, NavvertexIndex);
+    type NodeId = NavnodeIndex;
+    type EdgeId = (NavnodeIndex, NavnodeIndex);
     type Weight = ();
 
     fn source(&self) -> Self::NodeId {
@@ -402,13 +403,13 @@ impl EdgeRef for NavmeshEdgeReference {
 }
 
 impl<'a> IntoNeighbors for &'a Navmesh {
-    type Neighbors = Box<dyn Iterator<Item = NavvertexIndex> + 'a>;
+    type Neighbors = Box<dyn Iterator<Item = NavnodeIndex> + 'a>;
 
     fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
         Box::new(
             self.graph
                 .neighbors(vertex.petgraph_index())
-                .map(NavvertexIndex),
+                .map(NavnodeIndex),
         )
     }
 }
@@ -422,8 +423,8 @@ impl<'a> IntoEdgeReferences for &'a Navmesh {
             self.graph
                 .edge_references()
                 .map(|edge| NavmeshEdgeReference {
-                    from: NavvertexIndex(edge.source()),
-                    to: NavvertexIndex(edge.target()),
+                    from: NavnodeIndex(edge.source()),
+                    to: NavnodeIndex(edge.target()),
                 }),
         )
     }
@@ -437,8 +438,8 @@ impl<'a> IntoEdges for &'a Navmesh {
             self.graph
                 .edges(vertex.petgraph_index())
                 .map(|edge| NavmeshEdgeReference {
-                    from: NavvertexIndex(edge.source()),
-                    to: NavvertexIndex(edge.target()),
+                    from: NavnodeIndex(edge.source()),
+                    to: NavnodeIndex(edge.target()),
                 }),
         )
     }

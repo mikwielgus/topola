@@ -24,7 +24,7 @@ use topola::{
     graph::MakeRef,
     layout::{poly::MakePolygon, via::ViaWeight},
     math::{Circle, RotationSense},
-    router::navmesh::NavvertexIndex,
+    router::navmesh::NavnodeIndex,
 };
 
 use crate::{config::Config, menu_bar::MenuBar, painter::Painter, workspace::Workspace};
@@ -333,16 +333,16 @@ impl Viewport {
                                     }
 
                                     for index in navmesh.graph().node_indices() {
-                                        let navvertex = NavvertexIndex(index);
+                                        let navnode = NavnodeIndex(index);
                                         let mut pos = PrimitiveIndex::from(
-                                            navmesh.node_weight(navvertex).unwrap().node,
+                                            navmesh.node_weight(navnode).unwrap().node,
                                         )
                                         .primitive(board.layout().drawing())
                                         .shape()
                                         .center();
 
                                         pos += match navmesh
-                                            .node_weight(navvertex)
+                                            .node_weight(navnode)
                                             .unwrap()
                                             .maybe_sense
                                         {
@@ -356,14 +356,14 @@ impl Viewport {
                                         //TODO "{astar.scores[index]} ({astar.estimate_scores[index]}) (...)"
                                         let score_text = &astar
                                             .scores
-                                            .get(&navvertex)
+                                            .get(&navnode)
                                             .map_or_else(String::new, |s| format!("g={:.2}", s));
                                         let estimate_score_text = &astar
                                             .estimate_scores
-                                            .get(&navvertex)
+                                            .get(&navnode)
                                             .map_or_else(String::new, |s| format!("(f={:.2})", s));
                                         let debug_text =
-                                            activity.navvertex_debug_text(navvertex).unwrap_or("");
+                                            activity.navnode_debug_text(navnode).unwrap_or("");
 
                                         painter.paint_text(
                                             pos,

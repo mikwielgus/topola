@@ -70,7 +70,7 @@ pub fn replay_and_assert(invoker: &mut Invoker<SpecctraMesadata>, filename: &str
     );
 }
 
-pub fn assert_navvertex_count(
+pub fn assert_navnode_count(
     autorouter: &mut Autorouter<SpecctraMesadata>,
     origin_pin: &str,
     destination_pin: &str,

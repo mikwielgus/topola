@@ -13,7 +13,7 @@ use crate::{
 use super::{
     draw::{Draw, DrawException},
     navcord::Navcord,
-    navmesh::{Navmesh, NavvertexIndex},
+    navmesh::{Navmesh, NavnodeIndex},
 };
 
 #[derive(Error, Debug, Clone, Copy)]
@@ -29,7 +29,7 @@ pub trait Navcorder {
         &mut self,
         recorder: LayoutEdit,
         source: FixedDotIndex,
-        source_navvertex: NavvertexIndex,
+        source_navnode: NavnodeIndex,
         width: f64,
     ) -> Navcord;
 
@@ -44,14 +44,14 @@ pub trait Navcorder {
         &mut self,
         navmesh: &Navmesh,
         navcord: &mut Navcord,
-        path: &[NavvertexIndex],
+        path: &[NavnodeIndex],
     ) -> Result<(), NavcorderException>;
 
     fn path(
         &mut self,
         navmesh: &Navmesh,
         navcord: &mut Navcord,
-        path: &[NavvertexIndex],
+        path: &[NavnodeIndex],
     ) -> Result<(), NavcorderException>;
 
     fn undo_path(&mut self, navcord: &mut Navcord, step_count: usize);
@@ -62,10 +62,10 @@ impl<R: AccessRules> Navcorder for Layout<R> {
         &mut self,
         recorder: LayoutEdit,
         source: FixedDotIndex,
-        source_navvertex: NavvertexIndex,
+        source_navnode: NavnodeIndex,
         width: f64,
     ) -> Navcord {
-        Navcord::new(recorder, source, source_navvertex, width)
+        Navcord::new(recorder, source, source_navnode, width)
     }
 
     fn finish(
@@ -83,7 +83,7 @@ impl<R: AccessRules> Navcorder for Layout<R> {
         &mut self,
         navmesh: &Navmesh,
         navcord: &mut Navcord,
-        path: &[NavvertexIndex],
+        path: &[NavnodeIndex],
     ) -> Result<(), NavcorderException> {
         let prefix_length = navcord
             .path
@@ -102,7 +102,7 @@ impl<R: AccessRules> Navcorder for Layout<R> {
         &mut self,
         navmesh: &Navmesh,
         navcord: &mut Navcord,
-        path: &[NavvertexIndex],
+        path: &[NavnodeIndex],
     ) -> Result<(), NavcorderException> {
         for (i, vertex) in path.iter().enumerate() {
             if let Err(err) = navcord.step_to(self, navmesh, *vertex) {

@@ -49,14 +49,14 @@ impl RouteStepper {
         width: f64,
     ) -> Self {
         let source = navmesh.origin();
-        let source_navvertex = navmesh.origin_navvertex();
+        let source_navnode = navmesh.origin_navnode();
         let target = navmesh.destination();
 
         let layout = router.layout_mut();
-        let mut navcord = layout.start(recorder, source, source_navvertex, width);
+        let mut navcord = layout.start(recorder, source, source_navnode, width);
 
         let mut strategy = RouterAstarStrategy::new(layout, &mut navcord, target);
-        let astar = AstarStepper::new(navmesh, source_navvertex, &mut strategy);
+        let astar = AstarStepper::new(navmesh, source_navnode, &mut strategy);
         let ghosts = vec![];
         let obstacles = vec![];
 
@@ -88,7 +88,7 @@ impl<R: AccessRules> Step<Router<'_, R>, BandTermsegIndex> for RouteStepper {
             Ok(ControlFlow::Break((_cost, _path, band))) => Ok(ControlFlow::Break(band)),
             Err(e) => {
                 // NOTE(fogti): The 1 instead 0 is because the first element in the path
-                // is the source navvertex. See also: `NavcordStepper::new`.
+                // is the source navnode. See also: `NavcordStepper::new`.
                 for _ in 1..self.navcord.path.len() {
                     self.navcord.step_back(layout);
                 }
