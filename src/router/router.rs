@@ -62,12 +62,12 @@ impl<'a, R> RouterAstarStrategy<'a, R> {
 }
 
 impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAstarStrategy<'_, R> {
-    fn is_goal(
+    fn visit_navnode(
         &mut self,
         navmesh: &Navmesh,
         vertex: NavnodeIndex,
         tracker: &PathTracker<Navmesh>,
-    ) -> Option<BandTermsegIndex> {
+    ) -> Result<Option<BandTermsegIndex>, ()> {
         let new_path = tracker.reconstruct_path_to(vertex);
 
         if vertex == navmesh.destination_navnode() {
@@ -84,16 +84,19 @@ impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAst
             );
             self.navcord.path.push(vertex);
 
-            self.navcord.final_termseg
+            Ok(self.navcord.final_termseg)
         } else {
             self.layout
                 .rework_path(navmesh, self.navcord, &new_path[..])
-                .unwrap();
-            None
+                .map_or(Err(()), |_| Ok(None))
         }
     }
 
-    fn place_probe(&mut self, navmesh: &Navmesh, edge: NavmeshEdgeReference) -> Option<f64> {
+    fn place_probe_at_navedge(
+        &mut self,
+        navmesh: &Navmesh,
+        edge: NavmeshEdgeReference,
+    ) -> Option<f64> {
         let old_head = self.navcord.head;
         let result = self.navcord.step_to(self.layout, navmesh, edge.target());
 

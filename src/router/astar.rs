@@ -103,8 +103,13 @@ where
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
     K: Measure + Copy,
 {
-    fn is_goal(&mut self, graph: &G, node: G::NodeId, tracker: &PathTracker<G>) -> Option<R>;
-    fn place_probe<'a>(
+    fn visit_navnode(
+        &mut self,
+        graph: &G,
+        node: G::NodeId,
+        tracker: &PathTracker<G>,
+    ) -> Result<Option<R>, ()>;
+    fn place_probe_at_navedge<'a>(
         &mut self,
         graph: &'a G,
         edge: <&'a G as IntoEdgeReferences>::EdgeRef,
@@ -148,11 +153,11 @@ where
 #[derive(Debug)]
 pub enum AstarContinueStatus {
     /// A* has now placed a probe to measure the cost of the edge to a
-    /// neighboring node from the current position. The probed node has been
-    /// added to the priority queue, and the newly measured edge cost has been
-    /// stored in a map.
+    /// neighboring navnode from the current position. The probed navnode has
+    /// been added to the priority queue, and the newly measured edge cost has
+    /// been stored in a map.
     Probing,
-    /// A* has now placed a probe, but it turned out that the probed node has
+    /// A* has now placed a probe, but it turned out that the probed navnode has
     /// been previously reached through a path with equal or lower score, so the
     /// probe's measurement has been discarded. The probe, however, will be only
     /// removed in the next state just as if it was after the normal `Probing`
@@ -165,17 +170,20 @@ pub enum AstarContinueStatus {
     /// to pause the A* while the placed probe exists, which is very useful
     /// for debugging.
     Probed,
-    /// A* has now attempted to visit a new node, but it turned out that it has
-    /// been previously reached through a path with an equal or lower estimated
-    /// score, so the visit to that node has been skipped.
+    /// A* has now attempted to visit a new navnode, but it turned out that
+    /// it has been previously reached through a path with an equal or lower
+    /// estimated score, so the visit to that navnode has been skipped.
     VisitSkipped,
-    /// A* has now visited a new node.
+    /// A* has failed to visit a new navnode. Happens, so A* will just proceed
+    /// to the next node in the priority queue.
+    VisitFailed,
+    /// A* has now visited a new navnode.
     ///
     /// Quick recap if you have been trying to remember what is the difference
     /// between probing and visiting: probing is done as part of a scan of
-    /// neighboring nodes around the currently visited node to add them to the
-    /// priority queue, whereas when a node is visited it actually *becomes* the
-    /// currently visited node.
+    /// neighboring navnodes around the currently visited navnode to add them to
+    /// the priority queue, whereas when a navnode is visited it is taken from
+    /// the priority queue to actually become the currently visited navnode.
     Visited,
 }
 
@@ -238,7 +246,7 @@ where
                 let node_score = self.scores[&curr_node];
                 let edge = (&self.graph).edge_ref(edge_id);
 
-                if let Some(edge_cost) = strategy.place_probe(&self.graph, edge) {
+                if let Some(edge_cost) = strategy.place_probe_at_navedge(&self.graph, edge) {
                     let next = edge.target();
                     let next_score = node_score + edge_cost;
 
@@ -277,7 +285,11 @@ where
             return Err(AstarError::NotFound);
         };
 
-        if let Some(result) = strategy.is_goal(&self.graph, node, &self.path_tracker) {
+        let Ok(maybe_result) = strategy.visit_navnode(&self.graph, node, &self.path_tracker) else {
+            return Ok(ControlFlow::Continue(AstarContinueStatus::VisitFailed));
+        };
+
+        if let Some(result) = maybe_result {
             let path = self.path_tracker.reconstruct_path_to(node);
             let cost = self.scores[&node];
             return Ok(ControlFlow::Break((cost, path, result)));
