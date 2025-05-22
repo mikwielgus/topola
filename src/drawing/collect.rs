@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use crate::graph::{GenericIndex, GetPetgraphIndex, MakeRef};
+use crate::graph::MakeRef;
 
 use super::{
     band::{BandTermsegIndex, BandUid},
@@ -15,8 +15,14 @@ use super::{
     Drawing,
 };
 
+#[derive(Clone, Debug, thiserror::Error)]
+#[error("unable to resolve Loose to BandUid")]
+pub struct BandUidError {
+    pub maybe_end: Option<BandTermsegIndex>,
+}
+
 pub trait Collect {
-    fn loose_band_uid(&self, start_loose: LooseIndex) -> BandUid;
+    fn loose_band_uid(&self, start_loose: LooseIndex) -> Result<BandUid, BandUidError>;
 
     fn bend_bow(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex>;
 
@@ -26,11 +32,15 @@ pub trait Collect {
 }
 
 impl<CW: Clone, Cel: Copy, R: AccessRules> Collect for Drawing<CW, Cel, R> {
-    fn loose_band_uid(&self, start_loose: LooseIndex) -> BandUid {
-        BandUid::from((
+    fn loose_band_uid(&self, start_loose: LooseIndex) -> Result<BandUid, BandUidError> {
+        match (
             self.loose_band_first_seg(start_loose),
             self.loose_band_last_seg(start_loose),
-        ))
+        ) {
+            (Some(first), Some(last)) => Ok(BandUid::from((first, last))),
+            (Some(x), None) | (None, Some(x)) => Err(BandUidError { maybe_end: Some(x) }),
+            (None, None) => Err(BandUidError { maybe_end: None }),
+        }
     }
 
     fn bend_bow(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex> {
@@ -88,14 +98,14 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Collect for Drawing<CW, Cel, R> {
 }
 
 trait CollectPrivate {
-    fn loose_band_first_seg(&self, start_loose: LooseIndex) -> BandTermsegIndex;
-    fn loose_band_last_seg(&self, start_loose: LooseIndex) -> BandTermsegIndex;
+    fn loose_band_first_seg(&self, start_loose: LooseIndex) -> Option<BandTermsegIndex>;
+    fn loose_band_last_seg(&self, start_loose: LooseIndex) -> Option<BandTermsegIndex>;
 }
 
 impl<CW: Clone, Cel: Copy, R: AccessRules> CollectPrivate for Drawing<CW, Cel, R> {
-    fn loose_band_first_seg(&self, start_loose: LooseIndex) -> BandTermsegIndex {
+    fn loose_band_first_seg(&self, start_loose: LooseIndex) -> Option<BandTermsegIndex> {
         if let LooseIndex::LoneSeg(seg) = start_loose {
-            return BandTermsegIndex::Straight(seg);
+            return Some(BandTermsegIndex::Lone(seg));
         }
 
         let mut loose = start_loose;
@@ -106,14 +116,14 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> CollectPrivate for Drawing<CW, Cel, R
                 prev = Some(loose);
                 loose = next_loose;
             } else {
-                return BandTermsegIndex::Bended(GenericIndex::new(loose.petgraph_index()));
+                return loose.try_into().ok();
             }
         }
     }
 
-    fn loose_band_last_seg(&self, start_loose: LooseIndex) -> BandTermsegIndex {
+    fn loose_band_last_seg(&self, start_loose: LooseIndex) -> Option<BandTermsegIndex> {
         if let LooseIndex::LoneSeg(seg) = start_loose {
-            return BandTermsegIndex::Straight(seg);
+            return Some(BandTermsegIndex::Lone(seg));
         }
 
         let mut loose = start_loose;
@@ -124,7 +134,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> CollectPrivate for Drawing<CW, Cel, R
                 next = Some(loose);
                 loose = prev_loose;
             } else {
-                return BandTermsegIndex::Bended(GenericIndex::new(loose.petgraph_index()));
+                return loose.try_into().ok();
             }
         }
     }

@@ -125,7 +125,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
                 .board
                 .layout()
                 .drawing()
-                .loose_band_uid(band_termseg.into());
+                .loose_band_uid(band_termseg.into())
+                .expect("a completely routed band should've Seg's as ends");
 
             autorouter
                 .ratsnest

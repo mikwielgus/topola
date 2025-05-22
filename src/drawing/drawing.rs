@@ -34,7 +34,6 @@ use crate::{
         edit::{ApplyGeometryEdit, GeometryEdit},
         primitive::{AccessPrimitiveShape, PrimitiveShape},
         recording_with_rtree::RecordingGeometryWithRtree,
-        shape::MeasureLength,
         with_rtree::BboxedIndex,
         AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
         GetLayer, GetOffset, GetSetPos, GetWidth,
@@ -214,72 +213,70 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         recorder: &mut DrawingEdit<CW, Cel>,
         band: BandTermsegIndex,
     ) -> Result<(), DrawingException> {
-        match band {
-            BandTermsegIndex::Straight(seg) => {
+        let mut maybe_loose: Option<LooseIndex> = Some(match band {
+            BandTermsegIndex::Lone(seg) => {
                 self.recording_geometry_with_rtree
                     .remove_seg(recorder, seg.into());
+                return Ok(());
             }
-            BandTermsegIndex::Bended(first_loose_seg) => {
-                let mut dots = vec![];
-                let mut segs = vec![];
-                let mut bends = vec![];
-                let mut outers = vec![];
+            BandTermsegIndex::Seq(first_loose_seg) => first_loose_seg.into(),
+        });
 
-                let mut maybe_loose = Some(first_loose_seg.into());
-                let mut prev = None;
+        let mut dots = vec![];
+        let mut segs = vec![];
+        let mut bends = vec![];
+        let mut outers = vec![];
+        let mut prev = None;
 
-                while let Some(loose) = maybe_loose {
-                    match loose {
-                        LooseIndex::Dot(dot) => {
-                            dots.push(dot);
-                        }
-                        LooseIndex::LoneSeg(seg) => {
-                            self.recording_geometry_with_rtree
-                                .remove_seg(recorder, seg.into());
-                            break;
-                        }
-                        LooseIndex::SeqSeg(seg) => {
-                            segs.push(seg);
-                        }
-                        LooseIndex::Bend(bend) => {
-                            bends.push(bend);
-
-                            if let Some(outer) = self.primitive(bend).outer() {
-                                outers.push(outer);
-                                self.reattach_bend(recorder, outer, self.primitive(bend).inner());
-                            }
-                        }
-                    }
-
-                    let prev_prev = prev;
-                    prev = maybe_loose;
-                    maybe_loose = self.loose(loose).next_loose(prev_prev);
+        while let Some(loose) = maybe_loose {
+            match loose {
+                LooseIndex::Dot(dot) => {
+                    dots.push(dot);
                 }
-
-                for bend in bends {
-                    self.recording_geometry_with_rtree
-                        .remove_bend(recorder, bend.into());
-                }
-
-                for seg in segs {
+                LooseIndex::LoneSeg(seg) => {
                     self.recording_geometry_with_rtree
                         .remove_seg(recorder, seg.into());
+                    break;
                 }
-
-                // We must remove the dots only after the segs and bends because we need dots to calculate
-                // the shapes, which we first need unchanged to remove the segs and bends from the R-tree.
-
-                for dot in dots {
-                    self.recording_geometry_with_rtree
-                        .remove_dot(recorder, dot.into());
+                LooseIndex::SeqSeg(seg) => {
+                    segs.push(seg);
                 }
+                LooseIndex::Bend(bend) => {
+                    bends.push(bend);
 
-                for outer in outers {
-                    self.update_this_and_outward_bows(recorder, outer)?;
+                    if let Some(outer) = self.primitive(bend).outer() {
+                        outers.push(outer);
+                        self.reattach_bend(recorder, outer, self.primitive(bend).inner());
+                    }
                 }
             }
+
+            let prev_prev = prev;
+            prev = maybe_loose;
+            maybe_loose = self.loose(loose).next_loose(prev_prev);
         }
 
+        for bend in bends {
+            self.recording_geometry_with_rtree
+                .remove_bend(recorder, bend.into());
+        }
+
+        for seg in segs {
+            self.recording_geometry_with_rtree
+                .remove_seg(recorder, seg.into());
+        }
+
+        // We must remove the dots only after the segs and bends because we need dots to calculate
+        // the shapes, which we first need unchanged to remove the segs and bends from the R-tree.
+
+        for dot in dots {
+            self.recording_geometry_with_rtree
+                .remove_dot(recorder, dot.into());
+        }
+
+        for outer in outers {
+            self.update_this_and_outward_bows(recorder, outer)?;
+        }
         Ok(())
     }
 
@@ -414,7 +411,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         termseg: BandTermsegIndex,
     ) {
         self.recording_geometry_with_rtree
-            .remove_seg(recorder, termseg.into());
+            .remove_seg(recorder, termseg.into())
     }
 
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() + 1))]
@@ -866,6 +863,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                     .remove_dot(recorder, seg_to.into());
             })?;
 
+        #[cfg(debug_assertions)]
+        use crate::geometry::shape::MeasureLength;
         #[cfg(debug_assertions)]
         approx::assert_abs_diff_eq!(bend.primitive(self).shape().length(), 0.0);
 

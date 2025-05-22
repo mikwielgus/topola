@@ -60,8 +60,10 @@ impl<'a> ResolvedSelector<'a> {
         if let Some(pin_name) = board.node_pinname(&node) {
             Some(ResolvedSelector::Pin { pin_name, layer })
         } else {
-            loose.map(|loose| ResolvedSelector::Band {
-                band_uid: board.layout().drawing().loose_band_uid(loose),
+            loose.and_then(|loose| {
+                Some(ResolvedSelector::Band {
+                    band_uid: board.layout().drawing().loose_band_uid(loose).ok()?,
+                })
             })
         }
     }

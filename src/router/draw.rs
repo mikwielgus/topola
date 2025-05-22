@@ -105,7 +105,7 @@ impl<R: AccessRules> Draw for Layout<R> {
                         maybe_net,
                     }),
                 )
-                .map(BandTermsegIndex::Straight),
+                .map(BandTermsegIndex::Lone),
             DotIndex::Loose(dot) => self
                 .add_seq_loose_seg(
                     recorder,
@@ -117,7 +117,7 @@ impl<R: AccessRules> Draw for Layout<R> {
                         maybe_net,
                     }),
                 )
-                .map(BandTermsegIndex::Bended),
+                .map(BandTermsegIndex::Seq),
         }
         .map_err(|err| {
             // move the head back to where it came from

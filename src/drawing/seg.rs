@@ -7,6 +7,7 @@ use enum_dispatch::enum_dispatch;
 use crate::{
     drawing::{
         graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+        loose::LooseIndex,
         primitive::{GenericPrimitive, Primitive},
         rules::AccessRules,
         Drawing,
@@ -18,11 +19,60 @@ use crate::{
 use petgraph::stable_graph::NodeIndex;
 
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum SegIndex {
     Fixed(FixedSegIndex),
     LoneLoose(LoneLooseSegIndex),
     SeqLoose(SeqLooseSegIndex),
+}
+
+#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
+pub enum LooseSegIndex {
+    Lone(LoneLooseSegIndex),
+    Seq(SeqLooseSegIndex),
+}
+
+impl From<LooseSegIndex> for SegIndex {
+    fn from(seg: LooseSegIndex) -> Self {
+        match seg {
+            LooseSegIndex::Lone(seg) => SegIndex::LoneLoose(seg),
+            LooseSegIndex::Seq(seg) => SegIndex::SeqLoose(seg),
+        }
+    }
+}
+
+impl From<LooseSegIndex> for LooseIndex {
+    fn from(seg: LooseSegIndex) -> Self {
+        match seg {
+            LooseSegIndex::Lone(seg) => LooseIndex::LoneSeg(seg),
+            LooseSegIndex::Seq(seg) => LooseIndex::SeqSeg(seg),
+        }
+    }
+}
+
+impl TryFrom<SegIndex> for LooseSegIndex {
+    type Error = (); // TODO.
+
+    fn try_from(index: SegIndex) -> Result<LooseSegIndex, ()> {
+        Ok(match index {
+            SegIndex::LoneLoose(index) => LooseSegIndex::Lone(index),
+            SegIndex::SeqLoose(index) => LooseSegIndex::Seq(index),
+            _ => return Err(()),
+        })
+    }
+}
+
+impl TryFrom<LooseIndex> for LooseSegIndex {
+    type Error = (); // TODO.
+
+    fn try_from(index: LooseIndex) -> Result<LooseSegIndex, ()> {
+        Ok(match index {
+            LooseIndex::LoneSeg(index) => LooseSegIndex::Lone(index),
+            LooseIndex::SeqSeg(index) => LooseSegIndex::Seq(index),
+            _ => return Err(()),
+        })
+    }
 }
 
 impl From<SegIndex> for PrimitiveIndex {
@@ -39,12 +89,12 @@ impl TryFrom<PrimitiveIndex> for SegIndex {
     type Error = (); // TODO.
 
     fn try_from(index: PrimitiveIndex) -> Result<SegIndex, ()> {
-        match index {
-            PrimitiveIndex::FixedSeg(index) => Ok(SegIndex::Fixed(index)),
-            PrimitiveIndex::LoneLooseSeg(index) => Ok(SegIndex::LoneLoose(index)),
-            PrimitiveIndex::SeqLooseSeg(index) => Ok(SegIndex::SeqLoose(index)),
-            _ => Err(()),
-        }
+        Ok(match index {
+            PrimitiveIndex::FixedSeg(index) => SegIndex::Fixed(index),
+            PrimitiveIndex::LoneLooseSeg(index) => SegIndex::LoneLoose(index),
+            PrimitiveIndex::SeqLooseSeg(index) => SegIndex::SeqLoose(index),
+            _ => return Err(()),
+        })
     }
 }
 
