@@ -55,6 +55,7 @@ enum_dispatch = "0.3"
 geo.workspace = true
 log.workspace = true
 petgraph.workspace = true
+ron = "0.10"
 rstar.workspace = true
 serde.workspace = true
 spade.workspace = true

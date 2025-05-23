@@ -50,7 +50,9 @@ pub use router::*;
 #[derive(Clone, Copy, Debug)]
 pub struct PieNavmeshBase;
 
-#[derive(Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord)]
+#[derive(
+    Clone, Copy, Debug, PartialEq, Eq, PartialOrd, Ord, serde::Deserialize, serde::Serialize,
+)]
 pub struct EtchedPath {
     pub end_points: EdgeIndex<FixedDotIndex>,
 }

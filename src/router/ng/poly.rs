@@ -202,6 +202,11 @@ impl PolygonRouting {
                 break;
             }
         }
+        log::debug!(
+            "route_to_exit on {:?} finished, head = {:?}",
+            self.apex,
+            active_head,
+        );
         Ok((active_head, route_length))
     }
 }

@@ -393,6 +393,14 @@ impl<'a, B: NavmeshBase + 'a> NavmeshRefMut<'a, B> {
 }
 
 impl<'a, B: NavmeshBase + 'a> NavmeshRef<'a, B> {
+    pub fn to_owned(&self) -> Navmesh<B> {
+        Navmesh {
+            nodes: Arc::new(self.nodes.clone()),
+            edges: Arc::new(self.edges.clone()),
+            edge_paths: self.edge_paths.to_vec().into_boxed_slice(),
+        }
+    }
+
     #[inline(always)]
     pub fn resolve_edge_data(
         &self,
