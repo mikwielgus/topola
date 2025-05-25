@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::BTreeMap;
+use std::collections::{btree_map::Entry, BTreeMap};
 
 use crate::graph::{GenericIndex, GetPetgraphIndex};
 
@@ -32,10 +32,6 @@ pub struct GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI> {
         BTreeMap<GenericIndex<CW>, (Option<(Vec<(Cel, PI)>, CW)>, Option<(Vec<(Cel, PI)>, CW)>)>,
 }
 
-fn swap_tuple_inplace<D>(x: &mut (D, D)) {
-    core::mem::swap(&mut x.0, &mut x.1);
-}
-
 impl<
         DW: AccessDotWeight + GetLayer,
         SW: AccessSegWeight + GetLayer,
@@ -57,54 +53,45 @@ impl<
         }
     }
 
+    pub fn merge(&mut self, edit: GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>) {
+        Self::merge_btmap(&mut self.dots, &edit.dots);
+        Self::merge_btmap(&mut self.segs, &edit.segs);
+        Self::merge_btmap(&mut self.bends, &edit.bends);
+        Self::merge_btmap(&mut self.compounds, &edit.compounds);
+    }
+
+    fn merge_btmap<I: Copy + Eq + Ord, D: Clone>(
+        main: &mut BTreeMap<I, (Option<D>, Option<D>)>,
+        edit: &BTreeMap<I, (Option<D>, Option<D>)>,
+    ) {
+        for (index, (old, new)) in edit {
+            match main.entry(*index) {
+                Entry::Vacant(vac) => {
+                    vac.insert((old.clone(), new.clone()));
+                }
+                Entry::Occupied(mut occ) => {
+                    occ.get_mut().1 = new.clone();
+                }
+            }
+        }
+    }
+
     pub fn reverse_inplace(&mut self) {
-        self.dots.values_mut().for_each(swap_tuple_inplace);
-        self.segs.values_mut().for_each(swap_tuple_inplace);
-        self.bends.values_mut().for_each(swap_tuple_inplace);
-        self.compounds.values_mut().for_each(swap_tuple_inplace);
+        self.dots.values_mut().for_each(Self::swap_tuple_inplace);
+        self.segs.values_mut().for_each(Self::swap_tuple_inplace);
+        self.bends.values_mut().for_each(Self::swap_tuple_inplace);
+        self.compounds
+            .values_mut()
+            .for_each(Self::swap_tuple_inplace);
+    }
+
+    fn swap_tuple_inplace<D>(x: &mut (D, D)) {
+        core::mem::swap(&mut x.0, &mut x.1);
     }
 
     pub fn reverse(&self) -> Self {
         let mut rev = self.clone();
         rev.reverse_inplace();
         rev
-    }
-}
-
-fn apply_btmap<I: Copy + Eq + Ord, D: Clone>(
-    main: &mut BTreeMap<I, (Option<D>, Option<D>)>,
-    edit: &BTreeMap<I, (Option<D>, Option<D>)>,
-) {
-    use std::collections::btree_map::Entry;
-    for (index, (old, new)) in edit {
-        match main.entry(*index) {
-            Entry::Vacant(vac) => {
-                vac.insert((old.clone(), new.clone()));
-            }
-            Entry::Occupied(mut occ) => {
-                occ.get_mut().1 = new.clone();
-            }
-        }
-    }
-}
-
-impl<
-        DW: AccessDotWeight + GetLayer,
-        SW: AccessSegWeight + GetLayer,
-        BW: AccessBendWeight + GetLayer,
-        CW: Clone,
-        Cel: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-    > ApplyGeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>
-    for GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>
-{
-    fn apply(&mut self, edit: &GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>) {
-        apply_btmap(&mut self.dots, &edit.dots);
-        apply_btmap(&mut self.segs, &edit.segs);
-        apply_btmap(&mut self.bends, &edit.bends);
-        apply_btmap(&mut self.compounds, &edit.compounds);
     }
 }

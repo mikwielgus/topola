@@ -773,8 +773,9 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     ) -> Result<(), DrawingException> {
         let mut temp_recorder = DrawingEdit::new();
         let ret = self.update_this_and_outward_bows_intern(&mut temp_recorder, around);
+
         if ret.is_ok() {
-            recorder.apply(&temp_recorder);
+            recorder.merge(temp_recorder);
         } else {
             temp_recorder.reverse_inplace();
             self.recording_geometry_with_rtree.apply(&temp_recorder);
