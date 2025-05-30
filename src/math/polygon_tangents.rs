@@ -46,7 +46,7 @@ impl<I: Copy + Eq> CachedPolyExt<I> {
         debug_assert!(!poly_ext.is_empty());
 
         let (pos_false, pos_true) =
-            cyclic_breadth_partition_search(0..poly_ext.len(), &|i: usize| {
+            cyclic_breadth_partition_search(0..poly_ext.len(), |i: usize| {
                 let prev = &poly_ext[(poly_ext.len() + i - 1) % poly_ext.len()];
                 let cur = &poly_ext[i];
                 let next = &poly_ext[(i + 1) % poly_ext.len()];
@@ -103,7 +103,7 @@ pub fn poly_ext_tangent_points<I: Copy>(
         return Err(PolyTangentException::EmptyTargetPolygon { origin });
     }
 
-    let (pos_false, pos_true) = cyclic_breadth_partition_search(0..poly_ext.len(), &|i: usize| {
+    let (pos_false, pos_true) = cyclic_breadth_partition_search(0..poly_ext.len(), |i: usize| {
         let prev = &poly_ext[(poly_ext.len() + i - 1) % poly_ext.len()];
         let cur = &poly_ext[i];
         let next = &poly_ext[(i + 1) % poly_ext.len()];

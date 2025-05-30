@@ -24,17 +24,12 @@ fn breadth4level(bounds: Range<usize>, level: u8, mut callback: impl FnMut(Range
     callback(block_start..bounds.end);
 }
 
-#[derive(Clone, Copy)]
+#[derive(Clone, Copy, Default)]
 enum TriState<T> {
+    #[default]
     Nothing,
     Got(T),
     Fixed(T),
-}
-
-impl<T> Default for TriState<T> {
-    fn default() -> Self {
-        TriState::Nothing
-    }
 }
 
 impl<T> TriState<T> {
@@ -108,7 +103,7 @@ impl Discover {
     }
 }
 
-/// A brute-force implementation of [`cyclic_breadth_binary_search`].
+/// A brute-force implementation of [`cyclic_breadth_partition_search`].
 fn cbps_brute_force<EF>(
     bounds: core::ops::Range<usize>,
     eval: &EF,
