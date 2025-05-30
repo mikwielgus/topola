@@ -129,7 +129,7 @@ where
 }
 
 /// Search for the largest index inside the bounds which still fulfills the condition
-fn exponential_search<T, EF>(
+fn binary_search<T, EF>(
     eval: &EF,
     expected_value: T,
     mut bounds: core::ops::Range<usize>,
@@ -143,28 +143,21 @@ where
         return None;
     }
 
-    let mut largest_checked = bounds.start;
-    while (bounds.start + 1) < bounds.end {
-        let len = bounds.end - bounds.start;
-        for level in 0..64u8 {
-            let mut index = 1 << level;
-            if index >= len {
-                break;
-            }
-            index += bounds.start;
-            if eval(index) != expected_value {
-                bounds.end = index;
-                break;
-            }
-            largest_checked = index;
-        }
+    while bounds.start + 1 < bounds.end {
+        let middle = bounds.start + (bounds.end - bounds.start) / 2;
+        debug_assert_ne!(middle, bounds.start);
+        debug_assert_ne!(middle, bounds.end);
 
-        bounds.start = largest_checked;
-        // this implies that `bounds.start` doesn't have to get checked again
+        // binary search for partition bounds
+        if eval(middle) == expected_value {
+            bounds.start = middle;
+        } else {
+            bounds.end = middle;
+        }
     }
 
-    debug_assert_eq!(eval(largest_checked), expected_value);
-    Some(largest_checked)
+    debug_assert_eq!(eval(bounds.start), expected_value);
+    Some(bounds.start)
 }
 
 /// Perform a breadth-first search on an induced binary tree on the list,
@@ -221,8 +214,8 @@ where
             true => (&mut pos_true, &mut pos_false),
         };
 
-        *pos_start = exponential_search(&eval, val_start, bounds.start..*pos_next).unwrap();
-        *pos_next = exponential_search(&eval, !val_start, *pos_start + 1..bounds.end).unwrap();
+        *pos_start = binary_search(&eval, val_start, bounds.start..*pos_next).unwrap();
+        *pos_next = binary_search(&eval, !val_start, *pos_start + 1..bounds.end).unwrap();
     }
 
     (Some(pos_false), Some(pos_true))
