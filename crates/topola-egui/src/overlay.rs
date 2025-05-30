@@ -39,7 +39,7 @@ pub enum SelectionMode {
 
 pub struct Overlay {
     ratsnest: Ratsnest,
-    selection: Selection,
+    pub selection: Selection,
     planar_incr_navmesh: Option<PieNavmesh>,
     reselect_bbox: Option<(SelectionMode, Point)>,
 }
@@ -86,6 +86,10 @@ impl Overlay {
         use spade::Triangulation;
         use topola::router::planar_incr_embed::navmesh::TrianVertex;
 
+        let Some(active_layer) = appearance_panel.active_layer else {
+            return;
+        };
+
         if let Ok(triangulation) =
             spade::DelaunayTriangulation::<TrianVertex<NodeIndex, f64>>::bulk_load(
                 board
@@ -93,16 +97,8 @@ impl Overlay {
                     .drawing()
                     .rtree()
                     .locate_in_envelope_intersecting(&AABB::<[f64; 3]>::from_corners(
-                        [
-                            -f64::INFINITY,
-                            -f64::INFINITY,
-                            appearance_panel.active_layer as f64,
-                        ],
-                        [
-                            f64::INFINITY,
-                            f64::INFINITY,
-                            appearance_panel.active_layer as f64,
-                        ],
+                        [-f64::INFINITY, -f64::INFINITY, active_layer as f64],
+                        [f64::INFINITY, f64::INFINITY, active_layer as f64],
                     ))
                     .map(|&geom| geom.data)
                     .filter_map(|node| {

@@ -74,7 +74,7 @@ impl PinSelector {
 }
 
 #[derive(Debug, Default, Clone, Serialize, Deserialize)]
-pub struct PinSelection(BTreeSet<PinSelector>);
+pub struct PinSelection(pub BTreeSet<PinSelector>);
 
 impl PinSelection {
     pub fn new() -> Self {

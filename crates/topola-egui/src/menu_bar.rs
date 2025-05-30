@@ -8,6 +8,7 @@ use topola::{
     autorouter::{
         execution::Command, invoker::InvokerError, selection::Selection, AutorouterOptions,
     },
+    board::AccessMesadata,
     router::RouterOptions,
     specctra::{design::SpecctraDesign, ParseError, ParseErrorContext as SpecctraLoadingError},
 };
@@ -281,7 +282,22 @@ impl MenuBar {
                     ) {
                     } else if workspace_activities_enabled {
                         let mut schedule = |op: fn(Selection, AutorouterOptions) -> Command| {
-                            let selection = workspace.overlay.take_selection();
+                            let mut selection = workspace.overlay.take_selection();
+                            if let Some(active_layer) = workspace.appearance_panel.active_layer {
+                                let active_layer = workspace
+                                    .interactor
+                                    .invoker()
+                                    .autorouter()
+                                    .board()
+                                    .layout()
+                                    .rules()
+                                    .layer_layername(active_layer)
+                                    .expect("unknown active layer");
+                                selection
+                                    .pin_selection
+                                    .0
+                                    .retain(|i| i.layer == active_layer);
+                            }
                             workspace
                                 .interactor
                                 .schedule(op(selection, self.autorouter_options));
