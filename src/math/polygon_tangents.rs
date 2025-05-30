@@ -160,10 +160,10 @@ mod tests {
     #[test]
     fn petp00() {
         let poly_ext = &[
-            (point! { x: 0.0, y: 0.0 }, FixedDotIndex::new(0.into())),
-            (point! { x: 1.0, y: 0.0 }, FixedDotIndex::new(1.into())),
-            (point! { x: 1.0, y: 1.0 }, FixedDotIndex::new(2.into())),
-            (point! { x: 0.0, y: 1.0 }, FixedDotIndex::new(3.into())),
+            (point! { x: 0., y: 0. }, FixedDotIndex::new(0.into())),
+            (point! { x: 1., y: 0. }, FixedDotIndex::new(1.into())),
+            (point! { x: 1., y: 1. }, FixedDotIndex::new(2.into())),
+            (point! { x: 0., y: 1. }, FixedDotIndex::new(3.into())),
         ];
         let origin = point! { x: 0.5, y: -1.0 };
         assert_eq!(
@@ -175,15 +175,45 @@ mod tests {
     #[test]
     fn petp00cw() {
         let poly_ext = &[
-            (point! { x: 0.0, y: 0.0 }, FixedDotIndex::new(0.into())),
-            (point! { x: 0.0, y: 1.0 }, FixedDotIndex::new(3.into())),
-            (point! { x: 1.0, y: 1.0 }, FixedDotIndex::new(2.into())),
-            (point! { x: 1.0, y: 0.0 }, FixedDotIndex::new(1.into())),
+            (point! { x: 0., y: 0. }, FixedDotIndex::new(0.into())),
+            (point! { x: 0., y: 1. }, FixedDotIndex::new(3.into())),
+            (point! { x: 1., y: 1. }, FixedDotIndex::new(2.into())),
+            (point! { x: 1., y: 0. }, FixedDotIndex::new(1.into())),
         ];
         let origin = point! { x: 0.5, y: -1.0 };
         assert_eq!(
             petp(poly_ext, true, origin),
             Ok((FixedDotIndex::new(1.into()), FixedDotIndex::new(0.into())))
+        );
+    }
+
+    #[test]
+    #[ignore = "https://codeberg.org/topola/topola/issues/238"]
+    fn triangle() {
+        let poly_ext = &[
+            (point! { x: 0., y: 0. }, FixedDotIndex::new(0.into())),
+            (point! { x: 1., y: 1. }, FixedDotIndex::new(1.into())),
+            (point! { x: 0., y: 2. }, FixedDotIndex::new(2.into())),
+        ];
+        let origin = point! { x: 2., y: 1. };
+        assert_eq!(
+            petp(poly_ext, false, origin),
+            Ok((FixedDotIndex::new(2.into()), FixedDotIndex::new(0.into())))
+        );
+    }
+
+    #[test]
+    #[ignore = "https://codeberg.org/topola/topola/issues/238"]
+    fn triangle_cw() {
+        let poly_ext = &[
+            (point! { x: 0., y: 0. }, FixedDotIndex::new(0.into())),
+            (point! { x: 0., y: 2. }, FixedDotIndex::new(2.into())),
+            (point! { x: 1., y: 1. }, FixedDotIndex::new(1.into())),
+        ];
+        let origin = point! { x: 2., y: 1. };
+        assert_eq!(
+            petp(poly_ext, true, origin),
+            Ok((FixedDotIndex::new(2.into()), FixedDotIndex::new(0.into())))
         );
     }
 }
