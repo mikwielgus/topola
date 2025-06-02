@@ -213,15 +213,15 @@ impl SpecctraDesign {
 
         // add pins from components
         for component in &self.pcb.placement.components {
-            for place in &component.places {
-                let image = self
-                    .pcb
-                    .library
-                    .images
-                    .iter()
-                    .find(|image| image.name == component.name)
-                    .unwrap();
+            let image = self
+                .pcb
+                .library
+                .images
+                .iter()
+                .find(|image| image.name == component.name)
+                .unwrap();
 
+            for place in &component.places {
                 let place_side_is_front = place.side == "front";
                 let get_layer = |board: &Board<SpecctraMesadata>, name: &str| {
                     Self::layer(board, &self.pcb.structure.layers, name, place_side_is_front)
