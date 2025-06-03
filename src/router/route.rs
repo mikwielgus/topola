@@ -77,7 +77,7 @@ impl<R: AccessRules> Step<Router<'_, R>, BandTermsegIndex> for RouteStepper {
         router: &mut Router<R>,
     ) -> Result<ControlFlow<BandTermsegIndex>, AstarError> {
         let layout = router.layout_mut();
-        let target = self.astar.graph.destination();
+        let target = self.astar.graph().destination();
         let mut strategy = RouterAstarStrategy::new(layout, &mut self.navcord, target);
         let result = self.astar.step(&mut strategy);
         self.ghosts = strategy.probe_ghosts;

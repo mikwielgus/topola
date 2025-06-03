@@ -251,7 +251,7 @@ impl Viewport {
                         if menu_bar.show_navmesh {
                             if let Some(activity) = workspace.interactor.maybe_activity() {
                                 if let Some(astar) = activity.maybe_astar() {
-                                    let navmesh = &astar.graph;
+                                    let navmesh = astar.graph();
 
                                     for edge in navmesh.edge_references() {
                                         let mut from = PrimitiveIndex::from(
@@ -354,12 +354,12 @@ impl Viewport {
                                         };
 
                                         //TODO "{astar.scores[index]} ({astar.estimate_scores[index]}) (...)"
-                                        let score_text = &astar
-                                            .scores
+                                        let score_text = astar
+                                            .scores()
                                             .get(&navnode)
                                             .map_or_else(String::new, |s| format!("g={:.2}", s));
-                                        let estimate_score_text = &astar
-                                            .estimate_scores
+                                        let estimate_score_text = astar
+                                            .estimate_scores()
                                             .get(&navnode)
                                             .map_or_else(String::new, |s| format!("(f={:.2})", s));
                                         let debug_text =
@@ -460,7 +460,7 @@ impl Viewport {
                             }
 
                             if let Some(ref navmesh) =
-                                activity.maybe_astar().map(|astar| &astar.graph)
+                                activity.maybe_astar().map(|astar| astar.graph())
                             {
                                 if menu_bar.show_origin_destination {
                                     let (origin, destination) =

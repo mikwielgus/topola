@@ -7,6 +7,7 @@ use std::collections::{btree_map::Entry, BTreeMap, BinaryHeap, VecDeque};
 
 use std::ops::ControlFlow;
 
+use derive_getters::Getters;
 use petgraph::algo::Measure;
 use petgraph::visit::{EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges};
 use thiserror::Error;
@@ -122,6 +123,7 @@ pub trait MakeEdgeRef: IntoEdgeReferences {
     fn edge_ref(&self, edge_id: Self::EdgeId) -> Self::EdgeRef;
 }
 
+#[derive(Getters)]
 pub struct AstarStepper<G, K>
 where
     G: GraphBase,
@@ -129,18 +131,23 @@ where
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
     K: Measure + Copy,
 {
-    pub graph: G,
-    pub visit_next: BinaryHeap<MinScored<K, G::NodeId>>,
+    graph: G,
+    #[getter(skip)]
+    visit_next: BinaryHeap<MinScored<K, G::NodeId>>,
     /// Also known as the g-scores, or just g.
-    pub scores: BTreeMap<G::NodeId, K>,
+    scores: BTreeMap<G::NodeId, K>,
     /// Also known as the f-scores, or just f.
-    pub estimate_scores: BTreeMap<G::NodeId, K>,
-    pub path_tracker: PathTracker<G>,
-    pub maybe_curr_node: Option<G::NodeId>,
+    estimate_scores: BTreeMap<G::NodeId, K>,
+    #[getter(skip)]
+    path_tracker: PathTracker<G>,
+    #[getter(skip)]
+    maybe_curr_node: Option<G::NodeId>,
     // FIXME: To work around edge references borrowing from the graph we collect then reiterate over them.
-    pub edge_ids: VecDeque<G::EdgeId>,
+    #[getter(skip)]
+    edge_ids: VecDeque<G::EdgeId>,
     // TODO: Rewrite this to be a well-designed state machine. Booleans are a code smell.
-    pub is_probing: bool,
+    #[getter(skip)]
+    is_probing: bool,
 }
 
 /// The status enum of the A* stepper returned when there is no failure or
