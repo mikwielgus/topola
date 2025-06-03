@@ -3,7 +3,8 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::{btree_map::Entry, BTreeMap, BinaryHeap, VecDeque};
+use std::collections::btree_map::Entry;
+use std::collections::{BTreeMap, BinaryHeap, VecDeque};
 
 use std::ops::ControlFlow;
 
@@ -123,6 +124,15 @@ pub trait MakeEdgeRef: IntoEdgeReferences {
     fn edge_ref(&self, edge_id: Self::EdgeId) -> Self::EdgeRef;
 }
 
+enum AstarState<G>
+where
+    G: GraphBase,
+{
+    Scanning,
+    Visiting(G::NodeId),
+    Probing(G::NodeId, G::EdgeId),
+}
+
 #[derive(Getters)]
 pub struct AstarStepper<G, K>
 where
@@ -131,6 +141,7 @@ where
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
     K: Measure + Copy,
 {
+    state: AstarState<G>,
     graph: G,
     #[getter(skip)]
     visit_next: BinaryHeap<MinScored<K, G::NodeId>>,
@@ -140,14 +151,9 @@ where
     estimate_scores: BTreeMap<G::NodeId, K>,
     #[getter(skip)]
     path_tracker: PathTracker<G>,
-    #[getter(skip)]
-    maybe_curr_node: Option<G::NodeId>,
     // FIXME: To work around edge references borrowing from the graph we collect then reiterate over them.
     #[getter(skip)]
     edge_ids: VecDeque<G::EdgeId>,
-    // TODO: Rewrite this to be a well-designed state machine. Booleans are a code smell.
-    #[getter(skip)]
-    is_probing: bool,
 }
 
 /// The status enum of the A* stepper returned when there is no failure or
@@ -159,6 +165,21 @@ where
 /// `VisitSkipped` and `Visited`, would correspond to the same state.
 #[derive(Debug)]
 pub enum AstarContinueStatus {
+    /// A* has now attempted to visit a new navnode, but it turned out that
+    /// it has been previously reached through a path with an equal or lower
+    /// estimated score, so the visit to that navnode has been skipped.
+    ScanningVisitSkipped,
+    /// A* has failed to visit a new navnode. Happens, so A* will just proceed
+    /// to the next node in the priority queue.
+    ScanningVisitFailed,
+    /// A* is now visiting a new navnode.
+    ///
+    /// Quick recap if you have been trying to remember what is the difference
+    /// between probing and visiting: probing is done as part of a scan of
+    /// neighboring navnodes around the currently visited navnode to add them to
+    /// the priority queue, whereas when a navnode is visited it is taken from
+    /// the priority queue to actually become the currently visited navnode.
+    Visiting,
     /// A* has now placed a probe to measure the cost of the edge to a
     /// neighboring navnode from the current position. The probed navnode has
     /// been added to the priority queue, and the newly measured edge cost has
@@ -177,21 +198,6 @@ pub enum AstarContinueStatus {
     /// to pause the A* while the placed probe exists, which is very useful
     /// for debugging.
     Probed,
-    /// A* has now attempted to visit a new navnode, but it turned out that
-    /// it has been previously reached through a path with an equal or lower
-    /// estimated score, so the visit to that navnode has been skipped.
-    VisitSkipped,
-    /// A* has failed to visit a new navnode. Happens, so A* will just proceed
-    /// to the next node in the priority queue.
-    VisitFailed,
-    /// A* has now visited a new navnode.
-    ///
-    /// Quick recap if you have been trying to remember what is the difference
-    /// between probing and visiting: probing is done as part of a scan of
-    /// neighboring navnodes around the currently visited navnode to add them to
-    /// the priority queue, whereas when a navnode is visited it is taken from
-    /// the priority queue to actually become the currently visited navnode.
-    Visited,
 }
 
 #[derive(Error, Debug, Clone)]
@@ -209,14 +215,13 @@ where
 {
     pub fn new<R>(graph: G, start: G::NodeId, strategy: &mut impl AstarStrategy<G, K, R>) -> Self {
         let mut this = Self {
+            state: AstarState::Scanning,
             graph,
             visit_next: BinaryHeap::new(),
             scores: BTreeMap::new(),
             estimate_scores: BTreeMap::new(),
             path_tracker: PathTracker::<G>::new(),
-            maybe_curr_node: None,
             edge_ids: VecDeque::new(),
-            is_probing: false,
         };
 
         let zero_score = K::default();
@@ -241,84 +246,98 @@ where
         &mut self,
         strategy: &mut S,
     ) -> Result<ControlFlow<(K, Vec<G::NodeId>, R), AstarContinueStatus>, AstarError> {
-        if let Some(curr_node) = self.maybe_curr_node {
-            if self.is_probing {
-                strategy.remove_probe(&self.graph);
-                self.is_probing = false;
-            }
+        match self.state {
+            AstarState::Scanning => {
+                let Some(MinScored(estimate_score, node)) = self.visit_next.pop() else {
+                    return Err(AstarError::NotFound);
+                };
 
-            if let Some(edge_id) = self.edge_ids.pop_front() {
-                // This lookup can be unwrapped without fear of panic since the node was
-                // necessarily scored before adding it to `.visit_next`.
-                let node_score = self.scores[&curr_node];
-                let edge = (&self.graph).edge_ref(edge_id);
+                let Ok(maybe_result) =
+                    strategy.visit_navnode(&self.graph, node, &self.path_tracker)
+                else {
+                    return Ok(ControlFlow::Continue(
+                        AstarContinueStatus::ScanningVisitFailed,
+                    ));
+                };
 
-                if let Some(edge_cost) = strategy.place_probe_at_navedge(&self.graph, edge) {
-                    let next = edge.target();
-                    let next_score = node_score + edge_cost;
+                if let Some(result) = maybe_result {
+                    let path = self.path_tracker.reconstruct_path_to(node);
+                    let cost = self.scores[&node];
+                    return Ok(ControlFlow::Break((cost, path, result)));
+                }
 
-                    match self.scores.entry(next) {
-                        Entry::Occupied(mut entry) => {
-                            // No need to add neighbors that we have already reached through a
-                            // shorter path than now.
-                            if *entry.get() <= next_score {
-                                return Ok(ControlFlow::Continue(
-                                    AstarContinueStatus::ProbingButDiscarded,
-                                ));
-                            }
-                            entry.insert(next_score);
+                match self.estimate_scores.entry(node) {
+                    Entry::Occupied(mut entry) => {
+                        // If the node has already been visited with an equal or lower
+                        // estimated score than now, then we do not need to re-visit it.
+                        if *entry.get() <= estimate_score {
+                            return Ok(ControlFlow::Continue(
+                                AstarContinueStatus::ScanningVisitSkipped,
+                            ));
                         }
-                        Entry::Vacant(entry) => {
-                            entry.insert(next_score);
-                        }
+                        entry.insert(estimate_score);
                     }
-
-                    self.path_tracker.set_predecessor(next, curr_node);
-                    let next_estimate_score =
-                        next_score + strategy.estimate_cost(&self.graph, next);
-                    self.visit_next.push(MinScored(next_estimate_score, next));
-
-                    self.is_probing = true;
-                    return Ok(ControlFlow::Continue(AstarContinueStatus::Probing));
+                    Entry::Vacant(entry) => {
+                        entry.insert(estimate_score);
+                    }
                 }
 
-                return Ok(ControlFlow::Continue(AstarContinueStatus::Probed));
+                self.edge_ids = self.graph.edges(node).map(|edge| edge.id()).collect();
+
+                self.state = AstarState::Visiting(node);
+                Ok(ControlFlow::Continue(AstarContinueStatus::Visiting))
             }
+            AstarState::Visiting(curr_visited_navnode) => {
+                if let Some(curr_probed_navedge) = self.edge_ids.pop_front() {
+                    // This lookup can be unwrapped without fear of panic since the node was
+                    // necessarily scored before adding it to `.visit_next`.
+                    let node_score = self.scores[&curr_visited_navnode];
+                    let curr_probed_navedge_ref = (&self.graph).edge_ref(curr_probed_navedge);
 
-            self.maybe_curr_node = None;
-        }
+                    if let Some(edge_cost) =
+                        strategy.place_probe_at_navedge(&self.graph, curr_probed_navedge_ref)
+                    {
+                        let next = curr_probed_navedge_ref.target();
+                        let next_score = node_score + edge_cost;
 
-        let Some(MinScored(estimate_score, node)) = self.visit_next.pop() else {
-            return Err(AstarError::NotFound);
-        };
+                        match self.scores.entry(next) {
+                            Entry::Occupied(mut entry) => {
+                                // No need to add neighbors that we have already reached through a
+                                // shorter path than now.
+                                if *entry.get() <= next_score {
+                                    return Ok(ControlFlow::Continue(
+                                        AstarContinueStatus::ProbingButDiscarded,
+                                    ));
+                                }
+                                entry.insert(next_score);
+                            }
+                            Entry::Vacant(entry) => {
+                                entry.insert(next_score);
+                            }
+                        }
 
-        let Ok(maybe_result) = strategy.visit_navnode(&self.graph, node, &self.path_tracker) else {
-            return Ok(ControlFlow::Continue(AstarContinueStatus::VisitFailed));
-        };
+                        self.path_tracker
+                            .set_predecessor(next, curr_visited_navnode);
+                        let next_estimate_score =
+                            next_score + strategy.estimate_cost(&self.graph, next);
+                        self.visit_next.push(MinScored(next_estimate_score, next));
 
-        if let Some(result) = maybe_result {
-            let path = self.path_tracker.reconstruct_path_to(node);
-            let cost = self.scores[&node];
-            return Ok(ControlFlow::Break((cost, path, result)));
-        }
-
-        match self.estimate_scores.entry(node) {
-            Entry::Occupied(mut entry) => {
-                // If the node has already been visited with an equal or lower
-                // estimated score than now, then we do not need to re-visit it.
-                if *entry.get() <= estimate_score {
-                    return Ok(ControlFlow::Continue(AstarContinueStatus::VisitSkipped));
+                        self.state = AstarState::Probing(curr_visited_navnode, curr_probed_navedge);
+                        Ok(ControlFlow::Continue(AstarContinueStatus::Probing))
+                    } else {
+                        Ok(ControlFlow::Continue(AstarContinueStatus::Probed))
+                    }
+                } else {
+                    self.state = AstarState::Scanning;
+                    Ok(ControlFlow::Continue(AstarContinueStatus::Probed))
                 }
-                entry.insert(estimate_score);
             }
-            Entry::Vacant(entry) => {
-                entry.insert(estimate_score);
+            AstarState::Probing(curr_visited_navnode, _curr_probed_navedge) => {
+                strategy.remove_probe(&self.graph);
+
+                self.state = AstarState::Visiting(curr_visited_navnode);
+                Ok(ControlFlow::Continue(AstarContinueStatus::Probed))
             }
         }
-
-        self.maybe_curr_node = Some(node);
-        self.edge_ids = self.graph.edges(node).map(|edge| edge.id()).collect();
-
-        Ok(ControlFlow::Continue(AstarContinueStatus::Visited))
     }
 }
