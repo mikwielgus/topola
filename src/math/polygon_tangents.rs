@@ -2,7 +2,9 @@
 //
 // SPDX-License-Identifier: MIT
 
-use super::{between_vectors_cached, cyclic_breadth_partition_search, perp_dot_product};
+use super::{
+    between_vectors_cached, cyclic_breadth_partition_search, dot_product, perp_dot_product,
+};
 use geo::Point;
 
 #[derive(Clone, Debug, thiserror::Error, PartialEq)]
@@ -24,6 +26,7 @@ pub struct CachedPolyExt<I>(pub Box<[(Point, I, f64)]>);
 impl<I: Copy> CachedPolyExt<I> {
     pub fn new(poly_ext: &[(Point, I)], poly_ext_is_cw: bool) -> Self {
         let mut tmp;
+        assert!(!poly_ext.len() > 1);
         let poly_ext = if poly_ext_is_cw {
             tmp = poly_ext.to_vec();
             tmp[1..].reverse();
@@ -32,7 +35,6 @@ impl<I: Copy> CachedPolyExt<I> {
             poly_ext
         };
 
-        assert!(!poly_ext.is_empty());
         Self(
             poly_ext
                 .iter()
@@ -50,17 +52,8 @@ impl<I: Copy> CachedPolyExt<I> {
     /// Calculates the tangents to the polygon exterior going through point `origin`.
     pub fn tangent_points(&self, origin: Point) -> Option<(I, I)> {
         let poly_ext = &self.0;
-        debug_assert!(!poly_ext.is_empty());
-
-        let (pos_false, pos_true) =
-            cyclic_breadth_partition_search(0..poly_ext.len(), |i: usize| {
-                let prev = &poly_ext[(poly_ext.len() + i - 1) % poly_ext.len()];
-                let cur = &poly_ext[i];
-                let next = &poly_ext[(i + 1) % poly_ext.len()];
-
-                // local coordinate system with origin at `cur.0`.
-                between_vectors_cached(cur.0 - origin, cur.0 - prev.0, cur.0 - next.0, cur.2)
-            });
+        let len = poly_ext.len();
+        debug_assert!(len > 1);
 
         // * `pos_false` points to the maximum
         // * `pos_true`  points to the minimum
@@ -80,9 +73,52 @@ impl<I: Copy> CachedPolyExt<I> {
 
         // In `Self::new` we force CCw.
 
-        let (pos_false, pos_true) = if let (Some(pos_false), Some(pos_true)) = (pos_false, pos_true)
+        let (pos_false, pos_true) = if let (Some(pos_false), Some(pos_true)) =
+            cyclic_breadth_partition_search(0..len, |i: usize| {
+                let prev = &poly_ext[(len + i - 1) % len];
+                let cur = &poly_ext[i];
+                let next = &poly_ext[(i + 1) % len];
+
+                // local coordinate system with origin at `cur.0`.
+                between_vectors_cached(cur.0 - origin, cur.0 - prev.0, cur.0 - next.0, cur.2)
+            }) {
+            ((pos_false + 1) % len, pos_true)
+        } else if let (Some(mut rev_pos_false), Some(mut rev_pos_true)) =
+            cyclic_breadth_partition_search(0..len, |i: usize| {
+                let prev = &poly_ext[(len + i - 1) % len];
+                let cur = &poly_ext[i];
+                let next = &poly_ext[(i + 1) % len];
+
+                // local coordinate system with origin at `cur.0`.
+                between_vectors_cached(origin - cur.0, cur.0 - prev.0, cur.0 - next.0, cur.2)
+            })
         {
-            ((pos_false + 1) % poly_ext.len(), pos_true)
+            // the following is necessary to find the "furthest" tangent points
+            let same_direction = |pos: usize, vec: Point| {
+                let vec_cur = origin - poly_ext[pos].0;
+                approx::abs_diff_eq!(0., dot_product(vec_cur, vec))
+            };
+            let mut pos_false = rev_pos_true;
+            let vec_false = origin - poly_ext[pos_false].0;
+            let mut pos_true = (rev_pos_false + 1) % len;
+            let vec_true = origin - poly_ext[pos_true].0;
+            // try to move pos_true along CCW
+            loop {
+                let next_pos = (pos_true + 1) % len;
+                if !same_direction(next_pos, vec_true) {
+                    break;
+                }
+                pos_true = next_pos;
+            }
+            // try to move pos_false along CW
+            loop {
+                let next_pos = (len + pos_false - 1) % len;
+                if !same_direction(next_pos, vec_false) {
+                    break;
+                }
+                pos_false = next_pos;
+            }
+            (pos_false, pos_true)
         } else {
             return None;
         };
@@ -98,7 +134,7 @@ pub fn poly_ext_tangent_points<I: Copy>(
     poly_ext_is_cw: bool,
     origin: Point,
 ) -> Result<(I, I), PolyTangentException<I>> {
-    if poly_ext.is_empty() {
+    if poly_ext.len() < 2 {
         return Err(PolyTangentException::EmptyTargetPolygon { origin });
     }
 
@@ -147,7 +183,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "https://codeberg.org/topola/topola/issues/238"]
     fn triangle() {
         let poly_ext = &[
             (point! { x: 0., y: 0. }, FixedDotIndex::new(0.into())),
@@ -162,7 +197,6 @@ mod tests {
     }
 
     #[test]
-    #[ignore = "https://codeberg.org/topola/topola/issues/238"]
     fn triangle_cw() {
         let poly_ext = &[
             (point! { x: 0., y: 0. }, FixedDotIndex::new(0.into())),
