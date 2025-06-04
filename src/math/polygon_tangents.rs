@@ -2,9 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use super::{
-    between_vectors, between_vectors_cached, cyclic_breadth_partition_search, perp_dot_product,
-};
+use super::{between_vectors_cached, cyclic_breadth_partition_search, perp_dot_product};
 use geo::Point;
 
 #[derive(Clone, Debug, thiserror::Error, PartialEq)]
@@ -20,10 +18,20 @@ pub enum PolyTangentException<I> {
 }
 
 /// Caches the `perp_dot_product` call in [`between_vectors`]
-pub struct CachedPolyExt<I>(pub Box<[(Point, I, f64)]>, bool);
+#[derive(Clone, Debug)]
+pub struct CachedPolyExt<I>(pub Box<[(Point, I, f64)]>);
 
-impl<I: Copy + Eq> CachedPolyExt<I> {
+impl<I: Copy> CachedPolyExt<I> {
     pub fn new(poly_ext: &[(Point, I)], poly_ext_is_cw: bool) -> Self {
+        let mut tmp;
+        let poly_ext = if poly_ext_is_cw {
+            tmp = poly_ext.to_vec();
+            tmp[1..].reverse();
+            &tmp[..]
+        } else {
+            poly_ext
+        };
+
         assert!(!poly_ext.is_empty());
         Self(
             poly_ext
@@ -36,7 +44,6 @@ impl<I: Copy + Eq> CachedPolyExt<I> {
                     (cur, index, cross)
                 })
                 .collect(),
-            poly_ext_is_cw,
         )
     }
 
@@ -55,13 +62,6 @@ impl<I: Copy + Eq> CachedPolyExt<I> {
                 between_vectors_cached(cur.0 - origin, cur.0 - prev.0, cur.0 - next.0, cur.2)
             });
 
-        let (mut pos_false, mut pos_true) =
-            if let (Some(pos_false), Some(pos_true)) = (pos_false, pos_true) {
-                (pos_false, pos_true)
-            } else {
-                return None;
-            };
-
         // * `pos_false` points to the maximum
         // * `pos_true`  points to the minimum
 
@@ -78,15 +78,14 @@ impl<I: Copy + Eq> CachedPolyExt<I> {
         // * `pos_false` will be correct.
         // * `pos_true`  will be one too early, and
 
-        // TODO: can we (without too much overhead) determine if `poly_ext` is CW or CCW?
+        // In `Self::new` we force CCw.
 
-        if self.1 {
-            pos_true += 1;
-            pos_true %= poly_ext.len();
+        let (pos_false, pos_true) = if let (Some(pos_false), Some(pos_true)) = (pos_false, pos_true)
+        {
+            ((pos_false + 1) % poly_ext.len(), pos_true)
         } else {
-            pos_false += 1;
-            pos_false %= poly_ext.len();
-        }
+            return None;
+        };
 
         Some((poly_ext[pos_true].1, poly_ext[pos_false].1))
     }
@@ -103,52 +102,12 @@ pub fn poly_ext_tangent_points<I: Copy>(
         return Err(PolyTangentException::EmptyTargetPolygon { origin });
     }
 
-    let (pos_false, pos_true) = cyclic_breadth_partition_search(0..poly_ext.len(), |i: usize| {
-        let prev = &poly_ext[(poly_ext.len() + i - 1) % poly_ext.len()];
-        let cur = &poly_ext[i];
-        let next = &poly_ext[(i + 1) % poly_ext.len()];
-
-        // local coordinate system with origin at `cur.0`.
-        between_vectors(cur.0 - origin, cur.0 - prev.0, cur.0 - next.0)
-    });
-
-    let (mut pos_false, mut pos_true) =
-        if let (Some(pos_false), Some(pos_true)) = (pos_false, pos_true) {
-            (pos_false, pos_true)
-        } else {
-            return Err(PolyTangentException::InvalidData {
-                poly_ext: poly_ext.to_vec().into_boxed_slice(),
-                origin,
-            });
-        };
-
-    // * `pos_false` points to the maximum
-    // * `pos_true`  points to the minimum
-
-    // NOTE: although pos_{false,true} are vertex indices, they are actually
-    // referring to the "critical" segment(s) (pos_false, pos_false + 1) (and resp. for pos_true).
-    // because that is where the `between_vectors` result flips.
-    // These critical segments are independent of CW/CCW.
-
-    // if `poly_ext` is oriented CCW, then
-    // * `pos_false` will be one too early, and
-    // * `pos_true`  will be correct.
-
-    // if `poly_ext` is oriented CW, then
-    // * `pos_false` will be correct.
-    // * `pos_true`  will be one too early, and
-
-    // TODO: can we (without too much overhead) determine if `poly_ext` is CW or CCW?
-
-    if poly_ext_is_cw {
-        pos_true += 1;
-        pos_true %= poly_ext.len();
-    } else {
-        pos_false += 1;
-        pos_false %= poly_ext.len();
-    }
-
-    Ok((poly_ext[pos_true].1, poly_ext[pos_false].1))
+    CachedPolyExt::new(poly_ext, poly_ext_is_cw)
+        .tangent_points(origin)
+        .ok_or_else(|| PolyTangentException::InvalidData {
+            poly_ext: poly_ext.to_vec().into_boxed_slice(),
+            origin,
+        })
 }
 
 #[cfg(test)]
