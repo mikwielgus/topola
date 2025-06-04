@@ -4,8 +4,9 @@
 
 use super::{
     between_vectors_cached, cyclic_breadth_partition_search, dot_product, perp_dot_product,
+    RotationSense,
 };
-use geo::Point;
+use geo::{algorithm::Centroid, Point, Polygon};
 
 #[derive(Clone, Debug, thiserror::Error, PartialEq)]
 pub enum PolyTangentException<I> {
@@ -49,8 +50,36 @@ impl<I: Copy> CachedPolyExt<I> {
         )
     }
 
+    pub fn centroid(&self) -> Point {
+        Polygon::new(self.0.iter().map(|(pt, _, _)| *pt).collect(), Vec::new())
+            .centroid()
+            .unwrap()
+    }
+
+    fn is_outside(&self, i: usize, origin: Point) -> bool {
+        let poly_ext = &self.0;
+        let len = poly_ext.len();
+        let prev = &poly_ext[(len + i - 1) % len];
+        let cur = &poly_ext[i];
+        let next = &poly_ext[(i + 1) % len];
+
+        // local coordinate system with origin at `cur.0`.
+        between_vectors_cached(cur.0 - origin, cur.0 - prev.0, cur.0 - next.0, cur.2)
+    }
+
+    fn is_rev_outside(&self, i: usize, origin: Point) -> bool {
+        let poly_ext = &self.0;
+        let len = poly_ext.len();
+        let prev = &poly_ext[(len + i - 1) % len];
+        let cur = &poly_ext[i];
+        let next = &poly_ext[(i + 1) % len];
+
+        // local coordinate system with origin at `cur.0`.
+        between_vectors_cached(origin - cur.0, cur.0 - prev.0, cur.0 - next.0, cur.2)
+    }
+
     /// Calculates the tangents to the polygon exterior going through point `origin`.
-    pub fn tangent_points(&self, origin: Point) -> Option<(I, I)> {
+    fn tangent_points_intern(&self, origin: Point) -> Option<(usize, usize)> {
         let poly_ext = &self.0;
         let len = poly_ext.len();
         debug_assert!(len > 1);
@@ -74,24 +103,11 @@ impl<I: Copy> CachedPolyExt<I> {
         // In `Self::new` we force CCw.
 
         let (pos_false, pos_true) = if let (Some(pos_false), Some(pos_true)) =
-            cyclic_breadth_partition_search(0..len, |i: usize| {
-                let prev = &poly_ext[(len + i - 1) % len];
-                let cur = &poly_ext[i];
-                let next = &poly_ext[(i + 1) % len];
-
-                // local coordinate system with origin at `cur.0`.
-                between_vectors_cached(cur.0 - origin, cur.0 - prev.0, cur.0 - next.0, cur.2)
-            }) {
+            cyclic_breadth_partition_search(0..len, |i: usize| self.is_outside(i, origin))
+        {
             ((pos_false + 1) % len, pos_true)
-        } else if let (Some(mut rev_pos_false), Some(mut rev_pos_true)) =
-            cyclic_breadth_partition_search(0..len, |i: usize| {
-                let prev = &poly_ext[(len + i - 1) % len];
-                let cur = &poly_ext[i];
-                let next = &poly_ext[(i + 1) % len];
-
-                // local coordinate system with origin at `cur.0`.
-                between_vectors_cached(origin - cur.0, cur.0 - prev.0, cur.0 - next.0, cur.2)
-            })
+        } else if let (Some(rev_pos_false), Some(rev_pos_true)) =
+            cyclic_breadth_partition_search(0..len, |i: usize| self.is_rev_outside(i, origin))
         {
             // the following is necessary to find the "furthest" tangent points
             let same_direction = |pos: usize, vec: Point| {
@@ -123,7 +139,13 @@ impl<I: Copy> CachedPolyExt<I> {
             return None;
         };
 
-        Some((poly_ext[pos_true].1, poly_ext[pos_false].1))
+        Some((pos_true, pos_false))
+    }
+
+    /// Calculates the tangents to the polygon exterior going through point `origin`.
+    pub fn tangent_points(&self, origin: Point) -> Option<(I, I)> {
+        self.tangent_points_intern(origin)
+            .map(|(pos_min, pos_max)| (self.0[pos_min].1, self.0[pos_max].1))
     }
 }
 
@@ -146,9 +168,98 @@ pub fn poly_ext_tangent_points<I: Copy>(
         })
 }
 
+/// Calculates the tangent between the polygons `source` and `target`,
+/// according to their intended [`RotationSense`].
+pub fn poly_ext_handover<I: Copy>(
+    source: &CachedPolyExt<I>,
+    source_sense: RotationSense,
+    target: &CachedPolyExt<I>,
+    target_sense: RotationSense,
+) -> Option<(I, I)> {
+    use RotationSense::{Clockwise as Cw, Counterclockwise as CoCw};
+
+    let inv_source_sense = match source_sense {
+        CoCw => Cw,
+        Cw => CoCw,
+    };
+    let inv_target_sense = match target_sense {
+        CoCw => Cw,
+        Cw => CoCw,
+    };
+
+    // initialization
+    let mut pos_trg = {
+        let pos = target.tangent_points_intern(source.centroid())?;
+        match target_sense {
+            CoCw => pos.0,
+            Cw => pos.1,
+        }
+    };
+    let mut pos_src = {
+        let pos = source.tangent_points_intern(target.centroid())?;
+        match inv_source_sense {
+            CoCw => pos.0,
+            Cw => pos.1,
+        }
+    };
+
+    // compute flow (direction toward which to shift the positions)
+    /*
+    let (flow_src, flow_trg) = match (source_sense, target_sense) {
+        (CoCw, CoCw) => (Cw, CoCw),
+        (Cw, CoCw) => (Cw, Cw),
+        (CoCw, Cw) => (CoCw, CoCw),
+        (Cw, Cw) => (CoCw, Cw),
+    };
+    */
+    let (flow_src, flow_trg) = (inv_target_sense, source_sense);
+
+    let mut modified = true;
+    while modified {
+        modified = false;
+        if !source.is_outside(pos_src, target.0[pos_trg].0)
+            || !source.is_rev_outside(pos_src, target.0[pos_trg].0)
+        {
+            pos_src = flow_src.step_ccw(pos_src, source.0.len(), 1);
+            modified = true;
+        }
+        if !target.is_outside(pos_trg, source.0[pos_src].0)
+            || !target.is_rev_outside(pos_trg, source.0[pos_src].0)
+        {
+            pos_trg = flow_trg.step_ccw(pos_trg, target.0.len(), 1);
+            modified = true;
+        }
+    }
+
+    // make extremal
+    let (xtflow_src, xtflow_trg) = (inv_source_sense, target_sense);
+    while modified {
+        modified = false;
+        let next_pos_src = xtflow_src.step_ccw(pos_src, source.0.len(), 1);
+        if source.is_outside(next_pos_src, target.0[pos_trg].0)
+            && source.is_rev_outside(next_pos_src, target.0[pos_trg].0)
+        {
+            pos_src = next_pos_src;
+            modified = true;
+        }
+        let next_pos_trg = xtflow_trg.step_ccw(pos_trg, target.0.len(), 1);
+        if target.is_outside(next_pos_trg, source.0[pos_src].0)
+            && target.is_rev_outside(next_pos_trg, source.0[pos_src].0)
+        {
+            pos_trg = next_pos_trg;
+            modified = true;
+        }
+    }
+
+    Some((source.0[pos_src].1, target.0[pos_trg].1))
+}
+
 #[cfg(test)]
 mod tests {
-    use super::poly_ext_tangent_points as petp;
+    use super::{
+        poly_ext_handover as pehov, poly_ext_tangent_points as petp, CachedPolyExt,
+        RotationSense::{Clockwise as Cw, Counterclockwise as CoCw},
+    };
     use crate::drawing::dot::FixedDotIndex;
     use geo::point;
 
@@ -207,6 +318,46 @@ mod tests {
         assert_eq!(
             petp(poly_ext, true, origin),
             Ok((FixedDotIndex::new(2.into()), FixedDotIndex::new(0.into())))
+        );
+    }
+
+    #[test]
+    fn handover00() {
+        let poly_ext_src = &[
+            (point! { x: 4., y: 0. }, FixedDotIndex::new(0.into())),
+            (point! { x: 3., y: 3. }, FixedDotIndex::new(1.into())),
+            (point! { x: 1., y: 2. }, FixedDotIndex::new(2.into())),
+            (point! { x: 1., y: -2. }, FixedDotIndex::new(3.into())),
+            (point! { x: 3., y: -3. }, FixedDotIndex::new(4.into())),
+        ];
+        let source = CachedPolyExt::new(poly_ext_src, false);
+        let source = &source;
+
+        let poly_ext_trg = &[
+            (point! { x: -4., y: 0. }, FixedDotIndex::new(10.into())),
+            (point! { x: -3., y: 3. }, FixedDotIndex::new(11.into())),
+            (point! { x: -1., y: 2. }, FixedDotIndex::new(12.into())),
+            (point! { x: -1., y: -2. }, FixedDotIndex::new(13.into())),
+            (point! { x: -3., y: -3. }, FixedDotIndex::new(14.into())),
+        ];
+        let target = CachedPolyExt::new(poly_ext_trg, true);
+        let target = &target;
+
+        assert_eq!(
+            pehov(source, CoCw, target, CoCw),
+            Some((FixedDotIndex::new(1.into()), FixedDotIndex::new(11.into())))
+        );
+        assert_eq!(
+            pehov(source, CoCw, target, Cw),
+            Some((FixedDotIndex::new(2.into()), FixedDotIndex::new(13.into())))
+        );
+        assert_eq!(
+            pehov(source, Cw, target, CoCw),
+            Some((FixedDotIndex::new(3.into()), FixedDotIndex::new(12.into())))
+        );
+        assert_eq!(
+            pehov(source, Cw, target, Cw),
+            Some((FixedDotIndex::new(4.into()), FixedDotIndex::new(14.into())))
         );
     }
 }

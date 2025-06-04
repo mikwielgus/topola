@@ -15,10 +15,32 @@ pub use polygon_tangents::*;
 mod tangents;
 pub use tangents::*;
 
-#[derive(Clone, Copy, Debug, PartialEq)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum RotationSense {
     Counterclockwise,
     Clockwise,
+}
+
+impl core::ops::Neg for RotationSense {
+    type Output = Self;
+
+    fn neg(self) -> Self {
+        match self {
+            RotationSense::Counterclockwise => RotationSense::Clockwise,
+            RotationSense::Clockwise => RotationSense::Counterclockwise,
+        }
+    }
+}
+
+impl RotationSense {
+    /// move `pos` by `step` along `self` assuming the list of positions is ordered CCW.
+    pub fn step_ccw(self, pos: usize, len: usize, mut step: usize) -> usize {
+        step %= len;
+        (match self {
+            RotationSense::Counterclockwise => pos + step,
+            RotationSense::Clockwise => len + pos - step,
+        }) % len
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq)]
