@@ -20,7 +20,7 @@ pub enum PolyTangentException<I> {
     },
 }
 
-/// Caches the `perp_dot_product` call in [`between_vectors`]
+/// Caches the [`perp_dot_product`] call in [`between_vectors`](super::between_vectors)
 #[derive(Clone, Debug)]
 pub struct CachedPolyExt<I>(pub Box<[(Point, I, f64)]>);
 
