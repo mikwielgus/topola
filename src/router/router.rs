@@ -4,7 +4,7 @@
 
 use derive_getters::Getters;
 use geo::algorithm::line_measures::{Distance, Euclidean};
-use petgraph::{data::DataMap, visit::EdgeRef};
+use petgraph::data::DataMap;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -25,12 +25,12 @@ use crate::{
 };
 
 use super::{
-    astar::{AstarStrategy, PathTracker},
     draw::DrawException,
     navcord::Navcord,
     navcorder::{Navcorder, NavcorderException},
-    navmesh::{Navmesh, NavmeshEdgeReference, NavmeshError, NavnodeIndex},
+    navmesh::{Navmesh, NavmeshError, NavnodeIndex},
     route::RouteStepper,
+    thetastar::{PathTracker, ThetastarStrategy},
 };
 
 #[derive(Debug, Clone, Copy, Serialize, Deserialize)]
@@ -41,7 +41,7 @@ pub struct RouterOptions {
 }
 
 #[derive(Debug)]
-pub struct RouterAstarStrategy<'a, R> {
+pub struct RouterThetastarStrategy<'a, R> {
     pub layout: &'a mut Layout<R>,
     pub navcord: &'a mut Navcord,
     pub target: FixedDotIndex,
@@ -49,7 +49,7 @@ pub struct RouterAstarStrategy<'a, R> {
     pub probe_obstacles: Vec<PrimitiveIndex>,
 }
 
-impl<'a, R> RouterAstarStrategy<'a, R> {
+impl<'a, R> RouterThetastarStrategy<'a, R> {
     pub fn new(layout: &'a mut Layout<R>, navcord: &'a mut Navcord, target: FixedDotIndex) -> Self {
         Self {
             layout,
@@ -61,28 +61,30 @@ impl<'a, R> RouterAstarStrategy<'a, R> {
     }
 }
 
-impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAstarStrategy<'_, R> {
+impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
+    for RouterThetastarStrategy<'_, R>
+{
     fn visit_navnode(
         &mut self,
         navmesh: &Navmesh,
-        vertex: NavnodeIndex,
+        navnode: NavnodeIndex,
         tracker: &PathTracker<Navmesh>,
     ) -> Result<Option<BandTermsegIndex>, ()> {
-        let new_path = tracker.reconstruct_path_to(vertex);
+        let new_path = tracker.reconstruct_path_to(navnode);
 
-        if vertex == navmesh.destination_navnode() {
+        if navnode == navmesh.destination_navnode() {
             self.layout
                 .rework_path(navmesh, self.navcord, &new_path[..new_path.len() - 1])
-                .unwrap();
+                .map_err(|_| ())?;
 
             // Set navcord members for consistency. The code would probably work
             // without this, since A* will terminate now anyway.
             self.navcord.final_termseg = Some(
                 self.layout
                     .finish(navmesh, self.navcord, self.target)
-                    .unwrap(),
+                    .map_err(|_| ())?,
             );
-            self.navcord.path.push(vertex);
+            self.navcord.path.push(navnode);
 
             Ok(self.navcord.final_termseg)
         } else {
@@ -92,13 +94,13 @@ impl<R: AccessRules> AstarStrategy<Navmesh, f64, BandTermsegIndex> for RouterAst
         }
     }
 
-    fn place_probe_at_navedge(
+    fn place_probe_to_navnode(
         &mut self,
         navmesh: &Navmesh,
-        edge: NavmeshEdgeReference,
+        probed_navnode: NavnodeIndex,
     ) -> Option<f64> {
         let old_head = self.navcord.head;
-        let result = self.navcord.step_to(self.layout, navmesh, edge.target());
+        let result = self.navcord.step_to(self.layout, navmesh, probed_navnode);
 
         let prev_bend_length = match old_head {
             Head::Cane(old_cane_head) => self

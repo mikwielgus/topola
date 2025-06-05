@@ -16,9 +16,9 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{edit::ApplyGeometryEdit, primitive::PrimitiveShape},
     router::{
-        astar::AstarStepper,
         navcord::Navcord,
         navmesh::{Navmesh, NavnodeIndex},
+        thetastar::ThetastarStepper,
     },
     stepper::Step,
 };
@@ -37,8 +37,8 @@ use super::{
 /// Trait for getting the A* stepper to display its data on the debug overlay,
 /// most importantly the navmesh which is owned by the A* stepper.
 #[enum_dispatch]
-pub trait GetMaybeAstarStepper {
-    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>> {
+pub trait GetMaybeThetastarStepper {
+    fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
         None
     }
 }

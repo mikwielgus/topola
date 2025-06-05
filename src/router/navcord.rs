@@ -112,7 +112,7 @@ impl Navcord {
                 unreachable!();
             };
 
-            self.final_termseg = Some(layout.finish(navmesh, self, to_dot).unwrap());
+            self.final_termseg = Some(layout.finish(navmesh, self, to_dot)?);
 
             // NOTE: We don't update the head here because there is currently
             // no head variant that consists only of a seg, and I'm not sure if

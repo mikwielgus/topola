@@ -32,7 +32,7 @@ use crate::{
     graph::{GetPetgraphIndex, MakeRef},
     layout::Layout,
     math::RotationSense,
-    router::astar::MakeEdgeRef,
+    router::thetastar::MakeEdgeRef,
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
 

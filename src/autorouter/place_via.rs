@@ -13,7 +13,7 @@ use crate::{
 
 use super::{
     invoker::{
-        GetGhosts, GetMaybeAstarStepper, GetMaybeNavcord, GetNavmeshDebugTexts, GetObstacles,
+        GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
     },
     Autorouter, AutorouterError,
 };
@@ -51,7 +51,7 @@ impl PlaceViaExecutionStepper {
     }
 }
 
-impl GetMaybeAstarStepper for PlaceViaExecutionStepper {}
+impl GetMaybeThetastarStepper for PlaceViaExecutionStepper {}
 impl GetMaybeNavcord for PlaceViaExecutionStepper {}
 impl GetGhosts for PlaceViaExecutionStepper {}
 impl GetObstacles for PlaceViaExecutionStepper {}

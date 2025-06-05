@@ -13,18 +13,18 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     layout::LayoutEdit,
     router::{
-        astar::{AstarError, AstarStepper},
         navcord::Navcord,
         navcorder::Navcorder,
         navmesh::{Navmesh, NavmeshError},
-        Router, RouterAstarStrategy,
+        thetastar::{ThetastarError, ThetastarStepper},
+        Router, RouterThetastarStrategy,
     },
     stepper::Step,
 };
 
 #[derive(Getters, Dissolve)]
 pub struct RouteStepper {
-    astar: AstarStepper<Navmesh, f64>,
+    thetastar: ThetastarStepper<Navmesh, f64>,
     navcord: Navcord,
     ghosts: Vec<PrimitiveShape>,
     obstacles: Vec<PrimitiveIndex>,
@@ -55,13 +55,13 @@ impl RouteStepper {
         let layout = router.layout_mut();
         let mut navcord = layout.start(recorder, source, source_navnode, width);
 
-        let mut strategy = RouterAstarStrategy::new(layout, &mut navcord, target);
-        let astar = AstarStepper::new(navmesh, source_navnode, &mut strategy);
+        let mut strategy = RouterThetastarStrategy::new(layout, &mut navcord, target);
+        let thetastar = ThetastarStepper::new(navmesh, source_navnode, &mut strategy);
         let ghosts = vec![];
         let obstacles = vec![];
 
         Self {
-            astar,
+            thetastar,
             navcord,
             ghosts,
             obstacles,
@@ -70,16 +70,16 @@ impl RouteStepper {
 }
 
 impl<R: AccessRules> Step<Router<'_, R>, BandTermsegIndex> for RouteStepper {
-    type Error = AstarError;
+    type Error = ThetastarError;
 
     fn step(
         &mut self,
         router: &mut Router<R>,
-    ) -> Result<ControlFlow<BandTermsegIndex>, AstarError> {
+    ) -> Result<ControlFlow<BandTermsegIndex>, ThetastarError> {
         let layout = router.layout_mut();
-        let target = self.astar.graph().destination();
-        let mut strategy = RouterAstarStrategy::new(layout, &mut self.navcord, target);
-        let result = self.astar.step(&mut strategy);
+        let target = self.thetastar.graph().destination();
+        let mut strategy = RouterThetastarStrategy::new(layout, &mut self.navcord, target);
+        let result = self.thetastar.step(&mut strategy);
         self.ghosts = strategy.probe_ghosts;
         self.obstacles = strategy.probe_obstacles;
 

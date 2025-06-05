@@ -14,7 +14,7 @@ use crate::{
     drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
     graph::MakeRef,
     layout::{via::ViaWeight, LayoutEdit},
-    router::{astar::AstarError, navmesh::NavmeshError, RouterOptions},
+    router::{navmesh::NavmeshError, thetastar::ThetastarError, RouterOptions},
     triangulation::GetTrianvertexNodeIndex,
 };
 
@@ -42,7 +42,7 @@ pub enum AutorouterError {
     #[error(transparent)]
     Navmesh(#[from] NavmeshError),
     #[error("routing failed: {0}")]
-    Astar(#[from] AstarError),
+    Thetastar(#[from] ThetastarError),
     #[error("could not place via")]
     CouldNotPlaceVia(#[from] Infringement),
     #[error("could not remove band")]

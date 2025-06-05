@@ -14,13 +14,15 @@ use crate::{
     drawing::{band::BandTermsegIndex, graph::PrimitiveIndex, Collect},
     geometry::primitive::PrimitiveShape,
     layout::LayoutEdit,
-    router::{astar::AstarStepper, navcord::Navcord, navmesh::Navmesh, RouteStepper, Router},
+    router::{
+        navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper, RouteStepper, Router,
+    },
     stepper::Step,
 };
 
 use super::{
     invoker::{
-        GetGhosts, GetMaybeAstarStepper, GetMaybeNavcord, GetNavmeshDebugTexts, GetObstacles,
+        GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
     },
     Autorouter, AutorouterError, AutorouterOptions,
 };
@@ -92,7 +94,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
     ) -> Result<ControlFlow<Option<LayoutEdit>, AutorouteContinueStatus>, AutorouterError> {
         let Some(curr_ratline) = self.curr_ratline else {
             let recorder = if let Some(taken_route) = self.route.take() {
-                let (_astar, navcord, ..) = taken_route.dissolve();
+                let (_thetastar, navcord, ..) = taken_route.dissolve();
                 navcord.recorder
             } else {
                 LayoutEdit::new()
@@ -147,7 +149,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
             self.curr_ratline = Some(new_ratline);
 
             let recorder = if let Some(taken_route) = self.route.take() {
-                let (_astar, navcord, ..) = taken_route.dissolve();
+                let (_thetastar, navcord, ..) = taken_route.dissolve();
                 navcord.recorder
             } else {
                 LayoutEdit::new()
@@ -167,9 +169,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
     }
 }
 
-impl GetMaybeAstarStepper for AutorouteExecutionStepper {
-    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>> {
-        self.route.as_ref().map(|route| route.astar())
+impl GetMaybeThetastarStepper for AutorouteExecutionStepper {
+    fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
+        self.route.as_ref().map(|route| route.thetastar())
     }
 }
 

@@ -36,7 +36,7 @@ pub enum Command {
 }
 
 #[enum_dispatch(
-    GetMaybeAstarStepper,
+    GetMaybeThetastarStepper,
     GetMaybeNavcord,
     GetGhosts,
     GetObstacles,

@@ -14,14 +14,14 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{primitive::PrimitiveShape, shape::MeasureLength},
     graph::MakeRef,
-    router::{astar::AstarStepper, navcord::Navcord, navmesh::Navmesh},
+    router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
     stepper::Step,
 };
 
 use super::{
     autoroute::{AutorouteContinueStatus, AutorouteExecutionStepper},
     invoker::{
-        GetGhosts, GetMaybeAstarStepper, GetMaybeNavcord, GetNavmeshDebugTexts, GetObstacles,
+        GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
     },
     Autorouter, AutorouterError, AutorouterOptions,
 };
@@ -102,9 +102,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, (f64, f64)> for CompareDetoursExecut
     }
 }
 
-impl GetMaybeAstarStepper for CompareDetoursExecutionStepper {
-    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>> {
-        self.autoroute.maybe_astar()
+impl GetMaybeThetastarStepper for CompareDetoursExecutionStepper {
+    fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
+        self.autoroute.maybe_thetastar()
     }
 }
 

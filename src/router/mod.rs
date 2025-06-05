@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: MIT
 
-pub mod astar;
 pub mod draw;
 pub mod navcord;
 pub mod navcorder;
 pub mod navmesh;
 mod route;
 mod router;
+pub mod thetastar;
 
 pub use route::RouteStepper;
 pub use router::*;

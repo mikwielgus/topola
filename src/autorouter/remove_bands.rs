@@ -8,7 +8,7 @@ use crate::{board::AccessMesadata, layout::LayoutEdit};
 
 use super::{
     invoker::{
-        GetGhosts, GetMaybeAstarStepper, GetMaybeNavcord, GetNavmeshDebugTexts, GetObstacles,
+        GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
     },
     selection::BandSelection,
     Autorouter, AutorouterError,
@@ -47,7 +47,7 @@ impl RemoveBandsExecutionStepper {
     }
 }
 
-impl GetMaybeAstarStepper for RemoveBandsExecutionStepper {}
+impl GetMaybeThetastarStepper for RemoveBandsExecutionStepper {}
 impl GetMaybeNavcord for RemoveBandsExecutionStepper {}
 impl GetGhosts for RemoveBandsExecutionStepper {}
 impl GetObstacles for RemoveBandsExecutionStepper {}

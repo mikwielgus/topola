@@ -12,8 +12,8 @@ use crate::{
     autorouter::{
         execution::ExecutionStepper,
         invoker::{
-            GetGhosts, GetMaybeAstarStepper, GetMaybeNavcord, GetNavmeshDebugTexts, GetObstacles,
-            Invoker, InvokerError,
+            GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts,
+            GetObstacles, Invoker, InvokerError,
         },
     },
     board::AccessMesadata,
@@ -21,9 +21,9 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     interactor::interaction::{InteractionError, InteractionStepper},
     router::{
-        astar::AstarStepper,
         navcord::Navcord,
         navmesh::{Navmesh, NavnodeIndex},
+        thetastar::ThetastarStepper,
     },
     stepper::{Abort, Step},
 };
@@ -50,7 +50,7 @@ pub enum ActivityError {
 
 /// An activity is either an interaction or an execution
 #[enum_dispatch(
-    GetMaybeAstarStepper,
+    GetMaybeThetastarStepper,
     GetMaybeNavcord,
     GetGhosts,
     GetObstacles,
@@ -125,9 +125,9 @@ impl<M: AccessMesadata> Abort<ActivityContext<'_, M>> for ActivityStepperWithSta
     }
 }
 
-impl GetMaybeAstarStepper for ActivityStepperWithStatus {
-    fn maybe_astar(&self) -> Option<&AstarStepper<Navmesh, f64>> {
-        self.activity.maybe_astar()
+impl GetMaybeThetastarStepper for ActivityStepperWithStatus {
+    fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
+        self.activity.maybe_thetastar()
     }
 }
 

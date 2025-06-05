@@ -12,7 +12,8 @@ use topola::{
     autorouter::{
         execution::Command,
         invoker::{
-            GetGhosts, GetMaybeAstarStepper, GetMaybeNavcord, GetNavmeshDebugTexts, GetObstacles,
+            GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts,
+            GetObstacles,
         },
     },
     board::AccessMesadata,
@@ -250,7 +251,7 @@ impl Viewport {
 
                         if menu_bar.show_navmesh {
                             if let Some(activity) = workspace.interactor.maybe_activity() {
-                                if let Some(astar) = activity.maybe_astar() {
+                                if let Some(astar) = activity.maybe_thetastar() {
                                     let navmesh = astar.graph();
 
                                     for edge in navmesh.edge_references() {
@@ -460,7 +461,7 @@ impl Viewport {
                             }
 
                             if let Some(ref navmesh) =
-                                activity.maybe_astar().map(|astar| astar.graph())
+                                activity.maybe_thetastar().map(|astar| astar.graph())
                             {
                                 if menu_bar.show_origin_destination {
                                     let (origin, destination) =
