@@ -313,13 +313,13 @@ where
                 }
             }
             ThetastarState::VisitingProbeOnNavedge(visited_navnode, curr_navedge) => {
-                let node_score = self.scores[&visited_navnode];
+                let visited_score = self.scores[&visited_navnode];
                 let to_navnode = (&self.graph).edge_ref(curr_navedge).target();
 
                 if let Some(navedge_cost) = strategy.place_probe_to_navnode(&self.graph, to_navnode)
                 {
                     let next = to_navnode;
-                    let next_score = node_score + navedge_cost;
+                    let next_score = visited_score + navedge_cost;
 
                     match self.scores.entry(next) {
                         Entry::Occupied(mut entry) => {

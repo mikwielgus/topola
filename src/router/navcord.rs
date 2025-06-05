@@ -9,9 +9,13 @@ use crate::{
     drawing::{
         band::BandTermsegIndex,
         dot::FixedDotIndex,
+        graph::MakePrimitive,
         head::{BareHead, CaneHead, Head},
+        primitive::MakePrimitiveShape,
         rules::AccessRules,
     },
+    geometry::shape::MeasureLength,
+    graph::MakeRef,
     layout::{Layout, LayoutEdit},
 };
 
@@ -39,7 +43,7 @@ pub struct Navcord {
     /// The head of the currently routed band.
     pub head: Head,
     /// If the band is finished, stores the termseg that was used to finish it.
-    pub final_termseg: Option<BandTermsegIndex>,
+    pub maybe_final_termseg: Option<BandTermsegIndex>,
     /// The width of the currently routed band.
     pub width: f64,
 }
@@ -56,7 +60,7 @@ impl Navcord {
             recorder,
             path: vec![source_navnode],
             head: BareHead { face: source }.into(),
-            final_termseg: None,
+            maybe_final_termseg: None,
             width,
         }
     }
@@ -98,6 +102,8 @@ impl Navcord {
 
     /// Advance the navcord and the currently routed band by one step to the
     /// navnode `to`.
+    ///
+    /// Returns the length of the created track.
     #[debug_ensures(ret.is_ok() -> self.path.len() == old(self.path.len() + 1))]
     #[debug_ensures(ret.is_err() -> self.path.len() == old(self.path.len()))]
     pub fn step_to<R: AccessRules>(
@@ -105,28 +111,60 @@ impl Navcord {
         layout: &mut Layout<R>,
         navmesh: &Navmesh,
         to: NavnodeIndex,
-    ) -> Result<(), NavcorderException> {
-        if to == navmesh.destination_navnode() {
+    ) -> Result<f64, NavcorderException> {
+        let length = if to == navmesh.destination_navnode() {
             let to_node_weight = navmesh.node_weight(to).unwrap();
             let BinavnodeNodeIndex::FixedDot(to_dot) = to_node_weight.node else {
                 unreachable!();
             };
 
-            self.final_termseg = Some(layout.finish(navmesh, self, to_dot)?);
+            let final_termseg = layout.finish(navmesh, self, to_dot)?;
+            self.maybe_final_termseg = Some(final_termseg);
+
+            let final_termseg_length = final_termseg.primitive(layout.drawing()).shape().length();
+
+            let bend_length = match self.head {
+                Head::Cane(old_cane_head) => layout
+                    .drawing()
+                    .primitive(old_cane_head.cane.bend)
+                    .shape()
+                    .length(),
+                Head::Bare(..) => 0.0,
+            };
+
+            final_termseg_length + bend_length
 
             // NOTE: We don't update the head here because there is currently
             // no head variant that consists only of a seg, and I'm not sure if
             // there should be one.
         } else {
+            let old_head = self.head;
+
             self.head = self.wrap(layout, navmesh, self.head, to)?.into();
-        }
+
+            let prev_bend_length = match old_head {
+                Head::Cane(old_cane_head) => layout
+                    .drawing()
+                    .primitive(old_cane_head.cane.bend)
+                    .shape()
+                    .length(),
+                Head::Bare(..) => 0.0,
+            };
+
+            prev_bend_length
+                // NOTE: the probe's bend length is always 0 here because such is
+                // the initial state of a cane (before getting extended, but this
+                // is never done for probes). So we could as well only measure the
+                // seg's length.
+                + self.head.ref_(layout.drawing()).length()
+        };
 
         // Now that the new part of the trace has been created, push the
         // navnode `to` onto the currently attempted path to start from it
         // on the next `.step_to(...)` call or retreat from it later using
         // `.step_back(...)`.
         self.path.push(to);
-        Ok(())
+        Ok(length)
     }
 
     /// Retreat the navcord and the currently routed band by one step.
@@ -135,9 +173,9 @@ impl Navcord {
         &mut self,
         layout: &mut Layout<R>,
     ) -> Result<(), NavcorderException> {
-        if let Some(final_termseg) = self.final_termseg {
+        if let Some(final_termseg) = self.maybe_final_termseg {
             layout.remove_termseg(&mut self.recorder, final_termseg);
-            self.final_termseg = None;
+            self.maybe_final_termseg = None;
         } else {
             if let Head::Cane(head) = self.head {
                 self.head = layout.undo_cane(&mut self.recorder, head).unwrap();

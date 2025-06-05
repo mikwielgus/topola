@@ -79,14 +79,14 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
 
             // Set navcord members for consistency. The code would probably work
             // without this, since A* will terminate now anyway.
-            self.navcord.final_termseg = Some(
+            self.navcord.maybe_final_termseg = Some(
                 self.layout
                     .finish(navmesh, self.navcord, self.target)
                     .map_err(|_| ())?,
             );
             self.navcord.path.push(navnode);
 
-            Ok(self.navcord.final_termseg)
+            Ok(self.navcord.maybe_final_termseg)
         } else {
             self.layout
                 .rework_path(navmesh, self.navcord, &new_path[..])
@@ -99,28 +99,10 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
         navmesh: &Navmesh,
         probed_navnode: NavnodeIndex,
     ) -> Option<f64> {
-        let old_head = self.navcord.head;
         let result = self.navcord.step_to(self.layout, navmesh, probed_navnode);
 
-        let prev_bend_length = match old_head {
-            Head::Cane(old_cane_head) => self
-                .layout
-                .drawing()
-                .primitive(old_cane_head.cane.bend)
-                .shape()
-                .length(),
-            Head::Bare(..) => 0.0,
-        };
-
-        let probe_length = prev_bend_length
-            // NOTE: the probe's bend length is always 0 here because such is
-            // the initial state of a cane (before getting extended, but this
-            // is never done for probes). So we could as well only measure the
-            // seg's length.
-            + self.navcord.head.ref_(self.layout.drawing()).length();
-
         match result {
-            Ok(..) => Some(probe_length),
+            Ok(probe_length) => Some(probe_length),
             Err(err) => {
                 if let NavcorderException::CannotDraw(draw_err) = err {
                     let layout_err = match draw_err {
