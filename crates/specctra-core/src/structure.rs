@@ -3,13 +3,12 @@
 // SPDX-License-Identifier: MIT
 
 use super::read::{ListTokenizer, ReadDsn};
-use super::write::ListWriter;
-use super::write::WriteSes;
+use super::write::{ListWriter, WriteSes};
 use crate::error::{ParseError, ParseErrorContext};
 use crate::math::PointWithRotation;
 use crate::ListToken;
-use specctra_derive::ReadDsn;
-use specctra_derive::WriteSes;
+use specctra_derive::{ReadDsn, WriteSes};
+use std::borrow::Cow;
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
 pub struct Dummy {}
@@ -89,6 +88,7 @@ pub struct Structure {
     #[vec("layer")]
     pub layers: Vec<Layer>,
     pub boundary: Boundary,
+    pub place_boundary: Option<Boundary>,
     #[vec("plane")]
     pub planes: Vec<Plane>,
     #[vec("keepout")]
@@ -109,6 +109,7 @@ impl<R: std::io::BufRead> ReadDsn<R> for Structure {
         let mut value = Self {
             layers: tokenizer.read_named_array(&["layer"])?,
             boundary: tokenizer.read_named(&["boundary"])?,
+            place_boundary: tokenizer.read_optional(&["place_boundary"])?,
             planes: tokenizer.read_named_array(&["plane"])?,
             keepouts: tokenizer.read_named_array(&["keepout"])?,
             via: tokenizer.read_named(&["via"])?,
@@ -138,8 +139,27 @@ pub struct Property {
 }
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
-pub struct Boundary {
-    pub path: Path,
+pub enum Boundary {
+    Path(Path),
+    Rect(Rect),
+}
+
+impl Boundary {
+    /// * For the `.structure.boundary`, it is expected that `.layer() == "pcb"`;
+    /// * Another special value which could be encountered is `"signal"`, for the boundary of the area available for routing.
+    pub fn layer(&self) -> &str {
+        match self {
+            Self::Path(x) => &x.layer,
+            Self::Rect(x) => &x.layer,
+        }
+    }
+
+    pub fn coords(&self) -> Cow<'_, [Point]> {
+        match self {
+            Self::Path(x) => Cow::Borrowed(&x.coords[..]),
+            Self::Rect(x) => Cow::Owned(x.coords()),
+        }
+    }
 }
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
@@ -464,6 +484,29 @@ pub struct Rect {
     pub x2: f64,
     #[anon]
     pub y2: f64,
+}
+
+impl Rect {
+    fn coords(&self) -> Vec<Point> {
+        vec![
+            Point {
+                x: self.x1,
+                y: self.y1,
+            },
+            Point {
+                x: self.x2,
+                y: self.y1,
+            },
+            Point {
+                x: self.x2,
+                y: self.y2,
+            },
+            Point {
+                x: self.x1,
+                y: self.y2,
+            },
+        ]
+    }
 }
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
