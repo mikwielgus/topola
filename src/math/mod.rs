@@ -109,6 +109,15 @@ impl NormalLine {
         };
         dot_product(parv, line.start.into())..=dot_product(parv, line.end.into())
     }
+
+    pub fn segment_interval_ordered(&self, line: &Line) -> core::ops::RangeInclusive<f64> {
+        let ret = self.segment_interval(line);
+        if ret.start() <= ret.end() {
+            ret
+        } else {
+            *ret.end()..=*ret.start()
+        }
+    }
 }
 
 /// Calculates the intersection of two circles, `circle1` and `circle2`.
@@ -195,6 +204,79 @@ pub fn intersect_circle_segment(circle: &Circle, segment: &Line) -> Vec<Point> {
     v
 }
 
+/// Returns `Some(p)` when `p` lies in the intersection of the given lines.
+pub fn intersect_lines(line1: &Line, line2: &Line) -> Option<Point> {
+    let nline1 = NormalLine::from(*line1);
+    let nline2 = NormalLine::from(*line2);
+
+    match nline1.intersects(&nline2) {
+        LineIntersection::Empty | LineIntersection::Overlapping => None,
+        LineIntersection::Point(pt) => {
+            let parv1 = geo::point! {
+                x: line1.dx(),
+                y: line1.dy(),
+            };
+            let parv2 = geo::point! {
+                x: line2.dx(),
+                y: line2.dy(),
+            };
+            // the following is more numerically robust than a `Line::contains` check
+            if nline1
+                .segment_interval_ordered(line1)
+                .contains(&dot_product(parv1, pt))
+                && nline2
+                    .segment_interval_ordered(line2)
+                    .contains(&dot_product(parv2, pt))
+            {
+                Some(pt)
+            } else {
+                None
+            }
+        }
+    }
+}
+
+/// Returns `Some(p)` when `p` lies in the intersection of a line and a beam
+/// (line which is only bounded at one side, i.e. point + directon)
+pub fn intersect_line_and_beam(line1: &Line, beam2: &Line) -> Option<Point> {
+    let nline1 = NormalLine::from(*line1);
+    let nbeam2 = NormalLine::from(*beam2);
+
+    match nline1.intersects(&nbeam2) {
+        LineIntersection::Empty | LineIntersection::Overlapping => None,
+        LineIntersection::Point(pt) => {
+            let parv1 = geo::point! {
+                x: line1.dx(),
+                y: line1.dy(),
+            };
+            let parv2 = geo::point! {
+                x: beam2.dx(),
+                y: beam2.dy(),
+            };
+            // the following is more numerically robust than a `Line::contains` check
+            let is_match = if nline1
+                .segment_interval_ordered(line1)
+                .contains(&dot_product(parv1, pt))
+            {
+                let nbeam2interval = nbeam2.segment_interval(beam2);
+                let parv2pt = dot_product(parv2, pt);
+                if nbeam2interval.start() <= nbeam2interval.end() {
+                    *nbeam2interval.start() <= parv2pt
+                } else {
+                    *nbeam2interval.start() >= parv2pt
+                }
+            } else {
+                false
+            };
+            if is_match {
+                Some(pt)
+            } else {
+                None
+            }
+        }
+    }
+}
+
 /// Returns `true` the point `p` is between the supporting lines of vectors
 /// `from` and `to`.
 pub fn between_vectors(p: Point, from: Point, to: Point) -> bool {
@@ -257,4 +339,86 @@ pub fn perp_dot_product(v1: Point, v2: Point) -> f64 {
     }
 
     v1.x() * v2.y() - v1.y() * v2.x()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn intersect_line_and_line00() {
+        assert_eq!(
+            intersect_lines(
+                &Line {
+                    start: geo::coord! { x: -1., y: -1. },
+                    end: geo::coord! { x: 1., y: 1. },
+                },
+                &Line {
+                    start: geo::coord! { x: -1., y: 1. },
+                    end: geo::coord! { x: 1., y: -1. },
+                }
+            ),
+            Some(geo::point! { x: 0., y: 0. })
+        );
+        assert_eq!(
+            intersect_lines(
+                &Line {
+                    start: geo::coord! { x: -1., y: -1. },
+                    end: geo::coord! { x: 1., y: 1. },
+                },
+                &Line {
+                    start: geo::coord! { x: -1., y: 1. },
+                    end: geo::coord! { x: -0.5, y: 0.5 },
+                }
+            ),
+            None
+        );
+    }
+
+    #[test]
+    fn intersect_line_and_beam00() {
+        assert_eq!(
+            intersect_line_and_beam(
+                &Line {
+                    start: geo::coord! { x: -1., y: -1. },
+                    end: geo::coord! { x: 1., y: 1. },
+                },
+                &Line {
+                    start: geo::coord! { x: -1., y: 1. },
+                    end: geo::coord! { x: 1., y: -1. },
+                }
+            ),
+            Some(geo::point! { x: 0., y: 0. })
+        );
+        assert_eq!(
+            intersect_line_and_beam(
+                &Line {
+                    start: geo::coord! { x: -1., y: -1. },
+                    end: geo::coord! { x: 1., y: 1. },
+                },
+                &Line {
+                    start: geo::coord! { x: -1., y: 1. },
+                    end: geo::coord! { x: -0.5, y: 0.5 },
+                }
+            ),
+            Some(geo::point! { x: 0., y: 0. })
+        );
+    }
+
+    #[test]
+    fn intersect_line_and_beam01() {
+        assert_eq!(
+            intersect_line_and_beam(
+                &Line {
+                    start: geo::coord! { x: -1., y: -1. },
+                    end: geo::coord! { x: 1., y: 1. },
+                },
+                &Line {
+                    start: geo::coord! { x: -3., y: -1. },
+                    end: geo::coord! { x: -1., y: 1. },
+                }
+            ),
+            None
+        );
+    }
 }
