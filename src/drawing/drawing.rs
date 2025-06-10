@@ -4,7 +4,7 @@
 
 use contracts_try::{debug_ensures, debug_invariant};
 use derive_getters::Getters;
-use geo::Point;
+use geo::{Point, Polygon};
 
 use core::fmt;
 use rstar::{RTree, AABB};
@@ -141,6 +141,9 @@ pub struct Drawing<CW, Cel, R> {
         BendIndex,
     >,
     rules: R,
+
+    boundary: Polygon,
+    place_boundary: Polygon,
 }
 
 impl<CW, Cel, R> Drawing<CW, Cel, R> {
@@ -201,10 +204,18 @@ impl<CW: Clone, Cel: Copy, R> Drawing<CW, Cel, R> {
 
 #[debug_invariant(self.test_if_looses_dont_infringe_each_other())]
 impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
-    pub fn new(rules: R, layer_count: usize) -> Self {
+    pub fn new(
+        rules: R,
+        layer_count: usize,
+        boundary: Polygon,
+        place_boundary: Option<Polygon>,
+    ) -> Self {
+        let place_boundary = place_boundary.unwrap_or_else(|| boundary.clone());
         Self {
             recording_geometry_with_rtree: RecordingGeometryWithRtree::new(layer_count),
             rules,
+            boundary,
+            place_boundary,
         }
     }
 

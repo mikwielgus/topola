@@ -184,6 +184,12 @@ impl SpecctraDesign {
         let mut board = Board::new(Layout::new(Drawing::new(
             mesadata,
             self.pcb.structure.layers.len(),
+            self.pcb.structure.boundary.to_polygon(),
+            self.pcb
+                .structure
+                .place_boundary
+                .as_ref()
+                .map(|i| i.to_polygon()),
         )));
 
         // mapping of pin -> net prepared for adding pins

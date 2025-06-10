@@ -7,6 +7,8 @@ use super::write::{ListWriter, WriteSes};
 use crate::error::{ParseError, ParseErrorContext};
 use crate::math::PointWithRotation;
 use crate::ListToken;
+
+use geo_types::{LineString, Polygon as GeoPolygon};
 use specctra_derive::{ReadDsn, WriteSes};
 use std::borrow::Cow;
 
@@ -159,6 +161,18 @@ impl Boundary {
             Self::Path(x) => Cow::Borrowed(&x.coords[..]),
             Self::Rect(x) => Cow::Owned(x.coords()),
         }
+    }
+
+    pub fn to_polygon(&self) -> GeoPolygon {
+        GeoPolygon::new(
+            LineString(
+                self.coords()
+                    .iter()
+                    .map(|i| geo_types::coord! { x: i.x, y: i.y })
+                    .collect(),
+            ),
+            Vec::new(),
+        )
     }
 }
 
@@ -460,6 +474,20 @@ pub struct Polygon {
     pub width: f64,
     #[anon]
     pub coords: Vec<Point>,
+}
+
+impl Polygon {
+    pub fn to_polygon(&self) -> GeoPolygon {
+        GeoPolygon::new(
+            LineString(
+                self.coords
+                    .iter()
+                    .map(|i| geo_types::coord! { x: i.x, y: i.y })
+                    .collect(),
+            ),
+            Vec::new(),
+        )
+    }
 }
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
