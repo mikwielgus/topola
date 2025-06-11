@@ -8,9 +8,10 @@ use crate::error::{ParseError, ParseErrorContext};
 use crate::math::PointWithRotation;
 use crate::ListToken;
 
+use core::fmt;
 use geo_types::{LineString, Polygon as GeoPolygon};
 use specctra_derive::{ReadDsn, WriteSes};
-use std::borrow::Cow;
+use std::{borrow::Cow, io};
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
 pub struct Dummy {}
@@ -106,7 +107,7 @@ pub struct Structure {
 }
 
 // custom impl to handle layers appearing late
-impl<R: std::io::BufRead> ReadDsn<R> for Structure {
+impl<R: io::BufRead> ReadDsn<R> for Structure {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         let mut value = Self {
             layers: tokenizer.read_named_array(&["layer"])?,
@@ -296,12 +297,153 @@ impl Pin {
     }
 }
 
-#[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
+#[derive(Clone, Debug, PartialEq)]
+pub struct Keepouts(pub Vec<Keepout>);
+
+impl<R: io::BufRead> ReadDsn<R> for Keepouts {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
+        let mut ret = Vec::new();
+        while let Ok(input) = tokenizer.consume_token() {
+            let is_keepout = input.token.is_start_of(&[
+                "keepout",
+                "place_keepout",
+                "via_keepout",
+                "wire_keepout",
+                "bend_keepout",
+                "elongate_keepout",
+            ]);
+            tokenizer.return_token(input);
+            if !is_keepout {
+                break;
+            }
+            ret.push(Keepout::read_dsn(tokenizer)?);
+        }
+        Ok(Self(ret))
+    }
+}
+
+impl<W: io::Write> WriteSes<W> for Keepouts {
+    fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
+        for i in &self.0[..] {
+            i.write_dsn(writer)?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
+pub enum KeepoutKind {
+    /// `keepout`
+    Normal,
+    /// `place_keepout`
+    Place,
+    /// `via_keepout`
+    Via,
+    /// `wire_keepout`
+    Wire,
+    /// `bend_keepout`
+    Bend,
+    /// `elongate_keepout`
+    Elongate,
+}
+
+impl core::str::FromStr for KeepoutKind {
+    type Err = ();
+
+    fn from_str(s: &str) -> Result<Self, ()> {
+        Ok(match s {
+            "keepout" => Self::Normal,
+            "place_keepout" => Self::Place,
+            "via_keepout" => Self::Via,
+            "wire_keepout" => Self::Wire,
+            "bend_keepout" => Self::Bend,
+            "elongate_keepout" => Self::Elongate,
+            _ => return Err(()),
+        })
+    }
+}
+
+impl AsRef<str> for KeepoutKind {
+    fn as_ref(&self) -> &str {
+        match self {
+            Self::Normal => "keepout",
+            Self::Place => "place_keepout",
+            Self::Via => "via_keepout",
+            Self::Wire => "wire_keepout",
+            Self::Bend => "bend_keepout",
+            Self::Elongate => "elongate_keepout",
+        }
+    }
+}
+
+impl fmt::Display for KeepoutKind {
+    #[inline]
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(self.as_ref())
+    }
+}
+
+#[derive(Clone, Debug, PartialEq)]
 pub struct Keepout {
-    #[anon]
-    pub idk: String,
-    #[anon]
+    pub kind: KeepoutKind,
+    pub id_: String,
+    pub sequence_number: Option<i32>,
     pub shape: Shape,
+    pub rule: Option<Rule>,
+    // TODO: `place_rule`: `(place_rule (spacing ....))`
+}
+
+impl<R: io::BufRead> ReadDsn<R> for Keepout {
+    fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
+        let input = tokenizer.consume_token()?;
+        let err = ParseError::ExpectedStartOfListOneOf(&[
+            "keepout",
+            "place_keepout",
+            "via_keepout",
+            "wire_keepout",
+            "bend_keepout",
+            "elongate_keepout",
+        ]);
+        let kind = if let ListToken::Start { name: ref kind } = input.token {
+            kind.parse::<KeepoutKind>().map_err(|()| {
+                tokenizer.return_token(input);
+                tokenizer.add_context(err)
+            })?
+        } else {
+            tokenizer.return_token(input);
+            return Err(tokenizer.add_context(err));
+        };
+
+        let id_ = String::read_dsn(tokenizer)?;
+        let sequence_number = tokenizer.read_optional(&["sequence_number"])?;
+        let shape = Shape::read_dsn(tokenizer)?;
+        let rule = tokenizer.read_optional(&["rule"])?;
+        // TODO: handle `place_rule`
+
+        tokenizer.consume_token()?.expect_end()?;
+        Ok(Self {
+            kind,
+            id_,
+            sequence_number,
+            shape,
+            rule,
+        })
+    }
+}
+
+impl<W: io::Write> WriteSes<W> for Keepout {
+    fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
+        writer.write_token(ListToken::Start {
+            name: self.kind.as_ref().to_string(),
+        })?;
+
+        self.id_.write_dsn(writer)?;
+        writer.write_optional("sequence_number", &self.sequence_number)?;
+        self.shape.write_dsn(writer)?;
+        writer.write_optional("rule", &self.rule)?;
+
+        writer.write_token(ListToken::End)
+    }
 }
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
@@ -420,7 +562,7 @@ impl From<Point> for geo_types::Point {
 }
 
 // Custom impl for the case described above
-impl<R: std::io::BufRead> ReadDsn<R> for Vec<Point> {
+impl<R: io::BufRead> ReadDsn<R> for Vec<Point> {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         let mut array = Vec::new();
         while let Some(x) = tokenizer.read_value::<Option<Point>>()? {
@@ -430,7 +572,7 @@ impl<R: std::io::BufRead> ReadDsn<R> for Vec<Point> {
     }
 }
 
-impl<R: std::io::BufRead> ReadDsn<R> for Option<Point> {
+impl<R: io::BufRead> ReadDsn<R> for Option<Point> {
     fn read_dsn(tokenizer: &mut ListTokenizer<R>) -> Result<Self, ParseErrorContext> {
         let input = tokenizer.consume_token()?;
         Ok(if let ListToken::Leaf { value: ref x } = input.token {
@@ -446,8 +588,8 @@ impl<R: std::io::BufRead> ReadDsn<R> for Option<Point> {
     }
 }
 
-impl<W: std::io::Write> WriteSes<W> for Vec<Point> {
-    fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), std::io::Error> {
+impl<W: io::Write> WriteSes<W> for Vec<Point> {
+    fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
         for elem in self {
             writer.write_value(&elem.x)?;
             writer.write_value(&elem.y)?;
@@ -456,8 +598,8 @@ impl<W: std::io::Write> WriteSes<W> for Vec<Point> {
     }
 }
 
-impl<W: std::io::Write> WriteSes<W> for Option<Point> {
-    fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), std::io::Error> {
+impl<W: io::Write> WriteSes<W> for Option<Point> {
+    fn write_dsn(&self, writer: &mut ListWriter<W>) -> Result<(), io::Error> {
         if let Some(value) = self {
             writer.write_value(&value.x)?;
             writer.write_value(&value.y)?;

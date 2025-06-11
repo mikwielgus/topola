@@ -138,7 +138,7 @@ impl<R> ListTokenizer<R> {
         (self.line, self.column)
     }
 
-    fn add_context(&self, error: ParseError) -> ParseErrorContext {
+    pub(crate) fn add_context(&self, error: ParseError) -> ParseErrorContext {
         ParseErrorContext {
             error,
             context: (self.line, self.column),
