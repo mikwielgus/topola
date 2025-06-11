@@ -4,7 +4,7 @@
 // SPDX-License-Identifier: MIT
 
 use std::collections::btree_map::Entry;
-use std::collections::{BTreeMap, BinaryHeap, VecDeque};
+use std::collections::{BTreeMap, BinaryHeap};
 
 use std::ops::ControlFlow;
 
@@ -152,7 +152,7 @@ where
     path_tracker: PathTracker<G>,
     // FIXME: To work around edge references borrowing from the graph we collect then reiterate over them.
     #[getter(skip)]
-    edge_ids: VecDeque<G::EdgeId>,
+    edge_ids: Vec<G::EdgeId>,
 }
 
 #[derive(Error, Debug, Clone)]
@@ -180,7 +180,7 @@ where
             scores: BTreeMap::new(),
             estimate_scores: BTreeMap::new(),
             path_tracker: PathTracker::<G>::new(),
-            edge_ids: VecDeque::new(),
+            edge_ids: Vec::new(),
         };
 
         let zero_score = K::default();
@@ -246,7 +246,7 @@ where
                 Ok(ControlFlow::Continue(self.state))
             }
             ThetastarState::VisitingProbeOnLineOfSight(visited_navnode) => {
-                if let Some(curr_navedge) = self.edge_ids.pop_front() {
+                if let Some(curr_navedge) = self.edge_ids.pop() {
                     // This lookup can be unwrapped without fear of panic since the node was
                     // necessarily scored before adding it to `.visit_next`.
                     //let node_score = self.scores[&visited_navnode];
