@@ -1,7 +1,12 @@
-// Copyright (c) 2015
 // SPDX-FileCopyrightText: 2024 Topola contributors
 //
 // SPDX-License-Identifier: MIT
+//
+// This file was originally copied from astar.rs of library Petgraph at
+// https://github.com/petgraph/petgraph/blob/master/src/algo/astar.rs
+//
+// Petgraph's original copyright line is
+// Copyright (c) 2015
 
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BinaryHeap};
@@ -124,14 +129,26 @@ pub trait MakeEdgeRef: IntoEdgeReferences {
     fn edge_ref(&self, edge_id: Self::EdgeId) -> Self::EdgeRef;
 }
 
+/// The enum that describes the current state of the algorithm.
 #[derive(Clone, Copy, Debug)]
 pub enum ThetastarState<N: Copy, E: Copy> {
+    /// Visit a new navnode and copy all navedges going out of it.
     Scanning,
+    /// Load a new navedge, try to probe it from current navnode's predecessor.
+    /// If this fails, transition to `VisitingProbeOnNavedge`. If there is no
+    /// more navedges, transition back to `Scanning`.
     VisitingProbeOnLineOfSight(N),
+    /// Probe the currently loaded navedge from the current navnode.
     VisitingProbeOnNavedge(N, E),
+    /// The probe is in place, retract it and continue to the next navedge.
     Probing(N),
 }
 
+/// The pathfinding algorithm Topola uses to find the shortest path to route
+/// is Theta*. Theta* is just A* with an improvement: every time an navedge is
+/// scanned, the algorithm first tries to draw directly to its target navnode
+/// from the predecessor of the currently visited navnode. Note that this
+/// creates paths with edges that do not all lie on the navmesh.
 #[derive(Getters)]
 pub struct ThetastarStepper<G, K>
 where
