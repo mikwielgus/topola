@@ -94,8 +94,8 @@ pub struct Structure {
     pub place_boundary: Option<Boundary>,
     #[vec("plane")]
     pub planes: Vec<Plane>,
-    #[vec("keepout")]
-    pub keepouts: Vec<Keepout>,
+    #[anon]
+    pub keepouts: Keepouts,
     pub via: ViaNames,
     #[vec("grid")]
     pub grids: Vec<Grid>,
@@ -114,7 +114,7 @@ impl<R: io::BufRead> ReadDsn<R> for Structure {
             boundary: tokenizer.read_named(&["boundary"])?,
             place_boundary: tokenizer.read_optional(&["place_boundary"])?,
             planes: tokenizer.read_named_array(&["plane"])?,
-            keepouts: tokenizer.read_named_array(&["keepout"])?,
+            keepouts: Keepouts::read_dsn(tokenizer)?,
             via: tokenizer.read_named(&["via"])?,
             grids: tokenizer.read_named_array(&["grid"])?,
             rules: tokenizer.read_named_array(&["rule"])?,
@@ -266,8 +266,8 @@ pub struct Image {
     pub outlines: Vec<Outline>,
     #[vec("pin")]
     pub pins: Vec<Pin>,
-    #[vec("keepout")]
-    pub keepouts: Vec<Keepout>,
+    #[anon]
+    pub keepouts: Keepouts,
 }
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
