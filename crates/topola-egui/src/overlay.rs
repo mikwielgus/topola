@@ -104,8 +104,8 @@ impl Overlay {
                     .filter_map(|node| {
                         board
                             .layout()
-                            .center_of_compoundless_node(node)
-                            .map(|pos| (node, pos))
+                            .apex_of_compoundless_node(node, active_layer)
+                            .map(|(_, pos)| (node, pos))
                     })
                     .map(|(idx, pos)| TrianVertex {
                         idx,

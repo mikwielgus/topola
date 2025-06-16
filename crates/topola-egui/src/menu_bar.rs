@@ -9,6 +9,7 @@ use topola::{
         execution::Command, invoker::InvokerError, selection::Selection, AutorouterOptions,
     },
     board::AccessMesadata,
+    interactor::{interaction::InteractionStepper, route_plan::RoutePlan},
     router::RouterOptions,
     specctra::{design::SpecctraDesign, ParseError, ParseErrorContext as SpecctraLoadingError},
 };
@@ -303,16 +304,13 @@ impl MenuBar {
                             workspace
                                 .interactor
                                 .schedule(op(selection, self.autorouter_options));
-                            Ok::<(), InvokerError>(())
                         };
                         if actions.edit.remove_bands.consume_key_triggered(ctx, ui) {
-                            schedule(|selection, _| {
-                                Command::RemoveBands(selection.band_selection)
-                            })?;
+                            schedule(|selection, _| Command::RemoveBands(selection.band_selection));
                         } else if actions.route.autoroute.consume_key_triggered(ctx, ui) {
                             schedule(|selection, opts| {
                                 Command::Autoroute(selection.pin_selection, opts)
-                            })?;
+                            });
                         } else if actions
                             .inspect
                             .compare_detours
@@ -320,7 +318,7 @@ impl MenuBar {
                         {
                             schedule(|selection, opts| {
                                 Command::CompareDetours(selection.pin_selection, opts)
-                            })?;
+                            });
                         } else if actions
                             .inspect
                             .measure_length
@@ -328,7 +326,18 @@ impl MenuBar {
                         {
                             schedule(|selection, _| {
                                 Command::MeasureLength(selection.band_selection)
-                            })?;
+                            });
+                        } else if actions
+                            .place
+                            .place_route_plan
+                            .consume_key_triggered(ctx, ui)
+                        {
+                            if let Some(active_layer) = workspace.appearance_panel.active_layer {
+                                self.is_placing_via = false;
+                                workspace.interactor.interact(InteractionStepper::RoutePlan(
+                                    RoutePlan::new(active_layer),
+                                ));
+                            }
                         }
                     }
                 }

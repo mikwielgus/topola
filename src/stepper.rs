@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::ops::ControlFlow;
+use core::ops::ControlFlow;
 
 /// This trait represents a linearly advanceable state whose advancement may
 /// break or fail with many different return values, and to which part of
@@ -51,4 +51,11 @@ pub trait StepBack<C, S, E> {
 pub trait Abort<C> {
     /// Abort the stepper.
     fn abort(&mut self, context: &mut C);
+}
+
+/// Steppers that may receive discrete events and act on them, implement this trait.
+pub trait OnEvent<Ctx, Event> {
+    type Output;
+
+    fn on_event(&mut self, context: &mut Ctx, event: Event) -> Self::Output;
 }

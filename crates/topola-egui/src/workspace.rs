@@ -9,7 +9,10 @@ use std::{
 
 use topola::{
     autorouter::history::History,
-    interactor::{activity::InteractiveInput, Interactor},
+    interactor::{
+        activity::{InteractiveEvent, InteractiveInput},
+        Interactor,
+    },
     layout::LayoutEdit,
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
@@ -63,6 +66,7 @@ impl Workspace {
         tr: &Translator,
         error_dialog: &mut ErrorDialog,
         interactive_input: &InteractiveInput,
+        interactive_event: Option<InteractiveEvent>,
     ) -> ControlFlow<()> {
         if let Ok(data) = self.history_channel.1.try_recv() {
             match data {
@@ -88,7 +92,7 @@ impl Workspace {
             }
         }
 
-        match self.interactor.update(interactive_input) {
+        match self.interactor.update(interactive_input, interactive_event) {
             ControlFlow::Continue(()) => ControlFlow::Continue(()),
             ControlFlow::Break(Ok(())) => ControlFlow::Break(()),
             ControlFlow::Break(Err(err)) => {

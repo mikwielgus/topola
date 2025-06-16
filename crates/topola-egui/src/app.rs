@@ -2,20 +2,15 @@
 //
 // SPDX-License-Identifier: MIT
 
-use geo::point;
 use std::{
     future::Future,
     io,
-    ops::ControlFlow,
     path::Path,
     sync::mpsc::{channel, Receiver, Sender},
 };
 use unic_langid::{langid, LanguageIdentifier};
 
-use topola::{
-    interactor::activity::InteractiveInput,
-    specctra::{design::SpecctraDesign, ParseErrorContext as SpecctraLoadingError},
-};
+use topola::specctra::{design::SpecctraDesign, ParseErrorContext as SpecctraLoadingError};
 
 use crate::{
     config::Config, error_dialog::ErrorDialog, menu_bar::MenuBar, status_bar::StatusBar,
@@ -37,8 +32,6 @@ pub struct App {
     error_dialog: ErrorDialog,
 
     maybe_workspace: Option<Workspace>,
-
-    update_counter: f32,
 }
 
 impl Default for App {
@@ -52,7 +45,6 @@ impl Default for App {
             status_bar: StatusBar::new(),
             error_dialog: ErrorDialog::new(),
             maybe_workspace: None,
-            update_counter: 0.0,
         }
     }
 }
@@ -72,23 +64,8 @@ impl App {
         this
     }
 
-    /// Advances the app's state by the delta time `dt`. May call
-    /// `.update_state()` more than once if the delta time is more than a multiple of
-    /// the timestep.
-    fn advance_state_by_dt(&mut self, interactive_input: &InteractiveInput) {
-        self.update_counter += interactive_input.dt;
-
-        while self.update_counter >= self.menu_bar.frame_timestep {
-            self.update_counter -= self.menu_bar.frame_timestep;
-
-            if let ControlFlow::Break(()) = self.update_state(interactive_input) {
-                return;
-            }
-        }
-    }
-
     /// Advance the app's state by a single step.
-    fn update_state(&mut self, interactive_input: &InteractiveInput) -> ControlFlow<()> {
+    fn update_state(&mut self) {
         // If a new design has been loaded from a file, create a new workspace
         // with the design. Or handle the error if there was a failure to do so.
         if let Ok(data) = self.content_channel.1.try_recv() {
@@ -128,16 +105,6 @@ impl App {
                 },
             }
         }
-
-        if let Some(workspace) = &mut self.maybe_workspace {
-            return workspace.update_state(
-                &self.translator,
-                &mut self.error_dialog,
-                interactive_input,
-            );
-        }
-
-        ControlFlow::Break(())
     }
 
     /// Update the title displayed on the application window's frame to show the
@@ -213,22 +180,7 @@ impl eframe::App for App {
             self.maybe_workspace.as_mut(),
         );
 
-        let pointer_pos = self.viewport.transform.inverse()
-            * ctx.input(|i| i.pointer.latest_pos().unwrap_or_default());
-
-        self.advance_state_by_dt(&InteractiveInput {
-            pointer_pos: point! {x: pointer_pos.x as f64, y: pointer_pos.y as f64},
-            dt: ctx.input(|i| i.stable_dt),
-        });
-
-        self.status_bar.update(
-            ctx,
-            &self.translator,
-            &self.viewport,
-            self.maybe_workspace
-                .as_ref()
-                .and_then(|w| w.interactor.maybe_activity().as_ref()),
-        );
+        self.update_state();
 
         if self.menu_bar.show_appearance_panel {
             if let Some(workspace) = &mut self.maybe_workspace {
@@ -241,8 +193,19 @@ impl eframe::App for App {
         let _viewport_rect = self.viewport.update(
             &self.config,
             ctx,
+            &self.translator,
             &self.menu_bar,
+            &mut self.error_dialog,
             self.maybe_workspace.as_mut(),
+        );
+
+        self.status_bar.update(
+            ctx,
+            &self.translator,
+            &self.viewport,
+            self.maybe_workspace
+                .as_ref()
+                .and_then(|w| w.interactor.maybe_activity().as_ref()),
         );
 
         self.update_locale();

@@ -14,10 +14,14 @@ use crate::{
         Autorouter,
     },
     board::{AccessMesadata, Board},
-    interactor::activity::{
-        ActivityContext, ActivityError, ActivityStepperWithStatus, InteractiveInput,
+    interactor::{
+        activity::{
+            ActivityContext, ActivityError, ActivityStepperWithStatus, InteractiveEvent,
+            InteractiveInput,
+        },
+        interaction::InteractionStepper,
     },
-    stepper::{Abort, Step},
+    stepper::{Abort, OnEvent, Step},
 };
 
 /// Structure that manages the invoker and activities
@@ -48,6 +52,11 @@ impl<M: AccessMesadata> Interactor<M> {
         Ok(())
     }
 
+    /// Start an interaction activity
+    pub fn interact(&mut self, interaction: InteractionStepper) {
+        self.activity = Some(ActivityStepperWithStatus::new_interaction(interaction));
+    }
+
     /// Undo last command
     pub fn undo(&mut self) -> Result<(), InvokerError> {
         self.invoker.undo()
@@ -61,13 +70,7 @@ impl<M: AccessMesadata> Interactor<M> {
     /// Abort the currently running execution or activity
     pub fn abort(&mut self) {
         if let Some(ref mut activity) = self.activity.take() {
-            activity.abort(&mut ActivityContext::<M> {
-                interactive_input: &InteractiveInput {
-                    pointer_pos: [0.0, 0.0].into(),
-                    dt: 0.0,
-                },
-                invoker: &mut self.invoker,
-            });
+            activity.abort(&mut self.invoker);
         }
     }
 
@@ -80,24 +83,42 @@ impl<M: AccessMesadata> Interactor<M> {
     pub fn update(
         &mut self,
         interactive_input: &InteractiveInput,
+        interactive_event: Option<InteractiveEvent>,
     ) -> ControlFlow<Result<(), ActivityError>> {
         if let Some(ref mut activity) = self.activity {
-            return match activity.step(&mut ActivityContext {
-                interactive_input,
-                invoker: &mut self.invoker,
-            }) {
-                Ok(ControlFlow::Continue(())) => ControlFlow::Continue(()),
-                Ok(ControlFlow::Break(_msg)) => {
-                    self.activity = None;
-                    ControlFlow::Break(Ok(()))
+            if let Some(event) = interactive_event {
+                match activity.on_event(
+                    &mut ActivityContext {
+                        interactive_input,
+                        invoker: &mut self.invoker,
+                    },
+                    event,
+                ) {
+                    Ok(()) => ControlFlow::Continue(()),
+                    Err(err) => {
+                        self.activity = None;
+                        ControlFlow::Break(Err(err.into()))
+                    }
                 }
-                Err(err) => {
-                    self.activity = None;
-                    ControlFlow::Break(Err(err))
+            } else {
+                match activity.step(&mut ActivityContext {
+                    interactive_input,
+                    invoker: &mut self.invoker,
+                }) {
+                    Ok(ControlFlow::Continue(())) => ControlFlow::Continue(()),
+                    Ok(ControlFlow::Break(_msg)) => {
+                        self.activity = None;
+                        ControlFlow::Break(Ok(()))
+                    }
+                    Err(err) => {
+                        self.activity = None;
+                        ControlFlow::Break(Err(err))
+                    }
                 }
-            };
+            }
+        } else {
+            ControlFlow::Break(Ok(()))
         }
-        ControlFlow::Break(Ok(()))
     }
 
     /// Returns the invoker

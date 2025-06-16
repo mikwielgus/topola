@@ -17,9 +17,9 @@ use crate::{
             LooseDotWeight,
         },
         gear::GearIndex,
-        graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex},
+        graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
         loose::LooseIndex,
-        primitive::{GetWeight, MakePrimitiveShape, Primitive},
+        primitive::MakePrimitiveShape,
         rules::AccessRules,
         seg::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
@@ -296,26 +296,48 @@ impl<R: AccessRules> Layout<R> {
             .compound_members(GenericIndex::new(poly.petgraph_index()))
     }
 
-    pub fn node_shape(&self, index: NodeIndex) -> Shape {
-        match index {
-            NodeIndex::Primitive(primitive) => primitive.primitive(&self.drawing).shape().into(),
-            NodeIndex::Compound(compound) => match self.drawing.compound_weight(compound) {
-                CompoundWeight::Poly(_) => {
-                    GenericIndex::<PolyWeight>::new(compound.petgraph_index())
-                        .ref_(self)
-                        .shape()
-                        .into()
-                }
-                CompoundWeight::Via(_) => self
-                    .via(GenericIndex::<ViaWeight>::new(compound.petgraph_index()))
-                    .shape()
-                    .into(),
-            },
+    fn compound_shape(&self, compound: GenericIndex<CompoundWeight>) -> Shape {
+        match self.drawing.compound_weight(compound) {
+            CompoundWeight::Poly(_) => GenericIndex::<PolyWeight>::new(compound.petgraph_index())
+                .ref_(self)
+                .shape()
+                .into(),
+            CompoundWeight::Via(weight) => weight.shape().into(),
         }
     }
 
-    /// Checks if a node is not a primitive part of a compound, and if yes, returns its center
-    pub fn center_of_compoundless_node(&self, node: NodeIndex) -> Option<Point> {
+    pub fn node_shape(&self, index: NodeIndex) -> Shape {
+        match index {
+            NodeIndex::Primitive(primitive) => primitive.primitive(&self.drawing).shape().into(),
+            NodeIndex::Compound(compound) => self.compound_shape(compound),
+        }
+    }
+
+    /// Checks if a node is not a primitive part of a compound, and if yes, returns its apex and center
+    pub fn apex_of_compoundless_node(
+        &self,
+        node: NodeIndex,
+        active_layer: usize,
+    ) -> Option<(FixedDotIndex, Point)> {
+        fn handle_fixed_dot<R: AccessRules>(
+            drawing: &Drawing<CompoundWeight, CompoundEntryLabel, R>,
+            index: PrimitiveIndex,
+        ) -> Option<(FixedDotIndex, &FixedDotWeight)> {
+            let PrimitiveIndex::FixedDot(dot) = index else {
+                return None;
+            };
+            if let GenericNode::Primitive(PrimitiveWeight::FixedDot(weight)) = drawing
+                .geometry()
+                .graph()
+                .node_weight(dot.petgraph_index())
+                .unwrap()
+            {
+                Some((dot, weight))
+            } else {
+                unreachable!()
+            }
+        }
+
         match node {
             NodeIndex::Primitive(primitive) => {
                 if self
@@ -327,13 +349,30 @@ impl<R: AccessRules> Layout<R> {
                 {
                     return None;
                 }
-                match primitive.primitive(self.drawing()) {
-                    Primitive::FixedDot(dot) => Some(dot.weight().pos()),
-                    // Primitive::LooseDot(dot) => Some(dot.weight().pos()),
-                    _ => None,
-                }
+                handle_fixed_dot(&self.drawing, primitive).map(|(dot, weight)| (dot, weight.pos()))
             }
-            NodeIndex::Compound(_) => Some(self.node_shape(node).center()),
+            NodeIndex::Compound(compound) => Some(match self.drawing.compound_weight(compound) {
+                CompoundWeight::Poly(_) => {
+                    let poly =
+                        GenericIndex::<PolyWeight>::new(compound.petgraph_index()).ref_(self);
+                    (poly.apex(), poly.shape().center())
+                }
+                CompoundWeight::Via(weight) => {
+                    let mut dots = self.drawing.geometry().compound_members(compound);
+                    let apex = loop {
+                        // this returns None if the via is not present on this layer
+                        let (entry_label, dot) = dots.next()?;
+                        if entry_label == CompoundEntryLabel::NotInConvexHull {
+                            if let Some((dot, weight)) = handle_fixed_dot(&self.drawing, dot) {
+                                if weight.layer() == active_layer {
+                                    break dot;
+                                }
+                            }
+                        }
+                    };
+                    (apex, weight.shape().center())
+                }
+            }),
         }
     }
 

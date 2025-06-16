@@ -10,6 +10,7 @@ pub use specctra_core::mesadata::AccessMesadata;
 
 use bimap::BiBTreeMap;
 use derive_getters::Getters;
+use geo::Point;
 use std::collections::BTreeMap;
 
 use crate::{
@@ -173,6 +174,17 @@ impl<M: AccessMesadata> Board<M> {
     /// Returns the pin name associated with a given node.
     pub fn node_pinname(&self, node: &NodeIndex) -> Option<&String> {
         self.node_to_pinname.get(node)
+    }
+
+    /// Returns the apex belonging to a given pin, if any
+    ///
+    /// Warning: this is very slow.
+    pub fn pin_apex(&self, pin: &str, layer: usize) -> Option<(FixedDotIndex, Point)> {
+        self.node_to_pinname
+            .iter()
+            .filter(|(_, node_pin)| *node_pin == pin)
+            // this should only ever return one result
+            .find_map(|(node, _)| self.layout().apex_of_compoundless_node(*node, layer))
     }
 
     /// Returns the band name associated with a given band.

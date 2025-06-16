@@ -2,26 +2,22 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::ops::ControlFlow;
-
+use core::ops::ControlFlow;
 use thiserror::Error;
 
 use crate::{
     autorouter::invoker::{
         GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
+        Invoker,
     },
     board::AccessMesadata,
-    drawing::graph::PrimitiveIndex,
-    geometry::primitive::PrimitiveShape,
-    router::{
-        navcord::Navcord,
-        navmesh::{Navmesh, NavnodeIndex},
-        thetastar::ThetastarStepper,
-    },
-    stepper::{Abort, Step},
+    stepper::{Abort, OnEvent, Step},
 };
 
-use super::activity::ActivityContext;
+use super::{
+    activity::{ActivityContext, InteractiveEvent},
+    route_plan::RoutePlan,
+};
 
 #[derive(Error, Debug, Clone)]
 pub enum InteractionError {
@@ -30,10 +26,10 @@ pub enum InteractionError {
 }
 
 pub enum InteractionStepper {
-    // No interactions yet. This is only an empty skeleton for now.
     // Examples of interactions:
     // - interactively routing a track
     // - interactively moving a footprint.
+    RoutePlan(RoutePlan),
 }
 
 impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for InteractionStepper {
@@ -41,48 +37,38 @@ impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for InteractionStep
 
     fn step(
         &mut self,
-        _context: &mut ActivityContext<M>,
+        context: &mut ActivityContext<M>,
     ) -> Result<ControlFlow<String>, InteractionError> {
-        Ok(ControlFlow::Break(String::from("")))
+        match self {
+            Self::RoutePlan(rp) => rp.step(context),
+        }
     }
 }
 
-impl<M: AccessMesadata> Abort<ActivityContext<'_, M>> for InteractionStepper {
-    fn abort(&mut self, _context: &mut ActivityContext<M>) {
-        todo!();
+impl<M: AccessMesadata> Abort<Invoker<M>> for InteractionStepper {
+    fn abort(&mut self, context: &mut Invoker<M>) {
+        match self {
+            Self::RoutePlan(rp) => rp.abort(context),
+        }
     }
 }
 
-impl GetMaybeThetastarStepper for InteractionStepper {
-    fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
-        todo!()
+impl<M: AccessMesadata> OnEvent<ActivityContext<'_, M>, InteractiveEvent> for InteractionStepper {
+    type Output = Result<(), InteractionError>;
+
+    fn on_event(
+        &mut self,
+        context: &mut ActivityContext<M>,
+        event: InteractiveEvent,
+    ) -> Result<(), InteractionError> {
+        match self {
+            Self::RoutePlan(rp) => rp.on_event(context, event),
+        }
     }
 }
 
-impl GetMaybeNavcord for InteractionStepper {
-    fn maybe_navcord(&self) -> Option<&Navcord> {
-        todo!()
-    }
-}
-
-impl GetGhosts for InteractionStepper {
-    fn ghosts(&self) -> &[PrimitiveShape] {
-        todo!()
-    }
-}
-
-impl GetObstacles for InteractionStepper {
-    fn obstacles(&self) -> &[PrimitiveIndex] {
-        todo!()
-    }
-}
-
-impl GetNavmeshDebugTexts for InteractionStepper {
-    fn navnode_debug_text(&self, _navnode: NavnodeIndex) -> Option<&str> {
-        todo!()
-    }
-
-    fn navedge_debug_text(&self, _navedge: (NavnodeIndex, NavnodeIndex)) -> Option<&str> {
-        todo!()
-    }
-}
+impl GetGhosts for InteractionStepper {}
+impl GetMaybeThetastarStepper for InteractionStepper {}
+impl GetMaybeNavcord for InteractionStepper {}
+impl GetNavmeshDebugTexts for InteractionStepper {}
+impl GetObstacles for InteractionStepper {}

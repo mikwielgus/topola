@@ -25,13 +25,21 @@ use crate::{
         navmesh::{Navmesh, NavnodeIndex},
         thetastar::ThetastarStepper,
     },
-    stepper::{Abort, Step},
+    stepper::{Abort, OnEvent, Step},
 };
 
 /// Stores the interactive input data from the user
 pub struct InteractiveInput {
+    pub active_layer: Option<usize>,
     pub pointer_pos: Point,
     pub dt: f32,
+}
+
+/// An event received from the user
+#[derive(Clone, Copy, Debug)]
+pub enum InteractiveEvent {
+    PointerPrimaryButtonClicked,
+    PointerSecondaryButtonClicked,
 }
 
 /// This is the execution context passed to the stepper on each step
@@ -75,14 +83,27 @@ impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for ActivityStepper
     }
 }
 
-impl<M: AccessMesadata> Abort<ActivityContext<'_, M>> for ActivityStepper {
-    fn abort(&mut self, context: &mut ActivityContext<M>) {
+impl<M: AccessMesadata> Abort<Invoker<M>> for ActivityStepper {
+    fn abort(&mut self, context: &mut Invoker<M>) {
         match self {
             ActivityStepper::Interaction(interaction) => interaction.abort(context),
-            ActivityStepper::Execution(execution) => {
-                execution.finish(context.invoker);
-            } // TODO.
-        };
+            ActivityStepper::Execution(execution) => execution.abort(context),
+        }
+    }
+}
+
+impl<M: AccessMesadata> OnEvent<ActivityContext<'_, M>, InteractiveEvent> for ActivityStepper {
+    type Output = Result<(), InteractionError>;
+
+    fn on_event(
+        &mut self,
+        context: &mut ActivityContext<M>,
+        event: InteractiveEvent,
+    ) -> Result<(), InteractionError> {
+        match self {
+            ActivityStepper::Interaction(interaction) => interaction.on_event(context, event),
+            ActivityStepper::Execution(_) => Ok(()),
+        }
     }
 }
 
@@ -98,6 +119,17 @@ impl ActivityStepperWithStatus {
             activity: ActivityStepper::Execution(execution),
             maybe_status: None,
         }
+    }
+
+    pub fn new_interaction(interaction: InteractionStepper) -> ActivityStepperWithStatus {
+        Self {
+            activity: ActivityStepper::Interaction(interaction),
+            maybe_status: None,
+        }
+    }
+
+    pub fn activity(&self) -> &ActivityStepper {
+        &self.activity
     }
 
     pub fn maybe_status(&self) -> Option<ControlFlow<String>> {
@@ -118,10 +150,24 @@ impl<M: AccessMesadata> Step<ActivityContext<'_, M>, String> for ActivityStepper
     }
 }
 
-impl<M: AccessMesadata> Abort<ActivityContext<'_, M>> for ActivityStepperWithStatus {
-    fn abort(&mut self, context: &mut ActivityContext<M>) {
+impl<M: AccessMesadata> Abort<Invoker<M>> for ActivityStepperWithStatus {
+    fn abort(&mut self, context: &mut Invoker<M>) {
         self.maybe_status = Some(ControlFlow::Break(String::from("aborted")));
         self.activity.abort(context);
+    }
+}
+
+impl<M: AccessMesadata> OnEvent<ActivityContext<'_, M>, InteractiveEvent>
+    for ActivityStepperWithStatus
+{
+    type Output = Result<(), InteractionError>;
+
+    fn on_event(
+        &mut self,
+        context: &mut ActivityContext<M>,
+        event: InteractiveEvent,
+    ) -> Result<(), InteractionError> {
+        self.activity.on_event(context, event)
     }
 }
 

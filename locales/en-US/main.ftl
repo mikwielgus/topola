@@ -32,6 +32,7 @@ tr-menu-view-frame-timestep = Frame Timestep
 
 tr-menu-place = Place
 tr-menu-place-place-via = Place Via
+tr-menu-place-place-route-plan = Place Route Plan
 
 tr-menu-route = Route
 tr-menu-route-autoroute = Autoroute

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use geo::{CoordsIter, Point, Polygon};
+use geo::{CoordsIter, LineString, Point, Polygon};
 use rstar::AABB;
 use topola::{
     geometry::{primitive::PrimitiveShape, shape::AccessShape},
@@ -87,6 +87,23 @@ impl<'a> Painter<'a> {
             circle.r as f32 * self.transform.scaling,
             color,
         )
+    }
+
+    pub fn paint_linestring(&mut self, linestring: &LineString, color: egui::epaint::Color32) {
+        self.ui.painter().add(egui::Shape::line(
+            linestring
+                .exterior_coords_iter()
+                .map(|coords| {
+                    self.transform
+                        .mul_pos([coords.x as f32, -coords.y as f32].into())
+                })
+                .collect(),
+            egui::epaint::PathStroke {
+                width: 5.0,
+                color: egui::epaint::ColorMode::Solid(color),
+                kind: egui::epaint::StrokeKind::Inside,
+            },
+        ));
     }
 
     pub fn paint_polygon(&mut self, polygon: &Polygon, color: egui::epaint::Color32) {

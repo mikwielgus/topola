@@ -12,15 +12,10 @@ use crate::{
         band::BandTermsegIndex,
         dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
-        head::Head,
         primitive::MakePrimitiveShape,
         rules::AccessRules,
     },
-    geometry::{
-        primitive::PrimitiveShape,
-        shape::{AccessShape, MeasureLength},
-    },
-    graph::MakeRef,
+    geometry::{primitive::PrimitiveShape, shape::AccessShape},
     layout::{Layout, LayoutEdit},
 };
 

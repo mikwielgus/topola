@@ -235,6 +235,7 @@ impl ViewActions {
 
 pub struct PlaceActions {
     pub place_via: Switch,
+    pub place_route_plan: Trigger,
 }
 
 impl PlaceActions {
@@ -246,6 +247,8 @@ impl PlaceActions {
                 egui::Key::P,
             )
             .into_switch(),
+            place_route_plan: Action::new_keyless(tr.text("tr-menu-place-place-route-plan"))
+                .into_trigger(),
         }
     }
 
@@ -258,6 +261,7 @@ impl PlaceActions {
     ) -> egui::InnerResponse<()> {
         ui.add_enabled_ui(have_workspace, |ui| {
             self.place_via.toggle_widget(ui, is_placing_via);
+            self.place_route_plan.button(ctx, ui);
         })
     }
 }

@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     board::AccessMesadata,
     layout::{via::ViaWeight, LayoutEdit},
-    stepper::Step,
+    stepper::{Abort, Step},
 };
 
 use super::{
@@ -108,5 +108,12 @@ impl<M: AccessMesadata> Step<Invoker<M>, String> for ExecutionStepper {
                 Err(err)
             }
         }
+    }
+}
+
+impl<M: AccessMesadata> Abort<Invoker<M>> for ExecutionStepper {
+    fn abort(&mut self, context: &mut Invoker<M>) {
+        // TODO: fix this
+        self.finish(context);
     }
 }

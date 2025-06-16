@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
+use core::ops::ControlFlow;
 use geo::point;
 use petgraph::{
     data::DataMap,
@@ -23,18 +24,27 @@ use topola::{
     },
     geometry::{shape::AccessShape, GenericNode},
     graph::MakeRef,
+    interactor::{
+        activity::{ActivityStepper, InteractiveEvent, InteractiveInput},
+        interaction::InteractionStepper,
+    },
     layout::{poly::MakePolygon, via::ViaWeight},
     math::{Circle, RotationSense},
     router::navmesh::NavnodeIndex,
 };
 
-use crate::{config::Config, menu_bar::MenuBar, painter::Painter, workspace::Workspace};
+use crate::{
+    config::Config, error_dialog::ErrorDialog, menu_bar::MenuBar, painter::Painter,
+    translator::Translator, workspace::Workspace,
+};
 
 pub struct Viewport {
     pub transform: egui::emath::TSTransform,
     /// how much should a single arrow key press scroll
     pub kbd_scroll_delta_factor: f32,
     pub scheduled_zoom_to_fit: bool,
+
+    update_counter: f32,
 }
 
 impl Viewport {
@@ -43,6 +53,7 @@ impl Viewport {
             transform: egui::emath::TSTransform::new([0.0, 0.0].into(), 0.01),
             kbd_scroll_delta_factor: 5.0,
             scheduled_zoom_to_fit: false,
+            update_counter: 0.0,
         }
     }
 
@@ -50,7 +61,9 @@ impl Viewport {
         &mut self,
         config: &Config,
         ctx: &egui::Context,
+        tr: &Translator,
         menu_bar: &MenuBar,
+        error_dialog: &mut ErrorDialog,
         maybe_workspace: Option<&mut Workspace>,
     ) -> egui::Rect {
         egui::CentralPanel::default()
@@ -123,51 +136,120 @@ impl Viewport {
                     let mut painter = Painter::new(ui, self.transform, menu_bar.show_bboxes);
 
                     if let Some(workspace) = maybe_workspace {
-                        let layers = &mut workspace.appearance_panel;
-                        let overlay = &mut workspace.overlay;
                         let latest_point = point! {x: latest_pos.x as f64, y: -latest_pos.y as f64};
-                        let board = workspace.interactor.invoker().autorouter().board();
 
-                        if response.clicked_by(egui::PointerButton::Primary) {
-                            if menu_bar.is_placing_via {
-                                workspace.interactor.execute(Command::PlaceVia(ViaWeight {
-                                    from_layer: 0,
-                                    to_layer: 0,
-                                    circle: Circle {
-                                        pos: latest_point,
-                                        r: menu_bar
-                                            .autorouter_options
-                                            .router_options
-                                            .routed_band_width
-                                            / 2.0,
-                                    },
-                                    maybe_net: Some(1234),
-                                }));
+                        if !workspace.interactor.maybe_activity().as_ref().map_or(true, |activity| {
+                            matches!(activity.maybe_status(), Some(ControlFlow::Break(..)))
+                        }) {
+                            // there is currently some activity
+                            let interactive_event = if response.clicked_by(egui::PointerButton::Primary) {
+                                Some(InteractiveEvent::PointerPrimaryButtonClicked)
+                            } else if response.clicked_by(egui::PointerButton::Secondary) {
+                                Some(InteractiveEvent::PointerSecondaryButtonClicked)
                             } else {
-                                overlay.click(board, layers, latest_point);
+                                None
+                            };
+                            if let Some(event) = interactive_event {
+                                log::debug!("got {:?}", event);
                             }
-                        } else if response.drag_started_by(egui::PointerButton::Primary) {
-                            overlay.drag_start(
-                                board,
-                                layers,
-                                latest_point,
-                                &response.ctx.input(|i| i.modifiers),
-                            );
-                        } else if response.drag_stopped_by(egui::PointerButton::Primary) {
-                            overlay.drag_stop(board, layers, latest_point);
-                        } else if let Some((_, bsk, cur_bbox)) =
-                            overlay.get_bbox_reselect(latest_point)
-                        {
-                            use topola::autorouter::selection::BboxSelectionKind;
-                            painter.paint_bbox_with_color(
-                                cur_bbox,
-                                match bsk {
-                                    BboxSelectionKind::CompletelyInside => egui::Color32::YELLOW,
-                                    BboxSelectionKind::MerelyIntersects => egui::Color32::BLUE,
-                                },
-                            );
+                            // Advances the app's state by the delta time `dt`. May call
+                            // `.update_state()` more than once if the delta time is more than a multiple of
+                            // the timestep.
+                            let dt = ctx.input(|i| i.stable_dt);
+                            let active_layer = workspace.appearance_panel.active_layer;
+                            self.update_counter += if interactive_event.is_some() {
+                                // make sure we run the loop below at least once on clicks
+                                let mut dtx = menu_bar.frame_timestep;
+                                if dt > dtx {
+                                    dtx = dt;
+                                }
+                                dtx
+                            } else {
+                                dt
+                            };
+                            while self.update_counter >= menu_bar.frame_timestep {
+                                self.update_counter -= menu_bar.frame_timestep;
+                                if let ControlFlow::Break(()) = workspace.update_state(
+                                    tr,
+                                    error_dialog,
+                                    &InteractiveInput {
+                                        active_layer,
+                                        pointer_pos: latest_point,
+                                        dt,
+                                    },
+                                    interactive_event,
+                                ) {
+                                    break;
+                                }
+                            }
+                        } else {
+                            // Advances the app's state by the delta time `dt`. May call
+                            // `.update_state()` more than once if the delta time is more than a multiple of
+                            // the timestep.
+                            let dt = ctx.input(|i| i.stable_dt);
+                            let active_layer = workspace.appearance_panel.active_layer;
+                            self.update_counter += dt;
+                            while self.update_counter >= menu_bar.frame_timestep {
+                                self.update_counter -= menu_bar.frame_timestep;
+                                if let ControlFlow::Break(()) = workspace.update_state(
+                                    tr,
+                                    error_dialog,
+                                    &InteractiveInput {
+                                        active_layer,
+                                        pointer_pos: point! {x: latest_pos.x as f64, y: latest_pos.y as f64},
+                                        dt,
+                                    },
+                                    None,
+                                ) {
+                                    break;
+                                }
+                            }
+                            let layers = &mut workspace.appearance_panel;
+                            let overlay = &mut workspace.overlay;
+                            let board = workspace.interactor.invoker().autorouter().board();
+                            if response.clicked_by(egui::PointerButton::Primary) {
+                                if menu_bar.is_placing_via {
+                                    workspace.interactor.execute(Command::PlaceVia(ViaWeight {
+                                        from_layer: 0,
+                                        to_layer: 0,
+                                        circle: Circle {
+                                            pos: latest_point,
+                                            r: menu_bar
+                                                .autorouter_options
+                                                .router_options
+                                                .routed_band_width
+                                                / 2.0,
+                                        },
+                                        maybe_net: Some(1234),
+                                    }));
+                                } else {
+                                    overlay.click(board, layers, latest_point);
+                                }
+                            } else if response.drag_started_by(egui::PointerButton::Primary) {
+                                overlay.drag_start(
+                                    board,
+                                    layers,
+                                    latest_point,
+                                    &response.ctx.input(|i| i.modifiers),
+                                );
+                            } else if response.drag_stopped_by(egui::PointerButton::Primary) {
+                                overlay.drag_stop(board, layers, latest_point);
+                            } else if let Some((_, bsk, cur_bbox)) =
+                                overlay.get_bbox_reselect(latest_point)
+                            {
+                                use topola::autorouter::selection::BboxSelectionKind;
+                                painter.paint_bbox_with_color(
+                                    cur_bbox,
+                                    match bsk {
+                                        BboxSelectionKind::CompletelyInside => egui::Color32::YELLOW,
+                                        BboxSelectionKind::MerelyIntersects => egui::Color32::BLUE,
+                                    },
+                                );
+                            }
                         }
 
+                        let layers = &mut workspace.appearance_panel;
+                        let overlay = &mut workspace.overlay;
                         let board = workspace.interactor.invoker().autorouter().board();
 
                         for i in (0..layers.visible.len()).rev() {
@@ -464,6 +546,10 @@ impl Viewport {
                             for ghost in activity.ghosts().iter() {
                                 painter
                                     .paint_primitive(ghost, egui::Color32::from_rgb(75, 75, 150));
+                            }
+
+                            if let ActivityStepper::Interaction(InteractionStepper::RoutePlan(rp)) = activity.activity() {
+                                painter.paint_linestring(&rp.lines, egui::Color32::from_rgb(245, 182, 66));
                             }
 
                             if let Some(ref navmesh) =

@@ -54,6 +54,7 @@ allowed_scopes = [
   "interactor/activity",
   "interactor/interaction",
   "interactor/interactor",
+  "interactor/route_plan",
   "layout/layout",
   "layout/poly",
   "layout/via",
