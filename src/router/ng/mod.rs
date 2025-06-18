@@ -455,9 +455,8 @@ fn cane_around<R: AccessRules>(
         sense
     );
 
-    // TODO: fix `-sense` vs `sense`.
     let ret = match inner {
-        None => layout.cane_around_dot(recorder, old_head, core, -sense, width),
+        None => layout.cane_around_dot(recorder, old_head, core, sense, width),
         Some(inner) => {
             // now, inner is expected to be a bend.
             // TODO: handle the case that the same path wraps multiple times around the same core
@@ -478,7 +477,7 @@ fn cane_around<R: AccessRules>(
                 })
                 .next();
             if let Some(inner_bend) = inner_bend {
-                layout.cane_around_bend(recorder, old_head, inner_bend.into(), -sense, width)
+                layout.cane_around_bend(recorder, old_head, inner_bend.into(), sense, width)
             } else {
                 return Err(EvalException::BendNotFound {
                     core: core,

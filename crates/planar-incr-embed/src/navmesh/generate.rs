@@ -93,8 +93,8 @@ where
                 b_idx,
                 &b,
                 Edge {
-                    lhs: Some(delaunay.from().data().idx.clone()),
-                    rhs: Some(delaunay.to().data().idx.clone()),
+                    lhs: Some(delaunay.to().data().idx.clone()),
+                    rhs: Some(delaunay.from().data().idx.clone()),
                 },
             );
         }

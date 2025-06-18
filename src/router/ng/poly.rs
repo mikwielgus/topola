@@ -105,10 +105,7 @@ impl PolygonRouting {
                 origin: destination,
             });
         };
-        let cw = match self.cw {
-            RotationSense::Counterclockwise => false,
-            RotationSense::Clockwise => true,
-        };
+        let cw = matches!(self.cw, RotationSense::Clockwise);
         Ok(if invert_cw ^ cw { lhs } else { rhs })
     }
 
@@ -175,11 +172,7 @@ impl PolygonRouting {
         );
         let mut mr = mayrev::MaybeReversed::new(&self.convex_hull.0[..]);
         // the convex hull is oriented counter-clockwise
-        // FIXME(fogti): I have no clue where the orientation gets wrong...
-        mr.reversed = !match self.cw {
-            RotationSense::Counterclockwise => false,
-            RotationSense::Clockwise => true,
-        };
+        mr.reversed = matches!(self.cw, RotationSense::Clockwise);
 
         let mut route_length = 0.0;
 
