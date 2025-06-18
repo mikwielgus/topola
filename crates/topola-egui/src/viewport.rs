@@ -354,27 +354,33 @@ impl Viewport {
                                             None => [0.0, 0.0].into(),
                                         };
 
-                                        //TODO "{astar.scores[index]} ({astar.estimate_scores[index]}) (...)"
-                                        let score_text = astar
-                                            .scores()
-                                            .get(&navnode)
-                                            .map_or_else(String::new, |s| format!("g={:.2}", s));
-                                        let estimate_score_text = astar
-                                            .estimate_scores()
-                                            .get(&navnode)
-                                            .map_or_else(String::new, |s| format!("(f={:.2})", s));
-                                        let debug_text =
-                                            activity.navnode_debug_text(navnode).unwrap_or("");
+                                        if menu_bar.show_pathfinding_scores {
+                                            //TODO "{astar.scores[index]} ({astar.estimate_scores[index]}) (...)"
+                                            let score_text = astar
+                                                .scores()
+                                                .get(&navnode)
+                                                .map_or_else(String::new, |s| {
+                                                    format!("g={:.2}", s)
+                                                });
+                                            let estimate_score_text = astar
+                                                .estimate_scores()
+                                                .get(&navnode)
+                                                .map_or_else(String::new, |s| {
+                                                    format!("(f={:.2})", s)
+                                                });
+                                            let debug_text =
+                                                activity.navnode_debug_text(navnode).unwrap_or("");
 
-                                        painter.paint_text(
-                                            pos,
-                                            egui::Align2::LEFT_BOTTOM,
-                                            &format!(
-                                                "{} {} {}",
-                                                score_text, estimate_score_text, debug_text
-                                            ),
-                                            egui::Color32::from_rgb(255, 255, 255),
-                                        );
+                                            painter.paint_text(
+                                                pos,
+                                                egui::Align2::LEFT_BOTTOM,
+                                                &format!(
+                                                    "{} {} {}",
+                                                    score_text, estimate_score_text, debug_text
+                                                ),
+                                                egui::Color32::from_rgb(255, 255, 255),
+                                            );
+                                        }
                                     }
                                 }
                             }

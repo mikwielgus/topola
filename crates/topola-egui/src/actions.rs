@@ -166,6 +166,7 @@ pub struct ViewActions {
     pub zoom_to_fit: Switch,
     pub show_ratsnest: Switch,
     pub show_navmesh: Switch,
+    pub show_pathfinding_scores: Switch,
     pub show_topo_navmesh: Switch,
     pub show_bboxes: Switch,
     pub show_origin_destination: Switch,
@@ -178,6 +179,10 @@ impl ViewActions {
             zoom_to_fit: Action::new_keyless(tr.text("tr-menu-view-zoom-to-fit")).into_switch(),
             show_ratsnest: Action::new_keyless(tr.text("tr-menu-view-show-ratsnest")).into_switch(),
             show_navmesh: Action::new_keyless(tr.text("tr-menu-view-show-navmesh")).into_switch(),
+            show_pathfinding_scores: Action::new_keyless(
+                tr.text("tr-menu-view-show-pathfinding-scores"),
+            )
+            .into_switch(),
             show_topo_navmesh: Action::new_keyless(tr.text("tr-menu-view-show-topo-navmesh"))
                 .into_switch(),
             show_bboxes: Action::new_keyless(tr.text("tr-menu-view-show-bboxes")).into_switch(),
@@ -206,6 +211,8 @@ impl ViewActions {
         ui.add_enabled_ui(have_workspace, |ui| {
             self.show_ratsnest.checkbox(ui, &mut menu_bar.show_ratsnest);
             self.show_navmesh.checkbox(ui, &mut menu_bar.show_navmesh);
+            self.show_pathfinding_scores
+                .checkbox(ui, &mut menu_bar.show_pathfinding_scores);
             self.show_topo_navmesh
                 .checkbox(ui, &mut menu_bar.show_topo_navmesh);
             self.show_bboxes.checkbox(ui, &mut menu_bar.show_bboxes);
