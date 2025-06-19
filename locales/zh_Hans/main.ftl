@@ -51,3 +51,4 @@ tr-menu-edit-recalculate-topo-navmesh = 重新计算拓扑导航网格
 tr-menu-view-show-topo-navmesh = 显示拓扑导航网格
 tr-menu-route-options-squeeze-through-under-bends = 推挤弯曲处
 tr-menu-view-kdb-scroll-delta-factor = 键盘滚动增量因子
+tr-menu-view-show-pathfinding-scores = 显示路径查找分数
