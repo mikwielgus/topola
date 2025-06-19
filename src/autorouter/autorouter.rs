@@ -44,8 +44,8 @@ pub enum AutorouterError {
     Navmesh(#[from] NavmeshError),
     #[error("routing failed: {0}")]
     Thetastar(#[from] ThetastarError),
-    #[error(transparent)]
-    Spade(#[from] spade::InsertionError),
+    #[error("TopoNavmesh generation failed: {0}")]
+    TopoNavmeshGeneration(#[from] ng::NavmeshCalculationError),
     #[error("could not place via")]
     CouldNotPlaceVia(#[from] Infringement),
     #[error("could not remove band")]

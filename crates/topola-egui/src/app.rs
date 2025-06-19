@@ -176,6 +176,7 @@ impl eframe::App for App {
             ctx,
             &mut self.translator,
             self.content_channel.0.clone(),
+            &mut self.error_dialog,
             &mut self.viewport,
             self.maybe_workspace.as_mut(),
         );

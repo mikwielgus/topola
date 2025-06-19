@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 use geo::algorithm::line_measures::{Distance, Euclidean};
-use geo::{geometry::Point, point, Line};
+use geo::{point, Line, LineString, Point};
 pub use specctra_core::math::{Circle, PointWithRotation};
 
 mod cyclic_search;
@@ -102,8 +102,8 @@ impl NormalLine {
         let apt = geo::point! { x: a.x, y: a.y };
         let bpt = geo::point! { x: b.x, y: b.y };
         let det = perp_dot_product(apt, bpt);
-        let rpx = -b.y * a.offset + a.y * b.offset;
-        let rpy = b.x * a.offset - a.x * b.offset;
+        let rpx = b.y * a.offset - a.y * b.offset;
+        let rpy = -b.x * a.offset + a.x * b.offset;
 
         if det.abs() > ALMOST_ZERO {
             LineIntersection::Point(geo::point! { x: rpx, y: rpy } / det)
@@ -302,6 +302,16 @@ pub fn intersect_line_and_beam(line1: &Line, beam2: &Line) -> Option<Point> {
     }
 }
 
+/// Returns `Some(p)` when `p` lies in the intersection of a linestring and a beam
+pub fn intersect_linestring_and_beam(linestring: &LineString, beam: &Line) -> Option<Point> {
+    for line in linestring.lines() {
+        if let Some(pt) = intersect_line_and_beam(&line, beam) {
+            return Some(pt);
+        }
+    }
+    None
+}
+
 /// Returns `true` the point `p` is between the supporting lines of vectors
 /// `from` and `to`.
 pub fn between_vectors(p: Point, from: Point, to: Point) -> bool {
@@ -445,5 +455,23 @@ mod tests {
             ),
             None
         );
+    }
+
+    #[test]
+    fn intersect_line_and_beam02() {
+        let pt = intersect_line_and_beam(
+            &Line {
+                start: geo::coord! { x: 140., y: -110. },
+                end: geo::coord! { x: 160., y: -110. },
+            },
+            &Line {
+                start: geo::coord! { x: 148., y: -106. },
+                end: geo::coord! { x: 148., y: -109. },
+            },
+        )
+        .unwrap();
+
+        approx::assert_abs_diff_eq!(pt.x(), 148.);
+        approx::assert_abs_diff_eq!(pt.y(), -110.);
     }
 }

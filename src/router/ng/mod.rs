@@ -8,7 +8,7 @@ use pie::{
 };
 pub use planar_incr_embed as pie;
 
-use geo::geometry::{LineString, Point};
+use geo::{Coord, LineString, Point};
 use rstar::AABB;
 use std::{
     collections::{BTreeMap, BTreeSet},
@@ -274,10 +274,27 @@ impl EvalException {
     }
 }
 
+#[derive(Clone, Debug, thiserror::Error)]
+pub enum NavmeshCalculationError {
+    #[error("Layer contains too few nodes to generate meaningful navmesh")]
+    NotEnoughNodes,
+
+    #[error("Unable to find boundary from node {node:?}, direction {direction:?}")]
+    UnableToFindBoundary {
+        node: FixedDotIndex,
+        direction: Coord,
+    },
+
+    #[error(transparent)]
+    Insertion(#[from] spade::InsertionError),
+}
+
+/// NOTE: this only works if the layer has ≥ 3 nodes
+// TODO: handle the case with 2 nodes on the layer specifically.
 pub fn calculate_navmesh<R: AccessRules>(
     board: &Board<R>,
     active_layer: usize,
-) -> Result<PieNavmesh, spade::InsertionError> {
+) -> Result<PieNavmesh, NavmeshCalculationError> {
     use pie::NavmeshIndex::*;
     use spade::Triangulation;
 
@@ -302,37 +319,142 @@ pub fn calculate_navmesh<R: AccessRules>(
             .collect(),
     )?;
 
+    if triangulation.num_inner_faces() == 0 {
+        log::warn!("calculate_navmesh: not enough nodes");
+        return Err(NavmeshCalculationError::NotEnoughNodes);
+    }
+
     let mut navmesh = navmesh::NavmeshSer::<PieNavmeshBase>::from_triangulation(&triangulation);
 
     let barrier2: Arc<[RelaxedPath<_, _>]> =
         Arc::from(vec![RelaxedPath::Weak(()), RelaxedPath::Weak(())]);
 
-    // populate DualInner-Dual* routed traces
-    for value in navmesh.edges.values_mut() {
-        if let (Some(lhs), Some(rhs)) = (value.0.lhs, value.0.rhs) {
-            value.1 = barrier2.clone();
-            let wrap = |dot| GenericNode::Primitive(PrimitiveIndex::FixedDot(dot));
-            let bands = board
-                .layout()
-                .bands_between_nodes_with_alignment(active_layer, wrap(lhs), wrap(rhs))
-                .map(|i| match i {
-                    RelaxedPath::Weak(()) => RelaxedPath::Weak(()),
-                    RelaxedPath::Normal(band_uid) => {
-                        RelaxedPath::Normal(*board.bands_by_id().get_by_right(&band_uid).unwrap())
-                    }
-                })
-                .collect::<Vec<_>>();
+    let barrier0: Arc<[RelaxedPath<_, _>]> = Arc::from(vec![]);
 
-            if bands != *barrier2 {
-                log::debug!("navmesh generated with {:?} = {:?}", value, &bands);
-                value.1 = Arc::from(bands);
+    log::debug!("boundary = {:?}", board.layout().drawing().boundary());
+
+    // populate Dual*-Dual* routed traces
+    for (key, value) in &mut navmesh.edges {
+        let wrap = |dot| GenericNode::Primitive(PrimitiveIndex::FixedDot(dot));
+        match (value.0.lhs, value.0.rhs) {
+            (Some(lhs), Some(rhs)) => {
+                value.1 = barrier2.clone();
+                let bands = board
+                    .layout()
+                    .bands_between_nodes_with_alignment(active_layer, wrap(lhs), wrap(rhs))
+                    .map(|i| match i {
+                        RelaxedPath::Weak(()) => RelaxedPath::Weak(()),
+                        RelaxedPath::Normal(band_uid) => RelaxedPath::Normal(
+                            *board.bands_by_id().get_by_right(&band_uid).unwrap(),
+                        ),
+                    })
+                    .collect::<Vec<_>>();
+
+                if bands != *barrier2 {
+                    log::debug!("navmesh generated with {:?} = {:?}", value, &bands);
+                    value.1 = Arc::from(bands);
+                }
+            }
+            (None, Some(rhs)) => {
+                value.1 = barrier0.clone();
+                let direction = {
+                    let (prev_key, next_key) = key.into();
+                    let prev_dir = navmesh.nodes[prev_key]
+                        .open_direction
+                        .expect("expected DualOuter entry");
+                    let next_dir = navmesh.nodes[next_key]
+                        .open_direction
+                        .expect("expected DualOuter entry");
+                    Coord {
+                        x: (prev_dir.x + next_dir.x) / 2.0,
+                        y: (prev_dir.y + next_dir.y) / 2.0,
+                    }
+                };
+                let bands = match board.layout().bands_between_node_and_boundary(
+                    active_layer,
+                    direction,
+                    wrap(rhs),
+                ) {
+                    None => {
+                        log::warn!("calculate_navmesh: unable to find boundary from node {:?}, direction {:?}", rhs, direction);
+                        continue;
+                        /*
+                        return Err(NavmeshCalculationError::UnableToFindBoundary {
+                            node: rhs,
+                            direction,
+                        });
+                        */
+                    }
+                    Some(x) => {
+                        log::debug!("calculate_navmesh: successfully found boundary from node {:?}, direction {:?}", rhs, direction);
+                        x.map(|(band_uid, _)| {
+                            RelaxedPath::Normal(
+                                *board.bands_by_id().get_by_right(&band_uid).unwrap(),
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                    }
+                };
+
+                if bands != *barrier0 {
+                    log::debug!("navmesh generated with {:?} = {:?}", value, &bands);
+                    value.1 = Arc::from(bands);
+                }
+            }
+            (Some(lhs), None) => {
+                value.1 = barrier0.clone();
+                let direction = {
+                    let (prev_key, next_key) = key.into();
+                    let prev_dir = navmesh.nodes[prev_key]
+                        .open_direction
+                        .expect("expected DualOuter entry");
+                    let next_dir = navmesh.nodes[next_key]
+                        .open_direction
+                        .expect("expected DualOuter entry");
+                    Coord {
+                        x: (prev_dir.x + next_dir.x) / 2.0,
+                        y: (prev_dir.y + next_dir.y) / 2.0,
+                    }
+                };
+                let mut bands = match board.layout().bands_between_node_and_boundary(
+                    active_layer,
+                    direction,
+                    wrap(lhs),
+                ) {
+                    None => {
+                        log::warn!("calculate_navmesh: unable to find boundary from node {:?}, direction {:?}", lhs, direction);
+                        continue;
+                        /*
+                        return Err(NavmeshCalculationError::UnableToFindBoundary {
+                            node: rhs,
+                            direction,
+                        });
+                        */
+                    }
+                    Some(x) => {
+                        log::debug!("calculate_navmesh: successfully found boundary from node {:?}, direction {:?}", lhs, direction);
+                        x.map(|(band_uid, _)| {
+                            RelaxedPath::Normal(
+                                *board.bands_by_id().get_by_right(&band_uid).unwrap(),
+                            )
+                        })
+                        .collect::<Vec<_>>()
+                    }
+                };
+                bands.reverse();
+
+                if bands != *barrier0 {
+                    log::debug!("navmesh generated with {:?} = {:?}", value, &bands);
+                    value.1 = Arc::from(bands);
+                }
+            }
+            (None, None) => {
+                // nothing to do
             }
         }
     }
-    // TODO: insert fixed and outer routed traces/bands into the navmesh
-    // see also: https://codeberg.org/topola/topola/issues/166
-    // due to not handling outer routed traces/bends,
-    // the above code might produce an inconsistent navmesh
+
+    // TODO: insert fixed routed traces/bands into the navmesh
 
     // populate Primal-Dual* routed traces
     let dual_ends: BTreeMap<_, _> = navmesh

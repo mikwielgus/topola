@@ -17,6 +17,7 @@ use topola::{
 use crate::{
     actions::Actions,
     app::{execute, handle_file},
+    error_dialog::ErrorDialog,
     translator::Translator,
     viewport::Viewport,
     workspace::Workspace,
@@ -63,6 +64,7 @@ impl MenuBar {
         ctx: &egui::Context,
         tr: &mut Translator,
         content_sender: Sender<Result<SpecctraDesign, SpecctraLoadingError>>,
+        error_dialog: &mut ErrorDialog,
         viewport: &mut Viewport,
         maybe_workspace: Option<&mut Workspace>,
     ) -> Result<(), InvokerError> {
@@ -287,6 +289,7 @@ impl MenuBar {
                     ) {
                     } else if workspace_activities_enabled {
                         fn schedule<F: FnOnce(Selection) -> Command>(
+                            error_dialog: &mut ErrorDialog,
                             workspace: &mut Workspace,
                             op: F,
                         ) {
@@ -306,11 +309,13 @@ impl MenuBar {
                                     .0
                                     .retain(|i| i.layer == active_layer);
                             }
-                            workspace.interactor.schedule(op(selection));
+                            if let Err(err) = workspace.interactor.schedule(op(selection)) {
+                                error_dialog.push_error("tr-module-invoker", format!("{}", err));
+                            }
                         }
                         let opts = self.autorouter_options;
                         if actions.edit.remove_bands.consume_key_triggered(ctx, ui) {
-                            schedule(workspace, |selection| {
+                            schedule(error_dialog, workspace, |selection| {
                                 Command::RemoveBands(selection.band_selection)
                             })
                         } else if actions.route.topo_autoroute.consume_key_triggered(ctx, ui) {
@@ -325,15 +330,17 @@ impl MenuBar {
                                     .layer_layername(active_layer)
                                     .expect("unknown active layer")
                                     .to_string();
-                                schedule(workspace, |selection| Command::TopoAutoroute {
-                                    selection: selection.pin_selection,
-                                    allowed_edges: BTreeSet::new(),
-                                    active_layer,
-                                    routed_band_width: opts.router_options.routed_band_width,
+                                schedule(error_dialog, workspace, |selection| {
+                                    Command::TopoAutoroute {
+                                        selection: selection.pin_selection,
+                                        allowed_edges: BTreeSet::new(),
+                                        active_layer,
+                                        routed_band_width: opts.router_options.routed_band_width,
+                                    }
                                 });
                             }
                         } else if actions.route.autoroute.consume_key_triggered(ctx, ui) {
-                            schedule(workspace, |selection| {
+                            schedule(error_dialog, workspace, |selection| {
                                 Command::Autoroute(selection.pin_selection, opts)
                             });
                         } else if actions
@@ -341,7 +348,7 @@ impl MenuBar {
                             .compare_detours
                             .consume_key_triggered(ctx, ui)
                         {
-                            schedule(workspace, |selection| {
+                            schedule(error_dialog, workspace, |selection| {
                                 Command::CompareDetours(selection.pin_selection, opts)
                             });
                         } else if actions
@@ -349,7 +356,7 @@ impl MenuBar {
                             .measure_length
                             .consume_key_triggered(ctx, ui)
                         {
-                            schedule(workspace, |selection| {
+                            schedule(error_dialog, workspace, |selection| {
                                 Command::MeasureLength(selection.band_selection)
                             });
                         } else if actions

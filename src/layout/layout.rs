@@ -7,7 +7,7 @@ use core::iter;
 use contracts_try::debug_ensures;
 use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
-use geo::Point;
+use geo::{Coord, Line, Point};
 use planar_incr_embed::RelaxedPath;
 use rstar::AABB;
 
@@ -42,7 +42,7 @@ use crate::{
         poly::{add_poly_with_nodes_intern, MakePolygon, PolyWeight},
         via::{Via, ViaWeight},
     },
-    math::{LineIntersection, NormalLine, RotationSense},
+    math::{intersect_linestring_and_beam, LineIntersection, NormalLine, RotationSense},
 };
 
 /// Represents a weight for various compounds
@@ -379,20 +379,12 @@ impl<R: AccessRules> Layout<R> {
         }
     }
 
-    // TODO: computation of bands between outer node and direction towards "outside"
-
-    /// Finds all bands on `layer` between `left` and `right`
-    /// (usually assuming `left` and `right` are neighbors in a Delaunay triangulation)
-    /// and returns them ordered from `left` to `right`.
-    pub fn bands_between_nodes(
+    fn bands_between_positions_internal(
         &self,
         layer: usize,
-        left: NodeIndex,
-        right: NodeIndex,
-    ) -> impl Iterator<Item = (BandUid, LooseIndex)> {
-        assert_ne!(left, right);
-        let left_pos = self.node_shape(left).center();
-        let right_pos = self.node_shape(right).center();
+        left_pos: Point,
+        right_pos: Point,
+    ) -> impl Iterator<Item = (f64, BandUid, LooseIndex)> + '_ {
         let ltr_line = geo::Line {
             start: left_pos.into(),
             end: right_pos.into(),
@@ -406,11 +398,10 @@ impl<R: AccessRules> Layout<R> {
         orig_hline.make_normal_unit();
         let orig_hline = orig_hline;
         let location_denom = orig_hline.segment_interval(&ltr_line);
-        let location_start = location_denom.start();
-        let location_denom = location_denom.end() - location_denom.start();
+        let location_start = *location_denom.start();
+        let location_denom = *location_denom.end() - *location_denom.start();
 
-        let mut bands: Vec<_> = self
-            .drawing
+        self.drawing
             .rtree()
             .locate_in_envelope_intersecting(&{
                 let aabb_init = AABB::from_corners(
@@ -432,7 +423,7 @@ impl<R: AccessRules> Layout<R> {
                 let shape = prim.primitive(&self.drawing).shape();
                 (loose, shape)
             })
-            .filter_map(|(loose, shape)| {
+            .filter_map(move |(loose, shape)| {
                 let band_uid = self.drawing.loose_band_uid(loose).ok()?;
                 let loose_hline = orig_hline.orthogonal_through(&match shape {
                     PrimitiveShape::Seg(seg) => {
@@ -461,6 +452,22 @@ impl<R: AccessRules> Layout<R> {
                     .contains(&location)
                     .then_some((location, band_uid, loose))
             })
+    }
+
+    /// Finds all bands on `layer` between `left` and `right`
+    /// (usually assuming `left` and `right` are neighbors in a Delaunay triangulation)
+    /// and returns them ordered from `left` to `right`.
+    pub fn bands_between_nodes(
+        &self,
+        layer: usize,
+        left: NodeIndex,
+        right: NodeIndex,
+    ) -> impl Iterator<Item = (BandUid, LooseIndex)> {
+        assert_ne!(left, right);
+        let left_pos = self.node_shape(left).center();
+        let right_pos = self.node_shape(right).center();
+        let mut bands: Vec<_> = self
+            .bands_between_positions_internal(layer, left_pos, right_pos)
             .filter(|(_, band_uid, _)| {
                 // filter entries which are connected to either lhs or rhs (and possibly both)
                 let (bts1, bts2) = band_uid.into();
@@ -480,6 +487,49 @@ impl<R: AccessRules> Layout<R> {
         bands
             .into_iter()
             .map(|(_, band_uid, loose)| (band_uid, loose))
+    }
+
+    /// Finds all bands on `layer` between direction `left` and node `right`
+    /// and returns them ordered from `left` to `right`.
+    pub fn bands_between_node_and_boundary(
+        &self,
+        layer: usize,
+        left: Coord,
+        right: NodeIndex,
+    ) -> Option<impl Iterator<Item = (BandUid, LooseIndex)>> {
+        // First, decode the `left` direction into a point on the boundary
+        let right_pos = self.node_shape(right).center();
+        let left_pos = intersect_linestring_and_beam(
+            self.drawing.boundary().exterior(),
+            &Line {
+                start: right_pos.0,
+                end: right_pos.0 + left,
+            },
+        )?;
+
+        let mut bands: Vec<_> = self
+            .bands_between_positions_internal(layer, left_pos, right_pos)
+            .filter(|(_, band_uid, _)| {
+                // filter entries which are connected to rhs
+                let (bts1, bts2) = band_uid.into();
+                let (bts1, bts2) = (bts1.petgraph_index(), bts2.petgraph_index());
+                let geometry = self.drawing.geometry();
+                [(bts1, right), (bts2, right)]
+                    .iter()
+                    .all(|&(x, y)| !geometry.is_joined_with(x, y))
+            })
+            .collect();
+        bands.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
+
+        // TODO: handle "loops" of bands, or multiple primitives from the band crossing the segment
+        // both in the case of "edge" of a primitive/loose, and in case the band actually goes into a segment
+        // and then again out of it.
+
+        Some(
+            bands
+                .into_iter()
+                .map(|(_, band_uid, loose)| (band_uid, loose)),
+        )
     }
 
     fn does_compound_have_core(&self, primary: NodeIndex, core: DotIndex) -> bool {

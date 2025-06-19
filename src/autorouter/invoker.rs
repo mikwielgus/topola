@@ -176,9 +176,9 @@ impl<M: AccessMesadata + Clone> Invoker<M> {
         &mut self,
         command: Command,
     ) -> Result<ExecutionStepper<M>, InvokerError> {
-        let execute = self.dispatch_command(&command);
+        let execute = self.dispatch_command(&command)?;
         self.ongoing_command = Some(command);
-        execute
+        Ok(execute)
     }
 
     #[debug_requires(self.ongoing_command.is_none())]
