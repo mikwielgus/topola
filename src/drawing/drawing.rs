@@ -713,13 +713,13 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 let from = self.head_around_bend_segment(
                     &from_head,
                     inner,
-                    RotationSense::Clockwise,
+                    RotationSense::Counterclockwise,
                     width,
                 )?;
                 let to = self.head_around_bend_segment(
                     &to_head,
                     inner,
-                    RotationSense::Counterclockwise,
+                    RotationSense::Clockwise,
                     width,
                 )?;
                 let offset = self.head_around_bend_offset(&from_head, inner, width);
@@ -729,15 +729,11 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 let from = self.head_around_dot_segment(
                     &from_head,
                     core,
-                    RotationSense::Clockwise,
-                    width,
-                )?;
-                let to = self.head_around_dot_segment(
-                    &to_head,
-                    core,
                     RotationSense::Counterclockwise,
                     width,
                 )?;
+                let to =
+                    self.head_around_dot_segment(&to_head, core, RotationSense::Clockwise, width)?;
                 let offset = self.head_around_dot_offset(&from_head, core, width);
                 (from, to, offset)
             };
