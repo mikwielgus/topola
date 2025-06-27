@@ -2,7 +2,6 @@
 //
 // SPDX-License-Identifier: MIT
 
-use core::ops::ControlFlow;
 use geo::point;
 use petgraph::{
     data::DataMap,
@@ -10,12 +9,8 @@ use petgraph::{
 };
 use rstar::{Envelope, AABB};
 use topola::{
-    autorouter::{
-        execution::Command,
-        invoker::{
-            GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts,
-            GetObstacles,
-        },
+    autorouter::invoker::{
+        GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
     },
     board::AccessMesadata,
     drawing::{
@@ -25,10 +20,10 @@ use topola::{
     geometry::{shape::AccessShape, GenericNode},
     graph::MakeRef,
     interactor::{
-        activity::{ActivityStepper, InteractiveEvent, InteractiveInput},
+        activity::{ActivityStepper, InteractiveEvent, InteractiveEventKind, InteractiveInput},
         interaction::InteractionStepper,
     },
-    layout::{poly::MakePolygon, via::ViaWeight},
+    layout::poly::MakePolygon,
     math::{Circle, RotationSense},
     router::navmesh::NavnodeIndex,
 };
@@ -138,95 +133,52 @@ impl Viewport {
                     if let Some(workspace) = maybe_workspace {
                         let latest_point = point! {x: latest_pos.x as f64, y: -latest_pos.y as f64};
 
-                        // Advances the app's state by the delta time `dt`. May call
-                        // `.update_state()` more than once if the delta time is more than a multiple of
-                        // the timestep.
-                        let dt = ctx.input(|i| i.stable_dt);
-                        let active_layer = workspace.appearance_panel.active_layer;
-                        self.update_counter += dt;
-                        while self.update_counter >= menu_bar.frame_timestep {
-                            self.update_counter -= menu_bar.frame_timestep;
-                            if let ControlFlow::Break(()) = workspace.update_state(
-                                tr,
-                                error_dialog,
-                                &InteractiveInput {
-                                    active_layer,
-                                    pointer_pos: point! {x: latest_pos.x as f64, y: latest_pos.y as f64},
-                                    dt,
-                                },
-                            ) {
-                                break;
-                            }
-                        }
+                        let interactive_input = InteractiveInput {
+                            active_layer: workspace.appearance_panel.active_layer,
+                            pointer_pos: latest_point,
+                            dt: ctx.input(|i| i.stable_dt),
+                        };
+                        workspace.advance_state_by_dt(
+                            tr,
+                            error_dialog,
+                            menu_bar.frame_timestep,
+                            &interactive_input,
+                        );
 
-                        if !workspace.interactor.maybe_activity().as_ref().map_or(true, |activity| {
-                            matches!(activity.maybe_status(), Some(ControlFlow::Break(..)))
-                        }) {
-                            // there is currently some activity
-                            let interactive_event = if response.clicked_by(egui::PointerButton::Primary) {
-                                Some(InteractiveEvent::PointerPrimaryButtonClicked)
+                        let interactive_event_kind =
+                            if response.clicked_by(egui::PointerButton::Primary) {
+                                Some(InteractiveEventKind::PointerPrimaryButtonClicked)
+                            } else if response.drag_started_by(egui::PointerButton::Primary) {
+                                Some(InteractiveEventKind::PointerPrimaryButtonDragStarted)
+                            } else if response.drag_stopped_by(egui::PointerButton::Primary) {
+                                Some(InteractiveEventKind::PointerPrimaryButtonDragStopped)
                             } else if response.clicked_by(egui::PointerButton::Secondary) {
-                                Some(InteractiveEvent::PointerSecondaryButtonClicked)
+                                Some(InteractiveEventKind::PointerSecondaryButtonClicked)
                             } else {
                                 None
                             };
-                            if let Some(interactive_event) = interactive_event {
-                                let dt = ctx.input(|i| i.stable_dt);
-                                let active_layer = workspace.appearance_panel.active_layer;
-                                let _ = workspace.update_state_for_event(
-                                    tr,
-                                    error_dialog,
-                                    &InteractiveInput {
-                                        active_layer,
-                                        pointer_pos: latest_point,
-                                        dt,
-                                    },
-                                    interactive_event,
-                                );
-                            }
-                        } else {
-                            let layers = &mut workspace.appearance_panel;
-                            let overlay = &mut workspace.overlay;
-                            let board = workspace.interactor.invoker().autorouter().board();
-                            if response.clicked_by(egui::PointerButton::Primary) {
-                                if menu_bar.is_placing_via {
-                                    workspace.interactor.execute(Command::PlaceVia(ViaWeight {
-                                        from_layer: 0,
-                                        to_layer: 0,
-                                        circle: Circle {
-                                            pos: latest_point,
-                                            r: menu_bar
-                                                .autorouter_options
-                                                .router_options
-                                                .routed_band_width
-                                                / 2.0,
-                                        },
-                                        maybe_net: Some(1234),
-                                    }));
-                                } else {
-                                    overlay.click(board, layers, latest_point);
-                                }
-                            } else if response.drag_started_by(egui::PointerButton::Primary) {
-                                overlay.drag_start(
-                                    board,
-                                    layers,
-                                    latest_point,
-                                    &response.ctx.input(|i| i.modifiers),
-                                );
-                            } else if response.drag_stopped_by(egui::PointerButton::Primary) {
-                                overlay.drag_stop(board, layers, latest_point);
-                            } else if let Some((_, bsk, cur_bbox)) =
-                                overlay.get_bbox_reselect(latest_point)
-                            {
-                                use topola::autorouter::selection::BboxSelectionKind;
-                                painter.paint_bbox_with_color(
-                                    cur_bbox,
-                                    match bsk {
-                                        BboxSelectionKind::CompletelyInside => egui::Color32::YELLOW,
-                                        BboxSelectionKind::MerelyIntersects => egui::Color32::BLUE,
-                                    },
-                                );
-                            }
+                        if let Some(kind) = interactive_event_kind {
+                            let (ctrl, shift) = response
+                                .ctx
+                                .input(|i| (i.modifiers.ctrl, i.modifiers.shift));
+                            let _ = workspace.update_state_for_event(
+                                tr,
+                                error_dialog,
+                                menu_bar,
+                                &interactive_input,
+                                InteractiveEvent { kind, ctrl, shift },
+                            );
+                        } else if let Some((_, bsk, cur_bbox)) =
+                            workspace.overlay.get_bbox_reselect(latest_point)
+                        {
+                            use topola::autorouter::selection::BboxSelectionKind;
+                            painter.paint_bbox_with_color(
+                                cur_bbox,
+                                match bsk {
+                                    BboxSelectionKind::CompletelyInside => egui::Color32::YELLOW,
+                                    BboxSelectionKind::MerelyIntersects => egui::Color32::BLUE,
+                                },
+                            );
                         }
 
                         let layers = &mut workspace.appearance_panel;
@@ -529,8 +481,13 @@ impl Viewport {
                                     .paint_primitive(ghost, egui::Color32::from_rgb(75, 75, 150));
                             }
 
-                            if let ActivityStepper::Interaction(InteractionStepper::RoutePlan(rp)) = activity.activity() {
-                                painter.paint_linestring(&rp.lines, egui::Color32::from_rgb(245, 182, 66));
+                            if let ActivityStepper::Interaction(InteractionStepper::RoutePlan(rp)) =
+                                activity.activity()
+                            {
+                                painter.paint_linestring(
+                                    &rp.lines,
+                                    egui::Color32::from_rgb(245, 182, 66),
+                                );
                             }
 
                             if let Some(ref navmesh) =

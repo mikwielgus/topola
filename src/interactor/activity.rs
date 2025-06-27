@@ -35,11 +35,23 @@ pub struct InteractiveInput {
     pub dt: f32,
 }
 
-/// An event received from the user
 #[derive(Clone, Copy, Debug)]
-pub enum InteractiveEvent {
+pub enum InteractiveEventKind {
     PointerPrimaryButtonClicked,
+    PointerPrimaryButtonDragStarted,
+    PointerPrimaryButtonDragStopped,
     PointerSecondaryButtonClicked,
+}
+
+/// An event received from the user
+pub struct InteractiveEvent {
+    pub kind: InteractiveEventKind,
+
+    /// `true` if the `Ctrl` key pressed during the event
+    pub ctrl: bool,
+
+    /// `true` if the `Shift` key pressed during the event
+    pub shift: bool,
 }
 
 /// This is the execution context passed to the stepper on each step

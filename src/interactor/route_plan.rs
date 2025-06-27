@@ -15,7 +15,7 @@ use crate::{
 };
 
 use super::{
-    activity::{ActivityContext, InteractiveEvent},
+    activity::{ActivityContext, InteractiveEvent, InteractiveEventKind},
     interaction::InteractionError,
 };
 
@@ -128,8 +128,8 @@ impl<M: AccessMesadata> OnEvent<ActivityContext<'_, M>, InteractiveEvent> for Ro
         context: &mut ActivityContext<M>,
         event: InteractiveEvent,
     ) -> Result<(), InteractionError> {
-        match event {
-            InteractiveEvent::PointerPrimaryButtonClicked if self.end_pin.is_none() => {
+        match event.kind {
+            InteractiveEventKind::PointerPrimaryButtonClicked if self.end_pin.is_none() => {
                 if let Some((layer, idx, pos)) = try_select_pin(context) {
                     // make sure double-click or such doesn't corrupt state
                     if let Some(start_pin) = self.start_pin {
@@ -151,7 +151,7 @@ impl<M: AccessMesadata> OnEvent<ActivityContext<'_, M>, InteractiveEvent> for Ro
                     }
                 }
             }
-            InteractiveEvent::PointerSecondaryButtonClicked => {
+            InteractiveEventKind::PointerSecondaryButtonClicked => {
                 if self.end_pin.is_some() {
                     log::debug!("un-clicked end pin");
                     self.end_pin = None;

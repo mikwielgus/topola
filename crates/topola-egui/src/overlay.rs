@@ -131,13 +131,14 @@ impl Overlay {
         _board: &Board<impl AccessMesadata>,
         _appearance_panel: &AppearancePanel,
         at: Point,
-        modifiers: &egui::Modifiers,
+        ctrl: bool,
+        shift: bool,
     ) {
         if self.reselect_bbox.is_none() {
             // handle bounding box selection
-            let selmode = if modifiers.ctrl {
+            let selmode = if ctrl {
                 SelectionMode::Toggling
-            } else if modifiers.shift {
+            } else if shift {
                 SelectionMode::Addition
             } else {
                 SelectionMode::Substitution
