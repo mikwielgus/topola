@@ -61,12 +61,31 @@ impl Workspace {
         })
     }
 
+    pub fn update_state_for_event(
+        &mut self,
+        tr: &Translator,
+        error_dialog: &mut ErrorDialog,
+        interactive_input: &InteractiveInput,
+        interactive_event: InteractiveEvent,
+    ) -> ControlFlow<()> {
+        match self
+            .interactor
+            .update_for_event(interactive_input, interactive_event)
+        {
+            ControlFlow::Continue(()) => ControlFlow::Continue(()),
+            ControlFlow::Break(Ok(())) => ControlFlow::Break(()),
+            ControlFlow::Break(Err(err)) => {
+                error_dialog.push_error("tr-module-invoker", format!("{}", err));
+                ControlFlow::Break(())
+            }
+        }
+    }
+
     pub fn update_state(
         &mut self,
         tr: &Translator,
         error_dialog: &mut ErrorDialog,
         interactive_input: &InteractiveInput,
-        interactive_event: Option<InteractiveEvent>,
     ) -> ControlFlow<()> {
         if let Ok(data) = self.history_channel.1.try_recv() {
             match data {
@@ -92,7 +111,7 @@ impl Workspace {
             }
         }
 
-        match self.interactor.update(interactive_input, interactive_event) {
+        match self.interactor.update(interactive_input) {
             ControlFlow::Continue(()) => ControlFlow::Continue(()),
             ControlFlow::Break(Ok(())) => ControlFlow::Break(()),
             ControlFlow::Break(Err(err)) => {

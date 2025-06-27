@@ -79,41 +79,49 @@ impl<M: AccessMesadata> Interactor<M> {
         self.invoker.replay(history);
     }
 
+    /// Update the currently running execution or activity, given an event
+    pub fn update_for_event(
+        &mut self,
+        interactive_input: &InteractiveInput,
+        interactive_event: InteractiveEvent,
+    ) -> ControlFlow<Result<(), ActivityError>> {
+        if let Some(ref mut activity) = self.activity {
+            match activity.on_event(
+                &mut ActivityContext {
+                    interactive_input,
+                    invoker: &mut self.invoker,
+                },
+                interactive_event,
+            ) {
+                Ok(()) => ControlFlow::Continue(()),
+                Err(err) => {
+                    self.activity = None;
+                    ControlFlow::Break(Err(err.into()))
+                }
+            }
+        } else {
+            ControlFlow::Break(Ok(()))
+        }
+    }
+
     /// Update the currently running execution or activity
     pub fn update(
         &mut self,
         interactive_input: &InteractiveInput,
-        interactive_event: Option<InteractiveEvent>,
     ) -> ControlFlow<Result<(), ActivityError>> {
         if let Some(ref mut activity) = self.activity {
-            if let Some(event) = interactive_event {
-                match activity.on_event(
-                    &mut ActivityContext {
-                        interactive_input,
-                        invoker: &mut self.invoker,
-                    },
-                    event,
-                ) {
-                    Ok(()) => ControlFlow::Continue(()),
-                    Err(err) => {
-                        self.activity = None;
-                        ControlFlow::Break(Err(err.into()))
-                    }
+            match activity.step(&mut ActivityContext {
+                interactive_input,
+                invoker: &mut self.invoker,
+            }) {
+                Ok(ControlFlow::Continue(())) => ControlFlow::Continue(()),
+                Ok(ControlFlow::Break(_msg)) => {
+                    self.activity = None;
+                    ControlFlow::Break(Ok(()))
                 }
-            } else {
-                match activity.step(&mut ActivityContext {
-                    interactive_input,
-                    invoker: &mut self.invoker,
-                }) {
-                    Ok(ControlFlow::Continue(())) => ControlFlow::Continue(()),
-                    Ok(ControlFlow::Break(_msg)) => {
-                        self.activity = None;
-                        ControlFlow::Break(Ok(()))
-                    }
-                    Err(err) => {
-                        self.activity = None;
-                        ControlFlow::Break(Err(err))
-                    }
+                Err(err) => {
+                    self.activity = None;
+                    ControlFlow::Break(Err(err))
                 }
             }
         } else {

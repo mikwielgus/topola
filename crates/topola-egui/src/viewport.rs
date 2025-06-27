@@ -138,6 +138,27 @@ impl Viewport {
                     if let Some(workspace) = maybe_workspace {
                         let latest_point = point! {x: latest_pos.x as f64, y: -latest_pos.y as f64};
 
+                        // Advances the app's state by the delta time `dt`. May call
+                        // `.update_state()` more than once if the delta time is more than a multiple of
+                        // the timestep.
+                        let dt = ctx.input(|i| i.stable_dt);
+                        let active_layer = workspace.appearance_panel.active_layer;
+                        self.update_counter += dt;
+                        while self.update_counter >= menu_bar.frame_timestep {
+                            self.update_counter -= menu_bar.frame_timestep;
+                            if let ControlFlow::Break(()) = workspace.update_state(
+                                tr,
+                                error_dialog,
+                                &InteractiveInput {
+                                    active_layer,
+                                    pointer_pos: point! {x: latest_pos.x as f64, y: latest_pos.y as f64},
+                                    dt,
+                                },
+                            ) {
+                                break;
+                            }
+                        }
+
                         if !workspace.interactor.maybe_activity().as_ref().map_or(true, |activity| {
                             matches!(activity.maybe_status(), Some(ControlFlow::Break(..)))
                         }) {
@@ -149,27 +170,10 @@ impl Viewport {
                             } else {
                                 None
                             };
-                            if let Some(event) = interactive_event {
-                                log::debug!("got {:?}", event);
-                            }
-                            // Advances the app's state by the delta time `dt`. May call
-                            // `.update_state()` more than once if the delta time is more than a multiple of
-                            // the timestep.
-                            let dt = ctx.input(|i| i.stable_dt);
-                            let active_layer = workspace.appearance_panel.active_layer;
-                            self.update_counter += if interactive_event.is_some() {
-                                // make sure we run the loop below at least once on clicks
-                                let mut dtx = menu_bar.frame_timestep;
-                                if dt > dtx {
-                                    dtx = dt;
-                                }
-                                dtx
-                            } else {
-                                dt
-                            };
-                            while self.update_counter >= menu_bar.frame_timestep {
-                                self.update_counter -= menu_bar.frame_timestep;
-                                if let ControlFlow::Break(()) = workspace.update_state(
+                            if let Some(interactive_event) = interactive_event {
+                                let dt = ctx.input(|i| i.stable_dt);
+                                let active_layer = workspace.appearance_panel.active_layer;
+                                let _ = workspace.update_state_for_event(
                                     tr,
                                     error_dialog,
                                     &InteractiveInput {
@@ -178,32 +182,9 @@ impl Viewport {
                                         dt,
                                     },
                                     interactive_event,
-                                ) {
-                                    break;
-                                }
+                                );
                             }
                         } else {
-                            // Advances the app's state by the delta time `dt`. May call
-                            // `.update_state()` more than once if the delta time is more than a multiple of
-                            // the timestep.
-                            let dt = ctx.input(|i| i.stable_dt);
-                            let active_layer = workspace.appearance_panel.active_layer;
-                            self.update_counter += dt;
-                            while self.update_counter >= menu_bar.frame_timestep {
-                                self.update_counter -= menu_bar.frame_timestep;
-                                if let ControlFlow::Break(()) = workspace.update_state(
-                                    tr,
-                                    error_dialog,
-                                    &InteractiveInput {
-                                        active_layer,
-                                        pointer_pos: point! {x: latest_pos.x as f64, y: latest_pos.y as f64},
-                                        dt,
-                                    },
-                                    None,
-                                ) {
-                                    break;
-                                }
-                            }
                             let layers = &mut workspace.appearance_panel;
                             let overlay = &mut workspace.overlay;
                             let board = workspace.interactor.invoker().autorouter().board();
