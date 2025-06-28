@@ -61,6 +61,7 @@ allowed_scopes = [
   "layout/poly",
   "layout/via",
   "math/cyclic_search",
+  "math/line",
   "math/polygon_tangents",
   "math/tangents",
   "math/tunnel",
