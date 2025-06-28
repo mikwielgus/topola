@@ -261,13 +261,13 @@ pub fn intersect_lines(line1: &Line, line2: &Line) -> Option<Point> {
     }
 }
 
-/// Returns `Some(p)` when `p` lies in the intersection of a line and a beam
+/// Returns `Some(p)` when `p` lies in the intersection of a line and a ray
 /// (line which is only bounded at one side, i.e. point + directon)
-pub fn intersect_line_and_beam(line1: &Line, beam2: &Line) -> Option<Point> {
+pub fn intersect_line_and_ray(line1: &Line, ray2: &Line) -> Option<Point> {
     let nline1 = NormalLine::from(*line1);
-    let nbeam2 = NormalLine::from(*beam2);
+    let nray2 = NormalLine::from(*ray2);
 
-    match nline1.intersects(&nbeam2) {
+    match nline1.intersects(&nray2) {
         LineIntersection::Empty | LineIntersection::Overlapping => None,
         LineIntersection::Point(pt) => {
             let parv1 = geo::point! {
@@ -275,20 +275,20 @@ pub fn intersect_line_and_beam(line1: &Line, beam2: &Line) -> Option<Point> {
                 y: line1.dy(),
             };
             let parv2 = geo::point! {
-                x: beam2.dx(),
-                y: beam2.dy(),
+                x: ray2.dx(),
+                y: ray2.dy(),
             };
             // the following is more numerically robust than a `Line::contains` check
             let is_match = if nline1
                 .segment_interval_ordered(line1)
                 .contains(&dot_product(parv1, pt))
             {
-                let nbeam2interval = nbeam2.segment_interval(beam2);
+                let nray2interval = nray2.segment_interval(ray2);
                 let parv2pt = dot_product(parv2, pt);
-                if nbeam2interval.start() <= nbeam2interval.end() {
-                    *nbeam2interval.start() <= parv2pt
+                if nray2interval.start() <= nray2interval.end() {
+                    *nray2interval.start() <= parv2pt
                 } else {
-                    *nbeam2interval.start() >= parv2pt
+                    *nray2interval.start() >= parv2pt
                 }
             } else {
                 false
@@ -302,10 +302,10 @@ pub fn intersect_line_and_beam(line1: &Line, beam2: &Line) -> Option<Point> {
     }
 }
 
-/// Returns `Some(p)` when `p` lies in the intersection of a linestring and a beam
-pub fn intersect_linestring_and_beam(linestring: &LineString, beam: &Line) -> Option<Point> {
+/// Returns `Some(p)` when `p` lies in the intersection of a linestring and a ray
+pub fn intersect_linestring_and_ray(linestring: &LineString, ray: &Line) -> Option<Point> {
     for line in linestring.lines() {
-        if let Some(pt) = intersect_line_and_beam(&line, beam) {
+        if let Some(pt) = intersect_line_and_ray(&line, ray) {
             return Some(pt);
         }
     }
@@ -411,9 +411,9 @@ mod tests {
     }
 
     #[test]
-    fn intersect_line_and_beam00() {
+    fn intersect_line_and_ray00() {
         assert_eq!(
-            intersect_line_and_beam(
+            intersect_line_and_ray(
                 &Line {
                     start: geo::coord! { x: -1., y: -1. },
                     end: geo::coord! { x: 1., y: 1. },
@@ -426,7 +426,7 @@ mod tests {
             Some(geo::point! { x: 0., y: 0. })
         );
         assert_eq!(
-            intersect_line_and_beam(
+            intersect_line_and_ray(
                 &Line {
                     start: geo::coord! { x: -1., y: -1. },
                     end: geo::coord! { x: 1., y: 1. },
@@ -441,9 +441,9 @@ mod tests {
     }
 
     #[test]
-    fn intersect_line_and_beam01() {
+    fn intersect_line_and_ray01() {
         assert_eq!(
-            intersect_line_and_beam(
+            intersect_line_and_ray(
                 &Line {
                     start: geo::coord! { x: -1., y: -1. },
                     end: geo::coord! { x: 1., y: 1. },
@@ -458,8 +458,8 @@ mod tests {
     }
 
     #[test]
-    fn intersect_line_and_beam02() {
-        let pt = intersect_line_and_beam(
+    fn intersect_line_and_ray02() {
+        let pt = intersect_line_and_ray(
             &Line {
                 start: geo::coord! { x: 140., y: -110. },
                 end: geo::coord! { x: 160., y: -110. },

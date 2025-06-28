@@ -26,7 +26,7 @@ use crate::{
     },
     graph::GetPetgraphIndex,
     layout::{Layout, NodeIndex},
-    math::{intersect_linestring_and_beam, LineIntersection, NormalLine},
+    math::{intersect_linestring_and_ray, LineIntersection, NormalLine},
 };
 
 impl<R: AccessRules> Layout<R> {
@@ -150,7 +150,7 @@ impl<R: AccessRules> Layout<R> {
     ) -> Option<impl Iterator<Item = (BandUid, LooseIndex)>> {
         // First, decode the `left` direction into a point on the boundary
         let right_pos = self.node_shape(right).center();
-        let left_pos = intersect_linestring_and_beam(
+        let left_pos = intersect_linestring_and_ray(
             self.drawing.boundary().exterior(),
             &Line {
                 start: right_pos.0,
