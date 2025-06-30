@@ -52,3 +52,4 @@ tr-menu-edit-recalculate-topo-navmesh = Topologisches Navmesh neuberechnen
 tr-menu-view-show-topo-navmesh = Topologisches Navmesh anzeigen
 tr-menu-view-kdb-scroll-delta-factor = Tastatur Scroll Delta Faktor
 tr-menu-view-show-pathfinding-scores = Zeige Pfadsuch-Bewertungen
+tr-menu-place-place-route-plan = Platziere Routenplan
