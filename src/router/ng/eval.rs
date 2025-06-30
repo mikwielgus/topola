@@ -191,8 +191,8 @@ impl AstarContext {
                         }
                         alignment
                     }
-                    (Some(_), None) => Alignment::Right,
-                    (None, Some(_)) => Alignment::Left,
+                    (Some(_), None) => Alignment::Left,
+                    (None, Some(_)) => Alignment::Right,
                     // this should only happen when one end-point is primal, handled above
                     (None, None) => unreachable!(),
                 };
