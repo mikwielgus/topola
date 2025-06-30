@@ -385,14 +385,13 @@ pub fn calculate_navmesh<R: AccessRules>(
                         });
                         */
                     }
-                    Some(x) => {
-                        x.map(|(band_uid, _)| {
+                    Some(x) => x
+                        .map(|(band_uid, _)| {
                             RelaxedPath::Normal(
                                 *board.bands_by_id().get_by_right(&band_uid).unwrap(),
                             )
                         })
-                        .collect::<Vec<_>>()
-                    }
+                        .collect::<Vec<_>>(),
                 };
 
                 if bands != *barrier0 {
@@ -430,14 +429,13 @@ pub fn calculate_navmesh<R: AccessRules>(
                         });
                         */
                     }
-                    Some(x) => {
-                        x.map(|(band_uid, _)| {
+                    Some(x) => x
+                        .map(|(band_uid, _)| {
                             RelaxedPath::Normal(
                                 *board.bands_by_id().get_by_right(&band_uid).unwrap(),
                             )
                         })
-                        .collect::<Vec<_>>()
-                    }
+                        .collect::<Vec<_>>(),
                 };
                 bands.reverse();
 
