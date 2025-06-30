@@ -386,7 +386,6 @@ pub fn calculate_navmesh<R: AccessRules>(
                         */
                     }
                     Some(x) => {
-                        log::debug!("calculate_navmesh: successfully found boundary from node {:?}, direction {:?}", rhs, direction);
                         x.map(|(band_uid, _)| {
                             RelaxedPath::Normal(
                                 *board.bands_by_id().get_by_right(&band_uid).unwrap(),
@@ -432,7 +431,6 @@ pub fn calculate_navmesh<R: AccessRules>(
                         */
                     }
                     Some(x) => {
-                        log::debug!("calculate_navmesh: successfully found boundary from node {:?}, direction {:?}", lhs, direction);
                         x.map(|(band_uid, _)| {
                             RelaxedPath::Normal(
                                 *board.bands_by_id().get_by_right(&band_uid).unwrap(),
