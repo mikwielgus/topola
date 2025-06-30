@@ -81,7 +81,7 @@ impl NormalLine {
             // recover the original parallel vector
             x: -self.y,
             y: self.x,
-            offset: -self.x * pt.0.y + self.y * pt.0.x,
+            offset: self.x * pt.0.y - self.y * pt.0.x,
         }
     }
 
