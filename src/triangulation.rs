@@ -46,7 +46,31 @@ impl<I: GetPetgraphIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Defa
     }
 
     pub fn add_constraint_edge(&mut self, from: VW, to: VW) -> Result<bool, InsertionError> {
-        self.cdt.add_constraint_edge(from, to)
+        let from_index = from.node_index().petgraph_index().index();
+        let to_index = to.node_index().petgraph_index().index();
+
+        // It is possible for one or both constraint edge endpoint vertices to
+        // not exist in the triangulation even after everything has been added.
+        // This can happen if the constraint was formed from a band wrapped
+        // over a polygonal pad that is the routing origin or destination, since
+        // in such situation the vertices of the pad boundary are not added to
+        // the triangulation.
+        //
+        // To prevent this from causing a panic at runtime, we idempotently add
+        // the constraint edge endpoint vertices to triangulation before adding
+        // the edge itself.
+        self.add_vertex(from)?;
+        self.add_vertex(to)?;
+
+        Ok(self.cdt.add_constraint(
+            self.trianvertex_to_handle[from_index].unwrap(),
+            self.trianvertex_to_handle[to_index].unwrap(),
+        ))
+    }
+
+    pub fn intersects_constraint(&self, from: &VW, to: &VW) -> bool {
+        self.cdt
+            .intersects_constraint(from.position(), to.position())
     }
 
     pub fn weight(&self, vertex: I) -> &VW {

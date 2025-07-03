@@ -4,6 +4,7 @@
 
 use std::collections::BTreeMap;
 
+use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
@@ -21,10 +22,10 @@ use thiserror::Error;
 use crate::{
     drawing::{
         bend::{FixedBendIndex, LooseBendIndex},
-        dot::FixedDotIndex,
+        dot::{DotIndex, FixedDotIndex},
         gear::{GearIndex, GetNextGear},
         graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
-        primitive::{GetJoints, MakePrimitiveShape, Primitive},
+        primitive::{GetCore, GetJoints, MakePrimitiveShape, Primitive},
         rules::AccessRules,
         Drawing,
     },
@@ -92,14 +93,14 @@ impl From<BinavnodeNodeIndex> for GearIndex {
 /// The name "trianvertex" is a shortening of "triangulation vertex".
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-enum TrianvertexNodeIndex {
+pub enum TrianvertexNodeIndex {
     FixedDot(FixedDotIndex),
     FixedBend(FixedBendIndex),
 }
 
 impl From<TrianvertexNodeIndex> for BinavnodeNodeIndex {
-    fn from(vertex: TrianvertexNodeIndex) -> Self {
-        match vertex {
+    fn from(trianvertex: TrianvertexNodeIndex) -> Self {
+        match trianvertex {
             TrianvertexNodeIndex::FixedDot(dot) => BinavnodeNodeIndex::FixedDot(dot),
             TrianvertexNodeIndex::FixedBend(bend) => BinavnodeNodeIndex::FixedBend(bend),
         }
@@ -107,7 +108,7 @@ impl From<TrianvertexNodeIndex> for BinavnodeNodeIndex {
 }
 
 #[derive(Debug, Clone)]
-struct TrianvertexWeight {
+pub struct TrianvertexWeight {
     pub node: TrianvertexNodeIndex,
     pub pos: Point,
 }
@@ -154,13 +155,21 @@ pub enum NavmeshError {
 /// along-edge crossing.
 ///
 /// The name "navmesh" is a blend of "navigation mesh".
-#[derive(Debug, Clone)]
+#[derive(Clone, Getters)]
 pub struct Navmesh {
     graph: UnGraph<NavnodeWeight, (), usize>,
+    #[getter(skip)]
     origin: FixedDotIndex,
+    #[getter(skip)]
     origin_navnode: NavnodeIndex,
+    #[getter(skip)]
     destination: FixedDotIndex,
+    #[getter(skip)]
     destination_navnode: NavnodeIndex,
+
+    /// Original triangulation stored for debugging purposes.
+    // XXX: Maybe have a way to compile this out in release?
+    triangulation: Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()>,
 }
 
 impl Navmesh {
@@ -192,8 +201,34 @@ impl Navmesh {
                                 pos: primitive.shape().center(),
                             })?;
                         }
-                        PrimitiveIndex::FixedSeg(seg) => {
+                        PrimitiveIndex::LoneLooseSeg(seg) => {
                             let (from_dot, to_dot) = layout.drawing().primitive(seg).joints();
+
+                            triangulation.add_constraint_edge(
+                                TrianvertexWeight {
+                                    node: from_dot.into(),
+                                    pos: from_dot.primitive(layout.drawing()).shape().center(),
+                                },
+                                TrianvertexWeight {
+                                    node: to_dot.into(),
+                                    pos: to_dot.primitive(layout.drawing()).shape().center(),
+                                },
+                            )?;
+                        }
+                        PrimitiveIndex::SeqLooseSeg(seg) => {
+                            let (from_joint, to_joint) = layout.drawing().primitive(seg).joints();
+
+                            let from_dot = match from_joint {
+                                DotIndex::Fixed(dot) => dot,
+                                DotIndex::Loose(dot) => {
+                                    let bend = layout.drawing().primitive(dot).bend();
+
+                                    layout.drawing().primitive(bend).core()
+                                }
+                            };
+
+                            let to_bend = layout.drawing().primitive(to_joint).bend();
+                            let to_dot = layout.drawing().primitive(to_bend).core();
 
                             triangulation.add_constraint_edge(
                                 TrianvertexWeight {
@@ -211,6 +246,50 @@ impl Navmesh {
                                 node: bend.into(),
                                 pos: primitive.shape().center(),
                             })?;
+                        }
+                        _ => (),
+                    }
+                }
+            }
+        }
+
+        for node in layout.drawing().layer_primitive_nodes(layer) {
+            let primitive = node.primitive(layout.drawing());
+
+            if let Some(primitive_net) = primitive.maybe_net() {
+                if node == origin.into()
+                    || node == destination.into()
+                    || Some(primitive_net) != maybe_net
+                {
+                    // If you have a band that was routed from a polygonal pad,
+                    // upon another routing some of the constraint edges created
+                    // from the loose segs band will intersect some of the
+                    // constraint edges created from the fixed segs constituting
+                    // the pad boundary.
+                    //
+                    // Such constraint intersections are erroneous and cause
+                    // Spade to throw a panic at runtime. So, to prevent this
+                    // from occuring, we iterate over the layout for the second
+                    // time, after all the constraint edges from bands have
+                    // been placed, and only then add constraint edges created
+                    // from fixed segs, but only ones that do not cause an
+                    // intersection.
+                    match node {
+                        PrimitiveIndex::FixedSeg(seg) => {
+                            let (from_dot, to_dot) = layout.drawing().primitive(seg).joints();
+
+                            let from_weight = TrianvertexWeight {
+                                node: from_dot.into(),
+                                pos: from_dot.primitive(layout.drawing()).shape().center(),
+                            };
+                            let to_weight = TrianvertexWeight {
+                                node: to_dot.into(),
+                                pos: to_dot.primitive(layout.drawing()).shape().center(),
+                            };
+
+                            if !triangulation.intersects_constraint(&from_weight, &to_weight) {
+                                triangulation.add_constraint_edge(from_weight, to_weight)?;
+                            }
                         }
                         _ => (),
                     }
@@ -318,6 +397,7 @@ impl Navmesh {
             origin_navnode: NavnodeIndex(origin_navnode.unwrap()),
             destination,
             destination_navnode: NavnodeIndex(destination_navnode.unwrap()),
+            triangulation,
         })
     }
 
@@ -340,11 +420,6 @@ impl Navmesh {
         map.get_mut(&trianvertex)
             .unwrap()
             .push((navnode1, navnode2));
-    }
-
-    /// Returns the navmesh's underlying petgraph graph structure.
-    pub fn graph(&self) -> &UnGraph<NavnodeWeight, (), usize> {
-        &self.graph
     }
 
     /// Returns the origin node.

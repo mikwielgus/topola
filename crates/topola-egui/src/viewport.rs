@@ -23,7 +23,10 @@ use topola::{
     },
     layout::poly::MakePolygon,
     math::{Circle, RotationSense},
-    router::{navmesh::NavnodeIndex, ng::pie},
+    router::{
+        navmesh::{BinavnodeNodeIndex, NavnodeIndex},
+        ng::pie,
+    },
 };
 
 use crate::{
@@ -36,8 +39,6 @@ pub struct Viewport {
     /// how much should a single arrow key press scroll
     pub kbd_scroll_delta_factor: f32,
     pub scheduled_zoom_to_fit: bool,
-
-    update_counter: f32,
 }
 
 impl Viewport {
@@ -46,7 +47,6 @@ impl Viewport {
             transform: egui::emath::TSTransform::new([0.0, 0.0].into(), 0.01),
             kbd_scroll_delta_factor: 5.0,
             scheduled_zoom_to_fit: false,
-            update_counter: 0.0,
         }
     }
 
@@ -271,8 +271,8 @@ impl Viewport {
 
                         if menu_bar.show_navmesh {
                             if let Some(activity) = workspace.interactor.maybe_activity() {
-                                if let Some(astar) = activity.maybe_thetastar() {
-                                    let navmesh = astar.graph();
+                                if let Some(thetastar) = activity.maybe_thetastar() {
+                                    let navmesh = thetastar.graph();
 
                                     for edge in navmesh.edge_references() {
                                         let mut from = PrimitiveIndex::from(
@@ -376,13 +376,13 @@ impl Viewport {
 
                                         if menu_bar.show_pathfinding_scores {
                                             //TODO "{astar.scores[index]} ({astar.estimate_scores[index]}) (...)"
-                                            let score_text = astar
+                                            let score_text = thetastar
                                                 .scores()
                                                 .get(&navnode)
                                                 .map_or_else(String::new, |s| {
                                                     format!("g={:.2}", s)
                                                 });
-                                            let estimate_score_text = astar
+                                            let estimate_score_text = thetastar
                                                 .estimate_scores()
                                                 .get(&navnode)
                                                 .map_or_else(String::new, |s| {
@@ -401,6 +401,38 @@ impl Viewport {
                                                 egui::Color32::from_rgb(255, 255, 255),
                                             );
                                         }
+                                    }
+                                }
+                            }
+                        }
+
+                        if menu_bar.show_triangulation {
+                            if let Some(activity) = workspace.interactor.maybe_activity() {
+                                if let Some(thetastar) = activity.maybe_thetastar() {
+                                    let navmesh = thetastar.graph();
+
+                                    for edge in navmesh.triangulation().edge_references() {
+                                        let from = PrimitiveIndex::from(BinavnodeNodeIndex::from(
+                                            edge.source(),
+                                        ))
+                                        .primitive(board.layout().drawing())
+                                        .shape()
+                                        .center();
+                                        let to = PrimitiveIndex::from(BinavnodeNodeIndex::from(
+                                            edge.target(),
+                                        ))
+                                        .primitive(board.layout().drawing())
+                                        .shape()
+                                        .center();
+
+                                        painter.paint_edge(
+                                            from,
+                                            to,
+                                            egui::Stroke::new(
+                                                1.0,
+                                                egui::Color32::from_rgb(255, 255, 255),
+                                            ),
+                                        );
                                     }
                                 }
                             }

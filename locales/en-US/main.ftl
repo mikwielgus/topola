@@ -22,6 +22,7 @@ tr-menu-view = View
 tr-menu-view-zoom-to-fit = Zoom to Fit
 tr-menu-view-show-ratsnest = Show Ratsnest
 tr-menu-view-show-navmesh = Show Navmesh
+tr-menu-view-show-triangulation = Show Triangulation
 tr-menu-view-show-pathfinding-scores = Show Pathfinding Scores
 tr-menu-view-show-topo-navmesh = Show Topological Navmesh
 tr-menu-view-show-bboxes = Show BBoxes
