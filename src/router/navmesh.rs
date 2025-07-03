@@ -24,7 +24,7 @@ use crate::{
         dot::FixedDotIndex,
         gear::{GearIndex, GetNextGear},
         graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
-        primitive::{MakePrimitiveShape, Primitive},
+        primitive::{GetJoints, MakePrimitiveShape, Primitive},
         rules::AccessRules,
         Drawing,
     },
@@ -191,6 +191,20 @@ impl Navmesh {
                                 node: dot.into(),
                                 pos: primitive.shape().center(),
                             })?;
+                        }
+                        PrimitiveIndex::FixedSeg(seg) => {
+                            let (from_dot, to_dot) = layout.drawing().primitive(seg).joints();
+
+                            triangulation.add_constraint_edge(
+                                TrianvertexWeight {
+                                    node: from_dot.into(),
+                                    pos: from_dot.primitive(layout.drawing()).shape().center(),
+                                },
+                                TrianvertexWeight {
+                                    node: to_dot.into(),
+                                    pos: to_dot.primitive(layout.drawing()).shape().center(),
+                                },
+                            )?;
                         }
                         PrimitiveIndex::FixedBend(bend) => {
                             triangulation.add_vertex(TrianvertexWeight {

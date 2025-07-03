@@ -7,7 +7,9 @@ use std::{cmp::Ordering, marker::PhantomData};
 use geo::algorithm::line_measures::{Distance, Euclidean};
 use geo::{point, Point};
 use petgraph::visit;
-use spade::{handles::FixedVertexHandle, DelaunayTriangulation, HasPosition, InsertionError};
+use spade::{
+    handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, HasPosition, InsertionError,
+};
 
 use crate::graph::GetPetgraphIndex;
 
@@ -15,9 +17,12 @@ pub trait GetTrianvertexNodeIndex<I> {
     fn node_index(&self) -> I;
 }
 
-#[derive(Debug, Clone)]
+// No `Debug` derive because `spade::ConstrainedDelaunayTriangulation` does
+// not implement `Debug`, though it could (and `spade::DelaunayTriangulation`
+// actually does).
+#[derive(Clone)]
 pub struct Triangulation<I, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Default> {
-    triangulation: DelaunayTriangulation<VW, EW>,
+    cdt: ConstrainedDelaunayTriangulation<VW, EW>,
     trianvertex_to_handle: Box<[Option<FixedVertexHandle>]>,
     index_marker: PhantomData<I>,
 }
@@ -27,7 +32,7 @@ impl<I: GetPetgraphIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Defa
 {
     pub fn new(node_bound: usize) -> Self {
         Self {
-            triangulation: <DelaunayTriangulation<VW, EW> as spade::Triangulation>::new(),
+            cdt: <ConstrainedDelaunayTriangulation<VW, EW> as spade::Triangulation>::new(),
             trianvertex_to_handle: vec![None; node_bound].into_boxed_slice(),
             index_marker: PhantomData,
         }
@@ -35,27 +40,29 @@ impl<I: GetPetgraphIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Defa
 
     pub fn add_vertex(&mut self, weight: VW) -> Result<(), InsertionError> {
         let index = weight.node_index().petgraph_index().index();
-        self.trianvertex_to_handle[index] = Some(spade::Triangulation::insert(
-            &mut self.triangulation,
-            weight,
-        )?);
+        self.trianvertex_to_handle[index] =
+            Some(spade::Triangulation::insert(&mut self.cdt, weight)?);
         Ok(())
     }
 
+    pub fn add_constraint_edge(&mut self, from: VW, to: VW) -> Result<bool, InsertionError> {
+        self.cdt.add_constraint_edge(from, to)
+    }
+
     pub fn weight(&self, vertex: I) -> &VW {
-        spade::Triangulation::s(&self.triangulation)
+        spade::Triangulation::s(&self.cdt)
             .vertex_data(self.trianvertex_to_handle[vertex.petgraph_index().index()].unwrap())
     }
 
     pub fn weight_mut(&mut self, vertex: I) -> &mut VW {
         spade::Triangulation::vertex_data_mut(
-            &mut self.triangulation,
+            &mut self.cdt,
             self.trianvertex_to_handle[vertex.petgraph_index().index()].unwrap(),
         )
     }
 
     fn vertex(&self, handle: FixedVertexHandle) -> I {
-        spade::Triangulation::vertex(&self.triangulation, handle)
+        spade::Triangulation::vertex(&self.cdt, handle)
             .as_ref()
             .node_index()
     }
@@ -68,8 +75,7 @@ impl<I: GetPetgraphIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Defa
     where
         <VW as HasPosition>::Scalar: geo::CoordNum,
     {
-        let position =
-            spade::Triangulation::vertex(&self.triangulation, self.handle(vertex)).position();
+        let position = spade::Triangulation::vertex(&self.cdt, self.handle(vertex)).position();
         point! {x: position.x, y: position.y}
     }
 }
@@ -152,7 +158,7 @@ impl<
 
     fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
         Box::new(
-            spade::Triangulation::vertex(&self.triangulation, self.handle(vertex))
+            spade::Triangulation::vertex(&self.cdt, self.handle(vertex))
                 .out_edges()
                 .map(|handle| self.vertex(handle.to().fix())),
         )
@@ -170,21 +176,19 @@ impl<
     type EdgeReferences = Box<dyn Iterator<Item = TriangulationEdgeReference<I, EW>> + 'a>;
 
     fn edge_references(self) -> Self::EdgeReferences {
-        Box::new(
-            spade::Triangulation::directed_edges(&self.triangulation).map(|edge| {
-                let from = self.vertex(edge.from().fix());
-                let to = self.vertex(edge.to().fix());
+        Box::new(spade::Triangulation::directed_edges(&self.cdt).map(|edge| {
+            let from = self.vertex(edge.from().fix());
+            let to = self.vertex(edge.to().fix());
 
-                TriangulationEdgeReference {
-                    from,
-                    to,
-                    weight: TriangulationEdgeWeightWrapper {
-                        length: Euclidean::distance(&self.position(from), &self.position(to)),
-                        weight: *edge.data(),
-                    },
-                }
-            }),
-        )
+            TriangulationEdgeReference {
+                from,
+                to,
+                weight: TriangulationEdgeWeightWrapper {
+                    length: Euclidean::distance(&self.position(from), &self.position(to)),
+                    weight: *edge.data(),
+                },
+            }
+        }))
     }
 }
 
@@ -199,7 +203,7 @@ impl<
 
     fn edges(self, node: Self::NodeId) -> Self::Edges {
         Box::new(
-            spade::Triangulation::vertex(&self.triangulation, self.handle(node))
+            spade::Triangulation::vertex(&self.cdt, self.handle(node))
                 .out_edges()
                 .map(|edge| {
                     let from = self.vertex(edge.from().fix());
@@ -229,8 +233,8 @@ impl<
 
     fn node_identifiers(self) -> Self::NodeIdentifiers {
         Box::new(
-            spade::Triangulation::fixed_vertices(&self.triangulation).map(|vertex| {
-                spade::Triangulation::s(&self.triangulation)
+            spade::Triangulation::fixed_vertices(&self.cdt).map(|vertex| {
+                spade::Triangulation::s(&self.cdt)
                     .vertex_data(vertex)
                     .node_index()
             }),
@@ -280,8 +284,8 @@ impl<
 
     fn node_references(self) -> Self::NodeReferences {
         Box::new(
-            spade::Triangulation::fixed_vertices(&self.triangulation).map(|vertex| {
-                let weight = spade::Triangulation::s(&self.triangulation).vertex_data(vertex);
+            spade::Triangulation::fixed_vertices(&self.cdt).map(|vertex| {
+                let weight = spade::Triangulation::s(&self.cdt).vertex_data(vertex);
                 TriangulationVertexReference {
                     index: weight.node_index(),
                     weight,
@@ -307,7 +311,7 @@ impl<
     }
 
     fn from_index(&self, index: usize) -> I {
-        spade::Triangulation::s(&self.triangulation)
+        spade::Triangulation::s(&self.cdt)
             .vertex_data(self.trianvertex_to_handle[index].unwrap())
             .node_index()
     }
