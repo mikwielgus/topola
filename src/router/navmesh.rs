@@ -170,6 +170,9 @@ pub struct Navmesh {
     /// Original triangulation stored for debugging purposes.
     // XXX: Maybe have a way to compile this out in release?
     triangulation: Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()>,
+    // Original triangulation constraints stored for debugging purposes.
+    // XXX: Maybe have a way to compile this out in release?
+    constraints: Vec<(TrianvertexWeight, TrianvertexWeight)>,
 }
 
 impl Navmesh {
@@ -182,6 +185,7 @@ impl Navmesh {
     ) -> Result<Self, NavmeshError> {
         let mut triangulation: Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()> =
             Triangulation::new(layout.drawing().geometry().graph().node_bound());
+        let mut constraints = vec![];
 
         let layer = layout.drawing().primitive(origin).layer();
         let maybe_net = layout.drawing().primitive(origin).maybe_net();
@@ -203,8 +207,7 @@ impl Navmesh {
                         }
                         PrimitiveIndex::LoneLooseSeg(seg) => {
                             let (from_dot, to_dot) = layout.drawing().primitive(seg).joints();
-
-                            triangulation.add_constraint_edge(
+                            let (from_weight, to_weight) = (
                                 TrianvertexWeight {
                                     node: from_dot.into(),
                                     pos: from_dot.primitive(layout.drawing()).shape().center(),
@@ -213,7 +216,11 @@ impl Navmesh {
                                     node: to_dot.into(),
                                     pos: to_dot.primitive(layout.drawing()).shape().center(),
                                 },
-                            )?;
+                            );
+
+                            triangulation
+                                .add_constraint_edge(from_weight.clone(), to_weight.clone())?;
+                            constraints.push((from_weight, to_weight));
                         }
                         PrimitiveIndex::SeqLooseSeg(seg) => {
                             let (from_joint, to_joint) = layout.drawing().primitive(seg).joints();
@@ -229,8 +236,7 @@ impl Navmesh {
 
                             let to_bend = layout.drawing().primitive(to_joint).bend();
                             let to_dot = layout.drawing().primitive(to_bend).core();
-
-                            triangulation.add_constraint_edge(
+                            let (from_weight, to_weight) = (
                                 TrianvertexWeight {
                                     node: from_dot.into(),
                                     pos: from_dot.primitive(layout.drawing()).shape().center(),
@@ -239,7 +245,11 @@ impl Navmesh {
                                     node: to_dot.into(),
                                     pos: to_dot.primitive(layout.drawing()).shape().center(),
                                 },
-                            )?;
+                            );
+
+                            triangulation
+                                .add_constraint_edge(from_weight.clone(), to_weight.clone())?;
+                            constraints.push((from_weight, to_weight));
                         }
                         PrimitiveIndex::FixedBend(bend) => {
                             triangulation.add_vertex(TrianvertexWeight {
@@ -297,7 +307,14 @@ impl Navmesh {
             }
         }
 
-        Self::new_from_triangulation(layout, triangulation, origin, destination, options)
+        Self::new_from_triangulation(
+            layout,
+            triangulation,
+            origin,
+            destination,
+            constraints,
+            options,
+        )
     }
 
     fn new_from_triangulation(
@@ -305,6 +322,7 @@ impl Navmesh {
         triangulation: Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()>,
         origin: FixedDotIndex,
         destination: FixedDotIndex,
+        constraints: Vec<(TrianvertexWeight, TrianvertexWeight)>,
         options: RouterOptions,
     ) -> Result<Self, NavmeshError> {
         let mut graph: UnGraph<NavnodeWeight, (), usize> = UnGraph::default();
@@ -398,6 +416,7 @@ impl Navmesh {
             destination,
             destination_navnode: NavnodeIndex(destination_navnode.unwrap()),
             triangulation,
+            constraints,
         })
     }
 

@@ -438,6 +438,28 @@ impl Viewport {
                             }
                         }
 
+                        if menu_bar.show_triangulation_constraints {
+                            if let Some(activity) = workspace.interactor.maybe_activity() {
+                                if let Some(thetastar) = activity.maybe_thetastar() {
+                                    let navmesh = thetastar.graph();
+
+                                    for (from_weight, to_weight) in navmesh.constraints() {
+                                        let from = from_weight.pos + [100.0, 100.0].into();
+                                        let to = to_weight.pos + [100.0, 100.0].into();
+
+                                        painter.paint_edge(
+                                            from,
+                                            to,
+                                            egui::Stroke::new(
+                                                1.0,
+                                                egui::Color32::from_rgb(255, 255, 0),
+                                            ),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+
                         if menu_bar.show_topo_navmesh {
                             if let Some(navmesh) = workspace
                                 .interactor
