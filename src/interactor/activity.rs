@@ -11,11 +11,7 @@ use thiserror::Error;
 use crate::{
     autorouter::{
         execution::ExecutionStepper,
-        invoker::{
-            GetActivePolygons, GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper,
-            GetMaybeTopoNavmesh, GetNavmeshDebugTexts, GetObstacles, GetPolygonalBlockers, Invoker,
-            InvokerError,
-        },
+        invoker::{GetDebugOverlayData, Invoker, InvokerError},
     },
     board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
@@ -32,7 +28,7 @@ use crate::{
     stepper::{Abort, OnEvent, Step},
 };
 
-/// Stores the interactive input data from the user
+/// Stores the interactive input data from the user.
 pub struct InteractiveInput {
     pub active_layer: Option<usize>,
     pub pointer_pos: Point,
@@ -47,18 +43,18 @@ pub enum InteractiveEventKind {
     PointerSecondaryButtonClicked,
 }
 
-/// An event received from the user
+/// An event received from the user.
 pub struct InteractiveEvent {
     pub kind: InteractiveEventKind,
 
-    /// `true` if the `Ctrl` key pressed during the event
+    /// `true` if the `Ctrl` key is pressed during the event
     pub ctrl: bool,
 
-    /// `true` if the `Shift` key pressed during the event
+    /// `true` if the `Shift` key is pressed during the event
     pub shift: bool,
 }
 
-/// This is the execution context passed to the stepper on each step
+/// This is the execution context passed to the stepper on each step.
 pub struct ActivityContext<'a, M> {
     pub interactive_input: &'a InteractiveInput,
     pub invoker: &'a mut Invoker<M>,
@@ -72,17 +68,8 @@ pub enum ActivityError {
     Invoker(#[from] InvokerError),
 }
 
-/// An activity is either an interaction or an execution
-#[enum_dispatch(
-    GetActivePolygons,
-    GetGhosts,
-    GetMaybeNavcord,
-    GetMaybeThetastarStepper,
-    GetMaybeTopoNavmesh,
-    GetNavmeshDebugTexts,
-    GetObstacles,
-    GetPolygonalBlockers
-)]
+/// An activity is either an interaction or an execution.
+#[enum_dispatch(GetDebugOverlayData)]
 pub enum ActivityStepper<M> {
     Interaction(InteractionStepper),
     Execution(ExecutionStepper<M>),
@@ -192,49 +179,35 @@ impl<M: AccessMesadata + Clone> OnEvent<ActivityContext<'_, M>, InteractiveEvent
     }
 }
 
-impl<M> GetActivePolygons for ActivityStepperWithStatus<M> {
-    fn active_polygons(&self) -> &[GenericIndex<PolyWeight>] {
-        self.activity.active_polygons()
-    }
-}
-
-impl<M> GetMaybeThetastarStepper for ActivityStepperWithStatus<M> {
+impl<M> GetDebugOverlayData for ActivityStepperWithStatus<M> {
     fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
         self.activity.maybe_thetastar()
     }
-}
 
-impl<M> GetMaybeTopoNavmesh for ActivityStepperWithStatus<M> {
     fn maybe_topo_navmesh(&self) -> Option<ng::pie::navmesh::NavmeshRef<'_, ng::PieNavmeshBase>> {
         self.activity.maybe_topo_navmesh()
     }
-}
 
-impl<M> GetMaybeNavcord for ActivityStepperWithStatus<M> {
     fn maybe_navcord(&self) -> Option<&Navcord> {
         self.activity.maybe_navcord()
     }
-}
 
-impl<M> GetGhosts for ActivityStepperWithStatus<M> {
+    fn active_polygons(&self) -> &[GenericIndex<PolyWeight>] {
+        self.activity.active_polygons()
+    }
+
     fn ghosts(&self) -> &[PrimitiveShape] {
         self.activity.ghosts()
     }
-}
 
-impl<M> GetPolygonalBlockers for ActivityStepperWithStatus<M> {
-    fn polygonal_blockers(&self) -> &[LineString] {
-        self.activity.polygonal_blockers()
-    }
-}
-
-impl<M> GetObstacles for ActivityStepperWithStatus<M> {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.activity.obstacles()
     }
-}
 
-impl<M> GetNavmeshDebugTexts for ActivityStepperWithStatus<M> {
+    fn polygonal_blockers(&self) -> &[LineString] {
+        self.activity.polygonal_blockers()
+    }
+
     fn navnode_debug_text(&self, navnode: NavnodeIndex) -> Option<&str> {
         self.activity.navnode_debug_text(navnode)
     }

@@ -9,8 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     board::AccessMesadata,
-    graph::GenericIndex,
-    layout::{poly::PolyWeight, via::ViaWeight, LayoutEdit},
+    layout::{via::ViaWeight, LayoutEdit},
     router::ng,
     stepper::{Abort, Step},
 };
@@ -18,7 +17,7 @@ use crate::{
 use super::{
     autoroute::AutorouteExecutionStepper,
     compare_detours::CompareDetoursExecutionStepper,
-    invoker::{GetActivePolygons, GetMaybeTopoNavmesh, Invoker, InvokerError},
+    invoker::{GetDebugOverlayData, Invoker, InvokerError},
     measure_length::MeasureLengthExecutionStepper,
     place_via::PlaceViaExecutionStepper,
     remove_bands::RemoveBandsExecutionStepper,
@@ -44,14 +43,7 @@ pub enum Command {
     MeasureLength(BandSelection),
 }
 
-#[enum_dispatch(
-    GetMaybeThetastarStepper,
-    GetMaybeNavcord,
-    GetGhosts,
-    GetPolygonalBlockers,
-    GetObstacles,
-    GetNavmeshDebugTexts
-)]
+#[enum_dispatch(GetDebugOverlayData)]
 pub enum ExecutionStepper<M> {
     Autoroute(AutorouteExecutionStepper),
     TopoAutoroute(ng::AutorouteExecutionStepper<M>),
@@ -170,24 +162,6 @@ impl<M: AccessMesadata + Clone> Abort<Invoker<M>> for ExecutionStepper<M> {
                 // TODO
                 execution.finish(invoker);
             }
-        }
-    }
-}
-
-impl<M> GetActivePolygons for ExecutionStepper<M> {
-    fn active_polygons(&self) -> &[GenericIndex<PolyWeight>] {
-        match self {
-            ExecutionStepper::TopoAutoroute(autoroute) => autoroute.active_polygons(),
-            _ => &[],
-        }
-    }
-}
-
-impl<M> GetMaybeTopoNavmesh for ExecutionStepper<M> {
-    fn maybe_topo_navmesh(&self) -> Option<ng::pie::navmesh::NavmeshRef<'_, ng::PieNavmeshBase>> {
-        match self {
-            ExecutionStepper::TopoAutoroute(autoroute) => autoroute.maybe_topo_navmesh(),
-            _ => None,
         }
     }
 }

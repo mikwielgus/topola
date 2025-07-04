@@ -10,10 +10,7 @@ use std::{
 };
 
 use crate::{
-    autorouter::invoker::{
-        GetActivePolygons, GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper,
-        GetMaybeTopoNavmesh, GetNavmeshDebugTexts, GetObstacles, GetPolygonalBlockers,
-    },
+    autorouter::invoker::GetDebugOverlayData,
     drawing::{band::BandUid, dot::FixedDotIndex, graph::PrimitiveIndex, rules::AccessRules},
     geometry::primitive::PrimitiveShape,
     graph::GenericIndex,
@@ -235,23 +232,7 @@ impl<R: AccessRules + Clone + std::panic::RefUnwindSafe> AutorouteExecutionStepp
     }
 }
 
-impl<M> GetActivePolygons for AutorouteExecutionStepper<M> {
-    fn active_polygons(&self) -> &[GenericIndex<PolyWeight>] {
-        &self.active_polygons[..]
-    }
-}
-
-impl<M> GetGhosts for AutorouteExecutionStepper<M> {
-    fn ghosts(&self) -> &[PrimitiveShape] {
-        &self.ghosts[..]
-    }
-}
-
-impl<M> GetMaybeThetastarStepper for AutorouteExecutionStepper<M> {}
-impl<M> GetMaybeNavcord for AutorouteExecutionStepper<M> {}
-impl<M> GetNavmeshDebugTexts for AutorouteExecutionStepper<M> {}
-
-impl<M> GetMaybeTopoNavmesh for AutorouteExecutionStepper<M> {
+impl<M> GetDebugOverlayData for AutorouteExecutionStepper<M> {
     fn maybe_topo_navmesh(&self) -> Option<pie::navmesh::NavmeshRef<'_, super::PieNavmeshBase>> {
         Some(pie::navmesh::NavmeshRef {
             nodes: &self.pmg_astar.nodes,
@@ -259,15 +240,19 @@ impl<M> GetMaybeTopoNavmesh for AutorouteExecutionStepper<M> {
             edge_paths: &self.last_edge_paths,
         })
     }
-}
 
-impl<M> GetObstacles for AutorouteExecutionStepper<M> {
+    fn active_polygons(&self) -> &[GenericIndex<PolyWeight>] {
+        &self.active_polygons[..]
+    }
+
+    fn ghosts(&self) -> &[PrimitiveShape] {
+        &self.ghosts[..]
+    }
+
     fn obstacles(&self) -> &[PrimitiveIndex] {
         &self.obstacles[..]
     }
-}
 
-impl<M> GetPolygonalBlockers for AutorouteExecutionStepper<M> {
     fn polygonal_blockers(&self) -> &[LineString] {
         &self.polygonal_blockers[..]
     }
@@ -534,23 +519,7 @@ impl<R: AccessRules + Clone + std::panic::RefUnwindSafe> ManualrouteExecutionSte
     }
 }
 
-impl<M> GetActivePolygons for ManualrouteExecutionStepper<M> {
-    fn active_polygons(&self) -> &[GenericIndex<PolyWeight>] {
-        &self.active_polygons[..]
-    }
-}
-
-impl<M> GetGhosts for ManualrouteExecutionStepper<M> {
-    fn ghosts(&self) -> &[PrimitiveShape] {
-        &self.ghosts[..]
-    }
-}
-
-impl<M> GetMaybeThetastarStepper for ManualrouteExecutionStepper<M> {}
-impl<M> GetMaybeNavcord for ManualrouteExecutionStepper<M> {}
-impl<M> GetNavmeshDebugTexts for ManualrouteExecutionStepper<M> {}
-
-impl<M> GetMaybeTopoNavmesh for ManualrouteExecutionStepper<M> {
+impl<M> GetDebugOverlayData for ManualrouteExecutionStepper<M> {
     fn maybe_topo_navmesh(&self) -> Option<pie::navmesh::NavmeshRef<'_, super::PieNavmeshBase>> {
         Some(pie::navmesh::NavmeshRef {
             nodes: &self.nodes,
@@ -558,15 +527,19 @@ impl<M> GetMaybeTopoNavmesh for ManualrouteExecutionStepper<M> {
             edge_paths: &self.last_edge_paths(),
         })
     }
-}
 
-impl<M> GetObstacles for ManualrouteExecutionStepper<M> {
+    fn active_polygons(&self) -> &[GenericIndex<PolyWeight>] {
+        &self.active_polygons[..]
+    }
+
+    fn ghosts(&self) -> &[PrimitiveShape] {
+        &self.ghosts[..]
+    }
+
     fn obstacles(&self) -> &[PrimitiveIndex] {
         &self.obstacles[..]
     }
-}
 
-impl<M> GetPolygonalBlockers for ManualrouteExecutionStepper<M> {
     fn polygonal_blockers(&self) -> &[LineString] {
         &self.polygonal_blockers[..]
     }

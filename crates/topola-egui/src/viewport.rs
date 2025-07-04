@@ -9,10 +9,7 @@ use petgraph::{
 };
 use rstar::{Envelope, AABB};
 use topola::{
-    autorouter::invoker::{
-        GetActivePolygons, GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper,
-        GetMaybeTopoNavmesh, GetNavmeshDebugTexts, GetObstacles, GetPolygonalBlockers,
-    },
+    autorouter::invoker::GetDebugOverlayData,
     board::AccessMesadata,
     drawing::{
         graph::{MakePrimitive, PrimitiveIndex},
@@ -26,8 +23,7 @@ use topola::{
     },
     layout::poly::MakePolygon,
     math::{Circle, RotationSense},
-    router::navmesh::NavnodeIndex,
-    router::ng::pie,
+    router::{navmesh::NavnodeIndex, ng::pie},
 };
 
 use crate::{

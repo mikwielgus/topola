@@ -6,10 +6,7 @@ use core::ops::ControlFlow;
 use thiserror::Error;
 
 use crate::{
-    autorouter::invoker::{
-        GetActivePolygons, GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper,
-        GetMaybeTopoNavmesh, GetNavmeshDebugTexts, GetObstacles, GetPolygonalBlockers, Invoker,
-    },
+    autorouter::invoker::{GetDebugOverlayData, Invoker},
     board::AccessMesadata,
     stepper::{Abort, OnEvent, Step},
 };
@@ -67,11 +64,4 @@ impl<M: AccessMesadata> OnEvent<ActivityContext<'_, M>, InteractiveEvent> for In
     }
 }
 
-impl GetActivePolygons for InteractionStepper {}
-impl GetGhosts for InteractionStepper {}
-impl GetMaybeNavcord for InteractionStepper {}
-impl GetMaybeThetastarStepper for InteractionStepper {}
-impl GetMaybeTopoNavmesh for InteractionStepper {}
-impl GetNavmeshDebugTexts for InteractionStepper {}
-impl GetObstacles for InteractionStepper {}
-impl GetPolygonalBlockers for InteractionStepper {}
+impl GetDebugOverlayData for InteractionStepper {}

@@ -10,14 +10,7 @@ use crate::{
     board::AccessMesadata, geometry::shape::MeasureLength as MeasureLengthTrait, graph::MakeRef,
 };
 
-use super::{
-    invoker::{
-        GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
-        GetPolygonalBlockers,
-    },
-    selection::BandSelection,
-    Autorouter, AutorouterError,
-};
+use super::{invoker::GetDebugOverlayData, selection::BandSelection, Autorouter, AutorouterError};
 
 pub struct MeasureLengthExecutionStepper {
     selection: BandSelection,
@@ -54,9 +47,4 @@ impl MeasureLengthExecutionStepper {
     }
 }
 
-impl GetGhosts for MeasureLengthExecutionStepper {}
-impl GetMaybeNavcord for MeasureLengthExecutionStepper {}
-impl GetMaybeThetastarStepper for MeasureLengthExecutionStepper {}
-impl GetNavmeshDebugTexts for MeasureLengthExecutionStepper {}
-impl GetObstacles for MeasureLengthExecutionStepper {}
-impl GetPolygonalBlockers for MeasureLengthExecutionStepper {}
+impl GetDebugOverlayData for MeasureLengthExecutionStepper {}

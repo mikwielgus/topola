@@ -38,76 +38,58 @@ use super::{
     Autorouter, AutorouterError,
 };
 
-/// Trait for getting the A* stepper to display its data on the debug overlay,
-/// most importantly the navmesh which is owned by the A* stepper.
+/// Trait for getting the information to display on the debug overlay,
 #[enum_dispatch]
-pub trait GetMaybeThetastarStepper {
+pub trait GetDebugOverlayData {
+    /// Get the Theta* stepper. Most importantly, this gives us the access to
+    /// the navmesh.
     fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
         None
     }
-}
 
-/// Trait for getting the navcord to display it on the debug overlay.
-#[enum_dispatch]
-pub trait GetMaybeNavcord {
-    fn maybe_navcord(&self) -> Option<&Navcord> {
-        None
-    }
-}
-
-/// Trait for getting ghosts to display on the debug overlay. Ghosts are the
-/// shapes that Topola attempted to create but failed due to them infringing on
-/// other shapes.
-#[enum_dispatch]
-pub trait GetGhosts {
-    fn ghosts(&self) -> &[PrimitiveShape] {
-        &[]
-    }
-}
-
-/// Getter for the polygonal blockers (polygonal regions which block routing)
-#[enum_dispatch]
-pub trait GetPolygonalBlockers {
-    fn polygonal_blockers(&self) -> &[LineString] {
-        &[]
-    }
-}
-
-/// Getter for the polygons around which some routing happens
-#[enum_dispatch]
-pub trait GetActivePolygons {
-    fn active_polygons(&self) -> &[GenericIndex<PolyWeight>] {
-        &[]
-    }
-}
-
-/// Getter trait to obtain Topological/Planar Navigation Mesh
-#[enum_dispatch]
-pub trait GetMaybeTopoNavmesh {
+    /// Obtain Topological/Planar Navigation Mesh, if present.
     fn maybe_topo_navmesh(&self) -> Option<ng::pie::navmesh::NavmeshRef<'_, ng::PieNavmeshBase>> {
         None
     }
-}
 
-/// Trait for getting the obstacles that prevented Topola from creating
-/// new objects (the shapes of these objects can be obtained with the above
-/// `GetGhosts` trait), for the purpose of displaying these obstacles on the
-/// debug overlay.
-#[enum_dispatch]
-pub trait GetObstacles {
+    /// Get the navcord. This is useful for coloring the currently visited path
+    /// on the navmesh.
+    fn maybe_navcord(&self) -> Option<&Navcord> {
+        None
+    }
+
+    fn active_polygons(&self) -> &[GenericIndex<PolyWeight>] {
+        &[]
+    }
+
+    /// Get ghosts. Ghosts are the shapes that Topola attempted to create but
+    /// failed due to them infringing on other shapes.
+    fn ghosts(&self) -> &[PrimitiveShape] {
+        &[]
+    }
+
+    /// Get the obstacles that prevented Topola from creating new objects (the
+    /// shapes of these objects can be obtained from the above `.ghosts(...)`)
+    /// method. This allows to highlight what prevented Topola's algorithm from
+    /// going some way.
     fn obstacles(&self) -> &[PrimitiveIndex] {
         &[]
     }
-}
 
-/// Trait for getting text strings with debug information attached to navmesh
-/// edges and vertices.
-#[enum_dispatch]
-pub trait GetNavmeshDebugTexts {
+    fn polygonal_blockers(&self) -> &[LineString] {
+        &[]
+    }
+
+    /// Get a text string to show on the debug overlay near to a navnode.
+    /// Usually returns None, this method exists only for quick and dirty
+    /// debugging.
     fn navnode_debug_text(&self, _navnode: NavnodeIndex) -> Option<&str> {
         None
     }
 
+    /// Get a text string to show on the debug overlay near to a navedge.
+    /// Usually returns None, this method exists only for quick and dirty
+    /// debugging.
     fn navedge_debug_text(&self, _navedge: (NavnodeIndex, NavnodeIndex)) -> Option<&str> {
         None
     }

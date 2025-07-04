@@ -6,14 +6,7 @@
 
 use crate::{board::AccessMesadata, layout::LayoutEdit};
 
-use super::{
-    invoker::{
-        GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
-        GetPolygonalBlockers,
-    },
-    selection::BandSelection,
-    Autorouter, AutorouterError,
-};
+use super::{invoker::GetDebugOverlayData, selection::BandSelection, Autorouter, AutorouterError};
 
 #[derive(Debug)]
 pub struct RemoveBandsExecutionStepper {
@@ -51,9 +44,4 @@ impl RemoveBandsExecutionStepper {
     }
 }
 
-impl GetGhosts for RemoveBandsExecutionStepper {}
-impl GetMaybeNavcord for RemoveBandsExecutionStepper {}
-impl GetMaybeThetastarStepper for RemoveBandsExecutionStepper {}
-impl GetNavmeshDebugTexts for RemoveBandsExecutionStepper {}
-impl GetObstacles for RemoveBandsExecutionStepper {}
-impl GetPolygonalBlockers for RemoveBandsExecutionStepper {}
+impl GetDebugOverlayData for RemoveBandsExecutionStepper {}

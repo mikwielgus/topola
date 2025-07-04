@@ -20,13 +20,7 @@ use crate::{
     stepper::Step,
 };
 
-use super::{
-    invoker::{
-        GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
-        GetPolygonalBlockers,
-    },
-    Autorouter, AutorouterError, AutorouterOptions,
-};
+use super::{invoker::GetDebugOverlayData, Autorouter, AutorouterError, AutorouterOptions};
 
 /// Represents the current status of the autoroute operation.
 pub enum AutorouteContinueStatus {
@@ -170,30 +164,20 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
     }
 }
 
-impl GetMaybeThetastarStepper for AutorouteExecutionStepper {
+impl GetDebugOverlayData for AutorouteExecutionStepper {
     fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
         self.route.as_ref().map(|route| route.thetastar())
     }
-}
 
-impl GetMaybeNavcord for AutorouteExecutionStepper {
     fn maybe_navcord(&self) -> Option<&Navcord> {
         self.route.as_ref().map(|route| route.navcord())
     }
-}
 
-impl GetGhosts for AutorouteExecutionStepper {
     fn ghosts(&self) -> &[PrimitiveShape] {
         self.route.as_ref().map_or(&[], |route| route.ghosts())
     }
-}
 
-impl GetPolygonalBlockers for AutorouteExecutionStepper {}
-
-impl GetObstacles for AutorouteExecutionStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.route.as_ref().map_or(&[], |route| route.obstacles())
     }
 }
-
-impl GetNavmeshDebugTexts for AutorouteExecutionStepper {}

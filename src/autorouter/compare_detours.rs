@@ -20,10 +20,7 @@ use crate::{
 
 use super::{
     autoroute::{AutorouteContinueStatus, AutorouteExecutionStepper},
-    invoker::{
-        GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
-        GetPolygonalBlockers,
-    },
+    invoker::GetDebugOverlayData,
     Autorouter, AutorouterError, AutorouterOptions,
 };
 
@@ -103,30 +100,20 @@ impl<M: AccessMesadata> Step<Autorouter<M>, (f64, f64)> for CompareDetoursExecut
     }
 }
 
-impl GetMaybeThetastarStepper for CompareDetoursExecutionStepper {
+impl GetDebugOverlayData for CompareDetoursExecutionStepper {
     fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
         self.autoroute.maybe_thetastar()
     }
-}
 
-impl GetMaybeNavcord for CompareDetoursExecutionStepper {
     fn maybe_navcord(&self) -> Option<&Navcord> {
         self.autoroute.maybe_navcord()
     }
-}
 
-impl GetGhosts for CompareDetoursExecutionStepper {
     fn ghosts(&self) -> &[PrimitiveShape] {
         self.autoroute.ghosts()
     }
-}
 
-impl GetPolygonalBlockers for CompareDetoursExecutionStepper {}
-
-impl GetObstacles for CompareDetoursExecutionStepper {
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.autoroute.obstacles()
     }
 }
-
-impl GetNavmeshDebugTexts for CompareDetoursExecutionStepper {}

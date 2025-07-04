@@ -11,13 +11,7 @@ use crate::{
     layout::{via::ViaWeight, LayoutEdit},
 };
 
-use super::{
-    invoker::{
-        GetGhosts, GetMaybeNavcord, GetMaybeThetastarStepper, GetNavmeshDebugTexts, GetObstacles,
-        GetPolygonalBlockers,
-    },
-    Autorouter, AutorouterError,
-};
+use super::{invoker::GetDebugOverlayData, Autorouter, AutorouterError};
 
 #[derive(Debug)]
 pub struct PlaceViaExecutionStepper {
@@ -52,9 +46,4 @@ impl PlaceViaExecutionStepper {
     }
 }
 
-impl GetGhosts for PlaceViaExecutionStepper {}
-impl GetMaybeNavcord for PlaceViaExecutionStepper {}
-impl GetMaybeThetastarStepper for PlaceViaExecutionStepper {}
-impl GetNavmeshDebugTexts for PlaceViaExecutionStepper {}
-impl GetObstacles for PlaceViaExecutionStepper {}
-impl GetPolygonalBlockers for PlaceViaExecutionStepper {}
+impl GetDebugOverlayData for PlaceViaExecutionStepper {}
