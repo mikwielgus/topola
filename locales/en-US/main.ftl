@@ -66,10 +66,6 @@ tr-dialog-error-messages = Error Messages
 tr-dialog-error-messages-reset = Reset Messages
 tr-dialog-error-messages-discard = Discard
 
-tr-dialog-init-topo-navmesh = Initialize Topological Navmesh
-tr-choose-active-layer-to-use = Choose active layer to use!
-tr-dialog-init-topo-navmesh-submit = Run
-
 tr-module-specctra-dsn-file-loader = Specctra DSN file loader
 tr-module-history-file-loader = History file loader
 tr-module-invoker = Invoker
