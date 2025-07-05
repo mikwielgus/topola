@@ -54,6 +54,3 @@ tr-menu-view-kdb-scroll-delta-factor = 键盘滚动增量因子
 tr-menu-view-show-pathfinding-scores = 显示路径查找分数
 tr-menu-place-place-route-plan = 布局布线规划
 tr-menu-route-topo-autoroute = 拓扑单层自动布线
-tr-dialog-init-topo-navmesh = 初始化拓扑导航网格
-tr-choose-active-layer-to-use = 选择要使用的活动层！
-tr-dialog-init-topo-navmesh-submit = 运行
