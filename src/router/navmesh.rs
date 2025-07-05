@@ -355,7 +355,7 @@ impl Navmesh {
                     Into::<GearIndex>::into(Into::<BinavnodeNodeIndex>::into(trianvertex));
 
                 if options.squeeze_through_under_bends {
-                    Self::add_node_to_graph_and_map_as_binavnode(
+                    Self::add_trianvertex_to_graph_and_map_as_binavnode(
                         &mut graph,
                         &mut map,
                         trianvertex,
@@ -364,7 +364,7 @@ impl Navmesh {
 
                     if options.wrap_around_bands {
                         while let Some(bend) = gear.ref_(layout.drawing()).next_gear() {
-                            Self::add_node_to_graph_and_map_as_binavnode(
+                            Self::add_trianvertex_to_graph_and_map_as_binavnode(
                                 &mut graph,
                                 &mut map,
                                 trianvertex,
@@ -381,14 +381,14 @@ impl Navmesh {
                         gear = bend.into();
                     }
 
-                    Self::add_node_to_graph_and_map_as_binavnode(
+                    Self::add_trianvertex_to_graph_and_map_as_binavnode(
                         &mut graph,
                         &mut map,
                         trianvertex,
                         bend.into(),
                     );
                 } else {
-                    Self::add_node_to_graph_and_map_as_binavnode(
+                    Self::add_trianvertex_to_graph_and_map_as_binavnode(
                         &mut graph,
                         &mut map,
                         trianvertex,
@@ -399,14 +399,28 @@ impl Navmesh {
         }
 
         for edge in triangulation.edge_references() {
-            for (from_navnode1, from_navnode2) in map[&edge.source()].iter() {
-                for (to_navnode1, to_navnode2) in map[&edge.target()].iter() {
-                    graph.update_edge(*from_navnode1, *to_navnode1, ());
-                    graph.update_edge(*from_navnode1, *to_navnode2, ());
-                    graph.update_edge(*from_navnode2, *to_navnode1, ());
-                    graph.update_edge(*from_navnode2, *to_navnode2, ());
-                }
-            }
+            Self::add_trianedge_to_graph_as_quadrinavedge(
+                &mut graph,
+                &map,
+                edge.source(),
+                edge.target(),
+            );
+        }
+
+        // The existence of a constraint edge does not (!) guarantee that this
+        // edge exactly will be present in the triangulation. It appears that
+        // Spade splits a constraint edge into two if an endpoint of another
+        // constraint lies on it.
+        //
+        // So now we go over all the constraints and make sure that
+        // quadrinavedges exist for every one of them.
+        for constraint in constraints.iter() {
+            Self::add_trianedge_to_graph_as_quadrinavedge(
+                &mut graph,
+                &map,
+                constraint.0.node,
+                constraint.1.node,
+            );
         }
 
         Ok(Self {
@@ -420,7 +434,7 @@ impl Navmesh {
         })
     }
 
-    fn add_node_to_graph_and_map_as_binavnode(
+    fn add_trianvertex_to_graph_and_map_as_binavnode(
         graph: &mut UnGraph<NavnodeWeight, (), usize>,
         map: &mut BTreeMap<TrianvertexNodeIndex, Vec<(NodeIndex<usize>, NodeIndex<usize>)>>,
         trianvertex: TrianvertexNodeIndex,
@@ -439,6 +453,22 @@ impl Navmesh {
         map.get_mut(&trianvertex)
             .unwrap()
             .push((navnode1, navnode2));
+    }
+
+    fn add_trianedge_to_graph_as_quadrinavedge(
+        graph: &mut UnGraph<NavnodeWeight, (), usize>,
+        map: &BTreeMap<TrianvertexNodeIndex, Vec<(NodeIndex<usize>, NodeIndex<usize>)>>,
+        from_trianvertex: TrianvertexNodeIndex,
+        to_trianvertex: TrianvertexNodeIndex,
+    ) {
+        for (from_navnode1, from_navnode2) in map[&from_trianvertex].iter() {
+            for (to_navnode1, to_navnode2) in map[&to_trianvertex].iter() {
+                graph.update_edge(*from_navnode1, *to_navnode1, ());
+                graph.update_edge(*from_navnode1, *to_navnode2, ());
+                graph.update_edge(*from_navnode2, *to_navnode1, ());
+                graph.update_edge(*from_navnode2, *to_navnode2, ());
+            }
+        }
     }
 
     /// Returns the origin node.
