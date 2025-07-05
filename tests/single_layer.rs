@@ -15,6 +15,21 @@ use topola::{
 mod common;
 
 #[test]
+fn test_tht_de9_to_tht_de9() {
+    let autorouter =
+        common::load_design("tests/single_layer/tht_de9_to_tht_de9/tht_de9_to_tht_de9.dsn");
+    let mut invoker = common::create_invoker_and_assert(autorouter);
+    common::replay_and_assert(
+        &mut invoker,
+        "tests/single_layer/tht_de9_to_tht_de9/autoroute_all_in_an_order.cmd",
+    );
+
+    let (mut autorouter, ..) = invoker.dissolve();
+
+    common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
+}
+
+#[test]
 fn test_0603_breakout() {
     let mut autorouter = common::load_design("tests/single_layer/0603_breakout/0603_breakout.dsn");
     common::assert_navnode_count(&mut autorouter, "R1-2", "J1-2", 54);
