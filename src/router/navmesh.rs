@@ -27,6 +27,7 @@ use crate::{
         graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
         primitive::{GetCore, GetJoints, MakePrimitiveShape, Primitive},
         rules::AccessRules,
+        seg::{FixedSegIndex, LoneLooseSegIndex, SegIndex, SeqLooseSegIndex},
         Drawing,
     },
     geometry::{shape::AccessShape, GetLayer},
@@ -107,10 +108,26 @@ impl From<TrianvertexNodeIndex> for BinavnodeNodeIndex {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Copy)]
 pub struct TrianvertexWeight {
     pub node: TrianvertexNodeIndex,
     pub pos: Point,
+}
+
+impl TrianvertexWeight {
+    fn new_from_fixed_dot(layout: &Layout<impl AccessRules>, dot: FixedDotIndex) -> Self {
+        Self {
+            node: dot.into(),
+            pos: dot.primitive(layout.drawing()).shape().center(),
+        }
+    }
+
+    fn new_from_fixed_bend(layout: &Layout<impl AccessRules>, bend: FixedBendIndex) -> Self {
+        Self {
+            node: bend.into(),
+            pos: bend.primitive(layout.drawing()).shape().center(),
+        }
+    }
 }
 
 impl GetTrianvertexNodeIndex<TrianvertexNodeIndex> for TrianvertexWeight {
@@ -123,6 +140,49 @@ impl HasPosition for TrianvertexWeight {
     type Scalar = f64;
     fn position(&self) -> Point2<Self::Scalar> {
         Point2::new(self.pos.x(), self.pos.y())
+    }
+}
+
+#[derive(Clone)]
+pub struct NavmeshTriangulationConstraint(pub TrianvertexWeight, pub TrianvertexWeight);
+
+impl NavmeshTriangulationConstraint {
+    fn new_from_fixed_dot_pair(
+        layout: &Layout<impl AccessRules>,
+        from_dot: FixedDotIndex,
+        to_dot: FixedDotIndex,
+    ) -> Self {
+        Self(
+            TrianvertexWeight::new_from_fixed_dot(layout, from_dot),
+            TrianvertexWeight::new_from_fixed_dot(layout, to_dot),
+        )
+    }
+
+    fn new_from_lone_loose_seg(layout: &Layout<impl AccessRules>, seg: LoneLooseSegIndex) -> Self {
+        let (from_dot, to_dot) = layout.drawing().primitive(seg).joints();
+        Self::new_from_fixed_dot_pair(layout, from_dot, to_dot)
+    }
+
+    fn new_from_seq_loose_seg(layout: &Layout<impl AccessRules>, seg: SeqLooseSegIndex) -> Self {
+        let (from_joint, to_joint) = layout.drawing().primitive(seg).joints();
+
+        let from_dot = match from_joint {
+            DotIndex::Fixed(dot) => dot,
+            DotIndex::Loose(dot) => {
+                let bend = layout.drawing().primitive(dot).bend();
+
+                layout.drawing().primitive(bend).core()
+            }
+        };
+
+        let to_bend = layout.drawing().primitive(to_joint).bend();
+        let to_dot = layout.drawing().primitive(to_bend).core();
+        Self::new_from_fixed_dot_pair(layout, from_dot, to_dot)
+    }
+
+    fn new_from_fixed_seg(layout: &Layout<impl AccessRules>, seg: FixedSegIndex) -> Self {
+        let (from_dot, to_dot) = layout.drawing().primitive(seg).joints();
+        Self::new_from_fixed_dot_pair(layout, from_dot, to_dot)
     }
 }
 
@@ -148,6 +208,8 @@ pub enum NavmeshError {
     Insertion(#[from] InsertionError),
 }
 
+type NavmeshTriangulation = Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()>;
+
 /// The navmesh holds the entire Topola's search space represented as a graph.
 /// Topola's routing works by navigating over this graph with a pathfinding
 /// algorithm such as A* while drawing a track segment (always a cane except
@@ -169,10 +231,10 @@ pub struct Navmesh {
 
     /// Original triangulation stored for debugging purposes.
     // XXX: Maybe have a way to compile this out in release?
-    triangulation: Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()>,
+    triangulation: NavmeshTriangulation,
     // Original triangulation constraints stored for debugging purposes.
     // XXX: Maybe have a way to compile this out in release?
-    constraints: Vec<(TrianvertexWeight, TrianvertexWeight)>,
+    constraints: Vec<NavmeshTriangulationConstraint>,
 }
 
 impl Navmesh {
@@ -183,8 +245,8 @@ impl Navmesh {
         destination: FixedDotIndex,
         options: RouterOptions,
     ) -> Result<Self, NavmeshError> {
-        let mut triangulation: Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()> =
-            Triangulation::new(layout.drawing().geometry().graph().node_bound());
+        let mut triangulation: NavmeshTriangulation =
+            NavmeshTriangulation::new(layout.drawing().geometry().graph().node_bound());
         let mut constraints = vec![];
 
         let layer = layout.drawing().primitive(origin).layer();
@@ -200,62 +262,28 @@ impl Navmesh {
                 {
                     match node {
                         PrimitiveIndex::FixedDot(dot) => {
-                            triangulation.add_vertex(TrianvertexWeight {
-                                node: dot.into(),
-                                pos: primitive.shape().center(),
-                            })?;
+                            triangulation
+                                .add_vertex(TrianvertexWeight::new_from_fixed_dot(layout, dot))?;
                         }
                         PrimitiveIndex::LoneLooseSeg(seg) => {
-                            let (from_dot, to_dot) = layout.drawing().primitive(seg).joints();
-                            let (from_weight, to_weight) = (
-                                TrianvertexWeight {
-                                    node: from_dot.into(),
-                                    pos: from_dot.primitive(layout.drawing()).shape().center(),
-                                },
-                                TrianvertexWeight {
-                                    node: to_dot.into(),
-                                    pos: to_dot.primitive(layout.drawing()).shape().center(),
-                                },
-                            );
-
-                            triangulation
-                                .add_constraint_edge(from_weight.clone(), to_weight.clone())?;
-                            constraints.push((from_weight, to_weight));
+                            Self::add_constraint(
+                                &mut triangulation,
+                                &mut constraints,
+                                NavmeshTriangulationConstraint::new_from_lone_loose_seg(
+                                    layout, seg,
+                                ),
+                            )?;
                         }
                         PrimitiveIndex::SeqLooseSeg(seg) => {
-                            let (from_joint, to_joint) = layout.drawing().primitive(seg).joints();
-
-                            let from_dot = match from_joint {
-                                DotIndex::Fixed(dot) => dot,
-                                DotIndex::Loose(dot) => {
-                                    let bend = layout.drawing().primitive(dot).bend();
-
-                                    layout.drawing().primitive(bend).core()
-                                }
-                            };
-
-                            let to_bend = layout.drawing().primitive(to_joint).bend();
-                            let to_dot = layout.drawing().primitive(to_bend).core();
-                            let (from_weight, to_weight) = (
-                                TrianvertexWeight {
-                                    node: from_dot.into(),
-                                    pos: from_dot.primitive(layout.drawing()).shape().center(),
-                                },
-                                TrianvertexWeight {
-                                    node: to_dot.into(),
-                                    pos: to_dot.primitive(layout.drawing()).shape().center(),
-                                },
-                            );
-
-                            triangulation
-                                .add_constraint_edge(from_weight.clone(), to_weight.clone())?;
-                            constraints.push((from_weight, to_weight));
+                            Self::add_constraint(
+                                &mut triangulation,
+                                &mut constraints,
+                                NavmeshTriangulationConstraint::new_from_seq_loose_seg(layout, seg),
+                            )?;
                         }
                         PrimitiveIndex::FixedBend(bend) => {
-                            triangulation.add_vertex(TrianvertexWeight {
-                                node: bend.into(),
-                                pos: primitive.shape().center(),
-                            })?;
+                            triangulation
+                                .add_vertex(TrianvertexWeight::new_from_fixed_bend(layout, bend))?;
                         }
                         _ => (),
                     }
@@ -272,33 +300,28 @@ impl Navmesh {
                     || Some(primitive_net) != maybe_net
                 {
                     // If you have a band that was routed from a polygonal pad,
-                    // upon another routing some of the constraint edges created
-                    // from the loose segs band will intersect some of the
-                    // constraint edges created from the fixed segs constituting
-                    // the pad boundary.
+                    // when you will start a new routing some of the constraint
+                    // edges created from the loose segs of a band will
+                    // intersect some of the constraint edges created from the
+                    // fixed segs constituting the pad boundary.
                     //
                     // Such constraint intersections are erroneous and cause
                     // Spade to throw a panic at runtime. So, to prevent this
                     // from occuring, we iterate over the layout for the second
-                    // time, after all the constraint edges from bands have
-                    // been placed, and only then add constraint edges created
-                    // from fixed segs, but only ones that do not cause an
-                    // intersection.
+                    // time, after all the constraint edges from bands have been
+                    // placed, and only then add constraint edges created from
+                    // fixed segs that do not cause an intersection.
                     match node {
                         PrimitiveIndex::FixedSeg(seg) => {
-                            let (from_dot, to_dot) = layout.drawing().primitive(seg).joints();
+                            let constraint =
+                                NavmeshTriangulationConstraint::new_from_fixed_seg(layout, seg);
 
-                            let from_weight = TrianvertexWeight {
-                                node: from_dot.into(),
-                                pos: from_dot.primitive(layout.drawing()).shape().center(),
-                            };
-                            let to_weight = TrianvertexWeight {
-                                node: to_dot.into(),
-                                pos: to_dot.primitive(layout.drawing()).shape().center(),
-                            };
-
-                            if !triangulation.intersects_constraint(&from_weight, &to_weight) {
-                                triangulation.add_constraint_edge(from_weight, to_weight)?;
+                            if !triangulation.intersects_constraint(&constraint.0, &constraint.1) {
+                                Self::add_constraint(
+                                    &mut triangulation,
+                                    &mut constraints,
+                                    constraint,
+                                );
                             }
                         }
                         _ => (),
@@ -317,12 +340,22 @@ impl Navmesh {
         )
     }
 
+    fn add_constraint(
+        triangulation: &mut NavmeshTriangulation,
+        constraints: &mut Vec<NavmeshTriangulationConstraint>,
+        constraint: NavmeshTriangulationConstraint,
+    ) -> Result<(), InsertionError> {
+        triangulation.add_constraint_edge(constraint.0, constraint.1)?;
+        constraints.push(constraint);
+        Ok(())
+    }
+
     fn new_from_triangulation(
         layout: &Layout<impl AccessRules>,
-        triangulation: Triangulation<TrianvertexNodeIndex, TrianvertexWeight, ()>,
+        triangulation: NavmeshTriangulation,
         origin: FixedDotIndex,
         destination: FixedDotIndex,
-        constraints: Vec<(TrianvertexWeight, TrianvertexWeight)>,
+        constraints: Vec<NavmeshTriangulationConstraint>,
         options: RouterOptions,
     ) -> Result<Self, NavmeshError> {
         let mut graph: UnGraph<NavnodeWeight, (), usize> = UnGraph::default();
