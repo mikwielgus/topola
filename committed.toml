@@ -73,6 +73,7 @@ allowed_scopes = [
   "router/ng/floating",
   "router/ng/poly",
   "router/ng/router",
+  "router/prenavmesh",
   "router/route",
   "router/router",
   "router/thetastar",

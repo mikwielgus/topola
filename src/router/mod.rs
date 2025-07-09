@@ -7,6 +7,7 @@ pub mod navcord;
 pub mod navcorder;
 pub mod navmesh;
 pub mod ng;
+pub mod prenavmesh;
 mod route;
 mod router;
 pub mod thetastar;

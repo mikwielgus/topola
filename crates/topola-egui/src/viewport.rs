@@ -24,8 +24,9 @@ use topola::{
     layout::poly::MakePolygon,
     math::{Circle, RotationSense},
     router::{
-        navmesh::{BinavnodeNodeIndex, NavmeshTriangulationConstraint, NavnodeIndex},
+        navmesh::{BinavnodeNodeIndex, NavnodeIndex},
         ng::pie,
+        prenavmesh::PrenavmeshConstraint,
     },
 };
 
@@ -411,7 +412,9 @@ impl Viewport {
                                 if let Some(thetastar) = activity.maybe_thetastar() {
                                     let navmesh = thetastar.graph();
 
-                                    for edge in navmesh.triangulation().edge_references() {
+                                    for edge in
+                                        navmesh.prenavmesh().triangulation().edge_references()
+                                    {
                                         let from = PrimitiveIndex::from(BinavnodeNodeIndex::from(
                                             edge.source(),
                                         ))
@@ -443,8 +446,8 @@ impl Viewport {
                                 if let Some(thetastar) = activity.maybe_thetastar() {
                                     let navmesh = thetastar.graph();
 
-                                    for NavmeshTriangulationConstraint(from_weight, to_weight) in
-                                        navmesh.constraints()
+                                    for PrenavmeshConstraint(from_weight, to_weight) in
+                                        navmesh.prenavmesh().constraints().iter()
                                     {
                                         let from = from_weight.pos + [100.0, 100.0].into();
                                         let to = to_weight.pos + [100.0, 100.0].into();
