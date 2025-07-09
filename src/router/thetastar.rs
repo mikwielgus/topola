@@ -11,7 +11,7 @@
 use std::collections::btree_map::Entry;
 use std::collections::{BTreeMap, BinaryHeap};
 
-use std::ops::ControlFlow;
+use std::ops::{ControlFlow, Sub};
 
 use derive_getters::Getters;
 use petgraph::algo::Measure;
@@ -20,7 +20,7 @@ use thiserror::Error;
 
 use std::cmp::Ordering;
 
-use crate::stepper::Step;
+use crate::stepper::{EstimateProgress, Step};
 
 #[derive(Copy, Clone, Debug)]
 pub struct MinScored<K, T>(pub K, pub T);
@@ -122,7 +122,7 @@ where
     ) -> Result<Option<R>, ()>;
     fn place_probe_to_navnode<'a>(&mut self, graph: &'a G, probed_navnode: G::NodeId) -> Option<K>;
     fn remove_probe(&mut self, graph: &G);
-    fn estimate_cost(&mut self, graph: &G, navnode: G::NodeId) -> K;
+    fn estimate_cost_to_goal(&mut self, graph: &G, navnode: G::NodeId) -> K;
 }
 
 pub trait MakeEdgeRef: IntoEdgeReferences {
@@ -155,21 +155,28 @@ where
     G: GraphBase,
     G::NodeId: Eq + Ord,
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
-    K: Measure + Copy,
+    K: Measure + Copy + Sub<Output = K>,
 {
     state: ThetastarState<G::NodeId, G::EdgeId>,
     graph: G,
+    /// The priority queue of the navnodes to expand.
     #[getter(skip)]
-    visit_next: BinaryHeap<MinScored<K, G::NodeId>>,
+    frontier: BinaryHeap<MinScored<K, G::NodeId>>,
     /// Also known as the g-scores, or just g.
     scores: BTreeMap<G::NodeId, K>,
     /// Also known as the f-scores, or just f.
-    estimate_scores: BTreeMap<G::NodeId, K>,
+    cost_to_goal_estimate_scores: BTreeMap<G::NodeId, K>,
     #[getter(skip)]
     path_tracker: PathTracker<G>,
     // FIXME: To work around edge references borrowing from the graph we collect then reiterate over them.
     #[getter(skip)]
     edge_ids: Vec<G::EdgeId>,
+
+    #[getter(skip)]
+    progress_estimate_value: K,
+
+    #[getter(skip)]
+    progress_estimate_maximum: K,
 }
 
 #[derive(Error, Debug, Clone)]
@@ -183,28 +190,54 @@ where
     G: GraphBase,
     G::NodeId: Eq + Ord,
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
-    K: Measure + Copy,
+    K: Measure + Copy + Sub<Output = K>,
 {
     pub fn new<R>(
         graph: G,
         start: G::NodeId,
         strategy: &mut impl ThetastarStrategy<G, K, R>,
     ) -> Self {
+        let estimated_cost_from_start_to_goal = strategy.estimate_cost_to_goal(&graph, start);
+
         let mut this = Self {
             state: ThetastarState::Scanning,
             graph,
-            visit_next: BinaryHeap::new(),
+            frontier: BinaryHeap::new(),
             scores: BTreeMap::new(),
-            estimate_scores: BTreeMap::new(),
+            cost_to_goal_estimate_scores: BTreeMap::new(),
             path_tracker: PathTracker::<G>::new(),
             edge_ids: Vec::new(),
+            progress_estimate_value: K::default(),
+            progress_estimate_maximum: estimated_cost_from_start_to_goal,
         };
 
         let zero_score = K::default();
         this.scores.insert(start, zero_score);
-        this.visit_next
-            .push(MinScored(strategy.estimate_cost(&this.graph, start), start));
+        this.frontier
+            .push(MinScored(estimated_cost_from_start_to_goal, start));
         this
+    }
+
+    fn push_to_frontier<R>(
+        &mut self,
+        next: G::NodeId,
+        next_score: K,
+        predecessor: G::NodeId,
+        strategy: &mut impl ThetastarStrategy<G, K, R>,
+    ) {
+        let cost_to_goal_estimate = strategy.estimate_cost_to_goal(&self.graph, next);
+
+        if cost_to_goal_estimate > self.progress_estimate_maximum {
+            self.progress_estimate_maximum = cost_to_goal_estimate;
+        }
+
+        if self.progress_estimate_maximum - cost_to_goal_estimate > self.progress_estimate_value {
+            self.progress_estimate_value = self.progress_estimate_maximum - cost_to_goal_estimate;
+        }
+
+        self.path_tracker.set_predecessor(next, predecessor);
+        let next_estimate_score = next_score + cost_to_goal_estimate;
+        self.frontier.push(MinScored(next_estimate_score, next));
     }
 }
 
@@ -214,7 +247,7 @@ where
     G: GraphBase,
     G::NodeId: Eq + Ord,
     for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
-    K: Measure + Copy,
+    K: Measure + Copy + Sub<Output = K>,
 {
     type Error = ThetastarError;
 
@@ -227,7 +260,7 @@ where
     > {
         match self.state {
             ThetastarState::Scanning => {
-                let Some(MinScored(estimate_score, navnode)) = self.visit_next.pop() else {
+                let Some(MinScored(estimate_score, navnode)) = self.frontier.pop() else {
                     return Err(ThetastarError::NotFound);
                 };
 
@@ -243,7 +276,7 @@ where
                     return Ok(ControlFlow::Break((cost, path, result)));
                 }
 
-                match self.estimate_scores.entry(navnode) {
+                match self.cost_to_goal_estimate_scores.entry(navnode) {
                     Entry::Occupied(mut entry) => {
                         // If the node has already been visited with an equal or lower
                         // estimated score than now, then we do not need to re-visit it.
@@ -299,10 +332,7 @@ where
                                 }
                             }
 
-                            self.path_tracker.set_predecessor(next, parent_navnode);
-                            let next_estimate_score =
-                                next_score + strategy.estimate_cost(&self.graph, next);
-                            self.visit_next.push(MinScored(next_estimate_score, next));
+                            self.push_to_frontier(next, next_score, parent_navnode, strategy);
 
                             self.state = ThetastarState::Probing(visited_navnode);
                             Ok(ControlFlow::Continue(self.state))
@@ -353,10 +383,7 @@ where
                         }
                     }
 
-                    self.path_tracker.set_predecessor(next, visited_navnode);
-                    let next_estimate_score =
-                        next_score + strategy.estimate_cost(&self.graph, next);
-                    self.visit_next.push(MinScored(next_estimate_score, next));
+                    self.push_to_frontier(next, next_score, visited_navnode, strategy);
 
                     self.state = ThetastarState::Probing(visited_navnode);
                     Ok(ControlFlow::Continue(self.state))
@@ -372,5 +399,23 @@ where
                 Ok(ControlFlow::Continue(self.state))
             }
         }
+    }
+}
+
+impl<G, K> EstimateProgress for ThetastarStepper<G, K>
+where
+    G: GraphBase,
+    G::NodeId: Eq + Ord,
+    for<'a> &'a G: IntoEdges<NodeId = G::NodeId, EdgeId = G::EdgeId> + MakeEdgeRef,
+    K: Measure + Copy + Sub<Output = K>,
+{
+    type Value = K;
+
+    fn estimate_progress_value(&self) -> K {
+        self.progress_estimate_value
+    }
+
+    fn estimate_progress_maximum(&self) -> K {
+        self.progress_estimate_maximum
     }
 }

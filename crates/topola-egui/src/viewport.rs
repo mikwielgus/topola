@@ -376,7 +376,6 @@ impl Viewport {
                                         };
 
                                         if menu_bar.show_pathfinding_scores {
-                                            //TODO "{astar.scores[index]} ({astar.estimate_scores[index]}) (...)"
                                             let score_text = thetastar
                                                 .scores()
                                                 .get(&navnode)
@@ -384,7 +383,7 @@ impl Viewport {
                                                     format!("g={:.2}", s)
                                                 });
                                             let estimate_score_text = thetastar
-                                                .estimate_scores()
+                                                .cost_to_goal_estimate_scores()
                                                 .get(&navnode)
                                                 .map_or_else(String::new, |s| {
                                                     format!("(f={:.2})", s)

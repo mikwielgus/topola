@@ -25,7 +25,7 @@ use crate::{
         ng,
         thetastar::ThetastarStepper,
     },
-    stepper::{Abort, OnEvent, Step},
+    stepper::{Abort, EstimateProgress, OnEvent, Step},
 };
 
 /// Stores the interactive input data from the user.
@@ -94,6 +94,26 @@ impl<M: AccessMesadata + Clone> Abort<Invoker<M>> for ActivityStepper<M> {
         match self {
             ActivityStepper::Interaction(interaction) => interaction.abort(context),
             ActivityStepper::Execution(execution) => execution.abort(context),
+        }
+    }
+}
+
+// Since enum_dispatch does not really support generics, we implement this the
+// long way.
+impl<M> EstimateProgress for ActivityStepper<M> {
+    type Value = f64;
+
+    fn estimate_progress_value(&self) -> f64 {
+        match self {
+            ActivityStepper::Interaction(..) => 0.0,
+            ActivityStepper::Execution(execution) => execution.estimate_progress_value(),
+        }
+    }
+
+    fn estimate_progress_maximum(&self) -> f64 {
+        match self {
+            ActivityStepper::Interaction(..) => 0.0,
+            ActivityStepper::Execution(execution) => execution.estimate_progress_maximum(),
         }
     }
 }
@@ -176,6 +196,18 @@ impl<M: AccessMesadata + Clone> OnEvent<ActivityContext<'_, M>, InteractiveEvent
         event: InteractiveEvent,
     ) -> Result<(), InteractionError> {
         self.activity.on_event(context, event)
+    }
+}
+
+impl<M> EstimateProgress for ActivityStepperWithStatus<M> {
+    type Value = f64;
+
+    fn estimate_progress_value(&self) -> f64 {
+        self.activity.estimate_progress_value()
+    }
+
+    fn estimate_progress_maximum(&self) -> f64 {
+        self.activity.estimate_progress_maximum()
     }
 }
 

@@ -11,14 +11,14 @@ use core::ops::ControlFlow;
 ///
 /// An object that implements this trait is called a "stepper".
 ///
-/// Steppers always progress linearly, that is, it is presumed that the context
-/// does not change between calls in a way that can affect the stepper's future
-/// states. Advanceable data structures designed for uses where the future state
-/// intentionally *may* change from the information supplied as arguments are
-/// not considered steppers. An example of such an advanceable non-stepper is
-/// the [`Navcord`](crate::router::navcord::Navcord) struct, as it does not progress
-/// linearly because it branches out by on each call taking in a
-/// changeable `to` argument that affects the future states.
+/// Steppers always progress linearly and their future states are determined by
+/// the initial state. It is assumed that the changes in context cannot change
+/// the stepper's execution. Advanceable data structures designed for uses where
+/// the future state intentionally *may* change from the information supplied
+/// after initialization are not considered steppers. An example of such an
+/// advanceable non-stepper is the [`Navcord`] (crate::router::navcord::Navcord)
+/// struct, as it does not progress linearly because it branches out on each
+/// call by taking in a changeable `to` argument that affects the future states.
 ///
 /// Petgraph's counterpart of this trait is its
 /// [`petgraph::visit::Walker<Context>`] trait.
@@ -53,9 +53,25 @@ pub trait Abort<C> {
     fn abort(&mut self, context: &mut C);
 }
 
-/// Steppers that may receive discrete events and act on them, implement this trait.
+/// Steppers that can receive discrete events and act on them, implement this
+/// trait.
+// XXX: Doesn't this violate the rule that stepper's future states are
+// determined by its initial state?
 pub trait OnEvent<Ctx, Event> {
     type Output;
 
     fn on_event(&mut self, context: &mut Ctx, event: Event) -> Self::Output;
+}
+
+/// Some steppers report estimates of how far they are from completion.
+pub trait EstimateProgress {
+    type Value: Default;
+
+    fn estimate_progress_value(&self) -> Self::Value {
+        Self::Value::default()
+    }
+
+    fn estimate_progress_maximum(&self) -> Self::Value {
+        Self::Value::default()
+    }
 }

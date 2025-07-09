@@ -19,7 +19,7 @@ use crate::{
         thetastar::{ThetastarError, ThetastarStepper},
         Router, RouterThetastarStrategy,
     },
-    stepper::Step,
+    stepper::{EstimateProgress, Step},
 };
 
 #[derive(Getters, Dissolve)]
@@ -80,6 +80,7 @@ impl<R: AccessRules> Step<Router<'_, R>, BandTermsegIndex> for RouteStepper {
         let target = self.thetastar.graph().destination();
         let mut strategy = RouterThetastarStrategy::new(layout, &mut self.navcord, target);
         let result = self.thetastar.step(&mut strategy);
+
         self.ghosts = strategy.probe_ghosts;
         self.obstacles = strategy.probe_obstacles;
 
@@ -95,5 +96,17 @@ impl<R: AccessRules> Step<Router<'_, R>, BandTermsegIndex> for RouteStepper {
                 Err(e)
             }
         }
+    }
+}
+
+impl EstimateProgress for RouteStepper {
+    type Value = f64;
+
+    fn estimate_progress_value(&self) -> f64 {
+        self.thetastar.estimate_progress_value()
+    }
+
+    fn estimate_progress_maximum(&self) -> f64 {
+        self.thetastar.estimate_progress_maximum()
     }
 }

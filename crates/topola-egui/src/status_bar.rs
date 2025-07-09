@@ -4,7 +4,7 @@
 
 use std::ops::ControlFlow;
 
-use topola::interactor::activity::ActivityStepperWithStatus;
+use topola::{interactor::activity::ActivityStepperWithStatus, stepper::EstimateProgress};
 
 use crate::{translator::Translator, viewport::Viewport};
 
@@ -38,6 +38,20 @@ impl StatusBar {
                 "x: {} y: {} \t {}",
                 latest_pos.x, -latest_pos.y, message
             ));
+
+            if let Some(activity) = maybe_activity {
+                let value = activity.estimate_progress_value();
+                let maximum = activity.estimate_progress_maximum();
+
+                ui.add(
+                    egui::ProgressBar::new((value / maximum) as f32).text(format!(
+                        "{:.1} ({:.1}/{:.1})",
+                        value / maximum * 100.0,
+                        value,
+                        maximum
+                    )),
+                );
+            }
         });
     }
 }

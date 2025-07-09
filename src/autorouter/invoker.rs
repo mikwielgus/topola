@@ -150,10 +150,10 @@ impl<M: AccessMesadata + Clone> Invoker<M> {
         }
     }
 
-    #[debug_requires(self.ongoing_command.is_none())]
     /// Pass given command to be executed.
     ///
     /// Function used to set given [`Command`] to ongoing state, dispatch and execute it.
+    #[debug_requires(self.ongoing_command.is_none())]
     pub fn execute_stepper(
         &mut self,
         command: Command,

@@ -17,7 +17,7 @@ use crate::{
     router::{
         navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper, RouteStepper, Router,
     },
-    stepper::Step,
+    stepper::{EstimateProgress, Step},
 };
 
 use super::{invoker::GetDebugOverlayData, Autorouter, AutorouterError, AutorouterOptions};
@@ -161,6 +161,22 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
         }
 
         Ok(ControlFlow::Continue(ret))
+    }
+}
+
+impl EstimateProgress for AutorouteExecutionStepper {
+    type Value = f64;
+
+    fn estimate_progress_value(&self) -> f64 {
+        self.route
+            .as_ref()
+            .map_or(0.0, |route| route.estimate_progress_value())
+    }
+
+    fn estimate_progress_maximum(&self) -> f64 {
+        self.route
+            .as_ref()
+            .map_or(0.0, |route| route.estimate_progress_maximum())
     }
 }
 

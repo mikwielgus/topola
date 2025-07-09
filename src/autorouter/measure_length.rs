@@ -8,6 +8,7 @@
 
 use crate::{
     board::AccessMesadata, geometry::shape::MeasureLength as MeasureLengthTrait, graph::MakeRef,
+    stepper::EstimateProgress,
 };
 
 use super::{invoker::GetDebugOverlayData, selection::BandSelection, Autorouter, AutorouterError};
@@ -47,4 +48,7 @@ impl MeasureLengthExecutionStepper {
     }
 }
 
+impl EstimateProgress for MeasureLengthExecutionStepper {
+    type Value = f64;
+}
 impl GetDebugOverlayData for MeasureLengthExecutionStepper {}

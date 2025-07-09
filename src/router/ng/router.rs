@@ -15,7 +15,7 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     graph::GenericIndex,
     layout::{poly::PolyWeight, Layout, LayoutEdit},
-    stepper::Abort,
+    stepper::{Abort, EstimateProgress},
 };
 
 use super::{
@@ -230,6 +230,10 @@ impl<R: AccessRules + Clone + std::panic::RefUnwindSafe> AutorouteExecutionStepp
             }
         }
     }
+}
+
+impl<M> EstimateProgress for AutorouteExecutionStepper<M> {
+    type Value = f64;
 }
 
 impl<M> GetDebugOverlayData for AutorouteExecutionStepper<M> {

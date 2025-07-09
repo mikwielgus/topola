@@ -119,7 +119,7 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
         self.navcord.step_back(self.layout);
     }
 
-    fn estimate_cost(&mut self, navmesh: &Navmesh, vertex: NavnodeIndex) -> f64 {
+    fn estimate_cost_to_goal(&mut self, navmesh: &Navmesh, vertex: NavnodeIndex) -> f64 {
         let start_point = PrimitiveIndex::from(navmesh.node_weight(vertex).unwrap().node)
             .primitive(self.layout.drawing())
             .shape()

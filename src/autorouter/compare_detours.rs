@@ -15,7 +15,7 @@ use crate::{
     geometry::{primitive::PrimitiveShape, shape::MeasureLength},
     graph::MakeRef,
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
-    stepper::Step,
+    stepper::{EstimateProgress, Step},
 };
 
 use super::{
@@ -98,6 +98,10 @@ impl<M: AccessMesadata> Step<Autorouter<M>, (f64, f64)> for CompareDetoursExecut
             }
         }
     }
+}
+
+impl EstimateProgress for CompareDetoursExecutionStepper {
+    type Value = f64;
 }
 
 impl GetDebugOverlayData for CompareDetoursExecutionStepper {
