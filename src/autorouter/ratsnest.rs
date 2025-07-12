@@ -13,7 +13,7 @@ use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
     data::Element,
-    graph::{EdgeIndex, NodeIndex, UnGraph},
+    graph::{NodeIndex, UnGraph},
     unionfind::UnionFind,
     visit::{EdgeRef, IntoEdgeReferences, NodeIndexable},
 };
@@ -35,6 +35,8 @@ use crate::{
     },
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
+
+use super::ratline::{RatlineIndex, RatlineWeight};
 
 #[enum_dispatch(GetPetgraphIndex)]
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -69,11 +71,6 @@ impl HasPosition for RatvertexWeight {
     fn position(&self) -> Point2<Self::Scalar> {
         Point2::new(self.pos.x(), self.pos.y())
     }
-}
-
-#[derive(Debug, Default, Clone, Copy)]
-pub struct RatlineWeight {
-    pub band_termseg: Option<BandTermsegIndex>,
 }
 
 pub struct Ratsnest {
@@ -161,7 +158,7 @@ impl Ratsnest {
 
     pub fn assign_band_termseg_to_ratline(
         &mut self,
-        ratline: EdgeIndex<usize>,
+        ratline: RatlineIndex,
         termseg: BandTermsegIndex,
     ) {
         self.graph.edge_weight_mut(ratline).unwrap().band_termseg = Some(termseg);

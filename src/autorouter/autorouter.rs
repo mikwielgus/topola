@@ -4,7 +4,7 @@
 
 use derive_getters::Getters;
 use geo::Point;
-use petgraph::graph::{EdgeIndex, NodeIndex};
+use petgraph::graph::NodeIndex;
 use serde::{Deserialize, Serialize};
 use spade::InsertionError;
 use std::collections::BTreeSet;
@@ -25,6 +25,7 @@ use super::{
     measure_length::MeasureLengthExecutionStepper,
     place_via::PlaceViaExecutionStepper,
     pointroute::PointrouteExecutionStepper,
+    ratline::RatlineIndex,
     ratsnest::{Ratsnest, RatvertexIndex},
     remove_bands::RemoveBandsExecutionStepper,
     selection::{BandSelection, PinSelection},
@@ -104,7 +105,7 @@ impl<M: AccessMesadata> Autorouter<M> {
 
     pub(super) fn autoroute_ratlines(
         &mut self,
-        ratlines: Vec<EdgeIndex<usize>>,
+        ratlines: Vec<RatlineIndex>,
         options: AutorouterOptions,
     ) -> Result<AutorouteExecutionStepper, AutorouterError> {
         AutorouteExecutionStepper::new(self, ratlines, options)
@@ -116,7 +117,7 @@ impl<M: AccessMesadata> Autorouter<M> {
 
     pub(super) fn undo_autoroute_ratlines(
         &mut self,
-        ratlines: Vec<EdgeIndex<usize>>,
+        ratlines: Vec<RatlineIndex>,
     ) -> Result<(), AutorouterError> {
         for ratline in ratlines.iter() {
             let band = self
@@ -157,7 +158,7 @@ impl<M: AccessMesadata> Autorouter<M> {
 
     pub(super) fn topo_autoroute_ratlines(
         &mut self,
-        ratlines: Vec<EdgeIndex<usize>>,
+        ratlines: Vec<RatlineIndex>,
         allowed_edges: BTreeSet<ng::PieEdgeIndex>,
         active_layer: usize,
         width: f64,
@@ -187,7 +188,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             active_layer,
             allowed_edges,
             ratlines.into_iter().filter_map(|ratline| {
-                let (source, target) = self.ratline_endpoints(ratline);
+                let (source, target) = ratline.ref_(self).endpoint_dots();
 
                 if navmesh
                     .as_ref()
@@ -260,8 +261,8 @@ impl<M: AccessMesadata> Autorouter<M> {
 
     pub(super) fn compare_detours_ratlines(
         &mut self,
-        ratline1: EdgeIndex<usize>,
-        ratline2: EdgeIndex<usize>,
+        ratline1: RatlineIndex,
+        ratline2: RatlineIndex,
         options: AutorouterOptions,
     ) -> Result<CompareDetoursExecutionStepper, AutorouterError> {
         CompareDetoursExecutionStepper::new(self, ratline1, ratline2, options)
@@ -274,35 +275,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         MeasureLengthExecutionStepper::new(selection)
     }
 
-    pub fn ratline_endpoints(&self, ratline: EdgeIndex<usize>) -> (FixedDotIndex, FixedDotIndex) {
-        let (source, target) = self.ratsnest.graph().edge_endpoints(ratline).unwrap();
-
-        let source_dot = match self
-            .ratsnest
-            .graph()
-            .node_weight(source)
-            .unwrap()
-            .node_index()
-        {
-            RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => poly.ref_(self.board.layout()).apex(),
-        };
-
-        let target_dot = match self
-            .ratsnest
-            .graph()
-            .node_weight(target)
-            .unwrap()
-            .node_index()
-        {
-            RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => poly.ref_(self.board.layout()).apex(),
-        };
-
-        (source_dot, target_dot)
-    }
-
-    pub(super) fn selected_ratlines(&self, selection: &PinSelection) -> Vec<EdgeIndex<usize>> {
+    pub(super) fn selected_ratlines(&self, selection: &PinSelection) -> Vec<RatlineIndex> {
         self.ratsnest
             .graph()
             .edge_indices()

@@ -83,7 +83,8 @@ pub fn assert_navnode_count(
         .collect::<Vec<_>>()
         .iter()
         .find_map(|ratline| {
-            let (candidate_origin, candidate_destination) = autorouter.ratline_endpoints(*ratline);
+            let (candidate_origin, candidate_destination) =
+                autorouter.ratline_endpoint_dots(*ratline);
             let candidate_origin_pin = autorouter
                 .board()
                 .node_pinname(&GenericNode::Primitive(candidate_origin.into()))
@@ -121,7 +122,7 @@ pub fn assert_single_layer_groundless_autoroute(
     let unionfind = unionfind(autorouter);
 
     for ratline in autorouter.ratsnest().graph().edge_indices() {
-        let (origin_dot, destination_dot) = autorouter.ratline_endpoints(ratline);
+        let (origin_dot, destination_dot) = autorouter.ratline_endpoint_dots(ratline);
 
         let origin_layer = autorouter
             .board()
@@ -219,7 +220,7 @@ fn unionfind(autorouter: &mut Autorouter<impl AccessMesadata>) -> UnionFind<Node
     for ratline in autorouter.ratsnest().graph().edge_indices() {
         // Accessing endpoints may create new dots because apex construction is lazy, so we access
         // tem all before starting unionfind, as it requires a constant index bound.
-        let _ = autorouter.ratline_endpoints(ratline);
+        let _ = autorouter.ratline_endpoint_dots(ratline);
     }
 
     let mut unionfind = UnionFind::new(

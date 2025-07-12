@@ -11,8 +11,7 @@ use petgraph::{
     graph::UnGraph,
     stable_graph::NodeIndex,
     visit::{
-        Data, EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges, IntoNeighbors,
-        IntoNodeIdentifiers, NodeIndexable,
+        Data, EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
     },
 };
 use spade::InsertionError;
@@ -23,21 +22,19 @@ use crate::{
         bend::{FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
         gear::{GearIndex, GetNextGear},
-        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
+        graph::{MakePrimitive, PrimitiveIndex},
         primitive::Primitive,
         rules::AccessRules,
         Drawing,
     },
-    geometry::GetLayer,
     graph::{GetPetgraphIndex, MakeRef},
     layout::Layout,
     math::RotationSense,
     router::thetastar::MakeEdgeRef,
-    triangulation::Triangulation,
 };
 
 use super::{
-    prenavmesh::{Prenavmesh, PrenavmeshConstraint, PrenavmeshNodeIndex, PrenavmeshWeight},
+    prenavmesh::{Prenavmesh, PrenavmeshNodeIndex},
     RouterOptions,
 };
 

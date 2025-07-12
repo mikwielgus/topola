@@ -7,12 +7,11 @@
 
 use std::ops::ControlFlow;
 
-use petgraph::graph::EdgeIndex;
-
 use crate::{
     board::AccessMesadata,
     drawing::{band::BandTermsegIndex, graph::PrimitiveIndex, Collect},
     geometry::primitive::PrimitiveShape,
+    graph::MakeRef,
     layout::LayoutEdit,
     router::{
         navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper, RouteStepper, Router,
@@ -20,7 +19,10 @@ use crate::{
     stepper::{EstimateProgress, Step},
 };
 
-use super::{invoker::GetDebugOverlayData, Autorouter, AutorouterError, AutorouterOptions};
+use super::{
+    invoker::GetDebugOverlayData, ratline::RatlineIndex, Autorouter, AutorouterError,
+    AutorouterOptions,
+};
 
 /// Represents the current status of the autoroute operation.
 pub enum AutorouteContinueStatus {
@@ -35,7 +37,7 @@ pub enum AutorouteContinueStatus {
 /// Manages the autorouting process across multiple ratlines.
 pub struct AutorouteExecutionStepper {
     /// The ratlines which we are routing.
-    ratlines: Vec<EdgeIndex<usize>>,
+    ratlines: Vec<RatlineIndex>,
     /// Keeps track of the current ratline being routed, if one is active.
     curr_ratline_index: usize,
     /// Stores the current route being processed, if any.
@@ -52,14 +54,14 @@ impl AutorouteExecutionStepper {
     /// and stores the associated data for future routing steps.
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: Vec<EdgeIndex<usize>>,
+        ratlines: Vec<RatlineIndex>,
         options: AutorouterOptions,
     ) -> Result<Self, AutorouterError> {
         if ratlines.is_empty() {
             return Err(AutorouterError::NothingToRoute);
         };
 
-        let (origin, destination) = autorouter.ratline_endpoints(ratlines[0]);
+        let (origin, destination) = ratlines[0].ref_(autorouter).endpoint_dots();
         let mut router = Router::new(autorouter.board.layout_mut(), options.router_options);
 
         Ok(Self {
@@ -101,7 +103,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
             return Ok(ControlFlow::Break(None));
         };
 
-        let (source, target) = autorouter.ratline_endpoints(self.ratlines[self.curr_ratline_index]);
+        let (source, target) = self.ratlines[self.curr_ratline_index]
+            .ref_(autorouter)
+            .endpoint_dots();
 
         let ret = if let Some(band_termseg) = autorouter.board.band_between_nodes(source, target) {
             AutorouteContinueStatus::Skipped(band_termseg[false])
@@ -138,7 +142,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
         self.curr_ratline_index += 1;
 
         if let Some(new_ratline) = self.ratlines.get(self.curr_ratline_index) {
-            let (source, target) = autorouter.ratline_endpoints(*new_ratline);
+            let (source, target) = new_ratline.ref_(autorouter).endpoint_dots();
             let mut router =
                 Router::new(autorouter.board.layout_mut(), self.options.router_options);
 

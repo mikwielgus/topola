@@ -7,8 +7,6 @@
 
 use std::ops::ControlFlow;
 
-use petgraph::graph::EdgeIndex;
-
 use crate::{
     board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
@@ -21,14 +19,15 @@ use crate::{
 use super::{
     autoroute::{AutorouteContinueStatus, AutorouteExecutionStepper},
     invoker::GetDebugOverlayData,
+    ratline::RatlineIndex,
     Autorouter, AutorouterError, AutorouterOptions,
 };
 
 pub struct CompareDetoursExecutionStepper {
     autoroute: AutorouteExecutionStepper,
     next_autoroute: Option<AutorouteExecutionStepper>,
-    ratline1: EdgeIndex<usize>,
-    ratline2: EdgeIndex<usize>,
+    ratline1: RatlineIndex,
+    ratline2: RatlineIndex,
     total_length1: f64,
     total_length2: f64,
     done: bool,
@@ -37,8 +36,8 @@ pub struct CompareDetoursExecutionStepper {
 impl CompareDetoursExecutionStepper {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratline1: EdgeIndex<usize>,
-        ratline2: EdgeIndex<usize>,
+        ratline1: RatlineIndex,
+        ratline2: RatlineIndex,
         options: AutorouterOptions,
     ) -> Result<Self, AutorouterError> {
         Ok(Self {
