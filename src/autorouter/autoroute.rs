@@ -10,13 +10,13 @@ use std::ops::ControlFlow;
 use crate::{
     board::AccessMesadata,
     drawing::{band::BandTermsegIndex, graph::PrimitiveIndex, Collect},
-    geometry::primitive::PrimitiveShape,
+    geometry::{edit::ApplyGeometryEdit, primitive::PrimitiveShape},
     graph::MakeRef,
     layout::LayoutEdit,
     router::{
         navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper, RouteStepper, Router,
     },
-    stepper::{EstimateProgress, Step},
+    stepper::{Abort, EstimateProgress, Step},
 };
 
 use super::{
@@ -162,6 +162,15 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
         }
 
         Ok(ControlFlow::Continue(ret))
+    }
+}
+
+impl<M: AccessMesadata> Abort<Autorouter<M>> for AutorouteExecutionStepper {
+    fn abort(&mut self, autorouter: &mut Autorouter<M>) {
+        if let Some(ref route) = self.route {
+            autorouter.board.apply(&route.navcord().recorder.reverse());
+            self.curr_ratline_index = self.ratlines.len();
+        }
     }
 }
 

@@ -39,21 +39,21 @@ pub trait Step<Ctx, B, C = ()> {
 }
 
 /// Steppers that may be stepped backwards implement this trait.
-pub trait StepBack<C, S, E> {
+pub trait StepBack<Ctx, S, E> {
     /// Retreat the stepper's state by one step.
-    fn step_back(&mut self, context: &mut C) -> Result<S, E>;
+    fn step_back(&mut self, context: &mut Ctx) -> Result<S, E>;
 }
 
 /// Steppers that may be aborted implement this trait.
 ///
-/// Aborting a stepper puts it in a state where stepping or stepping back always
-/// fails.
-pub trait Abort<C> {
+/// Aborting a stepper puts it and its context back in its initial state, except
+/// that from then on trying to step or step back always fails.
+pub trait Abort<Ctx> {
     /// Abort the stepper.
-    fn abort(&mut self, context: &mut C);
+    fn abort(&mut self, context: &mut Ctx);
 }
 
-/// Steppers that can receive discrete events and act on them, implement this
+/// Steppers that can receive discrete events and act on them implement this
 /// trait.
 // XXX: Doesn't this violate the rule that stepper's future states are
 // determined by its initial state?

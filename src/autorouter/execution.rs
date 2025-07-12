@@ -158,10 +158,11 @@ impl<M: AccessMesadata + Clone> Abort<Invoker<M>> for ExecutionStepper<M> {
                 // TODO: maintain topo-navmesh just like layout
                 *invoker.autorouter.board.layout_mut() = autoroute.last_layout.clone();
             }
-            execution => {
-                // TODO
-                execution.finish(invoker);
-            }
+            ExecutionStepper::Autoroute(autoroute) => autoroute.abort(&mut invoker.autorouter),
+            ExecutionStepper::PlaceVia(_place_via) => (), //place_via.abort(),
+            ExecutionStepper::RemoveBands(_remove_bands) => (), //remove_bands.abort(),
+            ExecutionStepper::CompareDetours(_compare_detours) => (), //compare_detours.abort(),
+            ExecutionStepper::MeasureLength(_measure_length) => (), //measure_length.abort(),
         }
     }
 }
