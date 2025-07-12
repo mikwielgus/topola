@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use geo::{Distance, Euclidean};
+use geo::{line_intersection::line_intersection, Distance, Euclidean, Line};
 use petgraph::graph::EdgeIndex;
 use specctra_core::mesadata::AccessMesadata;
 
@@ -73,31 +73,51 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
 
         (source_dot, target_dot)
     }
-}
 
-impl<'a, M: AccessMesadata> MeasureLength for RatlineRef<'a, M> {
-    fn length(&self) -> f64 {
-        let (ratvertex0, ratvertex1) = self
+    pub fn find_intersecting_ratlines(&self) -> impl Iterator<Item = RatlineIndex> + '_ {
+        let self_line = self.line();
+
+        self.autorouter
+            .ratsnest()
+            .graph()
+            .edge_indices()
+            .filter(move |other| {
+                let other_line = other.ref_(self.autorouter).line();
+
+                line_intersection(self_line, other_line).is_some()
+            })
+    }
+
+    pub fn line(&self) -> Line {
+        let (source, target) = self
             .autorouter
             .ratsnest
             .graph()
             .edge_endpoints(self.index)
             .unwrap();
-        let ratvertex0_pos = self
+        let source_pos = self
             .autorouter
             .ratsnest
             .graph()
-            .node_weight(ratvertex0)
+            .node_weight(source)
             .unwrap()
             .pos;
-        let ratvertex1_pos = self
+        let target_pos = self
             .autorouter
             .ratsnest
             .graph()
-            .node_weight(ratvertex1)
+            .node_weight(target)
             .unwrap()
             .pos;
 
-        Euclidean::distance(&ratvertex0_pos, &ratvertex1_pos)
+        Line::new(source_pos, target_pos)
+    }
+}
+
+impl<'a, M: AccessMesadata> MeasureLength for RatlineRef<'a, M> {
+    fn length(&self) -> f64 {
+        let line = self.line();
+
+        Euclidean::distance(&line.start_point(), &line.end_point())
     }
 }

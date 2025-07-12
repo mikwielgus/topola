@@ -11,6 +11,7 @@ use topola::autorouter::invoker::Invoker;
 use topola::autorouter::selection::PinSelection;
 use topola::autorouter::Autorouter;
 use topola::autorouter::AutorouterOptions;
+use topola::autorouter::PresortBy;
 use topola::layout::LayoutEdit;
 use topola::router::RouterOptions;
 use topola::specctra::design::SpecctraDesign;
@@ -38,7 +39,7 @@ fn main() -> Result<(), std::io::Error> {
             Command::Autoroute(
                 PinSelection::new_select_layer(&board, 0),
                 AutorouterOptions {
-                    presort_by_pairwise_detours: false,
+                    presort_by: PresortBy::RatlineIntersectionCountAndLength,
                     router_options: RouterOptions {
                         wrap_around_bands: true,
                         squeeze_through_under_bends: false,

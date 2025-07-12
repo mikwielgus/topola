@@ -7,6 +7,7 @@ use std::{collections::BTreeSet, ops::ControlFlow, path::Path, sync::mpsc::Sende
 use topola::{
     autorouter::{
         execution::Command, invoker::InvokerError, selection::Selection, AutorouterOptions,
+        PresortBy,
     },
     board::AccessMesadata,
     interactor::{interaction::InteractionStepper, route_plan::RoutePlan},
@@ -42,7 +43,7 @@ impl MenuBar {
     pub fn new() -> Self {
         Self {
             autorouter_options: AutorouterOptions {
-                presort_by_pairwise_detours: false,
+                presort_by: PresortBy::RatlineIntersectionCountAndLength,
                 router_options: RouterOptions {
                     routed_band_width: 100.0,
                     wrap_around_bands: true,

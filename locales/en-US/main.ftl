@@ -47,7 +47,9 @@ tr-menu-help-online-documentation = Online Documentation
 # Misnamed tag, TODO fix this.
 tr-menu-options = Options
 
-tr-menu-route-options-presort-by-pairwise-detours = Presort by Pairwise Detours
+tr-menu-route-options-presort-by = Presort by
+tr-menu-route-options-presort-by-ratline-intersection-count-and-length = Intersection Count and Length
+tr-menu-route-options-presort-by-pairwise-detours = Pairwise Detours
 
 ## Continuously applied, so use imperfective aspect if possible, e.g. in Polish
 ## it should be "przeciskaj pod taśmami" instead of "przeciśnij pod taśmami".

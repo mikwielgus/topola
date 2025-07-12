@@ -12,7 +12,7 @@ use thiserror::Error;
 
 use crate::{
     board::{AccessMesadata, Board},
-    drawing::{band::BandTermsegIndex, dot::FixedDotIndex, Infringement},
+    drawing::{band::BandTermsegIndex, Infringement},
     graph::MakeRef,
     layout::{via::ViaWeight, LayoutEdit},
     router::{navmesh::NavmeshError, ng, thetastar::ThetastarError, RouterOptions},
@@ -31,9 +31,15 @@ use super::{
     selection::{BandSelection, PinSelection},
 };
 
-#[derive(Debug, Clone, Copy, Serialize, Deserialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
+pub enum PresortBy {
+    RatlineIntersectionCountAndLength,
+    PairwiseDetours,
+}
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct AutorouterOptions {
-    pub presort_by_pairwise_detours: bool,
+    pub presort_by: PresortBy,
     pub router_options: RouterOptions,
 }
 

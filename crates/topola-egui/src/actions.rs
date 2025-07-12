@@ -10,7 +10,7 @@ use crate::{
 };
 
 use egui::{Context, Ui};
-use topola::autorouter::AutorouterOptions;
+use topola::autorouter::{AutorouterOptions, PresortBy};
 
 pub struct FileActions {
     pub open_design: Trigger,
@@ -330,10 +330,12 @@ impl RouteActions {
             ui.separator();
 
             ui.menu_button(tr.text("tr-menu-options"), |ui| {
-                ui.checkbox(
-                    &mut autorouter_options.presort_by_pairwise_detours,
-                    tr.text("tr-menu-route-options-presort-by-pairwise-detours"),
-                );
+                egui::ComboBox::from_label(tr.text("tr-menu-route-options-presort-by"))
+                    .selected_text(format!("{:?}", autorouter_options.presort_by))
+                    .show_ui(ui, |ui| {
+                        ui.selectable_value(&mut autorouter_options.presort_by, PresortBy::RatlineIntersectionCountAndLength, tr.text("tr-menu-route-options-presort-by-ratline-intersection-count-and-length"));
+                        ui.selectable_value(&mut autorouter_options.presort_by, PresortBy::PairwiseDetours, tr.text("tr-menu-route-options-presort-by-pairwise-detours"));
+                    });
                 ui.checkbox(
                     &mut autorouter_options
                         .router_options
