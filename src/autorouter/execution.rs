@@ -8,8 +8,8 @@ use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    board::AccessMesadata,
-    layout::{via::ViaWeight, LayoutEdit},
+    board::{edit::BoardEdit, AccessMesadata},
+    layout::via::ViaWeight,
     router::ng,
     stepper::{Abort, EstimateProgress, Step},
 };
@@ -57,7 +57,7 @@ impl<M: AccessMesadata + Clone> ExecutionStepper<M> {
     fn step_catch_err(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<ControlFlow<(Option<LayoutEdit>, String)>, InvokerError> {
+    ) -> Result<ControlFlow<(Option<BoardEdit>, String)>, InvokerError> {
         Ok(match self {
             ExecutionStepper::Autoroute(autoroute) => match autoroute.step(autorouter)? {
                 ControlFlow::Continue(..) => ControlFlow::Continue(()),
@@ -74,9 +74,12 @@ impl<M: AccessMesadata + Clone> ExecutionStepper<M> {
                     ControlFlow::Break(true) => {
                         for (ep, band) in &autoroute.last_bands {
                             let (source, target) = ep.end_points.into();
-                            autorouter
-                                .board
-                                .try_set_band_between_nodes(source, target, *band);
+                            autorouter.board.try_set_band_between_nodes(
+                                &mut autoroute.last_recorder.data_edit,
+                                source,
+                                target,
+                                *band,
+                            );
                         }
 
                         let topo_navmesh = autoroute.maybe_topo_navmesh().unwrap().to_owned();

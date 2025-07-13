@@ -4,7 +4,10 @@
 
 //! Provides functionality to remove bands from the layout.
 
-use crate::{board::AccessMesadata, layout::LayoutEdit, stepper::EstimateProgress};
+use crate::{
+    board::{edit::BoardEdit, AccessMesadata},
+    stepper::EstimateProgress,
+};
 
 use super::{invoker::GetDebugOverlayData, selection::BandSelection, Autorouter, AutorouterError};
 
@@ -25,11 +28,12 @@ impl RemoveBandsExecutionStepper {
     pub fn doit(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
-    ) -> Result<Option<LayoutEdit>, AutorouterError> {
+    ) -> Result<Option<BoardEdit>, AutorouterError> {
         if !self.done {
             self.done = true;
 
-            let mut edit = LayoutEdit::new();
+            let mut edit = BoardEdit::new();
+
             for selector in self.selection.selectors() {
                 let band = *autorouter.board.bandname_band(&selector.band).unwrap();
                 autorouter

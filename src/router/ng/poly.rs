@@ -6,6 +6,7 @@ use geo::Point;
 use specctra_core::rules::AccessRules;
 
 use crate::{
+    board::edit::BoardEdit,
     drawing::{
         band::BandUid,
         dot::FixedDotIndex,
@@ -15,7 +16,7 @@ use crate::{
     },
     geometry::{compound::ManageCompounds, shape::AccessShape as _, GetSetPos as _},
     graph::{GenericIndex, GetPetgraphIndex as _},
-    layout::{poly::PolyWeight, CompoundEntryLabel, Layout, LayoutEdit},
+    layout::{poly::PolyWeight, CompoundEntryLabel, Layout},
     math::{is_poly_convex_hull_cw, CachedPolyExt, RotationSense},
     router::ng::{
         pie::{mayrev, utils::rotate_iter},
@@ -112,7 +113,7 @@ impl PolygonRouting {
     fn route_next<R: AccessRules>(
         &self,
         layout: &mut Layout<R>,
-        recorder: &mut LayoutEdit,
+        recorder: &mut BoardEdit,
         route_length: &mut f64,
         old_head: Head,
         ext_core: FixedDotIndex,
@@ -133,7 +134,7 @@ impl PolygonRouting {
     pub fn route_to_entry<R: AccessRules>(
         &self,
         layout: &mut Layout<R>,
-        recorder: &mut LayoutEdit,
+        recorder: &mut BoardEdit,
         old_head: Head,
         entry_point: FixedDotIndex,
         width: f64,
@@ -153,7 +154,7 @@ impl PolygonRouting {
     pub fn route_to_exit<R: AccessRules>(
         &self,
         layout: &mut Layout<R>,
-        recorder: &mut LayoutEdit,
+        recorder: &mut BoardEdit,
         mut active_head: Head,
         exit: FixedDotIndex,
         width: f64,

@@ -11,10 +11,11 @@ use std::{
 
 use crate::{
     autorouter::invoker::GetDebugOverlayData,
+    board::edit::BoardEdit,
     drawing::{band::BandUid, dot::FixedDotIndex, graph::PrimitiveIndex, rules::AccessRules},
     geometry::primitive::PrimitiveShape,
     graph::GenericIndex,
-    layout::{poly::PolyWeight, Layout, LayoutEdit},
+    layout::{poly::PolyWeight, Layout},
     stepper::{Abort, EstimateProgress},
 };
 
@@ -68,7 +69,7 @@ pub struct AutorouteExecutionStepper<R> {
     original_edge_paths: Box<[EdgePaths<EtchedPath, ()>]>,
 
     pub last_layout: Layout<R>,
-    pub last_recorder: LayoutEdit,
+    pub last_recorder: BoardEdit,
     pub last_edge_paths: Box<[EdgePaths<EtchedPath, ()>]>,
     pub last_bands: BTreeMap<EtchedPath, BandUid>,
 
@@ -90,7 +91,7 @@ impl<R: Clone> AutorouteExecutionStepper<R> {
 impl<M: Clone + std::panic::RefUnwindSafe> Abort<()> for AutorouteExecutionStepper<M> {
     fn abort(&mut self, _: &mut ()) {
         self.last_layout = self.common.layout.clone();
-        self.last_recorder = LayoutEdit::new();
+        self.last_recorder = BoardEdit::new();
         self.last_edge_paths = self.original_edge_paths.clone();
         self.last_bands = BTreeMap::new();
         self.finish();
@@ -121,7 +122,7 @@ impl<R: AccessRules + Clone + std::panic::RefUnwindSafe> AutorouteExecutionStepp
         }
 
         let context = AstarContext {
-            recorder: LayoutEdit::new(),
+            recorder: BoardEdit::new(),
             bands,
             length: 0.0,
             sub: None,
@@ -154,7 +155,7 @@ impl<R: AccessRules + Clone + std::panic::RefUnwindSafe> AutorouteExecutionStepp
             common,
             original_edge_paths: navmesh.edge_paths.clone(),
             last_layout: layout.clone(),
-            last_recorder: LayoutEdit::new(),
+            last_recorder: BoardEdit::new(),
             last_edge_paths: navmesh.edge_paths.clone(),
             last_bands: context.bands.clone(),
             active_polygons: Vec::new(),
@@ -204,7 +205,7 @@ impl<R: AccessRules + Clone + std::panic::RefUnwindSafe> AutorouteExecutionStepp
             // no valid result found
             ControlFlow::Break(None) => {
                 self.last_layout = self.common.layout.clone();
-                self.last_recorder = LayoutEdit::new();
+                self.last_recorder = BoardEdit::new();
                 self.last_edge_paths = self.original_edge_paths.clone();
                 self.last_bands = BTreeMap::new();
                 self.finish();
@@ -286,7 +287,7 @@ pub struct ManualrouteExecutionStepper<R> {
 
     // results
     pub last_layout: Layout<R>,
-    pub last_recorder: LayoutEdit,
+    pub last_recorder: BoardEdit,
 
     // visualization / debug
     pub active_polygons: Vec<GenericIndex<PolyWeight>>,
@@ -321,7 +322,7 @@ impl<M: Clone> ManualrouteExecutionStepper<M> {
 impl<M: Clone + std::panic::RefUnwindSafe> Abort<()> for ManualrouteExecutionStepper<M> {
     fn abort(&mut self, _: &mut ()) {
         self.last_layout = self.common.layout.clone();
-        self.last_recorder = LayoutEdit::new();
+        self.last_recorder = BoardEdit::new();
         self.context.bands = BTreeMap::new();
         self.finish();
         self.aborted = true;
@@ -365,7 +366,7 @@ impl<R: AccessRules + Clone + std::panic::RefUnwindSafe> ManualrouteExecutionSte
         }
 
         let context = AstarContext {
-            recorder: LayoutEdit::new(),
+            recorder: BoardEdit::new(),
             bands,
             length: 0.0,
             sub: None,
@@ -382,7 +383,7 @@ impl<R: AccessRules + Clone + std::panic::RefUnwindSafe> ManualrouteExecutionSte
             original_edge_paths: tmp_navmesh_edge_paths,
 
             last_layout: layout.clone(),
-            last_recorder: LayoutEdit::new(),
+            last_recorder: BoardEdit::new(),
             active_polygons: Vec::new(),
             ghosts: Vec::new(),
             polygonal_blockers: Vec::new(),
@@ -514,7 +515,7 @@ impl<R: AccessRules + Clone + std::panic::RefUnwindSafe> ManualrouteExecutionSte
 
                 // no valid result found
                 self.last_layout = self.common.layout.clone();
-                self.last_recorder = LayoutEdit::new();
+                self.last_recorder = BoardEdit::new();
                 self.context.bands = BTreeMap::new();
                 self.finish();
                 ControlFlow::Break(false)

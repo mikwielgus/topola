@@ -11,7 +11,7 @@ use std::collections::{btree_map::Entry as BTreeMapEntry, BTreeMap};
 use geo::{point, Point, Rotate};
 
 use crate::{
-    board::{AccessMesadata, Board},
+    board::{edit::BoardEdit, AccessMesadata, Board},
     drawing::{
         dot::{FixedDotWeight, GeneralDotWeight},
         graph::{GetMaybeNet, MakePrimitive},
@@ -20,7 +20,7 @@ use crate::{
         Drawing,
     },
     geometry::{primitive::PrimitiveShape, GetLayer, GetWidth},
-    layout::{poly::SolidPolyWeight, Layout, LayoutEdit},
+    layout::{poly::SolidPolyWeight, Layout},
     math::{Circle, PointWithRotation},
     specctra::{
         mesadata::SpecctraMesadata,
@@ -179,7 +179,7 @@ impl SpecctraDesign {
     /// which is used for layout and routing operations. The board is initialized with [`SpecctraMesadata`],
     /// which includes layer and net mappings, and is populated with components, pins, vias, and wires
     /// from the PCB definition.
-    pub fn make_board(&self, recorder: &mut LayoutEdit) -> Board<SpecctraMesadata> {
+    pub fn make_board(&self, recorder: &mut BoardEdit) -> Board<SpecctraMesadata> {
         let mesadata = SpecctraMesadata::from_pcb(&self.pcb);
         let mut board = Board::new(Layout::new(Drawing::new(
             mesadata,
@@ -424,7 +424,7 @@ impl SpecctraDesign {
     }
 
     fn add_circle(
-        recorder: &mut LayoutEdit,
+        recorder: &mut BoardEdit,
         board: &mut Board<SpecctraMesadata>,
         place: PointWithRotation,
         pin: PointWithRotation,
@@ -450,7 +450,7 @@ impl SpecctraDesign {
     }
 
     fn add_rect(
-        recorder: &mut LayoutEdit,
+        recorder: &mut BoardEdit,
         board: &mut Board<SpecctraMesadata>,
         place: PointWithRotation,
         pin: PointWithRotation,
@@ -575,7 +575,7 @@ impl SpecctraDesign {
     }
 
     fn add_path(
-        recorder: &mut LayoutEdit,
+        recorder: &mut BoardEdit,
         board: &mut Board<SpecctraMesadata>,
         place: PointWithRotation,
         pin: PointWithRotation,
@@ -640,7 +640,7 @@ impl SpecctraDesign {
     }
 
     fn add_polygon(
-        recorder: &mut LayoutEdit,
+        recorder: &mut BoardEdit,
         board: &mut Board<SpecctraMesadata>,
         place: PointWithRotation,
         pin: PointWithRotation,

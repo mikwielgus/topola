@@ -10,7 +10,7 @@ use derive_getters::{Dissolve, Getters};
 use serde::{Deserialize, Serialize};
 use thiserror::Error;
 
-use crate::{autorouter::execution::Command, layout::LayoutEdit};
+use crate::{autorouter::execution::Command, board::edit::BoardEdit};
 
 #[derive(Error, Debug, Clone)]
 pub enum HistoryError {
@@ -25,7 +25,7 @@ pub enum HistoryError {
 pub struct HistoryEntry {
     command: Command,
     #[serde(skip)]
-    edit: Option<LayoutEdit>,
+    edit: Option<BoardEdit>,
 }
 
 #[derive(Debug, Default, Clone, Getters, Dissolve, Serialize, Deserialize)]
@@ -39,7 +39,7 @@ impl History {
         Self::default()
     }
 
-    pub fn do_(&mut self, command: Command, edit: Option<LayoutEdit>) {
+    pub fn do_(&mut self, command: Command, edit: Option<BoardEdit>) {
         self.done.push(HistoryEntry { command, edit });
     }
 

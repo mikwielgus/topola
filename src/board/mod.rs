@@ -2,10 +2,12 @@
 //
 // SPDX-License-Identifier: MIT
 
-//! Provides the functionality to create and manage relationships
-//! between nodes, pins, and bands, as well as handle metadata and geometric data
-//! for layout construction.
+//! Manages relationship between pins and bands and the primitives and compounds
+//! that consitutite them on the layout. And some more.
 
+pub mod edit;
+
+use edit::{BoardDataEdit, BoardEdit};
 pub use specctra_core::mesadata::AccessMesadata;
 
 use bimap::BiBTreeMap;
@@ -16,15 +18,14 @@ use std::collections::BTreeMap;
 use crate::{
     drawing::{
         band::BandUid,
-        bend::{BendIndex, BendWeight},
-        dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight},
+        dot::{FixedDotIndex, FixedDotWeight},
         graph::PrimitiveIndex,
-        seg::{FixedSegIndex, FixedSegWeight, SegIndex, SegWeight},
+        seg::{FixedSegIndex, FixedSegWeight},
         Collect, DrawingException,
     },
     geometry::{edit::ApplyGeometryEdit, GenericNode, GetLayer},
     graph::{GenericIndex, MakeRef},
-    layout::{poly::PolyWeight, CompoundEntryLabel, CompoundWeight, Layout, LayoutEdit, NodeIndex},
+    layout::{poly::PolyWeight, CompoundWeight, Layout, NodeIndex},
     router::ng::EtchedPath,
 };
 
@@ -109,11 +110,13 @@ impl<M: AccessMesadata> Board<M> {
     /// Inserts the dot into the layout and, if a pin name is provided, maps it to the created dot's node.
     pub fn add_fixed_dot_infringably(
         &mut self,
-        recorder: &mut LayoutEdit,
+        recorder: &mut BoardEdit,
         weight: FixedDotWeight,
         maybe_pin: Option<String>,
     ) -> FixedDotIndex {
-        let dot = self.layout.add_fixed_dot_infringably(recorder, weight);
+        let dot = self
+            .layout
+            .add_fixed_dot_infringably(&mut recorder.layout_edit, weight);
 
         if let Some(pin) = maybe_pin {
             self.node_to_pinname
@@ -128,15 +131,15 @@ impl<M: AccessMesadata> Board<M> {
     /// Adds the segment to the layout and updates the internal mapping if necessary.
     pub fn add_fixed_seg_infringably(
         &mut self,
-        recorder: &mut LayoutEdit,
+        recorder: &mut BoardEdit,
         from: FixedDotIndex,
         to: FixedDotIndex,
         weight: FixedSegWeight,
         maybe_pin: Option<String>,
     ) -> FixedSegIndex {
-        let seg = self
-            .layout
-            .add_fixed_seg_infringably(recorder, from, to, weight);
+        let seg =
+            self.layout
+                .add_fixed_seg_infringably(&mut recorder.layout_edit, from, to, weight);
 
         if let Some(pin) = maybe_pin {
             self.node_to_pinname
@@ -151,12 +154,14 @@ impl<M: AccessMesadata> Board<M> {
     /// Inserts the polygon into the layout and, if a pin name is provided, maps it to the created polygon's node.
     pub fn add_poly_with_nodes(
         &mut self,
-        recorder: &mut LayoutEdit,
+        recorder: &mut BoardEdit,
         weight: PolyWeight,
         maybe_pin: Option<String>,
         nodes: &[PrimitiveIndex],
     ) -> GenericIndex<PolyWeight> {
-        let (poly, apex) = self.layout.add_poly_with_nodes(recorder, weight, nodes);
+        let (poly, apex) =
+            self.layout
+                .add_poly_with_nodes(&mut recorder.layout_edit, weight, nodes);
 
         if let Some(pin) = maybe_pin {
             for i in nodes {
@@ -203,6 +208,7 @@ impl<M: AccessMesadata> Board<M> {
     /// Creates band between the two nodes
     pub fn try_set_band_between_nodes(
         &mut self,
+        recorder: &mut BoardDataEdit,
         source: FixedDotIndex,
         target: FixedDotIndex,
         band: BandUid,
@@ -216,6 +222,7 @@ impl<M: AccessMesadata> Board<M> {
             .unwrap()
             .to_string();
         let bandname = BandName::from((source_pinname, target_pinname));
+
         if self.band_bandname.get_by_right(&bandname).is_some() {
             false
         } else {
@@ -223,7 +230,9 @@ impl<M: AccessMesadata> Board<M> {
                 end_points: (source, target).into(),
             };
             self.bands_by_id.insert(ep, band);
-            self.band_bandname.insert(band, bandname);
+            self.band_bandname.insert(band, bandname.clone());
+
+            recorder.bands.insert(bandname, (None, Some(band)));
             true
         }
     }
@@ -242,10 +251,10 @@ impl<M: AccessMesadata> Board<M> {
         self.band_between_pins(source_pinname, target_pinname)
     }
 
-    /// Removes the band between the two nodes
+    /// Removes the band between the two nodes.
     pub fn remove_band_between_nodes(
         &mut self,
-        recorder: &mut LayoutEdit,
+        recorder: &mut BoardEdit,
         source: FixedDotIndex,
         target: FixedDotIndex,
     ) -> Result<(), DrawingException> {
@@ -260,25 +269,35 @@ impl<M: AccessMesadata> Board<M> {
             .node_pinname(&GenericNode::Primitive(target.into()))
             .unwrap()
             .to_string();
-        self.band_bandname
-            .remove_by_right(&BandName::from((source_pinname, target_pinname)));
+
+        let bandname = BandName::from((source_pinname, target_pinname));
+        let maybe_band = self.band_bandname.get_by_right(&bandname).cloned();
+        self.band_bandname.remove_by_right(&bandname);
+
         if let Some((_, uid)) = self.bands_by_id.remove_by_left(&ep) {
             let (from, _) = uid.into();
-            self.layout.remove_band(recorder, from)?;
+            self.layout.remove_band(&mut recorder.layout_edit, from)?;
         }
+
+        recorder
+            .data_edit
+            .bands
+            .insert(bandname, (maybe_band, None));
+
         Ok(())
     }
 
-    /// Removes the band between two nodes given by [`BandUid`]
+    /// Removes the band between two nodes given by [`BandUid`].
     pub fn remove_band_by_id(
         &mut self,
-        recorder: &mut LayoutEdit,
+        recorder: &mut BoardEdit,
         uid: BandUid,
     ) -> Result<(), DrawingException> {
         if let Some(ep) = self.bands_by_id.get_by_right(&uid) {
             let (source, target) = ep.end_points.into();
             self.remove_band_between_nodes(recorder, source, target)?;
         }
+
         Ok(())
     }
 
@@ -293,26 +312,24 @@ impl<M: AccessMesadata> Board<M> {
             .copied()
     }
 
+    pub fn apply_edit(&mut self, edit: &BoardEdit) {
+        for (bandname, (maybe_old_band_uid, ..)) in &edit.data_edit.bands {
+            if maybe_old_band_uid.is_some() {
+                self.band_bandname.remove_by_right(bandname);
+            }
+        }
+
+        self.layout_mut().apply(&edit.layout_edit);
+
+        for (bandname, (.., maybe_new_band_uid)) in &edit.data_edit.bands {
+            if let Some(band_uid) = maybe_new_band_uid {
+                self.band_bandname.insert(*band_uid, bandname.clone());
+            }
+        }
+    }
+
     /// Returns the mesadata associated with the layout's drawing rules.
     pub fn mesadata(&self) -> &M {
         self.layout.drawing().rules()
-    }
-}
-
-impl<M: AccessMesadata>
-    ApplyGeometryEdit<
-        DotWeight,
-        SegWeight,
-        BendWeight,
-        CompoundWeight,
-        CompoundEntryLabel,
-        PrimitiveIndex,
-        DotIndex,
-        SegIndex,
-        BendIndex,
-    > for Board<M>
-{
-    fn apply(&mut self, edit: &LayoutEdit) {
-        self.layout.apply(edit);
     }
 }

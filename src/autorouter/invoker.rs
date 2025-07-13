@@ -15,7 +15,7 @@ use thiserror::Error;
 use crate::{
     board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
-    geometry::{edit::ApplyGeometryEdit, primitive::PrimitiveShape, shape::MeasureLength},
+    geometry::{primitive::PrimitiveShape, shape::MeasureLength},
     graph::{GenericIndex, MakeRef},
     layout::poly::PolyWeight,
     router::{
@@ -256,7 +256,7 @@ impl<M: AccessMesadata + Clone> Invoker<M> {
         let last_done = self.history.last_done()?;
 
         if let Some(edit) = last_done.edit() {
-            self.autorouter.board.apply(&edit.reverse());
+            self.autorouter.board.apply_edit(&edit.reverse());
         }
 
         Ok(self.history.undo()?)
@@ -268,7 +268,7 @@ impl<M: AccessMesadata + Clone> Invoker<M> {
         let last_undone = self.history.last_undone()?;
 
         if let Some(edit) = last_undone.edit() {
-            self.autorouter.board.apply(edit);
+            self.autorouter.board.apply_edit(edit);
         }
 
         Ok(self.history.redo()?)

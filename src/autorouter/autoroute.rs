@@ -8,9 +8,12 @@
 use std::ops::ControlFlow;
 
 use crate::{
-    board::AccessMesadata,
+    board::{
+        edit::{BoardDataEdit, BoardEdit},
+        AccessMesadata,
+    },
     drawing::{band::BandTermsegIndex, graph::PrimitiveIndex, Collect},
-    geometry::{edit::ApplyGeometryEdit, primitive::PrimitiveShape},
+    geometry::primitive::PrimitiveShape,
     graph::MakeRef,
     layout::LayoutEdit,
     router::{
@@ -42,6 +45,9 @@ pub struct AutorouteExecutionStepper {
     curr_ratline_index: usize,
     /// Stores the current route being processed, if any.
     route: Option<RouteStepper>,
+    /// Records the changes to the board data (changes to layout data are
+    /// recorded in navcord in route stepper).
+    data_edit: BoardDataEdit,
     /// The options for the autorouting process, defining how routing should be carried out.
     options: AutorouterOptions,
 }
@@ -73,12 +79,22 @@ impl AutorouteExecutionStepper {
                 destination,
                 options.router_options.routed_band_width,
             )?),
+            data_edit: BoardDataEdit::new(),
             options,
         })
     }
+
+    fn dissolve_route_stepper_into_layout_edit(&mut self) -> LayoutEdit {
+        if let Some(taken_route) = self.route.take() {
+            let (_thetastar, navcord, ..) = taken_route.dissolve();
+            navcord.recorder
+        } else {
+            LayoutEdit::new()
+        }
+    }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinueStatus>
+impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinueStatus>
     for AutorouteExecutionStepper
 {
     type Error = AutorouterError;
@@ -86,20 +102,17 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
     fn step(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<ControlFlow<Option<LayoutEdit>, AutorouteContinueStatus>, AutorouterError> {
+    ) -> Result<ControlFlow<Option<BoardEdit>, AutorouteContinueStatus>, AutorouterError> {
         if self.curr_ratline_index >= self.ratlines.len() {
-            let recorder = if let Some(taken_route) = self.route.take() {
-                let (_thetastar, navcord, ..) = taken_route.dissolve();
-                navcord.recorder
-            } else {
-                LayoutEdit::new()
-            };
-
-            return Ok(ControlFlow::Break(Some(recorder)));
+            let recorder = self.dissolve_route_stepper_into_layout_edit();
+            return Ok(ControlFlow::Break(Some(BoardEdit::new_from_edits(
+                self.data_edit.clone(),
+                recorder,
+            ))));
         }
 
         let Some(ref mut route) = self.route else {
-            // Shouldn't happen.
+            // May happen if stepper was aborted.
             return Ok(ControlFlow::Break(None));
         };
 
@@ -134,7 +147,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
 
             autorouter
                 .board
-                .try_set_band_between_nodes(source, target, band);
+                .try_set_band_between_nodes(&mut self.data_edit, source, target, band);
 
             AutorouteContinueStatus::Routed(band_termseg)
         };
@@ -145,13 +158,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
             let (source, target) = new_ratline.ref_(autorouter).endpoint_dots();
             let mut router =
                 Router::new(autorouter.board.layout_mut(), self.options.router_options);
-
-            let recorder = if let Some(taken_route) = self.route.take() {
-                let (_thetastar, navcord, ..) = taken_route.dissolve();
-                navcord.recorder
-            } else {
-                LayoutEdit::new()
-            };
+            let recorder = self.dissolve_route_stepper_into_layout_edit();
 
             self.route = Some(router.route(
                 recorder,
@@ -167,10 +174,11 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<LayoutEdit>, AutorouteContinu
 
 impl<M: AccessMesadata> Abort<Autorouter<M>> for AutorouteExecutionStepper {
     fn abort(&mut self, autorouter: &mut Autorouter<M>) {
-        if let Some(ref route) = self.route {
-            autorouter.board.apply(&route.navcord().recorder.reverse());
-            self.curr_ratline_index = self.ratlines.len();
-        }
+        let layout_edit = self.dissolve_route_stepper_into_layout_edit();
+        let board_edit = BoardEdit::new_from_edits(self.data_edit.clone(), layout_edit);
+
+        autorouter.board.apply_edit(&board_edit.reverse());
+        self.curr_ratline_index = self.ratlines.len();
     }
 }
 

@@ -145,7 +145,12 @@ impl AstarContext {
                     }
                 }
 
-                let fin = layout.finish_in_dot(&mut recorder, sub.active_head, prim, width)?;
+                let fin = layout.finish_in_dot(
+                    &mut recorder.layout_edit,
+                    sub.active_head,
+                    prim,
+                    width,
+                )?;
                 length += sub
                     .active_head
                     .maybe_cane()

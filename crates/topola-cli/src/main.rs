@@ -12,7 +12,7 @@ use topola::autorouter::selection::PinSelection;
 use topola::autorouter::Autorouter;
 use topola::autorouter::AutorouterOptions;
 use topola::autorouter::PresortBy;
-use topola::layout::LayoutEdit;
+use topola::board::edit::BoardEdit;
 use topola::router::RouterOptions;
 use topola::specctra::design::SpecctraDesign;
 
@@ -27,7 +27,7 @@ fn main() -> Result<(), std::io::Error> {
     let design =
         SpecctraDesign::load(design_bufread).expect("File failed to parse as Specctra DSN");
 
-    let board = design.make_board(&mut LayoutEdit::new());
+    let board = design.make_board(&mut BoardEdit::new());
 
     let history = if let Some(commands_filename) = args.commands {
         let command_file = File::open(commands_filename)?;

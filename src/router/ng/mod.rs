@@ -16,7 +16,7 @@ use std::{
 };
 
 use crate::{
-    board::Board,
+    board::{edit::BoardEdit, Board},
     drawing::{
         band::BandUid,
         bend::BendIndex,
@@ -34,7 +34,7 @@ use crate::{
         GenericNode,
     },
     graph::GetPetgraphIndex as _,
-    layout::{Layout, LayoutEdit},
+    layout::Layout,
     math::{CachedPolyExt, RotationSense},
     router::draw::{Draw, DrawException},
 };
@@ -122,7 +122,7 @@ pub struct Common<R> {
 #[derive(Clone, Debug)]
 pub struct AstarContext {
     /// TODO: make sure we can trust the `LayoutEdit`
-    pub recorder: LayoutEdit,
+    pub recorder: BoardEdit,
 
     pub bands: BTreeMap<EtchedPath, BandUid>,
 
@@ -135,7 +135,7 @@ pub struct AstarContext {
 impl AstarContext {
     pub fn last_layout<R: AccessRules + Clone>(&self, common: &Common<R>) -> Layout<R> {
         let mut layout = common.layout.clone();
-        layout.apply(&self.recorder);
+        layout.apply(&self.recorder.layout_edit);
         layout
     }
 }
@@ -557,7 +557,7 @@ impl SubContext {
 
 fn cane_around<R: AccessRules>(
     layout: &mut Layout<R>,
-    recorder: &mut LayoutEdit,
+    recorder: &mut BoardEdit,
     route_length: &mut f64,
     old_head: Head,
     core: FixedDotIndex,
@@ -574,7 +574,7 @@ fn cane_around<R: AccessRules>(
     );
 
     let ret = match inner {
-        None => layout.cane_around_dot(recorder, old_head, core, sense, width),
+        None => layout.cane_around_dot(&mut recorder.layout_edit, old_head, core, sense, width),
         Some(inner) => {
             // now, inner is expected to be a bend.
             // TODO: handle the case that the same path wraps multiple times around the same core
@@ -595,7 +595,13 @@ fn cane_around<R: AccessRules>(
                 })
                 .next();
             if let Some(inner_bend) = inner_bend {
-                layout.cane_around_bend(recorder, old_head, inner_bend.into(), sense, width)
+                layout.cane_around_bend(
+                    &mut recorder.layout_edit,
+                    old_head,
+                    inner_bend.into(),
+                    sense,
+                    width,
+                )
             } else {
                 return Err(EvalException::BendNotFound {
                     core: core,

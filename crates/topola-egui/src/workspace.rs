@@ -9,11 +9,12 @@ use std::{
 
 use topola::{
     autorouter::{execution::Command, history::History},
+    board::edit::BoardEdit,
     interactor::{
         activity::{InteractiveEvent, InteractiveEventKind, InteractiveInput},
         Interactor,
     },
-    layout::{via::ViaWeight, LayoutEdit},
+    layout::via::ViaWeight,
     math::Circle,
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
@@ -40,7 +41,7 @@ pub struct Workspace {
 
 impl Workspace {
     pub fn new(design: SpecctraDesign, tr: &Translator) -> Result<Self, String> {
-        let board = design.make_board(&mut LayoutEdit::new());
+        let board = design.make_board(&mut BoardEdit::new());
         let appearance_panel = AppearancePanel::new(&board);
         let overlay = Overlay::new(&board).map_err(|err| {
             format!(

@@ -7,7 +7,7 @@ use std::ops::ControlFlow;
 use geo::Point;
 
 use crate::{
-    board::AccessMesadata,
+    board::{edit::BoardEdit, AccessMesadata},
     drawing::{
         band::BandTermsegIndex,
         dot::{FixedDotIndex, FixedDotWeight, GeneralDotWeight},
@@ -33,7 +33,7 @@ impl PointrouteExecutionStepper {
         options: AutorouterOptions,
     ) -> Result<Self, AutorouterError> {
         let destination = autorouter.board.add_fixed_dot_infringably(
-            &mut LayoutEdit::new(),
+            &mut BoardEdit::new(), // TODO?
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
                     pos: point,
@@ -49,7 +49,7 @@ impl PointrouteExecutionStepper {
 
         Ok(Self {
             route: router.route(
-                LayoutEdit::new(),
+                LayoutEdit::new(), // TODO?
                 origin,
                 destination,
                 options.router_options.routed_band_width,
