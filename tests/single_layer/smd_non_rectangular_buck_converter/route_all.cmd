@@ -37,7 +37,7 @@
           }
         ],
         {
-          "presort_by_pairwise_detours": false,
+          "presort_by": "RatlineIntersectionCountAndLength",
           "router_options": {
             "routed_band_width": 100.0,
             "wrap_around_bands": true,

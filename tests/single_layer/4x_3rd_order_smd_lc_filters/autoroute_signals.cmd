@@ -49,7 +49,7 @@
           }
         ],
         {
-          "presort_by_pairwise_detours": false,
+          "presort_by": "RatlineIntersectionCountAndLength",
           "router_options": {
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true,
@@ -107,7 +107,7 @@
           }
         ],
         {
-          "presort_by_pairwise_detours": false,
+          "presort_by": "RatlineIntersectionCountAndLength",
           "router_options": {
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true,
@@ -165,7 +165,7 @@
           }
         ],
         {
-          "presort_by_pairwise_detours": false,
+          "presort_by": "RatlineIntersectionCountAndLength",
           "router_options": {
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true,
@@ -223,7 +223,7 @@
           }
         ],
         {
-          "presort_by_pairwise_detours": false,
+          "presort_by": "RatlineIntersectionCountAndLength",
           "router_options": {
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true,
