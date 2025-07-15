@@ -9,6 +9,7 @@ mod actions;
 mod app;
 mod appearance_panel;
 mod config;
+mod displayer;
 mod error_dialog;
 mod menu_bar;
 mod overlay;
