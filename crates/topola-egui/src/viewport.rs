@@ -65,69 +65,11 @@ impl Viewport {
                 egui::Frame::canvas(ui.style()).show(ui, |ui| {
                     // TODO: only request re-render if anything changed
                     ui.ctx().request_repaint();
-
                     let (id, viewport_rect) = ui.allocate_space(ui.available_size());
-                    let response = ui.interact(viewport_rect, id, egui::Sense::click_and_drag());
-                    // NOTE: we use `interact_pos` instead of `latest_pos` to handle "pointer gone"
-                    // events more graceful
-                    let latest_pos = self.transform.inverse()
-                        * (response.interact_pointer_pos().unwrap_or_else(|| {
-                            ctx.input(|i| i.pointer.interact_pos().unwrap_or_default())
-                        }));
 
-                    let old_scaling = self.transform.scaling;
-                    self.transform.scaling *= ctx.input(|i| i.zoom_delta());
-
-                    self.transform.translation +=
-                        latest_pos.to_vec2() * (old_scaling - self.transform.scaling);
-
-                    // disable built-in behavior of arrow keys
-                    if response.has_focus() {
-                        response.ctx.memory_mut(|m| {
-                            // we are only allowed to modify the focus lock filter if we have focus
-                            m.set_focus_lock_filter(
-                                id,
-                                egui::EventFilter {
-                                    horizontal_arrows: true,
-                                    vertical_arrows: true,
-                                    ..Default::default()
-                                },
-                            );
-                        });
-                    }
-
-                    self.transform.translation += ctx.input_mut(|i| {
-                        // handle scrolling
-                        let mut scroll_delta = core::mem::take(&mut i.smooth_scroll_delta);
-
-                        // arrow keys
-                        let kbd_sdf = self.kbd_scroll_delta_factor;
-                        let mut pressed = |key| {
-                            i.consume_shortcut(&egui::KeyboardShortcut::new(
-                                egui::Modifiers::SHIFT,
-                                key,
-                            ))
-                        };
-                        use egui::Key;
-                        scroll_delta.y += if pressed(Key::ArrowDown) {
-                            kbd_sdf
-                        } else if pressed(Key::ArrowUp) {
-                            -kbd_sdf
-                        } else {
-                            0.0
-                        };
-                        scroll_delta.x += if pressed(Key::ArrowRight) {
-                            kbd_sdf
-                        } else if pressed(Key::ArrowLeft) {
-                            -kbd_sdf
-                        } else {
-                            0.0
-                        };
-
-                        scroll_delta
-                    });
-
-                    let mut painter = Painter::new(ui, self.transform, menu_bar.show_bboxes);
+                    let (response, latest_pos) =
+                        self.read_egui_response_and_latest_pos(id, viewport_rect, ctx, ui);
+                    self.update_transform_by_input(ctx, latest_pos);
 
                     if let Some(workspace) = maybe_workspace {
                         let latest_point = point! {x: latest_pos.x as f64, y: -latest_pos.y as f64};
@@ -137,12 +79,15 @@ impl Viewport {
                             pointer_pos: latest_point,
                             dt: ctx.input(|i| i.stable_dt),
                         };
+
                         workspace.advance_state_by_dt(
                             tr,
                             error_dialog,
                             menu_bar.frame_timestep,
                             &interactive_input,
                         );
+
+                        let mut painter = Painter::new(ui, self.transform, menu_bar.show_bboxes);
 
                         let interactive_event_kind =
                             if response.clicked_by(egui::PointerButton::Primary) {
@@ -640,43 +585,7 @@ impl Viewport {
                             }
                         }
 
-                        if self.scheduled_zoom_to_fit {
-                            let root_bbox = workspace
-                                .interactor
-                                .invoker()
-                                .autorouter()
-                                .board()
-                                .layout()
-                                .drawing()
-                                .rtree()
-                                .root()
-                                .envelope();
-
-                            let root_bbox_width = root_bbox.upper()[0] - root_bbox.lower()[0];
-                            let root_bbox_height = root_bbox.upper()[1] - root_bbox.lower()[1];
-
-                            self.transform.scaling = 0.8
-                                * if root_bbox_width / root_bbox_height
-                                    >= (viewport_rect.width() as f64)
-                                        / (viewport_rect.height() as f64)
-                                {
-                                    viewport_rect.width() / root_bbox_width as f32
-                                } else {
-                                    viewport_rect.height() / root_bbox_height as f32
-                                };
-
-                            self.transform.translation = egui::Vec2::new(
-                                viewport_rect.center()[0],
-                                viewport_rect.center()[1],
-                            ) - (self.transform.scaling
-                                * egui::Pos2::new(
-                                    root_bbox.center()[0] as f32,
-                                    -root_bbox.center()[1] as f32,
-                                ))
-                            .to_vec2();
-                        }
-
-                        self.scheduled_zoom_to_fit = false;
+                        self.zoom_to_fit_if_scheduled(&workspace, &viewport_rect);
                     }
 
                     viewport_rect
@@ -684,5 +593,110 @@ impl Viewport {
             })
             .inner
             .inner
+    }
+
+    fn read_egui_response_and_latest_pos(
+        &self,
+        id: egui::Id,
+        viewport_rect: egui::Rect,
+        ctx: &egui::Context,
+        ui: &mut egui::Ui,
+    ) -> (egui::Response, egui::Pos2) {
+        let response = ui.interact(viewport_rect, id, egui::Sense::click_and_drag());
+
+        // NOTE: we use `interact_pos` instead of `latest_pos` to handle "pointer gone"
+        // events more graceful
+        let latest_pos = self.transform.inverse()
+            * (response
+                .interact_pointer_pos()
+                .unwrap_or_else(|| ctx.input(|i| i.pointer.interact_pos().unwrap_or_default())));
+
+        // disable built-in behavior of arrow keys
+        if response.has_focus() {
+            response.ctx.memory_mut(|m| {
+                // we are only allowed to modify the focus lock filter if we have focus
+                m.set_focus_lock_filter(
+                    id,
+                    egui::EventFilter {
+                        horizontal_arrows: true,
+                        vertical_arrows: true,
+                        ..Default::default()
+                    },
+                );
+            });
+        }
+
+        (response, latest_pos)
+    }
+
+    fn update_transform_by_input(&mut self, ctx: &egui::Context, latest_pos: egui::Pos2) {
+        let old_scaling = self.transform.scaling;
+        self.transform.scaling *= ctx.input(|i| i.zoom_delta());
+
+        self.transform.translation += latest_pos.to_vec2() * (old_scaling - self.transform.scaling);
+        self.transform.translation += ctx.input_mut(|i| {
+            // handle scrolling
+            let mut scroll_delta = core::mem::take(&mut i.smooth_scroll_delta);
+
+            // arrow keys
+            let kbd_sdf = self.kbd_scroll_delta_factor;
+            let mut pressed =
+                |key| i.consume_shortcut(&egui::KeyboardShortcut::new(egui::Modifiers::SHIFT, key));
+            use egui::Key;
+            scroll_delta.y += if pressed(Key::ArrowDown) {
+                kbd_sdf
+            } else if pressed(Key::ArrowUp) {
+                -kbd_sdf
+            } else {
+                0.0
+            };
+            scroll_delta.x += if pressed(Key::ArrowRight) {
+                kbd_sdf
+            } else if pressed(Key::ArrowLeft) {
+                -kbd_sdf
+            } else {
+                0.0
+            };
+
+            scroll_delta
+        });
+    }
+
+    fn zoom_to_fit_if_scheduled(&mut self, workspace: &Workspace, viewport_rect: &egui::Rect) {
+        if self.scheduled_zoom_to_fit {
+            let root_bbox = workspace
+                .interactor
+                .invoker()
+                .autorouter()
+                .board()
+                .layout()
+                .drawing()
+                .rtree()
+                .root()
+                .envelope();
+
+            let root_bbox_width = root_bbox.upper()[0] - root_bbox.lower()[0];
+            let root_bbox_height = root_bbox.upper()[1] - root_bbox.lower()[1];
+
+            self.transform.scaling = 0.8
+                * if root_bbox_width / root_bbox_height
+                    >= (viewport_rect.width() as f64) / (viewport_rect.height() as f64)
+                {
+                    viewport_rect.width() / root_bbox_width as f32
+                } else {
+                    viewport_rect.height() / root_bbox_height as f32
+                };
+
+            self.transform.translation =
+                egui::Vec2::new(viewport_rect.center()[0], viewport_rect.center()[1])
+                    - (self.transform.scaling
+                        * egui::Pos2::new(
+                            root_bbox.center()[0] as f32,
+                            -root_bbox.center()[1] as f32,
+                        ))
+                    .to_vec2();
+        }
+
+        self.scheduled_zoom_to_fit = false;
     }
 }
