@@ -361,63 +361,6 @@ impl<
     for RecordingGeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     fn apply(&mut self, edit: &GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>) {
-        for (compound, (maybe_old_data, ..)) in &edit.compounds {
-            if maybe_old_data.is_some() {
-                self.geometry_with_rtree.remove_compound(*compound);
-            }
-        }
-
-        for (bend, (maybe_old_data, ..)) in &edit.bends {
-            if maybe_old_data.is_some() {
-                self.geometry_with_rtree.remove_bend(*bend);
-            }
-        }
-
-        for (seg, (maybe_old_data, ..)) in &edit.segs {
-            if maybe_old_data.is_some() {
-                self.geometry_with_rtree.remove_seg(*seg);
-            }
-        }
-
-        for (dot, (maybe_old_data, ..)) in &edit.dots {
-            if maybe_old_data.is_some() {
-                self.geometry_with_rtree.remove_dot(*dot);
-            }
-        }
-
-        for (dot, (.., maybe_new_data)) in &edit.dots {
-            if let Some(weight) = maybe_new_data {
-                self.geometry_with_rtree.add_dot_at_index(*dot, *weight);
-            }
-        }
-
-        for (seg, (.., maybe_new_data)) in &edit.segs {
-            if let Some(((from, to), weight)) = maybe_new_data {
-                self.geometry_with_rtree
-                    .add_seg_at_index(*seg, *from, *to, *weight);
-            }
-        }
-
-        for (bend, (.., maybe_new_data)) in &edit.bends {
-            if let Some(((from, to, core), weight)) = maybe_new_data {
-                self.geometry_with_rtree
-                    .add_bend_at_index(*bend, *from, *to, *core, *weight);
-            }
-        }
-
-        for (compound, (.., maybe_new_data)) in &edit.compounds {
-            if let Some((members, weight)) = maybe_new_data {
-                self.geometry_with_rtree
-                    .add_compound_at_index(*compound, weight.clone());
-
-                for (entry_label, member) in members {
-                    self.geometry_with_rtree.add_to_compound(
-                        GenericIndex::<PW>::new(member.petgraph_index()),
-                        *entry_label,
-                        *compound,
-                    );
-                }
-            }
-        }
+        self.geometry_with_rtree.apply(edit);
     }
 }

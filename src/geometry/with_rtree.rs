@@ -18,6 +18,8 @@ use crate::{
     graph::{GenericIndex, GetPetgraphIndex},
 };
 
+use super::edit::{ApplyGeometryEdit, GeometryEdit};
+
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct Bbox {
     pub aabb: AABB<[f64; 3]>,
@@ -153,24 +155,6 @@ impl<
         let bend = self.geometry.add_bend(from, to, core, weight);
         self.init_bend_bbox(bend.into().try_into().unwrap_or_else(|_| unreachable!()));
         bend
-    }
-
-    pub(super) fn add_bend_at_index<W: AccessBendWeight + Into<PW> + GetLayer>(
-        &mut self,
-        bend: BI,
-        from: DI,
-        to: DI,
-        core: DI,
-        weight: W,
-    ) {
-        self.geometry.add_bend_at_index(
-            GenericIndex::<W>::new(bend.petgraph_index()),
-            from,
-            to,
-            core,
-            weight,
-        );
-        self.init_bend_bbox(bend);
     }
 
     pub(super) fn add_compound_at_index(&mut self, compound: GenericIndex<CW>, weight: CW) {
@@ -489,5 +473,118 @@ impl<
         I: Copy + GetPetgraphIndex,
     {
         self.geometry.compounds(node)
+    }
+}
+
+impl<
+        PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<Index = PI> + Copy,
+        DW: AccessDotWeight + Into<PW> + GetLayer,
+        SW: AccessSegWeight + Into<PW> + GetLayer,
+        BW: AccessBendWeight + Into<PW> + GetLayer,
+        CW: Clone,
+        Cel: Copy,
+        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
+        DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+    > ApplyGeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>
+    for GeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
+{
+    fn apply(&mut self, edit: &GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>) {
+        // First we remove every node that is in the edit. But we have to do
+        // this in a correct order, because otherwise some removals of some
+        // nodes may fail due to inadvertent invalidation of the bboxes of these
+        // nodes.
+        //
+        // We chose to first remove compounds, then bends and segs, and only
+        // then dots.
+
+        for (compound, (maybe_old_data, ..)) in &edit.compounds {
+            if maybe_old_data.is_some() {
+                self.remove_compound(*compound);
+            }
+        }
+
+        // Because removal of a bend will invalidate bboxes of the bends wrapped
+        // around it, we first remove the bends from the R-tree, and their nodes
+        // from the graph only afterwards.
+
+        for (bend, (maybe_old_data, ..)) in &edit.bends {
+            if maybe_old_data.is_some() {
+                Self::rtree_remove_must_be_successful(
+                    self.rtree.remove(&self.make_bend_bbox(*bend)),
+                );
+            }
+        }
+
+        for (bend, (maybe_old_data, ..)) in &edit.bends {
+            if maybe_old_data.is_some() {
+                self.geometry.remove_primitive((*bend).into());
+            }
+        }
+
+        for (seg, (maybe_old_data, ..)) in &edit.segs {
+            if maybe_old_data.is_some() {
+                self.remove_seg(*seg);
+            }
+        }
+
+        for (dot, (maybe_old_data, ..)) in &edit.dots {
+            if maybe_old_data.is_some() {
+                self.remove_dot(*dot);
+            }
+        }
+
+        // Now we add every node that is created or modified (but not removed)
+        // in the edit. This also has to be done in a right order, which we
+        // chose to be exactly the opposite of the order of the removal which we
+        // just did.
+
+        for (dot, (.., maybe_new_data)) in &edit.dots {
+            if let Some(weight) = maybe_new_data {
+                self.add_dot_at_index(*dot, *weight);
+            }
+        }
+
+        for (seg, (.., maybe_new_data)) in &edit.segs {
+            if let Some(((from, to), weight)) = maybe_new_data {
+                self.add_seg_at_index(*seg, *from, *to, *weight);
+            }
+        }
+
+        // Just as with removal, we handle bend layout nodes and their bboxes
+        // separately to prevent failures from inadvertent bbox invalidation.
+
+        for (bend, (.., maybe_new_data)) in &edit.bends {
+            if let Some(((from, to, core), weight)) = maybe_new_data {
+                self.geometry.add_bend_at_index(
+                    GenericIndex::<BW>::new(bend.petgraph_index()),
+                    *from,
+                    *to,
+                    *core,
+                    *weight,
+                );
+            }
+        }
+
+        for (bend, (.., maybe_new_data)) in &edit.bends {
+            if let Some(..) = maybe_new_data {
+                self.init_bend_bbox(*bend);
+            }
+        }
+
+        for (compound, (.., maybe_new_data)) in &edit.compounds {
+            if let Some((members, weight)) = maybe_new_data {
+                self.add_compound_at_index(*compound, weight.clone());
+
+                for (entry_label, member) in members {
+                    self.geometry.add_to_compound(
+                        GenericIndex::<PW>::new(member.petgraph_index()),
+                        *entry_label,
+                        *compound,
+                    );
+                }
+            }
+        }
     }
 }
