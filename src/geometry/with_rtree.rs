@@ -184,7 +184,9 @@ impl<
         entry_label: Cel,
         compound: GenericIndex<CW>,
     ) {
-        self.rtree.remove(&self.make_compound_bbox(compound));
+        Self::rtree_remove_must_be_successful(
+            self.rtree.remove(&self.make_compound_bbox(compound)),
+        );
         self.geometry
             .add_to_compound(primitive, entry_label, compound);
         self.rtree.insert(self.make_compound_bbox(compound));
@@ -199,36 +201,38 @@ impl<
             return Err(());
         }
 
-        self.rtree.remove(&self.make_dot_bbox(dot));
+        Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_dot_bbox(dot)));
         self.geometry.remove_primitive(dot.into());
         Ok(())
     }
 
     pub fn remove_seg(&mut self, seg: SI) {
-        self.rtree.remove(&self.make_seg_bbox(seg));
+        Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_seg_bbox(seg)));
         self.geometry.remove_primitive(seg.into());
     }
 
     pub fn remove_bend(&mut self, bend: BI) {
-        self.rtree.remove(&self.make_bend_bbox(bend));
+        Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_bend_bbox(bend)));
         self.geometry.remove_primitive(bend.into());
     }
 
     pub fn remove_compound(&mut self, compound: GenericIndex<CW>) {
-        self.rtree.remove(&self.make_compound_bbox(compound));
+        Self::rtree_remove_must_be_successful(
+            self.rtree.remove(&self.make_compound_bbox(compound)),
+        );
         self.geometry.remove_compound(compound);
     }
 
     pub fn move_dot(&mut self, dot: DI, to: Point) {
         for seg in self.geometry.joined_segs(dot) {
-            self.rtree.remove(&self.make_seg_bbox(seg));
+            Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_seg_bbox(seg)));
         }
 
         for bend in self.geometry.joined_bends(dot) {
-            self.rtree.remove(&self.make_bend_bbox(bend));
+            Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_bend_bbox(bend)));
         }
 
-        self.rtree.remove(&self.make_dot_bbox(dot));
+        Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_dot_bbox(dot)));
         self.geometry.move_dot(dot, to);
         self.rtree.insert(self.make_dot_bbox(dot));
 
@@ -245,11 +249,11 @@ impl<
         let mut rail = bend;
 
         while let Some(outer) = self.geometry.outer(rail) {
-            self.rtree.remove(&self.make_bend_bbox(outer));
+            Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_bend_bbox(outer)));
             rail = outer;
         }
 
-        self.rtree.remove(&self.make_bend_bbox(bend));
+        Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_bend_bbox(bend)));
         self.geometry.shift_bend(bend, offset);
         self.rtree.insert(self.make_bend_bbox(bend));
 
@@ -270,11 +274,11 @@ impl<
         let mut rail = bend;
 
         while let Some(outer) = self.geometry.outer(rail) {
-            self.rtree.remove(&self.make_bend_bbox(outer));
+            Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_bend_bbox(outer)));
             rail = outer;
         }
 
-        self.rtree.remove(&self.make_bend_bbox(bend));
+        Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_bend_bbox(bend)));
         self.geometry.reattach_bend(bend, maybe_new_inner);
         self.rtree.insert(self.make_bend_bbox(bend));
 
@@ -284,6 +288,23 @@ impl<
             self.rtree.insert(self.make_bend_bbox(outer));
             rail = outer;
         }
+    }
+
+    /// If you are wondering why this method only lengthily asserts without
+    /// doing the removal itself, this is because doing the removal would
+    /// require us to mutably borrow self, which would prevent us from using
+    /// this function inside for loops over any of the geometry's nodes due to
+    /// borrow checker's restrictions.
+    fn rtree_remove_must_be_successful(
+        removed: Option<BboxedIndex<GenericNode<PI, GenericIndex<CW>>>>,
+    ) {
+        debug_assert!(
+            removed.is_some(),
+            "removed node's bbox did not match any of the R-tree's envelopes.
+            This is most likely because node's bbox changed without being
+            reinserted into the R-tree, making it impossible to find the node
+            using an R-tree query, which is inevitably fatal"
+        );
     }
 }
 
@@ -439,7 +460,9 @@ impl<
     }
 
     fn remove_compound(&mut self, compound: GenericIndex<CW>) {
-        self.rtree.remove(&self.make_compound_bbox(compound));
+        Self::rtree_remove_must_be_successful(
+            self.rtree.remove(&self.make_compound_bbox(compound)),
+        );
         self.geometry.remove_compound(compound);
     }
 
