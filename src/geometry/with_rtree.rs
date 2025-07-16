@@ -508,7 +508,6 @@ impl<
         // Because removal of a bend will invalidate bboxes of the bends wrapped
         // around it, we first remove the bends from the R-tree, and their nodes
         // from the graph only afterwards.
-
         for (bend, (maybe_old_data, ..)) in &edit.bends {
             if maybe_old_data.is_some() {
                 Self::rtree_remove_must_be_successful(
@@ -556,7 +555,7 @@ impl<
         // separately to prevent failures from inadvertent bbox invalidation.
 
         for (bend, (.., maybe_new_data)) in &edit.bends {
-            if let Some(((from, to, core), weight)) = maybe_new_data {
+            if let Some(((from, to, core, ..), weight)) = maybe_new_data {
                 self.geometry.add_bend_at_index(
                     GenericIndex::<BW>::new(bend.petgraph_index()),
                     *from,
@@ -564,6 +563,15 @@ impl<
                     *core,
                     *weight,
                 );
+            }
+        }
+
+        // We attach bends to other bends only after all bends have been
+        // created, since we cannot guarantee that their inner bends will exist,
+        // and attaching to an inexistent bend will result in a crash.
+        for (bend, (.., maybe_new_data)) in &edit.bends {
+            if let Some(((.., maybe_inner), ..)) = maybe_new_data {
+                self.geometry.reattach_bend(*bend, *maybe_inner);
             }
         }
 

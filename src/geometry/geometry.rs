@@ -302,6 +302,18 @@ impl<
         );
     }
 
+    pub(super) fn init_bend_inner<W: AccessBendWeight + Into<PW>>(
+        &mut self,
+        bend: GenericIndex<W>,
+        inner: BI,
+    ) {
+        self.graph.update_edge(
+            inner.petgraph_index(),
+            bend.petgraph_index(),
+            GeometryLabel::Outer,
+        );
+    }
+
     pub fn remove_primitive(&mut self, primitive: PI) {
         self.graph.remove_node(primitive.petgraph_index());
     }

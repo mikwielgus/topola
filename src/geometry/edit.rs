@@ -27,7 +27,13 @@ pub trait ApplyGeometryEdit<
 pub struct GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI> {
     pub(super) dots: BTreeMap<DI, (Option<DW>, Option<DW>)>,
     pub(super) segs: BTreeMap<SI, (Option<((DI, DI), SW)>, Option<((DI, DI), SW)>)>,
-    pub(super) bends: BTreeMap<BI, (Option<((DI, DI, DI), BW)>, Option<((DI, DI, DI), BW)>)>,
+    pub(super) bends: BTreeMap<
+        BI,
+        (
+            Option<((DI, DI, DI, Option<BI>), BW)>,
+            Option<((DI, DI, DI, Option<BI>), BW)>,
+        ),
+    >,
     pub(super) compounds:
         BTreeMap<GenericIndex<CW>, (Option<(Vec<(Cel, PI)>, CW)>, Option<(Vec<(Cel, PI)>, CW)>)>,
 }

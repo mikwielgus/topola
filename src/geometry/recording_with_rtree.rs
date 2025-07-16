@@ -138,7 +138,7 @@ impl<
             (
                 None,
                 Some((
-                    (from, to, core),
+                    (from, to, core, None),
                     weight.into().try_into().unwrap_or_else(|_| unreachable!()),
                 )),
             ),
@@ -215,11 +215,13 @@ impl<
         let weight = geometry.bend_weight(bend);
         let joints = geometry.bend_joints(bend);
         let core = geometry.core(bend);
+        let maybe_inner = geometry.inner(bend);
+
         self.geometry_with_rtree.remove_bend(bend);
         edit_remove_from_map(
             &mut recorder.bends,
             bend,
-            ((joints.0, joints.1, core), weight),
+            ((joints.0, joints.1, core, maybe_inner), weight),
         );
     }
 
@@ -263,6 +265,7 @@ impl<
         let geometry = self.geometry_with_rtree.geometry();
         let old_joints = geometry.bend_joints(bend);
         let old_core = geometry.core(bend);
+        let old_maybe_inner = geometry.inner(bend);
         let old_weight = geometry.bend_weight(bend);
 
         f(&mut self.geometry_with_rtree, bend);
@@ -270,16 +273,23 @@ impl<
         let geometry = self.geometry_with_rtree.geometry();
         let new_joints = geometry.bend_joints(bend);
         let new_core = geometry.core(bend);
+        let new_maybe_inner = geometry.inner(bend);
         let new_weight = geometry.bend_weight(bend);
 
         recorder
             .bends
             .entry(bend)
             .or_insert((
-                Some(((old_joints.0, old_joints.1, old_core), old_weight)),
+                Some((
+                    (old_joints.0, old_joints.1, old_core, old_maybe_inner),
+                    old_weight,
+                )),
                 None,
             ))
-            .1 = Some(((new_joints.0, new_joints.1, new_core), new_weight));
+            .1 = Some((
+            (new_joints.0, new_joints.1, new_core, new_maybe_inner),
+            new_weight,
+        ));
     }
 
     pub fn shift_bend(
