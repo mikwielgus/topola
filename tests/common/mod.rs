@@ -7,15 +7,14 @@ use std::{fs::File, io::BufReader};
 use petgraph::{stable_graph::NodeIndex, unionfind::UnionFind, visit::NodeIndexable};
 use topola::{
     autorouter::{
-        history::HistoryError,
+        history::{History, HistoryError},
         invoker::{Invoker, InvokerError},
         Autorouter,
     },
-    board::{AccessMesadata, Board},
+    board::{edit::BoardEdit, AccessMesadata, Board},
     drawing::graph::GetMaybeNet,
     geometry::{shape::MeasureLength, GenericNode, GetLayer},
     graph::{GetPetgraphIndex, MakeRef},
-    layout::LayoutEdit,
     router::{navmesh::Navmesh, RouterOptions},
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
@@ -24,7 +23,7 @@ pub fn load_design(filename: &str) -> Autorouter<SpecctraMesadata> {
     let design_file = File::open(filename).unwrap();
     let design_bufread = BufReader::new(design_file);
     let design = SpecctraDesign::load(design_bufread).unwrap();
-    Autorouter::new(design.make_board(&mut LayoutEdit::new())).unwrap()
+    Autorouter::new(design.make_board(&mut BoardEdit::new())).unwrap()
 }
 
 pub fn create_invoker_and_assert(
@@ -46,7 +45,9 @@ pub fn create_invoker_and_assert(
 
 pub fn replay_and_assert(invoker: &mut Invoker<SpecctraMesadata>, filename: &str) {
     let file = File::open(filename).unwrap();
-    invoker.replay(serde_json::from_reader(file).unwrap());
+    let history: History = serde_json::from_reader(file).unwrap();
+
+    invoker.replay(history);
 
     let prev_node_count = invoker.autorouter().board().layout().drawing().node_count();
 
@@ -63,6 +64,24 @@ pub fn replay_and_assert(invoker: &mut Invoker<SpecctraMesadata>, filename: &str
 
         let _ = invoker.redo();
     }
+
+    assert_eq!(
+        invoker.autorouter().board().layout().drawing().node_count(),
+        prev_node_count,
+    );
+
+    // Another sanity test: undo all, and then replay again. This protects
+    // against undo failing to remove something that does not cause the
+    // subsequent redo to fail or something that the redo restores idempotently.
+
+    let file = File::open(filename).unwrap();
+    let history: History = serde_json::from_reader(file).unwrap();
+
+    for _ in 0..history.done().len() {
+        invoker.undo().unwrap();
+    }
+
+    invoker.replay(history);
 
     assert_eq!(
         invoker.autorouter().board().layout().drawing().node_count(),
