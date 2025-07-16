@@ -302,20 +302,8 @@ impl<
         );
     }
 
-    pub(super) fn init_bend_inner<W: AccessBendWeight + Into<PW>>(
-        &mut self,
-        bend: GenericIndex<W>,
-        inner: BI,
-    ) {
-        self.graph.update_edge(
-            inner.petgraph_index(),
-            bend.petgraph_index(),
-            GeometryLabel::Outer,
-        );
-    }
-
     pub fn remove_primitive(&mut self, primitive: PI) {
-        self.graph.remove_node(primitive.petgraph_index());
+        debug_assert!(self.graph.remove_node(primitive.petgraph_index()).is_some());
     }
 
     pub fn move_dot(&mut self, dot: DI, to: Point) {
@@ -362,7 +350,7 @@ impl<
             .edges_directed(bend.petgraph_index(), Incoming)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Outer))
         {
-            self.graph.remove_edge(old_inner_edge.id());
+            debug_assert!(self.graph.remove_edge(old_inner_edge.id()).is_some());
         }
 
         if let Some(new_inner) = maybe_new_inner {
@@ -611,7 +599,7 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cel: Copy, PI: Copy, D
     }
 
     fn remove_compound(&mut self, compound: GenericIndex<CW>) {
-        self.graph.remove_node(compound.petgraph_index());
+        debug_assert!(self.graph.remove_node(compound.petgraph_index()).is_some());
     }
 
     fn add_to_compound<I>(&mut self, primitive: I, entry_label: Cel, compound: GenericIndex<CW>)
