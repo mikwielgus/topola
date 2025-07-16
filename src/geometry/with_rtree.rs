@@ -176,18 +176,12 @@ impl<
         self.rtree.insert(self.make_compound_bbox(compound));
     }
 
-    pub fn remove_dot(&mut self, dot: DI) -> Result<(), ()> {
-        if self.geometry.joined_segs(dot).next().is_some() {
-            return Err(());
-        }
-
-        if self.geometry.joined_bends(dot).next().is_some() {
-            return Err(());
-        }
+    pub fn remove_dot(&mut self, dot: DI) {
+        debug_assert!(self.geometry.joined_segs(dot).next().is_none());
+        debug_assert!(self.geometry.joined_bends(dot).next().is_none());
 
         Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_dot_bbox(dot)));
         self.geometry.remove_primitive(dot.into());
-        Ok(())
     }
 
     pub fn remove_seg(&mut self, seg: SI) {
@@ -300,8 +294,9 @@ impl<
         debug_assert!(
             removed.is_some(),
             "removed node's bbox did not match any of the R-tree's envelopes.
-            This is most likely because node's bbox changed without being
-            reinserted into the R-tree, making it impossible to find the node
+            There are two likely reasons for this. The node may have not
+            existed already. Or the node's bbox may have changed without being
+            reinserted in the R-tree, making it impossible to find the node
             using an R-tree query, which is inevitably fatal"
         );
     }

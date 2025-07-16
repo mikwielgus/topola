@@ -71,6 +71,7 @@ impl<
         edit: &BTreeMap<I, (Option<D>, Option<D>)>,
     ) {
         for (index, (old, new)) in edit {
+            // TODO: Delete `(None, None)`s.
             match main.entry(*index) {
                 Entry::Vacant(vac) => {
                     vac.insert((old.clone(), new.clone()));

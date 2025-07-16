@@ -189,7 +189,7 @@ impl<
         dot: DI,
     ) -> Result<(), ()> {
         let weight = self.geometry_with_rtree.geometry().dot_weight(dot);
-        self.geometry_with_rtree.remove_dot(dot)?;
+        self.geometry_with_rtree.remove_dot(dot);
         edit_remove_from_map(&mut recorder.dots, dot, weight);
         Ok(())
     }
