@@ -546,7 +546,12 @@ impl<
     > Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     pub fn first_rail(&self, node: NodeIndex<usize>) -> Option<BI> {
-        self.all_rails(node).next()
+        self.all_rails(node).find(|bend| {
+            !self
+                .graph
+                .edges_directed(bend.petgraph_index(), Incoming)
+                .any(|edge| matches!(edge.weight(), GeometryLabel::Outer))
+        })
     }
 
     pub fn all_rails(&self, node: NodeIndex<usize>) -> impl Iterator<Item = BI> + '_ {
