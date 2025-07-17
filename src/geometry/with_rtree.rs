@@ -563,7 +563,12 @@ impl<
         for (dot, (maybe_old_data, maybe_new_data)) in &edit.dots {
             if let (Some(_), Some(weight)) = (maybe_old_data, maybe_new_data) {
                 self.modify_dot(*dot, |geometry, dot| {
-                    geometry.remove_primitive(dot.into());
+                    // Note that we do not remove the dot. This is because doing
+                    // so removes its edges, which we would have to restore
+                    // afterwards. So it's easier to only update the weight.
+
+                    // Despite this method's name, it actually does not add the
+                    // dot, it updates it.
                     geometry
                         .add_dot_at_index(GenericIndex::<DW>::new(dot.petgraph_index()), *weight);
                 })
