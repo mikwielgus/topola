@@ -220,6 +220,15 @@ impl<
     }
 
     pub fn move_dot(&mut self, dot: DI, to: Point) {
+        self.modify_dot(dot, |geometry, dot| {
+            geometry.move_dot(dot, to);
+        });
+    }
+
+    fn modify_dot<F>(&mut self, dot: DI, f: F)
+    where
+        F: FnOnce(&mut Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>, DI),
+    {
         for seg in self.geometry.joined_segs(dot) {
             Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_seg_bbox(seg)));
         }
@@ -229,7 +238,9 @@ impl<
         }
 
         Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_dot_bbox(dot)));
-        self.geometry.move_dot(dot, to);
+
+        f(&mut self.geometry, dot);
+
         self.rtree.insert(self.make_dot_bbox(dot));
 
         for bend in self.geometry.joined_bends(dot) {
@@ -538,9 +549,24 @@ impl<
             }
         }
 
-        for (dot, (maybe_old_data, ..)) in &edit.dots {
-            if maybe_old_data.is_some() {
+        for (dot, (maybe_old_data, maybe_new_data)) in &edit.dots {
+            if let (Some(_), None) = (maybe_old_data, maybe_new_data) {
                 self.remove_dot(*dot);
+            }
+        }
+
+        // We have special handling for modified (but not removed or created)
+        // dots because changing a dot also changes its limbs, which however may
+        // not be in the edit.
+        //
+        // XXX: It may be possible to merge all these three for loops over dots.
+        for (dot, (maybe_old_data, maybe_new_data)) in &edit.dots {
+            if let (Some(_), Some(weight)) = (maybe_old_data, maybe_new_data) {
+                self.modify_dot(*dot, |geometry, dot| {
+                    geometry.remove_primitive(dot.into());
+                    geometry
+                        .add_dot_at_index(GenericIndex::<DW>::new(dot.petgraph_index()), *weight);
+                })
             }
         }
 
@@ -549,8 +575,8 @@ impl<
         // chose to be exactly the opposite of the order of the removal which we
         // just did.
 
-        for (dot, (.., maybe_new_data)) in &edit.dots {
-            if let Some(weight) = maybe_new_data {
+        for (dot, (maybe_old_data, maybe_new_data)) in &edit.dots {
+            if let (None, Some(weight)) = (maybe_old_data, maybe_new_data) {
                 self.add_dot_at_index(*dot, *weight);
             }
         }
