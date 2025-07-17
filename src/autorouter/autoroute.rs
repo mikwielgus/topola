@@ -14,7 +14,7 @@ use crate::{
         AccessMesadata,
     },
     drawing::{band::BandTermsegIndex, graph::PrimitiveIndex, Collect},
-    geometry::primitive::PrimitiveShape,
+    geometry::{edit::Edit, primitive::PrimitiveShape},
     graph::MakeRef,
     layout::LayoutEdit,
     router::{

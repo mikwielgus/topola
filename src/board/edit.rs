@@ -4,9 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use crate::{drawing::band::BandUid, layout::LayoutEdit};
-
-use super::BandName;
+use crate::{board::BandName, drawing::band::BandUid, geometry::edit::Edit, layout::LayoutEdit};
 
 #[derive(Debug, Clone)]
 pub struct BoardDataEdit {
@@ -18,6 +16,16 @@ impl BoardDataEdit {
         Self {
             bands: BTreeMap::new(),
         }
+    }
+}
+
+impl Edit for BoardDataEdit {
+    fn reverse_inplace(&mut self) {
+        self.bands.reverse_inplace();
+    }
+
+    fn merge(&mut self, edit: Self) {
+        self.bands.merge(edit.bands);
     }
 }
 
@@ -41,22 +49,16 @@ impl BoardEdit {
             layout_edit,
         }
     }
+}
 
-    pub fn reverse_inplace(&mut self) {
-        self.data_edit
-            .bands
-            .values_mut()
-            .for_each(Self::swap_tuple_inplace);
+impl Edit for BoardEdit {
+    fn reverse_inplace(&mut self) {
+        self.data_edit.reverse_inplace();
         self.layout_edit.reverse_inplace();
     }
 
-    fn swap_tuple_inplace<D>(x: &mut (D, D)) {
-        core::mem::swap(&mut x.0, &mut x.1);
-    }
-
-    pub fn reverse(&self) -> Self {
-        let mut rev = self.clone();
-        rev.reverse_inplace();
-        rev
+    fn merge(&mut self, edit: Self) {
+        self.data_edit.merge(edit.data_edit);
+        self.layout_edit.merge(edit.layout_edit);
     }
 }

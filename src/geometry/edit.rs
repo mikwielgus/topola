@@ -8,6 +8,21 @@ use crate::graph::{GenericIndex, GetPetgraphIndex};
 
 use super::{AccessBendWeight, AccessDotWeight, AccessSegWeight, GetLayer};
 
+pub trait Edit: Sized {
+    fn reverse(&self) -> Self
+    where
+        Self: Clone,
+    {
+        let mut rev = self.clone();
+        rev.reverse_inplace();
+        rev
+    }
+
+    fn reverse_inplace(&mut self);
+
+    fn merge(&mut self, edit: Self);
+}
+
 pub trait ApplyGeometryEdit<
     DW: AccessDotWeight + GetLayer,
     SW: AccessSegWeight + GetLayer,
@@ -58,50 +73,56 @@ impl<
             compounds: BTreeMap::new(),
         }
     }
+}
 
-    pub fn merge(&mut self, edit: GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>) {
-        Self::merge_btmap(&mut self.dots, &edit.dots);
-        Self::merge_btmap(&mut self.segs, &edit.segs);
-        Self::merge_btmap(&mut self.bends, &edit.bends);
-        Self::merge_btmap(&mut self.compounds, &edit.compounds);
+impl<
+        DW: AccessDotWeight + GetLayer,
+        SW: AccessSegWeight + GetLayer,
+        BW: AccessBendWeight + GetLayer,
+        CW: Clone,
+        Cel: Copy,
+        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
+        DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+    > Edit for GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>
+{
+    fn reverse_inplace(&mut self) {
+        self.dots.reverse_inplace();
+        self.segs.reverse_inplace();
+        self.bends.reverse_inplace();
+        self.compounds.reverse_inplace();
     }
 
-    fn merge_btmap<I: Copy + Eq + Ord, D: Clone>(
-        main: &mut BTreeMap<I, (Option<D>, Option<D>)>,
-        edit: &BTreeMap<I, (Option<D>, Option<D>)>,
-    ) {
+    fn merge(&mut self, edit: Self) {
+        self.dots.merge(edit.dots);
+        self.segs.merge(edit.segs);
+        self.bends.merge(edit.bends);
+        self.compounds.merge(edit.compounds);
+    }
+}
+
+impl<K: Eq + Ord, V> Edit for BTreeMap<K, (Option<V>, Option<V>)> {
+    fn reverse_inplace(&mut self) {
+        self.values_mut()
+            .for_each(|x| core::mem::swap(&mut x.0, &mut x.1));
+    }
+
+    fn merge(&mut self, edit: Self) {
         for (index, (old, new)) in edit {
-            match main.entry(*index) {
+            match self.entry(index) {
                 Entry::Vacant(vac) => {
-                    vac.insert((old.clone(), new.clone()));
+                    vac.insert((old, new));
                 }
-                Entry::Occupied(mut occ) => {
-                    if let ((None, ..), None) = (occ.get(), new) {
+                Entry::Occupied(mut occ) => match (occ.get(), new) {
+                    ((None, _), None) => {
                         occ.remove();
-                    } else {
-                        occ.get_mut().1 = new.clone();
                     }
-                }
+                    (_, new) => {
+                        occ.get_mut().1 = new;
+                    }
+                },
             }
         }
-    }
-
-    pub fn reverse_inplace(&mut self) {
-        self.dots.values_mut().for_each(Self::swap_tuple_inplace);
-        self.segs.values_mut().for_each(Self::swap_tuple_inplace);
-        self.bends.values_mut().for_each(Self::swap_tuple_inplace);
-        self.compounds
-            .values_mut()
-            .for_each(Self::swap_tuple_inplace);
-    }
-
-    fn swap_tuple_inplace<D>(x: &mut (D, D)) {
-        core::mem::swap(&mut x.0, &mut x.1);
-    }
-
-    pub fn reverse(&self) -> Self {
-        let mut rev = self.clone();
-        rev.reverse_inplace();
-        rev
     }
 }

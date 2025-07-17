@@ -15,7 +15,7 @@ use thiserror::Error;
 use crate::{
     board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
-    geometry::primitive::PrimitiveShape,
+    geometry::{edit::Edit, primitive::PrimitiveShape},
     graph::GenericIndex,
     layout::poly::PolyWeight,
     router::{
