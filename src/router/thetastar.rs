@@ -120,7 +120,7 @@ where
         navnode: G::NodeId,
         tracker: &PathTracker<G>,
     ) -> Result<Option<R>, ()>;
-    fn place_probe_to_navnode<'a>(&mut self, graph: &'a G, probed_navnode: G::NodeId) -> Option<K>;
+    fn place_probe_to_navnode(&mut self, graph: &G, probed_navnode: G::NodeId) -> Option<K>;
     fn remove_probe(&mut self, graph: &G);
     fn estimate_cost_to_goal(&mut self, graph: &G, navnode: G::NodeId) -> K;
 }

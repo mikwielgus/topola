@@ -382,7 +382,7 @@ impl<R: AccessRules> Layout<R> {
         self.drawing.rules_mut()
     }
 
-    pub fn via(&self, index: GenericIndex<ViaWeight>) -> Via<R> {
+    pub fn via(&self, index: GenericIndex<ViaWeight>) -> Via<'_, R> {
         Via::new(index, self.drawing())
     }
 }

@@ -187,7 +187,7 @@ impl<B: NavmeshBase> From<Navmesh<B>> for NavmeshSer<B> {
 
 impl<B: NavmeshBase> Navmesh<B> {
     #[inline(always)]
-    pub fn as_ref(&self) -> NavmeshRef<B> {
+    pub fn as_ref(&self) -> NavmeshRef<'_, B> {
         NavmeshRef {
             nodes: &self.nodes,
             edges: &self.edges,
@@ -196,7 +196,7 @@ impl<B: NavmeshBase> Navmesh<B> {
     }
 
     #[inline(always)]
-    pub fn as_mut(&mut self) -> NavmeshRefMut<B> {
+    pub fn as_mut(&mut self) -> NavmeshRefMut<'_, B> {
         NavmeshRefMut {
             nodes: &self.nodes,
             edges: &self.edges,
