@@ -693,6 +693,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(cane)
     }
 
+    #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
+    #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
     fn update_this_and_outward_bows_intern(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -710,36 +712,41 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
 
             let (from, to, offset) = if let Some(inner) = rail_primitive.inner() {
                 let inner = inner.into();
-                let from = self.head_around_bend_segment(
+                let from = self.guide_for_head_around_bend_segment(
                     &from_head,
                     inner,
                     RotationSense::Counterclockwise,
                     width,
                 )?;
-                let to = self.head_around_bend_segment(
+                let to = self.guide_for_head_around_bend_segment(
                     &to_head,
                     inner,
                     RotationSense::Clockwise,
                     width,
                 )?;
-                let offset = self.head_around_bend_offset(&from_head, inner, width);
+                let offset = self.guide_for_head_around_bend_offset(&from_head, inner, width);
                 (from, to, offset)
             } else {
                 let core = rail_primitive.core().into();
-                let from = self.head_around_dot_segment(
+                let from = self.guide_for_head_around_dot_segment(
                     &from_head,
                     core,
                     RotationSense::Counterclockwise,
                     width,
                 )?;
-                let to =
-                    self.head_around_dot_segment(&to_head, core, RotationSense::Clockwise, width)?;
-                let offset = self.head_around_dot_offset(&from_head, core, width);
+                let to = self.guide_for_head_around_dot_segment(
+                    &to_head,
+                    core,
+                    RotationSense::Clockwise,
+                    width,
+                )?;
+                let offset = self.guide_for_head_around_dot_offset(&from_head, core, width);
                 (from, to, offset)
             };
 
             let rail_outer_bows = self.bend_outer_bows(rail);
 
+            // Commenting out these two makes the crash go away.
             self.move_dot_with_infringement_filtering(
                 recorder,
                 joints.0.into(),

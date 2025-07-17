@@ -85,7 +85,7 @@ impl<R: AccessRules> Draw for Layout<R> {
     ) -> Result<BandTermsegIndex, DrawException> {
         let tangent = self
             .drawing()
-            .head_into_dot_segment(&head, into, width)
+            .guide_for_head_into_dot_segment(&head, into, width)
             .map_err(Into::<DrawException>::into)?;
 
         let (layer, maybe_net) = {
@@ -137,12 +137,12 @@ impl<R: AccessRules> Draw for Layout<R> {
         sense: RotationSense,
         width: f64,
     ) -> Result<CaneHead, DrawException> {
-        let tangent = self
-            .drawing()
-            .head_around_dot_segment(&head, around.into(), sense, width)?;
+        let tangent =
+            self.drawing()
+                .guide_for_head_around_dot_segment(&head, around.into(), sense, width)?;
         let offset = self
             .drawing()
-            .head_around_dot_offset(&head, around.into(), width);
+            .guide_for_head_around_dot_offset(&head, around.into(), width);
         self.cane_around(
             recorder,
             head,
@@ -168,8 +168,10 @@ impl<R: AccessRules> Draw for Layout<R> {
     ) -> Result<CaneHead, DrawException> {
         let tangent = self
             .drawing()
-            .head_around_bend_segment(&head, around, sense, width)?;
-        let offset = self.drawing().head_around_bend_offset(&head, around, width);
+            .guide_for_head_around_bend_segment(&head, around, sense, width)?;
+        let offset = self
+            .drawing()
+            .guide_for_head_around_bend_offset(&head, around, width);
 
         self.cane_around(
             recorder,

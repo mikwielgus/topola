@@ -20,21 +20,21 @@ use super::{
 };
 
 pub trait Guide {
-    fn head_into_dot_segment(
+    fn guide_for_head_into_dot_segment(
         &self,
         head: &Head,
         into: FixedDotIndex,
         width: f64,
     ) -> Result<Line, NoTangents>;
 
-    fn head_around_dot_segments(
+    fn guide_for_head_around_dot_segments(
         &self,
         head: &Head,
         around: DotIndex,
         width: f64,
     ) -> Result<(Line, Line), NoTangents>;
 
-    fn head_around_dot_segment(
+    fn guide_for_head_around_dot_segment(
         &self,
         head: &Head,
         around: DotIndex,
@@ -42,16 +42,16 @@ pub trait Guide {
         width: f64,
     ) -> Result<Line, NoTangents>;
 
-    fn head_around_dot_offset(&self, head: &Head, around: DotIndex, _width: f64) -> f64;
+    fn guide_for_head_around_dot_offset(&self, head: &Head, around: DotIndex, _width: f64) -> f64;
 
-    fn head_around_bend_segments(
+    fn guide_for_head_around_bend_segments(
         &self,
         head: &Head,
         around: BendIndex,
         width: f64,
     ) -> Result<(Line, Line), NoTangents>;
 
-    fn head_around_bend_segment(
+    fn guide_for_head_around_bend_segment(
         &self,
         head: &Head,
         around: BendIndex,
@@ -59,7 +59,8 @@ pub trait Guide {
         width: f64,
     ) -> Result<Line, NoTangents>;
 
-    fn head_around_bend_offset(&self, head: &Head, around: BendIndex, _width: f64) -> f64;
+    fn guide_for_head_around_bend_offset(&self, head: &Head, around: BendIndex, _width: f64)
+        -> f64;
 
     fn head_sense(&self, head: &Head) -> Option<RotationSense>;
 
@@ -71,7 +72,7 @@ pub trait Guide {
 }
 
 impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
-    fn head_into_dot_segment(
+    fn guide_for_head_into_dot_segment(
         &self,
         head: &Head,
         into: FixedDotIndex,
@@ -87,7 +88,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         math::tangent_segment(from_circle, from_sense, to_circle, None)
     }
 
-    fn head_around_dot_segments(
+    fn guide_for_head_around_dot_segments(
         &self,
         head: &Head,
         around: DotIndex,
@@ -103,7 +104,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         Ok((tangents[0], tangents[1]))
     }
 
-    fn head_around_dot_segment(
+    fn guide_for_head_around_dot_segment(
         &self,
         head: &Head,
         around: DotIndex,
@@ -118,14 +119,14 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         math::tangent_segment(from_circle, from_sense, to_circle, Some(sense))
     }
 
-    fn head_around_dot_offset(&self, head: &Head, around: DotIndex, _width: f64) -> f64 {
+    fn guide_for_head_around_dot_offset(&self, head: &Head, around: DotIndex, _width: f64) -> f64 {
         self.clearance(
             self.conditions(around.into()).as_ref(),
             self.conditions(head.face().into()).as_ref(),
         )
     }
 
-    fn head_around_bend_segments(
+    fn guide_for_head_around_bend_segments(
         &self,
         head: &Head,
         around: BendIndex,
@@ -141,7 +142,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         Ok((tangents[0], tangents[1]))
     }
 
-    fn head_around_bend_segment(
+    fn guide_for_head_around_bend_segment(
         &self,
         head: &Head,
         around: BendIndex,
@@ -156,7 +157,12 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         math::tangent_segment(from_circle, from_sense, to_circle, Some(sense))
     }
 
-    fn head_around_bend_offset(&self, head: &Head, around: BendIndex, _width: f64) -> f64 {
+    fn guide_for_head_around_bend_offset(
+        &self,
+        head: &Head,
+        around: BendIndex,
+        _width: f64,
+    ) -> f64 {
         self.clearance(
             self.conditions(head.face().into()).as_ref(),
             self.conditions(around.into()).as_ref(),
