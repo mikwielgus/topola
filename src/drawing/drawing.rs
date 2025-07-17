@@ -458,7 +458,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         // when the band is squeezed through under bends the outward bows
         // of these bends are excluded from infringement detection to avoid
         // false positives (the code where this exception is made is in
-        // `.update_this_and_outward_bows_intern(...)`).
+        // `.update_this_and_outward_bows(...)`).
         //
         // XXX: Possible problem: What if there could be a collision due
         // to bend's length being zero? We may or may not want to create an
@@ -695,7 +695,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
 
     #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
     #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn update_this_and_outward_bows_intern(
+    fn update_this_and_outward_bows(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
         around: LooseBendIndex,
@@ -773,25 +773,6 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         }
 
         Ok(())
-    }
-
-    #[debug_ensures(self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count()))]
-    #[debug_ensures(self.recording_geometry_with_rtree.graph().edge_count() == old(self.recording_geometry_with_rtree.graph().edge_count()))]
-    fn update_this_and_outward_bows(
-        &mut self,
-        recorder: &mut DrawingEdit<CW, Cel>,
-        around: LooseBendIndex,
-    ) -> Result<(), DrawingException> {
-        let mut temp_recorder = DrawingEdit::new();
-        let ret = self.update_this_and_outward_bows_intern(&mut temp_recorder, around);
-
-        if ret.is_ok() {
-            recorder.merge(temp_recorder);
-        } else {
-            temp_recorder.reverse_inplace();
-            self.recording_geometry_with_rtree.apply(&temp_recorder);
-        }
-        ret
     }
 
     #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.graph().node_count() == old(self.recording_geometry_with_rtree.graph().node_count() + 4))]
