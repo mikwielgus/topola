@@ -77,7 +77,11 @@ impl<
                     vac.insert((old.clone(), new.clone()));
                 }
                 Entry::Occupied(mut occ) => {
-                    occ.get_mut().1 = new.clone();
+                    if let ((None, ..), None) = (occ.get(), new) {
+                        occ.remove();
+                    } else {
+                        occ.get_mut().1 = new.clone();
+                    }
                 }
             }
         }
