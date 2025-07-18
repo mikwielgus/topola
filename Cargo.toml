@@ -53,6 +53,7 @@ contracts-try = "0.7"
 derive-getters.workspace = true
 enum_dispatch = "0.3"
 geo.workspace = true
+itertools = "0.14"
 log.workspace = true
 petgraph.workspace = true
 ron = "0.10"

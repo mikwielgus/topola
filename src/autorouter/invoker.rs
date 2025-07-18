@@ -4,7 +4,7 @@
 
 //! Manages the execution of routing commands within the autorouting system.
 
-use std::{cmp::Ordering, ops::ControlFlow};
+use std::ops::ControlFlow;
 
 use contracts_try::debug_requires;
 use derive_getters::{Dissolve, Getters};
@@ -15,8 +15,8 @@ use thiserror::Error;
 use crate::{
     board::AccessMesadata,
     drawing::graph::PrimitiveIndex,
-    geometry::{primitive::PrimitiveShape, shape::MeasureLength},
-    graph::{GenericIndex, MakeRef},
+    geometry::primitive::PrimitiveShape,
+    graph::GenericIndex,
     layout::poly::PolyWeight,
     router::{
         navcord::Navcord,
@@ -28,14 +28,14 @@ use crate::{
 };
 
 use super::{
-    autoroute::AutorouteExecutionStepper,
+    autoroute::AutorouteExecutionPermutator,
     compare_detours::CompareDetoursExecutionStepper,
     execution::{Command, ExecutionStepper},
     history::{History, HistoryError},
     measure_length::MeasureLengthExecutionStepper,
     place_via::PlaceViaExecutionStepper,
     remove_bands::RemoveBandsExecutionStepper,
-    Autorouter, AutorouterError, PresortBy,
+    Autorouter, AutorouterError,
 };
 
 /// Trait for getting the information to display on the debug overlay,
@@ -167,48 +167,7 @@ impl<M: AccessMesadata + Clone> Invoker<M> {
     fn dispatch_command(&mut self, command: &Command) -> Result<ExecutionStepper<M>, InvokerError> {
         Ok(match command {
             Command::Autoroute(selection, options) => {
-                let mut ratlines = self.autorouter.selected_ratlines(selection);
-
-                match options.presort_by {
-                    PresortBy::RatlineIntersectionCountAndLength => {
-                        ratlines.sort_unstable_by(|a, b| {
-                            let a_intersector_count = a
-                                .ref_(self.autorouter())
-                                .find_intersecting_ratlines()
-                                .count();
-                            let b_intersector_count = b
-                                .ref_(self.autorouter())
-                                .find_intersecting_ratlines()
-                                .count();
-
-                            let primary_ordering = a_intersector_count.cmp(&b_intersector_count);
-
-                            if primary_ordering != Ordering::Equal {
-                                primary_ordering
-                            } else {
-                                let a_length = a.ref_(self.autorouter()).length();
-                                let b_length = b.ref_(self.autorouter()).length();
-                                let secondary_ordering = a_length.total_cmp(&b_length);
-
-                                secondary_ordering
-                            }
-                        })
-                    }
-                    PresortBy::PairwiseDetours => ratlines.sort_unstable_by(|a, b| {
-                        let mut compare_detours = self
-                            .autorouter
-                            .compare_detours_ratlines(*a, *b, *options)
-                            .unwrap();
-
-                        if let Ok((al, bl)) = compare_detours.finish(&mut self.autorouter) {
-                            PartialOrd::partial_cmp(&al, &bl).unwrap()
-                        } else {
-                            Ordering::Equal
-                        }
-                    }),
-                }
-
-                ExecutionStepper::Autoroute(self.autorouter.autoroute_ratlines(ratlines, *options)?)
+                ExecutionStepper::Autoroute(self.autorouter.autoroute(selection, *options)?)
             }
             Command::TopoAutoroute {
                 selection,

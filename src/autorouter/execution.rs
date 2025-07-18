@@ -15,7 +15,7 @@ use crate::{
 };
 
 use super::{
-    autoroute::AutorouteExecutionStepper,
+    autoroute::AutorouteExecutionPermutator,
     compare_detours::CompareDetoursExecutionStepper,
     invoker::{GetDebugOverlayData, Invoker, InvokerError},
     measure_length::MeasureLengthExecutionStepper,
@@ -45,7 +45,7 @@ pub enum Command {
 
 #[enum_dispatch(GetDebugOverlayData)]
 pub enum ExecutionStepper<M> {
-    Autoroute(AutorouteExecutionStepper),
+    Autoroute(AutorouteExecutionPermutator),
     TopoAutoroute(ng::AutorouteExecutionStepper<M>),
     PlaceVia(PlaceViaExecutionStepper),
     RemoveBands(RemoveBandsExecutionStepper),

@@ -5,6 +5,7 @@
 //! Manages autorouting of ratlines in a layout, tracking status and processed
 //! routing steps.
 
+use itertools::{Itertools, Permutations};
 use std::ops::ControlFlow;
 
 use crate::{
@@ -33,7 +34,7 @@ pub enum AutorouteContinueStatus {
     Running,
     /// A specific segment has been successfully routed.
     Routed(BandTermsegIndex),
-    /// A specific segment was already routed and has been skipped.
+    /// A specific segment had been already routed and has been skipped.
     Skipped(BandTermsegIndex),
 }
 
@@ -103,6 +104,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinue
         &mut self,
         autorouter: &mut Autorouter<M>,
     ) -> Result<ControlFlow<Option<BoardEdit>, AutorouteContinueStatus>, AutorouterError> {
+        // TODO: Use a proper state machine here for better readability?
+
         if self.curr_ratline_index >= self.ratlines.len() {
             let recorder = self.dissolve_route_stepper_into_layout_edit();
             return Ok(ControlFlow::Break(Some(BoardEdit::new_from_edits(
@@ -212,5 +215,93 @@ impl GetDebugOverlayData for AutorouteExecutionStepper {
 
     fn obstacles(&self) -> &[PrimitiveIndex] {
         self.route.as_ref().map_or(&[], |route| route.obstacles())
+    }
+}
+
+pub struct AutorouteExecutionPermutator {
+    stepper: AutorouteExecutionStepper,
+    permutations_iter: Permutations<std::vec::IntoIter<RatlineIndex>>,
+    options: AutorouterOptions,
+}
+
+impl AutorouteExecutionPermutator {
+    pub fn new(
+        autorouter: &mut Autorouter<impl AccessMesadata>,
+        ratlines: Vec<RatlineIndex>,
+        options: AutorouterOptions,
+    ) -> Result<Self, AutorouterError> {
+        let ratlines_len = ratlines.len();
+
+        Ok(Self {
+            stepper: AutorouteExecutionStepper::new(autorouter, ratlines.clone(), options)?,
+            permutations_iter: ratlines.into_iter().permutations(ratlines_len),
+            options,
+        })
+    }
+}
+
+impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinueStatus>
+    for AutorouteExecutionPermutator
+{
+    type Error = AutorouterError;
+
+    fn step(
+        &mut self,
+        autorouter: &mut Autorouter<M>,
+    ) -> Result<ControlFlow<Option<BoardEdit>, AutorouteContinueStatus>, AutorouterError> {
+        match self.stepper.step(autorouter) {
+            Ok(ok) => Ok(ok),
+            Err(..) => {
+                self.stepper.abort(autorouter);
+
+                let Some(new_permutation) = self.permutations_iter.next() else {
+                    return Ok(ControlFlow::Break(None));
+                };
+
+                self.stepper =
+                    AutorouteExecutionStepper::new(autorouter, new_permutation, self.options)?;
+
+                self.stepper.step(autorouter)
+            }
+        }
+    }
+}
+
+impl<M: AccessMesadata> Abort<Autorouter<M>> for AutorouteExecutionPermutator {
+    fn abort(&mut self, autorouter: &mut Autorouter<M>) {
+        self.permutations_iter.all(|_| true);
+        self.stepper.abort(autorouter);
+    }
+}
+
+impl EstimateProgress for AutorouteExecutionPermutator {
+    type Value = f64;
+
+    fn estimate_progress_value(&self) -> f64 {
+        // TODO.
+        self.stepper.estimate_progress_value()
+    }
+
+    fn estimate_progress_maximum(&self) -> f64 {
+        // TODO.
+        self.stepper.estimate_progress_maximum()
+    }
+}
+
+impl GetDebugOverlayData for AutorouteExecutionPermutator {
+    fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
+        self.stepper.maybe_thetastar()
+    }
+
+    fn maybe_navcord(&self) -> Option<&Navcord> {
+        self.stepper.maybe_navcord()
+    }
+
+    fn ghosts(&self) -> &[PrimitiveShape] {
+        self.stepper.ghosts()
+    }
+
+    fn obstacles(&self) -> &[PrimitiveIndex] {
+        self.stepper.obstacles()
     }
 }
