@@ -234,6 +234,7 @@ impl AutorouteExecutionPermutator {
 
         Ok(Self {
             stepper: AutorouteExecutionStepper::new(autorouter, ratlines.clone(), options)?,
+            // Note: I assume here that the first permutation is the same as the original order.
             permutations_iter: ratlines.into_iter().permutations(ratlines_len),
             options,
         })
@@ -251,7 +252,11 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinue
     ) -> Result<ControlFlow<Option<BoardEdit>, AutorouteContinueStatus>, AutorouterError> {
         match self.stepper.step(autorouter) {
             Ok(ok) => Ok(ok),
-            Err(..) => {
+            Err(err) => {
+                if !self.options.permutate {
+                    return Err(err);
+                }
+
                 self.stepper.abort(autorouter);
 
                 let Some(new_permutation) = self.permutations_iter.next() else {

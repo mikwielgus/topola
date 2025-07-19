@@ -42,6 +42,7 @@ pub enum PresortBy {
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct AutorouterOptions {
     pub presort_by: PresortBy,
+    pub permutate: bool,
     pub router_options: RouterOptions,
 }
 

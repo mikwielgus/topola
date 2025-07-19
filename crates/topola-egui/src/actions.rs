@@ -336,6 +336,7 @@ impl RouteActions {
                         ui.selectable_value(&mut autorouter_options.presort_by, PresortBy::RatlineIntersectionCountAndLength, tr.text("tr-menu-route-options-presort-by-ratline-intersection-count-and-length"));
                         ui.selectable_value(&mut autorouter_options.presort_by, PresortBy::PairwiseDetours, tr.text("tr-menu-route-options-presort-by-pairwise-detours"));
                     });
+                ui.checkbox(&mut autorouter_options.permutate, tr.text("tr-menu-route-options-permutate"));
                 ui.checkbox(
                     &mut autorouter_options
                         .router_options

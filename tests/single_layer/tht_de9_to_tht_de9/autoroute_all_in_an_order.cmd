@@ -18,7 +18,8 @@
             "routed_band_width": 100.0,
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true
-          }
+          },
+          "permutate": false
         }
       ]
     },
@@ -40,7 +41,8 @@
             "routed_band_width": 100.0,
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true
-          }
+          },
+          "permutate": false
         }
       ]
     },
@@ -62,7 +64,8 @@
             "routed_band_width": 100.0,
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true
-          }
+          },
+          "permutate": false
         }
       ]
     },
@@ -84,7 +87,8 @@
             "routed_band_width": 100.0,
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true
-          }
+          },
+          "permutate": false
         }
       ]
     },
@@ -106,7 +110,8 @@
             "routed_band_width": 100.0,
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true
-          }
+          },
+          "permutate": false
         }
       ]
     },
@@ -128,7 +133,8 @@
             "routed_band_width": 100.0,
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true
-          }
+          },
+          "permutate": false
         }
       ]
     },
@@ -150,7 +156,8 @@
             "routed_band_width": 100.0,
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true
-          }
+          },
+          "permutate": false
         }
       ]
     },
@@ -172,7 +179,8 @@
             "routed_band_width": 100.0,
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true
-          }
+          },
+          "permutate": false
         }
       ]
     },
@@ -194,7 +202,8 @@
             "routed_band_width": 100.0,
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true
-          }
+          },
+          "permutate": false
         }
       ]
     }

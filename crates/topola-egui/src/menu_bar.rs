@@ -44,6 +44,7 @@ impl MenuBar {
         Self {
             autorouter_options: AutorouterOptions {
                 presort_by: PresortBy::RatlineIntersectionCountAndLength,
+                permutate: true,
                 router_options: RouterOptions {
                     routed_band_width: 100.0,
                     wrap_around_bands: true,
@@ -318,7 +319,6 @@ impl MenuBar {
                                 error_dialog.push_error("tr-module-invoker", format!("{}", err));
                             }
                         }
-                        let opts = self.autorouter_options;
                         if actions.edit.remove_bands.consume_key_triggered(ctx, ui) {
                             schedule(error_dialog, workspace, |selection| {
                                 Command::RemoveBands(selection.band_selection)
@@ -340,13 +340,16 @@ impl MenuBar {
                                         selection: selection.pin_selection,
                                         allowed_edges: BTreeSet::new(),
                                         active_layer,
-                                        routed_band_width: opts.router_options.routed_band_width,
+                                        routed_band_width: self
+                                            .autorouter_options
+                                            .router_options
+                                            .routed_band_width,
                                     }
                                 });
                             }
                         } else if actions.route.autoroute.consume_key_triggered(ctx, ui) {
                             schedule(error_dialog, workspace, |selection| {
-                                Command::Autoroute(selection.pin_selection, opts)
+                                Command::Autoroute(selection.pin_selection, self.autorouter_options)
                             });
                         } else if actions
                             .inspect
@@ -354,7 +357,10 @@ impl MenuBar {
                             .consume_key_triggered(ctx, ui)
                         {
                             schedule(error_dialog, workspace, |selection| {
-                                Command::CompareDetours(selection.pin_selection, opts)
+                                Command::CompareDetours(
+                                    selection.pin_selection,
+                                    self.autorouter_options,
+                                )
                             });
                         } else if actions
                             .inspect

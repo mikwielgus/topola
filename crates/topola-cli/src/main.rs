@@ -40,6 +40,7 @@ fn main() -> Result<(), std::io::Error> {
                 PinSelection::new_select_layer(&board, 0),
                 AutorouterOptions {
                     presort_by: PresortBy::RatlineIntersectionCountAndLength,
+                    permutate: true,
                     router_options: RouterOptions {
                         wrap_around_bands: true,
                         squeeze_through_under_bends: false,
