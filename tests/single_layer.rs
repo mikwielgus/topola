@@ -24,9 +24,16 @@ fn test_tht_de9_to_tht_de9() {
         "tests/single_layer/tht_de9_to_tht_de9/autoroute_all_in_an_order.cmd",
     );
 
-    let (mut autorouter, ..) = invoker.dissolve();
+    let (mut autorouter, history, ..) = invoker.dissolve();
 
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
+
+    invoker = Invoker::new_with_history(autorouter, history);
+    common::undo_all_and_assert(&mut invoker);
+    common::replay_and_assert(
+        &mut invoker,
+        "tests/single_layer/tht_de9_to_tht_de9/autoroute_all.cmd",
+    );
 }
 
 #[test]

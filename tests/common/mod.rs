@@ -12,7 +12,7 @@ use topola::{
         Autorouter,
     },
     board::{edit::BoardEdit, AccessMesadata, Board},
-    drawing::graph::GetMaybeNet,
+    drawing::graph::{GetMaybeNet, PrimitiveIndex},
     geometry::{shape::MeasureLength, GenericNode, GetLayer},
     graph::{GetPetgraphIndex, MakeRef},
     router::{navmesh::Navmesh, RouterOptions},
@@ -77,16 +77,38 @@ pub fn replay_and_assert(invoker: &mut Invoker<SpecctraMesadata>, filename: &str
     let file = File::open(filename).unwrap();
     let history: History = serde_json::from_reader(file).unwrap();
 
-    for _ in 0..history.done().len() {
-        invoker.undo().unwrap();
-    }
-
+    undo_all_and_assert(invoker);
     invoker.replay(history);
 
     assert_eq!(
         invoker.autorouter().board().layout().drawing().node_count(),
         prev_node_count,
     );
+}
+
+pub fn undo_all_and_assert(invoker: &mut Invoker<SpecctraMesadata>) {
+    for _ in 0..invoker.history().done().len() {
+        invoker.undo().unwrap();
+    }
+
+    assert!(matches!(
+        invoker.undo(),
+        Err(InvokerError::History(HistoryError::NoPreviousCommand))
+    ));
+
+    assert_no_loose_nodes(invoker.autorouter());
+}
+
+pub fn assert_no_loose_nodes(autorouter: &Autorouter<impl AccessMesadata>) {
+    for node in autorouter.board().layout().drawing().primitive_nodes() {
+        match node {
+            PrimitiveIndex::LooseDot(..)
+            | PrimitiveIndex::LoneLooseSeg(..)
+            | PrimitiveIndex::SeqLooseSeg(..)
+            | PrimitiveIndex::LooseBend(..) => assert!(false),
+            _ => (),
+        }
+    }
 }
 
 pub fn assert_navnode_count(
