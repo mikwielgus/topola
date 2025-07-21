@@ -5,6 +5,7 @@
 use contracts_try::{debug_ensures, debug_invariant};
 use derive_getters::Getters;
 use geo::{Point, Polygon};
+use petgraph::visit::Walker;
 
 use core::fmt;
 use rstar::{RTree, AABB};
@@ -17,7 +18,7 @@ use crate::{
         cane::Cane,
         collect::Collect,
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-        gear::{GearIndex, GetNextGear},
+        gear::GearIndex,
         graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
         guide::Guide,
         loose::{GetPrevNextLoose, Loose, LooseIndex},
@@ -43,6 +44,8 @@ use crate::{
     math::NoTangents,
     math::RotationSense,
 };
+
+use super::gear::{GetOuterGears, WalkOutwards};
 
 #[derive(Clone, Copy, Error)]
 pub enum DrawingException {
@@ -255,7 +258,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 LooseIndex::Bend(bend) => {
                     bends.push(bend);
 
-                    if let Some(outer) = self.primitive(bend).outer() {
+                    for outer in self.primitive(bend).outers().collect::<Vec<_>>() {
                         outers.push(outer);
                         self.reattach_bend(recorder, outer, self.primitive(bend).inner());
                     }
@@ -509,10 +512,11 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 }
             }
             //
-            if let Some(next_gear) = around.ref_(self).next_gear() {
-                if let Some(next_gear_net) = next_gear.primitive(self).maybe_net() {
+            let mut outwards = around.ref_(self).outwards();
+            while let Some(gear) = outwards.walk_next(self) {
+                if let Some(next_gear_net) = gear.primitive(self).maybe_net() {
                     if net == next_gear_net {
-                        return Err(AlreadyConnected(net, next_gear.into()).into());
+                        return Err(AlreadyConnected(net, gear.into()).into());
                     }
                 }
             }
@@ -666,7 +670,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         bend_weight: LooseBendWeight,
         sense: RotationSense,
     ) -> Result<Cane, DrawingException> {
-        let maybe_next_gear = around.ref_(self).next_gear();
+        let outer_gears = around.ref_(self).outer_gears();
         let cane = self.add_cane_with_infringement_filtering(
             recorder,
             from,
@@ -678,11 +682,11 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             &|_drawing, _infringer, _infringee| true,
         )?;
 
-        if let Some(next_gear) = maybe_next_gear {
-            self.reattach_bend(recorder, next_gear, Some(cane.bend));
+        for gear in outer_gears {
+            self.reattach_bend(recorder, gear, Some(cane.bend));
         }
 
-        if let Some(outer) = self.primitive(cane.bend).outer() {
+        for outer in self.primitive(cane.bend).outers().collect::<Vec<_>>() {
             self.update_this_and_outward_bows(recorder, outer)
                 .inspect_err(|_| {
                     let joint = self.primitive(cane.bend).other_joint(cane.dot);
@@ -700,77 +704,84 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         recorder: &mut DrawingEdit<CW, Cel>,
         around: LooseBendIndex,
     ) -> Result<(), DrawingException> {
-        let mut maybe_rail = Some(around);
+        self.update_bow(recorder, around)?;
 
-        while let Some(rail) = maybe_rail {
-            let rail_primitive = self.primitive(rail);
-            let joints = rail_primitive.joints();
-            let width = rail_primitive.width();
-
-            let from_head = self.rear_head(joints.1);
-            let to_head = self.rear_head(joints.0);
-
-            let (from, to, offset) = if let Some(inner) = rail_primitive.inner() {
-                let inner = inner.into();
-                let from = self.guide_for_head_around_bend_segment(
-                    &from_head,
-                    inner,
-                    RotationSense::Counterclockwise,
-                    width,
-                )?;
-                let to = self.guide_for_head_around_bend_segment(
-                    &to_head,
-                    inner,
-                    RotationSense::Clockwise,
-                    width,
-                )?;
-                let offset = self.guide_for_head_around_bend_offset(&from_head, inner, width);
-                (from, to, offset)
-            } else {
-                let core = rail_primitive.core().into();
-                let from = self.guide_for_head_around_dot_segment(
-                    &from_head,
-                    core,
-                    RotationSense::Counterclockwise,
-                    width,
-                )?;
-                let to = self.guide_for_head_around_dot_segment(
-                    &to_head,
-                    core,
-                    RotationSense::Clockwise,
-                    width,
-                )?;
-                let offset = self.guide_for_head_around_dot_offset(&from_head, core, width);
-                (from, to, offset)
-            };
-
-            let rail_outer_bows = self.bend_outer_bows(rail);
-
-            // Commenting out these two makes the crash go away.
-            self.move_dot_with_infringement_filtering(
-                recorder,
-                joints.0.into(),
-                from.end_point(),
-                &|_drawing, _infringer, infringee| rail_outer_bows.contains(&infringee),
-            )?;
-            self.move_dot_with_infringement_filtering(
-                recorder,
-                joints.1.into(),
-                to.end_point(),
-                &|_drawing, _infringer, infringee| rail_outer_bows.contains(&infringee),
-            )?;
-
-            self.shift_bend_with_infringement_filtering(
-                recorder,
-                rail.into(),
-                offset,
-                &|_drawing, _infringer, infringee| rail_outer_bows.contains(&infringee),
-            )?;
-
-            // Update offsets in case the rule conditions changed.
-
-            maybe_rail = self.primitive(rail).outer();
+        let mut outwards = self.primitive(around).outwards();
+        while let Some(rail) = outwards.walk_next(self) {
+            self.update_bow(recorder, rail)?;
         }
+
+        Ok(())
+    }
+
+    fn update_bow(
+        &mut self,
+        recorder: &mut DrawingEdit<CW, Cel>,
+        rail: LooseBendIndex,
+    ) -> Result<(), DrawingException> {
+        let rail_primitive = self.primitive(rail);
+        let joints = rail_primitive.joints();
+        let width = rail_primitive.width();
+
+        let from_head = self.rear_head(joints.1);
+        let to_head = self.rear_head(joints.0);
+
+        let (from, to, offset) = if let Some(inner) = rail_primitive.inner() {
+            let inner = inner.into();
+            let from = self.guide_for_head_around_bend_segment(
+                &from_head,
+                inner,
+                RotationSense::Counterclockwise,
+                width,
+            )?;
+            let to = self.guide_for_head_around_bend_segment(
+                &to_head,
+                inner,
+                RotationSense::Clockwise,
+                width,
+            )?;
+            let offset = self.guide_for_head_around_bend_offset(&from_head, inner, width);
+            (from, to, offset)
+        } else {
+            let core = rail_primitive.core().into();
+            let from = self.guide_for_head_around_dot_segment(
+                &from_head,
+                core,
+                RotationSense::Counterclockwise,
+                width,
+            )?;
+            let to = self.guide_for_head_around_dot_segment(
+                &to_head,
+                core,
+                RotationSense::Clockwise,
+                width,
+            )?;
+            let offset = self.guide_for_head_around_dot_offset(&from_head, core, width);
+            (from, to, offset)
+        };
+
+        let rail_outer_bows = self.bend_outward_bows(rail);
+
+        // Commenting out these two makes the crash go away.
+        self.move_dot_with_infringement_filtering(
+            recorder,
+            joints.0.into(),
+            from.end_point(),
+            &|_drawing, _infringer, infringee| rail_outer_bows.contains(&infringee),
+        )?;
+        self.move_dot_with_infringement_filtering(
+            recorder,
+            joints.1.into(),
+            to.end_point(),
+            &|_drawing, _infringer, infringee| rail_outer_bows.contains(&infringee),
+        )?;
+
+        self.shift_bend_with_infringement_filtering(
+            recorder,
+            rail.into(),
+            offset,
+            &|_drawing, _infringer, infringee| rail_outer_bows.contains(&infringee),
+        )?;
 
         Ok(())
     }
@@ -877,11 +888,11 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         cane: &Cane,
         face: LooseDotIndex,
     ) {
-        let maybe_outer = self.primitive(cane.bend).outer();
+        let outers = self.primitive(cane.bend).outers().collect::<Vec<_>>();
 
         // Removing a loose bend affects its outer bends.
-        if let Some(outer) = maybe_outer {
-            self.reattach_bend(recorder, outer, self.primitive(cane.bend).inner());
+        for outer in &outers {
+            self.reattach_bend(recorder, *outer, self.primitive(cane.bend).inner());
         }
 
         self.recording_geometry_with_rtree
@@ -897,7 +908,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         self.recording_geometry_with_rtree
             .remove_dot(recorder, cane.dot.into());
 
-        if let Some(outer) = maybe_outer {
+        for outer in outers {
             self.update_this_and_outward_bows(recorder, outer).unwrap(); // Must never fail.
         }
     }

@@ -18,6 +18,8 @@ use crate::{
     graph::{GenericIndex, GetPetgraphIndex},
 };
 
+use super::gear::{DrawingOutwardWalker, GetOuterGears, WalkOutwards};
+
 pub trait GetDrawing {
     type CompoundWeight;
     type CompoundEntryLabel;
@@ -86,12 +88,14 @@ pub trait GetJoints {
     fn joints(&self) -> (Self::F, Self::T);
 }
 
-pub trait GetFirstGear: GetDrawing + GetPetgraphIndex {
-    fn first_gear(&self) -> Option<LooseBendIndex> {
+pub trait GetLowestGears: GetDrawing + GetPetgraphIndex {
+    // TODO: Make it return an iterator instead of a vec.
+    fn lowest_gears(&self) -> Vec<LooseBendIndex> {
         self.drawing()
             .geometry()
-            .first_rail(self.petgraph_index())
+            .all_rails(self.petgraph_index())
             .map(|ni| LooseBendIndex::new(ni.petgraph_index()))
+            .collect()
     }
 }
 
@@ -279,7 +283,19 @@ impl<CW, Cel, R> GetLimbs for FixedDot<'_, CW, Cel, R> {
     }
 }
 
-impl<CW, Cel, R> GetFirstGear for FixedDot<'_, CW, Cel, R> {}
+impl<CW, Cel, R> GetLowestGears for FixedDot<'_, CW, Cel, R> {}
+
+impl<CW, Cel, R> GetOuterGears for FixedDot<'_, CW, Cel, R> {
+    fn outer_gears(&self) -> Vec<LooseBendIndex> {
+        self.lowest_gears()
+    }
+}
+
+impl<CW, Cel, R> WalkOutwards for FixedDot<'_, CW, Cel, R> {
+    fn outwards(&self) -> DrawingOutwardWalker {
+        DrawingOutwardWalker::new(self.lowest_gears().into_iter())
+    }
+}
 
 pub type LooseDot<'a, CW, Cel, R> = GenericPrimitive<'a, LooseDotWeight, CW, Cel, R>;
 impl_loose_primitive!(LooseDot, LooseDotWeight);
@@ -433,8 +449,19 @@ impl<CW, Cel, R> GetJoints for FixedBend<'_, CW, Cel, R> {
     }
 }
 
-impl<CW, Cel, R> GetFirstGear for FixedBend<'_, CW, Cel, R> {}
-//impl<'a, R: QueryRules> GetInnerOuter for FixedBend<'a, CW, Cel, R> {}
+impl<CW, Cel, R> GetLowestGears for FixedBend<'_, CW, Cel, R> {}
+
+impl<CW, Cel, R> GetOuterGears for FixedBend<'_, CW, Cel, R> {
+    fn outer_gears(&self) -> Vec<LooseBendIndex> {
+        self.lowest_gears()
+    }
+}
+
+impl<CW, Cel, R> WalkOutwards for FixedBend<'_, CW, Cel, R> {
+    fn outwards(&self) -> DrawingOutwardWalker {
+        DrawingOutwardWalker::new(self.lowest_gears().into_iter())
+    }
+}
 
 pub type LooseBend<'a, CW, Cel, R> = GenericPrimitive<'a, LooseBendWeight, CW, Cel, R>;
 impl_loose_primitive!(LooseBend, LooseBendWeight);
@@ -477,6 +504,18 @@ impl<CW, Cel, R> GetJoints for LooseBend<'_, CW, Cel, R> {
     }
 }
 
+impl<CW, Cel, R> GetOuterGears for LooseBend<'_, CW, Cel, R> {
+    fn outer_gears(&self) -> Vec<LooseBendIndex> {
+        self.outers().collect()
+    }
+}
+
+impl<CW, Cel, R> WalkOutwards for LooseBend<'_, CW, Cel, R> {
+    fn outwards(&self) -> DrawingOutwardWalker {
+        DrawingOutwardWalker::new(self.outers())
+    }
+}
+
 impl<CW, Cel, R> LooseBend<'_, CW, Cel, R> {
     pub fn inner(&self) -> Option<LooseBendIndex> {
         self.drawing()
@@ -485,11 +524,10 @@ impl<CW, Cel, R> LooseBend<'_, CW, Cel, R> {
             .map(|ni| LooseBendIndex::new(ni.petgraph_index()))
     }
 
-    pub fn outer(&self) -> Option<LooseBendIndex> {
+    pub fn outers(&self) -> impl Iterator<Item = LooseBendIndex> + '_ {
         self.drawing()
             .geometry()
             .outers(self.bend_index())
-            .next()
             .map(|node| LooseBendIndex::new(node.petgraph_index()))
     }
 }

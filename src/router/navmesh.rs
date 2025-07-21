@@ -11,7 +11,8 @@ use petgraph::{
     graph::UnGraph,
     stable_graph::NodeIndex,
     visit::{
-        Data, EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges, IntoNeighbors, IntoNodeIdentifiers,
+        Data, EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges, IntoNeighbors,
+        IntoNodeIdentifiers, Walker,
     },
 };
 use spade::InsertionError;
@@ -21,7 +22,7 @@ use crate::{
     drawing::{
         bend::{FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
-        gear::{GearIndex, GetNextGear},
+        gear::{GearIndex, GetOuterGears, WalkOutwards},
         graph::{MakePrimitive, PrimitiveIndex},
         primitive::Primitive,
         rules::AccessRules,
@@ -183,8 +184,7 @@ impl Navmesh {
             } else {
                 map.insert(trianvertex, vec![]);
 
-                let mut gear =
-                    Into::<GearIndex>::into(Into::<BinavnodeNodeIndex>::into(trianvertex));
+                let gear = Into::<GearIndex>::into(Into::<BinavnodeNodeIndex>::into(trianvertex));
 
                 if options.squeeze_through_under_bends {
                     Self::add_trianvertex_to_graph_and_map_as_binavnode(
@@ -195,30 +195,34 @@ impl Navmesh {
                     );
 
                     if options.wrap_around_bands {
-                        while let Some(bend) = gear.ref_(layout.drawing()).next_gear() {
+                        let mut outwards = gear.ref_(layout.drawing()).outwards();
+                        while let Some(outward) = outwards.walk_next(layout.drawing()) {
                             Self::add_trianvertex_to_graph_and_map_as_binavnode(
                                 &mut graph,
                                 &mut map,
                                 trianvertex,
-                                bend.into(),
+                                outward.into(),
                             );
-                            gear = bend.into();
                         }
                     }
-                } else if let Some(first_bend) = gear.ref_(layout.drawing()).next_gear() {
-                    let mut bend = first_bend;
-
-                    while let Some(next_bend) = gear.ref_(layout.drawing()).next_gear() {
-                        bend = next_bend;
-                        gear = bend.into();
+                } else if !gear.ref_(layout.drawing()).outer_gears().is_empty() {
+                    let mut outwards = gear.ref_(layout.drawing()).outwards();
+                    while let Some(outward) = outwards.walk_next(layout.drawing()) {
+                        if layout
+                            .drawing()
+                            .primitive(outward)
+                            .outers()
+                            .collect::<Vec<_>>()
+                            .is_empty()
+                        {
+                            Self::add_trianvertex_to_graph_and_map_as_binavnode(
+                                &mut graph,
+                                &mut map,
+                                trianvertex,
+                                outward.into(),
+                            );
+                        }
                     }
-
-                    Self::add_trianvertex_to_graph_and_map_as_binavnode(
-                        &mut graph,
-                        &mut map,
-                        trianvertex,
-                        bend.into(),
-                    );
                 } else {
                     Self::add_trianvertex_to_graph_and_map_as_binavnode(
                         &mut graph,

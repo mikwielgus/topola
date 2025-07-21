@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: MIT
 
-use crate::graph::MakeRef;
+use petgraph::visit::Walker;
 
 use super::{
     band::{BandTermsegIndex, BandUid},
     bend::LooseBendIndex,
-    gear::{GearIndex, GetNextGear},
+    gear::WalkOutwards,
     graph::PrimitiveIndex,
     loose::{GetPrevNextLoose, LooseIndex},
     primitive::GetJoints,
@@ -26,9 +26,7 @@ pub trait Collect {
 
     fn bend_bow(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex>;
 
-    fn bend_outer_bows(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex>;
-
-    fn wraparounded_bows(&self, around: GearIndex) -> Vec<PrimitiveIndex>;
+    fn bend_outward_bows(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex>;
 }
 
 impl<CW: Clone, Cel: Copy, R: AccessRules> Collect for Drawing<CW, Cel, R> {
@@ -62,35 +60,12 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Collect for Drawing<CW, Cel, R> {
         v
     }
 
-    fn bend_outer_bows(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex> {
+    fn bend_outward_bows(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex> {
         let mut v = vec![];
-        let mut gear = bend;
 
-        while let Some(outer) = self.primitive(gear).outer() {
-            v.append(&mut self.bend_bow(outer));
-            gear = outer;
-        }
-
-        v
-    }
-
-    fn wraparounded_bows(&self, around: GearIndex) -> Vec<PrimitiveIndex> {
-        let mut v = vec![];
-        let mut gear = around;
-
-        while let Some(bend) = gear.ref_(self).next_gear() {
-            let primitive = self.primitive(bend);
-
-            v.push(bend.into());
-
-            let joints = primitive.joints();
-            v.push(joints.0.into());
-            v.push(joints.1.into());
-
-            v.push(self.primitive(joints.0).seg().unwrap().into());
-            v.push(self.primitive(joints.1).seg().unwrap().into());
-
-            gear = bend.into();
+        let mut outwards = self.primitive(bend).outwards();
+        while let Some(next) = outwards.walk_next(self) {
+            v.append(&mut self.bend_bow(next));
         }
 
         v

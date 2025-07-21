@@ -2,25 +2,22 @@
 //
 // SPDX-License-Identifier: MIT
 
+use std::collections::VecDeque;
+
 use enum_dispatch::enum_dispatch;
-use petgraph::stable_graph::NodeIndex;
+use petgraph::{stable_graph::NodeIndex, visit::Walker};
 
 use crate::{
     drawing::{
         bend::{BendIndex, FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
-        primitive::{FixedBend, FixedDot, GetFirstGear, LooseBend, Primitive},
+        primitive::{FixedBend, FixedDot, LooseBend, Primitive},
         rules::AccessRules,
         Drawing,
     },
     graph::{GetPetgraphIndex, MakeRef},
 };
-
-#[enum_dispatch]
-pub trait GetNextGear: GetPetgraphIndex {
-    fn next_gear(&self) -> Option<LooseBendIndex>;
-}
 
 #[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -56,7 +53,7 @@ impl From<BendIndex> for GearIndex {
     }
 }
 
-#[enum_dispatch(GetNextGear, GetDrawing, GetPetgraphIndex)]
+#[enum_dispatch(WalkOutwards, GetOuterGears, GetDrawing, GetPetgraphIndex)]
 pub enum GearRef<'a, CW, Cel, R> {
     FixedDot(FixedDot<'a, CW, Cel, R>),
     FixedBend(FixedBend<'a, CW, Cel, R>),
@@ -73,20 +70,40 @@ impl<'a, CW, Cel, R> GearRef<'a, CW, Cel, R> {
     }
 }
 
-impl<CW, Cel, R> GetNextGear for FixedDot<'_, CW, Cel, R> {
-    fn next_gear(&self) -> Option<LooseBendIndex> {
-        self.first_gear()
+#[enum_dispatch]
+pub trait GetOuterGears {
+    // TODO: This duplicates `.outers()` methods in some other places, we need
+    // to merge them with this.
+    // TODO: Use iterator instead of vec.
+    fn outer_gears(&self) -> Vec<LooseBendIndex>;
+}
+
+#[enum_dispatch]
+pub trait WalkOutwards {
+    fn outwards(&self) -> DrawingOutwardWalker;
+}
+
+/// I found it easier to just duplicate `OutwardWalker<BI>` for `Drawing<...>`.
+pub struct DrawingOutwardWalker {
+    frontier: VecDeque<LooseBendIndex>,
+}
+
+impl DrawingOutwardWalker {
+    pub fn new(initial_frontier: impl Iterator<Item = LooseBendIndex>) -> Self {
+        let mut frontier = VecDeque::new();
+        frontier.extend(initial_frontier);
+
+        Self { frontier }
     }
 }
 
-impl<CW, Cel, R> GetNextGear for LooseBend<'_, CW, Cel, R> {
-    fn next_gear(&self) -> Option<LooseBendIndex> {
-        self.outer()
-    }
-}
+impl<CW: Clone, Cel: Copy, R: AccessRules> Walker<&Drawing<CW, Cel, R>> for DrawingOutwardWalker {
+    type Item = LooseBendIndex;
 
-impl<CW, Cel, R> GetNextGear for FixedBend<'_, CW, Cel, R> {
-    fn next_gear(&self) -> Option<LooseBendIndex> {
-        self.first_gear()
+    fn walk_next(&mut self, drawing: &Drawing<CW, Cel, R>) -> Option<Self::Item> {
+        let front = self.frontier.pop_front()?;
+        self.frontier.extend(drawing.primitive(front).outers());
+
+        Some(front)
     }
 }
