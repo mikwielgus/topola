@@ -488,7 +488,8 @@ impl<CW, Cel, R> LooseBend<'_, CW, Cel, R> {
     pub fn outer(&self) -> Option<LooseBendIndex> {
         self.drawing()
             .geometry()
-            .outer(self.bend_index())
-            .map(|ni| LooseBendIndex::new(ni.petgraph_index()))
+            .outers(self.bend_index())
+            .next()
+            .map(|node| LooseBendIndex::new(node.petgraph_index()))
     }
 }

@@ -7,10 +7,11 @@ use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
     stable_graph::{NodeIndex, StableDiGraph},
-    visit::EdgeRef,
+    visit::{EdgeRef, Walker},
     Direction::{Incoming, Outgoing},
 };
 use serde::{Deserialize, Serialize};
+use std::collections::VecDeque;
 
 use crate::{
     drawing::{
@@ -520,6 +521,45 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
     }
 }
 
+pub struct OutwardWalker<BI> {
+    frontier: VecDeque<BI>,
+}
+
+impl<BI: GetPetgraphIndex> OutwardWalker<BI> {
+    pub fn new(initial_frontier: impl Iterator<Item = BI>) -> Self {
+        let mut frontier = VecDeque::new();
+        frontier.extend(initial_frontier);
+
+        Self { frontier }
+    }
+}
+
+impl<
+        PW: Copy + Retag<Index = PI>,
+        DW,
+        SW,
+        BW,
+        CW,
+        Cel,
+        PI: TryInto<DI> + TryInto<SI> + TryInto<BI>,
+        DI,
+        SI,
+        BI: Copy + GetPetgraphIndex,
+    > Walker<&Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>> for OutwardWalker<BI>
+{
+    type Item = BI;
+
+    fn walk_next(
+        &mut self,
+        geometry: &Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>,
+    ) -> Option<Self::Item> {
+        let front = self.frontier.pop_front()?;
+        self.frontier.extend(geometry.outers(front));
+
+        Some(front)
+    }
+}
+
 impl<
         PW: Copy + Retag<Index = PI>,
         DW,
@@ -576,15 +616,19 @@ impl<
             })
     }
 
-    pub fn outer(&self, bend: BI) -> Option<BI> {
+    pub fn outers(&self, bend: BI) -> impl Iterator<Item = BI> + '_ {
         self.graph
             .edges_directed(bend.petgraph_index(), Outgoing)
-            .find(|edge| matches!(edge.weight(), GeometryLabel::Outer))
+            .filter(|edge| matches!(edge.weight(), GeometryLabel::Outer))
             .map(|edge| {
                 self.primitive_index(edge.target())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
+    }
+
+    pub fn outwards(&self, bend: BI) -> OutwardWalker<BI> {
+        OutwardWalker::new(self.outers(bend))
     }
 }
 

@@ -5,7 +5,7 @@
 use contracts_try::debug_invariant;
 use derive_getters::Getters;
 use geo::Point;
-use petgraph::stable_graph::StableDiGraph;
+use petgraph::{stable_graph::StableDiGraph, visit::Walker};
 use rstar::{primitives::GeomWithData, Envelope, RTree, RTreeObject, AABB};
 
 use crate::{
@@ -194,21 +194,17 @@ impl<
         // here because it starts iteration from the bend we currently operate
         // on, which obviously does not exist after deletion.
 
-        let mut rail = bend;
-
-        while let Some(outer) = self.geometry.outer(rail) {
-            Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_bend_bbox(outer)));
-            rail = outer;
+        let mut outwards = self.geometry.outwards(bend);
+        while let Some(next) = outwards.walk_next(&self.geometry) {
+            Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_bend_bbox(next)));
         }
-
-        let mut maybe_rail = self.geometry.outer(bend);
 
         Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_bend_bbox(bend)));
         self.geometry.remove_primitive(bend.into());
 
-        while let Some(outer) = maybe_rail {
-            self.rtree.insert(self.make_bend_bbox(outer));
-            maybe_rail = Some(outer);
+        let mut outwards = self.geometry.outwards(bend);
+        while let Some(next) = outwards.walk_next(&self.geometry) {
+            self.rtree.insert(self.make_bend_bbox(next));
         }
     }
 
@@ -273,11 +269,9 @@ impl<
     where
         F: FnOnce(&mut Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>, BI),
     {
-        let mut rail = bend;
-
-        while let Some(outer) = self.geometry.outer(rail) {
-            Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_bend_bbox(outer)));
-            rail = outer;
+        let mut outwards = self.geometry.outwards(bend);
+        while let Some(next) = outwards.walk_next(&self.geometry) {
+            Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_bend_bbox(next)));
         }
 
         Self::rtree_remove_must_be_successful(self.rtree.remove(&self.make_bend_bbox(bend)));
@@ -286,11 +280,9 @@ impl<
 
         self.rtree.insert(self.make_bend_bbox(bend));
 
-        rail = bend;
-
-        while let Some(outer) = self.geometry.outer(rail) {
-            self.rtree.insert(self.make_bend_bbox(outer));
-            rail = outer;
+        let mut outwards = self.geometry.outwards(bend);
+        while let Some(next) = outwards.walk_next(&self.geometry) {
+            self.rtree.insert(self.make_bend_bbox(next));
         }
     }
 
