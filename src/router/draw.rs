@@ -288,31 +288,53 @@ impl<R: AccessRules> DrawPrivate for Layout<R> {
     ) -> Result<CaneHead, DrawingException> {
         let layer = head.face().primitive(self.drawing()).layer();
         let maybe_net = head.face().primitive(self.drawing()).maybe_net();
-        let cane = self.insert_cane(
+
+        let dot_weight = LooseDotWeight(GeneralDotWeight {
+            circle: Circle {
+                pos: to,
+                r: width / 2.0,
+            },
+            layer,
+            maybe_net,
+        });
+        let seg_weight = SeqLooseSegWeight(GeneralSegWeight {
+            width,
+            layer,
+            maybe_net,
+        });
+        let bend_weight = LooseBendWeight(GeneralBendWeight {
+            width,
+            offset,
+            layer,
+            maybe_net,
+        });
+
+        // We first try to add cane. If this fails, we try to insert it instead.
+        // These two operations differ simply: cane insertion squeezes through
+        // under bends, cane addition does not.
+
+        let cane = if let Ok(cane) = self.add_cane(
             recorder,
             head.face(),
             around,
-            LooseDotWeight(GeneralDotWeight {
-                circle: Circle {
-                    pos: to,
-                    r: width / 2.0,
-                },
-                layer,
-                maybe_net,
-            }),
-            SeqLooseSegWeight(GeneralSegWeight {
-                width,
-                layer,
-                maybe_net,
-            }),
-            LooseBendWeight(GeneralBendWeight {
-                width,
-                offset,
-                layer,
-                maybe_net,
-            }),
+            dot_weight,
+            seg_weight,
+            bend_weight,
             sense,
-        )?;
+        ) {
+            cane
+        } else {
+            self.insert_cane(
+                recorder,
+                head.face(),
+                around,
+                dot_weight,
+                seg_weight,
+                bend_weight,
+                sense,
+            )?
+        };
+
         Ok(CaneHead {
             face: self.drawing().primitive(cane.bend).other_joint(cane.dot),
             cane,

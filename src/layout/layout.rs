@@ -73,7 +73,27 @@ impl<R> Layout<R> {
 }
 
 impl<R: AccessRules> Layout<R> {
-    /// Insert [`Cane`] object into the [`Layout`]
+    pub fn add_cane(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        from: DotIndex,
+        around: GearIndex,
+        dot_weight: LooseDotWeight,
+        seg_weight: SeqLooseSegWeight,
+        bend_weight: LooseBendWeight,
+        sense: RotationSense,
+    ) -> Result<Cane, DrawingException> {
+        self.drawing.add_cane(
+            recorder,
+            from,
+            around,
+            dot_weight,
+            seg_weight,
+            bend_weight,
+            sense,
+        )
+    }
+
     pub fn insert_cane(
         &mut self,
         recorder: &mut LayoutEdit,

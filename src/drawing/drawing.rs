@@ -258,9 +258,12 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 LooseIndex::Bend(bend) => {
                     bends.push(bend);
 
+                    let bend_primitive = self.primitive(bend);
+                    let inner = bend_primitive.inner();
+
                     for outer in self.primitive(bend).outers().collect::<Vec<_>>() {
                         outers.push(outer);
-                        self.reattach_bend(recorder, outer, self.primitive(bend).inner());
+                        self.reattach_bend(recorder, outer, inner);
                     }
                 }
             }
