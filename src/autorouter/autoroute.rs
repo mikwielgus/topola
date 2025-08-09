@@ -6,7 +6,7 @@
 //! routing steps.
 
 use itertools::{Itertools, Permutations};
-use std::ops::ControlFlow;
+use std::{iter::Skip, ops::ControlFlow};
 
 use crate::{
     board::{
@@ -46,9 +46,10 @@ pub struct AutorouteExecutionStepper {
     curr_ratline_index: usize,
     /// Stores the current route being processed, if any.
     route: Option<RouteStepper>,
-    /// Records the changes to the board data (changes to layout data are
-    /// recorded in navcord in route stepper).
-    data_edit: BoardDataEdit,
+    /// Records the changes to the layout, one routed band per item.
+    layout_edits: Vec<LayoutEdit>,
+    /// Records the changes to the board data, one routed band per item.
+    board_data_edits: Vec<BoardDataEdit>,
     /// The options for the autorouting process, defining how routing should be carried out.
     options: AutorouterOptions,
 }
@@ -80,17 +81,60 @@ impl AutorouteExecutionStepper {
                 destination,
                 options.router_options.routed_band_width,
             )?),
-            data_edit: BoardDataEdit::new(),
+            layout_edits: vec![],
+            board_data_edits: vec![],
             options,
         })
     }
 
-    fn dissolve_route_stepper_into_layout_edit(&mut self) -> LayoutEdit {
+    fn permute(
+        &mut self,
+        autorouter: &mut Autorouter<impl AccessMesadata>,
+        permutation: Vec<RatlineIndex>,
+    ) -> Result<(), AutorouterError> {
+        let new_index = permutation
+            .iter()
+            .zip(self.ratlines.iter())
+            .position(|(permuted, original)| *permuted != *original)
+            .unwrap();
+        self.ratlines = permutation;
+
+        self.backtrace_to_index(autorouter, new_index)?;
+        Ok(())
+    }
+
+    fn backtrace_to_index(
+        &mut self,
+        autorouter: &mut Autorouter<impl AccessMesadata>,
+        index: usize,
+    ) -> Result<(), AutorouterError> {
+        self.dissolve_route_stepper_and_push_layout_edit();
+
+        let board_edit = BoardEdit::new_from_edits(
+            BoardDataEdit::merge_iter(self.board_data_edits.split_off(index)),
+            LayoutEdit::merge_iter(self.layout_edits.split_off(index)),
+        );
+
+        autorouter.board.apply_edit(&board_edit.reverse());
+
+        let (origin, destination) = self.ratlines[index].ref_(autorouter).endpoint_dots();
+        let mut router = Router::new(autorouter.board.layout_mut(), self.options.router_options);
+
+        self.route = Some(router.route(
+            LayoutEdit::new(),
+            origin,
+            destination,
+            self.options.router_options.routed_band_width,
+        )?);
+
+        self.curr_ratline_index = index;
+        Ok(())
+    }
+
+    fn dissolve_route_stepper_and_push_layout_edit(&mut self) {
         if let Some(taken_route) = self.route.take() {
             let (_thetastar, navcord, ..) = taken_route.dissolve();
-            navcord.recorder
-        } else {
-            LayoutEdit::new()
+            self.layout_edits.push(navcord.recorder);
         }
     }
 }
@@ -107,10 +151,14 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinue
         // TODO: Use a proper state machine here for better readability?
 
         if self.curr_ratline_index >= self.ratlines.len() {
-            let recorder = self.dissolve_route_stepper_into_layout_edit();
+            self.dissolve_route_stepper_and_push_layout_edit();
+
             return Ok(ControlFlow::Break(Some(BoardEdit::new_from_edits(
-                self.data_edit.clone(),
-                recorder,
+                BoardDataEdit::merge_iter(self.board_data_edits.iter().cloned()),
+                // FIXME: This is a large clone. We probably need some
+                // high-level, say `AutorouteEdit`, struct to store sequences
+                // of edits.
+                LayoutEdit::merge_iter(self.layout_edits.iter().cloned()),
             ))));
         }
 
@@ -148,9 +196,13 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinue
                 band_termseg,
             );
 
+            let mut board_data_edit = BoardDataEdit::new();
+
             autorouter
                 .board
-                .try_set_band_between_nodes(&mut self.data_edit, source, target, band);
+                .try_set_band_between_nodes(&mut board_data_edit, source, target, band);
+
+            self.board_data_edits.push(board_data_edit);
 
             AutorouteContinueStatus::Routed(band_termseg)
         };
@@ -161,7 +213,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinue
             let (source, target) = new_ratline.ref_(autorouter).endpoint_dots();
             let mut router =
                 Router::new(autorouter.board.layout_mut(), self.options.router_options);
-            let recorder = self.dissolve_route_stepper_into_layout_edit();
+
+            self.dissolve_route_stepper_and_push_layout_edit();
+            let recorder = LayoutEdit::new();
 
             self.route = Some(router.route(
                 recorder,
@@ -177,10 +231,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinue
 
 impl<M: AccessMesadata> Abort<Autorouter<M>> for AutorouteExecutionStepper {
     fn abort(&mut self, autorouter: &mut Autorouter<M>) {
-        let layout_edit = self.dissolve_route_stepper_into_layout_edit();
-        let board_edit = BoardEdit::new_from_edits(self.data_edit.clone(), layout_edit);
-
-        autorouter.board.apply_edit(&board_edit.reverse());
+        self.backtrace_to_index(autorouter, 0);
         self.curr_ratline_index = self.ratlines.len();
     }
 }
@@ -220,7 +271,7 @@ impl GetDebugOverlayData for AutorouteExecutionStepper {
 
 pub struct AutorouteExecutionPermutator {
     stepper: AutorouteExecutionStepper,
-    permutations_iter: Permutations<std::vec::IntoIter<RatlineIndex>>,
+    permutations_iter: Skip<Permutations<std::vec::IntoIter<RatlineIndex>>>,
     options: AutorouterOptions,
 }
 
@@ -235,7 +286,7 @@ impl AutorouteExecutionPermutator {
         Ok(Self {
             stepper: AutorouteExecutionStepper::new(autorouter, ratlines.clone(), options)?,
             // Note: I assume here that the first permutation is the same as the original order.
-            permutations_iter: ratlines.into_iter().permutations(ratlines_len),
+            permutations_iter: ratlines.into_iter().permutations(ratlines_len).skip(1),
             options,
         })
     }
@@ -257,15 +308,11 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinue
                     return Err(err);
                 }
 
-                self.stepper.abort(autorouter);
-
-                let Some(new_permutation) = self.permutations_iter.next() else {
+                let Some(permutation) = self.permutations_iter.next() else {
                     return Ok(ControlFlow::Break(None));
                 };
 
-                self.stepper =
-                    AutorouteExecutionStepper::new(autorouter, new_permutation, self.options)?;
-
+                self.stepper.permute(autorouter, permutation);
                 self.stepper.step(autorouter)
             }
         }
