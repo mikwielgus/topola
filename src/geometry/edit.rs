@@ -8,7 +8,7 @@ use crate::graph::{GenericIndex, GetPetgraphIndex};
 
 use super::{AccessBendWeight, AccessDotWeight, AccessSegWeight, GetLayer};
 
-pub trait Edit: Sized {
+pub trait Edit: Sized + Default {
     fn reverse(&self) -> Self
     where
         Self: Clone,
@@ -21,6 +21,16 @@ pub trait Edit: Sized {
     fn reverse_inplace(&mut self);
 
     fn merge(&mut self, edit: Self);
+
+    fn merge_iter(iter: impl IntoIterator<Item = Self>) -> Self {
+        let mut result_edit = Self::default();
+
+        for curr_edit in iter {
+            result_edit.merge(curr_edit);
+        }
+
+        result_edit
+    }
 }
 
 pub trait ApplyGeometryEdit<
