@@ -6,16 +6,14 @@ use std::collections::BTreeMap;
 
 use crate::{board::BandName, drawing::band::BandUid, geometry::edit::Edit, layout::LayoutEdit};
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct BoardDataEdit {
     pub(super) bands: BTreeMap<BandName, (Option<BandUid>, Option<BandUid>)>,
 }
 
 impl BoardDataEdit {
     pub fn new() -> Self {
-        Self {
-            bands: BTreeMap::new(),
-        }
+        Self::default()
     }
 }
 
@@ -29,7 +27,7 @@ impl Edit for BoardDataEdit {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct BoardEdit {
     pub data_edit: BoardDataEdit,
     pub layout_edit: LayoutEdit,
@@ -37,10 +35,7 @@ pub struct BoardEdit {
 
 impl BoardEdit {
     pub fn new() -> Self {
-        Self {
-            data_edit: BoardDataEdit::new(),
-            layout_edit: LayoutEdit::new(),
-        }
+        Self::default()
     }
 
     pub fn new_from_edits(data_edit: BoardDataEdit, layout_edit: LayoutEdit) -> Self {

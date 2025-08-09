@@ -38,7 +38,7 @@ pub trait ApplyGeometryEdit<
     fn apply(&mut self, edit: &GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>);
 }
 
-#[derive(Debug, Clone)]
+#[derive(Clone, Debug)]
 pub struct GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI> {
     pub(super) dots: BTreeMap<DI, (Option<DW>, Option<DW>)>,
     pub(super) segs: BTreeMap<SI, (Option<((DI, DI), SW)>, Option<((DI, DI), SW)>)>,
@@ -53,25 +53,23 @@ pub struct GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI> {
         BTreeMap<GenericIndex<CW>, (Option<(Vec<(Cel, PI)>, CW)>, Option<(Vec<(Cel, PI)>, CW)>)>,
 }
 
-impl<
-        DW: AccessDotWeight + GetLayer,
-        SW: AccessSegWeight + GetLayer,
-        BW: AccessBendWeight + GetLayer,
-        CW: Clone,
-        Cel: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-    > GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>
+impl<DW, SW, BW, CW, Cel, PI, DI, SI, BI> Default
+    for GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
-    pub fn new() -> Self {
+    fn default() -> Self {
         Self {
             dots: BTreeMap::new(),
             segs: BTreeMap::new(),
             bends: BTreeMap::new(),
             compounds: BTreeMap::new(),
         }
+    }
+}
+
+impl<DW, SW, BW, CW, Cel, PI, DI, SI, BI> GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI> {
+    #[inline(always)]
+    pub fn new() -> Self {
+        Self::default()
     }
 }
 
