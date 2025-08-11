@@ -8,7 +8,7 @@
 
 use std::collections::{btree_map::Entry as BTreeMapEntry, BTreeMap};
 
-use geo::{point, Point, Rotate};
+use geo::{Point, Rotate};
 
 use crate::{
     board::{edit::BoardEdit, AccessMesadata, Board},
@@ -252,6 +252,7 @@ impl SpecctraDesign {
                                     layer,
                                     net,
                                     Some(pinname.clone()),
+                                    !place_side_is_front,
                                 )
                             }
                             Shape::Rect(rect) => {
@@ -268,6 +269,7 @@ impl SpecctraDesign {
                                     layer,
                                     net,
                                     Some(pinname.clone()),
+                                    !place_side_is_front,
                                 )
                             }
                             Shape::Path(path) => {
@@ -282,6 +284,7 @@ impl SpecctraDesign {
                                     layer,
                                     net,
                                     Some(pinname.clone()),
+                                    !place_side_is_front,
                                 )
                             }
                             Shape::Polygon(polygon) => {
@@ -296,6 +299,7 @@ impl SpecctraDesign {
                                     layer,
                                     net,
                                     Some(pinname.clone()),
+                                    !place_side_is_front,
                                 )
                             }
                         };
@@ -328,6 +332,7 @@ impl SpecctraDesign {
                             layer,
                             net,
                             None,
+                            false,
                         )
                     }
                     Shape::Rect(rect) => {
@@ -344,6 +349,7 @@ impl SpecctraDesign {
                             layer,
                             net,
                             None,
+                            false,
                         )
                     }
                     Shape::Path(path) => {
@@ -358,6 +364,7 @@ impl SpecctraDesign {
                             layer,
                             net,
                             None,
+                            false,
                         )
                     }
                     Shape::Polygon(polygon) => {
@@ -372,6 +379,7 @@ impl SpecctraDesign {
                             layer,
                             net,
                             None,
+                            false,
                         )
                     }
                 };
@@ -397,6 +405,7 @@ impl SpecctraDesign {
                 layer,
                 net,
                 None,
+                false,
             );
         }
 
@@ -432,9 +441,10 @@ impl SpecctraDesign {
         layer: usize,
         maybe_net: Option<usize>,
         maybe_pin: Option<String>,
+        flip: bool,
     ) {
         let circle = Circle {
-            pos: Self::pos(place, pin, 0.0, 0.0),
+            pos: Self::pos(place, pin, 0.0, 0.0, flip),
             r,
         };
 
@@ -461,13 +471,14 @@ impl SpecctraDesign {
         layer: usize,
         maybe_net: Option<usize>,
         maybe_pin: Option<String>,
+        flip: bool,
     ) {
         // Corners.
         let dot_1_1 = board.add_fixed_dot_infringably(
             recorder,
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
-                    pos: Self::pos(place, pin, x1, y1),
+                    pos: Self::pos(place, pin, x1, y1, flip),
                     r: 0.5,
                 },
                 layer,
@@ -479,7 +490,7 @@ impl SpecctraDesign {
             recorder,
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
-                    pos: Self::pos(place, pin, x2, y1),
+                    pos: Self::pos(place, pin, x2, y1, flip),
                     r: 0.5,
                 },
                 layer,
@@ -491,7 +502,7 @@ impl SpecctraDesign {
             recorder,
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
-                    pos: Self::pos(place, pin, x2, y2),
+                    pos: Self::pos(place, pin, x2, y2, flip),
                     r: 0.5,
                 },
                 layer,
@@ -503,7 +514,7 @@ impl SpecctraDesign {
             recorder,
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
-                    pos: Self::pos(place, pin, x1, y2),
+                    pos: Self::pos(place, pin, x1, y2, flip),
                     r: 0.5,
                 },
                 layer,
@@ -584,9 +595,10 @@ impl SpecctraDesign {
         layer: usize,
         maybe_net: Option<usize>,
         maybe_pin: Option<String>,
+        flip: bool,
     ) {
         // add the first coordinate in the wire path as a dot and save its index
-        let mut prev_pos = Self::pos(place, pin, coords[0].x, coords[0].y);
+        let mut prev_pos = Self::pos(place, pin, coords[0].x, coords[0].y, flip);
         let mut prev_index = board.add_fixed_dot_infringably(
             recorder,
             FixedDotWeight(GeneralDotWeight {
@@ -602,7 +614,7 @@ impl SpecctraDesign {
 
         // iterate through path coords starting from the second
         for coord in coords.iter().skip(1) {
-            let pos = Self::pos(place, pin, coord.x, coord.y);
+            let pos = Self::pos(place, pin, coord.x, coord.y, flip);
 
             if pos == prev_pos {
                 continue;
@@ -649,6 +661,7 @@ impl SpecctraDesign {
         layer: usize,
         maybe_net: Option<usize>,
         maybe_pin: Option<String>,
+        flip: bool,
     ) {
         let mut nodes = Vec::with_capacity(coords.len() * 2 - 1);
 
@@ -657,7 +670,7 @@ impl SpecctraDesign {
             recorder,
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
-                    pos: Self::pos(place, pin, coords[0].x, coords[0].y),
+                    pos: Self::pos(place, pin, coords[0].x, coords[0].y, flip),
                     r: width / 2.0,
                 },
                 layer,
@@ -686,7 +699,7 @@ impl SpecctraDesign {
                 recorder,
                 FixedDotWeight(GeneralDotWeight {
                     circle: Circle {
-                        pos: Self::pos(place, pin, coord.x, coord.y),
+                        pos: Self::pos(place, pin, coord.x, coord.y, flip),
                         r: width / 2.0,
                     },
                     layer,
@@ -721,8 +734,9 @@ impl SpecctraDesign {
         );
     }
 
-    fn pos(place: PointWithRotation, pin: PointWithRotation, x: f64, y: f64) -> Point {
-        let pos = (point! {x: x, y: y} + pin.pos).rotate_around_point(pin.rot, pin.pos);
-        (pos + place.pos).rotate_around_point(place.rot, place.pos)
+    fn pos(place: PointWithRotation, pin: PointWithRotation, x: f64, y: f64, flip: bool) -> Point {
+        let pos = (Point::new(x, y) + pin.pos).rotate_around_point(pin.rot, pin.pos);
+        (place.pos + flip.then_some(Point::new(-pos.x(), pos.y())).unwrap_or(pos))
+            .rotate_around_point(place.rot, place.pos)
     }
 }

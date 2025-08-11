@@ -239,7 +239,7 @@ impl Place {
     pub fn point_with_rotation(&self) -> PointWithRotation {
         PointWithRotation {
             pos: (self.x, self.y).into(),
-            rot: self.rotation + (self.side == "back").then_some(180.0).unwrap_or(0.0),
+            rot: self.rotation,
         }
     }
 }
