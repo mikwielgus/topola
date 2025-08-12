@@ -26,7 +26,7 @@ use crate::{
     },
     graph::GetPetgraphIndex,
     layout::{Layout, NodeIndex},
-    math::{intersect_linestring_and_ray, LineIntersection, NormalLine},
+    math::{intersect_linestring_and_ray, LineInGeneralForm, LineIntersection},
 };
 
 impl<R: AccessRules> Layout<R> {
@@ -45,7 +45,7 @@ impl<R: AccessRules> Layout<R> {
             to: right_pos,
             width: f64::EPSILON * 16.0,
         };
-        let mut orig_hline = NormalLine::from(ltr_line);
+        let mut orig_hline = LineInGeneralForm::from(ltr_line);
         orig_hline.make_normal_unit();
         let orig_hline = orig_hline;
         let location_denom = orig_hline.segment_interval(&ltr_line);
@@ -78,7 +78,7 @@ impl<R: AccessRules> Layout<R> {
                 let band_uid = self.drawing.loose_band_uid(loose).ok()?;
                 let loose_hline = orig_hline.orthogonal_through(&match shape {
                     PrimitiveShape::Seg(seg) => {
-                        let seg_hline = NormalLine::from(seg.middle_line());
+                        let seg_hline = LineInGeneralForm::from(seg.middle_line());
                         match orig_hline.intersects(&seg_hline) {
                             LineIntersection::Empty => return None,
                             LineIntersection::Overlapping => shape.center(),
@@ -92,7 +92,7 @@ impl<R: AccessRules> Layout<R> {
                         shape.center()
                     }
                 });
-                let location = (loose_hline.offset - location_start) / location_denom;
+                let location = (loose_hline.c - location_start) / location_denom;
                 log::trace!(
                     "intersection ({:?}) with {:?} is at {:?}",
                     band_uid,

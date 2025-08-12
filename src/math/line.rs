@@ -14,13 +14,13 @@ pub enum LineIntersection {
 
 /// A line in the normal form: `x0*y + y0*y + offset = 0`.
 #[derive(Clone, Copy, Debug, PartialEq)]
-pub struct NormalLine {
-    pub x: f64,
-    pub y: f64,
-    pub offset: f64,
+pub struct LineInGeneralForm {
+    pub a: f64,
+    pub b: f64,
+    pub c: f64, // On the same equation side as a and b, not on the other.
 }
 
-impl From<Line> for NormalLine {
+impl From<Line> for LineInGeneralForm {
     fn from(l: Line) -> Self {
         // the normal vector is perpendicular to the line
         let normal = point! {
@@ -28,28 +28,28 @@ impl From<Line> for NormalLine {
             y: -l.dx(),
         };
         Self {
-            x: normal.0.x,
-            y: normal.0.y,
-            offset: -perp_dot_product(l.end.into(), l.start.into()),
+            a: normal.0.x,
+            b: normal.0.y,
+            c: -perp_dot_product(l.end.into(), l.start.into()),
         }
     }
 }
 
-impl NormalLine {
+impl LineInGeneralForm {
     pub fn evaluate_at(&self, pt: Point) -> f64 {
-        self.x * pt.x() + self.y * pt.y() + self.offset
+        self.a * pt.x() + self.b * pt.y() + self.c
     }
 
     pub fn angle(&self) -> f64 {
-        self.y.atan2(self.x)
+        self.b.atan2(self.a)
     }
 
     pub fn make_normal_unit(&mut self) {
-        let normal_len = self.y.hypot(self.x);
+        let normal_len = self.b.hypot(self.a);
         if normal_len > (f64::EPSILON * 16.0) {
-            self.x /= normal_len;
-            self.y /= normal_len;
-            self.offset /= normal_len;
+            self.a /= normal_len;
+            self.b /= normal_len;
+            self.c /= normal_len;
         }
     }
 
@@ -58,11 +58,11 @@ impl NormalLine {
         const ALMOST_ZERO: f64 = f64::EPSILON * 16.0;
         let (mut a, mut b) = (*self, *b);
         let _ = (a.make_normal_unit(), b.make_normal_unit());
-        let apt = geo::point! { x: a.x, y: a.y };
-        let bpt = geo::point! { x: b.x, y: b.y };
+        let apt = geo::point! { x: a.a, y: a.b };
+        let bpt = geo::point! { x: b.a, y: b.b };
         let det = perp_dot_product(apt, bpt);
-        let rpx = b.y * a.offset - a.y * b.offset;
-        let rpy = -b.x * a.offset + a.x * b.offset;
+        let rpx = b.b * a.c - a.b * b.c;
+        let rpy = -b.a * a.c + a.a * b.c;
 
         if det.abs() > ALMOST_ZERO {
             LineIntersection::Point(geo::point! { x: rpx, y: rpy } / det)
@@ -79,17 +79,17 @@ impl NormalLine {
     pub fn orthogonal_through(&self, pt: &Point) -> Self {
         Self {
             // recover the original parallel vector
-            x: -self.y,
-            y: self.x,
-            offset: self.x * pt.0.y - self.y * pt.0.x,
+            a: -self.b,
+            b: self.a,
+            c: self.a * pt.0.y - self.b * pt.0.x,
         }
     }
 
     pub fn segment_interval(&self, line: &Line) -> core::ops::RangeInclusive<f64> {
         // recover the original parallel vector
         let parv = geo::point! {
-            x: -self.y,
-            y: self.x,
+            x: -self.b,
+            y: self.a,
         };
         dot_product(parv, line.start.into())..=dot_product(parv, line.end.into())
     }
@@ -106,8 +106,8 @@ impl NormalLine {
 
 /// Returns `Some(p)` when `p` lies in the intersection of the given lines.
 pub fn intersect_lines(line1: &Line, line2: &Line) -> Option<Point> {
-    let nline1 = NormalLine::from(*line1);
-    let nline2 = NormalLine::from(*line2);
+    let nline1 = LineInGeneralForm::from(*line1);
+    let nline2 = LineInGeneralForm::from(*line2);
 
     match nline1.intersects(&nline2) {
         LineIntersection::Empty | LineIntersection::Overlapping => None,
@@ -139,8 +139,8 @@ pub fn intersect_lines(line1: &Line, line2: &Line) -> Option<Point> {
 /// Returns `Some(p)` when `p` lies in the intersection of a line and a ray
 /// (line which is only bounded at one side, i.e. point + directon)
 pub fn intersect_line_and_ray(line1: &Line, ray2: &Line) -> Option<Point> {
-    let nline1 = NormalLine::from(*line1);
-    let nray2 = NormalLine::from(*ray2);
+    let nline1 = LineInGeneralForm::from(*line1);
+    let nray2 = LineInGeneralForm::from(*ray2);
 
     match nline1.intersects(&nray2) {
         LineIntersection::Empty | LineIntersection::Overlapping => None,

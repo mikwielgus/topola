@@ -6,13 +6,13 @@ use geo::{geometry::Point, Line};
 use specctra_core::math::Circle;
 use thiserror::Error;
 
-use super::{seq_perp_dot_product, NormalLine, RotationSense};
+use super::{seq_perp_dot_product, LineInGeneralForm, RotationSense};
 
 #[derive(Error, Debug, Clone, Copy, PartialEq)]
 #[error("no tangents for {0:?} and {1:?}")] // TODO add real error message
 pub struct NoTangents(pub Circle, pub Circle);
 
-fn _tangent(center: Point, r1: f64, r2: f64) -> Result<NormalLine, ()> {
+fn _tangent(center: Point, r1: f64, r2: f64) -> Result<LineInGeneralForm, ()> {
     let epsilon = 1e-9;
     let dr = r2 - r1;
     let norm = center.x() * center.x() + center.y() * center.y();
@@ -24,15 +24,15 @@ fn _tangent(center: Point, r1: f64, r2: f64) -> Result<NormalLine, ()> {
 
     let sqrt_discriminant = f64::sqrt(f64::abs(discriminant));
 
-    Ok(NormalLine {
-        x: (center.x() * dr + center.y() * sqrt_discriminant) / norm,
-        y: (center.y() * dr - center.x() * sqrt_discriminant) / norm,
-        offset: r1,
+    Ok(LineInGeneralForm {
+        a: (center.x() * dr + center.y() * sqrt_discriminant) / norm,
+        b: (center.y() * dr - center.x() * sqrt_discriminant) / norm,
+        c: r1,
     })
 }
 
-fn _tangents(circle1: Circle, circle2: Circle) -> Result<[NormalLine; 4], ()> {
-    let mut tgs: [NormalLine; 4] = [
+fn _tangents(circle1: Circle, circle2: Circle) -> Result<[LineInGeneralForm; 4], ()> {
+    let mut tgs: [LineInGeneralForm; 4] = [
         _tangent((circle2 - circle1).pos, -circle1.r, -circle2.r)?,
         _tangent((circle2 - circle1).pos, -circle1.r, circle2.r)?,
         _tangent((circle2 - circle1).pos, circle1.r, -circle2.r)?,
@@ -40,18 +40,18 @@ fn _tangents(circle1: Circle, circle2: Circle) -> Result<[NormalLine; 4], ()> {
     ];
 
     for tg in tgs.iter_mut() {
-        tg.offset -= tg.x * circle1.pos.x() + tg.y * circle1.pos.y();
+        tg.c -= tg.a * circle1.pos.x() + tg.b * circle1.pos.y();
     }
 
     Ok(tgs)
 }
 
-fn cast_point_to_canonical_line(pt: Point, line: NormalLine) -> Point {
+fn cast_point_to_canonical_line(pt: Point, line: LineInGeneralForm) -> Point {
     (
-        (line.y * (line.y * pt.x() - line.x * pt.y()) - line.x * line.offset)
-            / (line.x * line.x + line.y * line.y),
-        (line.x * (-line.y * pt.x() + line.x * pt.y()) - line.y * line.offset)
-            / (line.x * line.x + line.y * line.y),
+        (line.b * (line.b * pt.x() - line.a * pt.y()) - line.a * line.c)
+            / (line.a * line.a + line.b * line.b),
+        (line.a * (-line.b * pt.x() + line.a * pt.y()) - line.b * line.c)
+            / (line.a * line.a + line.b * line.b),
     )
         .into()
 }
