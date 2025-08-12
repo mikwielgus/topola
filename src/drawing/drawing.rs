@@ -1140,24 +1140,33 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         let mut inflated_shape = infringer.primitive(self).shape(); // Unused temporary value just for initialization.
         let conditions = infringer.primitive(self).conditions();
 
-        it.filter(|infringee| !self.are_connectable(infringer, *infringee))
-            .find_map(|primitive_node| {
-                let infringee_conditions = primitive_node.primitive(self).conditions();
+        it.filter(|infringee| {
+            // Infringement with loose dots resulted in false positives for
+            // line-of-sight paths.
+            !matches!(infringer, PrimitiveIndex::LooseDot(..))
+                && !matches!(infringee, PrimitiveIndex::LooseDot(..))
+        })
+        .filter(|infringee| !self.are_connectable(infringer, *infringee))
+        .find_map(|primitive_node| {
+            let infringee_conditions = primitive_node.primitive(self).conditions();
 
-                let epsilon = 1.0;
-                inflated_shape = infringer.primitive(self).shape().inflate(
-                    match (&conditions, infringee_conditions) {
-                        (None, _) | (_, None) => 0.0,
-                        (Some(lhs), Some(rhs)) => {
-                            (self.rules.clearance(lhs, &rhs) - epsilon).clamp(0.0, f64::INFINITY)
-                        }
-                    },
-                );
+            let epsilon = 1.0;
+            inflated_shape = infringer.primitive(self).shape().inflate(
+                match (&conditions, infringee_conditions) {
+                    (None, _) | (_, None) => 0.0,
+                    (Some(lhs), Some(rhs)) => {
+                        // Note the epsilon comparison.
+                        // XXX: Epsilon is probably too large. But what should
+                        // it be exactly then?
+                        (self.rules.clearance(lhs, &rhs) - epsilon).clamp(0.0, f64::INFINITY)
+                    }
+                },
+            );
 
-                inflated_shape
-                    .intersects(&primitive_node.primitive(self).shape())
-                    .then_some(Infringement(inflated_shape, primitive_node))
-            })
+            inflated_shape
+                .intersects(&primitive_node.primitive(self).shape())
+                .then_some(Infringement(inflated_shape, primitive_node))
+        })
     }
 
     fn detect_collision_except(
