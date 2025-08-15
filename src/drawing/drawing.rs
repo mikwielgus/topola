@@ -20,7 +20,6 @@ use crate::{
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         gear::GearIndex,
         graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
-        guide::Guide,
         loose::{GetPrevNextLoose, Loose, LooseIndex},
         primitive::{
             GenericPrimitive, GetCore, GetJoints, GetLimbs, GetOtherJoint, MakePrimitiveShape,

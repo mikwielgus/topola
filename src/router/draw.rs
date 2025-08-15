@@ -15,7 +15,6 @@ use crate::{
         dot::{DotIndex, FixedDotIndex, GeneralDotWeight, LooseDotIndex, LooseDotWeight},
         gear::GearIndex,
         graph::{GetMaybeNet, MakePrimitive},
-        guide::Guide,
         head::{CaneHead, GetFace, Head},
         primitive::GetOtherJoint,
         rules::AccessRules,

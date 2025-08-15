@@ -19,76 +19,8 @@ use super::{
     Drawing,
 };
 
-pub trait Guide {
-    fn guide_for_head_into_dot_segment(
-        &self,
-        head: &Head,
-        into: FixedDotIndex,
-        width: f64,
-    ) -> Result<Line, NoTangents>;
-
-    fn guide_for_head_around_dot_segments(
-        &self,
-        head: &Head,
-        around: DotIndex,
-        width: f64,
-    ) -> Result<(Line, Line), NoTangents>;
-
-    fn guide_for_head_around_dot_segment(
-        &self,
-        head: &Head,
-        around: DotIndex,
-        sense: RotationSense,
-        width: f64,
-    ) -> Result<Line, NoTangents>;
-
-    fn guide_for_head_around_dot_offset(&self, head: &Head, around: DotIndex, _width: f64) -> f64;
-
-    fn guide_for_head_around_bend_segments(
-        &self,
-        head: &Head,
-        around: BendIndex,
-        width: f64,
-    ) -> Result<(Line, Line), NoTangents>;
-
-    fn guide_for_head_around_bend_segment(
-        &self,
-        head: &Head,
-        around: BendIndex,
-        sense: RotationSense,
-        width: f64,
-    ) -> Result<Line, NoTangents>;
-
-    fn guide_for_head_around_bend_offset(&self, head: &Head, around: BendIndex, _width: f64)
-        -> f64;
-
-    fn head_sense(&self, head: &Head) -> Option<RotationSense>;
-
-    fn cane_head(&self, face: LooseDotIndex) -> CaneHead;
-
-    fn rear_head(&self, face: LooseDotIndex) -> Head;
-
-    fn head(&self, face: DotIndex) -> Head;
-
-    fn bend_circle(
-        &self,
-        bend: BendIndex,
-        width: f64,
-        guide_conditions: Option<&Conditions<'_>>,
-    ) -> Circle;
-
-    fn dot_circle(
-        &self,
-        dot: DotIndex,
-        width: f64,
-        guide_conditions: Option<&Conditions<'_>>,
-    ) -> Circle;
-
-    fn conditions(&self, node: PrimitiveIndex) -> Option<Conditions<'_>>;
-}
-
-impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
-    fn guide_for_head_into_dot_segment(
+impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
+    pub fn guide_for_head_into_dot_segment(
         &self,
         head: &Head,
         into: FixedDotIndex,
@@ -104,7 +36,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         math::tangent_segment(from_circle, from_sense, to_circle, None)
     }
 
-    fn guide_for_head_around_dot_segments(
+    pub fn guide_for_head_around_dot_segments(
         &self,
         head: &Head,
         around: DotIndex,
@@ -120,7 +52,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         Ok((tangents[0], tangents[1]))
     }
 
-    fn guide_for_head_around_dot_segment(
+    pub fn guide_for_head_around_dot_segment(
         &self,
         head: &Head,
         around: DotIndex,
@@ -135,14 +67,19 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         math::tangent_segment(from_circle, from_sense, to_circle, Some(sense))
     }
 
-    fn guide_for_head_around_dot_offset(&self, head: &Head, around: DotIndex, _width: f64) -> f64 {
+    pub fn guide_for_head_around_dot_offset(
+        &self,
+        head: &Head,
+        around: DotIndex,
+        _width: f64,
+    ) -> f64 {
         self.clearance(
             self.conditions(around.into()).as_ref(),
             self.conditions(head.face().into()).as_ref(),
         )
     }
 
-    fn guide_for_head_around_bend_segments(
+    pub fn guide_for_head_around_bend_segments(
         &self,
         head: &Head,
         around: BendIndex,
@@ -158,7 +95,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         Ok((tangents[0], tangents[1]))
     }
 
-    fn guide_for_head_around_bend_segment(
+    pub fn guide_for_head_around_bend_segment(
         &self,
         head: &Head,
         around: BendIndex,
@@ -173,7 +110,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         math::tangent_segment(from_circle, from_sense, to_circle, Some(sense))
     }
 
-    fn guide_for_head_around_bend_offset(
+    pub fn guide_for_head_around_bend_offset(
         &self,
         head: &Head,
         around: BendIndex,
@@ -185,7 +122,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         )
     }
 
-    fn head_sense(&self, head: &Head) -> Option<RotationSense> {
+    pub fn head_sense(&self, head: &Head) -> Option<RotationSense> {
         if let Head::Cane(head) = head {
             let joints = self.primitive(head.cane.bend).joints();
 
@@ -199,25 +136,25 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         }
     }
 
-    fn cane_head(&self, face: LooseDotIndex) -> CaneHead {
+    pub fn cane_head(&self, face: LooseDotIndex) -> CaneHead {
         CaneHead {
             face,
             cane: self.cane(face),
         }
     }
 
-    fn rear_head(&self, face: LooseDotIndex) -> Head {
+    pub fn rear_head(&self, face: LooseDotIndex) -> Head {
         self.head(self.rear(self.cane_head(face)))
     }
 
-    fn head(&self, face: DotIndex) -> Head {
+    pub fn head(&self, face: DotIndex) -> Head {
         match face {
             DotIndex::Fixed(dot) => BareHead { face: dot }.into(),
             DotIndex::Loose(dot) => self.cane_head(dot).into(),
         }
     }
 
-    fn dot_circle(
+    pub fn dot_circle(
         &self,
         dot: DotIndex,
         width: f64,
@@ -232,7 +169,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         }
     }
 
-    fn bend_circle(
+    pub fn bend_circle(
         &self,
         bend: BendIndex,
         width: f64,
@@ -251,20 +188,10 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Guide for Drawing<CW, Cel, R> {
         }
     }
 
-    fn conditions(&self, node: PrimitiveIndex) -> Option<Conditions<'_>> {
+    pub fn conditions(&self, node: PrimitiveIndex) -> Option<Conditions<'_>> {
         node.primitive(self).conditions()
     }
-}
 
-trait GuidePrivate {
-    fn clearance(&self, lhs: Option<&Conditions<'_>>, rhs: Option<&Conditions<'_>>) -> f64;
-
-    fn head_circle(&self, head: &Head, width: f64) -> Circle;
-
-    fn rear(&self, head: CaneHead) -> DotIndex;
-}
-
-impl<CW: Clone, Cel: Copy, R: AccessRules> GuidePrivate for Drawing<CW, Cel, R> {
     fn clearance(&self, lhs: Option<&Conditions<'_>>, rhs: Option<&Conditions<'_>>) -> f64 {
         match (lhs, rhs) {
             (None, _) | (_, None) => 0.0,

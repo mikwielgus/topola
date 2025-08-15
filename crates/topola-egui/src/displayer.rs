@@ -14,7 +14,6 @@ use topola::{
         bend::BendIndex,
         dot::DotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
-        guide::Guide,
         head::GetFace,
         primitive::MakePrimitiveShape,
     },
