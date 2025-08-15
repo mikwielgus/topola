@@ -20,7 +20,7 @@ use super::{
 };
 
 impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
-    pub fn guide_for_head_into_dot_segment(
+    pub fn guide_for_head_into_dot(
         &self,
         head: &Head,
         into: FixedDotIndex,
@@ -36,7 +36,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         math::tangent_segment(from_circle, from_sense, to_circle, None)
     }
 
-    pub fn guide_for_head_around_dot_segments(
+    pub fn guides_for_head_around_dot(
         &self,
         head: &Head,
         around: DotIndex,
@@ -52,7 +52,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok((tangents[0], tangents[1]))
     }
 
-    pub fn guide_for_head_around_dot_segment(
+    pub fn guide_for_head_around_dot(
         &self,
         head: &Head,
         around: DotIndex,
@@ -67,7 +67,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         math::tangent_segment(from_circle, from_sense, to_circle, Some(sense))
     }
 
-    pub fn guide_for_head_around_dot_offset(
+    pub fn offset_for_guide_for_head_around_dot(
         &self,
         head: &Head,
         around: DotIndex,
@@ -79,7 +79,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         )
     }
 
-    pub fn guide_for_head_around_bend_segments(
+    pub fn guides_for_head_around_bend(
         &self,
         head: &Head,
         around: BendIndex,
@@ -95,7 +95,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok((tangents[0], tangents[1]))
     }
 
-    pub fn guide_for_head_around_bend_segment(
+    pub fn guide_for_head_around_bend(
         &self,
         head: &Head,
         around: BendIndex,
@@ -110,7 +110,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         math::tangent_segment(from_circle, from_sense, to_circle, Some(sense))
     }
 
-    pub fn guide_for_head_around_bend_offset(
+    pub fn offset_for_guide_for_head_around_bend(
         &self,
         head: &Head,
         around: BendIndex,

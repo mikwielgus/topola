@@ -728,35 +728,27 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
 
         let (from, to, offset) = if let Some(inner) = rail_primitive.inner() {
             let inner = inner.into();
-            let from = self.guide_for_head_around_bend_segment(
+            let from = self.guide_for_head_around_bend(
                 &from_head,
                 inner,
                 RotationSense::Counterclockwise,
                 width,
             )?;
-            let to = self.guide_for_head_around_bend_segment(
-                &to_head,
-                inner,
-                RotationSense::Clockwise,
-                width,
-            )?;
-            let offset = self.guide_for_head_around_bend_offset(&from_head, inner, width);
+            let to =
+                self.guide_for_head_around_bend(&to_head, inner, RotationSense::Clockwise, width)?;
+            let offset = self.offset_for_guide_for_head_around_bend(&from_head, inner, width);
             (from, to, offset)
         } else {
             let core = rail_primitive.core().into();
-            let from = self.guide_for_head_around_dot_segment(
+            let from = self.guide_for_head_around_dot(
                 &from_head,
                 core,
                 RotationSense::Counterclockwise,
                 width,
             )?;
-            let to = self.guide_for_head_around_dot_segment(
-                &to_head,
-                core,
-                RotationSense::Clockwise,
-                width,
-            )?;
-            let offset = self.guide_for_head_around_dot_offset(&from_head, core, width);
+            let to =
+                self.guide_for_head_around_dot(&to_head, core, RotationSense::Clockwise, width)?;
+            let offset = self.offset_for_guide_for_head_around_dot(&from_head, core, width);
             (from, to, offset)
         };
 
