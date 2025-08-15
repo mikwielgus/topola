@@ -30,7 +30,7 @@ impl<'a> Painter<'a> {
 
     pub fn paint_primitive(&mut self, shape: &PrimitiveShape, color: egui::epaint::Color32) {
         let epaint_shape = match shape {
-            PrimitiveShape::Dot(dot) => self.dot_shape(dot.circle, color),
+            PrimitiveShape::Dot(dot) => self.solid_circle_shape(dot.circle, color),
             PrimitiveShape::Seg(seg) => egui::Shape::line_segment(
                 [
                     self.transform
@@ -75,12 +75,26 @@ impl<'a> Painter<'a> {
         ));
     }
 
-    pub fn paint_dot(&mut self, circle: Circle, color: egui::epaint::Color32) {
-        let shape = self.dot_shape(circle, color);
+    pub fn paint_hollow_circle(
+        &mut self,
+        circle: Circle,
+        width: f32,
+        color: egui::epaint::Color32,
+    ) {
+        self.ui.painter().add(egui::Shape::circle_stroke(
+            self.transform
+                .mul_pos([circle.pos.x() as f32, -circle.pos.y() as f32].into()),
+            circle.r as f32 * self.transform.scaling,
+            egui::Stroke { width, color },
+        ));
+    }
+
+    pub fn paint_solid_circle(&mut self, circle: Circle, color: egui::epaint::Color32) {
+        let shape = self.solid_circle_shape(circle, color);
         self.ui.painter().add(shape);
     }
 
-    fn dot_shape(&mut self, circle: Circle, color: egui::epaint::Color32) -> egui::Shape {
+    fn solid_circle_shape(&mut self, circle: Circle, color: egui::epaint::Color32) -> egui::Shape {
         egui::Shape::circle_filled(
             self.transform
                 .mul_pos([circle.pos.x() as f32, -circle.pos.y() as f32].into()),
@@ -89,7 +103,7 @@ impl<'a> Painter<'a> {
         )
     }
 
-    pub fn paint_linestring(&mut self, linestring: &LineString, color: egui::epaint::Color32) {
+    pub fn paint_polyline(&mut self, linestring: &LineString, color: egui::epaint::Color32) {
         self.ui.painter().add(egui::Shape::line(
             linestring
                 .exterior_coords_iter()
@@ -120,7 +134,7 @@ impl<'a> Painter<'a> {
         ));
     }
 
-    pub fn paint_edge(&mut self, from: Point, to: Point, stroke: egui::Stroke) {
+    pub fn paint_line_segment(&mut self, from: Point, to: Point, stroke: egui::Stroke) {
         self.ui.painter().add(egui::Shape::line_segment(
             [
                 self.transform

@@ -11,7 +11,11 @@ use topola::{
     autorouter::invoker::GetDebugOverlayData,
     board::AccessMesadata,
     drawing::{
+        bend::BendIndex,
+        dot::DotIndex,
         graph::{MakePrimitive, PrimitiveIndex},
+        guide::Guide,
+        head::GetFace,
         primitive::MakePrimitiveShape,
     },
     geometry::{shape::AccessShape, GenericNode},
@@ -50,8 +54,8 @@ impl<'a> Displayer<'a> {
             self.display_ratsnest();
         }
 
-        if menu_bar.show_navmesh {
-            self.display_navmesh(menu_bar);
+        if menu_bar.show_navmesh || menu_bar.show_guide_circles {
+            self.display_navmesh_or_guides(menu_bar);
         }
 
         if menu_bar.show_triangulation {
@@ -158,7 +162,7 @@ impl<'a> Displayer<'a> {
             let from = graph.node_weight(edge.source()).unwrap().pos;
             let to = graph.node_weight(edge.target()).unwrap().pos;
 
-            self.painter.paint_edge(
+            self.painter.paint_line_segment(
                 from,
                 to,
                 egui::Stroke::new(1.0, egui::Color32::from_rgb(90, 90, 200)),
@@ -166,7 +170,7 @@ impl<'a> Displayer<'a> {
         }
     }
 
-    fn display_navmesh(&mut self, menu_bar: &MenuBar) {
+    fn display_navmesh_or_guides(&mut self, menu_bar: &MenuBar) {
         let board = self.workspace.interactor.invoker().autorouter().board();
 
         if let Some(activity) = self.workspace.interactor.maybe_activity() {
@@ -220,7 +224,9 @@ impl<'a> Displayer<'a> {
                         egui::Stroke::new(1.0, egui::Color32::from_rgb(125, 125, 125))
                     };
 
-                    self.painter.paint_edge(from, to, stroke);
+                    if menu_bar.show_navmesh {
+                        self.painter.paint_line_segment(from, to, stroke);
+                    }
 
                     if let Some(text) = activity.navedge_debug_text((edge.source(), edge.target()))
                     {
@@ -235,10 +241,42 @@ impl<'a> Displayer<'a> {
 
                 for index in navmesh.graph().node_indices() {
                     let navnode = NavnodeIndex(index);
-                    let mut pos = PrimitiveIndex::from(navmesh.node_weight(navnode).unwrap().node)
+                    let primitive =
+                        PrimitiveIndex::from(navmesh.node_weight(navnode).unwrap().node);
+                    let mut pos = primitive
                         .primitive(board.layout().drawing())
                         .shape()
                         .center();
+
+                    if menu_bar.show_guide_circles {
+                        if let Some(navcord) = activity.maybe_navcord() {
+                            if let Ok(dot) = DotIndex::try_from(primitive) {
+                                let drawing = board.layout().drawing();
+
+                                self.painter.paint_hollow_circle(
+                                    drawing.dot_circle(
+                                        dot,
+                                        navcord.width,
+                                        drawing.conditions(navcord.head.face().into()).as_ref(),
+                                    ),
+                                    1.0,
+                                    egui::epaint::Color32::WHITE,
+                                );
+                            } else if let Ok(bend) = BendIndex::try_from(primitive) {
+                                let drawing = board.layout().drawing();
+
+                                self.painter.paint_hollow_circle(
+                                    drawing.bend_circle(
+                                        bend,
+                                        navcord.width,
+                                        drawing.conditions(navcord.head.face().into()).as_ref(),
+                                    ),
+                                    1.0,
+                                    egui::epaint::Color32::WHITE,
+                                );
+                            }
+                        }
+                    }
 
                     pos += match navmesh.node_weight(navnode).unwrap().maybe_sense {
                         Some(RotationSense::Counterclockwise) => [0.0, 150.0].into(),
@@ -286,7 +324,7 @@ impl<'a> Displayer<'a> {
                         .shape()
                         .center();
 
-                    self.painter.paint_edge(
+                    self.painter.paint_line_segment(
                         from,
                         to,
                         egui::Stroke::new(1.0, egui::Color32::from_rgb(255, 255, 255)),
@@ -307,7 +345,7 @@ impl<'a> Displayer<'a> {
                     let from = from_weight.pos + [100.0, 100.0].into();
                     let to = to_weight.pos + [100.0, 100.0].into();
 
-                    self.painter.paint_edge(
+                    self.painter.paint_line_segment(
                         from,
                         to,
                         egui::Stroke::new(1.0, egui::Color32::from_rgb(255, 255, 0)),
@@ -399,14 +437,14 @@ impl<'a> Displayer<'a> {
                     offset_lhs /= offset_lhs.dot(offset_lhs).sqrt() / 50.0;
                     let mut offset_rhs = rhs - middle;
                     offset_rhs /= offset_rhs.dot(offset_rhs).sqrt() / 50.0;
-                    self.painter.paint_edge(
+                    self.painter.paint_line_segment(
                         a_pos + offset_lhs,
                         b_pos + offset_lhs,
                         make_stroke(edge_lens[0].len()),
                     );
                     self.painter
-                        .paint_edge(a_pos, b_pos, make_stroke(edge_lens[1].len()));
-                    self.painter.paint_edge(
+                        .paint_line_segment(a_pos, b_pos, make_stroke(edge_lens[1].len()));
+                    self.painter.paint_line_segment(
                         a_pos + offset_rhs,
                         b_pos + offset_rhs,
                         make_stroke(edge_lens[2].len()),
@@ -416,7 +454,8 @@ impl<'a> Displayer<'a> {
                         .iter()
                         .filter(|i| matches!(i, pie::RelaxedPath::Normal(_)))
                         .count();
-                    self.painter.paint_edge(a_pos, b_pos, make_stroke(edge_len));
+                    self.painter
+                        .paint_line_segment(a_pos, b_pos, make_stroke(edge_len));
                 }
             }
         }
@@ -447,25 +486,25 @@ impl<'a> Displayer<'a> {
                 activity.activity()
             {
                 self.painter
-                    .paint_linestring(&rp.lines, egui::Color32::from_rgb(245, 182, 66));
+                    .paint_polyline(&rp.lines, egui::Color32::from_rgb(245, 182, 66));
             }
 
             for linestring in activity.polygonal_blockers() {
                 self.painter
-                    .paint_linestring(linestring, egui::Color32::from_rgb(115, 0, 255));
+                    .paint_polyline(linestring, egui::Color32::from_rgb(115, 0, 255));
             }
 
             if let Some(ref navmesh) = activity.maybe_thetastar().map(|astar| astar.graph()) {
                 if menu_bar.show_origin_destination {
                     let (origin, destination) = (navmesh.origin(), navmesh.destination());
-                    self.painter.paint_dot(
+                    self.painter.paint_solid_circle(
                         Circle {
                             pos: board.layout().drawing().primitive(origin).shape().center(),
                             r: 150.0,
                         },
                         egui::Color32::from_rgb(255, 255, 100),
                     );
-                    self.painter.paint_dot(
+                    self.painter.paint_solid_circle(
                         Circle {
                             pos: board
                                 .layout()

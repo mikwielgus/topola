@@ -39,10 +39,8 @@ use crate::{
         AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
         GetLayer, GetOffset, GetSetPos, GetWidth,
     },
-    graph::MakeRef,
-    graph::{GenericIndex, GetPetgraphIndex},
-    math::NoTangents,
-    math::RotationSense,
+    graph::{GenericIndex, GetPetgraphIndex, MakeRef},
+    math::{NoTangents, RotationSense},
 };
 
 use super::gear::{GetOuterGears, WalkOutwards};
