@@ -4,12 +4,13 @@
 
 use petgraph::{
     data::DataMap,
+    graph::NodeIndex,
     visit::{EdgeRef, IntoEdgeReferences},
 };
 use rstar::AABB;
 use topola::{
     autorouter::invoker::GetDebugOverlayData,
-    board::AccessMesadata,
+    board::{AccessMesadata, Board},
     drawing::{
         bend::BendIndex,
         dot::DotIndex,
@@ -21,9 +22,10 @@ use topola::{
     graph::MakeRef,
     interactor::{activity::ActivityStepper, interaction::InteractionStepper},
     layout::poly::MakePolygon,
-    math::{Circle, RotationSense},
+    math::{self, Circle, RotationSense},
     router::{
-        navmesh::{BinavnodeNodeIndex, NavnodeIndex},
+        navcord::Navcord,
+        navmesh::{BinavnodeNodeIndex, Navmesh, NavnodeIndex},
         ng::pie,
         prenavmesh::PrenavmeshConstraint,
     },
@@ -53,7 +55,7 @@ impl<'a> Displayer<'a> {
             self.display_ratsnest();
         }
 
-        if menu_bar.show_navmesh || menu_bar.show_guide_circles {
+        if menu_bar.show_navmesh || menu_bar.show_guide_circles || menu_bar.show_guide_bitangents {
             self.display_navmesh_or_guides(menu_bar);
         }
 
@@ -227,6 +229,27 @@ impl<'a> Displayer<'a> {
                         self.painter.paint_line_segment(from, to, stroke);
                     }
 
+                    if menu_bar.show_guide_bitangents {
+                        if let Some(navcord) = activity.maybe_navcord() {
+                            if let (Some(from_circle), Some(to_circle)) = (
+                                Self::node_guide_circle(board, navmesh, navcord, edge.source().0),
+                                Self::node_guide_circle(board, navmesh, navcord, edge.target().0),
+                            ) {
+                                if let Ok(tangents) =
+                                    math::tangent_segments(from_circle, None, to_circle, None)
+                                {
+                                    for tangent in tangents {
+                                        self.painter.paint_line_segment(
+                                            tangent.start_point(),
+                                            tangent.end_point(),
+                                            egui::Stroke::new(1.0, egui::Color32::WHITE),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+
                     if let Some(text) = activity.navedge_debug_text((edge.source(), edge.target()))
                     {
                         self.painter.paint_text(
@@ -239,6 +262,20 @@ impl<'a> Displayer<'a> {
                 }
 
                 for index in navmesh.graph().node_indices() {
+                    if menu_bar.show_guide_circles {
+                        if let Some(navcord) = activity.maybe_navcord() {
+                            if let Some(circle) =
+                                Self::node_guide_circle(board, navmesh, navcord, index)
+                            {
+                                self.painter.paint_hollow_circle(
+                                    circle,
+                                    1.0,
+                                    egui::epaint::Color32::WHITE,
+                                );
+                            }
+                        }
+                    }
+
                     let navnode = NavnodeIndex(index);
                     let primitive =
                         PrimitiveIndex::from(navmesh.node_weight(navnode).unwrap().node);
@@ -246,36 +283,6 @@ impl<'a> Displayer<'a> {
                         .primitive(board.layout().drawing())
                         .shape()
                         .center();
-
-                    if menu_bar.show_guide_circles {
-                        if let Some(navcord) = activity.maybe_navcord() {
-                            if let Ok(dot) = DotIndex::try_from(primitive) {
-                                let drawing = board.layout().drawing();
-
-                                self.painter.paint_hollow_circle(
-                                    drawing.dot_circle(
-                                        dot,
-                                        navcord.width,
-                                        drawing.conditions(navcord.head.face().into()).as_ref(),
-                                    ),
-                                    1.0,
-                                    egui::epaint::Color32::WHITE,
-                                );
-                            } else if let Ok(bend) = BendIndex::try_from(primitive) {
-                                let drawing = board.layout().drawing();
-
-                                self.painter.paint_hollow_circle(
-                                    drawing.bend_circle(
-                                        bend,
-                                        navcord.width,
-                                        drawing.conditions(navcord.head.face().into()).as_ref(),
-                                    ),
-                                    1.0,
-                                    egui::epaint::Color32::WHITE,
-                                );
-                            }
-                        }
-                    }
 
                     pos += match navmesh.node_weight(navnode).unwrap().maybe_sense {
                         Some(RotationSense::Counterclockwise) => [0.0, 150.0].into(),
@@ -303,6 +310,33 @@ impl<'a> Displayer<'a> {
                     }
                 }
             }
+        }
+    }
+
+    fn node_guide_circle(
+        board: &Board<impl AccessMesadata>,
+        navmesh: &Navmesh,
+        navcord: &Navcord,
+        index: NodeIndex<usize>,
+    ) -> Option<Circle> {
+        let drawing = board.layout().drawing();
+        let navnode = NavnodeIndex(index);
+        let primitive = PrimitiveIndex::from(navmesh.node_weight(navnode).unwrap().node);
+
+        if let Ok(dot) = DotIndex::try_from(primitive) {
+            Some(drawing.dot_circle(
+                dot,
+                navcord.width,
+                drawing.conditions(navcord.head.face().into()).as_ref(),
+            ))
+        } else if let Ok(bend) = BendIndex::try_from(primitive) {
+            Some(drawing.bend_circle(
+                bend,
+                navcord.width,
+                drawing.conditions(navcord.head.face().into()).as_ref(),
+            ))
+        } else {
+            None
         }
     }
 

@@ -23,6 +23,7 @@ tr-menu-view-zoom-to-fit = Zoom to Fit
 tr-menu-view-show-ratsnest = Show Ratsnest
 tr-menu-view-show-navmesh = Show Navmesh
 tr-menu-view-show-guide-circles = Show Guide-Circles
+tr-menu-view-show-guide-bitangents = Show Guide-Bitangents
 tr-menu-view-show-triangulation = Show Triangulation
 tr-menu-view-show-triangulation-constraints = Show Triangulation Constraints
 tr-menu-view-show-pathfinding-scores = Show Pathfinding Scores

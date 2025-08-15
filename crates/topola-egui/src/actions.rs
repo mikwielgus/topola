@@ -167,6 +167,7 @@ pub struct ViewActions {
     pub show_ratsnest: Switch,
     pub show_navmesh: Switch,
     pub show_guide_circles: Switch,
+    pub show_guide_bitangents: Switch,
     pub show_triangulation: Switch,
     pub show_triangulation_constraints: Switch,
     pub show_pathfinding_scores: Switch,
@@ -184,6 +185,10 @@ impl ViewActions {
             show_navmesh: Action::new_keyless(tr.text("tr-menu-view-show-navmesh")).into_switch(),
             show_guide_circles: Action::new_keyless(tr.text("tr-menu-view-show-guide-circles"))
                 .into_switch(),
+            show_guide_bitangents: Action::new_keyless(
+                tr.text("tr-menu-view-show-guide-bitangents"),
+            )
+            .into_switch(),
             show_triangulation: Action::new_keyless(tr.text("tr-menu-view-show-triangulation"))
                 .into_switch(),
             show_triangulation_constraints: Action::new_keyless(
@@ -224,6 +229,8 @@ impl ViewActions {
             self.show_navmesh.checkbox(ui, &mut menu_bar.show_navmesh);
             self.show_guide_circles
                 .checkbox(ui, &mut menu_bar.show_guide_circles);
+            self.show_guide_bitangents
+                .checkbox(ui, &mut menu_bar.show_guide_bitangents);
             self.show_triangulation
                 .checkbox(ui, &mut menu_bar.show_triangulation);
             self.show_triangulation_constraints
