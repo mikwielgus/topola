@@ -123,7 +123,22 @@ fn test_tht_3pin_xlr_to_tht_3pin_xlr() {
 
     let (mut autorouter, ..) = invoker.dissolve();
 
-    // FIXME: The routing result is pretty bad.
+    common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
+}
+
+#[test]
+fn test_vga_dac_breakout() {
+    let mut autorouter =
+        common::load_design("tests/single_layer/vga_dac_breakout/vga_dac_breakout.dsn");
+    common::assert_navnode_count(&mut autorouter, "J1-2", "R4-1", 944);
+    let mut invoker = common::create_invoker_and_assert(autorouter);
+    common::replay_and_assert(
+        &mut invoker,
+        "tests/single_layer/vga_dac_breakout/autoroute_all.cmd",
+    );
+
+    let (mut autorouter, ..) = invoker.dissolve();
+
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
 }
 
