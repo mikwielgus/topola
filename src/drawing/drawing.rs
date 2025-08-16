@@ -39,7 +39,7 @@ use crate::{
         GetLayer, GetOffset, GetSetPos, GetWidth,
     },
     graph::{GenericIndex, GetPetgraphIndex, MakeRef},
-    math::{NoTangents, RotationSense},
+    math::{NoBitangents, RotationSense},
 };
 
 use super::gear::{GetOuterGears, WalkOutwards};
@@ -47,7 +47,7 @@ use super::gear::{GetOuterGears, WalkOutwards};
 #[derive(Clone, Copy, Error)]
 pub enum DrawingException {
     #[error(transparent)]
-    NoTangents(#[from] NoTangents),
+    NoTangents(#[from] NoBitangents),
     #[error(transparent)]
     Infringement(#[from] Infringement),
     #[error(transparent)]

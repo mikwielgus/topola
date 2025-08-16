@@ -23,13 +23,13 @@ use crate::{
     },
     geometry::{GetLayer, GetSetPos},
     layout::{Layout, LayoutEdit},
-    math::{Circle, NoTangents, RotationSense},
+    math::{Circle, NoBitangents, RotationSense},
 };
 
 #[derive(Error, Debug, Clone, Copy)]
 pub enum DrawException {
     #[error(transparent)]
-    NoTangents(#[from] NoTangents),
+    NoTangents(#[from] NoBitangents),
     // TODO add real error messages + these should eventually use Display
     #[error("cannot finish in {0:?}")]
     CannotFinishIn(FixedDotIndex, #[source] DrawingException),

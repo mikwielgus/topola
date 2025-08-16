@@ -235,13 +235,13 @@ impl<'a> Displayer<'a> {
                                 Self::node_guide_circle(board, navmesh, navcord, edge.source().0),
                                 Self::node_guide_circle(board, navmesh, navcord, edge.target().0),
                             ) {
-                                if let Ok(tangents) =
-                                    math::tangent_segments(from_circle, None, to_circle, None)
+                                if let Ok(bitangents) =
+                                    math::bitangents(from_circle, None, to_circle, None)
                                 {
-                                    for tangent in tangents {
+                                    for bitangent in bitangents {
                                         self.painter.paint_line_segment(
-                                            tangent.start_point(),
-                                            tangent.end_point(),
+                                            bitangent.start_point(),
+                                            bitangent.end_point(),
                                             egui::Stroke::new(1.0, egui::Color32::WHITE),
                                         )
                                     }

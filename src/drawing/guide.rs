@@ -6,7 +6,7 @@ use geo::Line;
 
 use crate::{
     geometry::{primitive::PrimitiveShape, shape::AccessShape, GetWidth},
-    math::{self, Circle, NoTangents, RotationSense},
+    math::{self, Circle, NoBitangents, RotationSense},
 };
 
 use super::{
@@ -25,7 +25,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         head: &Head,
         into: FixedDotIndex,
         width: f64,
-    ) -> Result<Line, NoTangents> {
+    ) -> Result<Line, NoBitangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle = Circle {
             pos: self.primitive(into).weight().0.circle.pos,
@@ -33,7 +33,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         };
 
         let from_sense = self.head_sense(head);
-        math::tangent_segment(from_circle, from_sense, to_circle, None)
+        math::bitangent(from_circle, from_sense, to_circle, None)
     }
 
     pub fn guides_for_head_around_dot(
@@ -41,14 +41,14 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         head: &Head,
         around: DotIndex,
         width: f64,
-    ) -> Result<(Line, Line), NoTangents> {
+    ) -> Result<(Line, Line), NoBitangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle =
             self.dot_circle(around, width, self.conditions(head.face().into()).as_ref());
 
         let from_sense = self.head_sense(head);
         let tangents: Vec<Line> =
-            math::tangent_segments(from_circle, from_sense, to_circle, None)?.collect();
+            math::bitangents(from_circle, from_sense, to_circle, None)?.collect();
         Ok((tangents[0], tangents[1]))
     }
 
@@ -58,13 +58,13 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         around: DotIndex,
         sense: RotationSense,
         width: f64,
-    ) -> Result<Line, NoTangents> {
+    ) -> Result<Line, NoBitangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle =
             self.dot_circle(around, width, self.conditions(head.face().into()).as_ref());
 
         let from_sense = self.head_sense(head);
-        math::tangent_segment(from_circle, from_sense, to_circle, Some(sense))
+        math::bitangent(from_circle, from_sense, to_circle, Some(sense))
     }
 
     pub fn offset_for_guide_for_head_around_dot(
@@ -84,14 +84,14 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         head: &Head,
         around: BendIndex,
         width: f64,
-    ) -> Result<(Line, Line), NoTangents> {
+    ) -> Result<(Line, Line), NoBitangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle =
             self.bend_circle(around, width, self.conditions(head.face().into()).as_ref());
 
         let from_sense = self.head_sense(head);
         let tangents: Vec<Line> =
-            math::tangent_segments(from_circle, from_sense, to_circle, None)?.collect();
+            math::bitangents(from_circle, from_sense, to_circle, None)?.collect();
         Ok((tangents[0], tangents[1]))
     }
 
@@ -101,13 +101,13 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         around: BendIndex,
         sense: RotationSense,
         width: f64,
-    ) -> Result<Line, NoTangents> {
+    ) -> Result<Line, NoBitangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle =
             self.bend_circle(around, width, self.conditions(head.face().into()).as_ref());
 
         let from_sense = self.head_sense(head);
-        math::tangent_segment(from_circle, from_sense, to_circle, Some(sense))
+        math::bitangent(from_circle, from_sense, to_circle, Some(sense))
     }
 
     pub fn offset_for_guide_for_head_around_bend(

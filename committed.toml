@@ -63,7 +63,7 @@ allowed_scopes = [
   "math/cyclic_search",
   "math/line",
   "math/polygon_tangents",
-  "math/tangents",
+  "math/bitangents",
   "math/tunnel",
   "router/draw",
   "router/navcord",

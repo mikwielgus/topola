@@ -15,8 +15,8 @@ pub use line::*;
 mod polygon_tangents;
 pub use polygon_tangents::*;
 
-mod tangents;
-pub use tangents::*;
+mod bitangents;
+pub use bitangents::*;
 
 mod tunnel;
 pub use tunnel::*;

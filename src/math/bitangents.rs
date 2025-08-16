@@ -10,9 +10,16 @@ use super::{seq_perp_dot_product, LineInGeneralForm, RotationSense};
 
 #[derive(Error, Debug, Clone, Copy, PartialEq)]
 #[error("no tangents for {0:?} and {1:?}")] // TODO add real error message
-pub struct NoTangents(pub Circle, pub Circle);
+pub struct NoBitangents(pub Circle, pub Circle);
 
-fn _tangent(center: Point, r1: f64, r2: f64) -> Result<LineInGeneralForm, ()> {
+fn _bitangent(center: Point, r1: f64, r2: f64) -> Result<LineInGeneralForm, ()> {
+    // Taken from https://cp-algorithms.com/geometry/tangents-to-two-circles.html
+    // with small changes.
+
+    if approx::relative_eq!(center.x(), 0.0) && approx::relative_eq!(center.y(), 0.0) {
+        return Err(());
+    }
+
     let epsilon = 1e-9;
     let dr = r2 - r1;
     let norm = center.x() * center.x() + center.y() * center.y();
@@ -31,22 +38,25 @@ fn _tangent(center: Point, r1: f64, r2: f64) -> Result<LineInGeneralForm, ()> {
     })
 }
 
-fn _tangents(circle1: Circle, circle2: Circle) -> Result<[LineInGeneralForm; 4], ()> {
-    let mut tgs: [LineInGeneralForm; 4] = [
-        _tangent((circle2 - circle1).pos, -circle1.r, -circle2.r)?,
-        _tangent((circle2 - circle1).pos, -circle1.r, circle2.r)?,
-        _tangent((circle2 - circle1).pos, circle1.r, -circle2.r)?,
-        _tangent((circle2 - circle1).pos, circle1.r, circle2.r)?,
-    ];
+fn _bitangents(circle1: Circle, circle2: Circle) -> Vec<LineInGeneralForm> {
+    let mut tgs: Vec<LineInGeneralForm> = [
+        _bitangent((circle2 - circle1).pos, -circle1.r, -circle2.r),
+        _bitangent((circle2 - circle1).pos, -circle1.r, circle2.r),
+        _bitangent((circle2 - circle1).pos, circle1.r, -circle2.r),
+        _bitangent((circle2 - circle1).pos, circle1.r, circle2.r),
+    ]
+    .into_iter()
+    .flatten()
+    .collect();
 
     for tg in tgs.iter_mut() {
         tg.c -= tg.a * circle1.pos.x() + tg.b * circle1.pos.y();
     }
 
-    Ok(tgs)
+    tgs
 }
 
-fn cast_point_to_canonical_line(pt: Point, line: LineInGeneralForm) -> Point {
+fn cast_point_to_line(pt: Point, line: LineInGeneralForm) -> Point {
     (
         (line.b * (line.b * pt.x() - line.a * pt.y()) - line.a * line.c)
             / (line.a * line.a + line.b * line.b),
@@ -56,39 +66,34 @@ fn cast_point_to_canonical_line(pt: Point, line: LineInGeneralForm) -> Point {
         .into()
 }
 
-fn tangent_point_pairs(
+fn bitangent_point_pairs(
     circle1: Circle,
     circle2: Circle,
-) -> Result<[(Point, Point); 4], NoTangents> {
-    let tgs = _tangents(circle1, circle2).map_err(|_| NoTangents(circle1, circle2))?;
+) -> Result<Vec<(Point, Point)>, NoBitangents> {
+    let bitangents: Vec<(Point, Point)> = _bitangents(circle1, circle2)
+        .into_iter()
+        .map(|tg| {
+            (
+                cast_point_to_line(circle1.pos, tg),
+                cast_point_to_line(circle2.pos, tg),
+            )
+        })
+        .collect();
 
-    Ok([
-        (
-            cast_point_to_canonical_line(circle1.pos, tgs[0]),
-            cast_point_to_canonical_line(circle2.pos, tgs[0]),
-        ),
-        (
-            cast_point_to_canonical_line(circle1.pos, tgs[1]),
-            cast_point_to_canonical_line(circle2.pos, tgs[1]),
-        ),
-        (
-            cast_point_to_canonical_line(circle1.pos, tgs[2]),
-            cast_point_to_canonical_line(circle2.pos, tgs[2]),
-        ),
-        (
-            cast_point_to_canonical_line(circle1.pos, tgs[3]),
-            cast_point_to_canonical_line(circle2.pos, tgs[3]),
-        ),
-    ])
+    if bitangents.is_empty() {
+        return Err(NoBitangents(circle1, circle2));
+    }
+
+    Ok(bitangents)
 }
 
-pub fn tangent_segments(
+pub fn bitangents(
     circle1: Circle,
     maybe_sense1: Option<RotationSense>,
     circle2: Circle,
     maybe_sense2: Option<RotationSense>,
-) -> Result<impl Iterator<Item = Line>, NoTangents> {
-    Ok(tangent_point_pairs(circle1, circle2)?
+) -> Result<impl Iterator<Item = Line>, NoBitangents> {
+    Ok(bitangent_point_pairs(circle1, circle2)?
         .into_iter()
         .filter_map(move |tangent_point_pair| {
             if let Some(sense1) = maybe_sense1 {
@@ -117,15 +122,13 @@ pub fn tangent_segments(
         }))
 }
 
-pub fn tangent_segment(
+pub fn bitangent(
     circle1: Circle,
     maybe_sense1: Option<RotationSense>,
     circle2: Circle,
     maybe_sense2: Option<RotationSense>,
-) -> Result<Line, NoTangents> {
-    Ok(
-        tangent_segments(circle1, maybe_sense1, circle2, maybe_sense2)?
-            .next()
-            .unwrap(),
-    )
+) -> Result<Line, NoBitangents> {
+    Ok(bitangents(circle1, maybe_sense1, circle2, maybe_sense2)?
+        .next()
+        .ok_or(NoBitangents(circle1, circle2))?)
 }
