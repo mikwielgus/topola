@@ -16,7 +16,7 @@ fn _bitangent(center: Point, r1: f64, r2: f64) -> Result<LineInGeneralForm, ()> 
     // Taken from https://cp-algorithms.com/geometry/tangents-to-two-circles.html
     // with small changes.
 
-    if approx::relative_eq!(center.x(), 0.0) && approx::relative_eq!(center.y(), 0.0) {
+    if center.x() == 0.0 && center.y() == 0.0 {
         return Err(());
     }
 
@@ -25,7 +25,7 @@ fn _bitangent(center: Point, r1: f64, r2: f64) -> Result<LineInGeneralForm, ()> 
     let norm = center.x() * center.x() + center.y() * center.y();
     let discriminant = norm - dr * dr;
 
-    if discriminant < -epsilon {
+    if discriminant <= -epsilon {
         return Err(());
     }
 
@@ -70,7 +70,7 @@ fn bitangent_point_pairs(
     circle1: Circle,
     circle2: Circle,
 ) -> Result<Vec<(Point, Point)>, NoBitangents> {
-    let point_pairs: Vec<(Point, Point)> = _bitangents(circle1, circle2)
+    let bitangents: Vec<(Point, Point)> = _bitangents(circle1, circle2)
         .into_iter()
         .map(|tg| {
             (
@@ -80,10 +80,11 @@ fn bitangent_point_pairs(
         })
         .collect();
 
-    if point_pairs.is_empty() {
+    if bitangents.is_empty() {
         return Err(NoBitangents(circle1, circle2));
     }
-    Ok(point_pairs)
+
+    Ok(bitangents)
 }
 
 pub fn bitangents(
