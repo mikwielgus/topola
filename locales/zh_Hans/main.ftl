@@ -59,3 +59,5 @@ tr-menu-view-show-triangulation-constraints = 显示三角剖分约束条件
 tr-menu-route-options-presort-by = 预排序依据
 tr-menu-route-options-presort-by-ratline-intersection-count-and-length = ‌交叉点数量及长度
 tr-menu-route-options-permutate = 排列组合
+tr-menu-view-show-guide-circles = 显示辅助圆
+tr-menu-view-show-guide-bitangents = 显示双切线
