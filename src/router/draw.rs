@@ -83,7 +83,7 @@ impl<R: AccessRules> Draw for Layout<R> {
         into: FixedDotIndex,
         width: f64,
     ) -> Result<BandTermsegIndex, DrawException> {
-        let tangent = self
+        let bitangent = self
             .drawing()
             .guide_for_head_into_dot(&head, into, width)
             .map_err(Into::<DrawException>::into)?;
@@ -96,7 +96,7 @@ impl<R: AccessRules> Draw for Layout<R> {
         self.extend_head(
             recorder,
             head,
-            tangent.start_point(),
+            bitangent.start_point(),
             |this, recorder| match head.face() {
                 DotIndex::Fixed(dot) => this
                     .add_lone_loose_seg(

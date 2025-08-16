@@ -177,6 +177,8 @@ impl<
     }
 
     pub fn remove_dot(&mut self, dot: DI) {
+        // One of the possible causes: you have failed to delete navcord's final
+        // termseg.
         debug_assert!(self.geometry.joined_segs(dot).next().is_none());
         debug_assert!(self.geometry.joined_bends(dot).next().is_none());
 

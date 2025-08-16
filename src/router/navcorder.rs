@@ -94,6 +94,7 @@ impl<R: AccessRules> Navcorder for Layout<R> {
 
         let length = navcord.path.len();
         self.undo_path(navcord, length - prefix_length);
+        // XXX: If this fails now, there may be a race condition.
         self.path(navmesh, navcord, &path[prefix_length..])
     }
 

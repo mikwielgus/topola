@@ -70,7 +70,7 @@ fn bitangent_point_pairs(
     circle1: Circle,
     circle2: Circle,
 ) -> Result<Vec<(Point, Point)>, NoBitangents> {
-    let bitangents: Vec<(Point, Point)> = _bitangents(circle1, circle2)
+    let point_pairs: Vec<(Point, Point)> = _bitangents(circle1, circle2)
         .into_iter()
         .map(|tg| {
             (
@@ -80,11 +80,10 @@ fn bitangent_point_pairs(
         })
         .collect();
 
-    if bitangents.is_empty() {
+    if point_pairs.is_empty() {
         return Err(NoBitangents(circle1, circle2));
     }
-
-    Ok(bitangents)
+    Ok(point_pairs)
 }
 
 pub fn bitangents(
