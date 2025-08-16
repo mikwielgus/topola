@@ -319,6 +319,12 @@ where
                                     // No need to add neighbors that we have already reached through a
                                     // shorter path than now.
                                     if *entry.get() <= next_score {
+                                        // We just remove the probe instantly
+                                        // here instead of doing it in
+                                        // ThetastarState::Probing or a new
+                                        // state to avoid complicating.
+                                        strategy.remove_probe(&self.graph);
+
                                         self.state = ThetastarState::VisitingProbeOnNavedge(
                                             visited_navnode,
                                             curr_navedge,
