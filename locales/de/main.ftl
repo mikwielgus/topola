@@ -59,3 +59,5 @@ tr-menu-view-show-triangulation-constraints = Zeige Triangulationszwänge
 tr-menu-route-options-presort-by = Vorsortieren nach
 tr-menu-route-options-presort-by-ratline-intersection-count-and-length = Anzahl und Länge von Überschneidungen
 tr-menu-route-options-permutate = Permutieren
+tr-menu-view-show-guide-bitangents = Zeige Führungs-Bitangenten
+tr-menu-view-show-guide-circles = Zeige Führungskreise
