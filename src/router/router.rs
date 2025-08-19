@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+use std::ops::ControlFlow;
+
 use derive_getters::Getters;
 use geo::algorithm::line_measures::{Distance, Euclidean};
 use petgraph::data::DataMap;
@@ -93,26 +95,28 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
         &mut self,
         navmesh: &Navmesh,
         probed_navnode: NavnodeIndex,
-    ) -> Option<f64> {
+    ) -> ControlFlow<Option<f64>> {
         let result = self.navcord.step_to(self.layout, navmesh, probed_navnode);
 
-        match result {
+        ControlFlow::Break(match result {
             Ok(probe_length) => Some(probe_length),
             Err(err) => {
                 if let NavcorderException::CannotDraw(draw_err) = err {
                     let layout_err = match draw_err {
-                        DrawException::NoTangents(..) => return None,
+                        DrawException::NoTangents(..) => return ControlFlow::Break(None),
                         DrawException::CannotFinishIn(.., layout_err) => layout_err,
                         DrawException::CannotWrapAround(.., layout_err) => layout_err,
                     };
 
-                    let (ghost, obstacle) = layout_err.maybe_ghost_and_obstacle()?;
+                    let Some((ghost, obstacle)) = layout_err.maybe_ghost_and_obstacle() else {
+                        return ControlFlow::Break(None);
+                    };
                     self.probe_ghosts = vec![*ghost];
                     self.probe_obstacles = vec![obstacle];
                 }
                 None
             }
-        }
+        })
     }
 
     fn remove_probe(&mut self, _navmesh: &Navmesh) {

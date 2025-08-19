@@ -120,7 +120,11 @@ where
         navnode: G::NodeId,
         tracker: &PathTracker<G>,
     ) -> Result<Option<R>, ()>;
-    fn place_probe_to_navnode(&mut self, graph: &G, probed_navnode: G::NodeId) -> Option<K>;
+    fn place_probe_to_navnode(
+        &mut self,
+        graph: &G,
+        probed_navnode: G::NodeId,
+    ) -> ControlFlow<Option<K>>;
     fn remove_probe(&mut self, graph: &G);
     fn estimate_cost_to_goal(&mut self, graph: &G, navnode: G::NodeId) -> K;
 }
@@ -145,10 +149,17 @@ pub enum ThetastarState<N: Copy, E: Copy> {
 }
 
 /// The pathfinding algorithm Topola uses to find the shortest path to route
-/// is Theta*. Theta* is just A* with an improvement: every time an navedge is
-/// scanned, the algorithm first tries to draw directly to its target navnode
-/// from the predecessor of the currently visited navnode. Note that this
-/// creates paths with edges that do not all lie on the navmesh.
+/// is Theta* with conditional repeated backtracking. Theta* is just A* with an
+/// improvement: every time an navedge is scanned, the algorithm first tries to
+/// draw directly to its target navnode from the predecessor of the currently
+/// visited navnode. Note that this creates paths with edges that do not all lie
+/// on the navmesh.
+///
+/// Conditional repeated backtracking is our improvement to Theta*: if
+/// line-of-sight routing fails if a condition is met, continue trying to draw
+/// from parent of the parent navnode, and so on. This is different from Theta*
+/// because in Theta* there is only one backtracking step -- only one attempt to
+/// do line-of-sight routing.
 #[derive(Getters)]
 pub struct ThetastarStepper<G, K>
 where
@@ -301,61 +312,61 @@ where
                     // necessarily scored before adding it to `.visit_next`.
                     //let node_score = self.scores[&visited_navnode];
                     let to_navnode = (&self.graph).edge_ref(curr_navedge).target();
+                    let mut curr_navnode = visited_navnode;
 
-                    if let Some(parent_navnode) = self.path_tracker.predecessor(visited_navnode) {
+                    // Loop to repeatedly backtrack.
+                    if let (Some(parent_navnode), Some(los_cost)) = loop {
+                        let Some(parent_navnode) = self.path_tracker.predecessor(curr_navnode)
+                        else {
+                            break (None, None);
+                        };
+
                         // Visit parent node.
                         strategy.visit_navnode(&self.graph, parent_navnode, &self.path_tracker);
 
-                        let parent_score = self.scores[&parent_navnode];
-
-                        if let Some(los_cost) =
+                        if let ControlFlow::Break(result) =
                             strategy.place_probe_to_navnode(&self.graph, to_navnode)
                         {
-                            let next = to_navnode;
-                            let next_score = parent_score + los_cost;
-
-                            match self.scores.entry(next) {
-                                Entry::Occupied(mut entry) => {
-                                    // No need to add neighbors that we have already reached through a
-                                    // shorter path than now.
-                                    if *entry.get() <= next_score {
-                                        // We just remove the probe instantly
-                                        // here instead of doing it in
-                                        // ThetastarState::Probing or a new
-                                        // state to avoid complicating.
-                                        strategy.remove_probe(&self.graph);
-
-                                        self.state = ThetastarState::VisitingProbeOnNavedge(
-                                            visited_navnode,
-                                            curr_navedge,
-                                        );
-                                        return Ok(ControlFlow::Continue(self.state));
-                                    }
-                                    entry.insert(next_score);
-                                }
-                                Entry::Vacant(entry) => {
-                                    entry.insert(next_score);
-                                }
-                            }
-
-                            self.push_to_frontier(next, next_score, parent_navnode, strategy);
-
-                            self.state = ThetastarState::Probing(visited_navnode);
-                            Ok(ControlFlow::Continue(self.state))
-                        } else {
-                            // Come back from parent node if drawing from it failed.
-                            strategy.visit_navnode(
-                                &self.graph,
-                                visited_navnode,
-                                &self.path_tracker,
-                            );
-                            self.state = ThetastarState::VisitingProbeOnNavedge(
-                                visited_navnode,
-                                curr_navedge,
-                            );
-                            Ok(ControlFlow::Continue(self.state))
+                            break (Some(parent_navnode), result);
                         }
+
+                        curr_navnode = parent_navnode;
+                    } {
+                        let parent_score = self.scores[&parent_navnode];
+                        let next = to_navnode;
+                        let next_score = parent_score + los_cost;
+
+                        match self.scores.entry(next) {
+                            Entry::Occupied(mut entry) => {
+                                // No need to add neighbors that we have already reached through a
+                                // shorter path than now.
+                                if *entry.get() <= next_score {
+                                    // We just remove the probe instantly
+                                    // here instead of doing it in
+                                    // ThetastarState::Probing or a new
+                                    // state to avoid complicating.
+                                    strategy.remove_probe(&self.graph);
+
+                                    self.state = ThetastarState::VisitingProbeOnNavedge(
+                                        visited_navnode,
+                                        curr_navedge,
+                                    );
+                                    return Ok(ControlFlow::Continue(self.state));
+                                }
+                                entry.insert(next_score);
+                            }
+                            Entry::Vacant(entry) => {
+                                entry.insert(next_score);
+                            }
+                        }
+
+                        self.push_to_frontier(next, next_score, parent_navnode, strategy);
+
+                        self.state = ThetastarState::Probing(visited_navnode);
+                        Ok(ControlFlow::Continue(self.state))
                     } else {
+                        // Come back from parent node if drawing from it failed.
+                        strategy.visit_navnode(&self.graph, visited_navnode, &self.path_tracker);
                         self.state =
                             ThetastarState::VisitingProbeOnNavedge(visited_navnode, curr_navedge);
                         Ok(ControlFlow::Continue(self.state))
@@ -369,7 +380,8 @@ where
                 let visited_score = self.scores[&visited_navnode];
                 let to_navnode = (&self.graph).edge_ref(curr_navedge).target();
 
-                if let Some(navedge_cost) = strategy.place_probe_to_navnode(&self.graph, to_navnode)
+                if let ControlFlow::Break(Some(navedge_cost)) =
+                    strategy.place_probe_to_navnode(&self.graph, to_navnode)
                 {
                     let next = to_navnode;
                     let next_score = visited_score + navedge_cost;
