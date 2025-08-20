@@ -138,12 +138,14 @@ pub trait MakeEdgeRef: IntoEdgeReferences {
 pub enum ThetastarState<N: Copy, E: Copy> {
     /// Visit a new navnode and copy all navedges going out of it.
     Scanning,
-    /// Load a new navedge, try to probe it from current navnode's predecessor.
-    /// If this fails, transition to `VisitingProbeOnNavedge`. If there is no
-    /// more navedges, transition back to `Scanning`.
-    VisitingProbeOnLineOfSight(N),
-    /// Probe the currently loaded navedge from the current navnode.
-    VisitingProbeOnNavedge(N, E),
+    /// Load a new navedge.
+    VisitFrontierNavedge(N),
+    /// Backtrack by one navnode, then line-of-sight probe to target of the
+    /// currently visited navedge. Transition to this state again until a
+    /// condition is met, then continue the algorithm by transitioning to the
+    /// `ProbeOnNavedge(...)` state.
+    BacktrackAndProbeOnLineOfSight(N, E),
+    ProbeOnNavedge(N, E),
     /// The probe is in place, retract it and continue to the next navedge.
     Probing(N),
 }
@@ -303,82 +305,99 @@ where
 
                 self.edge_ids = self.graph.edges(navnode).map(|edge| edge.id()).collect();
 
-                self.state = ThetastarState::VisitingProbeOnLineOfSight(navnode);
+                self.state = ThetastarState::VisitFrontierNavedge(navnode);
                 Ok(ControlFlow::Continue(self.state))
             }
-            ThetastarState::VisitingProbeOnLineOfSight(visited_navnode) => {
-                if let Some(curr_navedge) = self.edge_ids.pop() {
-                    // This lookup can be unwrapped without fear of panic since the node was
-                    // necessarily scored before adding it to `.visit_next`.
-                    //let node_score = self.scores[&visited_navnode];
-                    let to_navnode = (&self.graph).edge_ref(curr_navedge).target();
-                    let mut curr_navnode = visited_navnode;
-
-                    // Loop to repeatedly backtrack.
-                    if let (Some(parent_navnode), Some(los_cost)) = loop {
-                        let Some(parent_navnode) = self.path_tracker.predecessor(curr_navnode)
-                        else {
-                            break (None, None);
-                        };
-
-                        // Visit parent node.
-                        strategy.visit_navnode(&self.graph, parent_navnode, &self.path_tracker);
-
-                        if let ControlFlow::Break(result) =
-                            strategy.place_probe_to_navnode(&self.graph, to_navnode)
-                        {
-                            break (Some(parent_navnode), result);
-                        }
-
-                        curr_navnode = parent_navnode;
-                    } {
-                        let parent_score = self.scores[&parent_navnode];
-                        let next = to_navnode;
-                        let next_score = parent_score + los_cost;
-
-                        match self.scores.entry(next) {
-                            Entry::Occupied(mut entry) => {
-                                // No need to add neighbors that we have already reached through a
-                                // shorter path than now.
-                                if *entry.get() <= next_score {
-                                    // We just remove the probe instantly
-                                    // here instead of doing it in
-                                    // ThetastarState::Probing or a new
-                                    // state to avoid complicating.
-                                    strategy.remove_probe(&self.graph);
-
-                                    self.state = ThetastarState::VisitingProbeOnNavedge(
-                                        visited_navnode,
-                                        curr_navedge,
-                                    );
-                                    return Ok(ControlFlow::Continue(self.state));
-                                }
-                                entry.insert(next_score);
-                            }
-                            Entry::Vacant(entry) => {
-                                entry.insert(next_score);
-                            }
-                        }
-
-                        self.push_to_frontier(next, next_score, parent_navnode, strategy);
-
-                        self.state = ThetastarState::Probing(visited_navnode);
-                        Ok(ControlFlow::Continue(self.state))
-                    } else {
-                        // Come back from parent node if drawing from it failed.
-                        strategy.visit_navnode(&self.graph, visited_navnode, &self.path_tracker);
-                        self.state =
-                            ThetastarState::VisitingProbeOnNavedge(visited_navnode, curr_navedge);
-                        Ok(ControlFlow::Continue(self.state))
-                    }
+            ThetastarState::VisitFrontierNavedge(visited_navnode) => {
+                if let Some(visited_navedge) = self.edge_ids.pop() {
+                    self.state = ThetastarState::BacktrackAndProbeOnLineOfSight(
+                        visited_navnode,
+                        visited_navedge,
+                    );
+                    Ok(ControlFlow::Continue(self.state))
                 } else {
                     self.state = ThetastarState::Scanning;
                     Ok(ControlFlow::Continue(self.state))
                 }
             }
-            ThetastarState::VisitingProbeOnNavedge(visited_navnode, curr_navedge) => {
+            ThetastarState::BacktrackAndProbeOnLineOfSight(visited_navnode, visited_navedge) => {
+                // This lookup can be unwrapped without fear of panic since the node was
+                // necessarily scored before adding it to `.visit_next`.
+                //let node_score = self.scores[&visited_navnode];
+                let initial_from_navnode = (&self.graph).edge_ref(visited_navedge).source();
+                let to_navnode = (&self.graph).edge_ref(visited_navedge).target();
+
+                if let Some(parent_navnode) = self.path_tracker.predecessor(visited_navnode) {
+                    strategy.visit_navnode(&self.graph, parent_navnode, &self.path_tracker);
+                    let parent_score = self.scores[&parent_navnode];
+
+                    match strategy.place_probe_to_navnode(&self.graph, to_navnode) {
+                        ControlFlow::Continue(()) => {
+                            // Transition to self to repeatedly backtrack.
+                            self.state = ThetastarState::BacktrackAndProbeOnLineOfSight(
+                                parent_navnode,
+                                visited_navedge,
+                            );
+                            Ok(ControlFlow::Continue(self.state))
+                        }
+                        ControlFlow::Break(Some(los_cost)) => {
+                            let next = to_navnode;
+                            let next_score = parent_score + los_cost;
+
+                            match self.scores.entry(next) {
+                                Entry::Occupied(mut entry) => {
+                                    // No need to add neighbors that we have already reached through a
+                                    // shorter path than now.
+                                    if *entry.get() <= next_score {
+                                        // We just remove the probe instantly
+                                        // here instead of doing it in
+                                        // ThetastarState::Probing or a new
+                                        // state to avoid complicating.
+                                        strategy.remove_probe(&self.graph);
+
+                                        self.state = ThetastarState::ProbeOnNavedge(
+                                            visited_navnode,
+                                            visited_navedge,
+                                        );
+                                        return Ok(ControlFlow::Continue(self.state));
+                                    }
+                                    entry.insert(next_score);
+                                }
+                                Entry::Vacant(entry) => {
+                                    entry.insert(next_score);
+                                }
+                            }
+
+                            self.push_to_frontier(next, next_score, parent_navnode, strategy);
+
+                            self.state = ThetastarState::Probing(visited_navnode);
+                            Ok(ControlFlow::Continue(self.state))
+                        }
+                        ControlFlow::Break(None) => {
+                            // Come back to initial navnode if drawing failed
+                            // and the backtracking condition is not met.
+                            strategy.visit_navnode(
+                                &self.graph,
+                                visited_navnode,
+                                &self.path_tracker,
+                            );
+                            self.state = ThetastarState::ProbeOnNavedge(
+                                initial_from_navnode,
+                                visited_navedge,
+                            );
+                            Ok(ControlFlow::Continue(self.state))
+                        }
+                    }
+                } else {
+                    // Come back from parent node if drawing from it failed.
+                    strategy.visit_navnode(&self.graph, visited_navnode, &self.path_tracker);
+                    self.state = ThetastarState::ProbeOnNavedge(visited_navnode, visited_navedge);
+                    Ok(ControlFlow::Continue(self.state))
+                }
+            }
+            ThetastarState::ProbeOnNavedge(visited_navnode, visited_navedge) => {
                 let visited_score = self.scores[&visited_navnode];
-                let to_navnode = (&self.graph).edge_ref(curr_navedge).target();
+                let to_navnode = (&self.graph).edge_ref(visited_navedge).target();
 
                 if let ControlFlow::Break(Some(navedge_cost)) =
                     strategy.place_probe_to_navnode(&self.graph, to_navnode)
@@ -406,14 +425,14 @@ where
                     self.state = ThetastarState::Probing(visited_navnode);
                     Ok(ControlFlow::Continue(self.state))
                 } else {
-                    self.state = ThetastarState::VisitingProbeOnLineOfSight(visited_navnode);
+                    self.state = ThetastarState::VisitFrontierNavedge(visited_navnode);
                     Ok(ControlFlow::Continue(self.state))
                 }
             }
             ThetastarState::Probing(visited_navnode) => {
                 strategy.remove_probe(&self.graph);
 
-                self.state = ThetastarState::VisitingProbeOnLineOfSight(visited_navnode);
+                self.state = ThetastarState::VisitFrontierNavedge(visited_navnode);
                 Ok(ControlFlow::Continue(self.state))
             }
         }
