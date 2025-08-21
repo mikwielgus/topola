@@ -180,12 +180,12 @@ impl<'a> Displayer<'a> {
 
                 for edge in navmesh.edge_references() {
                     let mut from =
-                        PrimitiveIndex::from(navmesh.node_weight(edge.source()).unwrap().node)
+                        PrimitiveIndex::from(navmesh.node_weight(edge.source()).unwrap().binavnode)
                             .primitive(board.layout().drawing())
                             .shape()
                             .center();
                     let mut to =
-                        PrimitiveIndex::from(navmesh.node_weight(edge.target()).unwrap().node)
+                        PrimitiveIndex::from(navmesh.node_weight(edge.target()).unwrap().binavnode)
                             .primitive(board.layout().drawing())
                             .shape()
                             .center();
@@ -278,7 +278,7 @@ impl<'a> Displayer<'a> {
 
                     let navnode = NavnodeIndex(index);
                     let primitive =
-                        PrimitiveIndex::from(navmesh.node_weight(navnode).unwrap().node);
+                        PrimitiveIndex::from(navmesh.node_weight(navnode).unwrap().binavnode);
                     let mut pos = primitive
                         .primitive(board.layout().drawing())
                         .shape()
@@ -321,7 +321,7 @@ impl<'a> Displayer<'a> {
     ) -> Option<Circle> {
         let drawing = board.layout().drawing();
         let navnode = NavnodeIndex(index);
-        let primitive = PrimitiveIndex::from(navmesh.node_weight(navnode).unwrap().node);
+        let primitive = PrimitiveIndex::from(navmesh.node_weight(navnode).unwrap().binavnode);
 
         if let Ok(dot) = DotIndex::try_from(primitive) {
             Some(drawing.dot_circle(

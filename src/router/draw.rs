@@ -29,7 +29,7 @@ use crate::{
 #[derive(Error, Debug, Clone, Copy)]
 pub enum DrawException {
     #[error(transparent)]
-    NoTangents(#[from] NoBitangents),
+    NoBitangents(#[from] NoBitangents),
     // TODO add real error messages + these should eventually use Display
     #[error("cannot finish in {0:?}")]
     CannotFinishIn(FixedDotIndex, #[source] DrawingException),

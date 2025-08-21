@@ -19,6 +19,7 @@ use crate::{
     },
     geometry::{primitive::PrimitiveShape, shape::AccessShape},
     layout::{Layout, LayoutEdit},
+    router::navmesh::BinavnodeNodeIndex,
 };
 
 use super::{
@@ -94,6 +95,7 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
     fn place_probe_to_navnode(
         &mut self,
         navmesh: &Navmesh,
+        maybe_initial_parent_navnode: Option<NavnodeIndex>,
         probed_navnode: NavnodeIndex,
     ) -> ControlFlow<Option<f64>> {
         let result = self.navcord.step_to(self.layout, navmesh, probed_navnode);
@@ -103,7 +105,7 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
             Err(err) => {
                 if let NavcorderException::CannotDraw(draw_err) = err {
                     let layout_err = match draw_err {
-                        DrawException::NoTangents(..) => return ControlFlow::Break(None),
+                        DrawException::NoBitangents(..) => return ControlFlow::Break(None),
                         DrawException::CannotFinishIn(.., layout_err) => layout_err,
                         DrawException::CannotWrapAround(.., layout_err) => layout_err,
                     };
@@ -111,8 +113,63 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
                     let Some((ghost, obstacle)) = layout_err.maybe_ghost_and_obstacle() else {
                         return ControlFlow::Break(None);
                     };
+
                     self.probe_ghosts = vec![*ghost];
                     self.probe_obstacles = vec![obstacle];
+
+                    let Some(initial_parent_navnode) = maybe_initial_parent_navnode else {
+                        return ControlFlow::Break(None);
+                    };
+
+                    let initial_parent_binavnode = navmesh
+                        .node_weight(initial_parent_navnode)
+                        .unwrap()
+                        .binavnode;
+
+                    let initial_parent_compounds: Vec<_> = match initial_parent_binavnode {
+                        BinavnodeNodeIndex::FixedDot(dot) => {
+                            self.layout.drawing().compounds(dot).collect()
+                        }
+                        BinavnodeNodeIndex::FixedBend(_bend) => {
+                            todo!()
+                        }
+                        BinavnodeNodeIndex::LooseBend(bend) => {
+                            self.layout.drawing().compounds(bend).collect()
+                        }
+                    };
+
+                    let from_binavnode = navmesh
+                        .node_weight(*self.navcord.path.last().unwrap())
+                        .unwrap()
+                        .binavnode;
+
+                    let from_compounds: Vec<_> = match from_binavnode {
+                        BinavnodeNodeIndex::FixedDot(dot) => {
+                            self.layout.drawing().compounds(dot).collect()
+                        }
+                        BinavnodeNodeIndex::FixedBend(_bend) => {
+                            todo!()
+                        }
+                        BinavnodeNodeIndex::LooseBend(bend) => {
+                            self.layout.drawing().compounds(bend).collect()
+                        }
+                    };
+
+                    if initial_parent_compounds.iter().any(|compound1| {
+                        from_compounds
+                            .iter()
+                            .any(|compound2| compound1 == compound2)
+                    }) {
+                        // If we have failed to do a line-of-sight draw, but
+                        // the current probe source navnode and the initial
+                        // parent navnode are on the same compound (TODO:
+                        // narrow this down from compound to poly), we continue
+                        // backtracking. When ControlFlow::Continue(()) is
+                        // returned here, the modified Theta* algorithm instead
+                        // of visiting a new navedge recedes the navcord and
+                        // with that the current probe source navnode.
+                        return ControlFlow::Continue(());
+                    }
                 }
                 None
             }
@@ -124,7 +181,7 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
     }
 
     fn estimate_cost_to_goal(&mut self, navmesh: &Navmesh, vertex: NavnodeIndex) -> f64 {
-        let start_point = PrimitiveIndex::from(navmesh.node_weight(vertex).unwrap().node)
+        let start_point = PrimitiveIndex::from(navmesh.node_weight(vertex).unwrap().binavnode)
             .primitive(self.layout.drawing())
             .shape()
             .center();

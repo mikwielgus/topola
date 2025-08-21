@@ -78,7 +78,7 @@ impl Navcord {
             .maybe_sense
             .ok_or(NavcorderException::CannotWrap)?;
 
-        match around_node_weight.node {
+        match around_node_weight.binavnode {
             BinavnodeNodeIndex::FixedDot(dot) => {
                 layout.cane_around_dot(&mut self.recorder, head, dot, sense, self.width)
             }
@@ -113,8 +113,8 @@ impl Navcord {
         to: NavnodeIndex,
     ) -> Result<f64, NavcorderException> {
         let length = if to == navmesh.destination_navnode() {
-            let to_node_weight = navmesh.node_weight(to).unwrap();
-            let BinavnodeNodeIndex::FixedDot(to_dot) = to_node_weight.node else {
+            let to_binavnode = navmesh.node_weight(to).unwrap().binavnode;
+            let BinavnodeNodeIndex::FixedDot(to_dot) = to_binavnode else {
                 unreachable!();
             };
 

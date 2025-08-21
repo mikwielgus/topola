@@ -101,7 +101,7 @@ impl From<BinavnodeNodeIndex> for GearIndex {
 /// during autorouting: <https://topola.dev/blog/2024/07/20/junejuly-2024-development-update/#advanced-debug-visualization>
 #[derive(Debug, Clone)]
 pub struct NavnodeWeight {
-    pub node: BinavnodeNodeIndex,
+    pub binavnode: BinavnodeNodeIndex,
 
     /// There are two navnodes for each navigable node:
     /// one is clockwise (`Some(true)`), the other counterclockwise (`Some(false)`).
@@ -167,7 +167,7 @@ impl Navmesh {
         for trianvertex in prenavmesh.triangulation().node_identifiers() {
             if trianvertex == origin.into() {
                 let navnode = graph.add_node(NavnodeWeight {
-                    node: trianvertex.into(),
+                    binavnode: trianvertex.into(),
                     maybe_sense: None,
                 });
 
@@ -175,7 +175,7 @@ impl Navmesh {
                 map.insert(trianvertex, vec![(navnode, navnode)]);
             } else if trianvertex == destination.into() {
                 let navnode = graph.add_node(NavnodeWeight {
-                    node: trianvertex.into(),
+                    binavnode: trianvertex.into(),
                     maybe_sense: None,
                 });
 
@@ -276,12 +276,12 @@ impl Navmesh {
         node: BinavnodeNodeIndex,
     ) {
         let navnode1 = graph.add_node(NavnodeWeight {
-            node,
+            binavnode: node,
             maybe_sense: Some(RotationSense::Counterclockwise),
         });
 
         let navnode2 = graph.add_node(NavnodeWeight {
-            node,
+            binavnode: node,
             maybe_sense: Some(RotationSense::Clockwise),
         });
 

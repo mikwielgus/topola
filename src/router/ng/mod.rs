@@ -255,7 +255,7 @@ impl EvalException {
                 ],
                 Vec::new(),
             ),
-            Self::Draw(DrawException::NoTangents(_)) => (Vec::new(), Vec::new(), Vec::new()),
+            Self::Draw(DrawException::NoBitangents(_)) => (Vec::new(), Vec::new(), Vec::new()),
             Self::Draw(DrawException::CannotFinishIn(_, dwxc))
             | Self::Draw(DrawException::CannotWrapAround(_, dwxc)) => {
                 match dwxc.maybe_ghost_and_obstacle() {

@@ -123,6 +123,7 @@ where
     fn place_probe_to_navnode(
         &mut self,
         graph: &G,
+        initial_parent_navnode: Option<G::NodeId>,
         probed_navnode: G::NodeId,
     ) -> ControlFlow<Option<K>>;
     fn remove_probe(&mut self, graph: &G);
@@ -320,18 +321,23 @@ where
                     Ok(ControlFlow::Continue(self.state))
                 }
             }
-            ThetastarState::BacktrackAndProbeOnLineOfSight(visited_navnode, visited_navedge) => {
+            ThetastarState::BacktrackAndProbeOnLineOfSight(curr_navnode, visited_navedge) => {
                 // This lookup can be unwrapped without fear of panic since the node was
                 // necessarily scored before adding it to `.visit_next`.
                 //let node_score = self.scores[&visited_navnode];
-                let initial_from_navnode = (&self.graph).edge_ref(visited_navedge).source();
-                let to_navnode = (&self.graph).edge_ref(visited_navedge).target();
+                let initial_source_navnode = (&self.graph).edge_ref(visited_navedge).source();
+                let initial_parent_navnode = self.path_tracker.predecessor(initial_source_navnode);
+                let probed_navnode = (&self.graph).edge_ref(visited_navedge).target();
 
-                if let Some(parent_navnode) = self.path_tracker.predecessor(visited_navnode) {
+                if let Some(parent_navnode) = self.path_tracker.predecessor(curr_navnode) {
                     strategy.visit_navnode(&self.graph, parent_navnode, &self.path_tracker);
                     let parent_score = self.scores[&parent_navnode];
 
-                    match strategy.place_probe_to_navnode(&self.graph, to_navnode) {
+                    match strategy.place_probe_to_navnode(
+                        &self.graph,
+                        initial_parent_navnode,
+                        probed_navnode,
+                    ) {
                         ControlFlow::Continue(()) => {
                             // Transition to self to repeatedly backtrack.
                             self.state = ThetastarState::BacktrackAndProbeOnLineOfSight(
@@ -341,7 +347,7 @@ where
                             Ok(ControlFlow::Continue(self.state))
                         }
                         ControlFlow::Break(Some(los_cost)) => {
-                            let next = to_navnode;
+                            let next = probed_navnode;
                             let next_score = parent_score + los_cost;
 
                             match self.scores.entry(next) {
@@ -356,7 +362,7 @@ where
                                         strategy.remove_probe(&self.graph);
 
                                         self.state = ThetastarState::ProbeOnNavedge(
-                                            visited_navnode,
+                                            initial_source_navnode,
                                             visited_navedge,
                                         );
                                         return Ok(ControlFlow::Continue(self.state));
@@ -370,7 +376,7 @@ where
 
                             self.push_to_frontier(next, next_score, parent_navnode, strategy);
 
-                            self.state = ThetastarState::Probing(visited_navnode);
+                            self.state = ThetastarState::Probing(curr_navnode);
                             Ok(ControlFlow::Continue(self.state))
                         }
                         ControlFlow::Break(None) => {
@@ -378,31 +384,36 @@ where
                             // and the backtracking condition is not met.
                             strategy.visit_navnode(
                                 &self.graph,
-                                visited_navnode,
+                                initial_source_navnode,
                                 &self.path_tracker,
                             );
                             self.state = ThetastarState::ProbeOnNavedge(
-                                initial_from_navnode,
+                                initial_source_navnode,
                                 visited_navedge,
                             );
                             Ok(ControlFlow::Continue(self.state))
                         }
                     }
                 } else {
-                    // Come back from parent node if drawing from it failed.
-                    strategy.visit_navnode(&self.graph, visited_navnode, &self.path_tracker);
-                    self.state = ThetastarState::ProbeOnNavedge(visited_navnode, visited_navedge);
+                    // Come back from current navnode if drawing from it failed.
+                    strategy.visit_navnode(&self.graph, initial_source_navnode, &self.path_tracker);
+                    self.state =
+                        ThetastarState::ProbeOnNavedge(initial_source_navnode, visited_navedge);
                     Ok(ControlFlow::Continue(self.state))
                 }
             }
             ThetastarState::ProbeOnNavedge(visited_navnode, visited_navedge) => {
                 let visited_score = self.scores[&visited_navnode];
-                let to_navnode = (&self.graph).edge_ref(visited_navedge).target();
+                let initial_source_navnode = (&self.graph).edge_ref(visited_navedge).source();
+                let initial_parent_navnode = self.path_tracker.predecessor(initial_source_navnode);
+                let probed_navnode = (&self.graph).edge_ref(visited_navedge).target();
 
-                if let ControlFlow::Break(Some(navedge_cost)) =
-                    strategy.place_probe_to_navnode(&self.graph, to_navnode)
-                {
-                    let next = to_navnode;
+                if let ControlFlow::Break(Some(navedge_cost)) = strategy.place_probe_to_navnode(
+                    &self.graph,
+                    initial_parent_navnode,
+                    probed_navnode,
+                ) {
+                    let next = probed_navnode;
                     let next_score = visited_score + navedge_cost;
 
                     match self.scores.entry(next) {
