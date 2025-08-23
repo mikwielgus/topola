@@ -278,36 +278,34 @@ where
                     return Err(ThetastarError::NotFound);
                 };
 
-                let Ok(maybe_result) =
+                if let Ok(maybe_result) =
                     strategy.visit_navnode(&self.graph, navnode, &self.path_tracker)
-                else {
-                    return Ok(ControlFlow::Continue(self.state));
-                };
+                {
+                    if let Some(result) = maybe_result {
+                        let path = self.path_tracker.reconstruct_path_to(navnode);
+                        let cost = self.scores[&navnode];
 
-                if let Some(result) = maybe_result {
-                    let path = self.path_tracker.reconstruct_path_to(navnode);
-                    let cost = self.scores[&navnode];
-                    return Ok(ControlFlow::Break((cost, path, result)));
-                }
+                        return Ok(ControlFlow::Break((cost, path, result)));
+                    }
 
-                match self.cost_to_goal_estimate_scores.entry(navnode) {
-                    Entry::Occupied(mut entry) => {
-                        // If the node has already been visited with an equal or lower
-                        // estimated score than now, then we do not need to re-visit it.
-                        if *entry.get() <= estimate_score {
-                            return Ok(ControlFlow::Continue(self.state));
+                    match self.cost_to_goal_estimate_scores.entry(navnode) {
+                        Entry::Occupied(mut entry) => {
+                            // If the node has already been visited with an equal or lower
+                            // estimated score than now, then we do not need to re-visit it.
+                            if *entry.get() <= estimate_score {
+                                return Ok(ControlFlow::Continue(self.state));
+                            }
+                            entry.insert(estimate_score);
                         }
-                        entry.insert(estimate_score);
+                        Entry::Vacant(entry) => {
+                            entry.insert(estimate_score);
+                        }
                     }
-                    Entry::Vacant(entry) => {
-                        entry.insert(estimate_score);
-                    }
+
+                    self.edge_ids = self.graph.edges(navnode).map(|edge| edge.id()).collect();
+
+                    self.state = ThetastarState::VisitFrontierNavedge(navnode);
                 }
-
-                self.edge_ids = self.graph.edges(navnode).map(|edge| edge.id()).collect();
-
-                self.state = ThetastarState::VisitFrontierNavedge(navnode);
-                Ok(ControlFlow::Continue(self.state))
             }
             ThetastarState::VisitFrontierNavedge(visited_navnode) => {
                 if let Some(visited_navedge) = self.edge_ids.pop() {
@@ -315,10 +313,8 @@ where
                         visited_navnode,
                         visited_navedge,
                     );
-                    Ok(ControlFlow::Continue(self.state))
                 } else {
                     self.state = ThetastarState::Scanning;
-                    Ok(ControlFlow::Continue(self.state))
                 }
             }
             ThetastarState::BacktrackAndProbeOnLineOfSight(curr_navnode, visited_navedge) => {
@@ -344,7 +340,6 @@ where
                                 parent_navnode,
                                 visited_navedge,
                             );
-                            Ok(ControlFlow::Continue(self.state))
                         }
                         ControlFlow::Break(Some(los_cost)) => {
                             let next = probed_navnode;
@@ -377,7 +372,6 @@ where
                             self.push_to_frontier(next, next_score, parent_navnode, strategy);
 
                             self.state = ThetastarState::Probing(curr_navnode);
-                            Ok(ControlFlow::Continue(self.state))
                         }
                         ControlFlow::Break(None) => {
                             // Come back to initial navnode if drawing failed
@@ -387,19 +381,19 @@ where
                                 initial_source_navnode,
                                 &self.path_tracker,
                             );
+
                             self.state = ThetastarState::ProbeOnNavedge(
                                 initial_source_navnode,
                                 visited_navedge,
                             );
-                            Ok(ControlFlow::Continue(self.state))
                         }
                     }
                 } else {
                     // Come back from current navnode if drawing from it failed.
                     strategy.visit_navnode(&self.graph, initial_source_navnode, &self.path_tracker);
+
                     self.state =
                         ThetastarState::ProbeOnNavedge(initial_source_navnode, visited_navedge);
-                    Ok(ControlFlow::Continue(self.state))
                 }
             }
             ThetastarState::ProbeOnNavedge(visited_navnode, visited_navedge) => {
@@ -434,19 +428,18 @@ where
                     self.push_to_frontier(next, next_score, visited_navnode, strategy);
 
                     self.state = ThetastarState::Probing(visited_navnode);
-                    Ok(ControlFlow::Continue(self.state))
                 } else {
                     self.state = ThetastarState::VisitFrontierNavedge(visited_navnode);
-                    Ok(ControlFlow::Continue(self.state))
                 }
             }
             ThetastarState::Probing(visited_navnode) => {
                 strategy.remove_probe(&self.graph);
 
                 self.state = ThetastarState::VisitFrontierNavedge(visited_navnode);
-                Ok(ControlFlow::Continue(self.state))
             }
         }
+
+        Ok(ControlFlow::Continue(self.state))
     }
 }
 
