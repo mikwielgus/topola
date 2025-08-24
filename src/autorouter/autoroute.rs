@@ -13,7 +13,7 @@ use crate::{
         edit::{BoardDataEdit, BoardEdit},
         AccessMesadata,
     },
-    drawing::{band::BandTermsegIndex, graph::PrimitiveIndex, Collect},
+    drawing::{band::BandTermsegIndex, graph::PrimitiveIndex},
     geometry::{edit::Edit, primitive::PrimitiveShape},
     graph::MakeRef,
     layout::LayoutEdit,

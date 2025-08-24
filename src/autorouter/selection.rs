@@ -9,10 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     board::{AccessMesadata, BandName, Board, ResolvedSelector},
-    drawing::{
-        graph::{MakePrimitive, PrimitiveIndex},
-        Collect,
-    },
+    drawing::graph::{MakePrimitive, PrimitiveIndex},
     geometry::{
         shape::{AccessShape, Shape},
         GenericNode, GetLayer,

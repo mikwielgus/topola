@@ -25,7 +25,6 @@ use crate::{
         head::{CaneHead, GetFace as _, Head},
         primitive::MakePrimitiveShape as _,
         rules::AccessRules,
-        Collect as _,
     },
     geometry::{
         edit::ApplyGeometryEdit as _,

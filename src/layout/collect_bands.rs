@@ -16,7 +16,6 @@ use crate::{
         loose::LooseIndex,
         primitive::MakePrimitiveShape,
         rules::AccessRules,
-        Collect,
     },
     geometry::{
         compound::ManageCompounds,

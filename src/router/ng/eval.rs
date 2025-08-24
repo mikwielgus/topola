@@ -14,7 +14,6 @@ use crate::{
         head::{BareHead, GetFace as _, Head},
         primitive::MakePrimitiveShape as _,
         rules::AccessRules,
-        Collect,
     },
     geometry::{primitive::PrimitiveShape, shape::AccessShape as _, shape::MeasureLength as _},
     graph::{GenericIndex, GetPetgraphIndex as _},

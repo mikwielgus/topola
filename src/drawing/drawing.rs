@@ -16,7 +16,6 @@ use crate::{
         band::BandTermsegIndex,
         bend::{BendIndex, BendWeight, FixedBendIndex, LooseBendIndex, LooseBendWeight},
         cane::Cane,
-        collect::Collect,
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         gear::GearIndex,
         graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},

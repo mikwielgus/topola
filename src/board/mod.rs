@@ -21,7 +21,7 @@ use crate::{
         dot::{FixedDotIndex, FixedDotWeight},
         graph::PrimitiveIndex,
         seg::{FixedSegIndex, FixedSegWeight},
-        Collect, DrawingException,
+        DrawingException,
     },
     geometry::{edit::ApplyGeometryEdit, GenericNode, GetLayer},
     graph::{GenericIndex, MakeRef},

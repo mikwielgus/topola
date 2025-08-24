@@ -21,16 +21,10 @@ pub struct BandUidError {
     pub maybe_end: Option<BandTermsegIndex>,
 }
 
-pub trait Collect {
-    fn loose_band_uid(&self, start_loose: LooseIndex) -> Result<BandUid, BandUidError>;
-
-    fn bend_bow(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex>;
-
-    fn bend_outward_bows(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex>;
-}
-
-impl<CW: Clone, Cel: Copy, R: AccessRules> Collect for Drawing<CW, Cel, R> {
-    fn loose_band_uid(&self, start_loose: LooseIndex) -> Result<BandUid, BandUidError> {
+/// Routines implementing various queries on drawing. A query is a routine that
+/// returns indices of one or more primitives.
+impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
+    pub fn loose_band_uid(&self, start_loose: LooseIndex) -> Result<BandUid, BandUidError> {
         match (
             self.loose_band_first_seg(start_loose),
             self.loose_band_last_seg(start_loose),
@@ -39,6 +33,17 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Collect for Drawing<CW, Cel, R> {
             (Some(x), None) | (None, Some(x)) => Err(BandUidError { maybe_end: Some(x) }),
             (None, None) => Err(BandUidError { maybe_end: None }),
         }
+    }
+
+    pub fn bend_outward_bows(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex> {
+        let mut v = vec![];
+
+        let mut outwards = self.primitive(bend).outwards();
+        while let Some(next) = outwards.walk_next(self) {
+            v.append(&mut self.bend_bow(next));
+        }
+
+        v
     }
 
     fn bend_bow(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex> {
@@ -60,24 +65,6 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Collect for Drawing<CW, Cel, R> {
         v
     }
 
-    fn bend_outward_bows(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex> {
-        let mut v = vec![];
-
-        let mut outwards = self.primitive(bend).outwards();
-        while let Some(next) = outwards.walk_next(self) {
-            v.append(&mut self.bend_bow(next));
-        }
-
-        v
-    }
-}
-
-trait CollectPrivate {
-    fn loose_band_first_seg(&self, start_loose: LooseIndex) -> Option<BandTermsegIndex>;
-    fn loose_band_last_seg(&self, start_loose: LooseIndex) -> Option<BandTermsegIndex>;
-}
-
-impl<CW: Clone, Cel: Copy, R: AccessRules> CollectPrivate for Drawing<CW, Cel, R> {
     fn loose_band_first_seg(&self, start_loose: LooseIndex) -> Option<BandTermsegIndex> {
         if let LooseIndex::LoneSeg(seg) = start_loose {
             return Some(BandTermsegIndex::Lone(seg));
