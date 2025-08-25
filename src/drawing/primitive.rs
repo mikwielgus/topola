@@ -9,6 +9,7 @@ use crate::{
     drawing::{
         bend::{BendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
+        gear::{GearIndex, GetPrevNextInChain},
         graph::{GetMaybeNet, PrimitiveIndex, PrimitiveWeight},
         rules::{AccessRules, Conditions, GetConditions},
         seg::{FixedSegWeight, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex, SeqLooseSegWeight},
@@ -291,6 +292,24 @@ impl<CW, Cel, R> GetOuterGears for FixedDot<'_, CW, Cel, R> {
     }
 }
 
+impl<CW: Clone, Cel: Copy, R: AccessRules> GetPrevNextInChain for FixedDot<'_, CW, Cel, R> {
+    fn next_in_chain(&self, maybe_prev: Option<GearIndex>) -> Option<GearIndex> {
+        self.drawing
+            .clearance_intersectors(self.index.into())
+            .find_map(|infringement| {
+                let PrimitiveIndex::FixedDot(intersectee) = infringement.1 else {
+                    return None;
+                };
+
+                if let Some(prev) = maybe_prev {
+                    (infringement.1 == prev.into()).then_some(intersectee.into())
+                } else {
+                    Some(intersectee.into())
+                }
+            })
+    }
+}
+
 impl<CW, Cel, R> WalkOutwards for FixedDot<'_, CW, Cel, R> {
     fn outwards(&self) -> DrawingOutwardWalker {
         DrawingOutwardWalker::new(self.lowest_gears().into_iter())
@@ -457,6 +476,12 @@ impl<CW, Cel, R> GetOuterGears for FixedBend<'_, CW, Cel, R> {
     }
 }
 
+impl<CW, Cel, R> GetPrevNextInChain for FixedBend<'_, CW, Cel, R> {
+    fn next_in_chain(&self, _maybe_prev: Option<GearIndex>) -> Option<GearIndex> {
+        None
+    }
+}
+
 impl<CW, Cel, R> WalkOutwards for FixedBend<'_, CW, Cel, R> {
     fn outwards(&self) -> DrawingOutwardWalker {
         DrawingOutwardWalker::new(self.lowest_gears().into_iter())
@@ -507,6 +532,12 @@ impl<CW, Cel, R> GetJoints for LooseBend<'_, CW, Cel, R> {
 impl<CW, Cel, R> GetOuterGears for LooseBend<'_, CW, Cel, R> {
     fn outer_gears(&self) -> Vec<LooseBendIndex> {
         self.outers().collect()
+    }
+}
+
+impl<CW, Cel, R> GetPrevNextInChain for LooseBend<'_, CW, Cel, R> {
+    fn next_in_chain(&self, _maybe_prev: Option<GearIndex>) -> Option<GearIndex> {
+        None
     }
 }
 

@@ -112,24 +112,38 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         v
     }
 
-    pub(super) fn find_infringement_except(
-        &self,
+    pub(super) fn find_infringement_except<'a>(
+        &'a self,
         infringer: PrimitiveIndex,
-        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
+        predicate: &'a impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Option<Infringement> {
+        self.infringements_except(infringer, predicate).next()
+    }
+
+    /*pub(super) fn infringements<'a>(
+        &'a self,
+        infringer: PrimitiveIndex,
+    ) -> impl Iterator<Item = Infringement> + 'a {
+        self.infringements_except(infringer, &|_, _, _| true)
+    }*/
+
+    fn infringements_except<'a>(
+        &'a self,
+        infringer: PrimitiveIndex,
+        predicate: &'a impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
+    ) -> impl Iterator<Item = Infringement> + 'a {
         self.infringements_among(
             infringer,
             self.locate_possible_infringees(infringer)
-                .filter_map(|infringee_node| {
+                .filter_map(move |infringee_node| {
                     if let GenericNode::Primitive(primitive_node) = infringee_node {
                         Some(primitive_node)
                     } else {
                         None
                     }
                 })
-                .filter(|infringee| predicate(&self, infringer, *infringee)),
+                .filter(move |infringee| predicate(&self, infringer, *infringee)),
         )
-        .next()
     }
 
     pub(super) fn infringements_among<'a>(
@@ -137,21 +151,45 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         infringer: PrimitiveIndex,
         it: impl Iterator<Item = PrimitiveIndex> + 'a,
     ) -> impl Iterator<Item = Infringement> + 'a {
-        let mut inflated_shape = infringer.primitive(self).shape(); // Unused temporary value just for initialization.
-        let conditions = infringer.primitive(self).conditions();
+        self.clearance_intersectors_among(infringer, it)
+            .filter(move |infringement| {
+                // Infringement with loose dots resulted in false positives for
+                // line-of-sight paths.
+                !matches!(infringer, PrimitiveIndex::LooseDot(..))
+                    && !matches!(infringement.1, PrimitiveIndex::LooseDot(..))
+            })
+            .filter(move |infringement| !self.are_connectable(infringer, infringement.1))
+    }
 
-        it.filter(move |infringee| {
-            // Infringement with loose dots resulted in false positives for
-            // line-of-sight paths.
-            !matches!(infringer, PrimitiveIndex::LooseDot(..))
-                && !matches!(infringee, PrimitiveIndex::LooseDot(..))
-        })
-        .filter(move |infringee| !self.are_connectable(infringer, *infringee))
-        .filter_map(move |primitive_node| {
+    pub(super) fn clearance_intersectors<'a>(
+        &'a self,
+        intersector: PrimitiveIndex,
+    ) -> impl Iterator<Item = Infringement> + 'a {
+        self.clearance_intersectors_among(
+            intersector,
+            self.locate_possible_infringees(intersector)
+                .filter_map(move |infringee_node| {
+                    if let GenericNode::Primitive(primitive_node) = infringee_node {
+                        Some(primitive_node)
+                    } else {
+                        None
+                    }
+                }),
+        )
+    }
+
+    pub(super) fn clearance_intersectors_among<'a>(
+        &'a self,
+        intersector: PrimitiveIndex,
+        it: impl Iterator<Item = PrimitiveIndex> + 'a,
+    ) -> impl Iterator<Item = Infringement> + 'a {
+        let conditions = intersector.primitive(self).conditions();
+
+        it.filter_map(move |primitive_node| {
             let infringee_conditions = primitive_node.primitive(self).conditions();
 
             let epsilon = 1.0;
-            inflated_shape = infringer.primitive(self).shape().inflate(
+            let inflated_shape = intersector.primitive(self).shape().inflate(
                 match (&conditions, infringee_conditions) {
                     (None, _) | (_, None) => 0.0,
                     (Some(lhs), Some(rhs)) => {
