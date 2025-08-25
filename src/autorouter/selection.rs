@@ -122,7 +122,10 @@ impl BandSelector {
             _ => return None,
         };
 
-        Self::try_from_uid(board, &board.layout().drawing().loose_band_uid(loose).ok()?)
+        Self::try_from_uid(
+            board,
+            &board.layout().drawing().find_loose_band_uid(loose).ok()?,
+        )
     }
 
     pub fn try_from_uid(

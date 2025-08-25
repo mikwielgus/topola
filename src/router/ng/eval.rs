@@ -167,7 +167,7 @@ impl AstarContext {
                     sub.label.clone(),
                     layout
                         .drawing()
-                        .loose_band_uid(fin.into())
+                        .find_loose_band_uid(fin.into())
                         .expect("a completely routed band should've Seg's as ends"),
                 );
                 Ok((

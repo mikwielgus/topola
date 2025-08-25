@@ -65,7 +65,7 @@ impl<'a> ResolvedSelector<'a> {
         } else {
             loose.and_then(|loose| {
                 Some(ResolvedSelector::Band {
-                    band_uid: board.layout().drawing().loose_band_uid(loose).ok()?,
+                    band_uid: board.layout().drawing().find_loose_band_uid(loose).ok()?,
                 })
             })
         }

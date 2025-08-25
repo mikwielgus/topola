@@ -583,7 +583,7 @@ fn cane_around<R: AccessRules>(
                 .all_rails(core.petgraph_index())
                 .filter_map(|bi| {
                     if let BendIndex::Loose(lbi) = bi {
-                        if layout.drawing().loose_band_uid(lbi.into()).ok() == Some(inner) {
+                        if layout.drawing().find_loose_band_uid(lbi.into()).ok() == Some(inner) {
                             Some(lbi)
                         } else {
                             None

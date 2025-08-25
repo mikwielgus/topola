@@ -23,7 +23,7 @@ use crate::{
         primitive::{
             GenericPrimitive, GetCore, GetJoints, GetLimbs, GetOtherJoint, MakePrimitiveShape,
         },
-        rules::{AccessRules, GetConditions},
+        rules::AccessRules,
         seg::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
             SegWeight, SeqLooseSegIndex, SeqLooseSegWeight,
@@ -31,7 +31,7 @@ use crate::{
     },
     geometry::{
         edit::{ApplyGeometryEdit, GeometryEdit},
-        primitive::{AccessPrimitiveShape, PrimitiveShape},
+        primitive::PrimitiveShape,
         recording_with_rtree::RecordingGeometryWithRtree,
         with_rtree::BboxedIndex,
         AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
@@ -751,7 +751,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             (from, to, offset)
         };
 
-        let rail_outer_bows = self.bend_outward_bows(rail);
+        let rail_outer_bows = self.collect_bend_outward_bows(rail);
 
         // Commenting out these two makes the crash go away.
         self.move_dot_with_infringement_filtering(
@@ -950,7 +950,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             .move_dot(recorder, dot, to);
 
         for limb in dot.primitive(self).limbs() {
-            if let Some(infringement) = self.detect_infringement_except(limb, predicate) {
+            if let Some(infringement) = self.find_infringement_except(limb, predicate) {
                 // Restore previous state.
                 self.recording_geometry_with_rtree
                     .move_dot(recorder, dot, old_pos);
@@ -958,7 +958,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             }
         }
 
-        if let Some(infringement) = self.detect_infringement_except(dot.into(), predicate) {
+        if let Some(infringement) = self.find_infringement_except(dot.into(), predicate) {
             // Restore previous state.
             self.recording_geometry_with_rtree
                 .move_dot(recorder, dot, old_pos);
@@ -985,7 +985,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         self.recording_geometry_with_rtree
             .shift_bend(recorder, bend, offset);
 
-        if let Some(infringement) = self.detect_infringement_except(bend.into(), predicate) {
+        if let Some(infringement) = self.find_infringement_except(bend.into(), predicate) {
             // Restore previous state.
             self.recording_geometry_with_rtree
                 .shift_bend(recorder, bend, old_offset);
@@ -1068,7 +1068,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         node: PrimitiveIndex,
         predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<(), Infringement> {
-        if let Some(infringement) = self.detect_infringement_except(node, predicate) {
+        if let Some(infringement) = self.find_infringement_except(node, predicate) {
             if let Ok(dot) = node.try_into() {
                 self.recording_geometry_with_rtree.remove_dot(recorder, dot);
             } else if let Ok(seg) = node.try_into() {
@@ -1080,114 +1080,6 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             return Err(infringement);
         }
         Ok(())
-    }
-
-    fn detect_infringement_except(
-        &self,
-        infringer: PrimitiveIndex,
-        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
-    ) -> Option<Infringement> {
-        self.find_infringement(
-            infringer,
-            self.locate_possible_infringees(infringer)
-                .filter_map(|infringee_node| {
-                    if let GenericNode::Primitive(primitive_node) = infringee_node {
-                        Some(primitive_node)
-                    } else {
-                        None
-                    }
-                })
-                .filter(|infringee| predicate(&self, infringer, *infringee)),
-        )
-    }
-
-    fn locate_possible_infringees(
-        &self,
-        node: PrimitiveIndex,
-    ) -> impl Iterator<Item = GenericNode<PrimitiveIndex, GenericIndex<CW>>> + '_ {
-        let limiting_shape = node.primitive(self).shape().inflate(
-            node.primitive(self)
-                .maybe_net()
-                .map(|net| self.rules.largest_clearance(Some(net)))
-                .unwrap_or(0.0),
-        );
-
-        self.recording_geometry_with_rtree
-            .rtree()
-            .locate_in_envelope_intersecting(
-                &limiting_shape.envelope_3d(0.0, node.primitive(self).layer()),
-            )
-            .map(|wrapper| wrapper.data)
-    }
-
-    fn find_infringement(
-        &self,
-        infringer: PrimitiveIndex,
-        it: impl Iterator<Item = PrimitiveIndex>,
-    ) -> Option<Infringement> {
-        let mut inflated_shape = infringer.primitive(self).shape(); // Unused temporary value just for initialization.
-        let conditions = infringer.primitive(self).conditions();
-
-        it.filter(|infringee| {
-            // Infringement with loose dots resulted in false positives for
-            // line-of-sight paths.
-            !matches!(infringer, PrimitiveIndex::LooseDot(..))
-                && !matches!(infringee, PrimitiveIndex::LooseDot(..))
-        })
-        .filter(|infringee| !self.are_connectable(infringer, *infringee))
-        .find_map(|primitive_node| {
-            let infringee_conditions = primitive_node.primitive(self).conditions();
-
-            let epsilon = 1.0;
-            inflated_shape = infringer.primitive(self).shape().inflate(
-                match (&conditions, infringee_conditions) {
-                    (None, _) | (_, None) => 0.0,
-                    (Some(lhs), Some(rhs)) => {
-                        // Note the epsilon comparison.
-                        // XXX: Epsilon is probably too large. But what should
-                        // it be exactly then?
-                        (self.rules.clearance(lhs, &rhs) - epsilon).clamp(0.0, f64::INFINITY)
-                    }
-                },
-            );
-
-            inflated_shape
-                .intersects(&primitive_node.primitive(self).shape())
-                .then_some(Infringement(inflated_shape, primitive_node))
-        })
-    }
-
-    fn detect_collision_except(
-        &self,
-        collider: PrimitiveIndex,
-        predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
-    ) -> Option<Collision> {
-        let shape = collider.primitive(self).shape();
-
-        self.recording_geometry_with_rtree
-            .rtree()
-            .locate_in_envelope_intersecting(&shape.full_height_envelope_3d(0.0, 2))
-            .filter_map(|wrapper| {
-                if let GenericNode::Primitive(collidee) = wrapper.data {
-                    Some(collidee)
-                } else {
-                    None
-                }
-            })
-            // NOTE: Collisions can happen between two same-net loose
-            // segs, so these cases in particular are not filtered out
-            // here, unlike what is done in infringement code.
-            .filter(|&collidee| collider != collidee)
-            .filter(|&collidee| {
-                !self.are_connectable(collider, collidee)
-                    || ((matches!(collider, PrimitiveIndex::LoneLooseSeg(..))
-                        || matches!(collider, PrimitiveIndex::SeqLooseSeg(..)))
-                        && (matches!(collidee, PrimitiveIndex::LoneLooseSeg(..))
-                            || matches!(collidee, PrimitiveIndex::SeqLooseSeg(..))))
-            })
-            .filter(|collidee| predicate(&self, collider, *collidee))
-            .find(|collidee| shape.intersects(&collidee.primitive(self).shape()))
-            .map(|collidee| Collision(shape, collidee))
     }
 
     pub fn primitive_nodes(&self) -> impl Iterator<Item = PrimitiveIndex> + '_ {
@@ -1253,17 +1145,6 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         }
     }
 
-    fn are_connectable(&self, node1: PrimitiveIndex, node2: PrimitiveIndex) -> bool {
-        if let (Some(node1_net), Some(node2_net)) = (
-            node1.primitive(self).maybe_net(),
-            node2.primitive(self).maybe_net(),
-        ) {
-            node1_net == node2_net
-        } else {
-            true
-        }
-    }
-
     fn test_if_looses_dont_infringe_each_other(&self) -> bool {
         !self
             .primitive_nodes()
@@ -1277,7 +1158,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 )
             })
             .any(|node| {
-                self.find_infringement(
+                self.infringements_among(
                     node,
                     self.locate_possible_infringees(node)
                         .filter_map(|n| {
@@ -1297,6 +1178,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                             )
                         }),
                 )
+                .next()
                 .is_some()
             })
     }

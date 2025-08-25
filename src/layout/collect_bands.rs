@@ -74,7 +74,7 @@ impl<R: AccessRules> Layout<R> {
                 (loose, shape)
             })
             .filter_map(move |(loose, shape)| {
-                let band_uid = self.drawing.loose_band_uid(loose).ok()?;
+                let band_uid = self.drawing.find_loose_band_uid(loose).ok()?;
                 let loose_hline = orig_hline.orthogonal_through(&match shape {
                     PrimitiveShape::Seg(seg) => {
                         let seg_hline = LineInGeneralForm::from(seg.middle_line());
