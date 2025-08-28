@@ -66,8 +66,8 @@ pub enum BinavnodeNodeIndex {
 }
 
 impl From<PrenavmeshNodeIndex> for BinavnodeNodeIndex {
-    fn from(trianvertex: PrenavmeshNodeIndex) -> Self {
-        match trianvertex {
+    fn from(node: PrenavmeshNodeIndex) -> Self {
+        match node {
             PrenavmeshNodeIndex::FixedDot(dot) => BinavnodeNodeIndex::FixedDot(dot),
             PrenavmeshNodeIndex::FixedBend(bend) => BinavnodeNodeIndex::FixedBend(bend),
         }
@@ -75,8 +75,8 @@ impl From<PrenavmeshNodeIndex> for BinavnodeNodeIndex {
 }
 
 impl From<BinavnodeNodeIndex> for PrimitiveIndex {
-    fn from(vertex: BinavnodeNodeIndex) -> Self {
-        match vertex {
+    fn from(node: BinavnodeNodeIndex) -> Self {
+        match node {
             BinavnodeNodeIndex::FixedDot(dot) => PrimitiveIndex::FixedDot(dot),
             BinavnodeNodeIndex::FixedBend(bend) => PrimitiveIndex::FixedBend(bend),
             BinavnodeNodeIndex::LooseBend(bend) => PrimitiveIndex::LooseBend(bend),
@@ -85,8 +85,8 @@ impl From<BinavnodeNodeIndex> for PrimitiveIndex {
 }
 
 impl From<BinavnodeNodeIndex> for GearIndex {
-    fn from(vertex: BinavnodeNodeIndex) -> Self {
-        match vertex {
+    fn from(node: BinavnodeNodeIndex) -> Self {
+        match node {
             BinavnodeNodeIndex::FixedDot(dot) => GearIndex::FixedDot(dot),
             BinavnodeNodeIndex::FixedBend(bend) => GearIndex::FixedBend(bend),
             BinavnodeNodeIndex::LooseBend(bend) => GearIndex::LooseBend(bend),
@@ -241,6 +241,39 @@ impl Navmesh {
                 edge.source(),
                 edge.target(),
             );
+
+            // TODO: This shouldn't depend on clearance.
+            for source_intersector in layout
+                .drawing()
+                .clearance_intersectors(edge.source().into())
+            {
+                let source = match source_intersector.1 {
+                    PrimitiveIndex::FixedDot(dot) => PrenavmeshNodeIndex::FixedDot(dot),
+                    PrimitiveIndex::FixedBend(bend) => PrenavmeshNodeIndex::FixedBend(bend),
+                    _ => continue,
+                };
+
+                if !map.contains_key(&source) {
+                    continue;
+                }
+
+                for target_intersector in layout
+                    .drawing()
+                    .clearance_intersectors(edge.target().into())
+                {
+                    let target = match target_intersector.1 {
+                        PrimitiveIndex::FixedDot(dot) => PrenavmeshNodeIndex::FixedDot(dot),
+                        PrimitiveIndex::FixedBend(bend) => PrenavmeshNodeIndex::FixedBend(bend),
+                        _ => continue,
+                    };
+
+                    if !map.contains_key(&target) {
+                        continue;
+                    }
+
+                    Self::add_trianedge_to_graph_as_quadrinavedge(&mut graph, &map, source, target);
+                }
+            }
         }
 
         // The existence of a constraint edge does not (!) guarantee that this

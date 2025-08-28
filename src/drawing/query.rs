@@ -161,7 +161,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             .filter(move |infringement| !self.are_connectable(infringer, infringement.1))
     }
 
-    pub(super) fn clearance_intersectors<'a>(
+    pub fn clearance_intersectors<'a>(
         &'a self,
         intersector: PrimitiveIndex,
     ) -> impl Iterator<Item = Infringement> + 'a {

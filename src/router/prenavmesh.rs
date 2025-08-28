@@ -36,6 +36,15 @@ pub enum PrenavmeshNodeIndex {
     FixedBend(FixedBendIndex),
 }
 
+impl From<PrenavmeshNodeIndex> for PrimitiveIndex {
+    fn from(node: PrenavmeshNodeIndex) -> Self {
+        match node {
+            PrenavmeshNodeIndex::FixedDot(dot) => PrimitiveIndex::FixedDot(dot),
+            PrenavmeshNodeIndex::FixedBend(bend) => PrimitiveIndex::FixedBend(bend),
+        }
+    }
+}
+
 #[derive(Clone, Copy)]
 pub struct PrenavmeshWeight {
     pub node: PrenavmeshNodeIndex,
