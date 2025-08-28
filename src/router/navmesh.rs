@@ -10,9 +10,10 @@ use petgraph::{
     data::DataMap,
     graph::UnGraph,
     stable_graph::NodeIndex,
+    unionfind::UnionFind,
     visit::{
         Data, EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges, IntoNeighbors,
-        IntoNodeIdentifiers, Walker,
+        IntoNodeIdentifiers, NodeIndexable, Walker,
     },
 };
 use spade::InsertionError;
@@ -28,7 +29,7 @@ use crate::{
         rules::AccessRules,
         Drawing,
     },
-    graph::{GetPetgraphIndex, MakeRef},
+    graph::{GenericIndex, GetPetgraphIndex, MakeRef},
     layout::Layout,
     math::RotationSense,
     router::thetastar::MakeEdgeRef,
@@ -162,45 +163,52 @@ impl Navmesh {
         let mut origin_navnode = None;
         let mut destination_navnode = None;
 
-        let mut map = BTreeMap::new();
+        let mut prenavnode_to_navnodes = BTreeMap::new();
+        let mut overlapping_prenavnodes_unions =
+            UnionFind::new(prenavmesh.triangulation().node_bound());
 
-        for trianvertex in prenavmesh.triangulation().node_identifiers() {
-            if trianvertex == origin.into() {
+        for prenavnode in prenavmesh.triangulation().node_identifiers() {
+            if prenavnode == origin.into() {
                 let navnode = graph.add_node(NavnodeWeight {
-                    binavnode: trianvertex.into(),
+                    binavnode: prenavnode.into(),
                     maybe_sense: None,
                 });
 
                 origin_navnode = Some(navnode);
-                map.insert(trianvertex, vec![(navnode, navnode)]);
-            } else if trianvertex == destination.into() {
+                prenavnode_to_navnodes.insert(prenavnode, vec![(navnode, navnode)]);
+            } else if prenavnode == destination.into() {
                 let navnode = graph.add_node(NavnodeWeight {
-                    binavnode: trianvertex.into(),
+                    binavnode: prenavnode.into(),
                     maybe_sense: None,
                 });
 
                 destination_navnode = Some(navnode);
-                map.insert(trianvertex, vec![(navnode, navnode)]);
+                prenavnode_to_navnodes.insert(prenavnode, vec![(navnode, navnode)]);
             } else {
-                map.insert(trianvertex, vec![]);
+                prenavnode_to_navnodes.insert(prenavnode, vec![]);
+                Self::unionize_with_overlapees(
+                    layout,
+                    &mut overlapping_prenavnodes_unions,
+                    prenavnode,
+                );
 
-                let gear = Into::<GearIndex>::into(Into::<BinavnodeNodeIndex>::into(trianvertex));
+                let gear = Into::<GearIndex>::into(Into::<BinavnodeNodeIndex>::into(prenavnode));
 
                 if options.squeeze_through_under_bends {
-                    Self::add_trianvertex_to_graph_and_map_as_binavnode(
+                    Self::add_prenavnode_as_binavnode(
                         &mut graph,
-                        &mut map,
-                        trianvertex,
-                        trianvertex.into(),
+                        &mut prenavnode_to_navnodes,
+                        prenavnode,
+                        prenavnode.into(),
                     );
 
                     if options.wrap_around_bands {
                         let mut outwards = gear.ref_(layout.drawing()).outwards();
                         while let Some(outward) = outwards.walk_next(layout.drawing()) {
-                            Self::add_trianvertex_to_graph_and_map_as_binavnode(
+                            Self::add_prenavnode_as_binavnode(
                                 &mut graph,
-                                &mut map,
-                                trianvertex,
+                                &mut prenavnode_to_navnodes,
+                                prenavnode,
                                 outward.into(),
                             );
                         }
@@ -215,65 +223,33 @@ impl Navmesh {
                             .collect::<Vec<_>>()
                             .is_empty()
                         {
-                            Self::add_trianvertex_to_graph_and_map_as_binavnode(
+                            Self::add_prenavnode_as_binavnode(
                                 &mut graph,
-                                &mut map,
-                                trianvertex,
+                                &mut prenavnode_to_navnodes,
+                                prenavnode,
                                 outward.into(),
                             );
                         }
                     }
                 } else {
-                    Self::add_trianvertex_to_graph_and_map_as_binavnode(
+                    Self::add_prenavnode_as_binavnode(
                         &mut graph,
-                        &mut map,
-                        trianvertex,
-                        trianvertex.into(),
+                        &mut prenavnode_to_navnodes,
+                        prenavnode,
+                        prenavnode.into(),
                     );
                 }
             }
         }
 
-        for edge in prenavmesh.triangulation().edge_references() {
-            Self::add_trianedge_to_graph_as_quadrinavedge(
+        for prenavedge in prenavmesh.triangulation().edge_references() {
+            Self::add_prenavedge_to_repr_as_quadrinavedges(
                 &mut graph,
-                &map,
-                edge.source(),
-                edge.target(),
+                &prenavnode_to_navnodes,
+                &overlapping_prenavnodes_unions,
+                prenavedge.source(),
+                prenavedge.target(),
             );
-
-            // TODO: This shouldn't depend on clearance.
-            for source_intersector in layout
-                .drawing()
-                .clearance_intersectors(edge.source().into())
-            {
-                let source = match source_intersector.1 {
-                    PrimitiveIndex::FixedDot(dot) => PrenavmeshNodeIndex::FixedDot(dot),
-                    PrimitiveIndex::FixedBend(bend) => PrenavmeshNodeIndex::FixedBend(bend),
-                    _ => continue,
-                };
-
-                if !map.contains_key(&source) {
-                    continue;
-                }
-
-                for target_intersector in layout
-                    .drawing()
-                    .clearance_intersectors(edge.target().into())
-                {
-                    let target = match target_intersector.1 {
-                        PrimitiveIndex::FixedDot(dot) => PrenavmeshNodeIndex::FixedDot(dot),
-                        PrimitiveIndex::FixedBend(bend) => PrenavmeshNodeIndex::FixedBend(bend),
-                        _ => continue,
-                    };
-
-                    if !map.contains_key(&target) {
-                        continue;
-                    }
-
-                    Self::add_trianedge_to_graph_as_quadrinavedge(&mut graph, &map, source, target);
-                }
-            }
         }
 
         // The existence of a constraint edge does not (!) guarantee that this
@@ -284,12 +260,53 @@ impl Navmesh {
         // So now we go over all the constraints and make sure that
         // quadrinavedges exist for every one of them.
         for constraint in prenavmesh.constraints() {
-            Self::add_trianedge_to_graph_as_quadrinavedge(
+            Self::add_prenavedge_to_repr_as_quadrinavedges(
                 &mut graph,
-                &map,
+                &prenavnode_to_navnodes,
+                &overlapping_prenavnodes_unions,
                 constraint.0.node,
                 constraint.1.node,
             );
+        }
+
+        // Copy prenavedges of prenavnodes union representatives to all elements
+        // for each union.
+        for prenavnode in prenavmesh.triangulation().node_identifiers() {
+            let repr = PrenavmeshNodeIndex::FixedDot(GenericIndex::new(
+                overlapping_prenavnodes_unions.find(prenavnode.petgraph_index()),
+            ));
+
+            if repr == prenavnode {
+                continue;
+            }
+
+            for (repr_navnode1, repr_navnode2) in prenavnode_to_navnodes[&repr].iter() {
+                let repr_navedge1_targets: Vec<_> = graph
+                    .edges(*repr_navnode1)
+                    .map(|edge| edge.target())
+                    .collect();
+
+                for target in repr_navedge1_targets {
+                    for (from_navnode1, from_navnode2) in prenavnode_to_navnodes[&prenavnode].iter()
+                    {
+                        graph.update_edge(*from_navnode1, target, ());
+                        graph.update_edge(*from_navnode2, target, ());
+                    }
+                }
+
+                let repr_navedge2_targets: Vec<_> = graph
+                    .edges(*repr_navnode2)
+                    .map(|edge| edge.target())
+                    .collect();
+
+                for target in repr_navedge2_targets {
+                    for (from_navnode1, from_navnode2) in prenavnode_to_navnodes[&prenavnode].iter()
+                    {
+                        graph.update_edge(*from_navnode1, target, ());
+                        graph.update_edge(*from_navnode2, target, ());
+                    }
+                }
+            }
         }
 
         Ok(Self {
@@ -302,9 +319,27 @@ impl Navmesh {
         })
     }
 
-    fn add_trianvertex_to_graph_and_map_as_binavnode(
+    fn unionize_with_overlapees(
+        layout: &Layout<impl AccessRules>,
+        overlapping_prenavnodes_unions: &mut UnionFind<NodeIndex<usize>>,
+        prenavnode: PrenavmeshNodeIndex,
+    ) {
+        for overlap in layout.drawing().clearance_intersectors(prenavnode.into()) {
+            let PrimitiveIndex::FixedDot(overlapee) = overlap.1 else {
+                continue;
+            };
+
+            overlapping_prenavnodes_unions
+                .union(prenavnode.petgraph_index(), overlapee.petgraph_index());
+        }
+    }
+
+    fn add_prenavnode_as_binavnode(
         graph: &mut UnGraph<NavnodeWeight, (), usize>,
-        map: &mut BTreeMap<PrenavmeshNodeIndex, Vec<(NodeIndex<usize>, NodeIndex<usize>)>>,
+        prenavnode_to_navnodes: &mut BTreeMap<
+            PrenavmeshNodeIndex,
+            Vec<(NodeIndex<usize>, NodeIndex<usize>)>,
+        >,
         trianvertex: PrenavmeshNodeIndex,
         node: BinavnodeNodeIndex,
     ) {
@@ -318,19 +353,50 @@ impl Navmesh {
             maybe_sense: Some(RotationSense::Clockwise),
         });
 
-        map.get_mut(&trianvertex)
+        prenavnode_to_navnodes
+            .get_mut(&trianvertex)
             .unwrap()
             .push((navnode1, navnode2));
     }
 
-    fn add_trianedge_to_graph_as_quadrinavedge(
+    fn add_prenavedge_to_repr_as_quadrinavedges(
         graph: &mut UnGraph<NavnodeWeight, (), usize>,
-        map: &BTreeMap<PrenavmeshNodeIndex, Vec<(NodeIndex<usize>, NodeIndex<usize>)>>,
-        from_trianvertex: PrenavmeshNodeIndex,
-        to_trianvertex: PrenavmeshNodeIndex,
+        prenavnode_to_navnodes: &BTreeMap<
+            PrenavmeshNodeIndex,
+            Vec<(NodeIndex<usize>, NodeIndex<usize>)>,
+        >,
+        overlapping_prenavnodes_unions: &UnionFind<NodeIndex<usize>>,
+        from_prenavnode: PrenavmeshNodeIndex,
+        to_prenavnode: PrenavmeshNodeIndex,
     ) {
-        for (from_navnode1, from_navnode2) in map[&from_trianvertex].iter() {
-            for (to_navnode1, to_navnode2) in map[&to_trianvertex].iter() {
+        // We assume prenavmesh nodes are fixed dots. This is an ugly shortcut,
+        // since fixed bends also can be prenavnodes, but it works for now.
+        let from_prenavnode_repr = PrenavmeshNodeIndex::FixedDot(GenericIndex::new(
+            overlapping_prenavnodes_unions.find(from_prenavnode.petgraph_index()),
+        ));
+        let to_prenavnode_repr = PrenavmeshNodeIndex::FixedDot(GenericIndex::new(
+            overlapping_prenavnodes_unions.find(to_prenavnode.petgraph_index()),
+        ));
+
+        Self::add_prenavedge_as_quadrinavedges(
+            graph,
+            prenavnode_to_navnodes,
+            from_prenavnode_repr,
+            to_prenavnode_repr,
+        )
+    }
+
+    fn add_prenavedge_as_quadrinavedges(
+        graph: &mut UnGraph<NavnodeWeight, (), usize>,
+        prenavnode_to_navnodes: &BTreeMap<
+            PrenavmeshNodeIndex,
+            Vec<(NodeIndex<usize>, NodeIndex<usize>)>,
+        >,
+        from_prenavnode: PrenavmeshNodeIndex,
+        to_prenavnode: PrenavmeshNodeIndex,
+    ) {
+        for (from_navnode1, from_navnode2) in prenavnode_to_navnodes[&from_prenavnode].iter() {
+            for (to_navnode1, to_navnode2) in prenavnode_to_navnodes[&to_prenavnode].iter() {
                 graph.update_edge(*from_navnode1, *to_navnode1, ());
                 graph.update_edge(*from_navnode1, *to_navnode2, ());
                 graph.update_edge(*from_navnode2, *to_navnode1, ());
