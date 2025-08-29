@@ -9,6 +9,7 @@
 use std::collections::{btree_map::Entry as BTreeMapEntry, BTreeMap};
 
 use geo::{Point, Rotate};
+use specctra_core::math::PointWithRotation;
 
 use crate::{
     board::{edit::BoardEdit, AccessMesadata, Board},
@@ -21,7 +22,7 @@ use crate::{
     },
     geometry::{primitive::PrimitiveShape, GetLayer, GetWidth},
     layout::{poly::SolidPolyWeight, Layout},
-    math::{Circle, PointWithRotation},
+    math::Circle,
     specctra::{
         mesadata::SpecctraMesadata,
         read::ListTokenizer,

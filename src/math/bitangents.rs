@@ -3,8 +3,9 @@
 // SPDX-License-Identifier: MIT
 
 use geo::{geometry::Point, Line};
-use specctra_core::math::Circle;
 use thiserror::Error;
+
+use crate::math::Circle;
 
 use super::{seq_perp_dot_product, LineInGeneralForm, RotationSense};
 

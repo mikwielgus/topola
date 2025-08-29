@@ -54,7 +54,7 @@ impl LineInGeneralForm {
     }
 
     /// Calculate the intersection between two lines.
-    pub fn intersects(&self, b: &Self) -> LineIntersection {
+    pub fn intersect(&self, b: &Self) -> LineIntersection {
         const ALMOST_ZERO: f64 = f64::EPSILON * 16.0;
         let (mut a, mut b) = (*self, *b);
         let _ = (a.make_normal_unit(), b.make_normal_unit());
@@ -105,11 +105,11 @@ impl LineInGeneralForm {
 }
 
 /// Returns `Some(p)` when `p` lies in the intersection of the given lines.
-pub fn intersect_lines(line1: &Line, line2: &Line) -> Option<Point> {
+pub fn intersect_line_segments(line1: &Line, line2: &Line) -> Option<Point> {
     let nline1 = LineInGeneralForm::from(*line1);
     let nline2 = LineInGeneralForm::from(*line2);
 
-    match nline1.intersects(&nline2) {
+    match nline1.intersect(&nline2) {
         LineIntersection::Empty | LineIntersection::Overlapping => None,
         LineIntersection::Point(pt) => {
             let parv1 = geo::point! {
@@ -142,7 +142,7 @@ pub fn intersect_line_and_ray(line1: &Line, ray2: &Line) -> Option<Point> {
     let nline1 = LineInGeneralForm::from(*line1);
     let nray2 = LineInGeneralForm::from(*ray2);
 
-    match nline1.intersects(&nray2) {
+    match nline1.intersect(&nray2) {
         LineIntersection::Empty | LineIntersection::Overlapping => None,
         LineIntersection::Point(pt) => {
             let parv1 = geo::point! {
@@ -194,7 +194,7 @@ mod tests {
     #[test]
     fn intersect_line_and_line00() {
         assert_eq!(
-            intersect_lines(
+            intersect_line_segments(
                 &Line {
                     start: geo::coord! { x: -1., y: -1. },
                     end: geo::coord! { x: 1., y: 1. },
@@ -207,7 +207,7 @@ mod tests {
             Some(geo::point! { x: 0., y: 0. })
         );
         assert_eq!(
-            intersect_lines(
+            intersect_line_segments(
                 &Line {
                     start: geo::coord! { x: -1., y: -1. },
                     end: geo::coord! { x: 1., y: 1. },

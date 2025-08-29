@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use core::{fmt, ops::Sub};
+use core::fmt;
 use geo_types::geometry::Point;
 use serde::{Deserialize, Serialize};
 
@@ -16,50 +16,6 @@ pub struct Circle {
 pub struct PointWithRotation {
     pub pos: Point,
     pub rot: f64,
-}
-
-impl fmt::Debug for Circle {
-    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
-        f.debug_struct("Circle")
-            .field("x", &self.pos.0.x)
-            .field("y", &self.pos.0.y)
-            .field("r", &self.r)
-            .finish()
-    }
-}
-
-impl Circle {
-    /// Calculate the point that lies on the circle at angle `phi`,
-    /// relative to coordinate axes.
-    ///
-    /// `phi` is the angle given in radians starting at `(r, 0)`.
-    pub fn position_at_angle(&self, phi: f64) -> Point {
-        geo_types::point! {
-            x: self.pos.0.x + self.r * phi.cos(),
-            y: self.pos.0.y + self.r * phi.sin()
-        }
-    }
-
-    /// The (x,y) axis aligned bounding box for this circle.
-    #[cfg(feature = "rstar")]
-    pub fn bbox(&self, margin: f64) -> rstar::AABB<[f64; 2]> {
-        let r = self.r + margin;
-        rstar::AABB::from_corners(
-            [self.pos.0.x - r, self.pos.0.y - r],
-            [self.pos.0.x + r, self.pos.0.y + r],
-        )
-    }
-}
-
-impl Sub for Circle {
-    type Output = Self;
-
-    fn sub(self, other: Self) -> Self {
-        Self {
-            pos: self.pos - other.pos,
-            r: self.r,
-        }
-    }
 }
 
 impl fmt::Debug for PointWithRotation {

@@ -78,7 +78,7 @@ impl<R: AccessRules> Layout<R> {
                 let loose_hline = orig_hline.orthogonal_through(&match shape {
                     PrimitiveShape::Seg(seg) => {
                         let seg_hline = LineInGeneralForm::from(seg.middle_line());
-                        match orig_hline.intersects(&seg_hline) {
+                        match orig_hline.intersect(&seg_hline) {
                             LineIntersection::Empty => return None,
                             LineIntersection::Overlapping => shape.center(),
                             LineIntersection::Point(pt) => pt,
