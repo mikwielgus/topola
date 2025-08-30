@@ -8,7 +8,8 @@
 
 use std::collections::{btree_map::Entry as BTreeMapEntry, BTreeMap};
 
-use geo::{Point, Rotate};
+use geo::{Euclidean, Length, Line, Point, Rotate};
+use itertools::Itertools;
 use specctra_core::math::PointWithRotation;
 
 use crate::{
@@ -22,7 +23,7 @@ use crate::{
     },
     geometry::{primitive::PrimitiveShape, GetLayer, GetWidth},
     layout::{poly::SolidPolyWeight, Layout},
-    math::Circle,
+    math::{self, Circle},
     specctra::{
         mesadata::SpecctraMesadata,
         read::ListTokenizer,
@@ -733,6 +734,78 @@ impl SpecctraDesign {
             maybe_pin,
             &nodes[..],
         );
+
+        Self::add_polygon_fillet_circles(
+            recorder, board, place, pin, coords, width, layer, maybe_net, None, flip,
+        );
+    }
+
+    fn add_polygon_fillet_circles(
+        recorder: &mut BoardEdit,
+        board: &mut Board<SpecctraMesadata>,
+        place: PointWithRotation,
+        pin: PointWithRotation,
+        coords: &[structure::Point],
+        _width: f64,
+        layer: usize,
+        maybe_net: Option<usize>,
+        _maybe_pin: Option<String>,
+        flip: bool,
+    ) {
+        let MIN_FIRST_CHAIN_ELEMENT_LENGTH = 100.0;
+        let mut maybe_first_chain_segment = None;
+
+        let first_pos = Self::pos(place, pin, coords[0].x, coords[0].y, flip);
+        let last_pos = Self::pos(
+            place,
+            pin,
+            coords.last().unwrap().x,
+            coords.last().unwrap().y,
+            flip,
+        );
+
+        let last_first_segment = Line::new(last_pos, first_pos);
+
+        if last_first_segment.length::<Euclidean>() >= MIN_FIRST_CHAIN_ELEMENT_LENGTH {
+            maybe_first_chain_segment = Some((Line::new(last_pos, first_pos), 0));
+        }
+
+        for (index, coord_triple) in coords
+            .iter()
+            .circular_tuple_windows::<(_, _, _)>()
+            .enumerate()
+        {
+            let curr_pos0 = Self::pos(place, pin, coord_triple.0.x, coord_triple.0.y, flip);
+            let curr_pos1 = Self::pos(place, pin, coord_triple.1.x, coord_triple.1.y, flip);
+            let curr_pos2 = Self::pos(place, pin, coord_triple.2.x, coord_triple.2.y, flip);
+            let curr_segment01 = Line::new(curr_pos0, curr_pos1);
+            let curr_segment12 = Line::new(curr_pos1, curr_pos2);
+
+            if math::angle_between(curr_segment01.delta().into(), curr_segment12.delta().into())
+                .abs()
+                > 30.0_f64.to_radians()
+                || curr_segment12.length::<Euclidean>() >= MIN_FIRST_CHAIN_ELEMENT_LENGTH
+            {
+                if let Some((first_chain_segment, first_chain_index)) = maybe_first_chain_segment {
+                    if index - first_chain_index >= 3 {
+                        let circle = math::fillet_circle(&first_chain_segment, &curr_segment12);
+
+                        board.add_fixed_dot_infringably(
+                            recorder,
+                            FixedDotWeight(GeneralDotWeight {
+                                circle,
+                                layer,
+                                maybe_net: None, // TODO.
+                                                 //maybe_net,
+                            }),
+                            None,
+                        );
+                    }
+                }
+
+                maybe_first_chain_segment = Some((Line::new(curr_pos1, curr_pos2), index));
+            }
+        }
     }
 
     fn pos(place: PointWithRotation, pin: PointWithRotation, x: f64, y: f64, flip: bool) -> Point {

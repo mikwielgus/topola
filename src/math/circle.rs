@@ -4,8 +4,10 @@
 
 use std::ops::Sub;
 
-use geo::{point, Distance, Euclidean, Line, Point};
+use geo::{point, Distance, Euclidean, Length, Line, Point};
 use serde::{Deserialize, Serialize};
+
+use crate::math;
 
 #[derive(Clone, Copy, Debug, Deserialize, PartialEq, Serialize)]
 pub struct Circle {
@@ -128,4 +130,37 @@ pub fn intersect_circle_segment(circle: &Circle, segment: &Line) -> Vec<Point> {
     }
 
     v
+}
+
+/// Find the filleting circle of line segments `segment1` and `segment2`.
+pub fn fillet_circle(segment1: &Line, segment2: &Line) -> Circle {
+    // Turn segment1 delta vector counterclockwisely by 90 degrees.
+    let diameter_ray = Line::new(
+        segment1.end_point(),
+        point! {x: segment1.end_point().x() - segment1.delta().y, y: segment1.end_point().y() + segment1.delta().x},
+    );
+
+    // Radius is the distance from the diameter line to segment2.start_point().
+    let radius = (diameter_ray.delta().y * segment2.start_point().x()
+        - diameter_ray.delta().x * segment2.start_point().y()
+        + diameter_ray.end_point().x() * diameter_ray.start_point().y()
+        - diameter_ray.end_point().y() * diameter_ray.start_point().x())
+    .abs()
+        / diameter_ray.length::<Euclidean>();
+
+    let center =
+        if math::perp_dot_product(Point::from(segment1.delta()), Point::from(segment2.delta()))
+            >= 0.0
+        {
+            segment1.end_point()
+                + (diameter_ray.delta() / diameter_ray.length::<Euclidean>() * radius).into()
+        } else {
+            segment1.end_point()
+                - (diameter_ray.delta() / diameter_ray.length::<Euclidean>() * radius).into()
+        };
+
+    Circle {
+        pos: center,
+        r: radius,
+    }
 }
