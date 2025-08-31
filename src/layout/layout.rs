@@ -53,7 +53,8 @@ pub enum CompoundWeight {
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub enum CompoundEntryLabel {
     Normal,
-    NotInConvexHull,
+    Apex,
+    Fillet,
 }
 
 /// The alias to differ node types
@@ -254,13 +255,14 @@ impl<R: AccessRules> Layout<R> {
         recorder: &mut LayoutEdit,
         weight: PolyWeight,
         nodes: &[PrimitiveIndex],
+        fillets: &[FixedDotIndex],
     ) -> (GenericIndex<PolyWeight>, FixedDotIndex) {
         let layer = weight.layer();
         let maybe_net = weight.maybe_net();
         let poly = self.add_poly(recorder, weight);
         (
             poly,
-            add_poly_with_nodes_intern(self, recorder, poly, nodes, layer, maybe_net),
+            add_poly_with_nodes_intern(self, recorder, poly, nodes, fillets, layer, maybe_net),
         )
     }
 
@@ -361,6 +363,7 @@ impl<R: AccessRules> Layout<R> {
                 if self
                     .drawing()
                     .geometry()
+                    // TODO: Add `.compounds()` method working on `PrimitiveIndex`.
                     .compounds(GenericIndex::<()>::new(primitive.petgraph_index()))
                     .next()
                     .is_some()
@@ -380,7 +383,7 @@ impl<R: AccessRules> Layout<R> {
                     let apex = loop {
                         // this returns None if the via is not present on this layer
                         let (entry_label, dot) = dots.next()?;
-                        if entry_label == CompoundEntryLabel::NotInConvexHull {
+                        if entry_label == CompoundEntryLabel::Apex {
                             if let Some((dot, weight)) = handle_fixed_dot(&self.drawing, dot) {
                                 if weight.layer() == active_layer {
                                     break dot;

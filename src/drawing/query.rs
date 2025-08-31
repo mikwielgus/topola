@@ -151,7 +151,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         infringer: PrimitiveIndex,
         it: impl Iterator<Item = PrimitiveIndex> + 'a,
     ) -> impl Iterator<Item = Infringement> + 'a {
-        self.clearance_intersectors_among(infringer, it)
+        self.overlapees_among(infringer, it)
             .filter(move |infringement| {
                 // Infringement with loose dots resulted in false positives for
                 // line-of-sight paths.
@@ -161,24 +161,25 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             .filter(move |infringement| !self.are_connectable(infringer, infringement.1))
     }
 
-    pub fn clearance_intersectors<'a>(
+    pub fn overlapees<'a>(
         &'a self,
-        intersector: PrimitiveIndex,
+        overlapper: PrimitiveIndex,
     ) -> impl Iterator<Item = Infringement> + 'a {
-        self.clearance_intersectors_among(
-            intersector,
-            self.locate_possible_infringees(intersector)
+        self.overlapees_among(
+            overlapper,
+            self.locate_possible_infringees(overlapper)
                 .filter_map(move |infringee_node| {
                     if let GenericNode::Primitive(primitive_node) = infringee_node {
                         Some(primitive_node)
                     } else {
                         None
                     }
-                }),
+                })
+                .filter(move |&overlapee| overlapper != overlapee),
         )
     }
 
-    pub(super) fn clearance_intersectors_among<'a>(
+    pub(super) fn overlapees_among<'a>(
         &'a self,
         intersector: PrimitiveIndex,
         it: impl Iterator<Item = PrimitiveIndex> + 'a,

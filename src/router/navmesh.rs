@@ -254,7 +254,7 @@ impl Navmesh {
 
         // The existence of a constraint edge does not (!) guarantee that this
         // edge exactly will be present in the triangulation. It appears that
-        // Spade splits a constraint edge into two if an endpoint of another
+        // Spade splits a constraint edge in two if an endpoint of another
         // constraint lies on it.
         //
         // So now we go over all the constraints and make sure that
@@ -324,7 +324,7 @@ impl Navmesh {
         overlapping_prenavnodes_unions: &mut UnionFind<NodeIndex<usize>>,
         prenavnode: PrenavmeshNodeIndex,
     ) {
-        for overlap in layout.drawing().clearance_intersectors(prenavnode.into()) {
+        for overlap in layout.drawing().overlapees(prenavnode.into()) {
             let PrimitiveIndex::FixedDot(overlapee) = overlap.1 else {
                 continue;
             };

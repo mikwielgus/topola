@@ -158,10 +158,11 @@ impl<M: AccessMesadata> Board<M> {
         weight: PolyWeight,
         maybe_pin: Option<String>,
         nodes: &[PrimitiveIndex],
+        fillets: &[FixedDotIndex],
     ) -> GenericIndex<PolyWeight> {
         let (poly, apex) =
             self.layout
-                .add_poly_with_nodes(&mut recorder.layout_edit, weight, nodes);
+                .add_poly_with_nodes(&mut recorder.layout_edit, weight, nodes, fillets);
 
         if let Some(pin) = maybe_pin {
             for i in nodes {

@@ -19,8 +19,8 @@ use crate::{
         Drawing,
     },
     geometry::{shape::AccessShape, GetLayer},
-    graph::GetPetgraphIndex,
-    layout::Layout,
+    graph::{GenericIndex, GetPetgraphIndex},
+    layout::{CompoundEntryLabel, Layout},
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
 
@@ -153,32 +153,51 @@ impl Prenavmesh {
         for node in layout.drawing().layer_primitive_nodes(layer) {
             let primitive = node.primitive(layout.drawing());
 
-            if let Some(primitive_net) = primitive.maybe_net() {
-                if node == origin.into()
-                    || node == destination.into()
-                    || Some(primitive_net) != maybe_net
-                {
-                    match node {
-                        PrimitiveIndex::FixedDot(dot) => {
-                            this.triangulation
-                                .add_vertex(PrenavmeshWeight::new_from_fixed_dot(layout, dot))?;
+            let Some(primitive_net) = primitive.maybe_net() else {
+                continue;
+            };
+
+            if node == origin.into()
+                || node == destination.into()
+                || Some(primitive_net) != maybe_net
+            {
+                match node {
+                    PrimitiveIndex::FixedDot(dot) => {
+                        layout
+                            .drawing()
+                            // TODO: Add `.compounds()` method working on `PrimitiveIndex`.
+                            .compounds(GenericIndex::<()>::new(dot.petgraph_index()))
+                            .find(|(label, _)| *label == CompoundEntryLabel::Fillet)
+                            .is_some();
+
+                        // Do not add prenavnodes for primitives that have been filleted.
+                        // For now, we do this by detecting if the primitive overlaps
+                        // a fillet.
+                        // TODO: This method is simplistic and will obviously result in
+                        // false positives in some cases, so in the future, instead of this,
+                        // create a fillet compound type and check for compound membership.
+                        if Self::is_fixed_dot_filleted(layout, dot) {
+                            continue;
                         }
-                        PrimitiveIndex::LoneLooseSeg(seg) => {
-                            this.add_constraint(PrenavmeshConstraint::new_from_lone_loose_seg(
-                                layout, seg,
-                            ))?;
-                        }
-                        PrimitiveIndex::SeqLooseSeg(seg) => {
-                            this.add_constraint(PrenavmeshConstraint::new_from_seq_loose_seg(
-                                layout, seg,
-                            ))?;
-                        }
-                        PrimitiveIndex::FixedBend(bend) => {
-                            this.triangulation
-                                .add_vertex(PrenavmeshWeight::new_from_fixed_bend(layout, bend))?;
-                        }
-                        _ => (),
+
+                        this.triangulation
+                            .add_vertex(PrenavmeshWeight::new_from_fixed_dot(layout, dot))?;
                     }
+                    PrimitiveIndex::LoneLooseSeg(seg) => {
+                        this.add_constraint(PrenavmeshConstraint::new_from_lone_loose_seg(
+                            layout, seg,
+                        ))?;
+                    }
+                    PrimitiveIndex::SeqLooseSeg(seg) => {
+                        this.add_constraint(PrenavmeshConstraint::new_from_seq_loose_seg(
+                            layout, seg,
+                        ))?;
+                    }
+                    PrimitiveIndex::FixedBend(bend) => {
+                        this.triangulation
+                            .add_vertex(PrenavmeshWeight::new_from_fixed_bend(layout, bend))?;
+                    }
+                    _ => (),
                 }
             }
         }
@@ -186,41 +205,76 @@ impl Prenavmesh {
         for node in layout.drawing().layer_primitive_nodes(layer) {
             let primitive = node.primitive(layout.drawing());
 
-            if let Some(primitive_net) = primitive.maybe_net() {
-                if node == origin.into()
-                    || node == destination.into()
-                    || Some(primitive_net) != maybe_net
-                {
-                    // If you have a band that was routed from a polygonal pad,
-                    // when you will start a new routing some of the constraint
-                    // edges created from the loose segs of a band will
-                    // intersect some of the constraint edges created from the
-                    // fixed segs constituting the pad boundary.
-                    //
-                    // Such constraint intersections are erroneous and cause
-                    // Spade to throw a panic at runtime. So, to prevent this
-                    // from occuring, we iterate over the layout for the second
-                    // time, after all the constraint edges from bands have been
-                    // placed, and only then add constraint edges created from
-                    // fixed segs that do not cause an intersection.
-                    match node {
-                        PrimitiveIndex::FixedSeg(seg) => {
-                            let constraint = PrenavmeshConstraint::new_from_fixed_seg(layout, seg);
+            let Some(primitive_net) = primitive.maybe_net() else {
+                continue;
+            };
 
-                            if !this
-                                .triangulation
-                                .intersects_constraint(&constraint.0, &constraint.1)
-                            {
-                                this.add_constraint(constraint);
-                            }
+            if node == origin.into()
+                || node == destination.into()
+                || Some(primitive_net) != maybe_net
+            {
+                // If you have a band that was routed from a polygonal pad,
+                // when you will start a new routing some of the constraint
+                // edges created from the loose segs of a band will
+                // intersect some of the constraint edges created from the
+                // fixed segs constituting the pad boundary.
+                //
+                // Such constraint intersections are erroneous and cause
+                // Spade to throw a panic at runtime. So, to prevent this
+                // from occuring, we iterate over the layout for the second
+                // time, after all the constraint edges from bands have been
+                // placed, and only then add constraint edges created from
+                // fixed segs that do not cause an intersection.
+                match node {
+                    PrimitiveIndex::FixedSeg(seg) => {
+                        let (from_dot, to_dot) = layout.drawing().primitive(seg).joints();
+
+                        if Self::is_fixed_dot_filleted(layout, from_dot)
+                            && Self::is_fixed_dot_filleted(layout, to_dot)
+                        {
+                            continue;
                         }
-                        _ => (),
+
+                        let constraint = PrenavmeshConstraint::new_from_fixed_seg(layout, seg);
+
+                        if !this
+                            .triangulation
+                            .intersects_constraint(&constraint.0, &constraint.1)
+                        {
+                            this.add_constraint(constraint);
+                        }
                     }
+                    _ => (),
                 }
             }
         }
 
         Ok(this)
+    }
+
+    fn is_fixed_dot_filleted(layout: &Layout<impl AccessRules>, dot: FixedDotIndex) -> bool {
+        layout
+            .drawing()
+            .compounds(GenericIndex::<()>::new(dot.petgraph_index()))
+            .find(|(label, _)|
+            // Fillets fail this test for some reason that I did not investigate, so
+            // I added this condition.
+                *label == CompoundEntryLabel::Fillet
+            // Exclude apices because they may overlap fillets.
+                || *label == CompoundEntryLabel::Apex)
+            .is_none()
+            && layout
+                .drawing()
+                .overlapees(dot.into())
+                .find(|overlapee| {
+                    layout
+                        .drawing()
+                        // TODO: Add `.compounds()` method working on `PrimitiveIndex`.
+                        .compounds(GenericIndex::<()>::new(overlapee.1.petgraph_index()))
+                        .find(|(label, _)| *label == CompoundEntryLabel::Fillet)
+                        .is_some()
+                })
+                .is_some()
     }
 
     fn add_constraint(&mut self, constraint: PrenavmeshConstraint) -> Result<(), InsertionError> {

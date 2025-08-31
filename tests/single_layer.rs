@@ -39,7 +39,7 @@ fn test_tht_de9_to_tht_de9() {
 #[test]
 fn test_0603_breakout() {
     let mut autorouter = common::load_design("tests/single_layer/0603_breakout/0603_breakout.dsn");
-    common::assert_navnode_count(&mut autorouter, "R1-2", "J1-2", 54);
+    common::assert_navnode_count(&mut autorouter, "R1-2", "J1-2", 22);
     let mut invoker = common::create_invoker_and_assert(autorouter);
     common::replay_and_assert(
         &mut invoker,
@@ -93,7 +93,7 @@ fn test_4x_3rd_order_smd_lc_filters() {
     let mut autorouter = common::load_design(
         "tests/single_layer/4x_3rd_order_smd_lc_filters/4x_3rd_order_smd_lc_filters.dsn",
     );
-    common::assert_navnode_count(&mut autorouter, "J1-1", "L1-1", 2062);
+    common::assert_navnode_count(&mut autorouter, "J1-1", "L1-1", 558);
     let mut invoker = common::create_invoker_and_assert(autorouter);
     common::replay_and_assert(
         &mut invoker,
@@ -130,7 +130,7 @@ fn test_tht_3pin_xlr_to_tht_3pin_xlr() {
 fn test_vga_dac_breakout() {
     let mut autorouter =
         common::load_design("tests/single_layer/vga_dac_breakout/vga_dac_breakout.dsn");
-    common::assert_navnode_count(&mut autorouter, "J1-2", "R4-1", 944);
+    common::assert_navnode_count(&mut autorouter, "J1-2", "R4-1", 272);
     let mut invoker = common::create_invoker_and_assert(autorouter);
     common::replay_and_assert(
         &mut invoker,

@@ -15,7 +15,7 @@ use specctra_core::math::PointWithRotation;
 use crate::{
     board::{edit::BoardEdit, AccessMesadata, Board},
     drawing::{
-        dot::{FixedDotWeight, GeneralDotWeight},
+        dot::{FixedDotIndex, FixedDotWeight, GeneralDotWeight},
         graph::{GetMaybeNet, MakePrimitive},
         primitive::MakePrimitiveShape,
         seg::{FixedSegWeight, GeneralSegWeight},
@@ -584,6 +584,7 @@ impl SpecctraDesign {
                 seg3.into(),
                 seg4.into(),
             ],
+            &[],
         );
     }
 
@@ -728,15 +729,16 @@ impl SpecctraDesign {
                 .into(),
         );
 
+        let fillets = Self::add_polygon_fillet_circles(
+            recorder, board, place, pin, coords, width, layer, maybe_net, None, flip,
+        );
+
         board.add_poly_with_nodes(
             recorder,
             SolidPolyWeight { layer, maybe_net }.into(),
             maybe_pin,
             &nodes[..],
-        );
-
-        Self::add_polygon_fillet_circles(
-            recorder, board, place, pin, coords, width, layer, maybe_net, None, flip,
+            &fillets[..],
         );
     }
 
@@ -751,9 +753,10 @@ impl SpecctraDesign {
         maybe_net: Option<usize>,
         _maybe_pin: Option<String>,
         flip: bool,
-    ) {
+    ) -> Vec<FixedDotIndex> {
         let MIN_FIRST_CHAIN_ELEMENT_LENGTH = 100.0;
         let mut maybe_first_chain_segment = None;
+        let mut fillets = vec![];
 
         let first_pos = Self::pos(place, pin, coords[0].x, coords[0].y, flip);
         let last_pos = Self::pos(
@@ -790,22 +793,23 @@ impl SpecctraDesign {
                     if index - first_chain_index >= 3 {
                         let circle = math::fillet_circle(&first_chain_segment, &curr_segment12);
 
-                        board.add_fixed_dot_infringably(
+                        fillets.push(board.add_fixed_dot_infringably(
                             recorder,
                             FixedDotWeight(GeneralDotWeight {
                                 circle,
                                 layer,
-                                maybe_net: None, // TODO.
-                                                 //maybe_net,
+                                maybe_net,
                             }),
                             None,
-                        );
+                        ));
                     }
                 }
 
                 maybe_first_chain_segment = Some((Line::new(curr_pos1, curr_pos2), index));
             }
         }
+
+        fillets
     }
 
     fn pos(place: PointWithRotation, pin: PointWithRotation, x: f64, y: f64, flip: bool) -> Point {

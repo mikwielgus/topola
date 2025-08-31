@@ -49,6 +49,7 @@ pub(super) fn add_poly_with_nodes_intern<R: AccessRules>(
     recorder: &mut LayoutEdit,
     poly: GenericIndex<PolyWeight>,
     nodes: &[PrimitiveIndex],
+    fillets: &[FixedDotIndex],
     layer: usize,
     maybe_net: Option<usize>,
 ) -> FixedDotIndex {
@@ -123,19 +124,22 @@ pub(super) fn add_poly_with_nodes_intern<R: AccessRules>(
             layout.drawing.add_to_compound(
                 recorder,
                 GenericIndex::<()>::new(idx.petgraph_index()),
-                CompoundEntryLabel::NotInConvexHull,
+                CompoundEntryLabel::Apex,
                 poly_compound,
             );
         }
     }
 
+    for fillet in fillets {
+        layout
+            .drawing
+            .add_to_compound(recorder, *fillet, CompoundEntryLabel::Fillet, poly_compound)
+    }
+
     // maybe this should be a different edge label
-    layout.drawing.add_to_compound(
-        recorder,
-        apex,
-        CompoundEntryLabel::NotInConvexHull,
-        poly_compound,
-    );
+    layout
+        .drawing
+        .add_to_compound(recorder, apex, CompoundEntryLabel::Apex, poly_compound);
 
     assert!(is_apex(&layout.drawing, apex));
     apex
@@ -166,7 +170,7 @@ impl<'a, R> PolyRef<'a, R> {
             .geometry()
             .compound_members(self.index.into())
             .find_map(|(label, primitive_node)| {
-                if label == CompoundEntryLabel::NotInConvexHull {
+                if label == CompoundEntryLabel::Apex {
                     if let PrimitiveIndex::FixedDot(dot) = primitive_node {
                         if is_apex(self.drawing, dot) {
                             return Some(dot);

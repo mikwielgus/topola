@@ -295,7 +295,7 @@ impl<CW, Cel, R> GetOuterGears for FixedDot<'_, CW, Cel, R> {
 impl<CW: Clone, Cel: Copy, R: AccessRules> GetPrevNextInChain for FixedDot<'_, CW, Cel, R> {
     fn next_in_chain(&self, maybe_prev: Option<GearIndex>) -> Option<GearIndex> {
         self.drawing
-            .clearance_intersectors(self.index.into())
+            .overlapees(self.index.into())
             .find_map(|infringement| {
                 let PrimitiveIndex::FixedDot(intersectee) = infringement.1 else {
                     return None;
