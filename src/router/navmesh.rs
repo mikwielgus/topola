@@ -30,7 +30,7 @@ use crate::{
         Drawing,
     },
     graph::{GenericIndex, GetPetgraphIndex, MakeRef},
-    layout::Layout,
+    layout::{CompoundEntryLabel, Layout},
     math::RotationSense,
     router::thetastar::MakeEdgeRef,
 };
@@ -324,8 +324,28 @@ impl Navmesh {
         overlapping_prenavnodes_unions: &mut UnionFind<NodeIndex<usize>>,
         prenavnode: PrenavmeshNodeIndex,
     ) {
-        for overlap in layout.drawing().overlapees(prenavnode.into()) {
-            let PrimitiveIndex::FixedDot(overlapee) = overlap.1 else {
+        // Ignore overlaps of a fillet.
+        if layout
+            .drawing()
+            .compounds(GenericIndex::<()>::new(prenavnode.petgraph_index()))
+            .find(|(label, _)| *label == CompoundEntryLabel::Fillet)
+            .is_some()
+        {
+            return;
+        }
+
+        for overlapee in layout.drawing().overlapees(prenavnode.into()) {
+            // Ignore overlaps with fillets.
+            if layout
+                .drawing()
+                .compounds(GenericIndex::<()>::new(overlapee.1.petgraph_index()))
+                .find(|(label, _)| *label == CompoundEntryLabel::Fillet)
+                .is_some()
+            {
+                continue;
+            }
+
+            let PrimitiveIndex::FixedDot(overlapee) = overlapee.1 else {
                 continue;
             };
 
