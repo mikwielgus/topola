@@ -92,6 +92,10 @@ impl AutorouteExecutionStepper {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         index: usize,
     ) -> Result<(), AutorouterError> {
+        if index > self.board_data_edits.len() {
+            return Err(AutorouterError::NothingToUndoForPermutation);
+        }
+
         self.dissolve_route_stepper_and_push_layout_edit();
 
         let board_edit = BoardEdit::new_from_edits(
@@ -313,11 +317,18 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinue
                     return Err(err);
                 }
 
-                let Some(permutation) = self.permutations_iter.next() else {
-                    return Ok(ControlFlow::Break(None));
-                };
+                loop {
+                    let Some(permutation) = self.permutations_iter.next() else {
+                        return Ok(ControlFlow::Break(None));
+                    };
 
-                self.stepper.permute(autorouter, permutation);
+                    match self.stepper.permute(autorouter, permutation) {
+                        Ok(()) => break,
+                        Err(AutorouterError::NothingToUndoForPermutation) => continue,
+                        Err(err) => return Err(err),
+                    }
+                }
+
                 self.stepper.step(autorouter)
             }
         }

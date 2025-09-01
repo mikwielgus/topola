@@ -62,6 +62,8 @@ pub enum AutorouterError {
     CouldNotRemoveBand(BandTermsegIndex),
     #[error("need exactly two ratlines")]
     NeedExactlyTwoRatlines,
+    #[error("nothing to undo for permutation")]
+    NothingToUndoForPermutation,
 }
 
 #[derive(Getters)]
