@@ -53,6 +53,14 @@ pub trait Abort<Ctx> {
     fn abort(&mut self, context: &mut Ctx);
 }
 
+/// Some steppers may be permuted from their initial order.
+pub trait Permute<Ctx> {
+    type Index;
+    type Output;
+
+    fn permute(&mut self, context: &mut Ctx, ordering: Vec<Self::Index>) -> Self::Output;
+}
+
 /// Steppers that can receive discrete events and act on them implement this
 /// trait.
 // XXX: Doesn't this violate the rule that stepper's future states are

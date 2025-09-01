@@ -20,7 +20,7 @@ use crate::{
     router::{
         navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper, RouteStepper, Router,
     },
-    stepper::{Abort, EstimateProgress, Step},
+    stepper::{Abort, EstimateProgress, Permute, Step},
 };
 
 use super::{
@@ -85,22 +85,6 @@ impl AutorouteExecutionStepper {
             board_data_edits: vec![],
             options,
         })
-    }
-
-    fn permute(
-        &mut self,
-        autorouter: &mut Autorouter<impl AccessMesadata>,
-        permutation: Vec<RatlineIndex>,
-    ) -> Result<(), AutorouterError> {
-        let new_index = permutation
-            .iter()
-            .zip(self.ratlines.iter())
-            .position(|(permuted, original)| *permuted != *original)
-            .unwrap();
-        self.ratlines = permutation;
-
-        self.backtrace_to_index(autorouter, new_index)?;
-        Ok(())
     }
 
     fn backtrace_to_index(
@@ -233,6 +217,27 @@ impl<M: AccessMesadata> Abort<Autorouter<M>> for AutorouteExecutionStepper {
     fn abort(&mut self, autorouter: &mut Autorouter<M>) {
         self.backtrace_to_index(autorouter, 0);
         self.curr_ratline_index = self.ratlines.len();
+    }
+}
+
+impl<M: AccessMesadata> Permute<Autorouter<M>> for AutorouteExecutionStepper {
+    type Index = RatlineIndex;
+    type Output = Result<(), AutorouterError>;
+
+    fn permute(
+        &mut self,
+        autorouter: &mut Autorouter<M>,
+        permutation: Vec<RatlineIndex>,
+    ) -> Result<(), AutorouterError> {
+        let new_index = permutation
+            .iter()
+            .zip(self.ratlines.iter())
+            .position(|(permuted, original)| *permuted != *original)
+            .unwrap();
+        self.ratlines = permutation;
+
+        self.backtrace_to_index(autorouter, new_index)?;
+        Ok(())
     }
 }
 
