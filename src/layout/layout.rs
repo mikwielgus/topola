@@ -114,6 +114,7 @@ impl<R: AccessRules> Layout<R> {
             seg_weight,
             bend_weight,
             sense,
+            &|_drawing, _infringer, _infringee| true,
         )
     }
 

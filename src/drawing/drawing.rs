@@ -641,6 +641,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         seg_weight: SeqLooseSegWeight,
         bend_weight: LooseBendWeight,
         sense: RotationSense,
+        filter: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<Cane, DrawingException> {
         let outer_gears = around.ref_(self).outer_gears();
         let cane = self.add_cane(
@@ -651,7 +652,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             seg_weight,
             bend_weight,
             sense,
-            &|_drawing, _infringer, _infringee| true,
+            filter,
         )?;
 
         for gear in outer_gears {
