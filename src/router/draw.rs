@@ -143,6 +143,7 @@ impl<R: AccessRules> Draw for Layout<R> {
         let offset =
             self.drawing()
                 .offset_for_guide_for_head_around_dot(&head, around.into(), width);
+
         self.cane_around(
             recorder,
             head,

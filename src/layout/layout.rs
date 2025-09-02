@@ -92,6 +92,7 @@ impl<R: AccessRules> Layout<R> {
             seg_weight,
             bend_weight,
             sense,
+            &|_drawing, _infringer, _infringee| true,
         )
     }
 
@@ -116,7 +117,6 @@ impl<R: AccessRules> Layout<R> {
         )
     }
 
-    /// Remove [`Cane`] object from the [`Layout`]
     pub fn remove_cane(&mut self, recorder: &mut LayoutEdit, cane: &Cane, face: LooseDotIndex) {
         self.drawing.remove_cane(recorder, cane, face)
     }
