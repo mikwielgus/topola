@@ -18,7 +18,7 @@ use crate::{
         },
         gear::GearIndex,
         graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
-        primitive::MakePrimitiveShape,
+        primitive::{GetLimbs, MakePrimitiveShape},
         rules::AccessRules,
         seg::{
             FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SegIndex,
@@ -92,7 +92,18 @@ impl<R: AccessRules> Layout<R> {
             seg_weight,
             bend_weight,
             sense,
-            &|_drawing, _infringer, _infringee| true,
+            &|drawing, _infringer, infringee| {
+                // Don't infringe upon limbs of wraparound's filleteds.
+                !drawing
+                    .overlapees(around.into())
+                    .find(|overlapee| {
+                        PrimitiveIndex::from(overlapee.1)
+                            .primitive(drawing)
+                            .limbs()
+                            .contains(&infringee)
+                    })
+                    .is_some()
+            },
         )
     }
 

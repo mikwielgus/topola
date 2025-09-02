@@ -771,7 +771,20 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         let to = self.add_dot_infringably(recorder, dot_weight);
 
         let seg = self
-            .add_seg(recorder, from, seg_to.into(), seg_weight, filter)
+            .add_seg(
+                recorder,
+                from,
+                seg_to.into(),
+                seg_weight,
+                &|drawing, infringer, infringee| {
+                    filter(drawing, infringer, infringee)
+                        // Don't infringe upon limbs of the current wraparound.
+                        && !PrimitiveIndex::from(around)
+                            .primitive(drawing)
+                            .limbs()
+                            .contains(&infringee)
+                },
+            )
             .inspect_err(|_| {
                 self.recording_geometry_with_rtree
                     .remove_dot(recorder, to.into());
