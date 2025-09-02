@@ -83,29 +83,6 @@ pub trait WalkOutwards {
     fn outwards(&self) -> DrawingOutwardWalker;
 }
 
-//#[enum_dispatch]
-pub trait GetPrevNextInChain {
-    fn next_in_chain(&self, maybe_prev: Option<GearIndex>) -> Option<GearIndex>;
-
-    fn prev_in_chain(&self, maybe_next: Option<GearIndex>) -> Option<GearIndex> {
-        // Just as in the `GetPrevNextLoose` trait.
-        let maybe_prev = maybe_next.or_else(|| self.next_in_chain(None));
-        self.next_in_chain(maybe_prev)
-    }
-}
-
-// Because types have trait bounds, we cannot use enum_dispatch and instead we
-// implement `GetPrevNextInChain` explicitly.
-impl<'a, CW: Clone, Cel: Copy, R: AccessRules> GetPrevNextInChain for GearRef<'a, CW, Cel, R> {
-    fn next_in_chain(&self, maybe_prev: Option<GearIndex>) -> Option<GearIndex> {
-        match self {
-            GearRef::FixedDot(dot) => dot.next_in_chain(maybe_prev),
-            GearRef::FixedBend(bend) => bend.next_in_chain(maybe_prev),
-            GearRef::LooseBend(bend) => bend.next_in_chain(maybe_prev),
-        }
-    }
-}
-
 /// I found it easier to just duplicate `OutwardWalker<BI>` for `Drawing<...>`.
 pub struct DrawingOutwardWalker {
     frontier: VecDeque<LooseBendIndex>,
