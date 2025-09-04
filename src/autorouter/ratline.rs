@@ -2,8 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use geo::{line_intersection::line_intersection, Distance, Euclidean, Line};
-use petgraph::graph::EdgeIndex;
+use geo::{line_intersection::line_intersection, Distance, Euclidean, Line, LineIntersection};
+use petgraph::graph::{EdgeIndex, NodeIndex};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
@@ -74,26 +74,25 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         (source_dot, target_dot)
     }
 
-    pub fn find_intersecting_ratlines(&self) -> impl Iterator<Item = RatlineIndex> + '_ {
-        let self_line = self.line();
+    pub fn closure_obstacle_ratlines(&self) -> impl Iterator<Item = RatlineIndex> + '_ {
+        self.intersecting_ratlines()
+    }
+
+    pub fn interior_obstacle_ratlines(&self) -> impl Iterator<Item = RatlineIndex> + '_ {
+        self.intersecting_ratlines()
+            .filter(|index| !self.is_pin_cutter(*index))
+    }
+
+    fn intersecting_ratlines(&self) -> impl Iterator<Item = RatlineIndex> + '_ {
+        let self_line_segment = self.line_segment();
 
         self.autorouter
             .ratsnest()
             .graph()
             .edge_indices()
             .filter(move |other| {
-                let (self_source, self_target) = self
-                    .autorouter
-                    .ratsnest
-                    .graph()
-                    .edge_endpoints(self.index)
-                    .unwrap();
-                let (other_source, other_target) = self
-                    .autorouter
-                    .ratsnest
-                    .graph()
-                    .edge_endpoints(*other)
-                    .unwrap();
+                let (self_source, self_target) = self.endpoint_indices();
+                let (other_source, other_target) = other.ref_(self.autorouter).endpoint_indices();
 
                 self_source != other_source
                     && self_source != other_target
@@ -101,19 +100,33 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
                     && self_target != other_target
             })
             .filter(move |other| {
-                let other_line = other.ref_(self.autorouter).line();
+                let other_line_segment = other.ref_(self.autorouter).line_segment();
 
-                line_intersection(self_line, other_line).is_some()
+                line_intersection(self_line_segment, other_line_segment).is_some()
             })
     }
 
-    pub fn line(&self) -> Line {
-        let (source, target) = self
-            .autorouter
-            .ratsnest
-            .graph()
-            .edge_endpoints(self.index)
-            .unwrap();
+    fn is_pin_cutter(&self, other: RatlineIndex) -> bool {
+        // TODO: For now, instead of detecting whether endpoint ratvertex pins
+        // are cut, we only check if the intersection between self and the
+        // supposed cutter is not internal.
+
+        let self_line_segment = self.line_segment();
+        let other_line_segment = other.ref_(self.autorouter).line_segment();
+
+        if let Some(LineIntersection::SinglePoint { is_proper, .. }) =
+            line_intersection(self_line_segment, other_line_segment)
+        {
+            // It would make more sense to check for non-internality only in
+            // self, but this gives me the result I want too for now.
+            !is_proper
+        } else {
+            false
+        }
+    }
+
+    pub fn line_segment(&self) -> Line {
+        let (source, target) = self.endpoint_indices();
         let source_pos = self
             .autorouter
             .ratsnest
@@ -131,11 +144,19 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
 
         Line::new(source_pos, target_pos)
     }
+
+    fn endpoint_indices(&self) -> (NodeIndex<usize>, NodeIndex<usize>) {
+        self.autorouter
+            .ratsnest
+            .graph()
+            .edge_endpoints(self.index)
+            .unwrap()
+    }
 }
 
 impl<'a, M: AccessMesadata> MeasureLength for RatlineRef<'a, M> {
     fn length(&self) -> f64 {
-        let line = self.line();
+        let line = self.line_segment();
 
         Euclidean::distance(&line.start_point(), &line.end_point())
     }

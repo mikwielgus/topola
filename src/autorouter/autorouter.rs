@@ -115,8 +115,8 @@ impl<M: AccessMesadata> Autorouter<M> {
 
         match options.presort_by {
             PresortBy::RatlineIntersectionCountAndLength => ratlines.sort_unstable_by(|a, b| {
-                let a_intersector_count = a.ref_(self).find_intersecting_ratlines().count();
-                let b_intersector_count = b.ref_(self).find_intersecting_ratlines().count();
+                let a_intersector_count = a.ref_(self).interior_obstacle_ratlines().count();
+                let b_intersector_count = b.ref_(self).interior_obstacle_ratlines().count();
 
                 let primary_ordering = a_intersector_count.cmp(&b_intersector_count);
 
