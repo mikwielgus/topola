@@ -82,6 +82,25 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
             .graph()
             .edge_indices()
             .filter(move |other| {
+                let (self_source, self_target) = self
+                    .autorouter
+                    .ratsnest
+                    .graph()
+                    .edge_endpoints(self.index)
+                    .unwrap();
+                let (other_source, other_target) = self
+                    .autorouter
+                    .ratsnest
+                    .graph()
+                    .edge_endpoints(*other)
+                    .unwrap();
+
+                self_source != other_source
+                    && self_source != other_target
+                    && self_target != other_source
+                    && self_target != other_target
+            })
+            .filter(move |other| {
                 let other_line = other.ref_(self.autorouter).line();
 
                 line_intersection(self_line, other_line).is_some()
