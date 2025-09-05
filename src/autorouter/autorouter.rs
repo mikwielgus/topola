@@ -11,6 +11,7 @@ use std::{cmp::Ordering, collections::BTreeSet};
 use thiserror::Error;
 
 use crate::{
+    autorouter::permutator::AutorouteExecutionPermutator,
     board::{AccessMesadata, Board},
     drawing::{band::BandTermsegIndex, Infringement},
     geometry::shape::MeasureLength,
@@ -22,7 +23,7 @@ use crate::{
 };
 
 use super::{
-    autoroute::{AutorouteExecutionPermutator, AutorouteExecutionStepper},
+    autoroute::AutorouteExecutionStepper,
     compare_detours::CompareDetoursExecutionStepper,
     measure_length::MeasureLengthExecutionStepper,
     place_via::PlaceViaExecutionStepper,

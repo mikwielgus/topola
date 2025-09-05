@@ -28,11 +28,11 @@ use crate::{
 };
 
 use super::{
-    autoroute::AutorouteExecutionPermutator,
     compare_detours::CompareDetoursExecutionStepper,
     execution::{Command, ExecutionStepper},
     history::{History, HistoryError},
     measure_length::MeasureLengthExecutionStepper,
+    permutator::AutorouteExecutionPermutator,
     place_via::PlaceViaExecutionStepper,
     remove_bands::RemoveBandsExecutionStepper,
     Autorouter, AutorouterError,

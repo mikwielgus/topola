@@ -8,6 +8,7 @@ use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    autorouter::permutator::AutorouteExecutionPermutator,
     board::{edit::BoardEdit, AccessMesadata},
     layout::via::ViaWeight,
     router::ng,
@@ -15,7 +16,6 @@ use crate::{
 };
 
 use super::{
-    autoroute::AutorouteExecutionPermutator,
     compare_detours::CompareDetoursExecutionStepper,
     invoker::{GetDebugOverlayData, Invoker, InvokerError},
     measure_length::MeasureLengthExecutionStepper,

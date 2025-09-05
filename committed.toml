@@ -25,6 +25,7 @@ allowed_scopes = [
   "autorouter/history",
   "autorouter/invoker",
   "autorouter/measure_length",
+  "autorouter/permutator",
   "autorouter/place_via",
   "autorouter/pointroute",
   "autorouter/ratsnest",
