@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::{iter::Skip, ops::ControlFlow};
+use std::{cmp::Ordering, iter::Skip, ops::ControlFlow};
 
 use itertools::{Itertools, Permutations};
 use specctra_core::mesadata::AccessMesadata;
@@ -12,11 +12,12 @@ use crate::{
         autoroute::{AutorouteContinueStatus, AutorouteExecutionStepper},
         invoker::GetDebugOverlayData,
         ratline::RatlineIndex,
-        Autorouter, AutorouterError, AutorouterOptions,
+        Autorouter, AutorouterError, AutorouterOptions, PresortBy,
     },
     board::edit::BoardEdit,
     drawing::graph::PrimitiveIndex,
-    geometry::primitive::PrimitiveShape,
+    geometry::{primitive::PrimitiveShape, shape::MeasureLength},
+    graph::MakeRef,
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
     stepper::{Abort, EstimateProgress, Permutate, Step},
 };
@@ -30,10 +31,40 @@ pub struct AutorouteExecutionPermutator {
 impl AutorouteExecutionPermutator {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: Vec<RatlineIndex>,
+        mut ratlines: Vec<RatlineIndex>,
         options: AutorouterOptions,
     ) -> Result<Self, AutorouterError> {
         let ratlines_len = ratlines.len();
+
+        match options.presort_by {
+            PresortBy::RatlineIntersectionCountAndLength => ratlines.sort_unstable_by(|a, b| {
+                let a_intersector_count = a.ref_(autorouter).interior_obstacle_ratlines().count();
+                let b_intersector_count = b.ref_(autorouter).interior_obstacle_ratlines().count();
+
+                let primary_ordering = a_intersector_count.cmp(&b_intersector_count);
+
+                if primary_ordering != Ordering::Equal {
+                    primary_ordering
+                } else {
+                    let a_length = a.ref_(autorouter).length();
+                    let b_length = b.ref_(autorouter).length();
+                    let secondary_ordering = a_length.total_cmp(&b_length);
+
+                    secondary_ordering
+                }
+            }),
+            PresortBy::PairwiseDetours => ratlines.sort_unstable_by(|a, b| {
+                let mut compare_detours = autorouter
+                    .compare_detours_ratlines(*a, *b, options)
+                    .unwrap();
+
+                if let Ok((al, bl)) = compare_detours.finish(autorouter) {
+                    PartialOrd::partial_cmp(&al, &bl).unwrap()
+                } else {
+                    Ordering::Equal
+                }
+            }),
+        }
 
         Ok(Self {
             stepper: AutorouteExecutionStepper::new(autorouter, ratlines.clone(), options)?,

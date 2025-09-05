@@ -112,37 +112,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         selection: &PinSelection,
         options: AutorouterOptions,
     ) -> Result<AutorouteExecutionPermutator, AutorouterError> {
-        let mut ratlines = self.selected_ratlines(selection);
-
-        match options.presort_by {
-            PresortBy::RatlineIntersectionCountAndLength => ratlines.sort_unstable_by(|a, b| {
-                let a_intersector_count = a.ref_(self).interior_obstacle_ratlines().count();
-                let b_intersector_count = b.ref_(self).interior_obstacle_ratlines().count();
-
-                let primary_ordering = a_intersector_count.cmp(&b_intersector_count);
-
-                if primary_ordering != Ordering::Equal {
-                    primary_ordering
-                } else {
-                    let a_length = a.ref_(self).length();
-                    let b_length = b.ref_(self).length();
-                    let secondary_ordering = a_length.total_cmp(&b_length);
-
-                    secondary_ordering
-                }
-            }),
-            PresortBy::PairwiseDetours => ratlines.sort_unstable_by(|a, b| {
-                let mut compare_detours = self.compare_detours_ratlines(*a, *b, options).unwrap();
-
-                if let Ok((al, bl)) = compare_detours.finish(self) {
-                    PartialOrd::partial_cmp(&al, &bl).unwrap()
-                } else {
-                    Ordering::Equal
-                }
-            }),
-        }
-
-        AutorouteExecutionPermutator::new(self, ratlines, options)
+        AutorouteExecutionPermutator::new(self, self.selected_ratlines(selection), options)
     }
 
     pub(super) fn autoroute_ratlines(
