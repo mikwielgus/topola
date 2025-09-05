@@ -7,18 +7,16 @@ use geo::Point;
 use petgraph::graph::NodeIndex;
 use serde::{Deserialize, Serialize};
 use spade::InsertionError;
-use std::{cmp::Ordering, collections::BTreeSet};
+use std::collections::BTreeSet;
 use thiserror::Error;
 
 use crate::{
     autorouter::permutator::AutorouteExecutionPermutator,
     board::{AccessMesadata, Board},
     drawing::{band::BandTermsegIndex, Infringement},
-    geometry::shape::MeasureLength,
     graph::MakeRef,
     layout::{via::ViaWeight, LayoutEdit},
     router::{navmesh::NavmeshError, ng, thetastar::ThetastarError, RouterOptions},
-    stepper::Step,
     triangulation::GetTrianvertexNodeIndex,
 };
 

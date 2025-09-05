@@ -91,7 +91,7 @@ impl AutorouteExecutionStepper {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         index: usize,
     ) -> Result<(), AutorouterError> {
-        if index > self.board_data_edits.len() {
+        if index >= self.board_data_edits.len() {
             return Err(AutorouterError::NothingToUndoForPermutation);
         }
 
@@ -232,11 +232,13 @@ impl<M: AccessMesadata> Permutate<Autorouter<M>> for AutorouteExecutionStepper {
         autorouter: &mut Autorouter<M>,
         permutation: Vec<RatlineIndex>,
     ) -> Result<(), AutorouterError> {
-        let new_index = permutation
+        let Some(new_index) = permutation
             .iter()
             .zip(self.ratlines.iter())
             .position(|(permuted, original)| *permuted != *original)
-            .unwrap();
+        else {
+            return Err(AutorouterError::NothingToUndoForPermutation);
+        };
         self.ratlines = permutation;
 
         self.backtrace_to_index(autorouter, new_index)?;

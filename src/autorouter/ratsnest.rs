@@ -2,18 +2,14 @@
 //
 // SPDX-License-Identifier: MIT
 
-//! Defines data structures and methods for managing a graph
-//! used in layout triangulation and routing tasks. It includes vertex and edge
-//! structures for representing graph nodes and edges with associated metadata,
-//! as well as functions for constructing and manipulating these graphs.
-
 use std::collections::BTreeMap;
 
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
     data::Element,
-    graph::{NodeIndex, UnGraph},
+    graph::NodeIndex,
+    prelude::StableUnGraph,
     unionfind::UnionFind,
     visit::{EdgeRef, IntoEdgeReferences, NodeIndexable},
 };
@@ -74,7 +70,7 @@ impl HasPosition for RatvertexWeight {
 }
 
 pub struct Ratsnest {
-    graph: UnGraph<RatvertexWeight, RatlineWeight, usize>,
+    graph: StableUnGraph<RatvertexWeight, RatlineWeight, usize>,
 }
 
 impl Ratsnest {
@@ -86,7 +82,7 @@ impl Ratsnest {
         }
 
         let mut this = Self {
-            graph: UnGraph::default(),
+            graph: StableUnGraph::default(),
         };
 
         let mut triangulations = BTreeMap::new();
@@ -166,7 +162,7 @@ impl Ratsnest {
         self.graph.edge_weight_mut(ratline).unwrap().band_termseg = Some(termseg);
     }
 
-    pub fn graph(&self) -> &UnGraph<RatvertexWeight, RatlineWeight, usize> {
+    pub fn graph(&self) -> &StableUnGraph<RatvertexWeight, RatlineWeight, usize> {
         &self.graph
     }
 }
