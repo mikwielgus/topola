@@ -10,6 +10,7 @@ pub mod history;
 pub mod invoker;
 pub mod measure_length;
 pub mod permutator;
+pub mod permuter;
 pub mod place_via;
 pub mod pointroute;
 pub mod ratline;

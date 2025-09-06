@@ -16,7 +16,7 @@ allowed_scopes = [
   "topola-cli",
   "topola-egui",
 
-  # Generated using
+  # Originally generated using
   # `find src -type f | awk '!/lib.rs|mod.rs/ { print "\"" substr($1, 1 + 4, length($1) - 4 - 3) "\","; }' | sort`.
   "autorouter/autoroute",
   "autorouter/autorouter",
@@ -26,6 +26,7 @@ allowed_scopes = [
   "autorouter/invoker",
   "autorouter/measure_length",
   "autorouter/permutator",
+  "autorouter/permuter",
   "autorouter/place_via",
   "autorouter/pointroute",
   "autorouter/ratsnest",
