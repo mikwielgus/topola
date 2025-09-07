@@ -10,7 +10,7 @@ use crate::{
     autorouter::{
         autoroute::{AutorouteContinueStatus, AutorouteExecutionStepper},
         invoker::GetDebugOverlayData,
-        permuter::{PermuteRatlines, RatlinePermuter, SccRatlinePermuter},
+        permuter::{PermuteRatlines, RatlinesPermuter, SccPermutationsRatlinePermuter},
         ratline::RatlineIndex,
         Autorouter, AutorouterError, AutorouterOptions,
     },
@@ -23,7 +23,7 @@ use crate::{
 
 pub struct AutorouteExecutionPermutator {
     stepper: AutorouteExecutionStepper,
-    permuter: RatlinePermuter,
+    permuter: RatlinesPermuter,
     options: AutorouterOptions,
 }
 
@@ -33,9 +33,10 @@ impl AutorouteExecutionPermutator {
         ratlines: Vec<RatlineIndex>,
         options: AutorouterOptions,
     ) -> Result<Self, AutorouterError> {
-        let mut permuter =
-            RatlinePermuter::Scc(SccRatlinePermuter::new(autorouter, ratlines, &options));
-        let initially_sorted_ratlines = permuter.next_permutation(autorouter).unwrap();
+        let mut permuter = RatlinesPermuter::SccPermutations(SccPermutationsRatlinePermuter::new(
+            autorouter, ratlines, &options,
+        ));
+        let initially_sorted_ratlines = permuter.next_ratlines_permutation(autorouter).unwrap();
 
         Ok(Self {
             stepper: AutorouteExecutionStepper::new(
@@ -67,7 +68,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinue
                 }
 
                 loop {
-                    let Some(permutation) = self.permuter.next_permutation(autorouter) else {
+                    let Some(permutation) = self.permuter.next_ratlines_permutation(autorouter)
+                    else {
                         return Ok(ControlFlow::Break(None));
                     };
 

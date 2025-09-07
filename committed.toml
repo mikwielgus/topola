@@ -29,6 +29,7 @@ allowed_scopes = [
   "autorouter/permuter",
   "autorouter/place_via",
   "autorouter/pointroute",
+  "autorouter/presorter",
   "autorouter/ratsnest",
   "autorouter/ratline",
   "autorouter/remove_bands",
