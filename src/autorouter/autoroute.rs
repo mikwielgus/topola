@@ -7,6 +7,8 @@
 
 use std::ops::ControlFlow;
 
+use derive_getters::Getters;
+
 use crate::{
     board::{
         edit::{BoardDataEdit, BoardEdit},
@@ -38,6 +40,7 @@ pub enum AutorouteContinueStatus {
 }
 
 /// Manages the autorouting process across multiple ratlines.
+#[derive(Getters)]
 pub struct AutorouteExecutionStepper {
     /// The ratlines which we are routing.
     ratlines: Vec<RatlineIndex>,

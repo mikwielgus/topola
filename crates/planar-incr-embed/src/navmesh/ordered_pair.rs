@@ -9,7 +9,7 @@
     feature = "serde",
     serde(bound(deserialize = "T: serde::Deserialize<'de> + Ord"))
 )]
-pub struct OrderedPair<T>(T, T);
+pub struct OrderedPair<T>(pub T, pub T);
 
 impl<T> core::ops::Index<bool> for OrderedPair<T> {
     type Output = T;

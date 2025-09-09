@@ -18,9 +18,9 @@ use crate::{
 #[enum_dispatch]
 pub trait PresortRatlines {
     fn presort_ratlines(
-        &mut self,
+        &self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: Vec<RatlineIndex>,
+        ratlines: &[RatlineIndex],
     ) -> Vec<RatlineIndex>;
 }
 
@@ -37,14 +37,13 @@ pub struct SccIntersectionsAndLengthPresorter {
 impl SccIntersectionsAndLengthPresorter {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: &Vec<RatlineIndex>,
+        ratlines: &[RatlineIndex],
     ) -> Self {
         // FIXME: Unnecessary copy.
         let mut filtered_ratsnest = autorouter.ratsnest().graph().clone();
         filtered_ratsnest.retain_edges(|_g, i| ratlines.contains(&i));
 
         let mut sccs = tarjan_scc(&filtered_ratsnest);
-        let sccs_len = sccs.len();
 
         sccs.sort_unstable_by(|a, b| {
             // FIXME: These calculations should probably be stored somewhere
@@ -149,9 +148,9 @@ impl SccIntersectionsAndLengthPresorter {
 
 impl PresortRatlines for SccIntersectionsAndLengthPresorter {
     fn presort_ratlines(
-        &mut self,
+        &self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: Vec<RatlineIndex>,
+        ratlines: &[RatlineIndex],
     ) -> Vec<RatlineIndex> {
         let mut presorted_ratlines = vec![];
 

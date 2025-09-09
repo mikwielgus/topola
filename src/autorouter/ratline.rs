@@ -39,6 +39,16 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         Self { index, autorouter }
     }
 
+    pub fn band_termseg(&self) -> BandTermsegIndex {
+        self.autorouter
+            .ratsnest()
+            .graph()
+            .edge_weight(self.index)
+            .unwrap()
+            .band_termseg
+            .unwrap()
+    }
+
     pub fn endpoint_dots(&self) -> (FixedDotIndex, FixedDotIndex) {
         let (source, target) = self
             .autorouter

@@ -130,13 +130,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         ratlines: Vec<RatlineIndex>,
     ) -> Result<(), AutorouterError> {
         for ratline in ratlines.iter() {
-            let band = self
-                .ratsnest
-                .graph()
-                .edge_weight(*ratline)
-                .unwrap()
-                .band_termseg
-                .unwrap();
+            let band = ratline.ref_(self).band_termseg();
             self.board
                 .layout_mut()
                 .remove_band(&mut LayoutEdit::new(), band)

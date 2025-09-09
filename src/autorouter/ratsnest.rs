@@ -89,22 +89,23 @@ impl Ratsnest {
         let node_bound = layout.drawing().geometry().graph().node_bound();
 
         for layer in 0..layout.drawing().layer_count() {
-            let mut handle_rvw = |maybe_net: Option<usize>, vertex: RatvertexIndex, pos: Point| {
-                if let Some(net) = maybe_net {
-                    triangulations
-                        .entry((layer, net))
-                        .or_insert_with(|| Triangulation::new(node_bound))
-                        .add_vertex(RatvertexWeight { vertex, pos })?;
-                }
-                Ok(())
-            };
+            let mut handle_ratvertex_weight =
+                |maybe_net: Option<usize>, vertex: RatvertexIndex, pos: Point| {
+                    if let Some(net) = maybe_net {
+                        triangulations
+                            .entry((layer, net))
+                            .or_insert_with(|| Triangulation::new(node_bound))
+                            .add_vertex(RatvertexWeight { vertex, pos })?;
+                    }
+                    Ok(())
+                };
 
             for node in layout.drawing().layer_primitive_nodes(layer) {
                 if let PrimitiveIndex::FixedDot(dot) = node {
                     // Dots that are parts of polys are ignored because ratlines
                     // should only go to their centerpoints.
                     if layout.drawing().compounds(dot).next().is_none() {
-                        handle_rvw(
+                        handle_ratvertex_weight(
                             layout.drawing().primitive(dot).maybe_net(),
                             RatvertexIndex::FixedDot(dot),
                             node.primitive(layout.drawing()).shape().center(),
@@ -114,7 +115,7 @@ impl Ratsnest {
             }
 
             for poly in layout.layer_poly_nodes(layer) {
-                handle_rvw(
+                handle_ratvertex_weight(
                     layout.drawing().compound_weight(poly.into()).maybe_net(),
                     RatvertexIndex::Poly(poly),
                     poly.ref_(layout).shape().center(),
