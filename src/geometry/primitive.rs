@@ -38,6 +38,7 @@ pub trait AccessPrimitiveShape: AccessShape + GetWidth {
             [
                 envelope.upper()[0],
                 envelope.upper()[1],
+                // XXX: Why isn't floating point infinity used here?
                 (layer_count - 1) as f64,
             ],
         )

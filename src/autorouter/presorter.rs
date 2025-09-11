@@ -63,10 +63,10 @@ impl SccIntersectionsAndLengthPresorter {
                     && a.contains(&filtered_ratsnest.edge_endpoints(*ratline).unwrap().1)
                 {
                     a_length += ratline.ref_(autorouter).length();
-                    a_intersector_count += ratline
-                        .ref_(autorouter)
-                        .interior_obstacle_ratlines()
-                        .count();
+                    a_intersector_count +=
+                        ratline.ref_(autorouter).interiorly_cut_ratlines().count();
+                    a_intersector_count +=
+                        ratline.ref_(autorouter).cut_other_net_primitives().count();
                 }
             }
 
@@ -75,10 +75,10 @@ impl SccIntersectionsAndLengthPresorter {
                     && b.contains(&filtered_ratsnest.edge_endpoints(*ratline).unwrap().1)
                 {
                     b_length += ratline.ref_(autorouter).length();
-                    b_intersector_count += ratline
-                        .ref_(autorouter)
-                        .interior_obstacle_ratlines()
-                        .count();
+                    b_intersector_count +=
+                        ratline.ref_(autorouter).interiorly_cut_ratlines().count();
+                    b_intersector_count +=
+                        ratline.ref_(autorouter).cut_other_net_primitives().count();
                 }
             }
 

@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
+use geo::Line;
 use petgraph::visit::Walker;
 use specctra_core::rules::GetConditions;
 
@@ -11,7 +12,10 @@ use crate::{
         primitive::MakePrimitiveShape,
         Collision, Infringement,
     },
-    geometry::{primitive::AccessPrimitiveShape, GenericNode, GetLayer},
+    geometry::{
+        primitive::{AccessPrimitiveShape, PrimitiveShape, SegShape},
+        GenericNode, GetLayer,
+    },
     graph::GenericIndex,
 };
 
@@ -110,6 +114,36 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         }
 
         v
+    }
+
+    pub fn cut(
+        &self,
+        line: Line,
+        width: f64,
+        layer: usize,
+    ) -> impl Iterator<Item = PrimitiveIndex> + '_ {
+        let limiting_shape = PrimitiveShape::Seg(SegShape {
+            from: line.start_point(),
+            to: line.end_point(),
+            width,
+        })
+        .inflate(self.rules().largest_clearance(None));
+
+        self.recording_geometry_with_rtree()
+            .rtree()
+            .locate_in_envelope_intersecting(&limiting_shape.envelope_3d(width, layer))
+            .filter_map(|wrapper| {
+                if let GenericNode::Primitive(primitive_node) = wrapper.data {
+                    Some(primitive_node)
+                } else {
+                    None
+                }
+            })
+            .filter_map(move |primitive_node| {
+                limiting_shape
+                    .intersects(&primitive_node.primitive(self).shape())
+                    .then_some(primitive_node)
+            })
     }
 
     pub(super) fn find_infringement_except<'a>(

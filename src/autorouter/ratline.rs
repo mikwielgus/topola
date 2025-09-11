@@ -7,8 +7,12 @@ use petgraph::graph::{EdgeIndex, NodeIndex};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
-    drawing::{band::BandTermsegIndex, dot::FixedDotIndex},
-    geometry::shape::MeasureLength,
+    drawing::{
+        band::BandTermsegIndex,
+        dot::FixedDotIndex,
+        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
+    },
+    geometry::{shape::MeasureLength, GetLayer},
     graph::MakeRef,
     triangulation::GetTrianvertexNodeIndex,
 };
@@ -84,16 +88,40 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         (source_dot, target_dot)
     }
 
-    pub fn closure_obstacle_ratlines(&self) -> impl Iterator<Item = RatlineIndex> + '_ {
-        self.intersecting_ratlines()
+    pub fn layer(&self) -> usize {
+        self.endpoint_dots()
+            .0
+            .primitive(self.autorouter.board().layout().drawing())
+            .layer()
     }
 
-    pub fn interior_obstacle_ratlines(&self) -> impl Iterator<Item = RatlineIndex> + '_ {
-        self.intersecting_ratlines()
-            .filter(|index| !self.is_pin_cutter(*index))
+    pub fn net(&self) -> usize {
+        self.endpoint_dots()
+            .0
+            .primitive(self.autorouter.board().layout().drawing())
+            .maybe_net()
+            .unwrap()
     }
 
-    fn intersecting_ratlines(&self) -> impl Iterator<Item = RatlineIndex> + '_ {
+    fn cut_primitives(&self) -> impl Iterator<Item = PrimitiveIndex> + '_ {
+        self.autorouter
+            .board()
+            .layout()
+            .drawing()
+            .cut(self.line_segment(), 0.0, self.layer())
+    }
+
+    pub fn cut_other_net_primitives(&self) -> impl Iterator<Item = PrimitiveIndex> + '_ {
+        self.cut_primitives().filter(|primitive_node| {
+            primitive_node
+                .primitive(self.autorouter.board().layout().drawing())
+                .maybe_net()
+                .map(|net| net != self.net())
+                .unwrap_or(true)
+        })
+    }
+
+    pub fn interiorly_cut_ratlines(&self) -> impl Iterator<Item = RatlineIndex> + '_ {
         let self_line_segment = self.line_segment();
 
         self.autorouter
@@ -112,27 +140,16 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
             .filter(move |other| {
                 let other_line_segment = other.ref_(self.autorouter).line_segment();
 
-                line_intersection(self_line_segment, other_line_segment).is_some()
+                if let Some(LineIntersection::SinglePoint { is_proper, .. }) =
+                    line_intersection(self_line_segment, other_line_segment)
+                {
+                    // It would make more sense to check for non-internality only in
+                    // self, but this gives me the result I want too for now.
+                    !is_proper
+                } else {
+                    false
+                }
             })
-    }
-
-    fn is_pin_cutter(&self, other: RatlineIndex) -> bool {
-        // TODO: For now, instead of detecting whether endpoint ratvertex pins
-        // are cut, we only check if the intersection between self and the
-        // supposed cutter is not internal.
-
-        let self_line_segment = self.line_segment();
-        let other_line_segment = other.ref_(self.autorouter).line_segment();
-
-        if let Some(LineIntersection::SinglePoint { is_proper, .. }) =
-            line_intersection(self_line_segment, other_line_segment)
-        {
-            // It would make more sense to check for non-internality only in
-            // self, but this gives me the result I want too for now.
-            !is_proper
-        } else {
-            false
-        }
     }
 
     pub fn line_segment(&self) -> Line {

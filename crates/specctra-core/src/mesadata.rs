@@ -168,7 +168,6 @@ impl SpecctraMesadata {
     /// associated with a net class. If a net class is found, it retrieves the corresponding rule
     /// from the class rules. If no class is associated, or if the class does not have a defined rule,
     /// it defaults to the general structure rule.
-    ///
     pub fn get_rule(&self, net: usize) -> &SpecctraRule {
         self.net_netclass
             .get(&net)
@@ -179,10 +178,10 @@ impl SpecctraMesadata {
 
 impl AccessRules for SpecctraMesadata {
     fn clearance(&self, conditions1: &Conditions<'_>, conditions2: &Conditions<'_>) -> f64 {
-        let clr1 = self.get_rule(conditions1.net).clearance;
-        let clr2 = self.get_rule(conditions2.net).clearance;
+        let clearance1 = self.get_rule(conditions1.net).clearance;
+        let clearance2 = self.get_rule(conditions2.net).clearance;
 
-        f64::max(clr1, clr2)
+        f64::max(clearance1, clearance2)
     }
 
     fn largest_clearance(&self, _maybe_net: Option<usize>) -> f64 {
