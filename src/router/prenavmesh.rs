@@ -12,11 +12,10 @@ use crate::{
     drawing::{
         bend::FixedBendIndex,
         dot::{DotIndex, FixedDotIndex},
-        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
-        primitive::{GetCore, GetJoints, MakePrimitiveShape, Primitive},
+        graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex},
+        primitive::{GetCore, GetJoints, MakePrimitiveShape},
         rules::AccessRules,
         seg::{FixedSegIndex, LoneLooseSegIndex, SeqLooseSegIndex},
-        Drawing,
     },
     geometry::{shape::AccessShape, GetLayer},
     graph::{GenericIndex, GetPetgraphIndex},
@@ -68,14 +67,14 @@ impl PrenavmeshWeight {
     pub fn new_from_fixed_dot(layout: &Layout<impl AccessRules>, dot: FixedDotIndex) -> Self {
         Self {
             node: dot.into(),
-            pos: dot.primitive(layout.drawing()).shape().center(),
+            pos: dot.primitive_ref(layout.drawing()).shape().center(),
         }
     }
 
     pub fn new_from_fixed_bend(layout: &Layout<impl AccessRules>, bend: FixedBendIndex) -> Self {
         Self {
             node: bend.into(),
-            pos: bend.primitive(layout.drawing()).shape().center(),
+            pos: bend.primitive_ref(layout.drawing()).shape().center(),
         }
     }
 }
@@ -151,7 +150,7 @@ impl Prenavmesh {
         let maybe_net = layout.drawing().primitive(origin).maybe_net();
 
         for node in layout.drawing().layer_primitive_nodes(layer) {
-            let primitive = node.primitive(layout.drawing());
+            let primitive = node.primitive_ref(layout.drawing());
 
             let Some(primitive_net) = primitive.maybe_net() else {
                 continue;
@@ -203,7 +202,7 @@ impl Prenavmesh {
         }
 
         for node in layout.drawing().layer_primitive_nodes(layer) {
-            let primitive = node.primitive(layout.drawing());
+            let primitive = node.primitive_ref(layout.drawing());
 
             let Some(primitive_net) = primitive.maybe_net() else {
                 continue;

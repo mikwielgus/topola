@@ -9,8 +9,8 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     drawing::{
-        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
-        primitive::{GenericPrimitive, Primitive},
+        graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex, PrimitiveWeight},
+        primitive::{GenericPrimitive, PrimitiveRef},
         rules::AccessRules,
         Drawing,
     },
@@ -19,7 +19,7 @@ use crate::{
     math::Circle,
 };
 
-#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
+#[enum_dispatch(GetPetgraphIndex, MakePrimitiveRef)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum DotIndex {
     Fixed(FixedDotIndex),

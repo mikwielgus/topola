@@ -6,7 +6,7 @@ use super::{
     bend::LooseBendIndex,
     dot::LooseDotIndex,
     graph::PrimitiveIndex,
-    primitive::{GetInterior, GetJoints, GetOtherJoint, LooseBend, LooseDot},
+    primitive::{GetInterior, GetJoints, GetOtherJoint, LooseBendRef, LooseDotRef},
     rules::AccessRules,
     seg::SeqLooseSegIndex,
     Drawing,
@@ -30,9 +30,9 @@ impl Cane {
         dot: LooseDotIndex,
         drawing: &Drawing<impl Clone, impl Copy, impl AccessRules>,
     ) -> Self {
-        let bend = LooseDot::new(dot, drawing).bend();
-        let dot = LooseBend::new(bend, drawing).other_joint(dot);
-        let seg = LooseDot::new(dot, drawing).seg().unwrap();
+        let bend = LooseDotRef::new(dot, drawing).bend();
+        let dot = LooseBendRef::new(bend, drawing).other_joint(dot);
+        let seg = LooseDotRef::new(dot, drawing).seg().unwrap();
         Self { bend, dot, seg }
     }
 }

@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     board::{AccessMesadata, BandName, Board, ResolvedSelector},
-    drawing::graph::{MakePrimitive, PrimitiveIndex},
+    drawing::graph::{MakePrimitiveRef, PrimitiveIndex},
     geometry::{
         shape::{AccessShape, Shape},
         GenericNode, GetLayer,
@@ -31,7 +31,7 @@ impl PinSelector {
     ) -> Option<PinSelector> {
         let layer = match node {
             NodeIndex::Primitive(primitive) => {
-                primitive.primitive(board.layout().drawing()).layer()
+                primitive.primitive_ref(board.layout().drawing()).layer()
             }
             NodeIndex::Compound(compound) => {
                 if let CompoundWeight::Poly(..) = board.layout().drawing().compound_weight(compound)

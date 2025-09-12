@@ -16,7 +16,7 @@ use crate::{
     board::{edit::BoardEdit, AccessMesadata, Board},
     drawing::{
         dot::{FixedDotIndex, FixedDotWeight, GeneralDotWeight},
-        graph::{GetMaybeNet, MakePrimitive},
+        graph::{GetMaybeNet, MakePrimitiveRef},
         primitive::MakePrimitiveShape,
         seg::{FixedSegWeight, GeneralSegWeight},
         Drawing,
@@ -78,7 +78,7 @@ impl SpecctraDesign {
 
         let mut net_outs = BTreeMap::<usize, structure::NetOut>::new();
         for index in drawing.primitive_nodes() {
-            let primitive = index.primitive(drawing);
+            let primitive = index.primitive_ref(drawing);
 
             if let Some(net) = primitive.maybe_net() {
                 let coords = match primitive.shape() {

@@ -6,9 +6,9 @@ use enum_dispatch::enum_dispatch;
 
 use crate::{
     drawing::{
-        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+        graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex, PrimitiveWeight},
         loose::LooseIndex,
-        primitive::{GenericPrimitive, Primitive},
+        primitive::{GenericPrimitive, PrimitiveRef},
         rules::AccessRules,
         Drawing,
     },
@@ -18,7 +18,7 @@ use crate::{
 
 use petgraph::stable_graph::NodeIndex;
 
-#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
+#[enum_dispatch(GetPetgraphIndex, MakePrimitiveRef)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum SegIndex {
     Fixed(FixedSegIndex),
@@ -26,7 +26,7 @@ pub enum SegIndex {
     SeqLoose(SeqLooseSegIndex),
 }
 
-#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
+#[enum_dispatch(GetPetgraphIndex, MakePrimitiveRef)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum LooseSegIndex {
     Lone(LoneLooseSegIndex),

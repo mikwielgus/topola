@@ -17,7 +17,7 @@ use crate::{
             LooseDotWeight,
         },
         gear::GearIndex,
-        graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+        graph::{GetMaybeNet, IsInLayer, MakePrimitiveRef, PrimitiveIndex, PrimitiveWeight},
         primitive::{GetLimbs, MakePrimitiveShape},
         rules::AccessRules,
         seg::{
@@ -98,7 +98,7 @@ impl<R: AccessRules> Layout<R> {
                     .overlapees(around.into())
                     .find(|overlapee| {
                         PrimitiveIndex::from(overlapee.1)
-                            .primitive(drawing)
+                            .primitive_ref(drawing)
                             .limbs()
                             .contains(&infringee)
                     })
@@ -340,7 +340,9 @@ impl<R: AccessRules> Layout<R> {
 
     pub fn node_shape(&self, index: NodeIndex) -> Shape {
         match index {
-            NodeIndex::Primitive(primitive) => primitive.primitive(&self.drawing).shape().into(),
+            NodeIndex::Primitive(primitive) => {
+                primitive.primitive_ref(&self.drawing).shape().into()
+            }
             NodeIndex::Compound(compound) => self.compound_shape(compound),
         }
     }

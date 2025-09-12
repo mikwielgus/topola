@@ -10,7 +10,7 @@ use crate::{
     drawing::{
         band::BandTermsegIndex,
         dot::FixedDotIndex,
-        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
+        graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex},
     },
     geometry::{shape::MeasureLength, GetLayer},
     graph::MakeRef,
@@ -91,14 +91,14 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
     pub fn layer(&self) -> usize {
         self.endpoint_dots()
             .0
-            .primitive(self.autorouter.board().layout().drawing())
+            .primitive_ref(self.autorouter.board().layout().drawing())
             .layer()
     }
 
     pub fn net(&self) -> usize {
         self.endpoint_dots()
             .0
-            .primitive(self.autorouter.board().layout().drawing())
+            .primitive_ref(self.autorouter.board().layout().drawing())
             .maybe_net()
             .unwrap()
     }
@@ -114,7 +114,7 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
     pub fn cut_other_net_primitives(&self) -> impl Iterator<Item = PrimitiveIndex> + '_ {
         self.cut_primitives().filter(|primitive_node| {
             primitive_node
-                .primitive(self.autorouter.board().layout().drawing())
+                .primitive_ref(self.autorouter.board().layout().drawing())
                 .maybe_net()
                 .map(|net| net != self.net())
                 .unwrap_or(true)

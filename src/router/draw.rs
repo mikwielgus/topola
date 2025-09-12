@@ -14,7 +14,7 @@ use crate::{
         bend::{BendIndex, GeneralBendWeight, LooseBendWeight},
         dot::{DotIndex, FixedDotIndex, GeneralDotWeight, LooseDotIndex, LooseDotWeight},
         gear::GearIndex,
-        graph::{GetMaybeNet, MakePrimitive},
+        graph::{GetMaybeNet, MakePrimitiveRef},
         head::{CaneHead, GetFace, Head},
         primitive::GetOtherJoint,
         rules::AccessRules,
@@ -89,7 +89,7 @@ impl<R: AccessRules> Draw for Layout<R> {
             .map_err(Into::<DrawException>::into)?;
 
         let (layer, maybe_net) = {
-            let face = head.face().primitive(self.drawing());
+            let face = head.face().primitive_ref(self.drawing());
             (face.layer(), face.maybe_net())
         };
 
@@ -287,8 +287,8 @@ impl<R: AccessRules> DrawPrivate for Layout<R> {
         width: f64,
         offset: f64,
     ) -> Result<CaneHead, DrawingException> {
-        let layer = head.face().primitive(self.drawing()).layer();
-        let maybe_net = head.face().primitive(self.drawing()).maybe_net();
+        let layer = head.face().primitive_ref(self.drawing()).layer();
+        let maybe_net = head.face().primitive_ref(self.drawing()).maybe_net();
 
         let dot_weight = LooseDotWeight(GeneralDotWeight {
             circle: Circle {

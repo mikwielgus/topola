@@ -11,15 +11,15 @@ use crate::{
     drawing::{
         bend::{BendIndex, FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
-        graph::{MakePrimitive, PrimitiveIndex},
-        primitive::{FixedBend, FixedDot, LooseBend, Primitive},
+        graph::{MakePrimitiveRef, PrimitiveIndex},
+        primitive::{FixedBendRef, FixedDotRef, LooseBendRef, PrimitiveRef},
         rules::AccessRules,
         Drawing,
     },
     graph::{GetPetgraphIndex, MakeRef},
 };
 
-#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
+#[enum_dispatch(GetPetgraphIndex, MakePrimitiveRef)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum GearIndex {
     FixedDot(FixedDotIndex),
@@ -55,9 +55,9 @@ impl From<BendIndex> for GearIndex {
 
 #[enum_dispatch(GetOuterGears, WalkOutwards, GetDrawing, GetPetgraphIndex)]
 pub enum GearRef<'a, CW, Cel, R> {
-    FixedDot(FixedDot<'a, CW, Cel, R>),
-    FixedBend(FixedBend<'a, CW, Cel, R>),
-    LooseBend(LooseBend<'a, CW, Cel, R>),
+    FixedDot(FixedDotRef<'a, CW, Cel, R>),
+    FixedBend(FixedBendRef<'a, CW, Cel, R>),
+    LooseBend(LooseBendRef<'a, CW, Cel, R>),
 }
 
 impl<'a, CW, Cel, R> GearRef<'a, CW, Cel, R> {

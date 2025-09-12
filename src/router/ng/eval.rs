@@ -10,7 +10,7 @@ use crate::{
     drawing::{
         band::BandUid,
         dot::FixedDotIndex,
-        graph::MakePrimitive as _,
+        graph::MakePrimitiveRef as _,
         head::{BareHead, GetFace as _, Head},
         primitive::MakePrimitiveShape as _,
         rules::AccessRules,
@@ -130,7 +130,7 @@ impl AstarContext {
                 let mut length = ctx.length;
                 if let Some(old_poly) = sub.polygon.take() {
                     if prim != old_poly.apex {
-                        let destination = prim.primitive(layout.drawing()).shape().center();
+                        let destination = prim.primitive_ref(layout.drawing()).shape().center();
                         let exit = old_poly.entry_point(destination, true)?;
                         let (new_head, length_delta) = old_poly.route_to_exit(
                             &mut layout,
@@ -153,10 +153,10 @@ impl AstarContext {
                 length += sub
                     .active_head
                     .maybe_cane()
-                    .map(|cane| cane.bend.primitive(layout.drawing()).shape().length())
+                    .map(|cane| cane.bend.primitive_ref(layout.drawing()).shape().length())
                     .unwrap_or(0.0);
                 length += {
-                    match fin.primitive(layout.drawing()).shape() {
+                    match fin.primitive_ref(layout.drawing()).shape() {
                         PrimitiveShape::Dot(_) => unreachable!(),
                         PrimitiveShape::Seg(seg) => seg.length(),
                         PrimitiveShape::Bend(bend) => bend.length(),
@@ -224,8 +224,8 @@ impl AstarContext {
                     (Some(lhs), Some(rhs)) => Some(FloatingRouting::new(
                         &layout,
                         sub.active_head.face(),
-                        lhs.primitive(&layout.drawing()).shape().center(),
-                        rhs.primitive(&layout.drawing()).shape().center(),
+                        lhs.primitive_ref(&layout.drawing()).shape().center(),
+                        rhs.primitive_ref(&layout.drawing()).shape().center(),
                     )),
                     _ => None,
                 };

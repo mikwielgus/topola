@@ -10,7 +10,7 @@ use crate::{
     drawing::{
         band::BandUid,
         dot::FixedDotIndex,
-        graph::{MakePrimitive as _, PrimitiveIndex},
+        graph::{MakePrimitiveRef as _, PrimitiveIndex},
         head::{CaneHead, Head},
         primitive::MakePrimitiveShape as _,
     },
@@ -90,7 +90,7 @@ impl PolygonRouting {
     }
 
     pub fn center<R: AccessRules>(&self, layout: &Layout<R>) -> Point {
-        self.apex.primitive(layout.drawing()).shape().center()
+        self.apex.primitive_ref(layout.drawing()).shape().center()
     }
 
     /// calculate the entry or exit point for the polygon (set `invert_cw` to `true` for exit point)

@@ -18,7 +18,7 @@ use crate::{
         bend::{BendWeight, FixedBendWeight, LooseBendWeight},
         dot::{DotWeight, FixedDotWeight, LooseDotWeight},
         graph::PrimitiveWeight,
-        primitive::Primitive,
+        primitive::PrimitiveRef,
         seg::{FixedSegWeight, LoneLooseSegWeight, SegWeight, SeqLooseSegWeight},
     },
     geometry::{

@@ -14,7 +14,7 @@ use topola::{
     drawing::{
         bend::BendIndex,
         dot::DotIndex,
-        graph::{MakePrimitive, PrimitiveIndex},
+        graph::{MakePrimitiveRef, PrimitiveIndex},
         head::GetFace,
         primitive::MakePrimitiveShape,
     },
@@ -91,7 +91,7 @@ impl<'a> Displayer<'a> {
         for i in (0..self.workspace.appearance_panel.visible.len()).rev() {
             if self.workspace.appearance_panel.visible[i] {
                 for primitive in board.layout().drawing().layer_primitive_nodes(i) {
-                    let shape = primitive.primitive(board.layout().drawing()).shape();
+                    let shape = primitive.primitive_ref(board.layout().drawing()).shape();
 
                     let color = if self
                         .workspace
@@ -181,12 +181,12 @@ impl<'a> Displayer<'a> {
                 for edge in navmesh.edge_references() {
                     let mut from =
                         PrimitiveIndex::from(navmesh.node_weight(edge.source()).unwrap().binavnode)
-                            .primitive(board.layout().drawing())
+                            .primitive_ref(board.layout().drawing())
                             .shape()
                             .center();
                     let mut to =
                         PrimitiveIndex::from(navmesh.node_weight(edge.target()).unwrap().binavnode)
-                            .primitive(board.layout().drawing())
+                            .primitive_ref(board.layout().drawing())
                             .shape()
                             .center();
 
@@ -280,7 +280,7 @@ impl<'a> Displayer<'a> {
                     let primitive =
                         PrimitiveIndex::from(navmesh.node_weight(navnode).unwrap().binavnode);
                     let mut pos = primitive
-                        .primitive(board.layout().drawing())
+                        .primitive_ref(board.layout().drawing())
                         .shape()
                         .center();
 
@@ -349,11 +349,11 @@ impl<'a> Displayer<'a> {
 
                 for edge in navmesh.prenavmesh().triangulation().edge_references() {
                     let from = PrimitiveIndex::from(BinavnodeNodeIndex::from(edge.source()))
-                        .primitive(board.layout().drawing())
+                        .primitive_ref(board.layout().drawing())
                         .shape()
                         .center();
                     let to = PrimitiveIndex::from(BinavnodeNodeIndex::from(edge.target()))
-                        .primitive(board.layout().drawing())
+                        .primitive_ref(board.layout().drawing())
                         .shape()
                         .center();
 
@@ -411,7 +411,9 @@ impl<'a> Displayer<'a> {
             use topola::router::ng::pie::NavmeshIndex;
             let mut map = BTreeMap::new();
             let resolve_primal = |p: &topola::drawing::dot::FixedDotIndex| {
-                (*p).primitive(board.layout().drawing()).shape().center()
+                (*p).primitive_ref(board.layout().drawing())
+                    .shape()
+                    .center()
             };
 
             for (nidx, node) in &*navmesh.nodes {

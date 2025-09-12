@@ -8,7 +8,7 @@ use specctra_core::rules::GetConditions;
 
 use crate::{
     drawing::{
-        graph::{GetMaybeNet, MakePrimitive},
+        graph::{GetMaybeNet, MakePrimitiveRef},
         primitive::MakePrimitiveShape,
         Collision, Infringement,
     },
@@ -141,7 +141,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             })
             .filter_map(move |primitive_node| {
                 limiting_shape
-                    .intersects(&primitive_node.primitive(self).shape())
+                    .intersects(&primitive_node.primitive_ref(self).shape())
                     .then_some(primitive_node)
             })
     }
@@ -218,13 +218,13 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         intersector: PrimitiveIndex,
         it: impl Iterator<Item = PrimitiveIndex> + 'a,
     ) -> impl Iterator<Item = Infringement> + 'a {
-        let conditions = intersector.primitive(self).conditions();
+        let conditions = intersector.primitive_ref(self).conditions();
 
         it.filter_map(move |primitive_node| {
-            let infringee_conditions = primitive_node.primitive(self).conditions();
+            let infringee_conditions = primitive_node.primitive_ref(self).conditions();
 
             let epsilon = 1.0;
-            let inflated_shape = intersector.primitive(self).shape().inflate(
+            let inflated_shape = intersector.primitive_ref(self).shape().inflate(
                 match (&conditions, infringee_conditions) {
                     (None, _) | (_, None) => 0.0,
                     (Some(lhs), Some(rhs)) => {
@@ -237,7 +237,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             );
 
             inflated_shape
-                .intersects(&primitive_node.primitive(self).shape())
+                .intersects(&primitive_node.primitive_ref(self).shape())
                 .then_some(Infringement(inflated_shape, primitive_node))
         })
     }
@@ -246,8 +246,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         &self,
         node: PrimitiveIndex,
     ) -> impl Iterator<Item = GenericNode<PrimitiveIndex, GenericIndex<CW>>> + '_ {
-        let limiting_shape = node.primitive(self).shape().inflate(
-            node.primitive(self)
+        let limiting_shape = node.primitive_ref(self).shape().inflate(
+            node.primitive_ref(self)
                 .maybe_net()
                 .map(|net| self.rules().largest_clearance(Some(net)))
                 .unwrap_or(0.0),
@@ -256,7 +256,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         self.recording_geometry_with_rtree()
             .rtree()
             .locate_in_envelope_intersecting(
-                &limiting_shape.envelope_3d(0.0, node.primitive(self).layer()),
+                &limiting_shape.envelope_3d(0.0, node.primitive_ref(self).layer()),
             )
             .map(|wrapper| wrapper.data)
     }
@@ -266,7 +266,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         collider: PrimitiveIndex,
         predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Option<Collision> {
-        let shape = collider.primitive(self).shape();
+        let shape = collider.primitive_ref(self).shape();
 
         self.recording_geometry_with_rtree()
             .rtree()
@@ -290,14 +290,14 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                             || matches!(collidee, PrimitiveIndex::SeqLooseSeg(..))))
             })
             .filter(|collidee| predicate(&self, collider, *collidee))
-            .find(|collidee| shape.intersects(&collidee.primitive(self).shape()))
+            .find(|collidee| shape.intersects(&collidee.primitive_ref(self).shape()))
             .map(|collidee| Collision(shape, collidee))
     }
 
     fn are_connectable(&self, node1: PrimitiveIndex, node2: PrimitiveIndex) -> bool {
         if let (Some(node1_net), Some(node2_net)) = (
-            node1.primitive(self).maybe_net(),
-            node2.primitive(self).maybe_net(),
+            node1.primitive_ref(self).maybe_net(),
+            node2.primitive_ref(self).maybe_net(),
         ) {
             node1_net == node2_net
         } else {

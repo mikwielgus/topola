@@ -7,8 +7,8 @@ use geo::Point;
 use crate::{
     drawing::{
         dot::DotIndex,
-        graph::MakePrimitive as _,
-        primitive::{GetWeight as _, Primitive},
+        graph::MakePrimitiveRef as _,
+        primitive::{GetWeight as _, PrimitiveRef},
         rules::AccessRules,
     },
     geometry::GetSetPos as _,
@@ -35,9 +35,9 @@ impl FloatingRouting {
         lhs: Point,
         rhs: Point,
     ) -> Self {
-        let active_head_pos = match active_head_face.primitive(layout.drawing()) {
-            Primitive::FixedDot(dot) => dot.weight().0,
-            Primitive::LooseDot(dot) => dot.weight().0,
+        let active_head_pos = match active_head_face.primitive_ref(layout.drawing()) {
+            PrimitiveRef::FixedDot(dot) => dot.weight().0,
+            PrimitiveRef::LooseDot(dot) => dot.weight().0,
             _ => unreachable!(),
         }
         .pos();

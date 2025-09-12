@@ -12,7 +12,7 @@ use crate::{
     drawing::{
         band::BandUid,
         dot::DotIndex,
-        graph::{MakePrimitive, PrimitiveIndex},
+        graph::{MakePrimitiveRef, PrimitiveIndex},
         loose::LooseIndex,
         primitive::MakePrimitiveShape,
         rules::AccessRules,
@@ -70,7 +70,7 @@ impl<R: AccessRules> Layout<R> {
             })
             .map(|loose| {
                 let prim: PrimitiveIndex = loose.into();
-                let shape = prim.primitive(&self.drawing).shape();
+                let shape = prim.primitive_ref(&self.drawing).shape();
                 (loose, shape)
             })
             .filter_map(move |(loose, shape)| {

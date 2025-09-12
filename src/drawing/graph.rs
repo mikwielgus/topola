@@ -13,7 +13,7 @@ use crate::{
 use super::{
     bend::{FixedBendIndex, FixedBendWeight, LooseBendIndex, LooseBendWeight},
     dot::{FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
-    primitive::Primitive,
+    primitive::PrimitiveRef,
     rules::AccessRules,
     seg::{
         FixedSegIndex, FixedSegWeight, LoneLooseSegIndex, LoneLooseSegWeight, SeqLooseSegIndex,
@@ -46,11 +46,11 @@ pub trait GetMaybeNet {
 }
 
 #[enum_dispatch]
-pub trait MakePrimitive {
-    fn primitive<'a, CW: Clone, Cel: Copy, R: AccessRules>(
+pub trait MakePrimitiveRef {
+    fn primitive_ref<'a, CW: Clone, Cel: Copy, R: AccessRules>(
         &self,
         drawing: &'a Drawing<CW, Cel, R>,
-    ) -> Primitive<'a, CW, Cel, R>;
+    ) -> PrimitiveRef<'a, CW, Cel, R>;
 }
 
 macro_rules! impl_weight_forward {
@@ -75,12 +75,12 @@ macro_rules! impl_weight_forward {
 
         pub type $index_struct = GenericIndex<$weight_struct>;
 
-        impl MakePrimitive for $index_struct {
-            fn primitive<'a, CW: Clone, Cel: Copy, R: AccessRules>(
+        impl MakePrimitiveRef for $index_struct {
+            fn primitive_ref<'a, CW: Clone, Cel: Copy, R: AccessRules>(
                 &self,
                 drawing: &'a crate::drawing::Drawing<CW, Cel, R>,
-            ) -> Primitive<'a, CW, Cel, R> {
-                Primitive::$weight_variant(GenericPrimitive::new(*self, drawing))
+            ) -> PrimitiveRef<'a, CW, Cel, R> {
+                PrimitiveRef::$weight_variant(GenericPrimitive::new(*self, drawing))
             }
         }
     };
@@ -88,7 +88,7 @@ macro_rules! impl_weight_forward {
 
 // TODO: This enum shouldn't exist: we shouldn't be carrying the tag around like this. Instead we
 // should be getting it from the graph when it's needed.
-#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
+#[enum_dispatch(GetPetgraphIndex, MakePrimitiveRef)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum PrimitiveIndex {
     FixedDot(FixedDotIndex),

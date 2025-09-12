@@ -19,7 +19,7 @@ use crate::{
     drawing::{
         band::BandTermsegIndex,
         dot::FixedDotIndex,
-        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex},
+        graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex},
         primitive::MakePrimitiveShape,
         rules::AccessRules,
     },
@@ -108,7 +108,7 @@ impl Ratsnest {
                         handle_ratvertex_weight(
                             layout.drawing().primitive(dot).maybe_net(),
                             RatvertexIndex::FixedDot(dot),
-                            node.primitive(layout.drawing()).shape().center(),
+                            node.primitive_ref(layout.drawing()).shape().center(),
                         )?;
                     }
                 }

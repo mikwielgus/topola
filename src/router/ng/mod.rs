@@ -21,7 +21,7 @@ use crate::{
         band::BandUid,
         bend::BendIndex,
         dot::{DotIndex, FixedDotIndex},
-        graph::{MakePrimitive as _, PrimitiveIndex},
+        graph::{MakePrimitiveRef as _, PrimitiveIndex},
         head::{CaneHead, GetFace as _, Head},
         primitive::MakePrimitiveShape as _,
         rules::AccessRules,
@@ -548,7 +548,7 @@ impl SubContext {
     fn head_center<R: AccessRules>(&self, layout: &Layout<R>) -> Point {
         self.active_head
             .face()
-            .primitive(layout.drawing())
+            .primitive_ref(layout.drawing())
             .shape()
             .center()
     }
@@ -610,10 +610,15 @@ fn cane_around<R: AccessRules>(
         }
     }?;
     // record the length of the current seg, and the old bend, if any
-    *route_length += ret.cane.seg.primitive(layout.drawing()).shape().length()
+    *route_length += ret
+        .cane
+        .seg
+        .primitive_ref(layout.drawing())
+        .shape()
+        .length()
         + old_head
             .maybe_cane()
-            .map(|cane| cane.bend.primitive(layout.drawing()).shape().length())
+            .map(|cane| cane.bend.primitive_ref(layout.drawing()).shape().length())
             .unwrap_or(0.0);
     Ok(ret)
 }

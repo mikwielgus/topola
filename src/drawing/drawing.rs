@@ -18,7 +18,7 @@ use crate::{
         cane::Cane,
         dot::{DotIndex, DotWeight, FixedDotIndex, FixedDotWeight, LooseDotIndex, LooseDotWeight},
         gear::GearIndex,
-        graph::{GetMaybeNet, IsInLayer, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
+        graph::{GetMaybeNet, IsInLayer, MakePrimitiveRef, PrimitiveIndex, PrimitiveWeight},
         loose::{GetPrevNextLoose, Loose, LooseIndex},
         primitive::{
             GenericPrimitive, GetCore, GetJoints, GetLimbs, GetOtherJoint, MakePrimitiveShape,
@@ -467,8 +467,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 // Check whether the the seg is terminal, that is, whether at
                 // least one of its two joints is a fixed dot.
                 if matches!(from, DotIndex::Fixed(..)) || matches!(to, DotIndex::Fixed(..)) {
-                    collider.primitive(drawing).maybe_net()
-                        != collidee.primitive(drawing).maybe_net()
+                    collider.primitive_ref(drawing).maybe_net()
+                        != collidee.primitive_ref(drawing).maybe_net()
                 } else {
                     // Cane is non-initial.
                     true
@@ -501,7 +501,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         // It makes no sense to wrap something around or under one of its connectables.
         //
         if let Some(net) = weight.maybe_net() {
-            if let Some(around_net) = around.primitive(self).maybe_net() {
+            if let Some(around_net) = around.primitive_ref(self).maybe_net() {
                 if net == around_net {
                     return Err(AlreadyConnected(net, around.into()).into());
                 }
@@ -509,7 +509,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             //
             let mut outwards = around.ref_(self).outwards();
             while let Some(gear) = outwards.walk_next(self) {
-                if let Some(next_gear_net) = gear.primitive(self).maybe_net() {
+                if let Some(next_gear_net) = gear.primitive_ref(self).maybe_net() {
                     if net == next_gear_net {
                         return Err(AlreadyConnected(net, gear.into()).into());
                     }
@@ -780,7 +780,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                     filter(drawing, infringer, infringee)
                         // Don't infringe upon limbs of the current wraparound.
                         && !PrimitiveIndex::from(around)
-                            .primitive(drawing)
+                            .primitive_ref(drawing)
                             .limbs()
                             .contains(&infringee)
                 },
@@ -811,7 +811,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         #[cfg(debug_assertions)]
         use crate::geometry::shape::MeasureLength;
         #[cfg(debug_assertions)]
-        approx::assert_abs_diff_eq!(bend.primitive(self).shape().length(), 0.0);
+        approx::assert_abs_diff_eq!(bend.primitive_ref(self).shape().length(), 0.0);
 
         Ok(Cane {
             seg,
@@ -897,7 +897,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         self.recording_geometry_with_rtree
             .move_dot(recorder, dot, to);
 
-        for limb in dot.primitive(self).limbs() {
+        for limb in dot.primitive_ref(self).limbs() {
             if let Some(infringement) = self.find_infringement_except(limb, filter) {
                 // Restore previous state.
                 self.recording_geometry_with_rtree
@@ -1068,7 +1068,9 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         CW: super::graph::IsInLayer,
     {
         match index {
-            GenericNode::Primitive(primitive) => primitive.primitive(self).layer() == active_layer,
+            GenericNode::Primitive(primitive) => {
+                primitive.primitive_ref(self).layer() == active_layer
+            }
             GenericNode::Compound(compound) => {
                 self.compound_weight(compound).is_in_layer(active_layer)
             }
@@ -1085,7 +1087,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     {
         match index {
             GenericNode::Primitive(primitive) => {
-                primitive.primitive(self).is_in_any_layer_of(layers)
+                primitive.primitive_ref(self).is_in_any_layer_of(layers)
             }
             GenericNode::Compound(compound) => {
                 self.compound_weight(compound).is_in_any_layer_of(layers)

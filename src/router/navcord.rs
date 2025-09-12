@@ -9,7 +9,7 @@ use crate::{
     drawing::{
         band::BandTermsegIndex,
         dot::FixedDotIndex,
-        graph::MakePrimitive,
+        graph::MakePrimitiveRef,
         head::{BareHead, CaneHead, Head},
         primitive::MakePrimitiveShape,
         rules::AccessRules,
@@ -121,7 +121,10 @@ impl Navcord {
             let final_termseg = layout.finish(navmesh, self, to_dot)?;
             self.maybe_final_termseg = Some(final_termseg);
 
-            let final_termseg_length = final_termseg.primitive(layout.drawing()).shape().length();
+            let final_termseg_length = final_termseg
+                .primitive_ref(layout.drawing())
+                .shape()
+                .length();
 
             let bend_length = match self.head {
                 Head::Cane(old_cane_head) => layout

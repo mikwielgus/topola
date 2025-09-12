@@ -8,7 +8,7 @@ use crate::{
 };
 
 use super::{
-    graph::MakePrimitive,
+    graph::MakePrimitiveRef,
     loose::{GetPrevNextLoose, LooseIndex},
     primitive::MakePrimitiveShape,
     rules::AccessRules,
@@ -42,7 +42,7 @@ impl<'a, CW: 'a, Cel: 'a, R: 'a> BandRef<'a, CW, Cel, R> {
 
 impl<CW: Clone, Cel: Copy, R: AccessRules> GetLayer for BandRef<'_, CW, Cel, R> {
     fn layer(&self) -> usize {
-        self.first_seg.primitive(self.drawing).layer()
+        self.first_seg.primitive_ref(self.drawing).layer()
     }
 }
 
@@ -59,7 +59,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> MeasureLength for BandRef<'_, CW, Cel
         let mut length = 0.0;
 
         while let Some(loose) = maybe_loose {
-            length += loose.primitive(self.drawing).shape().length();
+            length += loose.primitive_ref(self.drawing).shape().length();
 
             let prev_prev = prev;
             prev = maybe_loose;

@@ -6,8 +6,8 @@ use enum_dispatch::enum_dispatch;
 
 use crate::{
     drawing::{
-        graph::{GetMaybeNet, MakePrimitive, PrimitiveIndex, PrimitiveWeight},
-        primitive::{GenericPrimitive, Primitive},
+        graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex, PrimitiveWeight},
+        primitive::{GenericPrimitive, PrimitiveRef},
         rules::AccessRules,
         Drawing,
     },
@@ -17,7 +17,7 @@ use crate::{
 
 use petgraph::stable_graph::NodeIndex;
 
-#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
+#[enum_dispatch(GetPetgraphIndex, MakePrimitiveRef)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum BendIndex {
     Fixed(FixedBendIndex),

@@ -12,7 +12,7 @@ use crate::{
 use super::{
     bend::BendIndex,
     dot::{DotIndex, FixedDotIndex, LooseDotIndex},
-    graph::{MakePrimitive, PrimitiveIndex},
+    graph::{MakePrimitiveRef, PrimitiveIndex},
     head::{BareHead, CaneHead, GetFace, Head},
     primitive::{GetCore, GetJoints, GetOtherJoint, GetWeight, MakePrimitiveShape},
     rules::{AccessRules, Conditions, GetConditions},
@@ -160,7 +160,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         width: f64,
         guide_conditions: Option<&Conditions<'_>>,
     ) -> Circle {
-        let shape = dot.primitive(self).shape();
+        let shape = dot.primitive_ref(self).shape();
         Circle {
             pos: shape.center(),
             r: shape.width() / 2.0
@@ -175,7 +175,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         width: f64,
         guide_conditions: Option<&Conditions<'_>>,
     ) -> Circle {
-        let outer_circle = match bend.primitive(self).shape() {
+        let outer_circle = match bend.primitive_ref(self).shape() {
             PrimitiveShape::Bend(shape) => shape.outer_circle(),
             _ => unreachable!(),
         };
@@ -189,7 +189,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     }
 
     pub fn conditions(&self, node: PrimitiveIndex) -> Option<Conditions<'_>> {
-        node.primitive(self).conditions()
+        node.primitive_ref(self).conditions()
     }
 
     fn clearance(&self, lhs: Option<&Conditions<'_>>, rhs: Option<&Conditions<'_>>) -> f64 {
@@ -202,7 +202,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     fn head_circle(&self, head: &Head, width: f64) -> Circle {
         match *head {
             Head::Bare(head) => Circle {
-                pos: head.face().primitive(self).shape().center(), // TODO.
+                pos: head.face().primitive_ref(self).shape().center(), // TODO.
                 r: 0.0,
             },
             Head::Cane(head) => {

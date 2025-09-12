@@ -119,11 +119,11 @@ impl<S: GetDrawing + GetBendIndex> GetCore for S {
 }
 
 macro_rules! impl_primitive {
-    ($primitive_struct:ident, $weight_struct:ident) => {
-        impl<CW, Cel, R> GetWeight for $primitive_struct<'_, CW, Cel, R> {
+    ($primitive_variant:ident, $primitive_refstruct:ident, $weight_struct:ident) => {
+        impl<CW, Cel, R> GetWeight for $primitive_refstruct<'_, CW, Cel, R> {
             type Weight = $weight_struct;
             fn weight(&self) -> $weight_struct {
-                if let PrimitiveWeight::$primitive_struct(weight) = self.tagged_weight() {
+                if let PrimitiveWeight::$primitive_variant(weight) = self.tagged_weight() {
                     weight
                 } else {
                     unreachable!()
@@ -131,13 +131,13 @@ macro_rules! impl_primitive {
             }
         }
 
-        impl<CW, Cel, R> GetLayer for $primitive_struct<'_, CW, Cel, R> {
+        impl<CW, Cel, R> GetLayer for $primitive_refstruct<'_, CW, Cel, R> {
             fn layer(&self) -> usize {
                 self.weight().layer()
             }
         }
 
-        impl<CW, Cel, R> GetMaybeNet for $primitive_struct<'_, CW, Cel, R> {
+        impl<CW, Cel, R> GetMaybeNet for $primitive_refstruct<'_, CW, Cel, R> {
             fn maybe_net(&self) -> Option<usize> {
                 self.weight().maybe_net()
             }
@@ -146,14 +146,14 @@ macro_rules! impl_primitive {
 }
 
 macro_rules! impl_fixed_primitive {
-    ($primitive_struct:ident, $weight_struct:ident) => {
-        impl_primitive!($primitive_struct, $weight_struct);
+    ($primitive_variant:ident, $primitive_struct:ident, $weight_struct:ident) => {
+        impl_primitive!($primitive_variant, $primitive_struct, $weight_struct);
     };
 }
 
 macro_rules! impl_loose_primitive {
-    ($primitive_struct:ident, $weight_struct:ident) => {
-        impl_primitive!($primitive_struct, $weight_struct);
+    ($primitive_variant:ident, $primitive_struct:ident, $weight_struct:ident) => {
+        impl_primitive!($primitive_variant, $primitive_struct, $weight_struct);
     };
 }
 
@@ -165,26 +165,26 @@ macro_rules! impl_loose_primitive {
     MakePrimitiveShape,
     GetLimbs
 )]
-pub enum Primitive<'a, CW, Cel, R> {
-    FixedDot(FixedDot<'a, CW, Cel, R>),
-    LooseDot(LooseDot<'a, CW, Cel, R>),
-    FixedSeg(FixedSeg<'a, CW, Cel, R>),
-    LoneLooseSeg(LoneLooseSeg<'a, CW, Cel, R>),
-    SeqLooseSeg(SeqLooseSeg<'a, CW, Cel, R>),
-    FixedBend(FixedBend<'a, CW, Cel, R>),
-    LooseBend(LooseBend<'a, CW, Cel, R>),
+pub enum PrimitiveRef<'a, CW, Cel, R> {
+    FixedDot(FixedDotRef<'a, CW, Cel, R>),
+    LooseDot(LooseDotRef<'a, CW, Cel, R>),
+    FixedSeg(FixedSegRef<'a, CW, Cel, R>),
+    LoneLooseSeg(LoneLooseSegRef<'a, CW, Cel, R>),
+    SeqLooseSeg(SeqLooseSegRef<'a, CW, Cel, R>),
+    FixedBend(FixedBendRef<'a, CW, Cel, R>),
+    LooseBend(LooseBendRef<'a, CW, Cel, R>),
 }
 
-impl<'a, CW, Cel, R: AccessRules> GetConditions<'a> for &Primitive<'a, CW, Cel, R> {
+impl<'a, CW, Cel, R: AccessRules> GetConditions<'a> for &PrimitiveRef<'a, CW, Cel, R> {
     fn conditions(self) -> Option<Conditions<'a>> {
         match self {
-            Primitive::FixedDot(x) => x.conditions(),
-            Primitive::LooseDot(x) => x.conditions(),
-            Primitive::FixedSeg(x) => x.conditions(),
-            Primitive::LoneLooseSeg(x) => x.conditions(),
-            Primitive::SeqLooseSeg(x) => x.conditions(),
-            Primitive::FixedBend(x) => x.conditions(),
-            Primitive::LooseBend(x) => x.conditions(),
+            PrimitiveRef::FixedDot(x) => x.conditions(),
+            PrimitiveRef::LooseDot(x) => x.conditions(),
+            PrimitiveRef::FixedSeg(x) => x.conditions(),
+            PrimitiveRef::LoneLooseSeg(x) => x.conditions(),
+            PrimitiveRef::SeqLooseSeg(x) => x.conditions(),
+            PrimitiveRef::FixedBend(x) => x.conditions(),
+            PrimitiveRef::LooseBend(x) => x.conditions(),
         }
     }
 }
@@ -258,16 +258,16 @@ where
     }
 }
 
-pub type FixedDot<'a, CW, Cel, R> = GenericPrimitive<'a, FixedDotWeight, CW, Cel, R>;
-impl_fixed_primitive!(FixedDot, FixedDotWeight);
+pub type FixedDotRef<'a, CW, Cel, R> = GenericPrimitive<'a, FixedDotWeight, CW, Cel, R>;
+impl_fixed_primitive!(FixedDot, FixedDotRef, FixedDotWeight);
 
-impl<CW, Cel, R> MakePrimitiveShape for FixedDot<'_, CW, Cel, R> {
+impl<CW, Cel, R> MakePrimitiveShape for FixedDotRef<'_, CW, Cel, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().dot_shape(self.index.into())
     }
 }
 
-impl<CW, Cel, R> GetLimbs for FixedDot<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetLimbs for FixedDotRef<'_, CW, Cel, R> {
     fn segs(&self) -> Vec<SegIndex> {
         self.drawing
             .geometry()
@@ -283,24 +283,24 @@ impl<CW, Cel, R> GetLimbs for FixedDot<'_, CW, Cel, R> {
     }
 }
 
-impl<CW, Cel, R> GetLowestGears for FixedDot<'_, CW, Cel, R> {}
+impl<CW, Cel, R> GetLowestGears for FixedDotRef<'_, CW, Cel, R> {}
 
-impl<CW, Cel, R> GetOuterGears for FixedDot<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetOuterGears for FixedDotRef<'_, CW, Cel, R> {
     fn outer_gears(&self) -> Vec<LooseBendIndex> {
         self.lowest_gears()
     }
 }
 
-impl<CW, Cel, R> WalkOutwards for FixedDot<'_, CW, Cel, R> {
+impl<CW, Cel, R> WalkOutwards for FixedDotRef<'_, CW, Cel, R> {
     fn outwards(&self) -> DrawingOutwardWalker {
         DrawingOutwardWalker::new(self.lowest_gears().into_iter())
     }
 }
 
-pub type LooseDot<'a, CW, Cel, R> = GenericPrimitive<'a, LooseDotWeight, CW, Cel, R>;
-impl_loose_primitive!(LooseDot, LooseDotWeight);
+pub type LooseDotRef<'a, CW, Cel, R> = GenericPrimitive<'a, LooseDotWeight, CW, Cel, R>;
+impl_loose_primitive!(LooseDot, LooseDotRef, LooseDotWeight);
 
-impl<CW, Cel, R> LooseDot<'_, CW, Cel, R> {
+impl<CW, Cel, R> LooseDotRef<'_, CW, Cel, R> {
     pub fn seg(&self) -> Option<SeqLooseSegIndex> {
         self.drawing
             .geometry()
@@ -319,13 +319,13 @@ impl<CW, Cel, R> LooseDot<'_, CW, Cel, R> {
     }
 }
 
-impl<CW, Cel, R> MakePrimitiveShape for LooseDot<'_, CW, Cel, R> {
+impl<CW, Cel, R> MakePrimitiveShape for LooseDotRef<'_, CW, Cel, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().dot_shape(self.index.into())
     }
 }
 
-impl<CW, Cel, R> GetLimbs for LooseDot<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetLimbs for LooseDotRef<'_, CW, Cel, R> {
     fn segs(&self) -> Vec<SegIndex> {
         if let Some(seg) = self.seg() {
             vec![seg.into()]
@@ -339,18 +339,18 @@ impl<CW, Cel, R> GetLimbs for LooseDot<'_, CW, Cel, R> {
     }
 }
 
-pub type FixedSeg<'a, CW, Cel, R> = GenericPrimitive<'a, FixedSegWeight, CW, Cel, R>;
-impl_fixed_primitive!(FixedSeg, FixedSegWeight);
+pub type FixedSegRef<'a, CW, Cel, R> = GenericPrimitive<'a, FixedSegWeight, CW, Cel, R>;
+impl_fixed_primitive!(FixedSeg, FixedSegRef, FixedSegWeight);
 
-impl<CW, Cel, R> MakePrimitiveShape for FixedSeg<'_, CW, Cel, R> {
+impl<CW, Cel, R> MakePrimitiveShape for FixedSegRef<'_, CW, Cel, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().seg_shape(self.index.into())
     }
 }
 
-impl<CW, Cel, R> GetLimbs for FixedSeg<'_, CW, Cel, R> {}
+impl<CW, Cel, R> GetLimbs for FixedSegRef<'_, CW, Cel, R> {}
 
-impl<CW, Cel, R> GetJoints for FixedSeg<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetJoints for FixedSegRef<'_, CW, Cel, R> {
     type F = FixedDotIndex;
     type T = FixedDotIndex;
     fn joints(&self) -> (FixedDotIndex, FixedDotIndex) {
@@ -362,18 +362,18 @@ impl<CW, Cel, R> GetJoints for FixedSeg<'_, CW, Cel, R> {
     }
 }
 
-pub type LoneLooseSeg<'a, CW, Cel, R> = GenericPrimitive<'a, LoneLooseSegWeight, CW, Cel, R>;
-impl_loose_primitive!(LoneLooseSeg, LoneLooseSegWeight);
+pub type LoneLooseSegRef<'a, CW, Cel, R> = GenericPrimitive<'a, LoneLooseSegWeight, CW, Cel, R>;
+impl_loose_primitive!(LoneLooseSeg, LoneLooseSegRef, LoneLooseSegWeight);
 
-impl<CW, Cel, R> MakePrimitiveShape for LoneLooseSeg<'_, CW, Cel, R> {
+impl<CW, Cel, R> MakePrimitiveShape for LoneLooseSegRef<'_, CW, Cel, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().seg_shape(self.index.into())
     }
 }
 
-impl<CW, Cel, R> GetLimbs for LoneLooseSeg<'_, CW, Cel, R> {}
+impl<CW, Cel, R> GetLimbs for LoneLooseSegRef<'_, CW, Cel, R> {}
 
-impl<CW, Cel, R> GetJoints for LoneLooseSeg<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetJoints for LoneLooseSegRef<'_, CW, Cel, R> {
     type F = FixedDotIndex;
     type T = FixedDotIndex;
     fn joints(&self) -> (FixedDotIndex, FixedDotIndex) {
@@ -385,18 +385,18 @@ impl<CW, Cel, R> GetJoints for LoneLooseSeg<'_, CW, Cel, R> {
     }
 }
 
-pub type SeqLooseSeg<'a, CW, Cel, R> = GenericPrimitive<'a, SeqLooseSegWeight, CW, Cel, R>;
-impl_loose_primitive!(SeqLooseSeg, SeqLooseSegWeight);
+pub type SeqLooseSegRef<'a, CW, Cel, R> = GenericPrimitive<'a, SeqLooseSegWeight, CW, Cel, R>;
+impl_loose_primitive!(SeqLooseSeg, SeqLooseSegRef, SeqLooseSegWeight);
 
-impl<CW, Cel, R> MakePrimitiveShape for SeqLooseSeg<'_, CW, Cel, R> {
+impl<CW, Cel, R> MakePrimitiveShape for SeqLooseSegRef<'_, CW, Cel, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().seg_shape(self.index.into())
     }
 }
 
-impl<CW, Cel, R> GetLimbs for SeqLooseSeg<'_, CW, Cel, R> {}
+impl<CW, Cel, R> GetLimbs for SeqLooseSegRef<'_, CW, Cel, R> {}
 
-impl<CW, Cel, R> GetJoints for SeqLooseSeg<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetJoints for SeqLooseSegRef<'_, CW, Cel, R> {
     type F = DotIndex;
     type T = LooseDotIndex;
     fn joints(&self) -> (DotIndex, LooseDotIndex) {
@@ -420,24 +420,24 @@ impl<CW, Cel, R> GetJoints for SeqLooseSeg<'_, CW, Cel, R> {
     }
 }
 
-pub type FixedBend<'a, CW, Cel, R> = GenericPrimitive<'a, FixedBendWeight, CW, Cel, R>;
-impl_fixed_primitive!(FixedBend, FixedBendWeight);
+pub type FixedBendRef<'a, CW, Cel, R> = GenericPrimitive<'a, FixedBendWeight, CW, Cel, R>;
+impl_fixed_primitive!(FixedBend, FixedBendRef, FixedBendWeight);
 
-impl<CW, Cel, R> GetBendIndex for FixedBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetBendIndex for FixedBendRef<'_, CW, Cel, R> {
     fn bend_index(&self) -> BendIndex {
         self.index.into()
     }
 }
 
-impl<CW, Cel, R> MakePrimitiveShape for FixedBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> MakePrimitiveShape for FixedBendRef<'_, CW, Cel, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().bend_shape(self.index.into())
     }
 }
 
-impl<CW, Cel, R> GetLimbs for FixedBend<'_, CW, Cel, R> {}
+impl<CW, Cel, R> GetLimbs for FixedBendRef<'_, CW, Cel, R> {}
 
-impl<CW, Cel, R> GetJoints for FixedBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetJoints for FixedBendRef<'_, CW, Cel, R> {
     type F = FixedDotIndex;
     type T = FixedDotIndex;
     fn joints(&self) -> (FixedDotIndex, FixedDotIndex) {
@@ -449,50 +449,50 @@ impl<CW, Cel, R> GetJoints for FixedBend<'_, CW, Cel, R> {
     }
 }
 
-impl<CW, Cel, R> GetLowestGears for FixedBend<'_, CW, Cel, R> {}
+impl<CW, Cel, R> GetLowestGears for FixedBendRef<'_, CW, Cel, R> {}
 
-impl<CW, Cel, R> GetOuterGears for FixedBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetOuterGears for FixedBendRef<'_, CW, Cel, R> {
     fn outer_gears(&self) -> Vec<LooseBendIndex> {
         self.lowest_gears()
     }
 }
 
-impl<CW, Cel, R> WalkOutwards for FixedBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> WalkOutwards for FixedBendRef<'_, CW, Cel, R> {
     fn outwards(&self) -> DrawingOutwardWalker {
         DrawingOutwardWalker::new(self.lowest_gears().into_iter())
     }
 }
 
-pub type LooseBend<'a, CW, Cel, R> = GenericPrimitive<'a, LooseBendWeight, CW, Cel, R>;
-impl_loose_primitive!(LooseBend, LooseBendWeight);
+pub type LooseBendRef<'a, CW, Cel, R> = GenericPrimitive<'a, LooseBendWeight, CW, Cel, R>;
+impl_loose_primitive!(LooseBend, LooseBendRef, LooseBendWeight);
 
-impl<CW, Cel, R> GetBendIndex for LooseBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetBendIndex for LooseBendRef<'_, CW, Cel, R> {
     fn bend_index(&self) -> BendIndex {
         self.index.into()
     }
 }
 
-impl<'a, CW: Clone, Cel: Copy, R: AccessRules> From<LooseBend<'a, CW, Cel, R>> for BendIndex {
-    fn from(bend: LooseBend<'a, CW, Cel, R>) -> BendIndex {
+impl<'a, CW: Clone, Cel: Copy, R: AccessRules> From<LooseBendRef<'a, CW, Cel, R>> for BendIndex {
+    fn from(bend: LooseBendRef<'a, CW, Cel, R>) -> BendIndex {
         bend.index.into()
     }
 }
 
-impl<CW, Cel, R> MakePrimitiveShape for LooseBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> MakePrimitiveShape for LooseBendRef<'_, CW, Cel, R> {
     fn shape(&self) -> PrimitiveShape {
         self.drawing.geometry().bend_shape(self.index.into())
     }
 }
 
-impl<CW, Cel, R> GetLimbs for LooseBend<'_, CW, Cel, R> {}
+impl<CW, Cel, R> GetLimbs for LooseBendRef<'_, CW, Cel, R> {}
 
-impl<CW, Cel, R> GetOffset for LooseBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetOffset for LooseBendRef<'_, CW, Cel, R> {
     fn offset(&self) -> f64 {
         self.weight().offset()
     }
 }
 
-impl<CW, Cel, R> GetJoints for LooseBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetJoints for LooseBendRef<'_, CW, Cel, R> {
     type F = LooseDotIndex;
     type T = LooseDotIndex;
     fn joints(&self) -> (LooseDotIndex, LooseDotIndex) {
@@ -504,19 +504,19 @@ impl<CW, Cel, R> GetJoints for LooseBend<'_, CW, Cel, R> {
     }
 }
 
-impl<CW, Cel, R> GetOuterGears for LooseBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> GetOuterGears for LooseBendRef<'_, CW, Cel, R> {
     fn outer_gears(&self) -> Vec<LooseBendIndex> {
         self.outers().collect()
     }
 }
 
-impl<CW, Cel, R> WalkOutwards for LooseBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> WalkOutwards for LooseBendRef<'_, CW, Cel, R> {
     fn outwards(&self) -> DrawingOutwardWalker {
         DrawingOutwardWalker::new(self.outers())
     }
 }
 
-impl<CW, Cel, R> LooseBend<'_, CW, Cel, R> {
+impl<CW, Cel, R> LooseBendRef<'_, CW, Cel, R> {
     pub fn inner(&self) -> Option<LooseBendIndex> {
         self.drawing()
             .geometry()

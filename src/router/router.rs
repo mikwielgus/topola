@@ -13,7 +13,7 @@ use crate::{
     drawing::{
         band::BandTermsegIndex,
         dot::FixedDotIndex,
-        graph::{MakePrimitive, PrimitiveIndex},
+        graph::{MakePrimitiveRef, PrimitiveIndex},
         primitive::MakePrimitiveShape,
         rules::AccessRules,
     },
@@ -182,7 +182,7 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
 
     fn estimate_cost_to_goal(&mut self, navmesh: &Navmesh, vertex: NavnodeIndex) -> f64 {
         let start_point = PrimitiveIndex::from(navmesh.node_weight(vertex).unwrap().binavnode)
-            .primitive(self.layout.drawing())
+            .primitive_ref(self.layout.drawing())
             .shape()
             .center();
         let end_point = self

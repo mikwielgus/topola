@@ -40,11 +40,11 @@ pub enum ResolvedSelector<'a> {
 
 impl<'a> ResolvedSelector<'a> {
     pub fn try_from_node(board: &'a Board<impl AccessMesadata>, node: NodeIndex) -> Option<Self> {
-        use crate::{drawing::graph::MakePrimitive, graph::GetPetgraphIndex};
+        use crate::{drawing::graph::MakePrimitiveRef, graph::GetPetgraphIndex};
 
         let (layer, loose) = match node {
             NodeIndex::Primitive(primitive) => (
-                primitive.primitive(board.layout().drawing()).layer(),
+                primitive.primitive_ref(board.layout().drawing()).layer(),
                 primitive.try_into().ok(),
             ),
             NodeIndex::Compound(compound) => {

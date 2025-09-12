@@ -14,7 +14,7 @@ use crate::{
         autoroute::AutorouteExecutionStepper, presorter::SccIntersectionsAndLengthPresorter,
         ratline::RatlineIndex, Autorouter, AutorouterOptions,
     },
-    drawing::graph::MakePrimitive,
+    drawing::graph::MakePrimitiveRef,
     geometry::{GenericNode, GetLayer},
     graph::MakeRef,
 };
@@ -141,7 +141,7 @@ impl PermuteRatlines for RatlineCutsRatlinePermuter {
             .bands_between_nodes(
                 endpoint_dots
                     .0
-                    .primitive(autorouter.board().layout().drawing())
+                    .primitive_ref(autorouter.board().layout().drawing())
                     .layer(),
                 GenericNode::Primitive(endpoint_dots.0.into()),
                 GenericNode::Primitive(endpoint_dots.1.into()),
