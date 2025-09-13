@@ -14,7 +14,7 @@ use topola::{
     board::{edit::BoardEdit, AccessMesadata, Board},
     drawing::graph::{GetMaybeNet, PrimitiveIndex},
     geometry::{shape::MeasureLength, GenericNode, GetLayer},
-    graph::{GetPetgraphIndex, MakeRef},
+    graph::{GetIndex, MakeRef},
     router::{navmesh::Navmesh, RouterOptions},
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
@@ -217,8 +217,8 @@ pub fn assert_single_layer_groundless_autoroute(
 
         if let Some(netname) = autorouter.board().layout().rules().net_netname(net) {
             // We don't route ground.
-            let org = unionfind.find(origin_dot.petgraph_index());
-            let desc = unionfind.find(destination_dot.petgraph_index());
+            let org = unionfind.find(origin_dot.index());
+            let desc = unionfind.find(destination_dot.index());
 
             if netname != "GND" {
                 assert_eq!(org, desc);
@@ -282,7 +282,7 @@ fn unionfind(autorouter: &mut Autorouter<impl AccessMesadata>) -> UnionFind<Node
             .geometry()
             .joineds(primitive)
         {
-            unionfind.union(primitive.petgraph_index(), joined.petgraph_index());
+            unionfind.union(primitive.index(), joined.index());
         }
     }
 

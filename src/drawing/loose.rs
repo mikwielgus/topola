@@ -17,7 +17,7 @@ use crate::{
         rules::AccessRules,
         seg::{LoneLooseSegIndex, SeqLooseSegIndex},
     },
-    graph::GetPetgraphIndex,
+    graph::GetIndex,
 };
 
 #[enum_dispatch]
@@ -38,7 +38,7 @@ pub trait GetPrevNextLoose {
     }
 }
 
-#[enum_dispatch(GetPetgraphIndex, MakePrimitiveRef)]
+#[enum_dispatch(GetIndex, MakePrimitiveRef)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum LooseIndex {
     Dot(LooseDotIndex),
@@ -71,7 +71,7 @@ impl TryFrom<PrimitiveIndex> for LooseIndex {
     }
 }
 
-#[enum_dispatch(GetPrevNextLoose, GetDrawing, GetPetgraphIndex)]
+#[enum_dispatch(GetPrevNextLoose, GetDrawing, GetIndex)]
 pub enum Loose<'a, CW, Cel, R> {
     Dot(LooseDotRef<'a, CW, Cel, R>),
     LoneSeg(LoneLooseSegRef<'a, CW, Cel, R>),
@@ -95,7 +95,7 @@ impl<CW, Cel, R> GetPrevNextLoose for LooseDotRef<'_, CW, Cel, R> {
         let bend = self.bend();
 
         if let Some(prev) = maybe_prev {
-            if bend.petgraph_index() != prev.petgraph_index() {
+            if bend.index() != prev.index() {
                 Some(bend.into())
             } else {
                 self.seg().map(Into::into)
@@ -119,7 +119,7 @@ impl<CW, Cel, R> GetPrevNextLoose for SeqLooseSegRef<'_, CW, Cel, R> {
             return Some(joints.1.into());
         };
 
-        if joints.0.petgraph_index() != prev.petgraph_index() {
+        if joints.0.index() != prev.index() {
             match joints.0 {
                 DotIndex::Fixed(..) => None,
                 DotIndex::Loose(dot) => Some(dot.into()),
@@ -135,7 +135,7 @@ impl<CW, Cel, R> GetPrevNextLoose for LooseBendRef<'_, CW, Cel, R> {
         let joints = self.joints();
 
         if let Some(prev) = maybe_prev {
-            if joints.0.petgraph_index() != prev.petgraph_index() {
+            if joints.0.index() != prev.index() {
                 Some(joints.0.into())
             } else {
                 Some(joints.1.into())

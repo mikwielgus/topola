@@ -40,7 +40,7 @@ pub enum ResolvedSelector<'a> {
 
 impl<'a> ResolvedSelector<'a> {
     pub fn try_from_node(board: &'a Board<impl AccessMesadata>, node: NodeIndex) -> Option<Self> {
-        use crate::{drawing::graph::MakePrimitiveRef, graph::GetPetgraphIndex};
+        use crate::{drawing::graph::MakePrimitiveRef, graph::GetIndex};
 
         let (layer, loose) = match node {
             NodeIndex::Primitive(primitive) => (
@@ -50,7 +50,7 @@ impl<'a> ResolvedSelector<'a> {
             NodeIndex::Compound(compound) => {
                 match board.layout().drawing().compound_weight(compound) {
                     CompoundWeight::Poly(..) => (
-                        GenericIndex::<PolyWeight>::new(compound.petgraph_index())
+                        GenericIndex::<PolyWeight>::new(compound.index())
                             .ref_(board.layout())
                             .layer(),
                         None,

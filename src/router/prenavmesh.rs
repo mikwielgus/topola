@@ -18,7 +18,7 @@ use crate::{
         seg::{FixedSegIndex, LoneLooseSegIndex, SeqLooseSegIndex},
     },
     geometry::{shape::AccessShape, GetLayer},
-    graph::{GenericIndex, GetPetgraphIndex},
+    graph::{GenericIndex, GetIndex},
     layout::{CompoundEntryLabel, Layout},
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
@@ -28,7 +28,7 @@ use super::{navmesh::NavmeshError, RouterOptions};
 /// Prenavmesh nodes are the vertices of constrained Delaunay triangulation
 /// before it is converted to the navmesh, which is done by multiplying each
 /// of the prenavmesh nodes into more nodes, called navnodes.
-#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
+#[enum_dispatch(GetIndex, MakePrimitive)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum PrenavmeshNodeIndex {
     FixedDot(FixedDotIndex),
@@ -165,7 +165,7 @@ impl Prenavmesh {
                         layout
                             .drawing()
                             // TODO: Add `.compounds()` method working on `PrimitiveIndex`.
-                            .compounds(GenericIndex::<()>::new(dot.petgraph_index()))
+                            .compounds(GenericIndex::<()>::new(dot.index()))
                             .find(|(label, _)| *label == CompoundEntryLabel::Fillet)
                             .is_some();
 
@@ -254,7 +254,7 @@ impl Prenavmesh {
     fn is_fixed_dot_filleted(layout: &Layout<impl AccessRules>, dot: FixedDotIndex) -> bool {
         layout
             .drawing()
-            .compounds(GenericIndex::<()>::new(dot.petgraph_index()))
+            .compounds(GenericIndex::<()>::new(dot.index()))
             .find(|(label, _)|
             // Fillets fail this test for some reason that I did not investigate, so
             // I added this condition.
@@ -269,7 +269,7 @@ impl Prenavmesh {
                     layout
                         .drawing()
                         // TODO: Add `.compounds()` method working on `PrimitiveIndex`.
-                        .compounds(GenericIndex::<()>::new(overlapee.1.petgraph_index()))
+                        .compounds(GenericIndex::<()>::new(overlapee.1.index()))
                         .find(|(label, _)| *label == CompoundEntryLabel::Fillet)
                         .is_some()
                 })

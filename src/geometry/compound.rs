@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use crate::graph::{GenericIndex, GetPetgraphIndex};
+use crate::graph::{GenericIndex, GetIndex};
 
 pub trait ManageCompounds<CW: Clone> {
     type GeneralIndex: Copy;
@@ -12,7 +12,7 @@ pub trait ManageCompounds<CW: Clone> {
     fn remove_compound(&mut self, compound: GenericIndex<CW>);
     fn add_to_compound<I>(&mut self, node: I, label: Self::EntryLabel, compound: GenericIndex<CW>)
     where
-        I: Copy + GetPetgraphIndex;
+        I: Copy + GetIndex;
 
     fn compound_weight(&self, node: GenericIndex<CW>) -> &CW;
 
@@ -23,5 +23,5 @@ pub trait ManageCompounds<CW: Clone> {
 
     fn compounds<I>(&self, node: I) -> impl Iterator<Item = (Self::EntryLabel, GenericIndex<CW>)>
     where
-        I: Copy + GetPetgraphIndex;
+        I: Copy + GetIndex;
 }

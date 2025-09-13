@@ -15,7 +15,7 @@ use crate::{
         AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
         GetLayer, GetWidth, Retag,
     },
-    graph::{GenericIndex, GetPetgraphIndex},
+    graph::{GenericIndex, GetIndex},
 };
 
 use super::edit::{ApplyGeometryEdit, GeometryEdit};
@@ -76,10 +76,10 @@ impl<
         BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Clone,
         Cel: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Copy,
+        PI: GetIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
+        DI: GetIndex + Into<PI> + Copy,
+        SI: GetIndex + Into<PI> + Copy,
+        BI: GetIndex + Into<PI> + Copy,
     > GeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     pub fn new(layer_count: usize) -> Self {
@@ -108,7 +108,7 @@ impl<
         weight: W,
     ) {
         self.geometry
-            .add_dot_at_index(GenericIndex::<W>::new(dot.petgraph_index()), weight);
+            .add_dot_at_index(GenericIndex::<W>::new(dot.index()), weight);
         self.init_dot_bbox(dot);
     }
 
@@ -133,12 +133,8 @@ impl<
         to: DI,
         weight: W,
     ) {
-        self.geometry.add_seg_at_index(
-            GenericIndex::<W>::new(seg.petgraph_index()),
-            from,
-            to,
-            weight,
-        );
+        self.geometry
+            .add_seg_at_index(GenericIndex::<W>::new(seg.index()), from, to, weight);
         self.init_seg_bbox(seg);
     }
 
@@ -159,7 +155,7 @@ impl<
 
     pub(super) fn add_compound_at_index(&mut self, compound: GenericIndex<CW>, weight: CW) {
         self.geometry
-            .add_compound_at_index(GenericIndex::<CW>::new(compound.petgraph_index()), weight);
+            .add_compound_at_index(GenericIndex::<CW>::new(compound.index()), weight);
     }
 
     pub fn add_to_compound<W>(
@@ -314,10 +310,10 @@ impl<
         BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Clone,
         Cel: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Copy,
+        PI: GetIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
+        DI: GetIndex + Into<PI> + Copy,
+        SI: GetIndex + Into<PI> + Copy,
+        BI: GetIndex + Into<PI> + Copy,
     > GeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     fn init_dot_bbox(&mut self, dot: DI) {
@@ -443,10 +439,10 @@ impl<
         BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Clone,
         Cel: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Copy,
+        PI: GetIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + PartialEq + Copy,
+        DI: GetIndex + Into<PI> + Copy,
+        SI: GetIndex + Into<PI> + Copy,
+        BI: GetIndex + Into<PI> + Copy,
     > ManageCompounds<CW> for GeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     type GeneralIndex = PI;
@@ -467,7 +463,7 @@ impl<
 
     fn add_to_compound<I>(&mut self, primitive: I, label: Cel, compound: GenericIndex<CW>)
     where
-        I: Copy + GetPetgraphIndex,
+        I: Copy + GetIndex,
     {
         self.geometry.add_to_compound(primitive, label, compound);
     }
@@ -485,7 +481,7 @@ impl<
 
     fn compounds<I>(&self, node: I) -> impl Iterator<Item = (Cel, GenericIndex<CW>)>
     where
-        I: Copy + GetPetgraphIndex,
+        I: Copy + GetIndex,
     {
         self.geometry.compounds(node)
     }
@@ -498,10 +494,10 @@ impl<
         BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Clone,
         Cel: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        PI: GetIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
+        DI: GetIndex + Into<PI> + Eq + Ord + Copy,
+        SI: GetIndex + Into<PI> + Eq + Ord + Copy,
+        BI: GetIndex + Into<PI> + Eq + Ord + Copy,
     > ApplyGeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>
     for GeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
@@ -563,8 +559,7 @@ impl<
 
                     // Despite this method's name, it actually does not add the
                     // dot, it updates it.
-                    geometry
-                        .add_dot_at_index(GenericIndex::<DW>::new(dot.petgraph_index()), *weight);
+                    geometry.add_dot_at_index(GenericIndex::<DW>::new(dot.index()), *weight);
                 })
             }
         }
@@ -592,7 +587,7 @@ impl<
         for (bend, (.., maybe_new_data)) in &edit.bends {
             if let Some(((from, to, core, ..), weight)) = maybe_new_data {
                 self.geometry.add_bend_at_index(
-                    GenericIndex::<BW>::new(bend.petgraph_index()),
+                    GenericIndex::<BW>::new(bend.index()),
                     *from,
                     *to,
                     *core,
@@ -622,7 +617,7 @@ impl<
 
                 for (entry_label, member) in members {
                     self.geometry.add_to_compound(
-                        GenericIndex::<PW>::new(member.petgraph_index()),
+                        GenericIndex::<PW>::new(member.index()),
                         *entry_label,
                         *compound,
                     );

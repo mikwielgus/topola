@@ -7,7 +7,7 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     geometry::GetLayer,
-    graph::{GenericIndex, GetPetgraphIndex},
+    graph::{GenericIndex, GetIndex},
 };
 
 use super::{
@@ -88,7 +88,7 @@ macro_rules! impl_weight_forward {
 
 // TODO: This enum shouldn't exist: we shouldn't be carrying the tag around like this. Instead we
 // should be getting it from the graph when it's needed.
-#[enum_dispatch(GetPetgraphIndex, MakePrimitiveRef)]
+#[enum_dispatch(GetIndex, MakePrimitiveRef)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum PrimitiveIndex {
     FixedDot(FixedDotIndex),

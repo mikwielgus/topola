@@ -25,12 +25,12 @@ use crate::{
         compound::ManageCompounds,
         primitive::{BendShape, DotShape, PrimitiveShape, SegShape},
     },
-    graph::{GenericIndex, GetPetgraphIndex},
+    graph::{GenericIndex, GetIndex},
     math::Circle,
 };
 
 pub trait Retag {
-    type Index: Sized + GetPetgraphIndex + PartialEq + Copy;
+    type Index: Sized + GetIndex + PartialEq + Copy;
     fn retag(&self, index: NodeIndex<usize>) -> Self::Index;
 }
 
@@ -74,11 +74,11 @@ pub enum GenericNode<P, C> {
     Compound(C),
 }
 
-impl<P: GetPetgraphIndex, C: GetPetgraphIndex> GetPetgraphIndex for GenericNode<P, C> {
-    fn petgraph_index(&self) -> NodeIndex<usize> {
+impl<P: GetIndex, C: GetIndex> GetIndex for GenericNode<P, C> {
+    fn index(&self) -> NodeIndex<usize> {
         match self {
-            Self::Primitive(x) => x.petgraph_index(),
-            Self::Compound(x) => x.petgraph_index(),
+            Self::Primitive(x) => x.index(),
+            Self::Compound(x) => x.index(),
         }
     }
 }
@@ -168,10 +168,10 @@ impl<
         BW: AccessBendWeight + Into<PW>,
         CW,
         Cel,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Copy,
+        PI: GetIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Copy,
+        DI: GetIndex + Into<PI> + Copy,
+        SI: GetIndex + Into<PI> + Copy,
+        BI: GetIndex + Into<PI> + Copy,
     > Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     pub fn add_dot<W: AccessDotWeight + Into<PW>>(&mut self, weight: W) -> GenericIndex<W> {
@@ -184,7 +184,7 @@ impl<
         weight: W,
     ) {
         self.graph
-            .update_node(dot.petgraph_index(), GenericNode::Primitive(weight.into()));
+            .update_node(dot.index(), GenericNode::Primitive(weight.into()));
     }
 
     pub fn add_seg<W: AccessSegWeight + Into<PW>>(
@@ -207,7 +207,7 @@ impl<
         weight: W,
     ) {
         self.graph
-            .update_node(seg.petgraph_index(), GenericNode::Primitive(weight.into()));
+            .update_node(seg.index(), GenericNode::Primitive(weight.into()));
         self.init_seg_joints(seg, from, to);
     }
 
@@ -217,28 +217,22 @@ impl<
         from: DI,
         to: DI,
     ) {
-        self.graph.update_edge(
-            from.petgraph_index(),
-            seg.petgraph_index(),
-            GeometryLabel::Joined,
-        );
-        self.graph.update_edge(
-            seg.petgraph_index(),
-            to.petgraph_index(),
-            GeometryLabel::Joined,
-        );
+        self.graph
+            .update_edge(from.index(), seg.index(), GeometryLabel::Joined);
+        self.graph
+            .update_edge(seg.index(), to.index(), GeometryLabel::Joined);
     }
 
     pub fn is_joined_with<I>(&self, seg: I, node: GenericNode<PI, GenericIndex<CW>>) -> bool
     where
-        I: Copy + GetPetgraphIndex,
+        I: Copy + GetIndex,
         CW: Clone,
         Cel: Copy,
     {
         match node {
             GenericNode::Primitive(prim) => self
                 .graph
-                .find_edge_undirected(seg.petgraph_index(), prim.petgraph_index())
+                .find_edge_undirected(seg.index(), prim.index())
                 .map_or(false, |(eidx, _direction)| {
                     matches!(self.graph.edge_weight(eidx).unwrap(), GeometryLabel::Joined)
                 }),
@@ -270,13 +264,13 @@ impl<
         weight: W,
     ) {
         self.graph
-            .update_node(bend.petgraph_index(), GenericNode::Primitive(weight.into()));
+            .update_node(bend.index(), GenericNode::Primitive(weight.into()));
         self.init_bend_joints_and_core(bend, from, to, core);
     }
 
     pub(super) fn add_compound_at_index(&mut self, compound: GenericIndex<CW>, weight: CW) {
         self.graph
-            .update_node(compound.petgraph_index(), GenericNode::Compound(weight));
+            .update_node(compound.index(), GenericNode::Compound(weight));
     }
 
     fn init_bend_joints_and_core<W: AccessBendWeight + Into<PW>>(
@@ -286,80 +280,58 @@ impl<
         to: DI,
         core: DI,
     ) {
-        self.graph.update_edge(
-            from.petgraph_index(),
-            bend.petgraph_index(),
-            GeometryLabel::Joined,
-        );
-        self.graph.update_edge(
-            bend.petgraph_index(),
-            to.petgraph_index(),
-            GeometryLabel::Joined,
-        );
-        self.graph.update_edge(
-            bend.petgraph_index(),
-            core.petgraph_index(),
-            GeometryLabel::Core,
-        );
+        self.graph
+            .update_edge(from.index(), bend.index(), GeometryLabel::Joined);
+        self.graph
+            .update_edge(bend.index(), to.index(), GeometryLabel::Joined);
+        self.graph
+            .update_edge(bend.index(), core.index(), GeometryLabel::Core);
     }
 
     pub fn remove_primitive(&mut self, primitive: PI) {
-        debug_assert!(self.graph.remove_node(primitive.petgraph_index()).is_some());
+        debug_assert!(self.graph.remove_node(primitive.index()).is_some());
     }
 
     pub fn move_dot(&mut self, dot: DI, to: Point) {
         let mut weight = self.dot_weight(dot);
         weight.set_pos(to);
-        *self.graph.node_weight_mut(dot.petgraph_index()).unwrap() =
-            GenericNode::Primitive(weight.into());
+        *self.graph.node_weight_mut(dot.index()).unwrap() = GenericNode::Primitive(weight.into());
     }
 
     pub fn shift_bend(&mut self, bend: BI, offset: f64) {
         let mut weight = self.bend_weight(bend);
         weight.set_offset(offset);
-        *self.graph.node_weight_mut(bend.petgraph_index()).unwrap() =
-            GenericNode::Primitive(weight.into());
+        *self.graph.node_weight_mut(bend.index()).unwrap() = GenericNode::Primitive(weight.into());
     }
 
     pub fn flip_bend(&mut self, bend: BI) {
         let (from, to) = self.bend_joints(bend);
         let from_edge_weight = self
             .graph
-            .remove_edge(
-                self.graph
-                    .find_edge(from.petgraph_index(), bend.petgraph_index())
-                    .unwrap(),
-            )
+            .remove_edge(self.graph.find_edge(from.index(), bend.index()).unwrap())
             .unwrap();
         let to_edge_weight = self
             .graph
-            .remove_edge(
-                self.graph
-                    .find_edge(bend.petgraph_index(), to.petgraph_index())
-                    .unwrap(),
-            )
+            .remove_edge(self.graph.find_edge(bend.index(), to.index()).unwrap())
             .unwrap();
         self.graph
-            .update_edge(from.petgraph_index(), bend.petgraph_index(), to_edge_weight);
+            .update_edge(from.index(), bend.index(), to_edge_weight);
         self.graph
-            .update_edge(bend.petgraph_index(), to.petgraph_index(), from_edge_weight);
+            .update_edge(bend.index(), to.index(), from_edge_weight);
     }
 
     pub fn reattach_bend(&mut self, bend: BI, maybe_new_inner: Option<BI>) {
         if let Some(old_inner_edge) = self
             .graph
-            .edges_directed(bend.petgraph_index(), Incoming)
+            .edges_directed(bend.index(), Incoming)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Outer))
         {
             debug_assert!(self.graph.remove_edge(old_inner_edge.id()).is_some());
         }
 
         if let Some(new_inner) = maybe_new_inner {
-            self.graph.update_edge(
-                new_inner.petgraph_index(),
-                bend.petgraph_index(),
-                GeometryLabel::Outer,
-            );
+            self.graph
+                .update_edge(new_inner.index(), bend.index(), GeometryLabel::Outer);
         }
     }
 
@@ -378,7 +350,7 @@ impl<
         PrimitiveShape::Seg(SegShape {
             from: self.dot_weight(from).pos(),
             to: self.dot_weight(to).pos(),
-            width: self.primitive_weight(seg.petgraph_index()).width(),
+            width: self.primitive_weight(seg.index()).width(),
         })
     }
 
@@ -392,7 +364,7 @@ impl<
                 pos: core_weight.pos(),
                 r: self.inner_radius(bend),
             },
-            width: self.primitive_weight(bend.petgraph_index()).width(),
+            width: self.primitive_weight(bend.index()).width(),
         })
     }
 
@@ -410,27 +382,25 @@ impl<
     }
 
     pub fn dot_weight(&self, dot: DI) -> DW {
-        self.primitive_weight(dot.petgraph_index())
+        self.primitive_weight(dot.index())
             .try_into()
             .unwrap_or_else(|_| unreachable!())
     }
 
     pub fn seg_weight(&self, seg: SI) -> SW {
-        self.primitive_weight(seg.petgraph_index())
+        self.primitive_weight(seg.index())
             .try_into()
             .unwrap_or_else(|_| unreachable!())
     }
 
     pub fn bend_weight(&self, bend: BI) -> BW {
-        self.primitive_weight(bend.petgraph_index())
+        self.primitive_weight(bend.index())
             .try_into()
             .unwrap_or_else(|_| unreachable!())
     }
 
     pub fn compound_weight(&self, compound: GenericIndex<CW>) -> &CW {
-        if let GenericNode::Compound(weight) =
-            self.graph.node_weight(compound.petgraph_index()).unwrap()
-        {
+        if let GenericNode::Compound(weight) = self.graph.node_weight(compound.index()).unwrap() {
             weight
         } else {
             unreachable!()
@@ -439,7 +409,7 @@ impl<
 
     fn core_weight(&self, bend: BI) -> DW {
         self.graph
-            .edges_directed(bend.petgraph_index(), Outgoing)
+            .edges_directed(bend.index(), Outgoing)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Core))
             .map(|edge| {
                 self.primitive_weight(edge.target())
@@ -451,13 +421,13 @@ impl<
 
     pub fn joineds(&self, node: PI) -> impl Iterator<Item = PI> + '_ {
         self.graph
-            .neighbors_undirected(node.petgraph_index())
+            .neighbors_undirected(node.index())
             .filter(move |ni| {
                 matches!(
                     self.graph
                         .edge_weight(
                             self.graph
-                                .find_edge_undirected(node.petgraph_index(), *ni)
+                                .find_edge_undirected(node.index(), *ni)
                                 .unwrap()
                                 .0,
                         )
@@ -479,12 +449,12 @@ impl<
     fn joints(&self, node: PI) -> (DI, DI) {
         let lhs = self
             .graph
-            .edges_directed(node.petgraph_index(), Incoming)
+            .edges_directed(node.index(), Incoming)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Joined))
             .map(|edge| edge.source());
         let rhs = self
             .graph
-            .edges_directed(node.petgraph_index(), Outgoing)
+            .edges_directed(node.index(), Outgoing)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Joined))
             .map(|edge| edge.target());
 
@@ -525,7 +495,7 @@ pub struct OutwardWalker<BI> {
     frontier: VecDeque<BI>,
 }
 
-impl<BI: GetPetgraphIndex> OutwardWalker<BI> {
+impl<BI: GetIndex> OutwardWalker<BI> {
     pub fn new(initial_frontier: impl Iterator<Item = BI>) -> Self {
         let mut frontier = VecDeque::new();
         frontier.extend(initial_frontier);
@@ -544,7 +514,7 @@ impl<
         PI: TryInto<DI> + TryInto<SI> + TryInto<BI>,
         DI,
         SI,
-        BI: Copy + GetPetgraphIndex,
+        BI: Copy + GetIndex,
     > Walker<&Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>> for OutwardWalker<BI>
 {
     type Item = BI;
@@ -570,7 +540,7 @@ impl<
         PI: TryInto<DI> + TryInto<SI> + TryInto<BI>,
         DI,
         SI,
-        BI: GetPetgraphIndex,
+        BI: GetIndex,
     > Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     pub fn all_rails(&self, node: NodeIndex<usize>) -> impl Iterator<Item = BI> + '_ {
@@ -586,7 +556,7 @@ impl<
 
     pub fn core(&self, bend: BI) -> DI {
         self.graph
-            .edges_directed(bend.petgraph_index(), Outgoing)
+            .edges_directed(bend.index(), Outgoing)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Core))
             .map(|edge| {
                 self.primitive_index(edge.target())
@@ -598,7 +568,7 @@ impl<
 
     pub fn inner(&self, bend: BI) -> Option<BI> {
         self.graph
-            .edges_directed(bend.petgraph_index(), Incoming)
+            .edges_directed(bend.index(), Incoming)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Outer))
             .map(|edge| {
                 self.primitive_index(edge.source())
@@ -609,7 +579,7 @@ impl<
 
     pub fn outers(&self, bend: BI) -> impl Iterator<Item = BI> + '_ {
         self.graph
-            .edges_directed(bend.petgraph_index(), Outgoing)
+            .edges_directed(bend.index(), Outgoing)
             .filter(|edge| matches!(edge.weight(), GeometryLabel::Outer))
             .map(|edge| {
                 self.primitive_index(edge.target())
@@ -634,24 +604,22 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cel: Copy, PI: Copy, D
     }
 
     fn remove_compound(&mut self, compound: GenericIndex<CW>) {
-        debug_assert!(self.graph.remove_node(compound.petgraph_index()).is_some());
+        debug_assert!(self.graph.remove_node(compound.index()).is_some());
     }
 
     fn add_to_compound<I>(&mut self, primitive: I, entry_label: Cel, compound: GenericIndex<CW>)
     where
-        I: Copy + GetPetgraphIndex,
+        I: Copy + GetIndex,
     {
         self.graph.update_edge(
-            primitive.petgraph_index(),
-            compound.petgraph_index(),
+            primitive.index(),
+            compound.index(),
             GeometryLabel::Compound(entry_label),
         );
     }
 
     fn compound_weight(&self, compound: GenericIndex<CW>) -> &CW {
-        if let GenericNode::Compound(weight) =
-            self.graph.node_weight(compound.petgraph_index()).unwrap()
-        {
+        if let GenericNode::Compound(weight) = self.graph.node_weight(compound.index()).unwrap() {
             weight
         } else {
             unreachable!()
@@ -663,7 +631,7 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cel: Copy, PI: Copy, D
         compound: GenericIndex<CW>,
     ) -> impl Iterator<Item = (Cel, Self::GeneralIndex)> + '_ {
         self.graph
-            .edges_directed(compound.petgraph_index(), Incoming)
+            .edges_directed(compound.index(), Incoming)
             .filter_map(|edge| {
                 if let GeometryLabel::Compound(entry_label) = *edge.weight() {
                     Some((entry_label, self.primitive_index(edge.source())))
@@ -675,10 +643,10 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cel: Copy, PI: Copy, D
 
     fn compounds<I>(&self, node: I) -> impl Iterator<Item = (Cel, GenericIndex<CW>)>
     where
-        I: Copy + GetPetgraphIndex,
+        I: Copy + GetIndex,
     {
         self.graph
-            .edges_directed(node.petgraph_index(), Outgoing)
+            .edges_directed(node.index(), Outgoing)
             .filter_map(|edge| {
                 if let GeometryLabel::Compound(entry_label) = *edge.weight() {
                     Some((entry_label, GenericIndex::new(edge.target())))

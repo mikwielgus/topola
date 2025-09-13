@@ -23,7 +23,7 @@ use crate::{
         shape::AccessShape,
         GenericNode,
     },
-    graph::GetPetgraphIndex,
+    graph::GetIndex,
     layout::{Layout, NodeIndex},
     math::{intersect_linestring_and_ray, LineInGeneralForm, LineIntersection},
 };
@@ -121,7 +121,7 @@ impl<R: AccessRules> Layout<R> {
             .filter(|(_, band_uid, _)| {
                 // filter entries which are connected to either lhs or rhs (and possibly both)
                 let (bts1, bts2) = band_uid.into();
-                let (bts1, bts2) = (bts1.petgraph_index(), bts2.petgraph_index());
+                let (bts1, bts2) = (bts1.index(), bts2.index());
                 let geometry = self.drawing.geometry();
                 [(bts1, left), (bts1, right), (bts2, left), (bts2, right)]
                     .iter()
@@ -162,7 +162,7 @@ impl<R: AccessRules> Layout<R> {
             .filter(|(_, band_uid, _)| {
                 // filter entries which are connected to rhs
                 let (bts1, bts2) = band_uid.into();
-                let (bts1, bts2) = (bts1.petgraph_index(), bts2.petgraph_index());
+                let (bts1, bts2) = (bts1.index(), bts2.index());
                 let geometry = self.drawing.geometry();
                 [(bts1, right), (bts2, right)]
                     .iter()

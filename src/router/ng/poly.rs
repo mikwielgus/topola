@@ -15,7 +15,7 @@ use crate::{
         primitive::MakePrimitiveShape as _,
     },
     geometry::{compound::ManageCompounds, shape::AccessShape as _, GetSetPos as _},
-    graph::{GenericIndex, GetPetgraphIndex as _},
+    graph::{GenericIndex, GetIndex as _},
     layout::{poly::PolyWeight, CompoundEntryLabel, Layout},
     math::{is_poly_convex_hull_cw, CachedPolyExt, RotationSense},
     router::ng::{
@@ -52,7 +52,7 @@ impl PolygonRouting {
         let convex_hull = layout
             .drawing()
             .geometry()
-            .compound_members(GenericIndex::new(polyidx.petgraph_index()))
+            .compound_members(GenericIndex::new(polyidx.index()))
             .filter_map(|(entry_label, primitive_node)| {
                 let PrimitiveIndex::FixedDot(poly_dot) = primitive_node else {
                     return None;

@@ -24,7 +24,7 @@ use crate::{
         rules::AccessRules,
     },
     geometry::shape::AccessShape,
-    graph::{GenericIndex, GetPetgraphIndex, MakeRef},
+    graph::{GenericIndex, GetIndex, MakeRef},
     layout::{
         poly::{MakePolygon, PolyWeight},
         Layout,
@@ -34,7 +34,7 @@ use crate::{
 
 use super::ratline::{RatlineIndex, RatlineWeight};
 
-#[enum_dispatch(GetPetgraphIndex)]
+#[enum_dispatch(GetIndex)]
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub enum RatvertexIndex {
     FixedDot(FixedDotIndex),
@@ -144,8 +144,8 @@ impl Ratsnest {
 
         this.graph.retain_edges(|g, i| {
             if let Some((source, target)) = g.edge_endpoints(i) {
-                let source_index = g.node_weight(source).unwrap().node_index().petgraph_index();
-                let target_index = g.node_weight(target).unwrap().node_index().petgraph_index();
+                let source_index = g.node_weight(source).unwrap().node_index().index();
+                let target_index = g.node_weight(target).unwrap().node_index().index();
                 !unionfind.equiv(source_index, target_index)
             } else {
                 true

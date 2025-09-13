@@ -8,7 +8,7 @@ use geo::Point;
 use petgraph::stable_graph::StableDiGraph;
 use rstar::RTree;
 
-use crate::graph::{GenericIndex, GetPetgraphIndex};
+use crate::graph::{GenericIndex, GetIndex};
 
 use super::{
     compound::ManageCompounds,
@@ -60,10 +60,10 @@ impl<
         BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Clone,
         Cel: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        PI: GetIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
+        DI: GetIndex + Into<PI> + Eq + Ord + Copy,
+        SI: GetIndex + Into<PI> + Eq + Ord + Copy,
+        BI: GetIndex + Into<PI> + Eq + Ord + Copy,
     > RecordingGeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     pub fn new(layer_count: usize) -> Self {
@@ -363,10 +363,10 @@ impl<
         BW: AccessBendWeight + Into<PW> + GetLayer,
         CW: Clone,
         Cel: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        PI: GetIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
+        DI: GetIndex + Into<PI> + Eq + Ord + Copy,
+        SI: GetIndex + Into<PI> + Eq + Ord + Copy,
+        BI: GetIndex + Into<PI> + Eq + Ord + Copy,
     > ApplyGeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>
     for RecordingGeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {

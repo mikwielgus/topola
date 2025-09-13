@@ -14,7 +14,7 @@ use crate::{
         Drawing,
     },
     geometry::primitive::{DotShape, PrimitiveShape},
-    graph::{GenericIndex, GetPetgraphIndex},
+    graph::{GenericIndex, GetIndex},
     layout::{CompoundEntryLabel, CompoundWeight},
     math::Circle,
 };
@@ -60,7 +60,7 @@ pub struct ViaWeight {
 
 impl From<GenericIndex<ViaWeight>> for GenericIndex<CompoundWeight> {
     fn from(via: GenericIndex<ViaWeight>) -> Self {
-        GenericIndex::<CompoundWeight>::new(via.petgraph_index())
+        GenericIndex::<CompoundWeight>::new(via.index())
     }
 }
 

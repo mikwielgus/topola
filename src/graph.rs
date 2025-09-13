@@ -14,13 +14,13 @@ pub trait MakeRef<'a, C> {
 }
 
 #[enum_dispatch]
-pub trait GetPetgraphIndex {
-    fn petgraph_index(&self) -> NodeIndex<usize>;
+pub trait GetIndex {
+    fn index(&self) -> NodeIndex<usize>;
 }
 
-impl GetPetgraphIndex for NodeIndex<usize> {
+impl GetIndex for NodeIndex<usize> {
     #[inline(always)]
-    fn petgraph_index(&self) -> NodeIndex<usize> {
+    fn index(&self) -> NodeIndex<usize> {
         *self
     }
 }
@@ -92,9 +92,9 @@ impl<W> core::hash::Hash for GenericIndex<W> {
     }
 }
 
-impl<W> GetPetgraphIndex for GenericIndex<W> {
+impl<W> GetIndex for GenericIndex<W> {
     #[inline]
-    fn petgraph_index(&self) -> NodeIndex<usize> {
+    fn index(&self) -> NodeIndex<usize> {
         self.node_index
     }
 }

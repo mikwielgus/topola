@@ -32,7 +32,7 @@ use crate::{
         shape::{AccessShape as _, MeasureLength as _},
         GenericNode,
     },
-    graph::GetPetgraphIndex as _,
+    graph::GetIndex as _,
     layout::Layout,
     math::{CachedPolyExt, RotationSense},
     router::draw::{Draw, DrawException},
@@ -580,7 +580,7 @@ fn cane_around<R: AccessRules>(
             let inner_bend = layout
                 .drawing()
                 .geometry()
-                .all_rails(core.petgraph_index())
+                .all_rails(core.index())
                 .filter_map(|bi| {
                     if let BendIndex::Loose(lbi) = bi {
                         if layout.drawing().find_loose_band_uid(lbi.into()).ok() == Some(inner) {

@@ -37,7 +37,7 @@ use crate::{
         AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
         GetLayer, GetOffset, GetSetPos, GetWidth,
     },
-    graph::{GenericIndex, GetPetgraphIndex, MakeRef},
+    graph::{GenericIndex, GetIndex, MakeRef},
     math::{NoBitangents, RotationSense},
 };
 
@@ -570,7 +570,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         let core = *self
             .recording_geometry_with_rtree
             .graph()
-            .neighbors(inner.petgraph_index())
+            .neighbors(inner.index())
             .filter(|ni| {
                 matches!(
                     self.recording_geometry_with_rtree
@@ -578,7 +578,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                         .edge_weight(
                             self.recording_geometry_with_rtree
                                 .graph()
-                                .find_edge(inner.petgraph_index(), *ni)
+                                .find_edge(inner.index(), *ni)
                                 .unwrap()
                         )
                         .unwrap(),

@@ -11,7 +11,7 @@ use spade::{
     handles::FixedVertexHandle, ConstrainedDelaunayTriangulation, HasPosition, InsertionError,
 };
 
-use crate::graph::GetPetgraphIndex;
+use crate::graph::GetIndex;
 
 pub trait GetTrianvertexNodeIndex<I> {
     fn node_index(&self) -> I;
@@ -27,7 +27,7 @@ pub struct Triangulation<I, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: De
     index_marker: PhantomData<I>,
 }
 
-impl<I: GetPetgraphIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Default>
+impl<I: GetIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Default>
     Triangulation<I, VW, EW>
 {
     pub fn new(node_bound: usize) -> Self {
@@ -39,15 +39,15 @@ impl<I: GetPetgraphIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Defa
     }
 
     pub fn add_vertex(&mut self, weight: VW) -> Result<(), InsertionError> {
-        let index = weight.node_index().petgraph_index().index();
+        let index = weight.node_index().index().index();
         self.trianvertex_to_handle[index] =
             Some(spade::Triangulation::insert(&mut self.cdt, weight)?);
         Ok(())
     }
 
     pub fn add_constraint_edge(&mut self, from: VW, to: VW) -> Result<bool, InsertionError> {
-        let from_index = from.node_index().petgraph_index().index();
-        let to_index = to.node_index().petgraph_index().index();
+        let from_index = from.node_index().index().index();
+        let to_index = to.node_index().index().index();
 
         // It is possible for one or both constraint edge endpoint vertices to
         // not exist in the triangulation even after everything has been added.
@@ -75,13 +75,13 @@ impl<I: GetPetgraphIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Defa
 
     pub fn weight(&self, vertex: I) -> &VW {
         spade::Triangulation::s(&self.cdt)
-            .vertex_data(self.trianvertex_to_handle[vertex.petgraph_index().index()].unwrap())
+            .vertex_data(self.trianvertex_to_handle[vertex.index().index()].unwrap())
     }
 
     pub fn weight_mut(&mut self, vertex: I) -> &mut VW {
         spade::Triangulation::vertex_data_mut(
             &mut self.cdt,
-            self.trianvertex_to_handle[vertex.petgraph_index().index()].unwrap(),
+            self.trianvertex_to_handle[vertex.index().index()].unwrap(),
         )
     }
 
@@ -92,7 +92,7 @@ impl<I: GetPetgraphIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Defa
     }
 
     fn handle(&self, vertex: I) -> FixedVertexHandle {
-        self.trianvertex_to_handle[vertex.petgraph_index().index()].unwrap()
+        self.trianvertex_to_handle[vertex.index().index()].unwrap()
     }
 
     pub fn position(&self, vertex: I) -> Point<<VW as HasPosition>::Scalar>
@@ -104,11 +104,8 @@ impl<I: GetPetgraphIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Defa
     }
 }
 
-impl<
-        I: Copy + PartialEq + GetPetgraphIndex,
-        VW: GetTrianvertexNodeIndex<I> + HasPosition,
-        EW: Default,
-    > visit::GraphBase for Triangulation<I, VW, EW>
+impl<I: Copy + PartialEq + GetIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Default>
+    visit::GraphBase for Triangulation<I, VW, EW>
 {
     type NodeId = I;
     type EdgeId = (I, I);
@@ -133,7 +130,7 @@ impl<EW> PartialOrd for TriangulationEdgeWeightWrapper<EW> {
 }
 
 impl<
-        I: Copy + PartialEq + GetPetgraphIndex,
+        I: Copy + PartialEq + GetIndex,
         VW: GetTrianvertexNodeIndex<I> + HasPosition,
         EW: Copy + Default,
     > visit::Data for Triangulation<I, VW, EW>
@@ -173,7 +170,7 @@ impl<I: Copy, EW: Copy> visit::EdgeRef for TriangulationEdgeReference<I, EW> {
 
 impl<
         'a,
-        I: Copy + PartialEq + GetPetgraphIndex,
+        I: Copy + PartialEq + GetIndex,
         VW: GetTrianvertexNodeIndex<I> + HasPosition,
         EW: Default,
     > visit::IntoNeighbors for &'a Triangulation<I, VW, EW>
@@ -191,7 +188,7 @@ impl<
 
 impl<
         'a,
-        I: Copy + PartialEq + GetPetgraphIndex,
+        I: Copy + PartialEq + GetIndex,
         VW: GetTrianvertexNodeIndex<I> + HasPosition<Scalar = f64>,
         EW: Copy + Default,
     > visit::IntoEdgeReferences for &'a Triangulation<I, VW, EW>
@@ -218,7 +215,7 @@ impl<
 
 impl<
         'a,
-        I: Copy + PartialEq + GetPetgraphIndex,
+        I: Copy + PartialEq + GetIndex,
         VW: GetTrianvertexNodeIndex<I> + HasPosition<Scalar = f64>,
         EW: Copy + Default,
     > visit::IntoEdges for &'a Triangulation<I, VW, EW>
@@ -248,7 +245,7 @@ impl<
 
 impl<
         'a,
-        I: Copy + PartialEq + GetPetgraphIndex,
+        I: Copy + PartialEq + GetIndex,
         VW: GetTrianvertexNodeIndex<I> + HasPosition,
         EW: Default,
     > visit::IntoNodeIdentifiers for &'a Triangulation<I, VW, EW>
@@ -298,7 +295,7 @@ impl<I: Copy, VW> visit::NodeRef for TriangulationVertexReference<'_, I, VW> {
 
 impl<
         'a,
-        I: Copy + PartialEq + GetPetgraphIndex,
+        I: Copy + PartialEq + GetIndex,
         VW: GetTrianvertexNodeIndex<I> + HasPosition,
         EW: Copy + Default,
     > visit::IntoNodeReferences for &'a Triangulation<I, VW, EW>
@@ -320,7 +317,7 @@ impl<
 }
 
 impl<
-        I: Copy + PartialEq + GetPetgraphIndex + std::fmt::Debug,
+        I: Copy + PartialEq + GetIndex + std::fmt::Debug,
         VW: GetTrianvertexNodeIndex<I> + HasPosition,
         EW: Default,
     > visit::NodeIndexable for &Triangulation<I, VW, EW>
@@ -331,7 +328,7 @@ impl<
     }
 
     fn to_index(&self, node: I) -> usize {
-        node.petgraph_index().index()
+        node.index().index()
     }
 
     fn from_index(&self, index: usize) -> I {

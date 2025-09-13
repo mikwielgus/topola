@@ -15,7 +15,7 @@ use crate::{
         Drawing,
     },
     geometry::{primitive::PrimitiveShape, GenericNode, GetLayer, GetOffset, GetWidth, Retag},
-    graph::{GenericIndex, GetPetgraphIndex},
+    graph::{GenericIndex, GetIndex},
 };
 
 use super::gear::{DrawingOutwardWalker, GetOuterGears, WalkOutwards};
@@ -67,14 +67,14 @@ pub trait GetOtherJoint: GetJoints {
 
 impl<F, S> GetOtherJoint for S
 where
-    F: GetPetgraphIndex,
+    F: GetIndex,
     S: GetJoints<F = F>,
-    <S as GetJoints>::T: GetPetgraphIndex + Into<F>,
+    <S as GetJoints>::T: GetIndex + Into<F>,
 {
     type J = F;
     fn other_joint(&self, end: F) -> F {
         let joints = self.joints();
-        if joints.0.petgraph_index() != end.petgraph_index() {
+        if joints.0.index() != end.index() {
             joints.0
         } else {
             joints.1.into()
@@ -88,13 +88,13 @@ pub trait GetJoints {
     fn joints(&self) -> (Self::F, Self::T);
 }
 
-pub trait GetLowestGears: GetDrawing + GetPetgraphIndex {
+pub trait GetLowestGears: GetDrawing + GetIndex {
     // TODO: Make it return an iterator instead of a vec.
     fn lowest_gears(&self) -> Vec<LooseBendIndex> {
         self.drawing()
             .geometry()
-            .all_rails(self.petgraph_index())
-            .map(|ni| LooseBendIndex::new(ni.petgraph_index()))
+            .all_rails(self.index())
+            .map(|ni| LooseBendIndex::new(ni.index()))
             .collect()
     }
 }
@@ -109,12 +109,7 @@ pub trait GetCore: GetBendIndex {
 
 impl<S: GetDrawing + GetBendIndex> GetCore for S {
     fn core(&self) -> FixedDotIndex {
-        FixedDotIndex::new(
-            self.drawing()
-                .geometry()
-                .core(self.bend_index())
-                .petgraph_index(),
-        )
+        FixedDotIndex::new(self.drawing().geometry().core(self.bend_index()).index())
     }
 }
 
@@ -205,7 +200,7 @@ impl<'a, W, CW, Cel, R> GenericPrimitive<'a, W, CW, Cel, R> {
             .drawing
             .geometry()
             .graph()
-            .node_weight(self.index.petgraph_index())
+            .node_weight(self.index.index())
             .unwrap()
         {
             *weight
@@ -217,7 +212,7 @@ impl<'a, W, CW, Cel, R> GenericPrimitive<'a, W, CW, Cel, R> {
 
 impl<W, CW, Cel, R> GetInterior<PrimitiveIndex> for GenericPrimitive<'_, W, CW, Cel, R> {
     fn interior(&self) -> Vec<PrimitiveIndex> {
-        vec![self.tagged_weight().retag(self.index.petgraph_index())]
+        vec![self.tagged_weight().retag(self.index.index())]
     }
 }
 
@@ -230,9 +225,9 @@ impl<W, CW, Cel, R> GetDrawing for GenericPrimitive<'_, W, CW, Cel, R> {
     }
 }
 
-impl<W, CW, Cel, R> GetPetgraphIndex for GenericPrimitive<'_, W, CW, Cel, R> {
-    fn petgraph_index(&self) -> NodeIndex<usize> {
-        self.index.petgraph_index()
+impl<W, CW, Cel, R> GetIndex for GenericPrimitive<'_, W, CW, Cel, R> {
+    fn index(&self) -> NodeIndex<usize> {
+        self.index.index()
     }
 }
 
@@ -305,7 +300,7 @@ impl<CW, Cel, R> LooseDotRef<'_, CW, Cel, R> {
         self.drawing
             .geometry()
             .joined_segs(self.index.into())
-            .map(|ni| SeqLooseSegIndex::new(ni.petgraph_index()))
+            .map(|ni| SeqLooseSegIndex::new(ni.index()))
             .next()
     }
 
@@ -313,7 +308,7 @@ impl<CW, Cel, R> LooseDotRef<'_, CW, Cel, R> {
         self.drawing
             .geometry()
             .joined_bends(self.index.into())
-            .map(|ni| LooseBendIndex::new(ni.petgraph_index()))
+            .map(|ni| LooseBendIndex::new(ni.index()))
             .next()
             .unwrap()
     }
@@ -356,8 +351,8 @@ impl<CW, Cel, R> GetJoints for FixedSegRef<'_, CW, Cel, R> {
     fn joints(&self) -> (FixedDotIndex, FixedDotIndex) {
         let (from, to) = self.drawing.geometry().seg_joints(self.index.into());
         (
-            FixedDotIndex::new(from.petgraph_index()),
-            FixedDotIndex::new(to.petgraph_index()),
+            FixedDotIndex::new(from.index()),
+            FixedDotIndex::new(to.index()),
         )
     }
 }
@@ -379,8 +374,8 @@ impl<CW, Cel, R> GetJoints for LoneLooseSegRef<'_, CW, Cel, R> {
     fn joints(&self) -> (FixedDotIndex, FixedDotIndex) {
         let (from, to) = self.drawing.geometry().seg_joints(self.index.into());
         (
-            FixedDotIndex::new(from.petgraph_index()),
-            FixedDotIndex::new(to.petgraph_index()),
+            FixedDotIndex::new(from.index()),
+            FixedDotIndex::new(to.index()),
         )
     }
 }
@@ -403,18 +398,18 @@ impl<CW, Cel, R> GetJoints for SeqLooseSegRef<'_, CW, Cel, R> {
         let joints = self.drawing.geometry().seg_joints(self.index.into());
         if let DotWeight::Fixed(..) = self.drawing.geometry().dot_weight(joints.0) {
             (
-                FixedDotIndex::new(joints.0.petgraph_index()).into(),
-                LooseDotIndex::new(joints.1.petgraph_index()),
+                FixedDotIndex::new(joints.0.index()).into(),
+                LooseDotIndex::new(joints.1.index()),
             )
         } else if let DotWeight::Fixed(..) = self.drawing.geometry().dot_weight(joints.1) {
             (
-                FixedDotIndex::new(joints.1.petgraph_index()).into(),
-                LooseDotIndex::new(joints.0.petgraph_index()),
+                FixedDotIndex::new(joints.1.index()).into(),
+                LooseDotIndex::new(joints.0.index()),
             )
         } else {
             (
-                LooseDotIndex::new(joints.0.petgraph_index()).into(),
-                LooseDotIndex::new(joints.1.petgraph_index()),
+                LooseDotIndex::new(joints.0.index()).into(),
+                LooseDotIndex::new(joints.1.index()),
             )
         }
     }
@@ -443,8 +438,8 @@ impl<CW, Cel, R> GetJoints for FixedBendRef<'_, CW, Cel, R> {
     fn joints(&self) -> (FixedDotIndex, FixedDotIndex) {
         let (from, to) = self.drawing.geometry().bend_joints(self.index.into());
         (
-            FixedDotIndex::new(from.petgraph_index()),
-            FixedDotIndex::new(to.petgraph_index()),
+            FixedDotIndex::new(from.index()),
+            FixedDotIndex::new(to.index()),
         )
     }
 }
@@ -498,8 +493,8 @@ impl<CW, Cel, R> GetJoints for LooseBendRef<'_, CW, Cel, R> {
     fn joints(&self) -> (LooseDotIndex, LooseDotIndex) {
         let (from, to) = self.drawing.geometry().bend_joints(self.index.into());
         (
-            LooseDotIndex::new(from.petgraph_index()),
-            LooseDotIndex::new(to.petgraph_index()),
+            LooseDotIndex::new(from.index()),
+            LooseDotIndex::new(to.index()),
         )
     }
 }
@@ -521,13 +516,13 @@ impl<CW, Cel, R> LooseBendRef<'_, CW, Cel, R> {
         self.drawing()
             .geometry()
             .inner(self.bend_index())
-            .map(|ni| LooseBendIndex::new(ni.petgraph_index()))
+            .map(|ni| LooseBendIndex::new(ni.index()))
     }
 
     pub fn outers(&self) -> impl Iterator<Item = LooseBendIndex> + '_ {
         self.drawing()
             .geometry()
             .outers(self.bend_index())
-            .map(|node| LooseBendIndex::new(node.petgraph_index()))
+            .map(|node| LooseBendIndex::new(node.index()))
     }
 }

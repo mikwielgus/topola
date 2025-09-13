@@ -32,7 +32,7 @@ use crate::{
         shape::{AccessShape, Shape},
         GenericNode, GetLayer, GetSetPos,
     },
-    graph::{GenericIndex, GetPetgraphIndex, MakeRef},
+    graph::{GenericIndex, GetIndex, MakeRef},
     layout::{
         poly::{add_poly_with_nodes_intern, MakePolygon, PolyWeight},
         via::{Via, ViaWeight},
@@ -179,7 +179,7 @@ impl<R: AccessRules> Layout<R> {
             }
         }
 
-        Ok(GenericIndex::<ViaWeight>::new(compound.petgraph_index()))
+        Ok(GenericIndex::<ViaWeight>::new(compound.index()))
     }
 
     pub fn add_fixed_dot(
@@ -256,7 +256,7 @@ impl<R: AccessRules> Layout<R> {
         GenericIndex::<PolyWeight>::new(
             self.drawing
                 .add_compound(recorder, CompoundWeight::Poly(weight))
-                .petgraph_index(),
+                .index(),
         )
     }
 
@@ -290,7 +290,7 @@ impl<R: AccessRules> Layout<R> {
         self.drawing.rtree().iter().filter_map(|wrapper| {
             if let NodeIndex::Compound(compound) = wrapper.data {
                 if let CompoundWeight::Poly(..) = self.drawing.compound_weight(compound) {
-                    return Some(GenericIndex::<PolyWeight>::new(compound.petgraph_index()));
+                    return Some(GenericIndex::<PolyWeight>::new(compound.index()));
                 }
             }
 
@@ -311,7 +311,7 @@ impl<R: AccessRules> Layout<R> {
             .filter_map(|wrapper| {
                 if let NodeIndex::Compound(compound) = wrapper.data {
                     if let CompoundWeight::Poly(..) = self.drawing.compound_weight(compound) {
-                        return Some(GenericIndex::<PolyWeight>::new(compound.petgraph_index()));
+                        return Some(GenericIndex::<PolyWeight>::new(compound.index()));
                     }
                 }
 
@@ -325,12 +325,12 @@ impl<R: AccessRules> Layout<R> {
     ) -> impl Iterator<Item = (CompoundEntryLabel, PrimitiveIndex)> + '_ {
         self.drawing
             .geometry()
-            .compound_members(GenericIndex::new(poly.petgraph_index()))
+            .compound_members(GenericIndex::new(poly.index()))
     }
 
     fn compound_shape(&self, compound: GenericIndex<CompoundWeight>) -> Shape {
         match self.drawing.compound_weight(compound) {
-            CompoundWeight::Poly(_) => GenericIndex::<PolyWeight>::new(compound.petgraph_index())
+            CompoundWeight::Poly(_) => GenericIndex::<PolyWeight>::new(compound.index())
                 .ref_(self)
                 .shape()
                 .into(),
@@ -360,11 +360,8 @@ impl<R: AccessRules> Layout<R> {
             let PrimitiveIndex::FixedDot(dot) = index else {
                 return None;
             };
-            if let GenericNode::Primitive(PrimitiveWeight::FixedDot(weight)) = drawing
-                .geometry()
-                .graph()
-                .node_weight(dot.petgraph_index())
-                .unwrap()
+            if let GenericNode::Primitive(PrimitiveWeight::FixedDot(weight)) =
+                drawing.geometry().graph().node_weight(dot.index()).unwrap()
             {
                 Some((dot, weight))
             } else {
@@ -378,7 +375,7 @@ impl<R: AccessRules> Layout<R> {
                     .drawing()
                     .geometry()
                     // TODO: Add `.compounds()` method working on `PrimitiveIndex`.
-                    .compounds(GenericIndex::<()>::new(primitive.petgraph_index()))
+                    .compounds(GenericIndex::<()>::new(primitive.index()))
                     .next()
                     .is_some()
                 {
@@ -388,8 +385,7 @@ impl<R: AccessRules> Layout<R> {
             }
             NodeIndex::Compound(compound) => Some(match self.drawing.compound_weight(compound) {
                 CompoundWeight::Poly(_) => {
-                    let poly =
-                        GenericIndex::<PolyWeight>::new(compound.petgraph_index()).ref_(self);
+                    let poly = GenericIndex::<PolyWeight>::new(compound.index()).ref_(self);
                     (poly.apex(), poly.shape().center())
                 }
                 CompoundWeight::Via(weight) => {

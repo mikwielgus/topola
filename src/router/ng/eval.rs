@@ -16,7 +16,7 @@ use crate::{
         rules::AccessRules,
     },
     geometry::{primitive::PrimitiveShape, shape::AccessShape as _, shape::MeasureLength as _},
-    graph::{GenericIndex, GetPetgraphIndex as _},
+    graph::{GenericIndex, GetIndex as _},
     layout::{poly::PolyWeight, CompoundWeight},
     math::{poly_ext_handover, RotationSense},
     router::{
@@ -270,7 +270,7 @@ impl AstarContext {
 
                 let current_poly = layout
                     .drawing()
-                    .compounds(GenericIndex::<()>::new(wrap_core.petgraph_index()))
+                    .compounds(GenericIndex::<()>::new(wrap_core.index()))
                     .find_map(|(_, compound)| {
                         if let CompoundWeight::Poly(_) = layout.drawing().compound_weight(compound)
                         {
@@ -279,7 +279,7 @@ impl AstarContext {
                             None
                         }
                     })
-                    .map(|compound| GenericIndex::<PolyWeight>::new(compound.petgraph_index()));
+                    .map(|compound| GenericIndex::<PolyWeight>::new(compound.index()));
 
                 let (active_head, length_delta) = match (
                     sub.polygon.take(),

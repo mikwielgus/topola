@@ -13,12 +13,12 @@ use crate::{
         Drawing,
     },
     geometry::{GetLayer, GetWidth},
-    graph::{GenericIndex, GetPetgraphIndex},
+    graph::{GenericIndex, GetIndex},
 };
 
 use petgraph::stable_graph::NodeIndex;
 
-#[enum_dispatch(GetPetgraphIndex, MakePrimitiveRef)]
+#[enum_dispatch(GetIndex, MakePrimitiveRef)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum SegIndex {
     Fixed(FixedSegIndex),
@@ -26,7 +26,7 @@ pub enum SegIndex {
     SeqLoose(SeqLooseSegIndex),
 }
 
-#[enum_dispatch(GetPetgraphIndex, MakePrimitiveRef)]
+#[enum_dispatch(GetIndex, MakePrimitiveRef)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd, Hash)]
 pub enum LooseSegIndex {
     Lone(LoneLooseSegIndex),

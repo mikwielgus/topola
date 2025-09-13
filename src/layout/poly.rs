@@ -21,7 +21,7 @@ use crate::{
         Drawing,
     },
     geometry::{compound::ManageCompounds, GetLayer, GetSetPos},
-    graph::{GenericIndex, GetPetgraphIndex, MakeRef},
+    graph::{GenericIndex, GetIndex, MakeRef},
     layout::{CompoundEntryLabel, CompoundWeight, Layout, LayoutEdit},
     math::Circle,
 };
@@ -81,7 +81,7 @@ pub(super) fn add_poly_with_nodes_intern<R: AccessRules>(
     for &idx in nodes {
         layout.drawing.add_to_compound(
             recorder,
-            GenericIndex::<()>::new(idx.petgraph_index()),
+            GenericIndex::<()>::new(idx.index()),
             CompoundEntryLabel::Normal,
             poly_compound,
         );
@@ -123,7 +123,7 @@ pub(super) fn add_poly_with_nodes_intern<R: AccessRules>(
         for Rto { idx, .. } in temp_rtree {
             layout.drawing.add_to_compound(
                 recorder,
-                GenericIndex::<()>::new(idx.petgraph_index()),
+                GenericIndex::<()>::new(idx.index()),
                 CompoundEntryLabel::Apex,
                 poly_compound,
             );
@@ -234,7 +234,7 @@ pub enum PolyWeight {
 
 impl From<GenericIndex<PolyWeight>> for GenericIndex<CompoundWeight> {
     fn from(poly: GenericIndex<PolyWeight>) -> Self {
-        GenericIndex::<CompoundWeight>::new(poly.petgraph_index())
+        GenericIndex::<CompoundWeight>::new(poly.index())
     }
 }
 
@@ -258,7 +258,7 @@ impl GetMaybeNet for SolidPolyWeight {
 
 impl From<GenericIndex<SolidPolyWeight>> for GenericIndex<CompoundWeight> {
     fn from(poly: GenericIndex<SolidPolyWeight>) -> Self {
-        GenericIndex::<CompoundWeight>::new(poly.petgraph_index())
+        GenericIndex::<CompoundWeight>::new(poly.index())
     }
 }
 
@@ -282,6 +282,6 @@ impl GetMaybeNet for PourPolyWeight {
 
 impl From<GenericIndex<PourPolyWeight>> for GenericIndex<CompoundWeight> {
     fn from(poly: GenericIndex<PourPolyWeight>) -> Self {
-        GenericIndex::<CompoundWeight>::new(poly.petgraph_index())
+        GenericIndex::<CompoundWeight>::new(poly.index())
     }
 }

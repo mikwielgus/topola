@@ -27,7 +27,7 @@ use crate::{
         graph::PrimitiveIndex,
         rules::AccessRules,
     },
-    graph::{GenericIndex, GetPetgraphIndex, MakeRef},
+    graph::{GenericIndex, GetIndex, MakeRef},
     layout::{CompoundEntryLabel, Layout},
     math::RotationSense,
     router::thetastar::MakeEdgeRef,
@@ -47,8 +47,8 @@ impl core::fmt::Debug for NavnodeIndex {
     }
 }
 
-impl GetPetgraphIndex for NavnodeIndex {
-    fn petgraph_index(&self) -> NodeIndex<usize> {
+impl GetIndex for NavnodeIndex {
+    fn index(&self) -> NodeIndex<usize> {
         self.0
     }
 }
@@ -56,7 +56,7 @@ impl GetPetgraphIndex for NavnodeIndex {
 /// A binavnode is a pair of navnodes, one clockwise and the other
 /// counterclockwise. Unlike their constituents, binavnodes are themselves
 /// not considered navnodes.
-#[enum_dispatch(GetPetgraphIndex, MakePrimitive)]
+#[enum_dispatch(GetIndex, MakePrimitive)]
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum BinavnodeNodeIndex {
     FixedDot(FixedDotIndex),
@@ -271,7 +271,7 @@ impl Navmesh {
         // for each union.
         for prenavnode in prenavmesh.triangulation().node_identifiers() {
             let repr = PrenavmeshNodeIndex::FixedDot(GenericIndex::new(
-                overlapping_prenavnodes_unions.find(prenavnode.petgraph_index()),
+                overlapping_prenavnodes_unions.find(prenavnode.index()),
             ));
 
             if repr == prenavnode {
@@ -325,7 +325,7 @@ impl Navmesh {
         // Ignore overlaps of a fillet.
         if layout
             .drawing()
-            .compounds(GenericIndex::<()>::new(prenavnode.petgraph_index()))
+            .compounds(GenericIndex::<()>::new(prenavnode.index()))
             .find(|(label, _)| *label == CompoundEntryLabel::Fillet)
             .is_some()
         {
@@ -336,7 +336,7 @@ impl Navmesh {
             // Ignore overlaps with fillets.
             if layout
                 .drawing()
-                .compounds(GenericIndex::<()>::new(overlapee.1.petgraph_index()))
+                .compounds(GenericIndex::<()>::new(overlapee.1.index()))
                 .find(|(label, _)| *label == CompoundEntryLabel::Fillet)
                 .is_some()
             {
@@ -347,8 +347,7 @@ impl Navmesh {
                 continue;
             };
 
-            overlapping_prenavnodes_unions
-                .union(prenavnode.petgraph_index(), overlapee.petgraph_index());
+            overlapping_prenavnodes_unions.union(prenavnode.index(), overlapee.index());
         }
     }
 
@@ -390,10 +389,10 @@ impl Navmesh {
         // We assume prenavmesh nodes are fixed dots. This is an ugly shortcut,
         // since fixed bends also can be prenavnodes, but it works for now.
         let from_prenavnode_repr = PrenavmeshNodeIndex::FixedDot(GenericIndex::new(
-            overlapping_prenavnodes_unions.find(from_prenavnode.petgraph_index()),
+            overlapping_prenavnodes_unions.find(from_prenavnode.index()),
         ));
         let to_prenavnode_repr = PrenavmeshNodeIndex::FixedDot(GenericIndex::new(
-            overlapping_prenavnodes_unions.find(to_prenavnode.petgraph_index()),
+            overlapping_prenavnodes_unions.find(to_prenavnode.index()),
         ));
 
         Self::add_prenavedge_as_quadrinavedges(
@@ -456,7 +455,7 @@ impl Data for Navmesh {
 
 impl DataMap for Navmesh {
     fn node_weight(&self, vertex: Self::NodeId) -> Option<&Self::NodeWeight> {
-        self.graph.node_weight(vertex.petgraph_index())
+        self.graph.node_weight(vertex.index())
     }
 
     fn edge_weight(&self, _edge: Self::EdgeId) -> Option<&Self::EdgeWeight> {
@@ -496,11 +495,7 @@ impl<'a> IntoNeighbors for &'a Navmesh {
     type Neighbors = Box<dyn Iterator<Item = NavnodeIndex> + 'a>;
 
     fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
-        Box::new(
-            self.graph
-                .neighbors(vertex.petgraph_index())
-                .map(NavnodeIndex),
-        )
+        Box::new(self.graph.neighbors(vertex.index()).map(NavnodeIndex))
     }
 }
 
@@ -526,7 +521,7 @@ impl<'a> IntoEdges for &'a Navmesh {
     fn edges(self, vertex: Self::NodeId) -> Self::Edges {
         Box::new(
             self.graph
-                .edges(vertex.petgraph_index())
+                .edges(vertex.index())
                 .map(|edge| NavmeshEdgeReference {
                     from: NavnodeIndex(edge.source()),
                     to: NavnodeIndex(edge.target()),

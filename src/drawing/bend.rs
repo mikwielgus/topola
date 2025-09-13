@@ -12,12 +12,12 @@ use crate::{
         Drawing,
     },
     geometry::{GetLayer, GetOffset, GetWidth, SetOffset},
-    graph::{GenericIndex, GetPetgraphIndex},
+    graph::{GenericIndex, GetIndex},
 };
 
 use petgraph::stable_graph::NodeIndex;
 
-#[enum_dispatch(GetPetgraphIndex, MakePrimitiveRef)]
+#[enum_dispatch(GetIndex, MakePrimitiveRef)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub enum BendIndex {
     Fixed(FixedBendIndex),

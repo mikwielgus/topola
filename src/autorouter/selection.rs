@@ -14,7 +14,7 @@ use crate::{
         shape::{AccessShape, Shape},
         GenericNode, GetLayer,
     },
-    graph::{GenericIndex, GetPetgraphIndex, MakeRef},
+    graph::{GenericIndex, GetIndex, MakeRef},
     layout::{poly::PolyWeight, CompoundWeight, NodeIndex},
 };
 
@@ -36,7 +36,7 @@ impl PinSelector {
             NodeIndex::Compound(compound) => {
                 if let CompoundWeight::Poly(..) = board.layout().drawing().compound_weight(compound)
                 {
-                    GenericIndex::<PolyWeight>::new(compound.petgraph_index())
+                    GenericIndex::<PolyWeight>::new(compound.index())
                         .ref_(board.layout())
                         .layer()
                 } else {

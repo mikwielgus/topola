@@ -4,7 +4,7 @@
 
 use std::collections::{btree_map::Entry, BTreeMap};
 
-use crate::graph::{GenericIndex, GetPetgraphIndex};
+use crate::graph::{GenericIndex, GetIndex};
 
 use super::{AccessBendWeight, AccessDotWeight, AccessSegWeight, GetLayer};
 
@@ -39,10 +39,10 @@ pub trait ApplyGeometryEdit<
     BW: AccessBendWeight + GetLayer,
     CW: Clone,
     Cel: Copy,
-    PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
-    DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-    SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-    BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+    PI: GetIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
+    DI: GetIndex + Into<PI> + Eq + Ord + Copy,
+    SI: GetIndex + Into<PI> + Eq + Ord + Copy,
+    BI: GetIndex + Into<PI> + Eq + Ord + Copy,
 >
 {
     fn apply(&mut self, edit: &GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>);
@@ -89,10 +89,10 @@ impl<
         BW: AccessBendWeight + GetLayer,
         CW: Clone,
         Cel: Copy,
-        PI: GetPetgraphIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
-        DI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-        SI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
-        BI: GetPetgraphIndex + Into<PI> + Eq + Ord + Copy,
+        PI: GetIndex + TryInto<DI> + TryInto<SI> + TryInto<BI> + Eq + Ord + Copy,
+        DI: GetIndex + Into<PI> + Eq + Ord + Copy,
+        SI: GetIndex + Into<PI> + Eq + Ord + Copy,
+        BI: GetIndex + Into<PI> + Eq + Ord + Copy,
     > Edit for GeometryEdit<DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     fn reverse_inplace(&mut self) {
