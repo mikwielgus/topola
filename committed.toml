@@ -21,6 +21,7 @@ allowed_scopes = [
   "autorouter/autoroute",
   "autorouter/autorouter",
   "autorouter/compare_detours",
+  "autorouter/conncomps",
   "autorouter/execution",
   "autorouter/history",
   "autorouter/invoker",

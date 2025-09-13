@@ -6,15 +6,11 @@ use std::collections::BTreeMap;
 
 use enum_dispatch::enum_dispatch;
 use geo::Point;
-use petgraph::{
-    data::Element,
-    prelude::StableUnGraph,
-    unionfind::UnionFind,
-    visit::{EdgeRef, IntoEdgeReferences, NodeIndexable},
-};
+use petgraph::{data::Element, prelude::StableUnGraph, visit::NodeIndexable};
 use spade::{HasPosition, InsertionError, Point2};
 
 use crate::{
+    autorouter::conncomps::Conncomps,
     drawing::{
         band::BandTermsegIndex,
         dot::FixedDotIndex,
@@ -74,11 +70,7 @@ pub struct Ratsnest {
 
 impl Ratsnest {
     pub fn new(layout: &Layout<impl AccessRules>) -> Result<Self, InsertionError> {
-        let mut unionfind = UnionFind::new(layout.drawing().geometry().graph().node_bound());
-
-        for edge in layout.drawing().geometry().graph().edge_references() {
-            unionfind.union(edge.source().index(), edge.target().index());
-        }
+        let conncomps = Conncomps::new(layout);
 
         let mut this = Self {
             graph: StableUnGraph::default(),
@@ -145,7 +137,7 @@ impl Ratsnest {
             if let Some((source, target)) = g.edge_endpoints(i) {
                 let source_index = g.node_weight(source).unwrap().node_index().index();
                 let target_index = g.node_weight(target).unwrap().node_index().index();
-                !unionfind.equiv(source_index, target_index)
+                !conncomps.unionfind().equiv(source_index, target_index)
             } else {
                 true
             }

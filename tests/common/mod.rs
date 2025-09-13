@@ -4,9 +4,9 @@
 
 use std::{fs::File, io::BufReader};
 
-use petgraph::{unionfind::UnionFind, visit::NodeIndexable};
 use topola::{
     autorouter::{
+        conncomps::Conncomps,
         history::{History, HistoryError},
         invoker::{Invoker, InvokerError},
         Autorouter,
@@ -160,7 +160,7 @@ pub fn assert_single_layer_groundless_autoroute(
     autorouter: &mut Autorouter<impl AccessMesadata>,
     layername: &str,
 ) {
-    let unionfind = unionfind(autorouter);
+    let conncomps = Conncomps::new(autorouter.board().layout());
 
     for ratline in autorouter.ratsnest().graph().edge_indices() {
         let (origin_dot, destination_dot) = ratline.ref_(autorouter).endpoint_dots();
@@ -217,8 +217,8 @@ pub fn assert_single_layer_groundless_autoroute(
 
         if let Some(netname) = autorouter.board().layout().rules().net_netname(net) {
             // We don't route ground.
-            let org = unionfind.find(origin_dot.index());
-            let desc = unionfind.find(destination_dot.index());
+            let org = conncomps.unionfind().find(origin_dot.index());
+            let desc = conncomps.unionfind().find(destination_dot.index());
 
             if netname != "GND" {
                 assert_eq!(org, desc);
@@ -255,36 +255,4 @@ pub fn assert_band_length(
         expected_length,
         rel_err
     );
-}
-
-fn unionfind(autorouter: &mut Autorouter<impl AccessMesadata>) -> UnionFind<usize> {
-    for ratline in autorouter.ratsnest().graph().edge_indices() {
-        // Accessing endpoints may create new dots because apex construction is lazy, so we access
-        // tem all before starting unionfind, as it requires a constant index bound.
-        let _ = ratline.ref_(autorouter).endpoint_dots();
-    }
-
-    let mut unionfind = UnionFind::new(
-        autorouter
-            .board()
-            .layout()
-            .drawing()
-            .geometry()
-            .graph()
-            .node_bound(),
-    );
-
-    for primitive in autorouter.board().layout().drawing().primitive_nodes() {
-        for joined in autorouter
-            .board()
-            .layout()
-            .drawing()
-            .geometry()
-            .joineds(primitive)
-        {
-            unionfind.union(primitive.index(), joined.index());
-        }
-    }
-
-    unionfind
 }

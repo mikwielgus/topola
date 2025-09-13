@@ -7,7 +7,7 @@ use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
     stable_graph::StableDiGraph,
-    visit::{EdgeRef, Walker},
+    visit::{EdgeRef, NodeIndexable, Walker},
     Direction::{Incoming, Outgoing},
 };
 use serde::{Deserialize, Serialize};
@@ -517,6 +517,18 @@ impl<
 
     pub fn bend_joints(&self, bend: BI) -> (DI, DI) {
         self.joints(bend.into())
+    }
+
+    pub fn dot_index_bound(&self) -> usize {
+        self.graph.node_bound()
+    }
+
+    pub fn seg_index_bound(&self) -> usize {
+        self.graph.node_bound()
+    }
+
+    pub fn bend_index_bound(&self) -> usize {
+        self.graph.node_bound()
     }
 }
 

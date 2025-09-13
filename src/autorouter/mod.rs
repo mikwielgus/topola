@@ -5,6 +5,7 @@
 pub mod autoroute;
 mod autorouter;
 pub mod compare_detours;
+pub mod conncomps;
 pub mod execution;
 pub mod history;
 pub mod invoker;
