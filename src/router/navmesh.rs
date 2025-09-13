@@ -48,8 +48,8 @@ impl core::fmt::Debug for NavnodeIndex {
 }
 
 impl GetIndex for NavnodeIndex {
-    fn index(&self) -> NodeIndex<usize> {
-        self.0
+    fn index(&self) -> usize {
+        self.0.index()
     }
 }
 
@@ -319,7 +319,7 @@ impl Navmesh {
 
     fn unionize_with_overlapees(
         layout: &Layout<impl AccessRules>,
-        overlapping_prenavnodes_unions: &mut UnionFind<NodeIndex<usize>>,
+        overlapping_prenavnodes_unions: &mut UnionFind<usize>,
         prenavnode: PrenavmeshNodeIndex,
     ) {
         // Ignore overlaps of a fillet.
@@ -382,17 +382,17 @@ impl Navmesh {
             PrenavmeshNodeIndex,
             Vec<(NodeIndex<usize>, NodeIndex<usize>)>,
         >,
-        overlapping_prenavnodes_unions: &UnionFind<NodeIndex<usize>>,
+        overlapping_prenavnodes_unions: &UnionFind<usize>,
         from_prenavnode: PrenavmeshNodeIndex,
         to_prenavnode: PrenavmeshNodeIndex,
     ) {
         // We assume prenavmesh nodes are fixed dots. This is an ugly shortcut,
         // since fixed bends also can be prenavnodes, but it works for now.
         let from_prenavnode_repr = PrenavmeshNodeIndex::FixedDot(GenericIndex::new(
-            overlapping_prenavnodes_unions.find(from_prenavnode.index()),
+            overlapping_prenavnodes_unions.find(from_prenavnode.index().into()),
         ));
         let to_prenavnode_repr = PrenavmeshNodeIndex::FixedDot(GenericIndex::new(
-            overlapping_prenavnodes_unions.find(to_prenavnode.index()),
+            overlapping_prenavnodes_unions.find(to_prenavnode.index().into()),
         ));
 
         Self::add_prenavedge_as_quadrinavedges(
@@ -455,7 +455,7 @@ impl Data for Navmesh {
 
 impl DataMap for Navmesh {
     fn node_weight(&self, vertex: Self::NodeId) -> Option<&Self::NodeWeight> {
-        self.graph.node_weight(vertex.index())
+        self.graph.node_weight(vertex.index().into())
     }
 
     fn edge_weight(&self, _edge: Self::EdgeId) -> Option<&Self::EdgeWeight> {
@@ -495,7 +495,11 @@ impl<'a> IntoNeighbors for &'a Navmesh {
     type Neighbors = Box<dyn Iterator<Item = NavnodeIndex> + 'a>;
 
     fn neighbors(self, vertex: Self::NodeId) -> Self::Neighbors {
-        Box::new(self.graph.neighbors(vertex.index()).map(NavnodeIndex))
+        Box::new(
+            self.graph
+                .neighbors(vertex.index().into())
+                .map(NavnodeIndex),
+        )
     }
 }
 
@@ -521,7 +525,7 @@ impl<'a> IntoEdges for &'a Navmesh {
     fn edges(self, vertex: Self::NodeId) -> Self::Edges {
         Box::new(
             self.graph
-                .edges(vertex.index())
+                .edges(vertex.index().into())
                 .map(|edge| NavmeshEdgeReference {
                     from: NavnodeIndex(edge.source()),
                     to: NavnodeIndex(edge.target()),

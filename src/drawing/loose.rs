@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT
 
 use enum_dispatch::enum_dispatch;
-use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     drawing::Drawing,

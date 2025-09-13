@@ -5,8 +5,6 @@
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 
-use petgraph::stable_graph::NodeIndex;
-
 use crate::{
     drawing::{
         graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex, PrimitiveWeight},

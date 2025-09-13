@@ -4,7 +4,7 @@
 
 use std::{fs::File, io::BufReader};
 
-use petgraph::{stable_graph::NodeIndex, unionfind::UnionFind, visit::NodeIndexable};
+use petgraph::{unionfind::UnionFind, visit::NodeIndexable};
 use topola::{
     autorouter::{
         history::{History, HistoryError},
@@ -257,7 +257,7 @@ pub fn assert_band_length(
     );
 }
 
-fn unionfind(autorouter: &mut Autorouter<impl AccessMesadata>) -> UnionFind<NodeIndex<usize>> {
+fn unionfind(autorouter: &mut Autorouter<impl AccessMesadata>) -> UnionFind<usize> {
     for ratline in autorouter.ratsnest().graph().edge_indices() {
         // Accessing endpoints may create new dots because apex construction is lazy, so we access
         // tem all before starting unionfind, as it requires a constant index bound.

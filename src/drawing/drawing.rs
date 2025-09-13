@@ -570,7 +570,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         let core = *self
             .recording_geometry_with_rtree
             .graph()
-            .neighbors(inner.index())
+            .neighbors(inner.index().into())
             .filter(|ni| {
                 matches!(
                     self.recording_geometry_with_rtree
@@ -578,14 +578,14 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                         .edge_weight(
                             self.recording_geometry_with_rtree
                                 .graph()
-                                .find_edge(inner.index(), *ni)
+                                .find_edge(inner.index().into(), *ni)
                                 .unwrap()
                         )
                         .unwrap(),
                     GeometryLabel::Core
                 )
             })
-            .map(FixedDotIndex::new)
+            .map(|node| FixedDotIndex::new(node.index()))
             .collect::<Vec<FixedDotIndex>>()
             .first()
             .unwrap();

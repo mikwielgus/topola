@@ -23,7 +23,6 @@ use crate::{
         shape::AccessShape,
         GenericNode,
     },
-    graph::GetIndex,
     layout::{Layout, NodeIndex},
     math::{intersect_linestring_and_ray, LineInGeneralForm, LineIntersection},
 };
@@ -121,11 +120,10 @@ impl<R: AccessRules> Layout<R> {
             .filter(|(_, band_uid, _)| {
                 // filter entries which are connected to either lhs or rhs (and possibly both)
                 let (bts1, bts2) = band_uid.into();
-                let (bts1, bts2) = (bts1.index(), bts2.index());
                 let geometry = self.drawing.geometry();
                 [(bts1, left), (bts1, right), (bts2, left), (bts2, right)]
                     .iter()
-                    .all(|&(x, y)| !geometry.is_joined_with(x, y))
+                    .all(|&(x, y)| !geometry.is_joined_with(*x, y))
             })
             .collect();
         bands.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));
@@ -162,11 +160,10 @@ impl<R: AccessRules> Layout<R> {
             .filter(|(_, band_uid, _)| {
                 // filter entries which are connected to rhs
                 let (bts1, bts2) = band_uid.into();
-                let (bts1, bts2) = (bts1.index(), bts2.index());
                 let geometry = self.drawing.geometry();
                 [(bts1, right), (bts2, right)]
                     .iter()
-                    .all(|&(x, y)| !geometry.is_joined_with(x, y))
+                    .all(|&(x, y)| !geometry.is_joined_with(*x, y))
             })
             .collect();
         bands.sort_by(|a, b| f64::total_cmp(&a.0, &b.0));

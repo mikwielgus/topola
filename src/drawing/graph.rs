@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT
 
 use enum_dispatch::enum_dispatch;
-use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     geometry::GetLayer,
@@ -115,7 +114,7 @@ pub enum PrimitiveWeight {
 impl crate::geometry::Retag for PrimitiveWeight {
     type Index = PrimitiveIndex;
 
-    fn retag(&self, index: NodeIndex<usize>) -> PrimitiveIndex {
+    fn retag(&self, index: usize) -> PrimitiveIndex {
         macro_rules! match_self {
             ($self:expr, $($kind:ident),*,) => {{
                 match $self {

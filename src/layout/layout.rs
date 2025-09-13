@@ -360,8 +360,11 @@ impl<R: AccessRules> Layout<R> {
             let PrimitiveIndex::FixedDot(dot) = index else {
                 return None;
             };
-            if let GenericNode::Primitive(PrimitiveWeight::FixedDot(weight)) =
-                drawing.geometry().graph().node_weight(dot.index()).unwrap()
+            if let GenericNode::Primitive(PrimitiveWeight::FixedDot(weight)) = drawing
+                .geometry()
+                .graph()
+                .node_weight(dot.index().into())
+                .unwrap()
             {
                 Some((dot, weight))
             } else {

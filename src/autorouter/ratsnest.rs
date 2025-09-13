@@ -8,7 +8,6 @@ use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
     data::Element,
-    graph::NodeIndex,
     prelude::StableUnGraph,
     unionfind::UnionFind,
     visit::{EdgeRef, IntoEdgeReferences, NodeIndexable},
@@ -78,7 +77,7 @@ impl Ratsnest {
         let mut unionfind = UnionFind::new(layout.drawing().geometry().graph().node_bound());
 
         for edge in layout.drawing().geometry().graph().edge_references() {
-            unionfind.union(edge.source(), edge.target());
+            unionfind.union(edge.source().index(), edge.target().index());
         }
 
         let mut this = Self {

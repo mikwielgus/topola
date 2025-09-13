@@ -5,7 +5,7 @@
 use std::collections::VecDeque;
 
 use enum_dispatch::enum_dispatch;
-use petgraph::{stable_graph::NodeIndex, visit::Walker};
+use petgraph::visit::Walker;
 
 use crate::{
     drawing::{

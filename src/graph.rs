@@ -15,13 +15,13 @@ pub trait MakeRef<'a, C> {
 
 #[enum_dispatch]
 pub trait GetIndex {
-    fn index(&self) -> NodeIndex<usize>;
+    fn index(&self) -> usize;
 }
 
 impl GetIndex for NodeIndex<usize> {
     #[inline(always)]
-    fn index(&self) -> NodeIndex<usize> {
-        *self
+    fn index(&self) -> usize {
+        NodeIndex::index(*self)
     }
 }
 
@@ -31,14 +31,14 @@ impl GetIndex for NodeIndex<usize> {
 #[serde(bound = "")]
 #[serde(transparent)]
 pub struct GenericIndex<W> {
-    node_index: NodeIndex<usize>,
+    node_index: usize,
     #[serde(skip)]
     marker: PhantomData<W>,
 }
 
 impl<W> GenericIndex<W> {
     #[inline]
-    pub fn new(index: NodeIndex<usize>) -> Self {
+    pub fn new(index: usize) -> Self {
         Self {
             node_index: index,
             marker: PhantomData,
@@ -58,7 +58,7 @@ impl<W> core::marker::Copy for GenericIndex<W> {}
 impl<W> core::fmt::Debug for GenericIndex<W> {
     #[inline]
     fn fmt(&self, f: &mut core::fmt::Formatter<'_>) -> core::fmt::Result {
-        core::fmt::Display::fmt(&self.node_index.index(), f)
+        core::fmt::Display::fmt(&self.node_index, f)
     }
 }
 
@@ -94,7 +94,7 @@ impl<W> core::hash::Hash for GenericIndex<W> {
 
 impl<W> GetIndex for GenericIndex<W> {
     #[inline]
-    fn index(&self) -> NodeIndex<usize> {
+    fn index(&self) -> usize {
         self.node_index
     }
 }
@@ -106,12 +106,12 @@ mod tests {
     #[test]
     fn serializable_index() {
         assert_eq!(
-            serde_json::to_string(&GenericIndex::<()>::new(NodeIndex::new(0))).unwrap(),
+            serde_json::to_string(&GenericIndex::<()>::new(0)).unwrap(),
             "0"
         );
         assert_eq!(
             serde_json::from_str::<GenericIndex<()>>("0").unwrap(),
-            GenericIndex::new(NodeIndex::new(0))
+            GenericIndex::new(0)
         );
     }
 }

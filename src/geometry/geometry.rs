@@ -6,7 +6,7 @@ use core::marker::PhantomData;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{
-    stable_graph::{NodeIndex, StableDiGraph},
+    stable_graph::StableDiGraph,
     visit::{EdgeRef, Walker},
     Direction::{Incoming, Outgoing},
 };
@@ -31,7 +31,7 @@ use crate::{
 
 pub trait Retag {
     type Index: Sized + GetIndex + PartialEq + Copy;
-    fn retag(&self, index: NodeIndex<usize>) -> Self::Index;
+    fn retag(&self, index: usize) -> Self::Index;
 }
 
 #[enum_dispatch]
@@ -75,7 +75,7 @@ pub enum GenericNode<P, C> {
 }
 
 impl<P: GetIndex, C: GetIndex> GetIndex for GenericNode<P, C> {
-    fn index(&self) -> NodeIndex<usize> {
+    fn index(&self) -> usize {
         match self {
             Self::Primitive(x) => x.index(),
             Self::Compound(x) => x.index(),
@@ -149,11 +149,11 @@ impl<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI> Geometry<PW, DW, SW, BW, CW, Cel, 
         &self.graph
     }
 
-    fn primitive_weight(&self, index: NodeIndex<usize>) -> PW
+    fn primitive_weight(&self, index: usize) -> PW
     where
         PW: Copy,
     {
-        if let GenericNode::Primitive(weight) = self.graph.node_weight(index).unwrap() {
+        if let GenericNode::Primitive(weight) = self.graph.node_weight(index.into()).unwrap() {
             *weight
         } else {
             unreachable!()
@@ -175,7 +175,11 @@ impl<
     > Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
     pub fn add_dot<W: AccessDotWeight + Into<PW>>(&mut self, weight: W) -> GenericIndex<W> {
-        GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())))
+        GenericIndex::<W>::new(
+            self.graph
+                .add_node(GenericNode::Primitive(weight.into()))
+                .index(),
+        )
     }
 
     pub(super) fn add_dot_at_index<W: AccessDotWeight + Into<PW>>(
@@ -184,7 +188,7 @@ impl<
         weight: W,
     ) {
         self.graph
-            .update_node(dot.index(), GenericNode::Primitive(weight.into()));
+            .update_node(dot.index().into(), GenericNode::Primitive(weight.into()));
     }
 
     pub fn add_seg<W: AccessSegWeight + Into<PW>>(
@@ -193,8 +197,11 @@ impl<
         to: DI,
         weight: W,
     ) -> GenericIndex<W> {
-        let seg =
-            GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())));
+        let seg = GenericIndex::<W>::new(
+            self.graph
+                .add_node(GenericNode::Primitive(weight.into()))
+                .index(),
+        );
         self.init_seg_joints(seg, from, to);
         seg
     }
@@ -207,7 +214,7 @@ impl<
         weight: W,
     ) {
         self.graph
-            .update_node(seg.index(), GenericNode::Primitive(weight.into()));
+            .update_node(seg.index().into(), GenericNode::Primitive(weight.into()));
         self.init_seg_joints(seg, from, to);
     }
 
@@ -217,10 +224,13 @@ impl<
         from: DI,
         to: DI,
     ) {
+        self.graph.update_edge(
+            from.index().into(),
+            seg.index().into(),
+            GeometryLabel::Joined,
+        );
         self.graph
-            .update_edge(from.index(), seg.index(), GeometryLabel::Joined);
-        self.graph
-            .update_edge(seg.index(), to.index(), GeometryLabel::Joined);
+            .update_edge(seg.index().into(), to.index().into(), GeometryLabel::Joined);
     }
 
     pub fn is_joined_with<I>(&self, seg: I, node: GenericNode<PI, GenericIndex<CW>>) -> bool
@@ -232,7 +242,7 @@ impl<
         match node {
             GenericNode::Primitive(prim) => self
                 .graph
-                .find_edge_undirected(seg.index(), prim.index())
+                .find_edge_undirected(seg.index().into(), prim.index().into())
                 .map_or(false, |(eidx, _direction)| {
                     matches!(self.graph.edge_weight(eidx).unwrap(), GeometryLabel::Joined)
                 }),
@@ -249,8 +259,11 @@ impl<
         core: DI,
         weight: W,
     ) -> GenericIndex<W> {
-        let bend =
-            GenericIndex::<W>::new(self.graph.add_node(GenericNode::Primitive(weight.into())));
+        let bend = GenericIndex::<W>::new(
+            self.graph
+                .add_node(GenericNode::Primitive(weight.into()))
+                .index(),
+        );
         self.init_bend_joints_and_core(bend, from, to, core);
         bend
     }
@@ -264,13 +277,13 @@ impl<
         weight: W,
     ) {
         self.graph
-            .update_node(bend.index(), GenericNode::Primitive(weight.into()));
+            .update_node(bend.index().into(), GenericNode::Primitive(weight.into()));
         self.init_bend_joints_and_core(bend, from, to, core);
     }
 
     pub(super) fn add_compound_at_index(&mut self, compound: GenericIndex<CW>, weight: CW) {
         self.graph
-            .update_node(compound.index(), GenericNode::Compound(weight));
+            .update_node(compound.index().into(), GenericNode::Compound(weight));
     }
 
     fn init_bend_joints_and_core<W: AccessBendWeight + Into<PW>>(
@@ -280,58 +293,80 @@ impl<
         to: DI,
         core: DI,
     ) {
-        self.graph
-            .update_edge(from.index(), bend.index(), GeometryLabel::Joined);
-        self.graph
-            .update_edge(bend.index(), to.index(), GeometryLabel::Joined);
-        self.graph
-            .update_edge(bend.index(), core.index(), GeometryLabel::Core);
+        self.graph.update_edge(
+            from.index().into(),
+            bend.index().into(),
+            GeometryLabel::Joined,
+        );
+        self.graph.update_edge(
+            bend.index().into(),
+            to.index().into(),
+            GeometryLabel::Joined,
+        );
+        self.graph.update_edge(
+            bend.index().into(),
+            core.index().into(),
+            GeometryLabel::Core,
+        );
     }
 
     pub fn remove_primitive(&mut self, primitive: PI) {
-        debug_assert!(self.graph.remove_node(primitive.index()).is_some());
+        debug_assert!(self.graph.remove_node(primitive.index().into()).is_some());
     }
 
     pub fn move_dot(&mut self, dot: DI, to: Point) {
         let mut weight = self.dot_weight(dot);
         weight.set_pos(to);
-        *self.graph.node_weight_mut(dot.index()).unwrap() = GenericNode::Primitive(weight.into());
+        *self.graph.node_weight_mut(dot.index().into()).unwrap() =
+            GenericNode::Primitive(weight.into());
     }
 
     pub fn shift_bend(&mut self, bend: BI, offset: f64) {
         let mut weight = self.bend_weight(bend);
         weight.set_offset(offset);
-        *self.graph.node_weight_mut(bend.index()).unwrap() = GenericNode::Primitive(weight.into());
+        *self.graph.node_weight_mut(bend.index().into()).unwrap() =
+            GenericNode::Primitive(weight.into());
     }
 
     pub fn flip_bend(&mut self, bend: BI) {
         let (from, to) = self.bend_joints(bend);
         let from_edge_weight = self
             .graph
-            .remove_edge(self.graph.find_edge(from.index(), bend.index()).unwrap())
+            .remove_edge(
+                self.graph
+                    .find_edge(from.index().into(), bend.index().into())
+                    .unwrap(),
+            )
             .unwrap();
         let to_edge_weight = self
             .graph
-            .remove_edge(self.graph.find_edge(bend.index(), to.index()).unwrap())
+            .remove_edge(
+                self.graph
+                    .find_edge(bend.index().into(), to.index().into())
+                    .unwrap(),
+            )
             .unwrap();
         self.graph
-            .update_edge(from.index(), bend.index(), to_edge_weight);
+            .update_edge(from.index().into(), bend.index().into(), to_edge_weight);
         self.graph
-            .update_edge(bend.index(), to.index(), from_edge_weight);
+            .update_edge(bend.index().into(), to.index().into(), from_edge_weight);
     }
 
     pub fn reattach_bend(&mut self, bend: BI, maybe_new_inner: Option<BI>) {
         if let Some(old_inner_edge) = self
             .graph
-            .edges_directed(bend.index(), Incoming)
+            .edges_directed(bend.index().into(), Incoming)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Outer))
         {
             debug_assert!(self.graph.remove_edge(old_inner_edge.id()).is_some());
         }
 
         if let Some(new_inner) = maybe_new_inner {
-            self.graph
-                .update_edge(new_inner.index(), bend.index(), GeometryLabel::Outer);
+            self.graph.update_edge(
+                new_inner.index().into(),
+                bend.index().into(),
+                GeometryLabel::Outer,
+            );
         }
     }
 
@@ -350,7 +385,7 @@ impl<
         PrimitiveShape::Seg(SegShape {
             from: self.dot_weight(from).pos(),
             to: self.dot_weight(to).pos(),
-            width: self.primitive_weight(seg.index()).width(),
+            width: self.primitive_weight(seg.index().into()).width(),
         })
     }
 
@@ -364,7 +399,7 @@ impl<
                 pos: core_weight.pos(),
                 r: self.inner_radius(bend),
             },
-            width: self.primitive_weight(bend.index()).width(),
+            width: self.primitive_weight(bend.index().into()).width(),
         })
     }
 
@@ -382,25 +417,27 @@ impl<
     }
 
     pub fn dot_weight(&self, dot: DI) -> DW {
-        self.primitive_weight(dot.index())
+        self.primitive_weight(dot.index().into())
             .try_into()
             .unwrap_or_else(|_| unreachable!())
     }
 
     pub fn seg_weight(&self, seg: SI) -> SW {
-        self.primitive_weight(seg.index())
+        self.primitive_weight(seg.index().into())
             .try_into()
             .unwrap_or_else(|_| unreachable!())
     }
 
     pub fn bend_weight(&self, bend: BI) -> BW {
-        self.primitive_weight(bend.index())
+        self.primitive_weight(bend.index().into())
             .try_into()
             .unwrap_or_else(|_| unreachable!())
     }
 
     pub fn compound_weight(&self, compound: GenericIndex<CW>) -> &CW {
-        if let GenericNode::Compound(weight) = self.graph.node_weight(compound.index()).unwrap() {
+        if let GenericNode::Compound(weight) =
+            self.graph.node_weight(compound.index().into()).unwrap()
+        {
             weight
         } else {
             unreachable!()
@@ -409,10 +446,10 @@ impl<
 
     fn core_weight(&self, bend: BI) -> DW {
         self.graph
-            .edges_directed(bend.index(), Outgoing)
+            .edges_directed(bend.index().into(), Outgoing)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Core))
             .map(|edge| {
-                self.primitive_weight(edge.target())
+                self.primitive_weight(edge.target().index())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
@@ -421,13 +458,13 @@ impl<
 
     pub fn joineds(&self, node: PI) -> impl Iterator<Item = PI> + '_ {
         self.graph
-            .neighbors_undirected(node.index())
+            .neighbors_undirected(node.index().into())
             .filter(move |ni| {
                 matches!(
                     self.graph
                         .edge_weight(
                             self.graph
-                                .find_edge_undirected(node.index(), *ni)
+                                .find_edge_undirected(node.index().into(), *ni)
                                 .unwrap()
                                 .0,
                         )
@@ -435,7 +472,7 @@ impl<
                     GeometryLabel::Joined
                 )
             })
-            .map(|ni| self.primitive_index(ni))
+            .map(|ni| self.primitive_index(ni.index()))
     }
 
     pub fn joined_segs(&self, dot: DI) -> impl Iterator<Item = SI> + '_ {
@@ -449,24 +486,24 @@ impl<
     fn joints(&self, node: PI) -> (DI, DI) {
         let lhs = self
             .graph
-            .edges_directed(node.index(), Incoming)
+            .edges_directed(node.index().into(), Incoming)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Joined))
             .map(|edge| edge.source());
         let rhs = self
             .graph
-            .edges_directed(node.index(), Outgoing)
+            .edges_directed(node.index().into(), Outgoing)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Joined))
             .map(|edge| edge.target());
 
         (
             lhs.map(|ni| {
-                self.primitive_index(ni)
+                self.primitive_index(ni.index())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
             .unwrap(),
             rhs.map(|ni| {
-                self.primitive_index(ni)
+                self.primitive_index(ni.index())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
@@ -486,7 +523,7 @@ impl<
 impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
     Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
-    fn primitive_index(&self, index: NodeIndex<usize>) -> PI {
+    fn primitive_index(&self, index: usize) -> PI {
         self.primitive_weight(index).retag(index)
     }
 }
@@ -543,12 +580,12 @@ impl<
         BI: GetIndex,
     > Geometry<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
-    pub fn all_rails(&self, node: NodeIndex<usize>) -> impl Iterator<Item = BI> + '_ {
+    pub fn all_rails(&self, index: usize) -> impl Iterator<Item = BI> + '_ {
         self.graph
-            .edges_directed(node, Incoming)
+            .edges_directed(index.into(), Incoming)
             .filter(|edge| matches!(edge.weight(), GeometryLabel::Core))
             .map(|edge| {
-                self.primitive_index(edge.source())
+                self.primitive_index(edge.source().index())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
@@ -556,10 +593,10 @@ impl<
 
     pub fn core(&self, bend: BI) -> DI {
         self.graph
-            .edges_directed(bend.index(), Outgoing)
+            .edges_directed(bend.index().into(), Outgoing)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Core))
             .map(|edge| {
-                self.primitive_index(edge.target())
+                self.primitive_index(edge.target().index())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
@@ -568,10 +605,10 @@ impl<
 
     pub fn inner(&self, bend: BI) -> Option<BI> {
         self.graph
-            .edges_directed(bend.index(), Incoming)
+            .edges_directed(bend.index().into(), Incoming)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Outer))
             .map(|edge| {
-                self.primitive_index(edge.source())
+                self.primitive_index(edge.source().index())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
@@ -579,10 +616,10 @@ impl<
 
     pub fn outers(&self, bend: BI) -> impl Iterator<Item = BI> + '_ {
         self.graph
-            .edges_directed(bend.index(), Outgoing)
+            .edges_directed(bend.index().into(), Outgoing)
             .filter(|edge| matches!(edge.weight(), GeometryLabel::Outer))
             .map(|edge| {
-                self.primitive_index(edge.target())
+                self.primitive_index(edge.target().index())
                     .try_into()
                     .unwrap_or_else(|_| unreachable!())
             })
@@ -600,11 +637,11 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cel: Copy, PI: Copy, D
     type EntryLabel = Cel;
 
     fn add_compound(&mut self, weight: CW) -> GenericIndex<CW> {
-        GenericIndex::<CW>::new(self.graph.add_node(GenericNode::Compound(weight)))
+        GenericIndex::<CW>::new(self.graph.add_node(GenericNode::Compound(weight)).index())
     }
 
     fn remove_compound(&mut self, compound: GenericIndex<CW>) {
-        debug_assert!(self.graph.remove_node(compound.index()).is_some());
+        debug_assert!(self.graph.remove_node(compound.index().into()).is_some());
     }
 
     fn add_to_compound<I>(&mut self, primitive: I, entry_label: Cel, compound: GenericIndex<CW>)
@@ -612,14 +649,16 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cel: Copy, PI: Copy, D
         I: Copy + GetIndex,
     {
         self.graph.update_edge(
-            primitive.index(),
-            compound.index(),
+            primitive.index().into(),
+            compound.index().into(),
             GeometryLabel::Compound(entry_label),
         );
     }
 
     fn compound_weight(&self, compound: GenericIndex<CW>) -> &CW {
-        if let GenericNode::Compound(weight) = self.graph.node_weight(compound.index()).unwrap() {
+        if let GenericNode::Compound(weight) =
+            self.graph.node_weight(compound.index().into()).unwrap()
+        {
             weight
         } else {
             unreachable!()
@@ -631,10 +670,10 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cel: Copy, PI: Copy, D
         compound: GenericIndex<CW>,
     ) -> impl Iterator<Item = (Cel, Self::GeneralIndex)> + '_ {
         self.graph
-            .edges_directed(compound.index(), Incoming)
+            .edges_directed(compound.index().into(), Incoming)
             .filter_map(|edge| {
                 if let GeometryLabel::Compound(entry_label) = *edge.weight() {
-                    Some((entry_label, self.primitive_index(edge.source())))
+                    Some((entry_label, self.primitive_index(edge.source().index())))
                 } else {
                     None
                 }
@@ -646,10 +685,10 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cel: Copy, PI: Copy, D
         I: Copy + GetIndex,
     {
         self.graph
-            .edges_directed(node.index(), Outgoing)
+            .edges_directed(node.index().into(), Outgoing)
             .filter_map(|edge| {
                 if let GeometryLabel::Compound(entry_label) = *edge.weight() {
-                    Some((entry_label, GenericIndex::new(edge.target())))
+                    Some((entry_label, GenericIndex::new(edge.target().index())))
                 } else {
                     None
                 }

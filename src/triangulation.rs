@@ -39,15 +39,15 @@ impl<I: GetIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Default>
     }
 
     pub fn add_vertex(&mut self, weight: VW) -> Result<(), InsertionError> {
-        let index = weight.node_index().index().index();
+        let index = weight.node_index().index();
         self.trianvertex_to_handle[index] =
             Some(spade::Triangulation::insert(&mut self.cdt, weight)?);
         Ok(())
     }
 
     pub fn add_constraint_edge(&mut self, from: VW, to: VW) -> Result<bool, InsertionError> {
-        let from_index = from.node_index().index().index();
-        let to_index = to.node_index().index().index();
+        let from_index = from.node_index().index();
+        let to_index = to.node_index().index();
 
         // It is possible for one or both constraint edge endpoint vertices to
         // not exist in the triangulation even after everything has been added.
@@ -75,13 +75,13 @@ impl<I: GetIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Default>
 
     pub fn weight(&self, vertex: I) -> &VW {
         spade::Triangulation::s(&self.cdt)
-            .vertex_data(self.trianvertex_to_handle[vertex.index().index()].unwrap())
+            .vertex_data(self.trianvertex_to_handle[vertex.index()].unwrap())
     }
 
     pub fn weight_mut(&mut self, vertex: I) -> &mut VW {
         spade::Triangulation::vertex_data_mut(
             &mut self.cdt,
-            self.trianvertex_to_handle[vertex.index().index()].unwrap(),
+            self.trianvertex_to_handle[vertex.index()].unwrap(),
         )
     }
 
@@ -92,7 +92,7 @@ impl<I: GetIndex, VW: GetTrianvertexNodeIndex<I> + HasPosition, EW: Default>
     }
 
     fn handle(&self, vertex: I) -> FixedVertexHandle {
-        self.trianvertex_to_handle[vertex.index().index()].unwrap()
+        self.trianvertex_to_handle[vertex.index()].unwrap()
     }
 
     pub fn position(&self, vertex: I) -> Point<<VW as HasPosition>::Scalar>
@@ -328,7 +328,7 @@ impl<
     }
 
     fn to_index(&self, node: I) -> usize {
-        node.index().index()
+        node.index()
     }
 
     fn from_index(&self, index: usize) -> I {

@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT
 
 use enum_dispatch::enum_dispatch;
-use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     drawing::{
@@ -200,7 +199,7 @@ impl<'a, W, CW, Cel, R> GenericPrimitive<'a, W, CW, Cel, R> {
             .drawing
             .geometry()
             .graph()
-            .node_weight(self.index.index())
+            .node_weight(self.index.index().into())
             .unwrap()
         {
             *weight
@@ -226,7 +225,7 @@ impl<W, CW, Cel, R> GetDrawing for GenericPrimitive<'_, W, CW, Cel, R> {
 }
 
 impl<W, CW, Cel, R> GetIndex for GenericPrimitive<'_, W, CW, Cel, R> {
-    fn index(&self) -> NodeIndex<usize> {
+    fn index(&self) -> usize {
         self.index.index()
     }
 }

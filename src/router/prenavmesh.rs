@@ -5,7 +5,7 @@
 use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
-use petgraph::{stable_graph::NodeIndex, visit::NodeIndexable};
+use petgraph::visit::NodeIndexable;
 use spade::{HasPosition, InsertionError, Point2};
 
 use crate::{

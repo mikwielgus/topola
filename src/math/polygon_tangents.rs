@@ -284,98 +284,98 @@ mod tests {
     #[test]
     fn petp00() {
         let poly_ext = &[
-            (point! { x: 0., y: 0. }, FixedDotIndex::new(0.into())),
-            (point! { x: 1., y: 0. }, FixedDotIndex::new(1.into())),
-            (point! { x: 1., y: 1. }, FixedDotIndex::new(2.into())),
-            (point! { x: 0., y: 1. }, FixedDotIndex::new(3.into())),
+            (point! { x: 0., y: 0. }, FixedDotIndex::new(0)),
+            (point! { x: 1., y: 0. }, FixedDotIndex::new(1)),
+            (point! { x: 1., y: 1. }, FixedDotIndex::new(2)),
+            (point! { x: 0., y: 1. }, FixedDotIndex::new(3)),
         ];
         let origin = point! { x: 0.5, y: -1.0 };
         assert_eq!(
             petp(poly_ext, false, origin),
-            Ok((FixedDotIndex::new(1.into()), FixedDotIndex::new(0.into())))
+            Ok((FixedDotIndex::new(1), FixedDotIndex::new(0)))
         );
     }
 
     #[test]
     fn petp00cw() {
         let poly_ext = &[
-            (point! { x: 0., y: 0. }, FixedDotIndex::new(0.into())),
-            (point! { x: 0., y: 1. }, FixedDotIndex::new(3.into())),
-            (point! { x: 1., y: 1. }, FixedDotIndex::new(2.into())),
-            (point! { x: 1., y: 0. }, FixedDotIndex::new(1.into())),
+            (point! { x: 0., y: 0. }, FixedDotIndex::new(0)),
+            (point! { x: 0., y: 1. }, FixedDotIndex::new(3)),
+            (point! { x: 1., y: 1. }, FixedDotIndex::new(2)),
+            (point! { x: 1., y: 0. }, FixedDotIndex::new(1)),
         ];
         let origin = point! { x: 0.5, y: -1.0 };
         assert_eq!(
             petp(poly_ext, true, origin),
-            Ok((FixedDotIndex::new(1.into()), FixedDotIndex::new(0.into())))
+            Ok((FixedDotIndex::new(1), FixedDotIndex::new(0)))
         );
     }
 
     #[test]
     fn triangle() {
         let poly_ext = &[
-            (point! { x: 0., y: 0. }, FixedDotIndex::new(0.into())),
-            (point! { x: 1., y: 1. }, FixedDotIndex::new(1.into())),
-            (point! { x: 0., y: 2. }, FixedDotIndex::new(2.into())),
+            (point! { x: 0., y: 0. }, FixedDotIndex::new(0)),
+            (point! { x: 1., y: 1. }, FixedDotIndex::new(1)),
+            (point! { x: 0., y: 2. }, FixedDotIndex::new(2)),
         ];
         let origin = point! { x: 2., y: 1. };
         assert_eq!(
             petp(poly_ext, false, origin),
-            Ok((FixedDotIndex::new(2.into()), FixedDotIndex::new(0.into())))
+            Ok((FixedDotIndex::new(2), FixedDotIndex::new(0)))
         );
     }
 
     #[test]
     fn triangle_cw() {
         let poly_ext = &[
-            (point! { x: 0., y: 0. }, FixedDotIndex::new(0.into())),
-            (point! { x: 0., y: 2. }, FixedDotIndex::new(2.into())),
-            (point! { x: 1., y: 1. }, FixedDotIndex::new(1.into())),
+            (point! { x: 0., y: 0. }, FixedDotIndex::new(0)),
+            (point! { x: 0., y: 2. }, FixedDotIndex::new(2)),
+            (point! { x: 1., y: 1. }, FixedDotIndex::new(1)),
         ];
         let origin = point! { x: 2., y: 1. };
         assert_eq!(
             petp(poly_ext, true, origin),
-            Ok((FixedDotIndex::new(2.into()), FixedDotIndex::new(0.into())))
+            Ok((FixedDotIndex::new(2), FixedDotIndex::new(0)))
         );
     }
 
     #[test]
     fn handover00() {
         let poly_ext_src = &[
-            (point! { x: 4., y: 0. }, FixedDotIndex::new(0.into())),
-            (point! { x: 3., y: 3. }, FixedDotIndex::new(1.into())),
-            (point! { x: 1., y: 2. }, FixedDotIndex::new(2.into())),
-            (point! { x: 1., y: -2. }, FixedDotIndex::new(3.into())),
-            (point! { x: 3., y: -3. }, FixedDotIndex::new(4.into())),
+            (point! { x: 4., y: 0. }, FixedDotIndex::new(0)),
+            (point! { x: 3., y: 3. }, FixedDotIndex::new(1)),
+            (point! { x: 1., y: 2. }, FixedDotIndex::new(2)),
+            (point! { x: 1., y: -2. }, FixedDotIndex::new(3)),
+            (point! { x: 3., y: -3. }, FixedDotIndex::new(4)),
         ];
         let source = CachedPolyExt::new(poly_ext_src, false);
         let source = &source;
 
         let poly_ext_trg = &[
-            (point! { x: -4., y: 0. }, FixedDotIndex::new(10.into())),
-            (point! { x: -3., y: 3. }, FixedDotIndex::new(11.into())),
-            (point! { x: -1., y: 2. }, FixedDotIndex::new(12.into())),
-            (point! { x: -1., y: -2. }, FixedDotIndex::new(13.into())),
-            (point! { x: -3., y: -3. }, FixedDotIndex::new(14.into())),
+            (point! { x: -4., y: 0. }, FixedDotIndex::new(10)),
+            (point! { x: -3., y: 3. }, FixedDotIndex::new(11)),
+            (point! { x: -1., y: 2. }, FixedDotIndex::new(12)),
+            (point! { x: -1., y: -2. }, FixedDotIndex::new(13)),
+            (point! { x: -3., y: -3. }, FixedDotIndex::new(14)),
         ];
         let target = CachedPolyExt::new(poly_ext_trg, true);
         let target = &target;
 
         assert_eq!(
             pehov(source, CoCw, target, CoCw),
-            Some((FixedDotIndex::new(1.into()), FixedDotIndex::new(11.into())))
+            Some((FixedDotIndex::new(1), FixedDotIndex::new(11)))
         );
         assert_eq!(
             pehov(source, CoCw, target, Cw),
-            Some((FixedDotIndex::new(2.into()), FixedDotIndex::new(13.into())))
+            Some((FixedDotIndex::new(2), FixedDotIndex::new(13)))
         );
         assert_eq!(
             pehov(source, Cw, target, CoCw),
-            Some((FixedDotIndex::new(3.into()), FixedDotIndex::new(12.into())))
+            Some((FixedDotIndex::new(3), FixedDotIndex::new(12)))
         );
         assert_eq!(
             pehov(source, Cw, target, Cw),
-            Some((FixedDotIndex::new(4.into()), FixedDotIndex::new(14.into())))
+            Some((FixedDotIndex::new(4), FixedDotIndex::new(14)))
         );
     }
 }
