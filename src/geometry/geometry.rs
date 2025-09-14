@@ -530,6 +530,10 @@ impl<
     pub fn bend_index_bound(&self) -> usize {
         self.graph.node_bound()
     }
+
+    pub fn compound_index_bound(&self) -> usize {
+        self.graph.node_bound()
+    }
 }
 
 impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW, Cel, PI, DI, SI, BI>

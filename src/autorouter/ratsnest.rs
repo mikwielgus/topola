@@ -2,12 +2,15 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::BTreeMap;
+use std::{
+    collections::BTreeMap,
+    ops::{Index, IndexMut},
+};
 
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{data::Element, prelude::StableUnGraph, visit::NodeIndexable};
-use spade::{HasPosition, InsertionError, Point2};
+use spade::{handles::FixedVertexHandle, HasPosition, InsertionError, Point2};
 
 use crate::{
     autorouter::conncomps::Conncomps,
@@ -64,6 +67,41 @@ impl HasPosition for RatvertexWeight {
     }
 }
 
+#[derive(Clone)]
+struct RatvertexToHandleMap {
+    fixed_dot_to_handle: Box<[Option<FixedVertexHandle>]>,
+    poly_to_handle: Box<[Option<FixedVertexHandle>]>,
+}
+
+impl RatvertexToHandleMap {
+    pub fn new(fixed_dot_bound: usize, poly_bound: usize) -> Self {
+        Self {
+            fixed_dot_to_handle: vec![None; fixed_dot_bound].into_boxed_slice(),
+            poly_to_handle: vec![None; poly_bound].into_boxed_slice(),
+        }
+    }
+}
+
+impl Index<RatvertexIndex> for RatvertexToHandleMap {
+    type Output = Option<FixedVertexHandle>;
+
+    fn index(&self, ratvertex: RatvertexIndex) -> &Self::Output {
+        match ratvertex {
+            RatvertexIndex::FixedDot(dot) => &self.fixed_dot_to_handle[dot.index()],
+            RatvertexIndex::Poly(bend) => &self.poly_to_handle[bend.index()],
+        }
+    }
+}
+
+impl IndexMut<RatvertexIndex> for RatvertexToHandleMap {
+    fn index_mut(&mut self, ratvertex: RatvertexIndex) -> &mut Self::Output {
+        match ratvertex {
+            RatvertexIndex::FixedDot(dot) => &mut self.fixed_dot_to_handle[dot.index()],
+            RatvertexIndex::Poly(bend) => &mut self.poly_to_handle[bend.index()],
+        }
+    }
+}
+
 pub struct Ratsnest {
     graph: StableUnGraph<RatvertexWeight, RatlineWeight, usize>,
 }
@@ -77,7 +115,6 @@ impl Ratsnest {
         };
 
         let mut triangulations = BTreeMap::new();
-        let node_bound = layout.drawing().geometry().graph().node_bound();
 
         for layer in 0..layout.drawing().layer_count() {
             let mut handle_ratvertex_weight =
@@ -85,7 +122,12 @@ impl Ratsnest {
                     if let Some(net) = maybe_net {
                         triangulations
                             .entry((layer, net))
-                            .or_insert_with(|| Triangulation::new(node_bound))
+                            .or_insert_with(|| {
+                                Triangulation::new(RatvertexToHandleMap::new(
+                                    layout.drawing().geometry().dot_index_bound(),
+                                    layout.drawing().geometry().compound_index_bound(),
+                                ))
+                            })
                             .add_vertex(RatvertexWeight { vertex, pos })?;
                     }
                     Ok(())

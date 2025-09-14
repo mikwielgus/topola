@@ -13,7 +13,7 @@ use petgraph::{
     unionfind::UnionFind,
     visit::{
         Data, EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges, IntoNeighbors,
-        IntoNodeIdentifiers, NodeIndexable, Walker,
+        IntoNodeIdentifiers, Walker,
     },
 };
 use spade::InsertionError;
@@ -163,7 +163,8 @@ impl Navmesh {
 
         let mut prenavnode_to_navnodes = BTreeMap::new();
         let mut overlapping_prenavnodes_unions =
-            UnionFind::new(prenavmesh.triangulation().node_bound());
+        // FIXME: This bound is incorrect. You can't actually unionize dots with bends.
+            UnionFind::new(layout.drawing().geometry().dot_index_bound());
 
         for prenavnode in prenavmesh.triangulation().node_identifiers() {
             if prenavnode == origin.into() {

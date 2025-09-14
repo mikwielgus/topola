@@ -2,11 +2,13 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use std::ops::{Index, IndexMut};
+
 use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::visit::NodeIndexable;
-use spade::{HasPosition, InsertionError, Point2};
+use spade::{handles::FixedVertexHandle, HasPosition, InsertionError, Point2};
 
 use crate::{
     drawing::{
@@ -128,9 +130,44 @@ impl PrenavmeshConstraint {
     }
 }
 
+#[derive(Clone)]
+pub struct PrenavnodeToHandleMap {
+    fixed_dot_to_handle: Box<[Option<FixedVertexHandle>]>,
+    fixed_bend_to_handle: Box<[Option<FixedVertexHandle>]>,
+}
+
+impl PrenavnodeToHandleMap {
+    pub fn new(fixed_dot_bound: usize, fixed_bend_bound: usize) -> Self {
+        Self {
+            fixed_dot_to_handle: vec![None; fixed_dot_bound].into_boxed_slice(),
+            fixed_bend_to_handle: vec![None; fixed_bend_bound].into_boxed_slice(),
+        }
+    }
+}
+
+impl Index<PrenavmeshNodeIndex> for PrenavnodeToHandleMap {
+    type Output = Option<FixedVertexHandle>;
+
+    fn index(&self, prenavnode: PrenavmeshNodeIndex) -> &Self::Output {
+        match prenavnode {
+            PrenavmeshNodeIndex::FixedDot(dot) => &self.fixed_dot_to_handle[dot.index()],
+            PrenavmeshNodeIndex::FixedBend(bend) => &self.fixed_bend_to_handle[bend.index()],
+        }
+    }
+}
+
+impl IndexMut<PrenavmeshNodeIndex> for PrenavnodeToHandleMap {
+    fn index_mut(&mut self, prenavnode: PrenavmeshNodeIndex) -> &mut Self::Output {
+        match prenavnode {
+            PrenavmeshNodeIndex::FixedDot(dot) => &mut self.fixed_dot_to_handle[dot.index()],
+            PrenavmeshNodeIndex::FixedBend(bend) => &mut self.fixed_bend_to_handle[bend.index()],
+        }
+    }
+}
+
 #[derive(Clone, Getters)]
 pub struct Prenavmesh {
-    triangulation: Triangulation<PrenavmeshNodeIndex, PrenavmeshWeight, ()>,
+    triangulation: Triangulation<PrenavmeshNodeIndex, PrenavnodeToHandleMap, PrenavmeshWeight, ()>,
     constraints: Vec<PrenavmeshConstraint>,
 }
 
@@ -142,7 +179,10 @@ impl Prenavmesh {
         _options: RouterOptions,
     ) -> Result<Self, NavmeshError> {
         let mut this = Self {
-            triangulation: Triangulation::new(layout.drawing().geometry().graph().node_bound()),
+            triangulation: Triangulation::new(PrenavnodeToHandleMap::new(
+                layout.drawing().geometry().dot_index_bound(),
+                layout.drawing().geometry().bend_index_bound(),
+            )),
             constraints: vec![],
         };
 
