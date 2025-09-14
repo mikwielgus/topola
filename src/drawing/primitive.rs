@@ -13,7 +13,7 @@ use crate::{
         seg::{FixedSegWeight, LoneLooseSegWeight, SegIndex, SeqLooseSegIndex, SeqLooseSegWeight},
         Drawing,
     },
-    geometry::{primitive::PrimitiveShape, GenericNode, GetLayer, GetOffset, GetWidth, Retag},
+    geometry::{primitive::PrimitiveShape, GetLayer, GetOffset, GetWidth},
     graph::{GenericIndex, GetIndex},
 };
 
@@ -53,10 +53,6 @@ pub trait GetLimbs {
     fn bends(&self) -> Vec<BendIndex> {
         vec![]
     }
-}
-
-pub trait GetInterior<T> {
-    fn interior(&self) -> Vec<T>;
 }
 
 pub trait GetOtherJoint: GetJoints {
@@ -117,7 +113,9 @@ macro_rules! impl_primitive {
         impl<CW, Cel, R> GetWeight for $primitive_refstruct<'_, CW, Cel, R> {
             type Weight = $weight_struct;
             fn weight(&self) -> $weight_struct {
-                if let PrimitiveWeight::$primitive_variant(weight) = self.tagged_weight() {
+                if let PrimitiveWeight::$primitive_variant(weight) =
+                    self.drawing.geometry().primitive_weight(self.index.index())
+                {
                     weight
                 } else {
                     unreachable!()
@@ -192,26 +190,6 @@ pub struct GenericPrimitive<'a, W, CW, Cel, R> {
 impl<'a, W, CW, Cel, R> GenericPrimitive<'a, W, CW, Cel, R> {
     pub fn new(index: GenericIndex<W>, drawing: &'a Drawing<CW, Cel, R>) -> Self {
         Self { index, drawing }
-    }
-
-    fn tagged_weight(&self) -> PrimitiveWeight {
-        if let GenericNode::Primitive(weight) = self
-            .drawing
-            .geometry()
-            .graph()
-            .node_weight(self.index.index().into())
-            .unwrap()
-        {
-            *weight
-        } else {
-            unreachable!()
-        }
-    }
-}
-
-impl<W, CW, Cel, R> GetInterior<PrimitiveIndex> for GenericPrimitive<'_, W, CW, Cel, R> {
-    fn interior(&self) -> Vec<PrimitiveIndex> {
-        vec![self.tagged_weight().retag(self.index.index())]
     }
 }
 

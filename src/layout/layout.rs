@@ -356,15 +356,12 @@ impl<R: AccessRules> Layout<R> {
         fn handle_fixed_dot<R: AccessRules>(
             drawing: &Drawing<CompoundWeight, CompoundEntryLabel, R>,
             index: PrimitiveIndex,
-        ) -> Option<(FixedDotIndex, &FixedDotWeight)> {
+        ) -> Option<(FixedDotIndex, FixedDotWeight)> {
             let PrimitiveIndex::FixedDot(dot) = index else {
                 return None;
             };
-            if let GenericNode::Primitive(PrimitiveWeight::FixedDot(weight)) = drawing
-                .geometry()
-                .graph()
-                .node_weight(dot.index().into())
-                .unwrap()
+            if let PrimitiveWeight::FixedDot(weight) =
+                drawing.geometry().primitive_weight(dot.index())
             {
                 Some((dot, weight))
             } else {

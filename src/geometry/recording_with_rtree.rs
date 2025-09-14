@@ -48,8 +48,8 @@ impl<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
         *self.geometry_with_rtree.layer_count()
     }
 
-    pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel<Cel>, usize> {
-        self.geometry_with_rtree.graph()
+    pub fn node_count(&self) -> usize {
+        self.geometry_with_rtree.node_count()
     }
 }
 

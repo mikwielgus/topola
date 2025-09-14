@@ -62,8 +62,8 @@ impl<PW: Clone, DW, SW, BW, CW: Clone, Cel: Clone, PI: Clone, DI, SI, BI> Clone
 impl<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
     GeometryWithRtree<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 {
-    pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel<Cel>, usize> {
-        self.geometry.graph()
+    pub fn node_count(&self) -> usize {
+        self.geometry.node_count()
     }
 }
 

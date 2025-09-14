@@ -5,8 +5,7 @@
 use super::{
     bend::LooseBendIndex,
     dot::LooseDotIndex,
-    graph::PrimitiveIndex,
-    primitive::{GetInterior, GetJoints, GetOtherJoint, LooseBendRef, LooseDotRef},
+    primitive::{GetJoints, GetOtherJoint, LooseBendRef, LooseDotRef},
     rules::AccessRules,
     seg::SeqLooseSegIndex,
     Drawing,
@@ -34,12 +33,6 @@ impl Cane {
         let dot = LooseBendRef::new(bend, drawing).other_joint(dot);
         let seg = LooseDotRef::new(dot, drawing).seg().unwrap();
         Self { bend, dot, seg }
-    }
-}
-
-impl GetInterior<PrimitiveIndex> for Cane {
-    fn interior(&self) -> Vec<PrimitiveIndex> {
-        vec![self.bend.into(), self.dot.into(), self.seg.into()]
     }
 }
 

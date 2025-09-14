@@ -141,15 +141,11 @@ impl<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI> Geometry<PW, DW, SW, BW, CW, Cel, 
         }
     }
 
-    // we could use `derive_getters` to generate these, but `Geometry` only wraps a single
-    // field that actually contains data...
-
-    #[inline(always)]
-    pub fn graph(&self) -> &StableDiGraph<GenericNode<PW, CW>, GeometryLabel<Cel>, usize> {
-        &self.graph
+    pub fn node_count(&self) -> usize {
+        self.graph.node_count()
     }
 
-    fn primitive_weight(&self, index: usize) -> PW
+    pub fn primitive_weight(&self, index: usize) -> PW
     where
         PW: Copy,
     {

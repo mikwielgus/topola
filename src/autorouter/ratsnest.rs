@@ -9,7 +9,7 @@ use std::{
 
 use enum_dispatch::enum_dispatch;
 use geo::Point;
-use petgraph::{data::Element, prelude::StableUnGraph, visit::NodeIndexable};
+use petgraph::{data::Element, prelude::StableUnGraph};
 use spade::{handles::FixedVertexHandle, HasPosition, InsertionError, Point2};
 
 use crate::{
