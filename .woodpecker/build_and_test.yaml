@@ -29,7 +29,8 @@ steps:
       CARGO_TERM_COLOR: always
     commands:
       - rustup default "$CHANNEL"
-      - cargo test -j4 --verbose --no-default-features --features "$FEATURES"
+      - cargo binstall cargo-nextest --secure
+      - cargo nextest -j4 --verbose --no-default-features --features "$FEATURES"
     when:
       event: [pull_request, push, tag]
       # Only run tests for stable channel to avoid straining Codeberg's CI.
