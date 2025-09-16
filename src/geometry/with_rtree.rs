@@ -68,7 +68,7 @@ impl<PW, DW, SW, BW, CW, Cel, PI, DI, SI, BI>
 }
 
 #[debug_invariant(self.test_envelopes())]
-#[debug_invariant(self.geometry.graph().node_count() == self.rtree.size())]
+#[debug_invariant(self.geometry.node_count() == self.rtree.size())]
 impl<
         PW: GetWidth + GetLayer + TryInto<DW> + TryInto<SW> + TryInto<BW> + Retag<Index = PI> + Copy,
         DW: AccessDotWeight + Into<PW> + GetLayer,
