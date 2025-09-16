@@ -293,8 +293,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(())
     }
 
-    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     pub fn add_fixed_dot(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -303,13 +303,13 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         self.add_dot(recorder, weight, &|_drawing, _infringer, _infringee| true)
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() - 1))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() - 1))]
     pub fn remove_fixed_dot(&mut self, recorder: &mut DrawingEdit<CW, Cel>, dot: FixedDotIndex) {
         self.recording_geometry_with_rtree
             .remove_dot(recorder, dot.into());
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
     pub fn add_fixed_dot_infringably(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -318,8 +318,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         self.add_dot_infringably(recorder, weight)
     }
 
-    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     fn add_dot<W: AccessDotWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -335,8 +335,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(dot)
     }
 
-    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     pub fn add_fixed_seg(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -353,7 +353,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         )
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
     pub fn add_fixed_seg_infringably(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -364,8 +364,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         self.add_seg_infringably(recorder, from.into(), to.into(), weight)
     }
 
-    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     pub fn add_lone_loose_seg(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -383,8 +383,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(seg)
     }
 
-    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     pub fn add_seq_loose_seg(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -403,7 +403,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(seg)
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() - 1))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() - 1))]
     pub fn remove_termseg(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -413,8 +413,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             .remove_seg(recorder, termseg.into())
     }
 
-    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     fn add_seg<W: AccessSegWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -472,8 +472,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(seg)
     }
 
-    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     fn add_loose_bend(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -515,8 +515,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         }
     }
 
-    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     fn add_core_bend<W: AccessBendWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -537,8 +537,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(bend)
     }
 
-    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
-    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
+    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     fn add_outer_bend(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -566,13 +566,13 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(bend)
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     pub fn flip_bend(&mut self, recorder: &mut DrawingEdit<CW, Cel>, bend: FixedBendIndex) {
         self.recording_geometry_with_rtree
             .flip_bend(recorder, bend.into());
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     fn reattach_bend(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -586,8 +586,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         );
     }
 
-    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 4))]
-    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     pub fn insert_cane(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -626,7 +626,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(cane)
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     fn update_this_and_outward_bows(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -706,8 +706,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(())
     }
 
-    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 4))]
-    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 4))]
+    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     pub fn add_cane(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -773,7 +773,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         })
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() - 4))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() - 4))]
     pub fn remove_cane(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -809,7 +809,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Cane::from_dot(dot, self)
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     pub fn move_dot(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -832,7 +832,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         }
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     fn move_dot_with_infringement_filtering(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -867,7 +867,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         Ok(())
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
     fn shift_bend_with_infringement_filtering(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -895,7 +895,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
 }
 
 impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
     fn add_dot_infringably<W: AccessDotWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -907,7 +907,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         self.recording_geometry_with_rtree.add_dot(recorder, weight)
     }
 
-    #[debug_ensures(self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() + 1))]
+    #[debug_ensures(self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() + 1))]
     fn add_seg_infringably<W: AccessSegWeight + Into<PrimitiveWeight> + GetLayer>(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
@@ -955,8 +955,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         );
     }
 
-    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count()))]
-    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.total_node_count() == old(self.recording_geometry_with_rtree.total_node_count() - 1))]
+    #[debug_ensures(ret.is_ok() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count()))]
+    #[debug_ensures(ret.is_err() -> self.recording_geometry_with_rtree.node_count() == old(self.recording_geometry_with_rtree.node_count() - 1))]
     fn fail_and_remove_if_infringes_except(
         &mut self,
         recorder: &mut DrawingEdit<CW, Cel>,
