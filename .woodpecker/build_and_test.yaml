@@ -6,6 +6,12 @@ matrix:
   include:
     - CHANNEL: stable
       FEATURES: disable_contracts
+      OPT_LEVEL: 3
+      DEBUG: false
+    - CHANNEL: stable
+      FEATURES: disable_contracts
+      OPT_LEVEL: 1
+      DEBUG: true
     - CHANNEL: nightly
       FEATURES:
 
