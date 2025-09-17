@@ -48,7 +48,10 @@ pub fn replay_and_assert(invoker: &mut Invoker<SpecctraMesadata>, filename: &str
     let history: History = serde_json::from_reader(file).unwrap();
 
     invoker.replay(history);
+    assert_undo_redo_replay(invoker, filename);
+}
 
+pub fn assert_undo_redo_replay(invoker: &mut Invoker<SpecctraMesadata>, filename: &str) {
     let prev_node_count = invoker.autorouter().board().layout().drawing().node_count();
 
     // Sanity test: check if node count remained the same after some attempts at undo-redo.

@@ -15,7 +15,7 @@ use topola::{
 mod common;
 
 #[test]
-fn test_tht_de9_to_tht_de9() {
+fn test_tht_de9_to_tht_de9_in_order() {
     let autorouter =
         common::load_design("tests/single_layer/tht_de9_to_tht_de9/tht_de9_to_tht_de9.dsn");
     let mut invoker = common::create_invoker_and_assert(autorouter);
@@ -24,16 +24,23 @@ fn test_tht_de9_to_tht_de9() {
         "tests/single_layer/tht_de9_to_tht_de9/autoroute_all_in_an_order.cmd",
     );
 
-    let (mut autorouter, history, ..) = invoker.dissolve();
-
+    let (mut autorouter, ..) = invoker.dissolve();
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
+}
 
-    invoker = Invoker::new_with_history(autorouter, history);
+#[test]
+fn test_tht_de9_to_tht_de9() {
+    let autorouter =
+        common::load_design("tests/single_layer/tht_de9_to_tht_de9/tht_de9_to_tht_de9.dsn");
+    let mut invoker = common::create_invoker_and_assert(autorouter);
     common::undo_all_and_assert(&mut invoker);
     common::replay_and_assert(
         &mut invoker,
         "tests/single_layer/tht_de9_to_tht_de9/autoroute_all.cmd",
     );
+
+    let (mut autorouter, ..) = invoker.dissolve();
+    common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
 }
 
 #[test]
