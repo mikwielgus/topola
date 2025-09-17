@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 use rstest::rstest;
+use rstest_reuse::{self, *};
 use topola::{
     autorouter::{
         execution::Command,
@@ -15,10 +16,14 @@ use topola::{
 
 mod common;
 
+#[template]
 #[rstest]
 #[case::plain("")]
 #[case::with_undo_redo_replay("with_undo_redo_replay")]
-fn test_tht_de9_to_tht_de9_in_order(#[case] variant: &str) {
+fn test_master(#[case] variant: &str) {}
+
+#[apply(test_master)]
+fn test_tht_de9_to_tht_de9_in_order(variant: &str) {
     let autorouter =
         common::load_design("tests/single_layer/tht_de9_to_tht_de9/tht_de9_to_tht_de9.dsn");
     let mut invoker = common::create_invoker_and_assert(autorouter);
@@ -32,10 +37,8 @@ fn test_tht_de9_to_tht_de9_in_order(#[case] variant: &str) {
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
 }
 
-#[rstest]
-#[case::plain("")]
-#[case::with_undo_redo_replay("with_undo_redo_replay")]
-fn test_tht_de9_to_tht_de9(#[case] variant: &str) {
+#[apply(test_master)]
+fn test_tht_de9_to_tht_de9(variant: &str) {
     let autorouter =
         common::load_design("tests/single_layer/tht_de9_to_tht_de9/tht_de9_to_tht_de9.dsn");
     let mut invoker = common::create_invoker_and_assert(autorouter);
@@ -50,10 +53,8 @@ fn test_tht_de9_to_tht_de9(#[case] variant: &str) {
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
 }
 
-#[rstest]
-#[case::plain("")]
-#[case::with_undo_redo_replay("with_undo_redo_replay")]
-fn test_0603_breakout(#[case] variant: &str) {
+#[apply(test_master)]
+fn test_0603_breakout(variant: &str) {
     let mut autorouter = common::load_design("tests/single_layer/0603_breakout/0603_breakout.dsn");
     common::assert_navnode_count(&mut autorouter, "R1-2", "J1-2", 22);
     let mut invoker = common::create_invoker_and_assert(autorouter);
@@ -69,10 +70,8 @@ fn test_0603_breakout(#[case] variant: &str) {
     //common::assert_number_of_conncomps(&mut autorouter, 2);
 }
 
-#[rstest]
-#[case::plain("")]
-#[case::with_undo_redo_replay("with_undo_redo_replay")]
-fn test_tht_diode_bridge_rectifier(#[case] variant: &str) {
+#[apply(test_master)]
+fn test_tht_diode_bridge_rectifier(variant: &str) {
     let mut autorouter = common::load_design(
         "tests/single_layer/tht_diode_bridge_rectifier/tht_diode_bridge_rectifier.dsn",
     );
@@ -108,10 +107,8 @@ fn test_tht_diode_bridge_rectifier(#[case] variant: &str) {
     ));
 }
 
-#[rstest]
-#[case::plain("")]
-#[case::with_undo_redo_replay("with_undo_redo_replay")]
-fn test_4x_3rd_order_smd_lc_filters(#[case] variant: &str) {
+#[apply(test_master)]
+fn test_4x_3rd_order_smd_lc_filters(variant: &str) {
     let mut autorouter = common::load_design(
         "tests/single_layer/4x_3rd_order_smd_lc_filters/4x_3rd_order_smd_lc_filters.dsn",
     );
@@ -152,10 +149,8 @@ fn test_tht_3pin_xlr_to_tht_3pin_xlr(#[case] variant: &str) {
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
 }*/
 
-#[rstest]
-#[case::plain("")]
-#[case::with_undo_redo_replay("with_undo_redo_replay")]
-fn test_vga_dac_breakout(#[case] variant: &str) {
+#[apply(test_master)]
+fn test_vga_dac_breakout(variant: &str) {
     let mut autorouter =
         common::load_design("tests/single_layer/vga_dac_breakout/vga_dac_breakout.dsn");
     common::assert_navnode_count(&mut autorouter, "J1-2", "R4-1", 272);
@@ -171,10 +166,8 @@ fn test_vga_dac_breakout(#[case] variant: &str) {
     common::assert_single_layer_groundless_autoroute(&mut autorouter, "F.Cu");
 }
 
-#[rstest]
-#[case::plain("")]
-#[case::with_undo_redo_replay("with_undo_redo_replay")]
-fn test_smd_non_rectangular_buck_converter(#[case] variant: &str) {
+#[apply(test_master)]
+fn test_smd_non_rectangular_buck_converter(variant: &str) {
     let path = "tests/single_layer/smd_non_rectangular_buck_converter/smd_non_rectangular_buck_converter.dsn";
     let autorouter = common::load_design(&path);
 
