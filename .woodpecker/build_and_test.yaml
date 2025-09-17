@@ -8,10 +8,10 @@ matrix:
       PROFILE: release
       FEATURES: disable_contracts
     - CHANNEL: stable
-      PROFILE: debug
+      PROFILE: dev
       FEATURES: disable_contracts
     - CHANNEL: nightly
-      PROFILE: debug
+      PROFILE: dev
       FEATURES:
 
 steps:
@@ -37,7 +37,7 @@ steps:
       - curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
       - cargo binstall --no-confirm cargo-nextest
       - rustup default "$CHANNEL"
-      - cargo nextest run -j4 --profile "$PROFILE" --hide-progress-bar --success-output final --no-default-features --features "$FEATURES"
+      - cargo nextest run -j4 --cargo-profile "$PROFILE" --hide-progress-bar --success-output final --no-default-features --features "$FEATURES"
     when:
       event: [pull_request, push, tag]
       # Only run tests for stable channel to avoid straining Codeberg's CI.
