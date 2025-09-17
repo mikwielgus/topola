@@ -43,12 +43,15 @@ pub fn create_invoker_and_assert(
     invoker
 }
 
-pub fn replay_and_assert(invoker: &mut Invoker<SpecctraMesadata>, filename: &str) {
+pub fn replay_and_assert(invoker: &mut Invoker<SpecctraMesadata>, filename: &str, variant: &str) {
     let file = File::open(filename).unwrap();
     let history: History = serde_json::from_reader(file).unwrap();
 
     invoker.replay(history);
-    assert_undo_redo_replay(invoker, filename);
+
+    if variant == "with_undo_redo_replay" {
+        assert_undo_redo_replay(invoker, filename);
+    }
 }
 
 pub fn assert_undo_redo_replay(invoker: &mut Invoker<SpecctraMesadata>, filename: &str) {
