@@ -307,7 +307,8 @@ impl<
     }
 
     pub fn remove_primitive(&mut self, primitive: PI) {
-        debug_assert!(self.graph.remove_node(primitive.index().into()).is_some());
+        let maybe_removed = self.graph.remove_node(primitive.index().into());
+        debug_assert!(maybe_removed.is_some());
     }
 
     pub fn move_dot(&mut self, dot: DI, to: Point) {
@@ -354,7 +355,8 @@ impl<
             .edges_directed(bend.index().into(), Incoming)
             .find(|edge| matches!(edge.weight(), GeometryLabel::Outer))
         {
-            debug_assert!(self.graph.remove_edge(old_inner_edge.id()).is_some());
+            let maybe_removed = self.graph.remove_edge(old_inner_edge.id());
+            debug_assert!(maybe_removed.is_some());
         }
 
         if let Some(new_inner) = maybe_new_inner {
@@ -653,7 +655,8 @@ impl<PW: Copy + Retag<Index = PI>, DW, SW, BW, CW: Clone, Cel: Copy, PI: Copy, D
     }
 
     fn remove_compound(&mut self, compound: GenericIndex<CW>) {
-        debug_assert!(self.graph.remove_node(compound.index().into()).is_some());
+        let maybe_removed = self.graph.remove_node(compound.index().into());
+        debug_assert!(maybe_removed.is_some());
     }
 
     fn add_to_compound<I>(&mut self, primitive: I, entry_label: Cel, compound: GenericIndex<CW>)
