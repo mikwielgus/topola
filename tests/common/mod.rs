@@ -12,7 +12,10 @@ use topola::{
         Autorouter,
     },
     board::{edit::BoardEdit, AccessMesadata, Board},
-    drawing::graph::{GetMaybeNet, PrimitiveIndex},
+    drawing::{
+        graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex},
+        primitive::MakePrimitiveShape,
+    },
     geometry::{shape::MeasureLength, GenericNode, GetLayer},
     graph::{GetIndex, MakeRef},
     router::{navmesh::Navmesh, RouterOptions},
@@ -43,11 +46,16 @@ pub fn create_invoker_and_assert(
     invoker
 }
 
-pub fn replay_and_assert(invoker: &mut Invoker<SpecctraMesadata>, filename: &str, variant: &str) {
+pub fn replay_and_assert_and_report(
+    invoker: &mut Invoker<SpecctraMesadata>,
+    filename: &str,
+    variant: &str,
+) {
     let file = File::open(filename).unwrap();
     let history: History = serde_json::from_reader(file).unwrap();
 
     invoker.replay(history);
+    report_route_lengths(invoker.autorouter());
 
     if variant == "with_undo_redo_replay" {
         assert_undo_redo_replay(invoker, filename);
@@ -162,7 +170,7 @@ pub fn assert_navnode_count(
     assert_eq!(navmesh.graph().node_count(), expected_count);
 }
 
-pub fn assert_single_layer_groundless_autoroute(
+pub fn assert_that_all_single_layer_groundless_ratlines_are_autorouted(
     autorouter: &mut Autorouter<impl AccessMesadata>,
     layername: &str,
 ) {
@@ -261,4 +269,37 @@ pub fn assert_band_length(
         expected_length,
         rel_err
     );
+}
+
+pub fn report_route_lengths(autorouter: &Autorouter<impl AccessMesadata>) {
+    let mut total_length = 0.0;
+
+    for layer in 0..autorouter.board().layout().drawing().layer_count() {
+        let mut layer_total_length = 0.0;
+
+        for primitive in autorouter
+            .board()
+            .layout()
+            .drawing()
+            .layer_primitive_nodes(layer)
+        {
+            match primitive {
+                PrimitiveIndex::LooseDot(..)
+                | PrimitiveIndex::LoneLooseSeg(..)
+                | PrimitiveIndex::SeqLooseSeg(..) => {
+                    layer_total_length += primitive
+                        .primitive_ref(autorouter.board().layout().drawing())
+                        .shape()
+                        .length();
+                }
+                _ => (),
+            }
+        }
+
+        dbg!(layer, layer_total_length);
+
+        total_length += layer_total_length;
+    }
+
+    dbg!(total_length);
 }
