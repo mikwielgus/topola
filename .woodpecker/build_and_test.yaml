@@ -22,7 +22,7 @@ steps:
       CARGO_TERM_COLOR: always
     commands:
       - rustup default "$CHANNEL"
-      - cargo build -P "$PROFILE" -j4 -p topola-cli --no-default-features --features "$FEATURES" --
+      - cargo build -j4 --profile "$PROFILE" -p topola-cli --no-default-features --features "$FEATURES" --
     when:
       event: [pull_request, push, tag]
 
@@ -37,7 +37,7 @@ steps:
       - curl -L --proto '=https' --tlsv1.2 -sSf https://raw.githubusercontent.com/cargo-bins/cargo-binstall/main/install-from-binstall-release.sh | bash
       - cargo binstall --no-confirm cargo-nextest
       - rustup default "$CHANNEL"
-      - cargo nextest run -P "$PROFILE" -j4 --hide-progress-bar --success-output final --no-default-features --features "$FEATURES"
+      - cargo nextest run -j4 --profile "$PROFILE" --hide-progress-bar --success-output final --no-default-features --features "$FEATURES"
     when:
       event: [pull_request, push, tag]
       # Only run tests for stable channel to avoid straining Codeberg's CI.
@@ -51,7 +51,7 @@ steps:
       CARGO_TERM_COLOR: always
     commands:
       - rustup default "$CHANNEL"
-      - cargo build -P "$PROFILE" -j4 -p topola-egui --no-default-features --features "$FEATURES,xdg-portal"
+      - cargo build -j4 --profile "$PROFILE" -p topola-egui --no-default-features --features "$FEATURES,xdg-portal"
     when:
       event: [pull_request, push, tag]
 
