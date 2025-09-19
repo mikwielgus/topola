@@ -34,10 +34,10 @@ use crate::{
         primitive::PrimitiveShape,
         recording_with_rtree::RecordingGeometryWithRtree,
         with_rtree::BboxedIndex,
-        AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
-        GetLayer, GetOffset, GetSetPos, GetWidth,
+        AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GetLayer,
+        GetOffset, GetSetPos, GetWidth,
     },
-    graph::{GenericIndex, GetIndex, MakeRef},
+    graph::{GenericIndex, MakeRef},
     math::{NoBitangents, RotationSense},
 };
 

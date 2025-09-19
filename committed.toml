@@ -35,6 +35,8 @@ allowed_scopes = [
   "autorouter/ratline",
   "autorouter/remove_bands",
   "autorouter/selection",
+  "board/mod",
+  "board/edit",
   "drawing/band",
   "drawing/bend",
   "drawing/cane",

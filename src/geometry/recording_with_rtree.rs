@@ -5,7 +5,6 @@
 use std::collections::btree_map::Entry as BTreeMapEntry;
 
 use geo::Point;
-use petgraph::stable_graph::StableDiGraph;
 use rstar::RTree;
 
 use crate::graph::{GenericIndex, GetIndex};
@@ -14,8 +13,8 @@ use super::{
     compound::ManageCompounds,
     edit::{ApplyGeometryEdit, GeometryEdit},
     with_rtree::{BboxedIndex, GeometryWithRtree},
-    AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
-    GetLayer, GetWidth, Retag,
+    AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GetLayer, GetWidth,
+    Retag,
 };
 
 #[derive(Debug)]

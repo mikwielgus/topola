@@ -22,6 +22,7 @@ pub mod graph;
 #[macro_use]
 pub mod drawing;
 pub mod autorouter;
+pub mod bimapset;
 pub mod board;
 pub mod geometry;
 pub mod interactor;

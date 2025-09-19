@@ -13,9 +13,9 @@ pub use specctra_core::mesadata::AccessMesadata;
 use bimap::BiBTreeMap;
 use derive_getters::Getters;
 use geo::Point;
-use std::collections::BTreeMap;
 
 use crate::{
+    bimapset::BiBTreeMapSet,
     drawing::{
         band::BandUid,
         dot::{FixedDotIndex, FixedDotWeight},
@@ -82,7 +82,7 @@ pub struct Board<M> {
     bands_by_id: BiBTreeMap<EtchedPath, BandUid>,
     // TODO: Simplify access logic to these members so that `#[getter(skip)]`s can be removed.
     #[getter(skip)]
-    node_to_pinname: BTreeMap<NodeIndex, String>,
+    pinname_nodes: BiBTreeMapSet<String, NodeIndex>,
     #[getter(skip)]
     band_bandname: BiBTreeMap<BandUid, BandName>,
 }
@@ -93,7 +93,7 @@ impl<M> Board<M> {
         Self {
             layout,
             bands_by_id: BiBTreeMap::new(),
-            node_to_pinname: BTreeMap::new(),
+            pinname_nodes: BiBTreeMapSet::new(),
             band_bandname: BiBTreeMap::new(),
         }
     }
@@ -119,8 +119,8 @@ impl<M: AccessMesadata> Board<M> {
             .add_fixed_dot_infringably(&mut recorder.layout_edit, weight);
 
         if let Some(pin) = maybe_pin {
-            self.node_to_pinname
-                .insert(GenericNode::Primitive(dot.into()), pin);
+            self.pinname_nodes
+                .insert(pin, GenericNode::Primitive(dot.into()));
         }
 
         dot
@@ -142,8 +142,8 @@ impl<M: AccessMesadata> Board<M> {
                 .add_fixed_seg_infringably(&mut recorder.layout_edit, from, to, weight);
 
         if let Some(pin) = maybe_pin {
-            self.node_to_pinname
-                .insert(GenericNode::Primitive(seg.into()), pin);
+            self.pinname_nodes
+                .insert(pin, GenericNode::Primitive(seg.into()));
         }
 
         seg
@@ -166,34 +166,43 @@ impl<M: AccessMesadata> Board<M> {
 
         if let Some(pin) = maybe_pin {
             for i in nodes {
-                self.node_to_pinname
-                    .insert(GenericNode::Primitive(*i), pin.clone());
+                self.pinname_nodes
+                    .insert(pin.clone(), GenericNode::Primitive(*i));
             }
 
-            self.node_to_pinname
-                .insert(GenericNode::Primitive(apex.into()), pin.clone());
+            self.pinname_nodes
+                .insert(pin.clone(), GenericNode::Primitive(apex.into()));
 
-            self.node_to_pinname
-                .insert(GenericNode::Compound(poly.into()), pin);
+            self.pinname_nodes
+                .insert(pin, GenericNode::Compound(poly.into()));
         }
 
         poly
     }
 
-    /// Returns the pin name associated with a given node.
-    pub fn node_pinname(&self, node: &NodeIndex) -> Option<&String> {
-        self.node_to_pinname.get(node)
+    /// Returns an iterator over the set of all nodes associated with a given
+    /// pin name.
+    pub fn pinname_nodes(&self, pinname: &str) -> impl Iterator<Item = NodeIndex> + '_ {
+        self.pinname_nodes
+            .get_values(pinname)
+            .into_iter()
+            .flat_map(|set| set.iter().map(|node| *node))
     }
 
-    /// Returns the apex belonging to a given pin, if any
-    ///
-    /// Warning: this is very slow.
+    /// Returns the pin name associated with a given node.
+    pub fn node_pinname(&self, node: &NodeIndex) -> Option<&String> {
+        self.pinname_nodes.get_key(node)
+    }
+
+    /// Returns the apex belonging to a given pin, if there is any.
     pub fn pin_apex(&self, pin: &str, layer: usize) -> Option<(FixedDotIndex, Point)> {
-        self.node_to_pinname
-            .iter()
-            .filter(|(_, node_pin)| *node_pin == pin)
-            // this should only ever return one result
-            .find_map(|(node, _)| self.layout().apex_of_compoundless_node(*node, layer))
+        self.pinname_nodes
+            .get_values(pin)
+            .map(|node| {
+                node.iter()
+                    .find_map(|node| self.layout().apex_of_compoundless_node(*node, layer))
+            })
+            .flatten()
     }
 
     /// Returns the band name associated with a given band.

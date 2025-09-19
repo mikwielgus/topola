@@ -5,15 +5,15 @@
 use contracts_try::debug_invariant;
 use derive_getters::Getters;
 use geo::Point;
-use petgraph::{stable_graph::StableDiGraph, visit::Walker};
+use petgraph::visit::Walker;
 use rstar::{primitives::GeomWithData, Envelope, RTree, RTreeObject, AABB};
 
 use crate::{
     geometry::{
         compound::ManageCompounds,
         primitive::{AccessPrimitiveShape, PrimitiveShape},
-        AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GeometryLabel,
-        GetLayer, GetWidth, Retag,
+        AccessBendWeight, AccessDotWeight, AccessSegWeight, GenericNode, Geometry, GetLayer,
+        GetWidth, Retag,
     },
     graph::{GenericIndex, GetIndex},
 };
