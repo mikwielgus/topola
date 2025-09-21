@@ -337,14 +337,14 @@ impl Navmesh {
             // Ignore overlaps with fillets.
             if layout
                 .drawing()
-                .compounds(GenericIndex::<()>::new(overlapee.1.index()))
+                .compounds(GenericIndex::<()>::new(overlapee.2.index()))
                 .find(|(label, _)| *label == CompoundEntryLabel::Fillet)
                 .is_some()
             {
                 continue;
             }
 
-            let PrimitiveIndex::FixedDot(overlapee) = overlapee.1 else {
+            let PrimitiveIndex::FixedDot(overlapee) = overlapee.2 else {
                 continue;
             };
 

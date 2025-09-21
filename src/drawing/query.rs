@@ -190,9 +190,9 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 // Infringement with loose dots resulted in false positives for
                 // line-of-sight paths.
                 !matches!(infringer, PrimitiveIndex::LooseDot(..))
-                    && !matches!(infringement.1, PrimitiveIndex::LooseDot(..))
+                    && !matches!(infringement.2, PrimitiveIndex::LooseDot(..))
             })
-            .filter(move |infringement| !self.are_connectable(infringer, infringement.1))
+            .filter(move |infringement| !self.are_connectable(infringer, infringement.2))
     }
 
     pub fn overlapees<'a>(
@@ -224,21 +224,28 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             let infringee_conditions = primitive_node.primitive_ref(self).conditions();
 
             let epsilon = 1.0;
-            let inflated_shape = intersector.primitive_ref(self).shape().inflate(
-                match (&conditions, infringee_conditions) {
-                    (None, _) | (_, None) => 0.0,
-                    (Some(lhs), Some(rhs)) => {
-                        // Note the epsilon comparison.
-                        // XXX: Epsilon is probably too large. But what should
-                        // it be exactly then?
-                        (self.rules().clearance(lhs, &rhs) - epsilon).clamp(0.0, f64::INFINITY)
-                    }
-                },
-            );
+            let inflated_infringer_shape = intersector.primitive_ref(self).shape().inflate(match (
+                &conditions,
+                infringee_conditions,
+            ) {
+                (None, _) | (_, None) => 0.0,
+                (Some(lhs), Some(rhs)) => {
+                    // Note the epsilon comparison.
+                    // XXX: Epsilon is probably too large. But what should
+                    // it be exactly then?
+                    (self.rules().clearance(lhs, &rhs) - epsilon).clamp(0.0, f64::INFINITY)
+                }
+            });
 
-            inflated_shape
-                .intersects(&primitive_node.primitive_ref(self).shape())
-                .then_some(Infringement(inflated_shape, primitive_node))
+            let infringee_shape = primitive_node.primitive_ref(self).shape();
+
+            inflated_infringer_shape
+                .intersects(&infringee_shape)
+                .then_some(Infringement(
+                    inflated_infringer_shape,
+                    infringee_shape,
+                    primitive_node,
+                ))
         })
     }
 
@@ -266,11 +273,11 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         collider: PrimitiveIndex,
         predicate: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Option<Collision> {
-        let shape = collider.primitive_ref(self).shape();
+        let collider_shape = collider.primitive_ref(self).shape();
 
         self.recording_geometry_with_rtree()
             .rtree()
-            .locate_in_envelope_intersecting(&shape.full_height_envelope_3d(0.0, 2))
+            .locate_in_envelope_intersecting(&collider_shape.full_height_envelope_3d(0.0, 2))
             .filter_map(|wrapper| {
                 if let GenericNode::Primitive(collidee) = wrapper.data {
                     Some(collidee)
@@ -290,8 +297,15 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                             || matches!(collidee, PrimitiveIndex::SeqLooseSeg(..))))
             })
             .filter(|collidee| predicate(&self, collider, *collidee))
-            .find(|collidee| shape.intersects(&collidee.primitive_ref(self).shape()))
-            .map(|collidee| Collision(shape, collidee))
+            .find_map(|collidee| {
+                let collidee_shape = collidee.primitive_ref(self).shape();
+
+                if collider_shape.intersects(&collidee_shape) {
+                    Some(Collision(collider_shape, collidee_shape, collidee))
+                } else {
+                    None
+                }
+            })
     }
 
     fn are_connectable(&self, node1: PrimitiveIndex, node2: PrimitiveIndex) -> bool {

@@ -257,9 +257,11 @@ impl EvalException {
             Self::Draw(DrawException::NoBitangents(_)) => (Vec::new(), Vec::new(), Vec::new()),
             Self::Draw(DrawException::CannotFinishIn(_, dwxc))
             | Self::Draw(DrawException::CannotWrapAround(_, dwxc)) => {
-                match dwxc.maybe_ghost_and_obstacle() {
+                match dwxc.maybe_ghosts_and_obstacle() {
                     None => (Vec::new(), Vec::new(), Vec::new()),
-                    Some((ghost, obstacle)) => (vec![*ghost], Vec::new(), vec![obstacle]),
+                    Some((infringer_ghost, _, obstacle)) => {
+                        (vec![*infringer_ghost], Vec::new(), vec![obstacle])
+                    }
                 }
             }
             Self::ResolvingPathFailed { .. } => (Vec::new(), Vec::new(), Vec::new()),

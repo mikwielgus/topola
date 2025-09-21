@@ -308,7 +308,7 @@ impl Prenavmesh {
                     layout
                         .drawing()
                         // TODO: Add `.compounds()` method working on `PrimitiveIndex`.
-                        .compounds(GenericIndex::<()>::new(overlapee.1.index()))
+                        .compounds(GenericIndex::<()>::new(overlapee.2.index()))
                         .find(|(label, _)| *label == CompoundEntryLabel::Fillet)
                         .is_some()
                 })

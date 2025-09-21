@@ -110,11 +110,13 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
                         DrawException::CannotWrapAround(.., layout_err) => layout_err,
                     };
 
-                    let Some((ghost, obstacle)) = layout_err.maybe_ghost_and_obstacle() else {
+                    let Some((infringer_ghost, infringee_ghost, obstacle)) =
+                        layout_err.maybe_ghosts_and_obstacle()
+                    else {
                         return ControlFlow::Break(None);
                     };
 
-                    self.probe_ghosts = vec![*ghost];
+                    self.probe_ghosts = vec![*infringer_ghost, *infringee_ghost];
                     self.probe_obstacles = vec![obstacle];
 
                     let Some(initial_parent_navnode) = maybe_initial_parent_navnode else {

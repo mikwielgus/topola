@@ -67,11 +67,17 @@ impl fmt::Debug for DrawingException {
 }
 
 impl DrawingException {
-    pub fn maybe_ghost_and_obstacle(&self) -> Option<(&PrimitiveShape, PrimitiveIndex)> {
+    pub fn maybe_ghosts_and_obstacle(
+        &self,
+    ) -> Option<(&PrimitiveShape, &PrimitiveShape, PrimitiveIndex)> {
         match self {
             Self::NoTangents(_) => None,
-            Self::Infringement(Infringement(ghost, obstacle)) => Some((ghost, *obstacle)),
-            Self::Collision(Collision(ghost, obstacle)) => Some((ghost, *obstacle)),
+            Self::Infringement(Infringement(infringer_ghost, infringee_ghost, obstacle)) => {
+                Some((infringer_ghost, infringee_ghost, *obstacle))
+            }
+            Self::Collision(Collision(collider_ghost, collidee_ghost, obstacle)) => {
+                Some((collider_ghost, collidee_ghost, *obstacle))
+            }
             Self::AlreadyConnected(_) => None,
         }
     }
@@ -86,7 +92,7 @@ impl DrawingException {
 /// having the same net implies being connectable.
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{0:?} infringes on {1:?}")]
-pub struct Infringement(pub PrimitiveShape, pub PrimitiveIndex);
+pub struct Infringement(pub PrimitiveShape, pub PrimitiveShape, pub PrimitiveIndex);
 
 /// A collision is a special case of infringement where the uninflated shapes of
 /// two primitives themselves intersect. In other words, collision detection is
@@ -107,7 +113,7 @@ pub struct Infringement(pub PrimitiveShape, pub PrimitiveIndex);
 /// net, making them connectable and thus uninfringable.
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{0:?} collides with {1:?}")]
-pub struct Collision(pub PrimitiveShape, pub PrimitiveIndex);
+pub struct Collision(pub PrimitiveShape, pub PrimitiveShape, pub PrimitiveIndex);
 
 #[derive(Error, Debug, Clone, Copy)]
 #[error("{1:?} is already connected to net {0}")]

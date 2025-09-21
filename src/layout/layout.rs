@@ -97,7 +97,7 @@ impl<R: AccessRules> Layout<R> {
                 !drawing
                     .overlapees(around.into())
                     .find(|overlapee| {
-                        PrimitiveIndex::from(overlapee.1)
+                        PrimitiveIndex::from(overlapee.2)
                             .primitive_ref(drawing)
                             .limbs()
                             .contains(&infringee)
