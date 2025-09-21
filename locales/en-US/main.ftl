@@ -56,8 +56,9 @@ tr-menu-route-options-presort-by-pairwise-detours = Pairwise Detours
 
 tr-menu-route-options-permutate = Permutate
 
-## Continuously applied, so use imperfective aspect if possible, e.g. in Polish
-## it should be "przeciskaj pod taśmami" instead of "przeciśnij pod taśmami".
+## Continuously applied, so use frequentative or imperfective aspect
+## if possible, e.g. in Polish it should be "przeciskaj pod taśmami"
+## (frequentative) instead of "przeciśnij pod taśmami".
 
 tr-menu-route-options-squeeze-through-under-bends = Squeeze through under Bends
 tr-menu-route-options-wrap-around-bands = Wrap around Bands

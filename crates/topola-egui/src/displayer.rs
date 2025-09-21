@@ -570,11 +570,22 @@ impl<'a> Displayer<'a> {
                     .shape()
                     .center();
 
+                let color = if let Some(activity) = &mut self.workspace.interactor.maybe_activity()
+                {
+                    if activity.obstacles().contains(&primitive) {
+                        egui::Color32::from_rgb(255, 255, 255)
+                    } else {
+                        egui::Color32::from_rgb(150, 150, 150)
+                    }
+                } else {
+                    egui::Color32::from_rgb(255, 255, 255)
+                };
+
                 self.painter.paint_text(
                     pos,
                     egui::Align2::CENTER_CENTER,
                     &format!("{}", primitive.index()),
-                    egui::Color32::from_rgb(200, 200, 200),
+                    color,
                 );
             }
         }
