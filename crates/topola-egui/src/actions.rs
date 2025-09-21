@@ -174,6 +174,7 @@ pub struct ViewActions {
     pub show_topo_navmesh: Switch,
     pub show_bboxes: Switch,
     pub show_origin_destination: Switch,
+    pub show_primitive_indices: Switch,
     pub show_appearance_panel: Switch,
 }
 
@@ -204,6 +205,10 @@ impl ViewActions {
             show_bboxes: Action::new_keyless(tr.text("tr-menu-view-show-bboxes")).into_switch(),
             show_origin_destination: Action::new_keyless(
                 tr.text("tr-menu-view-show-origin-destination"),
+            )
+            .into_switch(),
+            show_primitive_indices: Action::new_keyless(
+                tr.text("tr-menu-view-show-primitive-indices"),
             )
             .into_switch(),
             show_appearance_panel: Action::new_keyless(tr.text("tr-menu-view-show-layer-manager"))
@@ -242,6 +247,8 @@ impl ViewActions {
             self.show_bboxes.checkbox(ui, &mut menu_bar.show_bboxes);
             self.show_origin_destination
                 .checkbox(ui, &mut menu_bar.show_origin_destination);
+            self.show_primitive_indices
+                .checkbox(ui, &mut menu_bar.show_primitive_indices);
         });
 
         ui.separator();

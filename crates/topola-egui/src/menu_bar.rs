@@ -37,6 +37,7 @@ pub struct MenuBar {
     pub show_topo_navmesh: bool,
     pub show_bboxes: bool,
     pub show_origin_destination: bool,
+    pub show_primitive_indices: bool,
     pub show_appearance_panel: bool,
     pub frame_timestep: f32,
 }
@@ -64,6 +65,7 @@ impl MenuBar {
             show_topo_navmesh: false,
             show_bboxes: false,
             show_origin_destination: false,
+            show_primitive_indices: false,
             show_appearance_panel: true,
             frame_timestep: 0.1,
         }

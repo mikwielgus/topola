@@ -19,7 +19,7 @@ use topola::{
         primitive::MakePrimitiveShape,
     },
     geometry::{shape::AccessShape, GenericNode},
-    graph::MakeRef,
+    graph::{GetIndex, MakeRef},
     interactor::{activity::ActivityStepper, interaction::InteractionStepper},
     layout::poly::MakePolygon,
     math::{self, Circle, RotationSense},
@@ -76,6 +76,10 @@ impl<'a> Displayer<'a> {
         }
 
         self.display_activity(menu_bar);
+
+        if menu_bar.show_primitive_indices {
+            self.display_primitive_indices();
+        }
     }
 
     fn display_layout(&mut self, ctx: &egui::Context) {
@@ -552,6 +556,26 @@ impl<'a> Displayer<'a> {
                         egui::Color32::from_rgb(255, 255, 100),
                     );
                 }
+            }
+        }
+    }
+
+    fn display_primitive_indices(&mut self) {
+        let board = self.workspace.interactor.invoker().autorouter().board();
+
+        if let Some(active_layer) = self.workspace.appearance_panel.active_layer {
+            for primitive in board.layout().drawing().layer_primitive_nodes(active_layer) {
+                let pos = primitive
+                    .primitive_ref(board.layout().drawing())
+                    .shape()
+                    .center();
+
+                self.painter.paint_text(
+                    pos,
+                    egui::Align2::CENTER_CENTER,
+                    &format!("{}", primitive.index()),
+                    egui::Color32::from_rgb(200, 200, 200),
+                );
             }
         }
     }
