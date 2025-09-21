@@ -219,13 +219,13 @@ where
 
 impl<'a, W, CW, Cel, R> GetConditions<'a> for &GenericPrimitive<'a, W, CW, Cel, R>
 where
-    GenericPrimitive<'a, W, CW, Cel, R>: GetMaybeNet,
+    GenericPrimitive<'a, W, CW, Cel, R>: GetMaybeNet + GetLayer,
 {
     fn conditions(self) -> Option<Conditions<'a>> {
         self.maybe_net().map(|net| Conditions {
             net,
-            maybe_region: Some("A".into()),
-            maybe_layer: Some("F.Cu".into()),
+            maybe_region: Some("A".into()), // TODO.
+            maybe_layer: Some(self.layer()),
         })
     }
 }

@@ -195,7 +195,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     fn clearance(&self, lhs: Option<&Conditions<'_>>, rhs: Option<&Conditions<'_>>) -> f64 {
         match (lhs, rhs) {
             (None, _) | (_, None) => 0.0,
-            (Some(lhs), Some(rhs)) => self.rules().clearance(lhs, rhs),
+            (Some(lhs), Some(rhs)) => self.rules().clearance(lhs, rhs).unwrap_or(0.0),
         }
     }
 

@@ -162,13 +162,7 @@ impl SpecctraMesadata {
         }
     }
 
-    /// Retrieves the Specctra routing rule associated with a specified net ID.
-    ///
-    /// This function looks up the routing rule for a given net ID. It first checks if the net is
-    /// associated with a net class. If a net class is found, it retrieves the corresponding rule
-    /// from the class rules. If no class is associated, or if the class does not have a defined rule,
-    /// it defaults to the general structure rule.
-    pub fn get_rule(&self, net: usize) -> &SpecctraRule {
+    pub fn rule(&self, net: usize) -> &SpecctraRule {
         self.net_netclass
             .get(&net)
             .and_then(|netclass| self.class_rules.get(netclass))
@@ -177,11 +171,15 @@ impl SpecctraMesadata {
 }
 
 impl AccessRules for SpecctraMesadata {
-    fn clearance(&self, conditions1: &Conditions<'_>, conditions2: &Conditions<'_>) -> f64 {
-        let clearance1 = self.get_rule(conditions1.net).clearance;
-        let clearance2 = self.get_rule(conditions2.net).clearance;
+    fn clearance(&self, conditions1: &Conditions<'_>, conditions2: &Conditions<'_>) -> Option<f64> {
+        if conditions1.maybe_layer != conditions2.maybe_layer {
+            return None;
+        }
 
-        f64::max(clearance1, clearance2)
+        let clearance1 = self.rule(conditions1.net).clearance;
+        let clearance2 = self.rule(conditions2.net).clearance;
+
+        Some(f64::max(clearance1, clearance2))
     }
 
     fn largest_clearance(&self, _maybe_net: Option<usize>) -> f64 {

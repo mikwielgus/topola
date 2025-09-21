@@ -26,11 +26,10 @@ pub struct Conditions<'a> {
     #[serde(borrow)]
     pub maybe_region: Option<Cow<'a, str>>,
 
-    #[serde(borrow)]
-    pub maybe_layer: Option<Cow<'a, str>>,
+    pub maybe_layer: Option<usize>,
 }
 
 pub trait AccessRules {
-    fn clearance(&self, conditions1: &Conditions<'_>, conditions2: &Conditions<'_>) -> f64;
+    fn clearance(&self, conditions1: &Conditions<'_>, conditions2: &Conditions<'_>) -> Option<f64>;
     fn largest_clearance(&self, net: Option<usize>) -> f64;
 }

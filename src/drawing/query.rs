@@ -228,12 +228,16 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 &conditions,
                 infringee_conditions,
             ) {
-                (None, _) | (_, None) => 0.0,
+                (None, _) | (_, None) => return None,
                 (Some(lhs), Some(rhs)) => {
+                    let Some(clearance) = self.rules().clearance(lhs, &rhs) else {
+                        return None;
+                    };
+
                     // Note the epsilon comparison.
                     // XXX: Epsilon is probably too large. But what should
                     // it be exactly then?
-                    (self.rules().clearance(lhs, &rhs) - epsilon).clamp(0.0, f64::INFINITY)
+                    (clearance - epsilon).clamp(0.0, f64::INFINITY)
                 }
             });
 
@@ -298,6 +302,10 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             })
             .filter(|collidee| predicate(&self, collider, *collidee))
             .find_map(|collidee| {
+                if collider.primitive_ref(self).layer() != collidee.primitive_ref(self).layer() {
+                    return None;
+                }
+
                 let collidee_shape = collidee.primitive_ref(self).shape();
 
                 if collider_shape.intersects(&collidee_shape) {
