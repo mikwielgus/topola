@@ -8,8 +8,8 @@ use spade::InsertionError;
 
 use topola::{
     autorouter::{
-        ratsnest::Ratsnest,
         selection::{BboxSelectionKind, Selection},
+        Autorouter,
     },
     board::{AccessMesadata, Board},
     router::ng::{calculate_navmesh as ng_calculate_navmesh, PieNavmesh},
@@ -25,7 +25,6 @@ pub enum SelectionMode {
 }
 
 pub struct Overlay {
-    ratsnest: Ratsnest,
     pub selection: Selection,
     planar_incr_navmesh: Option<PieNavmesh>,
     reselect_bbox: Option<(SelectionMode, Point)>,
@@ -36,7 +35,6 @@ const INF: f64 = f64::INFINITY;
 impl Overlay {
     pub fn new(board: &Board<impl AccessMesadata>) -> Result<Self, InsertionError> {
         Ok(Self {
-            ratsnest: Ratsnest::new(board.layout())?,
             selection: Selection::new(),
             planar_incr_navmesh: None,
             reselect_bbox: None,
@@ -49,11 +47,11 @@ impl Overlay {
 
     pub fn select_all(
         &mut self,
-        board: &Board<impl AccessMesadata>,
+        autorouter: &Autorouter<impl AccessMesadata>,
         appearance_panel: &AppearancePanel,
     ) {
         self.select_all_in_bbox(
-            board,
+            autorouter.board(),
             appearance_panel,
             &AABB::from_corners([-INF, -INF], [INF, INF]),
             BboxSelectionKind::CompletelyInside,
@@ -67,17 +65,17 @@ impl Overlay {
 
     pub fn recalculate_topo_navmesh(
         &mut self,
-        board: &Board<impl AccessMesadata>,
+        autorouter: &Autorouter<impl AccessMesadata>,
         active_layer: usize,
     ) {
-        if let Ok(pien) = ng_calculate_navmesh(board, active_layer) {
+        if let Ok(pien) = ng_calculate_navmesh(autorouter.board(), active_layer) {
             self.planar_incr_navmesh = Some(pien);
         }
     }
 
     pub fn drag_start(
         &mut self,
-        _board: &Board<impl AccessMesadata>,
+        _autorouter: &Autorouter<impl AccessMesadata>,
         _appearance_panel: &AppearancePanel,
         at: Point,
         ctrl: bool,
@@ -98,7 +96,7 @@ impl Overlay {
 
     pub fn drag_stop(
         &mut self,
-        board: &Board<impl AccessMesadata>,
+        autorouter: &Autorouter<impl AccessMesadata>,
         appearance_panel: &AppearancePanel,
         at: Point,
     ) {
@@ -109,14 +107,14 @@ impl Overlay {
             match selmode {
                 SelectionMode::Substitution => {
                     self.selection = Selection::new();
-                    self.select_all_in_bbox(board, appearance_panel, &aabb, bsk);
+                    self.select_all_in_bbox(autorouter.board(), appearance_panel, &aabb, bsk);
                 }
                 SelectionMode::Addition => {
-                    self.select_all_in_bbox(board, appearance_panel, &aabb, bsk);
+                    self.select_all_in_bbox(autorouter.board(), appearance_panel, &aabb, bsk);
                 }
                 SelectionMode::Toggling => {
                     let old_selection = self.take_selection();
-                    self.select_all_in_bbox(board, appearance_panel, &aabb, bsk);
+                    self.select_all_in_bbox(autorouter.board(), appearance_panel, &aabb, bsk);
                     self.selection ^= &old_selection;
                 }
             }
@@ -125,20 +123,20 @@ impl Overlay {
 
     pub fn click(
         &mut self,
-        board: &Board<impl AccessMesadata>,
+        autorouter: &Autorouter<impl AccessMesadata>,
         appearance_panel: &AppearancePanel,
         at: Point,
     ) {
         if self.reselect_bbox.is_some() {
             // handle bounding box selection (takes precendence over other interactions)
             // this is mostly in order to allow the user to recover from a missed/dropped drag_stop event
-            self.drag_stop(board, appearance_panel, at);
+            self.drag_stop(autorouter, appearance_panel, at);
             return;
         }
 
         let old_selection = self.take_selection();
         self.select_all_in_bbox(
-            board,
+            autorouter.board(),
             appearance_panel,
             &AABB::from_point([at.x(), at.y()]),
             BboxSelectionKind::MerelyIntersects,
@@ -155,10 +153,6 @@ impl Overlay {
     ) {
         self.selection
             .select_all_in_bbox(board, aabb, &appearance_panel.visible[..], bsk);
-    }
-
-    pub fn ratsnest(&self) -> &Ratsnest {
-        &self.ratsnest
     }
 
     pub fn selection(&self) -> &Selection {

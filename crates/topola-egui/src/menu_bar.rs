@@ -279,20 +279,20 @@ impl MenuBar {
                         // NOTE: we need to check `unselect` first because `Ctrl+A` would also match `Ctrl+Shift+A`
                         workspace.overlay.unselect_all();
                     } else if actions.edit.select_all.consume_key_triggered(ctx, ui) {
-                        let board = workspace.interactor.invoker().autorouter().board();
-                        workspace
-                            .overlay
-                            .select_all(board, &workspace.appearance_panel);
+                        workspace.overlay.select_all(
+                            workspace.interactor.invoker().autorouter(),
+                            &workspace.appearance_panel,
+                        );
                     } else if actions
                         .edit
                         .recalculate_topo_navmesh
                         .consume_key_triggered(ctx, ui)
                     {
                         if let Some(active_layer) = workspace.appearance_panel.active_layer {
-                            let board = workspace.interactor.invoker().autorouter().board();
-                            workspace
-                                .overlay
-                                .recalculate_topo_navmesh(board, active_layer);
+                            workspace.overlay.recalculate_topo_navmesh(
+                                workspace.interactor.invoker().autorouter(),
+                                active_layer,
+                            );
                         }
                     } else if actions.place.place_via.consume_key_enabled(
                         ctx,

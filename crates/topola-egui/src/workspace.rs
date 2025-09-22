@@ -111,7 +111,6 @@ impl Workspace {
                 }
             }
         } else {
-            let board = self.interactor.invoker().autorouter().board();
             match interactive_event.kind {
                 InteractiveEventKind::PointerPrimaryButtonClicked => {
                     if menu_bar.is_placing_via {
@@ -127,7 +126,7 @@ impl Workspace {
                         }));
                     } else {
                         self.overlay.click(
-                            board,
+                            self.interactor.invoker().autorouter(),
                             &self.appearance_panel,
                             interactive_input.pointer_pos,
                         );
@@ -135,7 +134,7 @@ impl Workspace {
                 }
                 InteractiveEventKind::PointerPrimaryButtonDragStarted => {
                     self.overlay.drag_start(
-                        board,
+                        self.interactor.invoker().autorouter(),
                         &self.appearance_panel,
                         interactive_input.pointer_pos,
                         interactive_event.ctrl,
@@ -144,7 +143,7 @@ impl Workspace {
                 }
                 InteractiveEventKind::PointerPrimaryButtonDragStopped => {
                     self.overlay.drag_stop(
-                        board,
+                        self.interactor.invoker().autorouter(),
                         &self.appearance_panel,
                         interactive_input.pointer_pos,
                     );

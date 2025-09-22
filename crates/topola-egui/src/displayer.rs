@@ -162,8 +162,18 @@ impl<'a> Displayer<'a> {
     }
 
     fn display_ratsnest(&mut self) {
-        let graph = self.workspace.overlay.ratsnest().graph();
+        let graph = self
+            .workspace
+            .interactor
+            .invoker()
+            .autorouter()
+            .ratsnest()
+            .graph();
         for edge in graph.edge_references() {
+            if edge.weight().band_termseg.is_some() {
+                continue;
+            }
+
             let from = graph.node_weight(edge.source()).unwrap().pos;
             let to = graph.node_weight(edge.target()).unwrap().pos;
 
