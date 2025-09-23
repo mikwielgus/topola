@@ -106,7 +106,8 @@ pub struct Ratsnest {
 
 impl Ratsnest {
     pub fn new(board: &Board<impl AccessMesadata>) -> Result<Self, InsertionError> {
-        let conncomps = ConncompsWithPrincipalLayer::new(board, 0);
+        let principal_layer = 0;
+        let conncomps = ConncompsWithPrincipalLayer::new(board, principal_layer);
 
         let mut this = Self {
             graph: StableUnGraph::default(),
@@ -114,49 +115,11 @@ impl Ratsnest {
 
         let mut triangulations = BTreeMap::new();
 
+        this.add_layer_to_ratsnest(board, &mut triangulations, principal_layer);
+
         for layer in 0..board.layout().drawing().layer_count() {
-            let mut handle_ratvertex_weight =
-                |maybe_net: Option<usize>, vertex: RatvertexIndex, pos: Point| {
-                    if let Some(net) = maybe_net {
-                        triangulations
-                            .entry(net)
-                            .or_insert_with(|| {
-                                Triangulation::new(RatvertexToHandleMap::new(
-                                    board.layout().drawing().geometry().dot_index_bound(),
-                                    board.layout().drawing().geometry().compound_index_bound(),
-                                ))
-                            })
-                            .add_vertex(RatvertexWeight { vertex, pos })?;
-                    }
-                    Ok(())
-                };
-
-            for node in board.layout().drawing().layer_primitive_nodes(layer) {
-                if let PrimitiveIndex::FixedDot(dot) = node {
-                    // Dots that are parts of polys are ignored because ratlines
-                    // should only go to their centerpoints.
-                    if board.layout().drawing().compounds(dot).next().is_none() {
-                        handle_ratvertex_weight(
-                            board.layout().drawing().primitive(dot).maybe_net(),
-                            RatvertexIndex::FixedDot(dot),
-                            node.primitive_ref(board.layout().drawing())
-                                .shape()
-                                .center(),
-                        )?;
-                    }
-                }
-            }
-
-            for poly in board.layout().layer_poly_nodes(layer) {
-                handle_ratvertex_weight(
-                    board
-                        .layout()
-                        .drawing()
-                        .compound_weight(poly.into())
-                        .maybe_net(),
-                    RatvertexIndex::Poly(poly),
-                    poly.ref_(board.layout()).shape().center(),
-                )?;
+            if layer != principal_layer {
+                this.add_layer_to_ratsnest(board, &mut triangulations, layer);
             }
         }
 
@@ -190,6 +153,70 @@ impl Ratsnest {
         });
 
         Ok(this)
+    }
+
+    fn add_layer_to_ratsnest(
+        &mut self,
+        board: &Board<impl AccessMesadata>,
+        triangulations: &mut BTreeMap<
+            usize,
+            Triangulation<RatvertexIndex, RatvertexToHandleMap, RatvertexWeight, RatlineWeight>,
+        >,
+        layer: usize,
+    ) -> Result<(), InsertionError> {
+        let mut handle_ratvertex_weight =
+            |maybe_net: Option<usize>, vertex: RatvertexIndex, pos: Point| {
+                let Some(net) = maybe_net else {
+                    return Ok(());
+                };
+
+                let triangulation = triangulations.entry(net).or_insert_with(|| {
+                    Triangulation::new(RatvertexToHandleMap::new(
+                        board.layout().drawing().geometry().dot_index_bound(),
+                        board.layout().drawing().geometry().compound_index_bound(),
+                    ))
+                });
+
+                // If a vertex already exists at `pos` for this net, skip.
+                // This should prevent overwriting principal layer vertices
+                // with ones from non-principal layers.
+                if triangulation.find_vertex_at_position(pos).is_some() {
+                    return Ok(());
+                }
+
+                triangulation.add_vertex(RatvertexWeight { vertex, pos })?;
+                Ok(())
+            };
+
+        for node in board.layout().drawing().layer_primitive_nodes(layer) {
+            if let PrimitiveIndex::FixedDot(dot) = node {
+                // Dots that are parts of polys are ignored because ratlines
+                // should only go to their centerpoints.
+                if board.layout().drawing().compounds(dot).next().is_none() {
+                    handle_ratvertex_weight(
+                        board.layout().drawing().primitive(dot).maybe_net(),
+                        RatvertexIndex::FixedDot(dot),
+                        node.primitive_ref(board.layout().drawing())
+                            .shape()
+                            .center(),
+                    )?;
+                }
+            }
+        }
+
+        for poly in board.layout().layer_poly_nodes(layer) {
+            handle_ratvertex_weight(
+                board
+                    .layout()
+                    .drawing()
+                    .compound_weight(poly.into())
+                    .maybe_net(),
+                RatvertexIndex::Poly(poly),
+                poly.ref_(board.layout()).shape().center(),
+            )?;
+        }
+
+        Ok(())
     }
 
     pub fn assign_band_termseg_to_ratline(

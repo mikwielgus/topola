@@ -78,6 +78,17 @@ impl<
             .intersects_constraint(from.position(), to.position())
     }
 
+    pub fn find_vertex_at_position(&self, position: Point<<VW as HasPosition>::Scalar>) -> Option<I>
+    where
+        <VW as HasPosition>::Scalar: geo::CoordNum,
+    {
+        spade::Triangulation::locate_vertex(
+            &self.cdt,
+            spade::Point2::new(position.x(), position.y()),
+        )
+        .map(|handle| self.vertex(handle.fix()))
+    }
+
     pub fn weight(&self, vertex: I) -> &VW {
         spade::Triangulation::s(&self.cdt).vertex_data(self.trianvertex_to_handle[vertex].unwrap())
     }
