@@ -11,22 +11,20 @@ use enum_dispatch::enum_dispatch;
 use geo::Point;
 use petgraph::{data::Element, prelude::StableUnGraph};
 use spade::{handles::FixedVertexHandle, HasPosition, InsertionError, Point2};
+use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
-    autorouter::conncomps::Conncomps,
+    autorouter::conncomps::ConncompsWithPrincipalLayer,
+    board::Board,
     drawing::{
         band::BandTermsegIndex,
         dot::FixedDotIndex,
         graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex},
         primitive::MakePrimitiveShape,
-        rules::AccessRules,
     },
     geometry::shape::AccessShape,
     graph::{GenericIndex, GetIndex, MakeRef},
-    layout::{
-        poly::{MakePolygon, PolyWeight},
-        Layout,
-    },
+    layout::poly::{MakePolygon, PolyWeight},
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
 
@@ -107,8 +105,8 @@ pub struct Ratsnest {
 }
 
 impl Ratsnest {
-    pub fn new(layout: &Layout<impl AccessRules>) -> Result<Self, InsertionError> {
-        let conncomps = Conncomps::new(layout);
+    pub fn new(board: &Board<impl AccessMesadata>) -> Result<Self, InsertionError> {
+        let conncomps = ConncompsWithPrincipalLayer::new(board, 0);
 
         let mut this = Self {
             graph: StableUnGraph::default(),
@@ -116,16 +114,16 @@ impl Ratsnest {
 
         let mut triangulations = BTreeMap::new();
 
-        for layer in 0..layout.drawing().layer_count() {
+        for layer in 0..board.layout().drawing().layer_count() {
             let mut handle_ratvertex_weight =
                 |maybe_net: Option<usize>, vertex: RatvertexIndex, pos: Point| {
                     if let Some(net) = maybe_net {
                         triangulations
-                            .entry((layer, net))
+                            .entry(net)
                             .or_insert_with(|| {
                                 Triangulation::new(RatvertexToHandleMap::new(
-                                    layout.drawing().geometry().dot_index_bound(),
-                                    layout.drawing().geometry().compound_index_bound(),
+                                    board.layout().drawing().geometry().dot_index_bound(),
+                                    board.layout().drawing().geometry().compound_index_bound(),
                                 ))
                             })
                             .add_vertex(RatvertexWeight { vertex, pos })?;
@@ -133,30 +131,36 @@ impl Ratsnest {
                     Ok(())
                 };
 
-            for node in layout.drawing().layer_primitive_nodes(layer) {
+            for node in board.layout().drawing().layer_primitive_nodes(layer) {
                 if let PrimitiveIndex::FixedDot(dot) = node {
                     // Dots that are parts of polys are ignored because ratlines
                     // should only go to their centerpoints.
-                    if layout.drawing().compounds(dot).next().is_none() {
+                    if board.layout().drawing().compounds(dot).next().is_none() {
                         handle_ratvertex_weight(
-                            layout.drawing().primitive(dot).maybe_net(),
+                            board.layout().drawing().primitive(dot).maybe_net(),
                             RatvertexIndex::FixedDot(dot),
-                            node.primitive_ref(layout.drawing()).shape().center(),
+                            node.primitive_ref(board.layout().drawing())
+                                .shape()
+                                .center(),
                         )?;
                     }
                 }
             }
 
-            for poly in layout.layer_poly_nodes(layer) {
+            for poly in board.layout().layer_poly_nodes(layer) {
                 handle_ratvertex_weight(
-                    layout.drawing().compound_weight(poly.into()).maybe_net(),
+                    board
+                        .layout()
+                        .drawing()
+                        .compound_weight(poly.into())
+                        .maybe_net(),
                     RatvertexIndex::Poly(poly),
-                    poly.ref_(layout).shape().center(),
+                    poly.ref_(board.layout()).shape().center(),
                 )?;
             }
         }
 
-        for ((_layer, _net), triangulation) in triangulations {
+        for (_net, triangulation) in triangulations {
             let mut map = Vec::new();
 
             for element in petgraph::algo::min_spanning_tree(&triangulation) {

@@ -180,6 +180,11 @@ impl<M: AccessMesadata> Board<M> {
         poly
     }
 
+    /// Returns an iterator over all the pin names.
+    pub fn pinnames(&self) -> impl Iterator<Item = &String> + '_ {
+        self.pinname_nodes.keys()
+    }
+
     /// Returns an iterator over the set of all nodes associated with a given
     /// pin name.
     pub fn pinname_nodes(&self, pinname: &str) -> impl Iterator<Item = NodeIndex> + '_ {
@@ -215,7 +220,7 @@ impl<M: AccessMesadata> Board<M> {
         self.band_bandname.get_by_right(bandname)
     }
 
-    /// Creates band between the two nodes
+    /// Registers that a band is between the two nodes.
     pub fn try_set_band_between_nodes(
         &mut self,
         recorder: &mut BoardDataEdit,

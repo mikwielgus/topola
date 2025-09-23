@@ -6,7 +6,7 @@ use std::{fs::File, io::BufReader};
 
 use topola::{
     autorouter::{
-        conncomps::Conncomps,
+        conncomps::ConncompsWithPrincipalLayer,
         history::{History, HistoryError},
         invoker::{Invoker, InvokerError},
         Autorouter,
@@ -174,7 +174,7 @@ pub fn assert_that_all_single_layer_groundless_ratlines_are_autorouted(
     autorouter: &mut Autorouter<impl AccessMesadata>,
     layername: &str,
 ) {
-    let conncomps = Conncomps::new(autorouter.board().layout());
+    let conncomps = ConncompsWithPrincipalLayer::new(autorouter.board().layout());
 
     for ratline in autorouter.ratsnest().graph().edge_indices() {
         let (origin_dot, destination_dot) = ratline.ref_(autorouter).endpoint_dots();

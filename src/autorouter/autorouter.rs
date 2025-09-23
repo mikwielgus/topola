@@ -73,7 +73,7 @@ pub struct Autorouter<M> {
 
 impl<M: AccessMesadata> Autorouter<M> {
     pub fn new(board: Board<M>) -> Result<Self, InsertionError> {
-        let ratsnest = Ratsnest::new(board.layout())?;
+        let ratsnest = Ratsnest::new(&board)?;
         Ok(Self { board, ratsnest })
     }
 

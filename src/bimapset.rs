@@ -97,4 +97,8 @@ impl<K: Eq + Ord + Clone, V: Eq + Ord + Clone> BiBTreeMapSet<K, V> {
             None
         }
     }
+
+    pub fn keys(&self) -> impl Iterator<Item = &K> + '_ {
+        self.key_to_values.keys()
+    }
 }
