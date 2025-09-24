@@ -67,10 +67,14 @@ impl<
         self.add_vertex(from)?;
         self.add_vertex(to)?;
 
-        Ok(self.cdt.add_constraint(
-            self.trianvertex_to_handle[from_index].unwrap(),
-            self.trianvertex_to_handle[to_index].unwrap(),
-        ))
+        Ok(self
+            .cdt
+            .try_add_constraint(
+                self.trianvertex_to_handle[from_index].unwrap(),
+                self.trianvertex_to_handle[to_index].unwrap(),
+            )
+            .len()
+            > 0)
     }
 
     pub fn intersects_constraint(&self, from: &VW, to: &VW) -> bool {
