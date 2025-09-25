@@ -61,3 +61,4 @@ tr-menu-route-options-presort-by-ratline-intersection-count-and-length = ‌交�
 tr-menu-route-options-permutate = 排列组合
 tr-menu-view-show-guide-circles = 显示辅助圆
 tr-menu-view-show-guide-bitangents = 显示双切线
+tr-menu-view-show-primitive-indices = 显示图元索引‌
