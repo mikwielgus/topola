@@ -18,6 +18,7 @@ pub mod presorter;
 pub mod ratline;
 pub mod ratsnest;
 pub mod remove_bands;
+pub mod scc;
 pub mod selection;
 
 pub use autorouter::*;

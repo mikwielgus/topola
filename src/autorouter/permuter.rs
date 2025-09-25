@@ -6,13 +6,12 @@ use std::iter::Skip;
 
 use enum_dispatch::enum_dispatch;
 use itertools::{Itertools, Permutations};
-use petgraph::graph::NodeIndex;
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
     autorouter::{
         autoroute::AutorouteExecutionStepper, presorter::SccIntersectionsAndLengthPresorter,
-        ratline::RatlineIndex, Autorouter, AutorouterOptions,
+        ratline::RatlineIndex, scc::Scc, Autorouter, AutorouterOptions,
     },
     drawing::graph::MakePrimitiveRef,
     geometry::{GenericNode, GetLayer},
@@ -51,7 +50,7 @@ impl RatlinesPermuter {
 }
 
 pub struct SccPermutationsRatlinePermuter {
-    sccs_permutations_iter: Skip<Permutations<std::vec::IntoIter<Vec<NodeIndex<usize>>>>>,
+    sccs_permutations_iter: Skip<Permutations<std::vec::IntoIter<Scc>>>,
     original_ratlines: Vec<RatlineIndex>,
 }
 
@@ -85,14 +84,14 @@ impl PermuteRatlines for SccPermutationsRatlinePermuter {
 
         for scc in scc_permutation {
             for ratline in self.original_ratlines.iter() {
-                if scc.contains(
+                if scc.node_indices().contains(
                     &autorouter
                         .ratsnest()
                         .graph()
                         .edge_endpoints(*ratline)
                         .unwrap()
                         .0,
-                ) && scc.contains(
+                ) && scc.node_indices().contains(
                     &autorouter
                         .ratsnest()
                         .graph()
