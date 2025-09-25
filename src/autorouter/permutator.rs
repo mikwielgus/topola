@@ -11,7 +11,7 @@ use crate::{
         autoroute::{AutorouteContinueStatus, AutorouteExecutionStepper},
         invoker::GetDebugOverlayData,
         permuter::{PermuteRatlines, RatlinesPermuter},
-        presorter::{PresortRatlines, SccIntersectionsAndLengthPresorter},
+        presorter::{PresortParams, PresortRatlines, SccIntersectionsAndLengthPresorter},
         ratline::RatlineIndex,
         Autorouter, AutorouterError, AutorouterOptions,
     },
@@ -34,7 +34,14 @@ impl AutorouteExecutionPermutator {
         ratlines: Vec<RatlineIndex>,
         options: AutorouterOptions,
     ) -> Result<Self, AutorouterError> {
-        let presorter = SccIntersectionsAndLengthPresorter::new(autorouter, &ratlines);
+        let presorter = SccIntersectionsAndLengthPresorter::new(
+            autorouter,
+            &ratlines,
+            &PresortParams {
+                intersector_count_weight: 1.0,
+                length_weight: 0.001,
+            },
+        );
         let initially_sorted_ratlines = presorter.presort_ratlines(autorouter, &ratlines);
         /*let permuter = RatlinesPermuter::SccPermutations(SccPermutationsRatlinePermuter::new(
             autorouter, ratlines, presorter, &options,

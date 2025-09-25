@@ -20,8 +20,8 @@ use crate::{
 pub struct Scc {
     node_indices: Vec<NodeIndex<usize>>,
 
-    length: f64,
     intersector_count: usize,
+    length: f64,
 }
 
 impl Scc {

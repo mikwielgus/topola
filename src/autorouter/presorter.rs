@@ -2,14 +2,17 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::cmp::Ordering;
-
 use derive_getters::{Dissolve, Getters};
 use enum_dispatch::enum_dispatch;
 use petgraph::algo::tarjan_scc;
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::autorouter::{ratline::RatlineIndex, scc::Scc, Autorouter};
+
+pub struct PresortParams {
+    pub intersector_count_weight: f64,
+    pub length_weight: f64,
+}
 
 #[enum_dispatch]
 pub trait PresortRatlines {
@@ -34,6 +37,7 @@ impl SccIntersectionsAndLengthPresorter {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: &[RatlineIndex],
+        params: &PresortParams,
     ) -> Self {
         // FIXME: Unnecessary copy.
         let mut filtered_ratsnest = autorouter.ratsnest().graph().clone();
@@ -45,18 +49,15 @@ impl SccIntersectionsAndLengthPresorter {
             .collect();
 
         sccs.sort_unstable_by(|a, b| {
-            let primary_ordering = a.intersector_count().cmp(&b.intersector_count());
-
-            if primary_ordering != Ordering::Equal {
-                primary_ordering
-            } else {
-                let secondary_ordering = a.length().total_cmp(&b.length());
-
-                secondary_ordering
-            }
+            Self::scc_score(params, a).total_cmp(&Self::scc_score(params, b))
         });
 
         Self { sccs }
+    }
+
+    fn scc_score(params: &PresortParams, scc: &Scc) -> f64 {
+        params.intersector_count_weight * *scc.intersector_count() as f64
+            + params.length_weight * scc.length()
     }
 }
 
