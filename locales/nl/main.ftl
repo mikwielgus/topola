@@ -61,3 +61,5 @@ tr-menu-route-options-presort-by-ratline-intersection-count-and-length = Aantal 
 tr-menu-route-options-permutate = Permuteren
 tr-menu-view-show-guide-circles = Toon gids-cirkels
 tr-menu-view-show-guide-bitangents = Toon gids-bitangent
+tr-menu-view-show-primitive-indices = Primitieve indices weergeven
+tr-menu-route-planar-autoroute = Planaire Autoroute
