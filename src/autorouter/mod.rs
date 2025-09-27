@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-pub mod autoroute;
+pub mod anterouter;
 mod autorouter;
 pub mod compare_detours;
 pub mod conncomps;
@@ -10,9 +10,12 @@ pub mod execution;
 pub mod history;
 pub mod invoker;
 pub mod measure_length;
+pub mod multilayer_autoroute;
 pub mod permutator;
 pub mod permuter;
 pub mod place_via;
+pub mod planar_autoroute;
+pub mod planner;
 pub mod pointroute;
 pub mod presorter;
 pub mod ratline;

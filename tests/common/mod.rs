@@ -139,7 +139,7 @@ pub fn assert_navnode_count(
         .iter()
         .find_map(|ratline| {
             let (candidate_origin, candidate_destination) =
-                ratline.ref_(autorouter).endpoint_dots();
+                ratline.ref_(autorouter).terminating_dots();
             let candidate_origin_pin = autorouter
                 .board()
                 .node_pinname(&GenericNode::Primitive(candidate_origin.into()))

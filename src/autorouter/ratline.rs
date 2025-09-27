@@ -17,7 +17,7 @@ use crate::{
     triangulation::GetTrianvertexNodeIndex,
 };
 
-use super::{ratsnest::RatvertexIndex, Autorouter};
+use super::{ratsnest::RatvertexNodeIndex, Autorouter};
 
 pub type RatlineIndex = EdgeIndex<usize>;
 
@@ -69,8 +69,8 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
             .unwrap()
             .node_index()
         {
-            RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => poly.ref_(self.autorouter.board.layout()).apex(),
+            RatvertexNodeIndex::FixedDot(dot) => dot,
+            RatvertexNodeIndex::Poly(poly) => poly.ref_(self.autorouter.board.layout()).apex(),
         };
 
         let target_dot = match self
@@ -81,9 +81,37 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
             .unwrap()
             .node_index()
         {
-            RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => poly.ref_(self.autorouter.board.layout()).apex(),
+            RatvertexNodeIndex::FixedDot(dot) => dot,
+            RatvertexNodeIndex::Poly(poly) => poly.ref_(self.autorouter.board.layout()).apex(),
         };
+
+        (source_dot, target_dot)
+    }
+
+    pub fn terminating_dots(&self) -> (FixedDotIndex, FixedDotIndex) {
+        let (source, target) = self
+            .autorouter
+            .ratsnest
+            .graph()
+            .edge_endpoints(self.index)
+            .unwrap();
+
+        let source_dot = self
+            .autorouter
+            .ratsnest
+            .graph()
+            .node_weight(source)
+            .unwrap()
+            .maybe_terminating_dot
+            .unwrap_or(self.endpoint_dots().0);
+        let target_dot = self
+            .autorouter
+            .ratsnest
+            .graph()
+            .node_weight(target)
+            .unwrap()
+            .maybe_terminating_dot
+            .unwrap_or(self.endpoint_dots().1);
 
         (source_dot, target_dot)
     }
@@ -172,7 +200,7 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         Line::new(source_pos, target_pos)
     }
 
-    fn endpoint_indices(&self) -> (NodeIndex<usize>, NodeIndex<usize>) {
+    pub fn endpoint_indices(&self) -> (NodeIndex<usize>, NodeIndex<usize>) {
         self.autorouter
             .ratsnest
             .graph()

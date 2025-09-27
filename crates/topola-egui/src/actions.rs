@@ -299,6 +299,7 @@ impl PlaceActions {
 
 pub struct RouteActions {
     pub autoroute: Trigger,
+    pub planar_autoroute: Trigger,
     pub topo_autoroute: Trigger,
 }
 
@@ -309,6 +310,12 @@ impl RouteActions {
                 tr.text("tr-menu-route-autoroute"),
                 egui::Modifiers::CTRL,
                 egui::Key::R,
+            )
+            .into_trigger(),
+            planar_autoroute: Action::new(
+                tr.text("tr-menu-route-planar-autoroute"),
+                egui::Modifiers::CTRL,
+                egui::Key::P,
             )
             .into_trigger(),
             topo_autoroute: Action::new(
@@ -332,6 +339,7 @@ impl RouteActions {
         ui.add_enabled_ui(have_workspace, |ui| {
             ui.add_enabled_ui(workspace_activities_enabled, |ui| {
                 self.autoroute.button(ctx, ui);
+                self.planar_autoroute.button(ctx, ui);
                 self.topo_autoroute.button(ctx, ui);
             });
             ui.separator();

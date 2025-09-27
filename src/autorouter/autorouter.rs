@@ -7,11 +7,14 @@ use geo::Point;
 use petgraph::graph::NodeIndex;
 use serde::{Deserialize, Serialize};
 use spade::InsertionError;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use thiserror::Error;
 
 use crate::{
-    autorouter::permutator::AutorouteExecutionPermutator,
+    autorouter::{
+        anterouter::AnterouterPlan, multilayer_autoroute::MultilayerAutorouteExecutionStepper,
+        permutator::PlanarAutorouteExecutionPermutator, planner::Planner,
+    },
     board::{AccessMesadata, Board},
     drawing::{band::BandTermsegIndex, Infringement},
     graph::MakeRef,
@@ -21,13 +24,13 @@ use crate::{
 };
 
 use super::{
-    autoroute::AutorouteExecutionStepper,
     compare_detours::CompareDetoursExecutionStepper,
     measure_length::MeasureLengthExecutionStepper,
     place_via::PlaceViaExecutionStepper,
+    planar_autoroute::PlanarAutorouteExecutionStepper,
     pointroute::PointrouteExecutionStepper,
     ratline::RatlineIndex,
-    ratsnest::{Ratsnest, RatvertexIndex},
+    ratsnest::{Ratsnest, RatvertexNodeIndex},
     remove_bands::RemoveBandsExecutionStepper,
     selection::{BandSelection, PinSelection},
 };
@@ -91,8 +94,8 @@ impl<M: AccessMesadata> Autorouter<M> {
             .unwrap()
             .node_index()
         {
-            RatvertexIndex::FixedDot(dot) => dot,
-            RatvertexIndex::Poly(poly) => poly.ref_(self.board.layout()).apex(),
+            RatvertexNodeIndex::FixedDot(dot) => dot,
+            RatvertexNodeIndex::Poly(poly) => poly.ref_(self.board.layout()).apex(),
         };
 
         PointrouteExecutionStepper::new(self, origin_dot, point, options)
@@ -105,27 +108,45 @@ impl<M: AccessMesadata> Autorouter<M> {
             .map_err(|_| AutorouterError::CouldNotRemoveBand(band))
     }
 
-    pub fn autoroute(
+    pub fn multilayer_autoroute(
         &mut self,
         selection: &PinSelection,
         options: AutorouterOptions,
-    ) -> Result<AutorouteExecutionPermutator, AutorouterError> {
-        AutorouteExecutionPermutator::new(self, self.selected_ratlines(selection), options)
+    ) -> Result<MultilayerAutorouteExecutionStepper, AutorouterError> {
+        let planner = Planner::new(self, &self.selected_ratlines(selection));
+
+        MultilayerAutorouteExecutionStepper::new(
+            self,
+            self.selected_ratlines(selection),
+            planner.plan().clone(),
+            options,
+        )
     }
 
-    pub(super) fn autoroute_ratlines(
+    pub fn planar_autoroute(
+        &mut self,
+        selection: &PinSelection,
+        options: AutorouterOptions,
+    ) -> Result<PlanarAutorouteExecutionPermutator, AutorouterError> {
+        PlanarAutorouteExecutionPermutator::new(self, self.selected_ratlines(selection), options)
+    }
+
+    pub(super) fn planar_autoroute_ratlines(
         &mut self,
         ratlines: Vec<RatlineIndex>,
         options: AutorouterOptions,
-    ) -> Result<AutorouteExecutionStepper, AutorouterError> {
-        AutorouteExecutionStepper::new(self, ratlines, options)
+    ) -> Result<PlanarAutorouteExecutionStepper, AutorouterError> {
+        PlanarAutorouteExecutionStepper::new(self, ratlines, options)
     }
 
-    pub fn undo_autoroute(&mut self, selection: &PinSelection) -> Result<(), AutorouterError> {
-        self.undo_autoroute_ratlines(self.selected_ratlines(selection))
+    pub fn undo_planar_autoroute(
+        &mut self,
+        selection: &PinSelection,
+    ) -> Result<(), AutorouterError> {
+        self.undo_planar_autoroute_ratlines(self.selected_ratlines(selection))
     }
 
-    pub(super) fn undo_autoroute_ratlines(
+    pub(super) fn undo_planar_autoroute_ratlines(
         &mut self,
         ratlines: Vec<RatlineIndex>,
     ) -> Result<(), AutorouterError> {
@@ -192,7 +213,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             active_layer,
             allowed_edges,
             ratlines.into_iter().filter_map(|ratline| {
-                let (source, target) = ratline.ref_(self).endpoint_dots();
+                let (source, target) = ratline.ref_(self).terminating_dots();
 
                 if navmesh
                     .as_ref()

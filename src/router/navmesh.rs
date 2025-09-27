@@ -252,7 +252,7 @@ impl Navmesh {
         }
 
         // The existence of a constraint edge does not (!) guarantee that this
-        // edge exactly will be present in the triangulation. It appears that
+        // exact edge will be present in the triangulation. It appears that
         // Spade splits a constraint edge in two if an endpoint of another
         // constraint lies on it.
         //

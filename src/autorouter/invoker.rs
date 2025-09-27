@@ -32,7 +32,8 @@ use super::{
     execution::{Command, ExecutionStepper},
     history::{History, HistoryError},
     measure_length::MeasureLengthExecutionStepper,
-    permutator::AutorouteExecutionPermutator,
+    multilayer_autoroute::MultilayerAutorouteExecutionStepper,
+    permutator::PlanarAutorouteExecutionPermutator,
     place_via::PlaceViaExecutionStepper,
     remove_bands::RemoveBandsExecutionStepper,
     Autorouter, AutorouterError,
@@ -166,8 +167,13 @@ impl<M: AccessMesadata + Clone> Invoker<M> {
     #[debug_requires(self.ongoing_command.is_none())]
     fn dispatch_command(&mut self, command: &Command) -> Result<ExecutionStepper<M>, InvokerError> {
         Ok(match command {
-            Command::Autoroute(selection, options) => {
-                ExecutionStepper::Autoroute(self.autorouter.autoroute(selection, *options)?)
+            Command::Autoroute(selection, options) => ExecutionStepper::PlanarAutoroute(
+                self.autorouter.planar_autoroute(selection, *options)?,
+            ),
+            Command::MultilayerAutoroute(selection, options) => {
+                ExecutionStepper::MultilayerAutoroute(
+                    self.autorouter.multilayer_autoroute(selection, *options)?,
+                )
             }
             Command::TopoAutoroute {
                 selection,

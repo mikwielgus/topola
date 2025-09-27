@@ -10,8 +10,9 @@ use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
     autorouter::{
-        autoroute::AutorouteExecutionStepper, presorter::SccIntersectionsAndLengthPresorter,
-        ratline::RatlineIndex, scc::Scc, Autorouter, AutorouterOptions,
+        planar_autoroute::PlanarAutorouteExecutionStepper,
+        presorter::SccIntersectionsAndLengthPresorter, ratline::RatlineIndex, scc::Scc, Autorouter,
+        AutorouterOptions,
     },
     drawing::graph::MakePrimitiveRef,
     geometry::{GenericNode, GetLayer},
@@ -23,7 +24,7 @@ pub trait PermuteRatlines {
     fn permute_ratlines(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        stepper: &AutorouteExecutionStepper,
+        stepper: &PlanarAutorouteExecutionStepper,
     ) -> Option<Vec<RatlineIndex>>;
 }
 
@@ -77,7 +78,7 @@ impl PermuteRatlines for SccPermutationsRatlinePermuter {
     fn permute_ratlines(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        _stepper: &AutorouteExecutionStepper,
+        _stepper: &PlanarAutorouteExecutionStepper,
     ) -> Option<Vec<RatlineIndex>> {
         let scc_permutation = self.sccs_permutations_iter.next()?;
         let mut ratlines = vec![];
@@ -130,20 +131,20 @@ impl PermuteRatlines for RatlineCutsRatlinePermuter {
     fn permute_ratlines(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        stepper: &AutorouteExecutionStepper,
+        stepper: &PlanarAutorouteExecutionStepper,
     ) -> Option<Vec<RatlineIndex>> {
         let curr_ratline = stepper.ratlines()[*stepper.curr_ratline_index()];
-        let endpoint_dots = curr_ratline.ref_(autorouter).endpoint_dots();
+        let terminating_dots = curr_ratline.ref_(autorouter).terminating_dots();
         let bands_cut_by_ratline: Vec<_> = autorouter
             .board()
             .layout()
             .bands_between_nodes(
-                endpoint_dots
+                terminating_dots
                     .0
                     .primitive_ref(autorouter.board().layout().drawing())
                     .layer(),
-                GenericNode::Primitive(endpoint_dots.0.into()),
-                GenericNode::Primitive(endpoint_dots.1.into()),
+                GenericNode::Primitive(terminating_dots.0.into()),
+                GenericNode::Primitive(terminating_dots.1.into()),
             )
             .collect();
 

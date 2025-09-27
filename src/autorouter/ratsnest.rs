@@ -9,12 +9,11 @@ use std::{
 
 use enum_dispatch::enum_dispatch;
 use geo::Point;
-use petgraph::{data::Element, prelude::StableUnGraph};
+use petgraph::{data::Element, graph::NodeIndex, prelude::StableUnGraph};
 use spade::{handles::FixedVertexHandle, HasPosition, InsertionError, Point2};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
-    autorouter::conncomps::ConncompsWithPrincipalLayer,
     board::Board,
     drawing::{
         band::BandTermsegIndex,
@@ -28,32 +27,36 @@ use crate::{
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
 
-use super::ratline::{RatlineIndex, RatlineWeight};
+use super::{
+    conncomps::ConncompsWithPrincipalLayer,
+    ratline::{RatlineIndex, RatlineWeight},
+};
 
 #[enum_dispatch(GetIndex)]
 #[derive(Debug, Clone, Copy, PartialEq)]
-pub enum RatvertexIndex {
+pub enum RatvertexNodeIndex {
     FixedDot(FixedDotIndex),
     Poly(GenericIndex<PolyWeight>),
 }
 
-impl From<RatvertexIndex> for crate::layout::NodeIndex {
-    fn from(vertex: RatvertexIndex) -> crate::layout::NodeIndex {
+impl From<RatvertexNodeIndex> for crate::layout::NodeIndex {
+    fn from(vertex: RatvertexNodeIndex) -> crate::layout::NodeIndex {
         match vertex {
-            RatvertexIndex::FixedDot(dot) => crate::layout::NodeIndex::Primitive(dot.into()),
-            RatvertexIndex::Poly(poly) => crate::layout::NodeIndex::Compound(poly.into()),
+            RatvertexNodeIndex::FixedDot(dot) => crate::layout::NodeIndex::Primitive(dot.into()),
+            RatvertexNodeIndex::Poly(poly) => crate::layout::NodeIndex::Compound(poly.into()),
         }
     }
 }
 
 #[derive(Debug, Clone, Copy)]
 pub struct RatvertexWeight {
-    vertex: RatvertexIndex,
+    vertex: RatvertexNodeIndex,
     pub pos: Point,
+    pub maybe_terminating_dot: Option<FixedDotIndex>,
 }
 
-impl GetTrianvertexNodeIndex<RatvertexIndex> for RatvertexWeight {
-    fn node_index(&self) -> RatvertexIndex {
+impl GetTrianvertexNodeIndex<RatvertexNodeIndex> for RatvertexWeight {
+    fn node_index(&self) -> RatvertexNodeIndex {
         self.vertex
     }
 }
@@ -80,22 +83,22 @@ impl RatvertexToHandleMap {
     }
 }
 
-impl Index<RatvertexIndex> for RatvertexToHandleMap {
+impl Index<RatvertexNodeIndex> for RatvertexToHandleMap {
     type Output = Option<FixedVertexHandle>;
 
-    fn index(&self, ratvertex: RatvertexIndex) -> &Self::Output {
+    fn index(&self, ratvertex: RatvertexNodeIndex) -> &Self::Output {
         match ratvertex {
-            RatvertexIndex::FixedDot(dot) => &self.fixed_dot_to_handle[dot.index()],
-            RatvertexIndex::Poly(bend) => &self.poly_to_handle[bend.index()],
+            RatvertexNodeIndex::FixedDot(dot) => &self.fixed_dot_to_handle[dot.index()],
+            RatvertexNodeIndex::Poly(bend) => &self.poly_to_handle[bend.index()],
         }
     }
 }
 
-impl IndexMut<RatvertexIndex> for RatvertexToHandleMap {
-    fn index_mut(&mut self, ratvertex: RatvertexIndex) -> &mut Self::Output {
+impl IndexMut<RatvertexNodeIndex> for RatvertexToHandleMap {
+    fn index_mut(&mut self, ratvertex: RatvertexNodeIndex) -> &mut Self::Output {
         match ratvertex {
-            RatvertexIndex::FixedDot(dot) => &mut self.fixed_dot_to_handle[dot.index()],
-            RatvertexIndex::Poly(bend) => &mut self.poly_to_handle[bend.index()],
+            RatvertexNodeIndex::FixedDot(dot) => &mut self.fixed_dot_to_handle[dot.index()],
+            RatvertexNodeIndex::Poly(bend) => &mut self.poly_to_handle[bend.index()],
         }
     }
 }
@@ -160,12 +163,12 @@ impl Ratsnest {
         board: &Board<impl AccessMesadata>,
         triangulations: &mut BTreeMap<
             usize,
-            Triangulation<RatvertexIndex, RatvertexToHandleMap, RatvertexWeight, RatlineWeight>,
+            Triangulation<RatvertexNodeIndex, RatvertexToHandleMap, RatvertexWeight, RatlineWeight>,
         >,
         layer: usize,
     ) -> Result<(), InsertionError> {
         let mut handle_ratvertex_weight =
-            |maybe_net: Option<usize>, vertex: RatvertexIndex, pos: Point| {
+            |maybe_net: Option<usize>, vertex: RatvertexNodeIndex, pos: Point| {
                 let Some(net) = maybe_net else {
                     return Ok(());
                 };
@@ -184,7 +187,11 @@ impl Ratsnest {
                     return Ok(());
                 }
 
-                triangulation.add_vertex(RatvertexWeight { vertex, pos })?;
+                triangulation.add_vertex(RatvertexWeight {
+                    vertex,
+                    pos,
+                    maybe_terminating_dot: None,
+                })?;
                 Ok(())
             };
 
@@ -195,7 +202,7 @@ impl Ratsnest {
                 if board.layout().drawing().compounds(dot).next().is_none() {
                     handle_ratvertex_weight(
                         board.layout().drawing().primitive(dot).maybe_net(),
-                        RatvertexIndex::FixedDot(dot),
+                        RatvertexNodeIndex::FixedDot(dot),
                         node.primitive_ref(board.layout().drawing())
                             .shape()
                             .center(),
@@ -211,12 +218,23 @@ impl Ratsnest {
                     .drawing()
                     .compound_weight(poly.into())
                     .maybe_net(),
-                RatvertexIndex::Poly(poly),
+                RatvertexNodeIndex::Poly(poly),
                 poly.ref_(board.layout()).shape().center(),
             )?;
         }
 
         Ok(())
+    }
+
+    pub fn assign_terminating_dot_to_ratvertex(
+        &mut self,
+        node_index: NodeIndex<usize>,
+        terminating_dot: FixedDotIndex,
+    ) {
+        self.graph
+            .node_weight_mut(node_index)
+            .unwrap()
+            .maybe_terminating_dot = Some(terminating_dot)
     }
 
     pub fn assign_band_termseg_to_ratline(

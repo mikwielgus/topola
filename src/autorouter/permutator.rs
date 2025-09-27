@@ -8,9 +8,9 @@ use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
     autorouter::{
-        autoroute::{AutorouteContinueStatus, AutorouteExecutionStepper},
         invoker::GetDebugOverlayData,
         permuter::{PermuteRatlines, RatlinesPermuter},
+        planar_autoroute::{PlanarAutorouteContinueStatus, PlanarAutorouteExecutionStepper},
         presorter::{PresortParams, PresortRatlines, SccIntersectionsAndLengthPresorter},
         ratline::RatlineIndex,
         Autorouter, AutorouterError, AutorouterOptions,
@@ -22,13 +22,13 @@ use crate::{
     stepper::{Abort, EstimateProgress, Permutate, Step},
 };
 
-pub struct AutorouteExecutionPermutator {
-    stepper: AutorouteExecutionStepper,
+pub struct PlanarAutorouteExecutionPermutator {
+    stepper: PlanarAutorouteExecutionStepper,
     permuter: RatlinesPermuter,
     options: AutorouterOptions,
 }
 
-impl AutorouteExecutionPermutator {
+impl PlanarAutorouteExecutionPermutator {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: Vec<RatlineIndex>,
@@ -49,7 +49,7 @@ impl AutorouteExecutionPermutator {
         let permuter = RatlinesPermuter::new(autorouter, ratlines, presorter, &options);
 
         Ok(Self {
-            stepper: AutorouteExecutionStepper::new(
+            stepper: PlanarAutorouteExecutionStepper::new(
                 autorouter,
                 initially_sorted_ratlines,
                 options,
@@ -61,15 +61,16 @@ impl AutorouteExecutionPermutator {
     }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinueStatus>
-    for AutorouteExecutionPermutator
+impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteContinueStatus>
+    for PlanarAutorouteExecutionPermutator
 {
     type Error = AutorouterError;
 
     fn step(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<ControlFlow<Option<BoardEdit>, AutorouteContinueStatus>, AutorouterError> {
+    ) -> Result<ControlFlow<Option<BoardEdit>, PlanarAutorouteContinueStatus>, AutorouterError>
+    {
         match self.stepper.step(autorouter) {
             Ok(ok) => Ok(ok),
             Err(err) => {
@@ -97,14 +98,14 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinue
     }
 }
 
-impl<M: AccessMesadata> Abort<Autorouter<M>> for AutorouteExecutionPermutator {
+impl<M: AccessMesadata> Abort<Autorouter<M>> for PlanarAutorouteExecutionPermutator {
     fn abort(&mut self, autorouter: &mut Autorouter<M>) {
         //self.permutations_iter.all(|_| true); // Why did I add this code here???
         self.stepper.abort(autorouter);
     }
 }
 
-impl EstimateProgress for AutorouteExecutionPermutator {
+impl EstimateProgress for PlanarAutorouteExecutionPermutator {
     type Value = f64;
 
     fn estimate_progress_value(&self) -> f64 {
@@ -118,7 +119,7 @@ impl EstimateProgress for AutorouteExecutionPermutator {
     }
 }
 
-impl GetDebugOverlayData for AutorouteExecutionPermutator {
+impl GetDebugOverlayData for PlanarAutorouteExecutionPermutator {
     fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
         self.stepper.maybe_thetastar()
     }

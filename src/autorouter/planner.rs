@@ -1,0 +1,107 @@
+// SPDX-FileCopyrightText: 2025 Topola contributors
+//
+// SPDX-License-Identifier: MIT
+
+use std::collections::BTreeMap;
+
+use derive_getters::Getters;
+use specctra_core::mesadata::AccessMesadata;
+
+use crate::{
+    autorouter::{
+        anterouter::{AnterouterPlan, TerminatingScheme},
+        ratline::RatlineIndex,
+        Autorouter,
+    },
+    drawing::{
+        dot::FixedDotIndex,
+        graph::{MakePrimitiveRef, PrimitiveIndex},
+    },
+    geometry::{GenericNode, GetLayer},
+    graph::MakeRef,
+};
+
+#[derive(Getters)]
+pub struct Planner {
+    plan: AnterouterPlan,
+}
+
+impl Planner {
+    pub fn new(autorouter: &Autorouter<impl AccessMesadata>, ratlines: &[RatlineIndex]) -> Self {
+        let mut plan = AnterouterPlan {
+            layer_map: ratlines
+                .iter()
+                .enumerate()
+                .map(|(i, ratline)| (*ratline, i % 2))
+                .collect(),
+            ratline_endpoint_dot_to_terminating_scheme: BTreeMap::new(),
+        };
+
+        for ratline in ratlines {
+            let layer = plan.layer_map[ratline];
+
+            if let Some(terminating_scheme) = Self::determine_terminating_scheme(
+                autorouter,
+                ratline.ref_(autorouter).endpoint_dots().0,
+                layer,
+            ) {
+                plan.ratline_endpoint_dot_to_terminating_scheme.insert(
+                    ratline.ref_(autorouter).endpoint_dots().0,
+                    terminating_scheme,
+                );
+            }
+
+            if let Some(terminating_scheme) = Self::determine_terminating_scheme(
+                autorouter,
+                ratline.ref_(autorouter).endpoint_dots().1,
+                layer,
+            ) {
+                plan.ratline_endpoint_dot_to_terminating_scheme.insert(
+                    ratline.ref_(autorouter).endpoint_dots().1,
+                    terminating_scheme,
+                );
+            }
+        }
+
+        Self { plan }
+    }
+
+    fn determine_terminating_scheme(
+        autorouter: &Autorouter<impl AccessMesadata>,
+        ratline_endpoint_dot: FixedDotIndex,
+        layer: usize,
+    ) -> Option<TerminatingScheme> {
+        if layer
+            == ratline_endpoint_dot
+                .primitive_ref(autorouter.board().layout().drawing())
+                .layer()
+        {
+            return None;
+        }
+
+        let pinname = autorouter
+            .board()
+            .node_pinname(&GenericNode::Primitive(ratline_endpoint_dot.into()))
+            .unwrap();
+
+        Some(
+            autorouter
+                .board()
+                .pinname_nodes(pinname)
+                .find_map(|node| {
+                    if let GenericNode::Primitive(PrimitiveIndex::FixedDot(dot)) = node {
+                        (layer
+                            == dot
+                                .primitive_ref(autorouter.board().layout().drawing())
+                                .layer())
+                        .then_some(dot)
+                    } else {
+                        None
+                    }
+                })
+                .map_or(TerminatingScheme::Anteroute([-1.0, -1.0]), |dot| {
+                    TerminatingScheme::ExistingFixedDot(dot)
+                }),
+        )
+    }
+}

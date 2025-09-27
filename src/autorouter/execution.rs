@@ -8,7 +8,10 @@ use enum_dispatch::enum_dispatch;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    autorouter::permutator::AutorouteExecutionPermutator,
+    autorouter::{
+        multilayer_autoroute::MultilayerAutorouteExecutionStepper,
+        permutator::PlanarAutorouteExecutionPermutator,
+    },
     board::{edit::BoardEdit, AccessMesadata},
     layout::via::ViaWeight,
     router::ng,
@@ -29,7 +32,8 @@ type Type = PinSelection;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
-    Autoroute(PinSelection, AutorouterOptions),
+    Autoroute(PinSelection, AutorouterOptions), // TODO: Rename to PlanarAutoroute.
+    MultilayerAutoroute(PinSelection, AutorouterOptions),
     TopoAutoroute {
         selection: PinSelection,
         #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
@@ -45,7 +49,8 @@ pub enum Command {
 
 #[enum_dispatch(GetDebugOverlayData)]
 pub enum ExecutionStepper<M> {
-    Autoroute(AutorouteExecutionPermutator),
+    MultilayerAutoroute(MultilayerAutorouteExecutionStepper),
+    PlanarAutoroute(PlanarAutorouteExecutionPermutator),
     TopoAutoroute(ng::AutorouteExecutionStepper<M>),
     PlaceVia(PlaceViaExecutionStepper),
     RemoveBands(RemoveBandsExecutionStepper),
@@ -59,10 +64,16 @@ impl<M: AccessMesadata + Clone> ExecutionStepper<M> {
         autorouter: &mut Autorouter<M>,
     ) -> Result<ControlFlow<(Option<BoardEdit>, String)>, InvokerError> {
         Ok(match self {
-            ExecutionStepper::Autoroute(autoroute) => match autoroute.step(autorouter)? {
+            ExecutionStepper::MultilayerAutoroute(autoroute) => match autoroute.step(autorouter)? {
                 ControlFlow::Continue(..) => ControlFlow::Continue(()),
                 ControlFlow::Break(edit) => {
-                    ControlFlow::Break((edit, "finished autorouting".to_string()))
+                    ControlFlow::Break((edit, "finished multilayer autorouting".to_string()))
+                }
+            },
+            ExecutionStepper::PlanarAutoroute(autoroute) => match autoroute.step(autorouter)? {
+                ControlFlow::Continue(..) => ControlFlow::Continue(()),
+                ControlFlow::Break(edit) => {
+                    ControlFlow::Break((edit, "finished planar autorouting".to_string()))
                 }
             },
             ExecutionStepper::TopoAutoroute(autoroute) => {
@@ -156,12 +167,17 @@ impl<M: AccessMesadata + Clone> Step<Invoker<M>, String> for ExecutionStepper<M>
 impl<M: AccessMesadata + Clone> Abort<Invoker<M>> for ExecutionStepper<M> {
     fn abort(&mut self, invoker: &mut Invoker<M>) {
         match self {
+            ExecutionStepper::MultilayerAutoroute(autoroute) => {
+                autoroute.abort(&mut invoker.autorouter)
+            }
+            ExecutionStepper::PlanarAutoroute(autoroute) => {
+                autoroute.abort(&mut invoker.autorouter)
+            }
             ExecutionStepper::TopoAutoroute(autoroute) => {
                 autoroute.abort(&mut ());
                 // TODO: maintain topo-navmesh just like layout
                 *invoker.autorouter.board.layout_mut() = autoroute.last_layout.clone();
             }
-            ExecutionStepper::Autoroute(autoroute) => autoroute.abort(&mut invoker.autorouter),
             ExecutionStepper::PlaceVia(_place_via) => (), //place_via.abort(),
             ExecutionStepper::RemoveBands(_remove_bands) => (), //remove_bands.abort(),
             ExecutionStepper::CompareDetours(_compare_detours) => (), //compare_detours.abort(),
@@ -177,7 +193,8 @@ impl<M> EstimateProgress for ExecutionStepper<M> {
 
     fn estimate_progress_value(&self) -> f64 {
         match self {
-            ExecutionStepper::Autoroute(autoroute) => autoroute.estimate_progress_value(),
+            ExecutionStepper::MultilayerAutoroute(autoroute) => autoroute.estimate_progress_value(),
+            ExecutionStepper::PlanarAutoroute(autoroute) => autoroute.estimate_progress_value(),
             ExecutionStepper::TopoAutoroute(toporoute) => toporoute.estimate_progress_value(),
             ExecutionStepper::PlaceVia(place_via) => place_via.estimate_progress_value(),
             ExecutionStepper::RemoveBands(remove_bands) => remove_bands.estimate_progress_value(),
@@ -192,7 +209,10 @@ impl<M> EstimateProgress for ExecutionStepper<M> {
 
     fn estimate_progress_maximum(&self) -> f64 {
         match self {
-            ExecutionStepper::Autoroute(autoroute) => autoroute.estimate_progress_maximum(),
+            ExecutionStepper::MultilayerAutoroute(autoroute) => {
+                autoroute.estimate_progress_maximum()
+            }
+            ExecutionStepper::PlanarAutoroute(autoroute) => autoroute.estimate_progress_maximum(),
             ExecutionStepper::TopoAutoroute(toporoute) => toporoute.estimate_progress_maximum(),
             ExecutionStepper::PlaceVia(place_via) => place_via.estimate_progress_maximum(),
             ExecutionStepper::RemoveBands(remove_bands) => remove_bands.estimate_progress_maximum(),

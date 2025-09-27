@@ -30,7 +30,7 @@ use super::{
 };
 
 /// Represents the current status of the autoroute operation.
-pub enum AutorouteContinueStatus {
+pub enum PlanarAutorouteContinueStatus {
     /// The autoroute is currently running and in progress.
     Running,
     /// A specific segment has been successfully routed.
@@ -41,7 +41,7 @@ pub enum AutorouteContinueStatus {
 
 /// Manages the autorouting process across multiple ratlines.
 #[derive(Getters)]
-pub struct AutorouteExecutionStepper {
+pub struct PlanarAutorouteExecutionStepper {
     /// The ratlines which we are routing.
     ratlines: Vec<RatlineIndex>,
     /// Keeps track of the current ratline being routed, if one is active.
@@ -56,7 +56,7 @@ pub struct AutorouteExecutionStepper {
     options: AutorouterOptions,
 }
 
-impl AutorouteExecutionStepper {
+impl PlanarAutorouteExecutionStepper {
     /// Initializes a new [`AutorouteExecutionStepper`] instance.
     ///
     /// This method sets up the routing process by accepting the execution properties.
@@ -71,7 +71,7 @@ impl AutorouteExecutionStepper {
             return Err(AutorouterError::NothingToRoute);
         };
 
-        let (origin, destination) = ratlines[0].ref_(autorouter).endpoint_dots();
+        let (origin, destination) = ratlines[0].ref_(autorouter).terminating_dots();
         let mut router = Router::new(autorouter.board.layout_mut(), options.router_options);
 
         Ok(Self {
@@ -107,7 +107,7 @@ impl AutorouteExecutionStepper {
 
         autorouter.board.apply_edit(&board_edit.reverse());
 
-        let (origin, destination) = self.ratlines[index].ref_(autorouter).endpoint_dots();
+        let (origin, destination) = self.ratlines[index].ref_(autorouter).terminating_dots();
         let mut router = Router::new(autorouter.board.layout_mut(), self.options.router_options);
 
         self.route = Some(router.route(
@@ -129,15 +129,16 @@ impl AutorouteExecutionStepper {
     }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinueStatus>
-    for AutorouteExecutionStepper
+impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteContinueStatus>
+    for PlanarAutorouteExecutionStepper
 {
     type Error = AutorouterError;
 
     fn step(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<ControlFlow<Option<BoardEdit>, AutorouteContinueStatus>, AutorouterError> {
+    ) -> Result<ControlFlow<Option<BoardEdit>, PlanarAutorouteContinueStatus>, AutorouterError>
+    {
         // TODO: Use a proper state machine here for better readability?
 
         if self.curr_ratline_index >= self.ratlines.len() {
@@ -157,50 +158,56 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinue
             return Ok(ControlFlow::Break(None));
         };
 
-        let (source, target) = self.ratlines[self.curr_ratline_index]
+        let (origin, destination) = self.ratlines[self.curr_ratline_index]
             .ref_(autorouter)
-            .endpoint_dots();
+            .terminating_dots();
 
-        let ret = if let Some(band_termseg) = autorouter.board.band_between_nodes(source, target) {
-            AutorouteContinueStatus::Skipped(band_termseg[false])
-        } else {
-            let band_termseg = {
-                let mut router =
-                    Router::new(autorouter.board.layout_mut(), self.options.router_options);
+        let ret =
+            if let Some(band_termseg) = autorouter.board.band_between_nodes(origin, destination) {
+                PlanarAutorouteContinueStatus::Skipped(band_termseg[false])
+            } else {
+                let band_termseg = {
+                    let mut router =
+                        Router::new(autorouter.board.layout_mut(), self.options.router_options);
 
-                let ControlFlow::Break(band_termseg) = route.step(&mut router)? else {
-                    return Ok(ControlFlow::Continue(AutorouteContinueStatus::Running));
+                    let ControlFlow::Break(band_termseg) = route.step(&mut router)? else {
+                        return Ok(ControlFlow::Continue(
+                            PlanarAutorouteContinueStatus::Running,
+                        ));
+                    };
+                    band_termseg
                 };
-                band_termseg
+
+                let band = autorouter
+                    .board
+                    .layout()
+                    .drawing()
+                    .find_loose_band_uid(band_termseg.into())
+                    .expect("a completely routed band should've Seg's as ends");
+
+                autorouter.ratsnest.assign_band_termseg_to_ratline(
+                    self.ratlines[self.curr_ratline_index],
+                    band_termseg,
+                );
+
+                let mut board_data_edit = BoardDataEdit::new();
+
+                autorouter.board.try_set_band_between_nodes(
+                    &mut board_data_edit,
+                    origin,
+                    destination,
+                    band,
+                );
+
+                self.board_data_edits.push(board_data_edit);
+
+                PlanarAutorouteContinueStatus::Routed(band_termseg)
             };
-
-            let band = autorouter
-                .board
-                .layout()
-                .drawing()
-                .find_loose_band_uid(band_termseg.into())
-                .expect("a completely routed band should've Seg's as ends");
-
-            autorouter.ratsnest.assign_band_termseg_to_ratline(
-                self.ratlines[self.curr_ratline_index],
-                band_termseg,
-            );
-
-            let mut board_data_edit = BoardDataEdit::new();
-
-            autorouter
-                .board
-                .try_set_band_between_nodes(&mut board_data_edit, source, target, band);
-
-            self.board_data_edits.push(board_data_edit);
-
-            AutorouteContinueStatus::Routed(band_termseg)
-        };
 
         self.curr_ratline_index += 1;
 
         if let Some(new_ratline) = self.ratlines.get(self.curr_ratline_index) {
-            let (source, target) = new_ratline.ref_(autorouter).endpoint_dots();
+            let (source, target) = new_ratline.ref_(autorouter).terminating_dots();
             let mut router =
                 Router::new(autorouter.board.layout_mut(), self.options.router_options);
 
@@ -219,14 +226,14 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, AutorouteContinue
     }
 }
 
-impl<M: AccessMesadata> Abort<Autorouter<M>> for AutorouteExecutionStepper {
+impl<M: AccessMesadata> Abort<Autorouter<M>> for PlanarAutorouteExecutionStepper {
     fn abort(&mut self, autorouter: &mut Autorouter<M>) {
         self.backtrace_to_index(autorouter, 0);
         self.curr_ratline_index = self.ratlines.len();
     }
 }
 
-impl<M: AccessMesadata> Permutate<Autorouter<M>> for AutorouteExecutionStepper {
+impl<M: AccessMesadata> Permutate<Autorouter<M>> for PlanarAutorouteExecutionStepper {
     type Index = RatlineIndex;
     type Output = Result<(), AutorouterError>;
 
@@ -249,7 +256,7 @@ impl<M: AccessMesadata> Permutate<Autorouter<M>> for AutorouteExecutionStepper {
     }
 }
 
-impl EstimateProgress for AutorouteExecutionStepper {
+impl EstimateProgress for PlanarAutorouteExecutionStepper {
     type Value = f64;
 
     fn estimate_progress_value(&self) -> f64 {
@@ -264,7 +271,7 @@ impl EstimateProgress for AutorouteExecutionStepper {
     }
 }
 
-impl GetDebugOverlayData for AutorouteExecutionStepper {
+impl GetDebugOverlayData for PlanarAutorouteExecutionStepper {
     fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
         self.route.as_ref().map(|route| route.thetastar())
     }

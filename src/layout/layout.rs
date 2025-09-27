@@ -144,7 +144,7 @@ impl<R: AccessRules> Layout<R> {
         &mut self,
         recorder: &mut LayoutEdit,
         weight: ViaWeight,
-    ) -> Result<GenericIndex<ViaWeight>, Infringement> {
+    ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), Infringement> {
         let compound = self.drawing.add_compound(recorder, weight.into());
         let mut dots = vec![];
 
@@ -179,7 +179,7 @@ impl<R: AccessRules> Layout<R> {
             }
         }
 
-        Ok(GenericIndex::<ViaWeight>::new(compound.index()))
+        Ok((GenericIndex::<ViaWeight>::new(compound.index()), dots))
     }
 
     pub fn add_fixed_dot(

@@ -17,15 +17,15 @@ use crate::{
 };
 
 use super::{
-    autoroute::{AutorouteContinueStatus, AutorouteExecutionStepper},
     invoker::GetDebugOverlayData,
+    planar_autoroute::{PlanarAutorouteContinueStatus, PlanarAutorouteExecutionStepper},
     ratline::RatlineIndex,
     Autorouter, AutorouterError, AutorouterOptions,
 };
 
 pub struct CompareDetoursExecutionStepper {
-    autoroute: AutorouteExecutionStepper,
-    next_autoroute: Option<AutorouteExecutionStepper>,
+    autoroute: PlanarAutorouteExecutionStepper,
+    next_autoroute: Option<PlanarAutorouteExecutionStepper>,
     ratline1: RatlineIndex,
     ratline2: RatlineIndex,
     total_length1: f64,
@@ -41,8 +41,10 @@ impl CompareDetoursExecutionStepper {
         options: AutorouterOptions,
     ) -> Result<Self, AutorouterError> {
         Ok(Self {
-            autoroute: autorouter.autoroute_ratlines(vec![ratline1, ratline2], options)?,
-            next_autoroute: Some(autorouter.autoroute_ratlines(vec![ratline2, ratline1], options)?),
+            autoroute: autorouter.planar_autoroute_ratlines(vec![ratline1, ratline2], options)?,
+            next_autoroute: Some(
+                autorouter.planar_autoroute_ratlines(vec![ratline2, ratline1], options)?,
+            ),
             ratline1,
             ratline2,
             total_length1: 0.0,
@@ -67,9 +69,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, (f64, f64)> for CompareDetoursExecut
 
         match self.autoroute.step(autorouter)? {
             ControlFlow::Continue(
-                AutorouteContinueStatus::Running | AutorouteContinueStatus::Skipped(_),
+                PlanarAutorouteContinueStatus::Running | PlanarAutorouteContinueStatus::Skipped(_),
             ) => Ok(ControlFlow::Continue(())),
-            ControlFlow::Continue(AutorouteContinueStatus::Routed(band_termseg)) => {
+            ControlFlow::Continue(PlanarAutorouteContinueStatus::Routed(band_termseg)) => {
                 let length = band_termseg
                     .ref_(autorouter.board.layout().drawing())
                     .length();
@@ -84,13 +86,15 @@ impl<M: AccessMesadata> Step<Autorouter<M>, (f64, f64)> for CompareDetoursExecut
             }
             ControlFlow::Break(..) => {
                 if let Some(next_autoroute) = self.next_autoroute.take() {
-                    autorouter.undo_autoroute_ratlines(vec![self.ratline1, self.ratline2])?;
+                    autorouter
+                        .undo_planar_autoroute_ratlines(vec![self.ratline1, self.ratline2])?;
                     self.autoroute = next_autoroute;
 
                     Ok(ControlFlow::Continue(()))
                 } else {
                     self.done = true;
-                    autorouter.undo_autoroute_ratlines(vec![self.ratline2, self.ratline1])?;
+                    autorouter
+                        .undo_planar_autoroute_ratlines(vec![self.ratline2, self.ratline1])?;
 
                     Ok(ControlFlow::Break((self.total_length1, self.total_length2)))
                 }

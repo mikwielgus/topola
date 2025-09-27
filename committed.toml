@@ -18,7 +18,7 @@ allowed_scopes = [
 
   # Originally generated using
   # `find src -type f | awk '!/lib.rs|mod.rs/ { print "\"" substr($1, 1 + 4, length($1) - 4 - 3) "\","; }' | sort`.
-  "autorouter/autoroute",
+  "autorouter/anterouter",
   "autorouter/autorouter",
   "autorouter/compare_detours",
   "autorouter/conncomps",
@@ -26,9 +26,12 @@ allowed_scopes = [
   "autorouter/history",
   "autorouter/invoker",
   "autorouter/measure_length",
+  "autorouter/multilayer_autoroute",
   "autorouter/permutator",
   "autorouter/permuter",
   "autorouter/place_via",
+  "autorouter/planar_autoroute",
+  "autorouter/planner",
   "autorouter/pointroute",
   "autorouter/presorter",
   "autorouter/ratsnest",

@@ -41,6 +41,7 @@ tr-menu-place-place-route-plan = Place Route Plan
 
 tr-menu-route = Route
 tr-menu-route-autoroute = Autoroute
+tr-menu-route-planar-autoroute = Planar Autoroute
 tr-menu-route-topo-autoroute = Topological single-layer Autoroute
 tr-menu-route-routed-band-width = Routed Band Width
 

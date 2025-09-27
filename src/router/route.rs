@@ -34,11 +34,11 @@ impl RouteStepper {
     pub fn new(
         router: &mut Router<impl AccessRules>,
         recorder: LayoutEdit,
-        from: FixedDotIndex,
-        to: FixedDotIndex,
+        origin: FixedDotIndex,
+        destination: FixedDotIndex,
         width: f64,
     ) -> Result<Self, NavmeshError> {
-        let navmesh = Navmesh::new(router.layout(), from, to, *router.options())?;
+        let navmesh = Navmesh::new(router.layout(), origin, destination, *router.options())?;
         Ok(Self::new_from_navmesh(router, recorder, navmesh, width))
     }
 

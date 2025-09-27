@@ -42,7 +42,7 @@ pub struct RouterOptions {
 pub struct RouterThetastarStrategy<'a, R> {
     pub layout: &'a mut Layout<R>,
     pub navcord: &'a mut Navcord,
-    pub target: FixedDotIndex,
+    pub destination: FixedDotIndex,
     pub probe_ghosts: Vec<PrimitiveShape>,
     pub probe_obstacles: Vec<PrimitiveIndex>,
 }
@@ -52,7 +52,7 @@ impl<'a, R> RouterThetastarStrategy<'a, R> {
         Self {
             layout,
             navcord,
-            target,
+            destination: target,
             probe_ghosts: vec![],
             probe_obstacles: vec![],
         }
@@ -79,7 +79,7 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
             // without this, since A* will terminate now anyway.
             self.navcord.maybe_final_termseg = Some(
                 self.layout
-                    .finish(navmesh, self.navcord, self.target)
+                    .finish(navmesh, self.navcord, self.destination)
                     .map_err(|_| ())?,
             );
             self.navcord.path.push(navnode);
@@ -190,7 +190,7 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
         let end_point = self
             .layout
             .drawing()
-            .primitive(self.target)
+            .primitive(self.destination)
             .shape()
             .center();
 
@@ -213,11 +213,11 @@ impl<'a, R: AccessRules> Router<'a, R> {
     pub fn route(
         &mut self,
         recorder: LayoutEdit,
-        from: FixedDotIndex,
-        to: FixedDotIndex,
+        origin: FixedDotIndex,
+        destination: FixedDotIndex,
         width: f64,
     ) -> Result<RouteStepper, NavmeshError> {
-        RouteStepper::new(self, recorder, from, to, width)
+        RouteStepper::new(self, recorder, origin, destination, width)
     }
 
     pub fn layout_mut(&mut self) -> &mut Layout<R> {

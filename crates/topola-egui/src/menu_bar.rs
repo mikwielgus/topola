@@ -355,6 +355,17 @@ impl MenuBar {
                             }
                         } else if actions.route.autoroute.consume_key_triggered(ctx, ui) {
                             schedule(error_dialog, workspace, |selection| {
+                                Command::MultilayerAutoroute(
+                                    selection.pin_selection,
+                                    self.autorouter_options,
+                                )
+                            });
+                        } else if actions
+                            .route
+                            .planar_autoroute
+                            .consume_key_triggered(ctx, ui)
+                        {
+                            schedule(error_dialog, workspace, |selection| {
                                 Command::Autoroute(selection.pin_selection, self.autorouter_options)
                             });
                         } else if actions
