@@ -21,11 +21,11 @@ use crate::{
         dot::{FixedDotIndex, FixedDotWeight},
         graph::PrimitiveIndex,
         seg::{FixedSegIndex, FixedSegWeight},
-        DrawingException,
+        DrawingException, Infringement,
     },
     geometry::{edit::ApplyGeometryEdit, GenericNode, GetLayer},
     graph::{GenericIndex, MakeRef},
-    layout::{poly::PolyWeight, CompoundWeight, Layout, NodeIndex},
+    layout::{poly::PolyWeight, via::ViaWeight, CompoundWeight, Layout, NodeIndex},
     router::ng::EtchedPath,
 };
 
@@ -105,6 +105,24 @@ impl<M> Board<M> {
 }
 
 impl<M: AccessMesadata> Board<M> {
+    pub fn add_via(
+        &mut self,
+        recorder: &mut BoardEdit,
+        weight: ViaWeight,
+        maybe_pin: Option<String>,
+    ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), Infringement> {
+        let (weight, dots) = self.layout.add_via(&mut recorder.layout_edit, weight)?;
+
+        if let Some(pin) = maybe_pin {
+            for dot in dots.clone() {
+                self.pinname_nodes
+                    .insert(pin.clone(), GenericNode::Primitive(dot.into()));
+            }
+        }
+
+        Ok((weight, dots))
+    }
+
     /// Adds a new fixed dot with an optional pin name.
     ///
     /// Inserts the dot into the layout and, if a pin name is provided, maps it to the created dot's node.
@@ -295,7 +313,7 @@ impl<M: AccessMesadata> Board<M> {
         }
 
         recorder
-            .data_edit
+            .board_data_edit
             .bands
             .insert(bandname, (maybe_band, None));
 
@@ -328,7 +346,7 @@ impl<M: AccessMesadata> Board<M> {
     }
 
     pub fn apply_edit(&mut self, edit: &BoardEdit) {
-        for (bandname, (maybe_old_band_uid, ..)) in &edit.data_edit.bands {
+        for (bandname, (maybe_old_band_uid, ..)) in &edit.board_data_edit.bands {
             if maybe_old_band_uid.is_some() {
                 self.band_bandname.remove_by_right(bandname);
             }
@@ -336,7 +354,7 @@ impl<M: AccessMesadata> Board<M> {
 
         self.layout_mut().apply(&edit.layout_edit);
 
-        for (bandname, (.., maybe_new_band_uid)) in &edit.data_edit.bands {
+        for (bandname, (.., maybe_new_band_uid)) in &edit.board_data_edit.bands {
             if let Some(band_uid) = maybe_new_band_uid {
                 self.band_bandname.insert(*band_uid, bandname.clone());
             }

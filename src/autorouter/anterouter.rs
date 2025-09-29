@@ -11,17 +11,18 @@ use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
     autorouter::{ratline::RatlineIndex, Autorouter},
+    board::edit::BoardEdit,
     drawing::{
         dot::FixedDotIndex,
         graph::{GetMaybeNet, MakePrimitiveRef},
         primitive::MakePrimitiveShape,
     },
-    geometry::GetLayer,
+    geometry::{GenericNode, GetLayer},
     graph::{GenericIndex, GetIndex, MakeRef},
     layout::{
         poly::{MakePolygon, PolyWeight},
         via::ViaWeight,
-        CompoundWeight, LayoutEdit,
+        CompoundWeight,
     },
     math::Circle,
 };
@@ -53,15 +54,23 @@ impl Anterouter {
             let endpoint_indices = ratline.ref_(autorouter).endpoint_indices();
             let endpoint_dots = ratline.ref_(autorouter).endpoint_dots();
 
+            autorouter
+                .ratsnest
+                .assign_layer_to_ratline(*ratline, *layer);
+
             if let Some(terminating_scheme) = self
                 .plan
                 .ratline_endpoint_dot_to_terminating_scheme
                 .get(&endpoint_dots.0)
             {
                 match terminating_scheme {
-                    TerminatingScheme::ExistingFixedDot(terminating_dot) => autorouter
-                        .ratsnest
-                        .assign_terminating_dot_to_ratvertex(endpoint_indices.0, *terminating_dot),
+                    TerminatingScheme::ExistingFixedDot(terminating_dot) => {
+                        autorouter.ratsnest.assign_terminating_dot_to_ratvertex(
+                            endpoint_indices.0,
+                            *layer,
+                            *terminating_dot,
+                        )
+                    }
                     TerminatingScheme::Anteroute(pin_bbox_to_anchor) => self
                         .anteroute_dot_to_anchor(
                             autorouter,
@@ -79,9 +88,13 @@ impl Anterouter {
                 .get(&endpoint_dots.1)
             {
                 match terminating_scheme {
-                    TerminatingScheme::ExistingFixedDot(terminating_dot) => autorouter
-                        .ratsnest
-                        .assign_terminating_dot_to_ratvertex(endpoint_indices.1, *terminating_dot),
+                    TerminatingScheme::ExistingFixedDot(terminating_dot) => {
+                        autorouter.ratsnest.assign_terminating_dot_to_ratvertex(
+                            endpoint_indices.1,
+                            *layer,
+                            *terminating_dot,
+                        )
+                    }
                     TerminatingScheme::Anteroute(pin_bbox_to_anchor) => self
                         .anteroute_dot_to_anchor(
                             autorouter,
@@ -170,10 +183,10 @@ impl Anterouter {
 
         //let via_bbox_to_anchor = [-pin_bbox_to_anchor[0], -pin_bbox_to_anchor[1]];
 
-        let mut layout_edit = LayoutEdit::new();
+        let mut board_edit = BoardEdit::new();
 
-        if let Ok((.., dots)) = autorouter.board.layout_mut().add_via(
-            &mut layout_edit,
+        if let Ok((.., dots)) = autorouter.board.add_via(
+            &mut board_edit,
             ViaWeight {
                 from_layer: std::cmp::min(pin_layer, to_layer),
                 to_layer: std::cmp::max(pin_layer, to_layer),
@@ -183,6 +196,10 @@ impl Anterouter {
                 },
                 maybe_net: pin_maybe_net,
             },
+            autorouter
+                .board()
+                .node_pinname(&GenericNode::Primitive(dot.into()))
+                .cloned(),
         ) {
             let terminating_dot = dots
                 .iter()
@@ -193,9 +210,11 @@ impl Anterouter {
                             .layer()
                 })
                 .unwrap();
-            autorouter
-                .ratsnest
-                .assign_terminating_dot_to_ratvertex(ratvertex, *terminating_dot);
+            autorouter.ratsnest.assign_terminating_dot_to_ratvertex(
+                ratvertex,
+                to_layer,
+                *terminating_dot,
+            );
         }
         /*let bbox = if let Some(poly) = autorouter.board().layout().drawing().geometry().compounds(dot).find(|(_, compound_weight)| {
             matches!(compound_weight, CompoundWeight::Poly(..))

@@ -29,7 +29,7 @@ impl Edit for BoardDataEdit {
 
 #[derive(Debug, Clone, Default)]
 pub struct BoardEdit {
-    pub data_edit: BoardDataEdit,
+    pub board_data_edit: BoardDataEdit,
     pub layout_edit: LayoutEdit,
 }
 
@@ -40,7 +40,7 @@ impl BoardEdit {
 
     pub fn new_from_edits(data_edit: BoardDataEdit, layout_edit: LayoutEdit) -> Self {
         Self {
-            data_edit,
+            board_data_edit: data_edit,
             layout_edit,
         }
     }
@@ -48,12 +48,12 @@ impl BoardEdit {
 
 impl Edit for BoardEdit {
     fn reverse_inplace(&mut self) {
-        self.data_edit.reverse_inplace();
+        self.board_data_edit.reverse_inplace();
         self.layout_edit.reverse_inplace();
     }
 
     fn merge(&mut self, edit: Self) {
-        self.data_edit.merge(edit.data_edit);
+        self.board_data_edit.merge(edit.board_data_edit);
         self.layout_edit.merge(edit.layout_edit);
     }
 }

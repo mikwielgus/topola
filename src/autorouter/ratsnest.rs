@@ -48,11 +48,11 @@ impl From<RatvertexNodeIndex> for crate::layout::NodeIndex {
     }
 }
 
-#[derive(Debug, Clone, Copy)]
+#[derive(Debug, Clone)]
 pub struct RatvertexWeight {
     vertex: RatvertexNodeIndex,
     pub pos: Point,
-    pub maybe_terminating_dot: Option<FixedDotIndex>,
+    pub layer_terminating_dots: BTreeMap<usize, FixedDotIndex>,
 }
 
 impl GetTrianvertexNodeIndex<RatvertexNodeIndex> for RatvertexWeight {
@@ -118,11 +118,11 @@ impl Ratsnest {
 
         let mut triangulations = BTreeMap::new();
 
-        this.add_layer_to_ratsnest(board, &mut triangulations, principal_layer);
+        this.add_layer_to_ratsnest_triangulations(board, &mut triangulations, principal_layer);
 
         for layer in 0..board.layout().drawing().layer_count() {
             if layer != principal_layer {
-                this.add_layer_to_ratsnest(board, &mut triangulations, layer);
+                this.add_layer_to_ratsnest_triangulations(board, &mut triangulations, layer);
             }
         }
 
@@ -158,7 +158,7 @@ impl Ratsnest {
         Ok(this)
     }
 
-    fn add_layer_to_ratsnest(
+    fn add_layer_to_ratsnest_triangulations(
         &mut self,
         board: &Board<impl AccessMesadata>,
         triangulations: &mut BTreeMap<
@@ -190,7 +190,7 @@ impl Ratsnest {
                 triangulation.add_vertex(RatvertexWeight {
                     vertex,
                     pos,
-                    maybe_terminating_dot: None,
+                    layer_terminating_dots: BTreeMap::new(),
                 })?;
                 Ok(())
             };
@@ -229,12 +229,18 @@ impl Ratsnest {
     pub fn assign_terminating_dot_to_ratvertex(
         &mut self,
         node_index: NodeIndex<usize>,
+        layer: usize,
         terminating_dot: FixedDotIndex,
     ) {
         self.graph
             .node_weight_mut(node_index)
             .unwrap()
-            .maybe_terminating_dot = Some(terminating_dot)
+            .layer_terminating_dots
+            .insert(layer, terminating_dot);
+    }
+
+    pub fn assign_layer_to_ratline(&mut self, ratline: RatlineIndex, layer: usize) {
+        self.graph.edge_weight_mut(ratline).unwrap().layer = layer;
     }
 
     pub fn assign_band_termseg_to_ratline(

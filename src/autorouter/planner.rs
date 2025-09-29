@@ -99,7 +99,7 @@ impl Planner {
                         None
                     }
                 })
-                .map_or(TerminatingScheme::Anteroute([-1.0, -1.0]), |dot| {
+                .map_or(TerminatingScheme::Anteroute([-2.0, 0.0]), |dot| {
                     TerminatingScheme::ExistingFixedDot(dot)
                 }),
         )

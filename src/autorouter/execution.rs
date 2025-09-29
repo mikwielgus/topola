@@ -86,7 +86,7 @@ impl<M: AccessMesadata + Clone> ExecutionStepper<M> {
                         for (ep, band) in &autoroute.last_bands {
                             let (source, target) = ep.end_points.into();
                             autorouter.board.try_set_band_between_nodes(
-                                &mut autoroute.last_recorder.data_edit,
+                                &mut autoroute.last_recorder.board_data_edit,
                                 source,
                                 target,
                                 *band,

@@ -207,7 +207,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
         self.curr_ratline_index += 1;
 
         if let Some(new_ratline) = self.ratlines.get(self.curr_ratline_index) {
-            let (source, target) = new_ratline.ref_(autorouter).terminating_dots();
+            let (origin, destination) = new_ratline.ref_(autorouter).terminating_dots();
             let mut router =
                 Router::new(autorouter.board.layout_mut(), self.options.router_options);
 
@@ -216,8 +216,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
 
             self.route = Some(router.route(
                 recorder,
-                source,
-                target,
+                origin,
+                destination,
                 self.options.router_options.routed_band_width,
             )?);
         }

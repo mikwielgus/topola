@@ -12,7 +12,7 @@ use crate::{
         dot::FixedDotIndex,
         graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex},
     },
-    geometry::{shape::MeasureLength, GetLayer},
+    geometry::shape::MeasureLength,
     graph::MakeRef,
     triangulation::GetTrianvertexNodeIndex,
 };
@@ -23,6 +23,7 @@ pub type RatlineIndex = EdgeIndex<usize>;
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RatlineWeight {
+    pub layer: usize,
     pub band_termseg: Option<BandTermsegIndex>,
 }
 
@@ -102,7 +103,9 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
             .graph()
             .node_weight(source)
             .unwrap()
-            .maybe_terminating_dot
+            .layer_terminating_dots
+            .get(&self.layer())
+            .copied()
             .unwrap_or(self.endpoint_dots().0);
         let target_dot = self
             .autorouter
@@ -110,17 +113,25 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
             .graph()
             .node_weight(target)
             .unwrap()
-            .maybe_terminating_dot
+            .layer_terminating_dots
+            .get(&self.layer())
+            .copied()
             .unwrap_or(self.endpoint_dots().1);
 
         (source_dot, target_dot)
     }
 
     pub fn layer(&self) -> usize {
-        self.endpoint_dots()
-            .0
-            .primitive_ref(self.autorouter.board().layout().drawing())
-            .layer()
+        self.autorouter
+            .ratsnest()
+            .graph()
+            .edge_weight(self.index)
+            .unwrap()
+            .layer
+        /*self.endpoint_dots()
+        .0
+        .primitive_ref(self.autorouter.board().layout().drawing())
+        .layer()*/
     }
 
     pub fn net(&self) -> usize {

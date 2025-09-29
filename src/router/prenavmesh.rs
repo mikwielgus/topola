@@ -192,6 +192,8 @@ impl Prenavmesh {
             let primitive = node.primitive_ref(layout.drawing());
 
             let Some(primitive_net) = primitive.maybe_net() else {
+                assert_ne!(node, origin.into());
+                assert_ne!(node, destination.into());
                 continue;
             };
 
@@ -215,6 +217,10 @@ impl Prenavmesh {
                         // false positives in some cases, so in the future, instead of this,
                         // create a fillet compound type and check for compound membership.
                         if Self::is_fixed_dot_filleted(layout, dot) {
+                            // FIXME: anteroute dot may get skipped here, which
+                            // results in a panic.
+                            assert_ne!(origin, dot);
+                            assert_ne!(destination, dot);
                             continue;
                         }
 

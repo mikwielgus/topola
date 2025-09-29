@@ -7,12 +7,12 @@ use geo::Point;
 use petgraph::graph::NodeIndex;
 use serde::{Deserialize, Serialize};
 use spade::InsertionError;
-use std::collections::{BTreeMap, BTreeSet};
+use std::collections::BTreeSet;
 use thiserror::Error;
 
 use crate::{
     autorouter::{
-        anterouter::AnterouterPlan, multilayer_autoroute::MultilayerAutorouteExecutionStepper,
+        multilayer_autoroute::MultilayerAutorouteExecutionStepper,
         permutator::PlanarAutorouteExecutionPermutator, planner::Planner,
     },
     board::{AccessMesadata, Board},
@@ -213,22 +213,22 @@ impl<M: AccessMesadata> Autorouter<M> {
             active_layer,
             allowed_edges,
             ratlines.into_iter().filter_map(|ratline| {
-                let (source, target) = ratline.ref_(self).terminating_dots();
+                let (origin, destination) = ratline.ref_(self).terminating_dots();
 
                 if navmesh
                     .as_ref()
-                    .node_data(&NavmeshIndex::Primal(source))
+                    .node_data(&NavmeshIndex::Primal(origin))
                     .is_none()
                     || navmesh
                         .as_ref()
-                        .node_data(&NavmeshIndex::Primal(target))
+                        .node_data(&NavmeshIndex::Primal(destination))
                         .is_none()
                 {
                     // e.g. due to wrong active layer
                     return None;
                 }
 
-                if self.board.band_between_nodes(source, target).is_some() {
+                if self.board.band_between_nodes(origin, destination).is_some() {
                     // already connected
                     return None;
                 }
@@ -236,8 +236,8 @@ impl<M: AccessMesadata> Autorouter<M> {
                 got_any_valid_goals = true;
 
                 Some(ng::Goal {
-                    source,
-                    target,
+                    source: origin,
+                    target: destination,
                     width,
                 })
             }),
