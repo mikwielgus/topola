@@ -4,11 +4,15 @@
 
 use std::collections::BTreeMap;
 
-use crate::{board::BandName, drawing::band::BandUid, geometry::edit::Edit, layout::LayoutEdit};
+use crate::{
+    board::BandName, drawing::band::BandUid, geometry::edit::Edit, layout::LayoutEdit,
+    router::ng::EtchedPath,
+};
 
 #[derive(Debug, Clone, Default)]
 pub struct BoardDataEdit {
-    pub(super) bands: BTreeMap<BandName, (Option<BandUid>, Option<BandUid>)>,
+    pub(super) bands_by_id: BTreeMap<EtchedPath, (Option<BandUid>, Option<BandUid>)>,
+    pub(super) bands_by_name: BTreeMap<BandName, (Option<BandUid>, Option<BandUid>)>,
 }
 
 impl BoardDataEdit {
@@ -19,11 +23,13 @@ impl BoardDataEdit {
 
 impl Edit for BoardDataEdit {
     fn reverse_inplace(&mut self) {
-        self.bands.reverse_inplace();
+        self.bands_by_id.reverse_inplace();
+        self.bands_by_name.reverse_inplace();
     }
 
     fn merge(&mut self, edit: Self) {
-        self.bands.merge(edit.bands);
+        self.bands_by_id.merge(edit.bands_by_id);
+        self.bands_by_name.merge(edit.bands_by_name);
     }
 }
 

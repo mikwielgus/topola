@@ -262,10 +262,13 @@ impl<M: AccessMesadata> Board<M> {
             let ep = EtchedPath {
                 end_points: (source, target).into(),
             };
-            self.bands_by_id.insert(ep, band);
-            self.band_bandname.insert(band, bandname.clone());
 
-            recorder.bands.insert(bandname, (None, Some(band)));
+            self.bands_by_id.insert(ep, band);
+            recorder.bands_by_id.insert(ep, (None, Some(band)));
+
+            self.band_bandname.insert(band, bandname.clone());
+            recorder.bands_by_name.insert(bandname, (None, Some(band)));
+
             true
         }
     }
@@ -310,12 +313,19 @@ impl<M: AccessMesadata> Board<M> {
         if let Some((_, uid)) = self.bands_by_id.remove_by_left(&ep) {
             let (from, _) = uid.into();
             self.layout.remove_band(&mut recorder.layout_edit, from)?;
+
+            recorder
+                .board_data_edit
+                .bands_by_id
+                .insert(ep, (Some(uid), None));
         }
 
-        recorder
-            .board_data_edit
-            .bands
-            .insert(bandname, (maybe_band, None));
+        if let Some(uid) = maybe_band {
+            recorder
+                .board_data_edit
+                .bands_by_name
+                .insert(bandname, (Some(uid), None));
+        }
 
         Ok(())
     }
@@ -346,17 +356,29 @@ impl<M: AccessMesadata> Board<M> {
     }
 
     pub fn apply_edit(&mut self, edit: &BoardEdit) {
-        for (bandname, (maybe_old_band_uid, ..)) in &edit.board_data_edit.bands {
+        for (bandname, (maybe_old_band_uid, _)) in &edit.board_data_edit.bands_by_name {
             if maybe_old_band_uid.is_some() {
                 self.band_bandname.remove_by_right(bandname);
             }
         }
 
+        for (ep, (maybe_old_band_uid, _)) in &edit.board_data_edit.bands_by_id {
+            if maybe_old_band_uid.is_some() {
+                self.bands_by_id.remove_by_left(ep);
+            }
+        }
+
         self.layout_mut().apply(&edit.layout_edit);
 
-        for (bandname, (.., maybe_new_band_uid)) in &edit.board_data_edit.bands {
+        for (bandname, (_, maybe_new_band_uid)) in &edit.board_data_edit.bands_by_name {
             if let Some(band_uid) = maybe_new_band_uid {
                 self.band_bandname.insert(*band_uid, bandname.clone());
+            }
+        }
+
+        for (ep, (_, maybe_new_band_uid)) in &edit.board_data_edit.bands_by_id {
+            if let Some(band_uid) = maybe_new_band_uid {
+                self.bands_by_id.insert(*ep, *band_uid);
             }
         }
     }
