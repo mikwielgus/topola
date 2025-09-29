@@ -62,3 +62,4 @@ tr-menu-route-options-permutate = Permutieren
 tr-menu-view-show-guide-bitangents = Zeige Führungs-Bitangenten
 tr-menu-view-show-guide-circles = Zeige Führungskreise
 tr-menu-view-show-primitive-indices = Zeige primitive Indizes
+tr-menu-route-planar-autoroute = planares Autorouten
