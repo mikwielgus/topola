@@ -4,13 +4,13 @@
 
 use std::collections::BTreeMap;
 
-use geo::point;
-use petgraph::graph::NodeIndex;
+use geo::{point, Point};
+use petgraph::graph::{EdgeIndex, NodeIndex};
 use rstar::{Envelope, RTreeObject, AABB};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
-    autorouter::{ratline::RatlineIndex, Autorouter},
+    autorouter::{compass_direction::CompassDirection8, ratline::RatlineIndex, Autorouter},
     board::edit::BoardEdit,
     drawing::{
         dot::FixedDotIndex,
@@ -30,7 +30,7 @@ use crate::{
 #[derive(Clone, Copy, Debug)]
 pub enum TerminatingScheme {
     ExistingFixedDot(FixedDotIndex),
-    Anteroute([f64; 2]),
+    Fanout,
 }
 
 #[derive(Clone, Debug)]
@@ -71,14 +71,13 @@ impl Anterouter {
                             *terminating_dot,
                         )
                     }
-                    TerminatingScheme::Anteroute(pin_bbox_to_anchor) => self
-                        .anteroute_dot_to_anchor(
-                            autorouter,
-                            endpoint_indices.0,
-                            endpoint_dots.0,
-                            *layer,
-                            *pin_bbox_to_anchor,
-                        ),
+                    TerminatingScheme::Fanout => self.anteroute_fanout(
+                        autorouter,
+                        endpoint_indices.0,
+                        *ratline,
+                        endpoint_dots.0,
+                        *layer,
+                    ),
                 }
             }
 
@@ -95,45 +94,116 @@ impl Anterouter {
                             *terminating_dot,
                         )
                     }
-                    TerminatingScheme::Anteroute(pin_bbox_to_anchor) => self
-                        .anteroute_dot_to_anchor(
-                            autorouter,
-                            endpoint_indices.1,
-                            endpoint_dots.1,
-                            *layer,
-                            *pin_bbox_to_anchor,
-                        ),
+                    TerminatingScheme::Fanout => self.anteroute_fanout(
+                        autorouter,
+                        endpoint_indices.1,
+                        *ratline,
+                        endpoint_dots.1,
+                        *layer,
+                    ),
                 }
             }
         }
     }
 
-    fn anteroute_dot_to_anchor(
+    fn anteroute_fanout(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratvertex: NodeIndex<usize>,
-        dot: FixedDotIndex,
-        to_layer: usize,
-        endpoint_dot_bbox_to_anchor: [f64; 2],
+        ratline: EdgeIndex<usize>,
+        source_dot: FixedDotIndex,
+        target_layer: usize,
     ) {
-        self.place_assignment_via_on_anchor(
+        let mut ratline_delta: Point = ratline.ref_(autorouter).line_segment().delta().into();
+
+        if ratvertex == ratline.ref_(autorouter).endpoint_indices().1 {
+            ratline_delta = -ratline_delta;
+        }
+
+        let initial_compass_direction8 = CompassDirection8::nearest_to_vector(ratline_delta);
+
+        if self
+            .anteroute_fanout_to_anchor(
+                autorouter,
+                ratvertex,
+                source_dot,
+                target_layer,
+                Point::from(initial_compass_direction8) * 1.2,
+            )
+            .is_ok()
+        {
+            return;
+        }
+
+        let mut counterclockwise_turning = initial_compass_direction8;
+        let mut clockwise_turning = initial_compass_direction8;
+
+        loop {
+            counterclockwise_turning = counterclockwise_turning.turn_counterclockwise();
+
+            if self
+                .anteroute_fanout_to_anchor(
+                    autorouter,
+                    ratvertex,
+                    source_dot,
+                    target_layer,
+                    Point::from(counterclockwise_turning) * 1.2,
+                )
+                .is_ok()
+            {
+                return;
+            }
+
+            clockwise_turning = clockwise_turning.turn_clockwise();
+
+            if self
+                .anteroute_fanout_to_anchor(
+                    autorouter,
+                    ratvertex,
+                    source_dot,
+                    target_layer,
+                    Point::from(clockwise_turning) * 1.2,
+                )
+                .is_ok()
+            {
+                return;
+            }
+
+            if counterclockwise_turning == initial_compass_direction8
+                || clockwise_turning == initial_compass_direction8
+            {
+                break;
+                //panic!();
+            }
+        }
+    }
+
+    fn anteroute_fanout_to_anchor(
+        &mut self,
+        autorouter: &mut Autorouter<impl AccessMesadata>,
+        ratvertex: NodeIndex<usize>,
+        source_dot: FixedDotIndex,
+        target_layer: usize,
+        bbox_to_anchor: Point,
+    ) -> Result<(), ()> {
+        self.place_fanout_via_on_anchor(
             autorouter,
             ratvertex,
-            dot,
-            to_layer,
-            endpoint_dot_bbox_to_anchor,
+            source_dot,
+            target_layer,
+            bbox_to_anchor,
         )
     }
 
-    fn place_assignment_via_on_anchor(
+    fn place_fanout_via_on_anchor(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratvertex: NodeIndex<usize>,
         dot: FixedDotIndex,
-        to_layer: usize,
-        endpoint_dot_bbox_to_anchor: [f64; 2],
-    ) {
-        let pin_layer = autorouter.board().layout().drawing().primitive(dot).layer();
+        target_layer: usize,
+        endpoint_dot_bbox_to_anchor: Point,
+    ) -> Result<(), ()> {
+        let source_layer = autorouter.board().layout().drawing().primitive(dot).layer();
         let pin_maybe_net = autorouter
             .board()
             .layout()
@@ -177,8 +247,8 @@ impl Anterouter {
 
         //let pin_bbox_anchor = pin_bbox.center() + (pin_bbox.upper() - pin_bbox.lower()) * pin_bbox_to_anchor;
         let pin_bbox_anchor = point! {
-            x: pin_bbox.center()[0] + (pin_bbox.upper()[0] - pin_bbox.lower()[0]) / 2.0 * endpoint_dot_bbox_to_anchor[0],
-            y: pin_bbox.center()[1] + (pin_bbox.upper()[1] - pin_bbox.lower()[1]) / 2.0 * endpoint_dot_bbox_to_anchor[1],
+            x: pin_bbox.center()[0] + (pin_bbox.upper()[0] - pin_bbox.lower()[0]) / 2.0 * endpoint_dot_bbox_to_anchor.x(),
+            y: pin_bbox.center()[1] + (pin_bbox.upper()[1] - pin_bbox.lower()[1]) / 2.0 * endpoint_dot_bbox_to_anchor.y(),
         };
 
         //let via_bbox_to_anchor = [-pin_bbox_to_anchor[0], -pin_bbox_to_anchor[1]];
@@ -188,8 +258,8 @@ impl Anterouter {
         if let Ok((.., dots)) = autorouter.board.add_via(
             &mut board_edit,
             ViaWeight {
-                from_layer: std::cmp::min(pin_layer, to_layer),
-                to_layer: std::cmp::max(pin_layer, to_layer),
+                from_layer: std::cmp::min(source_layer, target_layer),
+                to_layer: std::cmp::max(source_layer, target_layer),
                 circle: Circle {
                     pos: pin_bbox_anchor,
                     r: 100.0,
@@ -204,7 +274,7 @@ impl Anterouter {
             let terminating_dot = dots
                 .iter()
                 .find(|dot| {
-                    to_layer
+                    target_layer
                         == dot
                             .primitive_ref(autorouter.board().layout().drawing())
                             .layer()
@@ -212,9 +282,12 @@ impl Anterouter {
                 .unwrap();
             autorouter.ratsnest.assign_terminating_dot_to_ratvertex(
                 ratvertex,
-                to_layer,
+                target_layer,
                 *terminating_dot,
             );
+            Ok(())
+        } else {
+            Err(())
         }
         /*let bbox = if let Some(poly) = autorouter.board().layout().drawing().geometry().compounds(dot).find(|(_, compound_weight)| {
             matches!(compound_weight, CompoundWeight::Poly(..))

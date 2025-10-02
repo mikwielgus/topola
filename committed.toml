@@ -21,6 +21,7 @@ allowed_scopes = [
   "autorouter/anterouter",
   "autorouter/autorouter",
   "autorouter/compare_detours",
+  "autorouter/compass_direction",
   "autorouter/conncomps",
   "autorouter/execution",
   "autorouter/history",
