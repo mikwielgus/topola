@@ -17,7 +17,7 @@ use crate::{
         graph::{GetMaybeNet, MakePrimitiveRef},
         primitive::MakePrimitiveShape,
     },
-    geometry::{primitive::PrimitiveShape, shape::AccessShape, GenericNode, GetLayer},
+    geometry::{GenericNode, GetLayer},
     graph::{GenericIndex, GetIndex, MakeRef},
     layout::{
         poly::{MakePolygon, PolyWeight},
@@ -30,7 +30,7 @@ use crate::{
 #[derive(Clone, Copy, Debug)]
 pub enum TerminatingScheme {
     ExistingFixedDot(FixedDotIndex),
-    Anteroute,
+    Anteroute([f64; 2]),
 }
 
 #[derive(Clone, Debug)]
@@ -71,9 +71,14 @@ impl Anterouter {
                             *terminating_dot,
                         )
                     }
-                    TerminatingScheme::Anteroute => {
-                        self.anteroute_dot(autorouter, endpoint_indices.0, endpoint_dots.0, *layer)
-                    }
+                    TerminatingScheme::Anteroute(pin_bbox_to_anchor) => self
+                        .anteroute_dot_to_anchor(
+                            autorouter,
+                            endpoint_indices.0,
+                            endpoint_dots.0,
+                            *layer,
+                            *pin_bbox_to_anchor,
+                        ),
                 }
             }
 
@@ -90,22 +95,17 @@ impl Anterouter {
                             *terminating_dot,
                         )
                     }
-                    TerminatingScheme::Anteroute => {
-                        self.anteroute_dot(autorouter, endpoint_indices.1, endpoint_dots.1, *layer)
-                    }
+                    TerminatingScheme::Anteroute(pin_bbox_to_anchor) => self
+                        .anteroute_dot_to_anchor(
+                            autorouter,
+                            endpoint_indices.1,
+                            endpoint_dots.1,
+                            *layer,
+                            *pin_bbox_to_anchor,
+                        ),
                 }
             }
         }
-    }
-
-    fn anteroute_dot(
-        &mut self,
-        autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratvertex: NodeIndex<usize>,
-        dot: FixedDotIndex,
-        to_layer: usize,
-    ) {
-        self.place_assignment_via_on_anchor(autorouter, ratvertex, dot, to_layer, [-20.0, 0.0])
     }
 
     fn anteroute_dot_to_anchor(
@@ -113,10 +113,16 @@ impl Anterouter {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratvertex: NodeIndex<usize>,
         dot: FixedDotIndex,
-        target_layer: usize,
-        anchor: [f64; 2],
+        to_layer: usize,
+        endpoint_dot_bbox_to_anchor: [f64; 2],
     ) {
-        self.place_assignment_via_on_anchor(autorouter, ratvertex, dot, target_layer, anchor)
+        self.place_assignment_via_on_anchor(
+            autorouter,
+            ratvertex,
+            dot,
+            to_layer,
+            endpoint_dot_bbox_to_anchor,
+        )
     }
 
     fn place_assignment_via_on_anchor(
@@ -124,38 +130,71 @@ impl Anterouter {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratvertex: NodeIndex<usize>,
         dot: FixedDotIndex,
-        target_layer: usize,
-        anchor: [f64; 2],
+        to_layer: usize,
+        endpoint_dot_bbox_to_anchor: [f64; 2],
     ) {
-        let source_layer = autorouter.board().layout().drawing().primitive(dot).layer();
+        let pin_layer = autorouter.board().layout().drawing().primitive(dot).layer();
+        let pin_maybe_net = autorouter
+            .board()
+            .layout()
+            .drawing()
+            .primitive(dot)
+            .maybe_net();
 
-        // TODO: refactor code to remove this let statement.
-        let PrimitiveShape::Dot(source_shape) =
-            autorouter.board().layout().drawing().primitive(dot).shape()
-        else {
-            unreachable!();
+        let pin_bbox = if let Some(poly) = autorouter
+            .board()
+            .layout()
+            .drawing()
+            .compounds(GenericIndex::<()>::new(dot.index()))
+            .find_map(|(_, compound)| {
+                if let CompoundWeight::Poly(_) = autorouter
+                    .board()
+                    .layout()
+                    .drawing()
+                    .compound_weight(compound)
+                {
+                    Some(compound)
+                } else {
+                    None
+                }
+            })
+            .map(|compound| GenericIndex::<PolyWeight>::new(compound.index()))
+        {
+            let bbox = poly.ref_(autorouter.board().layout()).shape().envelope();
+            AABB::<[f64; 2]>::from_corners(
+                [bbox.lower().x(), bbox.lower().y()],
+                [bbox.upper().x(), bbox.upper().y()],
+            )
+        } else {
+            autorouter
+                .board()
+                .layout()
+                .drawing()
+                .primitive(dot)
+                .shape()
+                .envelope()
         };
+
+        //let pin_bbox_anchor = pin_bbox.center() + (pin_bbox.upper() - pin_bbox.lower()) * pin_bbox_to_anchor;
+        let pin_bbox_anchor = point! {
+            x: pin_bbox.center()[0] + (pin_bbox.upper()[0] - pin_bbox.lower()[0]) / 2.0 * endpoint_dot_bbox_to_anchor[0],
+            y: pin_bbox.center()[1] + (pin_bbox.upper()[1] - pin_bbox.lower()[1]) / 2.0 * endpoint_dot_bbox_to_anchor[1],
+        };
+
+        //let via_bbox_to_anchor = [-pin_bbox_to_anchor[0], -pin_bbox_to_anchor[1]];
 
         let mut board_edit = BoardEdit::new();
 
         if let Ok((.., dots)) = autorouter.board.add_via(
             &mut board_edit,
             ViaWeight {
-                from_layer: std::cmp::min(source_layer, target_layer),
-                to_layer: std::cmp::max(source_layer, target_layer),
+                from_layer: std::cmp::min(pin_layer, to_layer),
+                to_layer: std::cmp::max(pin_layer, to_layer),
                 circle: Circle {
-                    pos: point! {
-                        x: source_shape.center().x() + anchor[0] * source_shape.circle.r,
-                        y: source_shape.center().y() + anchor[1] * source_shape.circle.r
-                    },
+                    pos: pin_bbox_anchor,
                     r: 100.0,
                 },
-                maybe_net: autorouter
-                    .board()
-                    .layout()
-                    .drawing()
-                    .primitive(dot)
-                    .maybe_net(),
+                maybe_net: pin_maybe_net,
             },
             autorouter
                 .board()
@@ -165,7 +204,7 @@ impl Anterouter {
             let terminating_dot = dots
                 .iter()
                 .find(|dot| {
-                    target_layer
+                    to_layer
                         == dot
                             .primitive_ref(autorouter.board().layout().drawing())
                             .layer()
@@ -173,9 +212,16 @@ impl Anterouter {
                 .unwrap();
             autorouter.ratsnest.assign_terminating_dot_to_ratvertex(
                 ratvertex,
-                target_layer,
+                to_layer,
                 *terminating_dot,
             );
         }
+        /*let bbox = if let Some(poly) = autorouter.board().layout().drawing().geometry().compounds(dot).find(|(_, compound_weight)| {
+            matches!(compound_weight, CompoundWeight::Poly(..))
+        }) {
+            poly.ref_(autorouter.board().layout()).polygon()
+        } else {
+            //
+        }*/
     }
 }
