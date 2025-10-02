@@ -216,11 +216,10 @@ impl Prenavmesh {
                         // TODO: This method is simplistic and will obviously result in
                         // false positives in some cases, so in the future, instead of this,
                         // create a fillet compound type and check for compound membership.
-                        if Self::is_fixed_dot_filleted(layout, dot) {
-                            // FIXME: anteroute dot may get skipped here, which
-                            // results in a panic.
-                            assert_ne!(origin, dot);
-                            assert_ne!(destination, dot);
+                        if node != origin.into()
+                            && node != destination.into()
+                            && Self::is_fixed_dot_filleted(layout, dot)
+                        {
                             continue;
                         }
 
