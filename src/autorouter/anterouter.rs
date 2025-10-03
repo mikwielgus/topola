@@ -16,10 +16,11 @@ use crate::{
         dot::FixedDotIndex,
         graph::{GetMaybeNet, MakePrimitiveRef},
         primitive::MakePrimitiveShape,
+        seg::{FixedSegWeight, GeneralSegWeight},
     },
     geometry::{GenericNode, GetLayer},
-    graph::MakeRef,
-    layout::{poly::MakePolygon, via::ViaWeight},
+    graph::{GenericIndex, MakeRef},
+    layout::{poly::MakePolygon, via::ViaWeight, LayoutEdit},
     math::Circle,
 };
 
@@ -124,7 +125,7 @@ impl Anterouter {
                 ratvertex,
                 source_dot,
                 target_layer,
-                Point::from(cardinal_direction) * 1.4,
+                Point::from(cardinal_direction) * 1.5,
             )
             .is_ok()
         {
@@ -143,7 +144,7 @@ impl Anterouter {
                     ratvertex,
                     source_dot,
                     target_layer,
-                    Point::from(counterclockwise_turning) * 1.4,
+                    Point::from(counterclockwise_turning) * 1.5,
                 )
                 .is_ok()
             {
@@ -158,7 +159,7 @@ impl Anterouter {
                     ratvertex,
                     source_dot,
                     target_layer,
-                    Point::from(clockwise_turning) * 1.4,
+                    Point::from(clockwise_turning) * 1.5,
                 )
                 .is_ok()
             {
@@ -182,13 +183,44 @@ impl Anterouter {
         target_layer: usize,
         bbox_to_anchor: Point,
     ) -> Result<(), ()> {
-        self.place_fanout_via_on_anchor(
+        let (_, dots) = self.place_fanout_via_on_anchor(
             autorouter,
             ratvertex,
             source_dot,
             target_layer,
             bbox_to_anchor,
-        )
+        )?;
+
+        let layer = source_dot
+            .primitive_ref(autorouter.board().layout().drawing())
+            .layer();
+        let maybe_net = source_dot
+            .primitive_ref(autorouter.board().layout().drawing())
+            .maybe_net();
+        let fanout_dot = *dots
+            .iter()
+            .find(|dot| {
+                source_dot
+                    .primitive_ref(autorouter.board().layout().drawing())
+                    .layer()
+                    == dot
+                        .primitive_ref(autorouter.board().layout().drawing())
+                        .layer()
+            })
+            .unwrap();
+
+        autorouter.board.layout_mut().add_fixed_seg(
+            &mut LayoutEdit::new(),
+            source_dot,
+            fanout_dot,
+            FixedSegWeight(GeneralSegWeight {
+                width: 100.0,
+                layer,
+                maybe_net,
+            }),
+        );
+
+        Ok(())
     }
 
     fn place_fanout_via_on_anchor(
@@ -198,7 +230,7 @@ impl Anterouter {
         dot: FixedDotIndex,
         target_layer: usize,
         endpoint_dot_bbox_to_anchor: Point,
-    ) -> Result<(), ()> {
+    ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), ()> {
         let source_layer = autorouter.board().layout().drawing().primitive(dot).layer();
         let pin_maybe_net = autorouter
             .board()
@@ -233,7 +265,7 @@ impl Anterouter {
 
         let mut board_edit = BoardEdit::new();
 
-        if let Ok((.., dots)) = autorouter.board.add_via(
+        if let Ok((via, dots)) = autorouter.board.add_via(
             &mut board_edit,
             ViaWeight {
                 from_layer: std::cmp::min(source_layer, target_layer),
@@ -263,7 +295,7 @@ impl Anterouter {
                 target_layer,
                 *terminating_dot,
             );
-            Ok(())
+            Ok((via, dots))
         } else {
             Err(())
         }

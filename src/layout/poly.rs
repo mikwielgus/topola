@@ -155,6 +155,11 @@ fn is_apex<R>(
         .iter()
         .any(|seg| matches!(seg, SegIndex::Fixed(..)))
         && drawing.primitive(dot).bends().is_empty()
+        // FIXME: Only the following should be needed to make sure dot is an apex.
+        // But for some reason I had to keep the above part.
+        || drawing
+            .compounds(dot)
+            .any(|(cel, _)| cel == CompoundEntryLabel::Apex)
 }
 
 impl<'a, R> PolyRef<'a, R> {
