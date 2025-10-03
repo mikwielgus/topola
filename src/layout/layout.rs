@@ -347,6 +347,19 @@ impl<R: AccessRules> Layout<R> {
         }
     }
 
+    pub fn primitive_poly(&self, primitive: PrimitiveIndex) -> Option<GenericIndex<PolyWeight>> {
+        self.drawing()
+            .compounds(GenericIndex::<()>::new(primitive.index()))
+            .find_map(|(_, compound)| {
+                if let CompoundWeight::Poly(_) = self.drawing().compound_weight(compound) {
+                    Some(compound)
+                } else {
+                    None
+                }
+            })
+            .map(|compound| GenericIndex::<PolyWeight>::new(compound.index()))
+    }
+
     /// Checks if a node is not a primitive part of a compound, and if yes, returns its apex and center
     pub fn apex_of_compoundless_node(
         &self,

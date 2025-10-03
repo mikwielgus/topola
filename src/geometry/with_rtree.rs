@@ -465,7 +465,9 @@ impl<
     where
         I: Copy + GetIndex,
     {
-        self.geometry.add_to_compound(primitive, label, compound);
+        todo!();
+        // This is incorrect: R-tree bbox is not updated.
+        //self.geometry.add_to_compound(primitive, label, compound);
     }
 
     fn compound_weight(&self, compound: GenericIndex<CW>) -> &CW {

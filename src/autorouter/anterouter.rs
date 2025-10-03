@@ -10,7 +10,7 @@ use rstar::{Envelope, RTreeObject, AABB};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
-    autorouter::{compass_direction::CompassDirection8, ratline::RatlineIndex, Autorouter},
+    autorouter::{compass_direction::CardinalDirection, ratline::RatlineIndex, Autorouter},
     board::edit::BoardEdit,
     drawing::{
         dot::FixedDotIndex,
@@ -18,12 +18,8 @@ use crate::{
         primitive::MakePrimitiveShape,
     },
     geometry::{GenericNode, GetLayer},
-    graph::{GenericIndex, GetIndex, MakeRef},
-    layout::{
-        poly::{MakePolygon, PolyWeight},
-        via::ViaWeight,
-        CompoundWeight,
-    },
+    graph::MakeRef,
+    layout::{poly::MakePolygon, via::ViaWeight},
     math::Circle,
 };
 
@@ -120,7 +116,7 @@ impl Anterouter {
             ratline_delta = -ratline_delta;
         }
 
-        let initial_compass_direction8 = CompassDirection8::nearest_to_vector(ratline_delta);
+        let cardinal_direction = CardinalDirection::nearest_to_vector(ratline_delta);
 
         if self
             .anteroute_fanout_to_anchor(
@@ -128,15 +124,15 @@ impl Anterouter {
                 ratvertex,
                 source_dot,
                 target_layer,
-                Point::from(initial_compass_direction8) * 1.2,
+                Point::from(cardinal_direction) * 1.4,
             )
             .is_ok()
         {
             return;
         }
 
-        let mut counterclockwise_turning = initial_compass_direction8;
-        let mut clockwise_turning = initial_compass_direction8;
+        let mut counterclockwise_turning = cardinal_direction;
+        let mut clockwise_turning = cardinal_direction;
 
         loop {
             counterclockwise_turning = counterclockwise_turning.turn_counterclockwise();
@@ -147,7 +143,7 @@ impl Anterouter {
                     ratvertex,
                     source_dot,
                     target_layer,
-                    Point::from(counterclockwise_turning) * 1.2,
+                    Point::from(counterclockwise_turning) * 1.4,
                 )
                 .is_ok()
             {
@@ -162,15 +158,15 @@ impl Anterouter {
                     ratvertex,
                     source_dot,
                     target_layer,
-                    Point::from(clockwise_turning) * 1.2,
+                    Point::from(clockwise_turning) * 1.4,
                 )
                 .is_ok()
             {
                 return;
             }
 
-            if counterclockwise_turning == initial_compass_direction8
-                || clockwise_turning == initial_compass_direction8
+            if counterclockwise_turning == cardinal_direction
+                || clockwise_turning == cardinal_direction
             {
                 break;
                 //panic!();
@@ -211,25 +207,7 @@ impl Anterouter {
             .primitive(dot)
             .maybe_net();
 
-        let pin_bbox = if let Some(poly) = autorouter
-            .board()
-            .layout()
-            .drawing()
-            .compounds(GenericIndex::<()>::new(dot.index()))
-            .find_map(|(_, compound)| {
-                if let CompoundWeight::Poly(_) = autorouter
-                    .board()
-                    .layout()
-                    .drawing()
-                    .compound_weight(compound)
-                {
-                    Some(compound)
-                } else {
-                    None
-                }
-            })
-            .map(|compound| GenericIndex::<PolyWeight>::new(compound.index()))
-        {
+        let pin_bbox = if let Some(poly) = autorouter.board().layout().primitive_poly(dot.into()) {
             let bbox = poly.ref_(autorouter.board().layout()).shape().envelope();
             AABB::<[f64; 2]>::from_corners(
                 [bbox.lower().x(), bbox.lower().y()],
