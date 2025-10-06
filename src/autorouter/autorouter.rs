@@ -16,9 +16,9 @@ use crate::{
         permutator::PlanarAutorouteExecutionPermutator, planner::Planner,
     },
     board::{AccessMesadata, Board},
-    drawing::{band::BandTermsegIndex, Infringement},
+    drawing::band::BandTermsegIndex,
     graph::MakeRef,
-    layout::{via::ViaWeight, LayoutEdit},
+    layout::{via::ViaWeight, LayoutEdit, LayoutException},
     router::{navmesh::NavmeshError, ng, thetastar::ThetastarError, RouterOptions},
     triangulation::GetTrianvertexNodeIndex,
 };
@@ -59,7 +59,7 @@ pub enum AutorouterError {
     #[error("TopoNavmesh generation failed: {0}")]
     TopoNavmeshGeneration(#[from] ng::NavmeshCalculationError),
     #[error("could not place via")]
-    CouldNotPlaceVia(#[from] Infringement),
+    CouldNotPlaceVia(#[from] LayoutException),
     #[error("could not remove band")]
     CouldNotRemoveBand(BandTermsegIndex),
     #[error("need exactly two ratlines")]

@@ -70,6 +70,7 @@ allowed_scopes = [
   "layout/collect_bands",
   "layout/layout",
   "layout/poly",
+  "layout/query",
   "layout/via",
   "math/circle",
   "math/cyclic_search",

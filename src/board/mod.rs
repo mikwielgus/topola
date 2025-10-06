@@ -21,11 +21,13 @@ use crate::{
         dot::{FixedDotIndex, FixedDotWeight},
         graph::PrimitiveIndex,
         seg::{FixedSegIndex, FixedSegWeight},
-        DrawingException, Infringement,
+        DrawingException,
     },
     geometry::{edit::ApplyGeometryEdit, GenericNode, GetLayer},
     graph::{GenericIndex, MakeRef},
-    layout::{poly::PolyWeight, via::ViaWeight, CompoundWeight, Layout, NodeIndex},
+    layout::{
+        poly::PolyWeight, via::ViaWeight, CompoundWeight, Layout, LayoutException, NodeIndex,
+    },
     router::ng::EtchedPath,
 };
 
@@ -110,7 +112,7 @@ impl<M: AccessMesadata> Board<M> {
         recorder: &mut BoardEdit,
         weight: ViaWeight,
         maybe_pin: Option<String>,
-    ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), Infringement> {
+    ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), LayoutException> {
         let (weight, dots) = self.layout.add_via(&mut recorder.layout_edit, weight)?;
 
         if let Some(pin) = maybe_pin {

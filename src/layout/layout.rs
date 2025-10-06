@@ -5,8 +5,9 @@
 use contracts_try::debug_ensures;
 use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
-use geo::Point;
+use geo::{Point, Polygon};
 use rstar::AABB;
+use thiserror::Error;
 
 use crate::{
     drawing::{
@@ -40,13 +41,23 @@ use crate::{
     math::RotationSense,
 };
 
-/// Represents a weight for various compounds
+#[derive(Clone, Debug, Error)]
+pub enum LayoutException {
+    #[error(transparent)]
+    HasPointInPoly(#[from] HasPointInPoly),
+    #[error(transparent)]
+    Infringement(#[from] Infringement),
+}
+
+#[derive(Clone, Debug, Error)]
+#[error("(0:?) has point in {1:?}")]
+pub struct HasPointInPoly(pub Polygon, pub Point);
+
+/// Represents a weight for various compounds.
 #[derive(Clone, Copy, Debug)]
 #[enum_dispatch(GetMaybeNet, IsInLayer)]
 pub enum CompoundWeight {
-    /// Represents the weight of a polygon compound, includes its basic [`Layout`] information
     Poly(PolyWeight),
-    /// Represents Via weight properties, containing its [`Layout`] properties
     Via(ViaWeight),
 }
 
@@ -57,12 +68,12 @@ pub enum CompoundEntryLabel {
     Fillet,
 }
 
-/// The alias to differ node types
+/// The alias to differentiate node types.
 pub type NodeIndex = GenericNode<PrimitiveIndex, GenericIndex<CompoundWeight>>;
 pub type LayoutEdit = DrawingEdit<CompoundWeight, CompoundEntryLabel>;
 
 #[derive(Clone, Debug, Getters)]
-/// Structure for managing the Layout design
+/// Structure for managing the Layout design.
 pub struct Layout<R> {
     pub(super) drawing: Drawing<CompoundWeight, CompoundEntryLabel, R>,
 }
@@ -144,7 +155,7 @@ impl<R: AccessRules> Layout<R> {
         &mut self,
         recorder: &mut LayoutEdit,
         weight: ViaWeight,
-    ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), Infringement> {
+    ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), LayoutException> {
         let compound = self.drawing.add_compound(recorder, weight.into());
         let mut dots = vec![];
 
@@ -158,28 +169,53 @@ impl<R: AccessRules> Layout<R> {
                 }),
             ) {
                 Ok(dot) => {
+                    dots.push(dot);
+
+                    let maybe_enclosing_poly = self
+                        .polys_enclosing_point_on_layers(weight.circle.pos, layer)
+                        .next();
+
+                    if let Some(enclosing_poly) = maybe_enclosing_poly {
+                        // If a via is inside poly, it may not necessarily
+                        // trigger an infringement on its primitives. To take
+                        // this situation into account, we also check if the
+                        // via's center is inside the poly's polygon.
+                        self.remove_failed_via(recorder, compound, dots);
+                        return Err(LayoutException::HasPointInPoly(HasPointInPoly(
+                            enclosing_poly.ref_(self).shape(),
+                            weight.circle.pos,
+                        )));
+                    }
+
                     self.drawing.add_to_compound(
                         recorder,
                         dot,
                         CompoundEntryLabel::Normal,
                         compound,
                     );
-                    dots.push(dot);
                 }
                 Err(err) => {
-                    // Remove inserted dots.
-                    self.drawing.remove_compound(recorder, compound);
-
-                    for dot in dots.iter().rev() {
-                        self.drawing.remove_fixed_dot(recorder, *dot);
-                    }
-
-                    return Err(err);
+                    self.remove_failed_via(recorder, compound, dots);
+                    return Err(err.into());
                 }
             }
         }
 
         Ok((GenericIndex::<ViaWeight>::new(compound.index()), dots))
+    }
+
+    fn remove_failed_via(
+        &mut self,
+        recorder: &mut LayoutEdit,
+        compound: GenericIndex<CompoundWeight>,
+        dots: Vec<FixedDotIndex>,
+    ) {
+        self.drawing.remove_compound(recorder, compound);
+
+        // Remove inserted dots.
+        for dot in dots.iter().rev() {
+            self.drawing.remove_fixed_dot(recorder, *dot);
+        }
     }
 
     pub fn add_fixed_dot(

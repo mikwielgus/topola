@@ -7,6 +7,7 @@
 mod collect_bands;
 mod layout;
 pub mod poly;
+pub mod query;
 pub mod via;
 
 pub use layout::*;
