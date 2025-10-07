@@ -326,11 +326,18 @@ impl Anterouter {
             .drawing()
             .primitive(source_dot)
             .maybe_net();
+        let center = autorouter
+            .board()
+            .layout()
+            .drawing()
+            .primitive(source_dot)
+            .shape()
+            .center();
 
         let bbox_to_anchor = Point::from(cardinal_direction) * 1.4;
         let bbox_anchor = point! {
-            x: bbox.center()[0] + (bbox.upper()[0] - bbox.lower()[0]) / 2.0 * bbox_to_anchor.x(),
-            y: bbox.center()[1] + (bbox.upper()[1] - bbox.lower()[1]) / 2.0 * bbox_to_anchor.y(),
+            x: center.x() + (bbox.upper()[0] - bbox.lower()[0]) / 2.0 * bbox_to_anchor.x(),
+            y: center.y() + (bbox.upper()[1] - bbox.lower()[1]) / 2.0 * bbox_to_anchor.y(),
         };
 
         //let via_bbox_to_anchor = [-pin_bbox_to_anchor[0], -pin_bbox_to_anchor[1]];
