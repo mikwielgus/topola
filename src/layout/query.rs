@@ -14,10 +14,9 @@ use crate::{
 };
 
 impl<R: AccessRules> Layout<R> {
-    pub fn polys_enclosing_point_on_layers(
+    pub fn polys_enclosing_point(
         &self,
         point: Point,
-        layer: usize,
     ) -> impl Iterator<Item = GenericIndex<PolyWeight>> + '_ {
         self.drawing()
             .rtree()
@@ -36,13 +35,23 @@ impl<R: AccessRules> Layout<R> {
                     return None;
                 };
 
-                if !self.drawing.compound_weight(compound).is_in_layer(layer)
-                    || !self.node_shape(node).contains_point(point)
-                {
+                if !self.node_shape(node).contains_point(point) {
                     return None;
                 }
 
                 Some(GenericIndex::<PolyWeight>::new(compound.index()))
             })
+    }
+
+    pub fn polys_enclosing_point_on_layer(
+        &self,
+        point: Point,
+        layer: usize,
+    ) -> impl Iterator<Item = GenericIndex<PolyWeight>> + '_ {
+        self.polys_enclosing_point(point).filter(move |node| {
+            self.drawing
+                .compound_weight((*node).into())
+                .is_in_layer(layer)
+        })
     }
 }

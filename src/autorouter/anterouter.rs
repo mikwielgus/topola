@@ -18,7 +18,7 @@ use crate::{
         primitive::MakePrimitiveShape,
         seg::{FixedSegWeight, GeneralSegWeight},
     },
-    geometry::{GenericNode, GetLayer},
+    geometry::{shape::AccessShape, GenericNode, GetLayer},
     graph::{GenericIndex, MakeRef},
     layout::{poly::MakePolygon, via::ViaWeight, LayoutEdit},
     math::Circle,
@@ -117,78 +117,160 @@ impl Anterouter {
             ratline_delta = -ratline_delta;
         }
 
-        let cardinal_direction = CardinalDirection::nearest_to_vector(ratline_delta);
+        let small_bbox = if let Some(poly) = autorouter
+            .board()
+            .layout()
+            .primitive_poly(source_dot.into())
+        {
+            let bbox = poly.ref_(autorouter.board().layout()).shape().envelope();
+            AABB::<[f64; 2]>::from_corners(
+                [bbox.lower().x(), bbox.lower().y()],
+                [bbox.upper().x(), bbox.upper().y()],
+            )
+        } else {
+            autorouter
+                .board()
+                .layout()
+                .drawing()
+                .primitive(source_dot)
+                .shape()
+                .envelope()
+        };
 
         if self
-            .anteroute_fanout_to_anchor(
+            .anteroute_fanout_on_bbox(
                 autorouter,
                 ratvertex,
                 source_dot,
+                small_bbox,
                 target_layer,
-                Point::from(cardinal_direction) * 1.5,
+                CardinalDirection::nearest_to_vector(ratline_delta),
             )
             .is_ok()
         {
             return;
         }
 
-        let mut counterclockwise_turning = cardinal_direction;
-        let mut clockwise_turning = cardinal_direction;
+        let mut large_bbox = small_bbox;
 
-        loop {
-            counterclockwise_turning = counterclockwise_turning.turn_counterclockwise();
-
-            if self
-                .anteroute_fanout_to_anchor(
-                    autorouter,
-                    ratvertex,
-                    source_dot,
-                    target_layer,
-                    Point::from(counterclockwise_turning) * 1.5,
-                )
-                .is_ok()
-            {
-                return;
-            }
-
-            clockwise_turning = clockwise_turning.turn_clockwise();
-
-            if self
-                .anteroute_fanout_to_anchor(
-                    autorouter,
-                    ratvertex,
-                    source_dot,
-                    target_layer,
-                    Point::from(clockwise_turning) * 1.5,
-                )
-                .is_ok()
-            {
-                return;
-            }
-
-            if counterclockwise_turning == cardinal_direction
-                || clockwise_turning == cardinal_direction
-            {
-                break;
-                //panic!();
-            }
+        for enclosing_poly in autorouter.board().layout().polys_enclosing_point(
+            source_dot
+                .primitive_ref(autorouter.board().layout().drawing())
+                .shape()
+                .center(),
+        ) {
+            let enclosing_bbox = enclosing_poly
+                .ref_(autorouter.board().layout())
+                .shape()
+                .envelope();
+            large_bbox.merge(&AABB::<[f64; 2]>::from_corners(
+                [enclosing_bbox.lower().x(), enclosing_bbox.lower().y()],
+                [enclosing_bbox.upper().x(), enclosing_bbox.upper().y()],
+            ));
         }
+
+        if self
+            .anteroute_fanout_on_bbox(
+                autorouter,
+                ratvertex,
+                source_dot,
+                large_bbox,
+                target_layer,
+                CardinalDirection::nearest_to_vector(ratline_delta),
+            )
+            .is_ok()
+        {
+            return;
+        }
+
+        panic!();
     }
 
-    fn anteroute_fanout_to_anchor(
+    fn anteroute_fanout_on_bbox(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratvertex: NodeIndex<usize>,
         source_dot: FixedDotIndex,
+        bbox: AABB<[f64; 2]>,
         target_layer: usize,
-        bbox_to_anchor: Point,
+        preferred_cardinal_direction: CardinalDirection,
     ) -> Result<(), ()> {
-        let (_, dots) = self.place_fanout_via_on_anchor(
+        if self
+            .anteroute_fanout_on_bbox_in_cardinal_direction(
+                autorouter,
+                ratvertex,
+                source_dot,
+                bbox,
+                target_layer,
+                preferred_cardinal_direction,
+            )
+            .is_ok()
+        {
+            return Ok(());
+        }
+
+        let mut counterclockwise_turning_cardinal_direction = preferred_cardinal_direction;
+        let mut clockwise_turning_cardinal_direction = preferred_cardinal_direction;
+
+        loop {
+            counterclockwise_turning_cardinal_direction =
+                counterclockwise_turning_cardinal_direction.turn_counterclockwise();
+
+            if self
+                .anteroute_fanout_on_bbox_in_cardinal_direction(
+                    autorouter,
+                    ratvertex,
+                    source_dot,
+                    bbox,
+                    target_layer,
+                    counterclockwise_turning_cardinal_direction,
+                )
+                .is_ok()
+            {
+                return Ok(());
+            }
+
+            clockwise_turning_cardinal_direction =
+                clockwise_turning_cardinal_direction.turn_clockwise();
+
+            if self
+                .anteroute_fanout_on_bbox_in_cardinal_direction(
+                    autorouter,
+                    ratvertex,
+                    source_dot,
+                    bbox,
+                    target_layer,
+                    clockwise_turning_cardinal_direction,
+                )
+                .is_ok()
+            {
+                return Ok(());
+            }
+
+            if counterclockwise_turning_cardinal_direction == preferred_cardinal_direction
+                || clockwise_turning_cardinal_direction == preferred_cardinal_direction
+            {
+                return Err(());
+            }
+        }
+    }
+
+    fn anteroute_fanout_on_bbox_in_cardinal_direction(
+        &mut self,
+        autorouter: &mut Autorouter<impl AccessMesadata>,
+        ratvertex: NodeIndex<usize>,
+        source_dot: FixedDotIndex,
+        bbox: AABB<[f64; 2]>,
+        target_layer: usize,
+        cardinal_direction: CardinalDirection,
+    ) -> Result<(), ()> {
+        let (_, dots) = self.place_fanout_via_on_bbox_in_cardinal_direction(
             autorouter,
             ratvertex,
             source_dot,
+            bbox,
             target_layer,
-            bbox_to_anchor,
+            cardinal_direction,
         )?;
 
         let layer = source_dot
@@ -223,42 +305,32 @@ impl Anterouter {
         Ok(())
     }
 
-    fn place_fanout_via_on_anchor(
+    fn place_fanout_via_on_bbox_in_cardinal_direction(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratvertex: NodeIndex<usize>,
-        dot: FixedDotIndex,
+        source_dot: FixedDotIndex,
+        bbox: AABB<[f64; 2]>,
         target_layer: usize,
-        endpoint_dot_bbox_to_anchor: Point,
+        cardinal_direction: CardinalDirection,
     ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), ()> {
-        let source_layer = autorouter.board().layout().drawing().primitive(dot).layer();
+        let source_layer = autorouter
+            .board()
+            .layout()
+            .drawing()
+            .primitive(source_dot)
+            .layer();
         let pin_maybe_net = autorouter
             .board()
             .layout()
             .drawing()
-            .primitive(dot)
+            .primitive(source_dot)
             .maybe_net();
 
-        let pin_bbox = if let Some(poly) = autorouter.board().layout().primitive_poly(dot.into()) {
-            let bbox = poly.ref_(autorouter.board().layout()).shape().envelope();
-            AABB::<[f64; 2]>::from_corners(
-                [bbox.lower().x(), bbox.lower().y()],
-                [bbox.upper().x(), bbox.upper().y()],
-            )
-        } else {
-            autorouter
-                .board()
-                .layout()
-                .drawing()
-                .primitive(dot)
-                .shape()
-                .envelope()
-        };
-
-        //let pin_bbox_anchor = pin_bbox.center() + (pin_bbox.upper() - pin_bbox.lower()) * pin_bbox_to_anchor;
-        let pin_bbox_anchor = point! {
-            x: pin_bbox.center()[0] + (pin_bbox.upper()[0] - pin_bbox.lower()[0]) / 2.0 * endpoint_dot_bbox_to_anchor.x(),
-            y: pin_bbox.center()[1] + (pin_bbox.upper()[1] - pin_bbox.lower()[1]) / 2.0 * endpoint_dot_bbox_to_anchor.y(),
+        let bbox_to_anchor = Point::from(cardinal_direction) * 1.4;
+        let bbox_anchor = point! {
+            x: bbox.center()[0] + (bbox.upper()[0] - bbox.lower()[0]) / 2.0 * bbox_to_anchor.x(),
+            y: bbox.center()[1] + (bbox.upper()[1] - bbox.lower()[1]) / 2.0 * bbox_to_anchor.y(),
         };
 
         //let via_bbox_to_anchor = [-pin_bbox_to_anchor[0], -pin_bbox_to_anchor[1]];
@@ -271,14 +343,14 @@ impl Anterouter {
                 from_layer: std::cmp::min(source_layer, target_layer),
                 to_layer: std::cmp::max(source_layer, target_layer),
                 circle: Circle {
-                    pos: pin_bbox_anchor,
+                    pos: bbox_anchor,
                     r: 100.0,
                 },
                 maybe_net: pin_maybe_net,
             },
             autorouter
                 .board()
-                .node_pinname(&GenericNode::Primitive(dot.into()))
+                .node_pinname(&GenericNode::Primitive(source_dot.into()))
                 .cloned(),
         ) {
             let terminating_dot = dots

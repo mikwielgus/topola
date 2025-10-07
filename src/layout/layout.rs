@@ -172,7 +172,7 @@ impl<R: AccessRules> Layout<R> {
                     dots.push(dot);
 
                     let maybe_enclosing_poly = self
-                        .polys_enclosing_point_on_layers(weight.circle.pos, layer)
+                        .polys_enclosing_point_on_layer(weight.circle.pos, layer)
                         .next();
 
                     if let Some(enclosing_poly) = maybe_enclosing_poly {
