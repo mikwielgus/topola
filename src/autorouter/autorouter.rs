@@ -12,8 +12,9 @@ use thiserror::Error;
 
 use crate::{
     autorouter::{
-        multilayer_autoroute::MultilayerAutorouteExecutionStepper,
-        permutator::PlanarAutorouteExecutionPermutator, planner::Planner,
+        multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouterOptions},
+        permutator::PlanarAutorouteExecutionPermutator,
+        planner::Planner,
     },
     board::{AccessMesadata, Board},
     drawing::band::BandTermsegIndex,
@@ -45,7 +46,7 @@ pub enum PresortBy {
 pub struct AutorouterOptions {
     pub presort_by: PresortBy,
     pub permutate: bool,
-    pub router_options: RouterOptions,
+    pub router: RouterOptions,
 }
 
 #[derive(Error, Debug, Clone)]
@@ -111,7 +112,7 @@ impl<M: AccessMesadata> Autorouter<M> {
     pub fn multilayer_autoroute(
         &mut self,
         selection: &PinSelection,
-        options: AutorouterOptions,
+        options: MultilayerAutorouterOptions,
     ) -> Result<MultilayerAutorouteExecutionStepper, AutorouterError> {
         let planner = Planner::new(self, &self.selected_ratlines(selection));
 

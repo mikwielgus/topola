@@ -5,6 +5,7 @@
 use clap::Parser;
 use std::fs::File;
 use std::io::BufReader;
+use topola::autorouter::anterouter::AnterouterOptions;
 use topola::autorouter::execution::Command;
 use topola::autorouter::history::History;
 use topola::autorouter::invoker::Invoker;
@@ -41,7 +42,7 @@ fn main() -> Result<(), std::io::Error> {
                 AutorouterOptions {
                     presort_by: PresortBy::RatlineIntersectionCountAndLength,
                     permutate: true,
-                    router_options: RouterOptions {
+                    router: RouterOptions {
                         wrap_around_bands: true,
                         squeeze_through_under_bends: false,
                         routed_band_width: 100.0,

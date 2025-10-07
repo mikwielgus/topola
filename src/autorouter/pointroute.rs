@@ -37,7 +37,7 @@ impl PointrouteExecutionStepper {
             FixedDotWeight(GeneralDotWeight {
                 circle: Circle {
                     pos: point,
-                    r: options.router_options.routed_band_width / 2.0,
+                    r: options.router.routed_band_width / 2.0,
                 },
                 layer: 0,
                 maybe_net: None,
@@ -45,14 +45,14 @@ impl PointrouteExecutionStepper {
             None,
         );
 
-        let mut router = Router::new(autorouter.board.layout_mut(), options.router_options);
+        let mut router = Router::new(autorouter.board.layout_mut(), options.router);
 
         Ok(Self {
             route: router.route(
                 LayoutEdit::new(), // TODO?
                 origin,
                 destination,
-                options.router_options.routed_band_width,
+                options.router.routed_band_width,
             )?,
             options,
         })
@@ -66,7 +66,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, BandTermsegIndex> for PointrouteExec
         &mut self,
         autorouter: &mut Autorouter<M>,
     ) -> Result<ControlFlow<BandTermsegIndex>, AutorouterError> {
-        let mut router = Router::new(autorouter.board.layout_mut(), self.options.router_options);
+        let mut router = Router::new(autorouter.board.layout_mut(), self.options.router);
         Ok(self.route.step(&mut router)?)
     }
 }

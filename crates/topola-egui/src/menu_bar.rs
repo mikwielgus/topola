@@ -6,7 +6,8 @@ use std::{collections::BTreeSet, ops::ControlFlow, path::Path, sync::mpsc::Sende
 
 use topola::{
     autorouter::{
-        execution::Command, invoker::InvokerError, selection::Selection, AutorouterOptions,
+        anterouter::AnterouterOptions, execution::Command, invoker::InvokerError,
+        multilayer_autoroute::MultilayerAutorouterOptions, selection::Selection, AutorouterOptions,
         PresortBy,
     },
     board::AccessMesadata,
@@ -25,7 +26,7 @@ use crate::{
 };
 
 pub struct MenuBar {
-    pub autorouter_options: AutorouterOptions,
+    pub multilayer_autorouter_options: MultilayerAutorouterOptions,
     pub is_placing_via: bool,
     pub show_ratsnest: bool,
     pub show_navmesh: bool,
@@ -45,13 +46,18 @@ pub struct MenuBar {
 impl MenuBar {
     pub fn new() -> Self {
         Self {
-            autorouter_options: AutorouterOptions {
-                presort_by: PresortBy::RatlineIntersectionCountAndLength,
-                permutate: true,
-                router_options: RouterOptions {
-                    routed_band_width: 100.0,
-                    wrap_around_bands: true,
-                    squeeze_through_under_bends: true,
+            multilayer_autorouter_options: MultilayerAutorouterOptions {
+                anterouter: AnterouterOptions {
+                    fanout_clearance: 100.0,
+                },
+                planar: AutorouterOptions {
+                    presort_by: PresortBy::RatlineIntersectionCountAndLength,
+                    permutate: true,
+                    router: RouterOptions {
+                        routed_band_width: 100.0,
+                        wrap_around_bands: true,
+                        squeeze_through_under_bends: true,
+                    },
                 },
             },
             is_placing_via: false,
@@ -160,7 +166,7 @@ impl MenuBar {
                             tr,
                             maybe_workspace.is_some(),
                             workspace_activities_enabled,
-                            &mut self.autorouter_options,
+                            &mut self.multilayer_autorouter_options,
                         )
                     });
 
@@ -347,8 +353,9 @@ impl MenuBar {
                                         allowed_edges: BTreeSet::new(),
                                         active_layer,
                                         routed_band_width: self
-                                            .autorouter_options
-                                            .router_options
+                                            .multilayer_autorouter_options
+                                            .planar
+                                            .router
                                             .routed_band_width,
                                     }
                                 });
@@ -357,7 +364,7 @@ impl MenuBar {
                             schedule(error_dialog, workspace, |selection| {
                                 Command::MultilayerAutoroute(
                                     selection.pin_selection,
-                                    self.autorouter_options,
+                                    self.multilayer_autorouter_options,
                                 )
                             });
                         } else if actions
@@ -366,7 +373,10 @@ impl MenuBar {
                             .consume_key_triggered(ctx, ui)
                         {
                             schedule(error_dialog, workspace, |selection| {
-                                Command::Autoroute(selection.pin_selection, self.autorouter_options)
+                                Command::Autoroute(
+                                    selection.pin_selection,
+                                    self.multilayer_autorouter_options.planar,
+                                )
                             });
                         } else if actions
                             .inspect
@@ -376,7 +386,7 @@ impl MenuBar {
                             schedule(error_dialog, workspace, |selection| {
                                 Command::CompareDetours(
                                     selection.pin_selection,
-                                    self.autorouter_options,
+                                    self.multilayer_autorouter_options.planar,
                                 )
                             });
                         } else if actions

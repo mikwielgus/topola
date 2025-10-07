@@ -72,7 +72,7 @@ impl PlanarAutorouteExecutionStepper {
         };
 
         let (origin, destination) = ratlines[0].ref_(autorouter).terminating_dots();
-        let mut router = Router::new(autorouter.board.layout_mut(), options.router_options);
+        let mut router = Router::new(autorouter.board.layout_mut(), options.router);
 
         Ok(Self {
             ratlines,
@@ -81,7 +81,7 @@ impl PlanarAutorouteExecutionStepper {
                 LayoutEdit::new(),
                 origin,
                 destination,
-                options.router_options.routed_band_width,
+                options.router.routed_band_width,
             )?),
             layout_edits: vec![],
             board_data_edits: vec![],
@@ -108,13 +108,13 @@ impl PlanarAutorouteExecutionStepper {
         autorouter.board.apply_edit(&board_edit.reverse());
 
         let (origin, destination) = self.ratlines[index].ref_(autorouter).terminating_dots();
-        let mut router = Router::new(autorouter.board.layout_mut(), self.options.router_options);
+        let mut router = Router::new(autorouter.board.layout_mut(), self.options.router);
 
         self.route = Some(router.route(
             LayoutEdit::new(),
             origin,
             destination,
-            self.options.router_options.routed_band_width,
+            self.options.router.routed_band_width,
         )?);
 
         self.curr_ratline_index = index;
@@ -162,54 +162,53 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
             .ref_(autorouter)
             .terminating_dots();
 
-        let ret =
-            if let Some(band_termseg) = autorouter.board.band_between_nodes(origin, destination) {
-                PlanarAutorouteContinueStatus::Skipped(band_termseg[false])
-            } else {
-                let band_termseg = {
-                    let mut router =
-                        Router::new(autorouter.board.layout_mut(), self.options.router_options);
+        let ret = if let Some(band_termseg) =
+            autorouter.board.band_between_nodes(origin, destination)
+        {
+            PlanarAutorouteContinueStatus::Skipped(band_termseg[false])
+        } else {
+            let band_termseg = {
+                let mut router = Router::new(autorouter.board.layout_mut(), self.options.router);
 
-                    let ControlFlow::Break(band_termseg) = route.step(&mut router)? else {
-                        return Ok(ControlFlow::Continue(
-                            PlanarAutorouteContinueStatus::Running,
-                        ));
-                    };
-                    band_termseg
+                let ControlFlow::Break(band_termseg) = route.step(&mut router)? else {
+                    return Ok(ControlFlow::Continue(
+                        PlanarAutorouteContinueStatus::Running,
+                    ));
                 };
-
-                let band = autorouter
-                    .board
-                    .layout()
-                    .drawing()
-                    .find_loose_band_uid(band_termseg.into())
-                    .expect("a completely routed band should've Seg's as ends");
-
-                autorouter.ratsnest.assign_band_termseg_to_ratline(
-                    self.ratlines[self.curr_ratline_index],
-                    band_termseg,
-                );
-
-                let mut board_data_edit = BoardDataEdit::new();
-
-                autorouter.board.try_set_band_between_nodes(
-                    &mut board_data_edit,
-                    origin,
-                    destination,
-                    band,
-                );
-
-                self.board_data_edits.push(board_data_edit);
-
-                PlanarAutorouteContinueStatus::Routed(band_termseg)
+                band_termseg
             };
+
+            let band = autorouter
+                .board
+                .layout()
+                .drawing()
+                .find_loose_band_uid(band_termseg.into())
+                .expect("a completely routed band should've Seg's as ends");
+
+            autorouter.ratsnest.assign_band_termseg_to_ratline(
+                self.ratlines[self.curr_ratline_index],
+                band_termseg,
+            );
+
+            let mut board_data_edit = BoardDataEdit::new();
+
+            autorouter.board.try_set_band_between_nodes(
+                &mut board_data_edit,
+                origin,
+                destination,
+                band,
+            );
+
+            self.board_data_edits.push(board_data_edit);
+
+            PlanarAutorouteContinueStatus::Routed(band_termseg)
+        };
 
         self.curr_ratline_index += 1;
 
         if let Some(new_ratline) = self.ratlines.get(self.curr_ratline_index) {
             let (origin, destination) = new_ratline.ref_(autorouter).terminating_dots();
-            let mut router =
-                Router::new(autorouter.board.layout_mut(), self.options.router_options);
+            let mut router = Router::new(autorouter.board.layout_mut(), self.options.router);
 
             self.dissolve_route_stepper_and_push_layout_edit();
             let recorder = LayoutEdit::new();
@@ -218,7 +217,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
                 recorder,
                 origin,
                 destination,
-                self.options.router_options.routed_band_width,
+                self.options.router.routed_band_width,
             )?);
         }
 

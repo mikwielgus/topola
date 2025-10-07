@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     autorouter::{
-        multilayer_autoroute::MultilayerAutorouteExecutionStepper,
+        multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouterOptions},
         permutator::PlanarAutorouteExecutionPermutator,
     },
     board::{edit::BoardEdit, AccessMesadata},
@@ -33,7 +33,7 @@ type Type = PinSelection;
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
     Autoroute(PinSelection, AutorouterOptions), // TODO: Rename to PlanarAutoroute.
-    MultilayerAutoroute(PinSelection, AutorouterOptions),
+    MultilayerAutoroute(PinSelection, MultilayerAutorouterOptions),
     TopoAutoroute {
         selection: PinSelection,
         #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]

@@ -4,9 +4,10 @@
 
 use std::collections::BTreeMap;
 
-use geo::{point, Point};
+use geo::{point, Distance, Euclidean, Point};
 use petgraph::graph::{EdgeIndex, NodeIndex};
 use rstar::{Envelope, RTreeObject, AABB};
+use serde::{Deserialize, Serialize};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
@@ -23,6 +24,11 @@ use crate::{
     layout::{poly::MakePolygon, via::ViaWeight, LayoutEdit},
     math::Circle,
 };
+
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub struct AnterouterOptions {
+    pub fanout_clearance: f64,
+}
 
 #[derive(Clone, Copy, Debug)]
 pub enum TerminatingScheme {
@@ -45,7 +51,11 @@ impl Anterouter {
         Self { plan }
     }
 
-    pub fn anteroute(&mut self, autorouter: &mut Autorouter<impl AccessMesadata>) {
+    pub fn anteroute(
+        &mut self,
+        autorouter: &mut Autorouter<impl AccessMesadata>,
+        options: &AnterouterOptions,
+    ) {
         // PERF: Unnecessary clone.
         for (ratline, layer) in self.plan.layer_map.clone().iter() {
             let endpoint_indices = ratline.ref_(autorouter).endpoint_indices();
@@ -74,6 +84,7 @@ impl Anterouter {
                         *ratline,
                         endpoint_dots.0,
                         *layer,
+                        options,
                     ),
                 }
             }
@@ -97,6 +108,7 @@ impl Anterouter {
                         *ratline,
                         endpoint_dots.1,
                         *layer,
+                        options,
                     ),
                 }
             }
@@ -110,6 +122,7 @@ impl Anterouter {
         ratline: EdgeIndex<usize>,
         source_dot: FixedDotIndex,
         target_layer: usize,
+        options: &AnterouterOptions,
     ) {
         let mut ratline_delta: Point = ratline.ref_(autorouter).line_segment().delta().into();
 
@@ -145,6 +158,7 @@ impl Anterouter {
                 small_bbox,
                 target_layer,
                 CardinalDirection::nearest_to_vector(ratline_delta),
+                options,
             )
             .is_ok()
         {
@@ -177,6 +191,7 @@ impl Anterouter {
                 large_bbox,
                 target_layer,
                 CardinalDirection::nearest_to_vector(ratline_delta),
+                options,
             )
             .is_ok()
         {
@@ -194,6 +209,7 @@ impl Anterouter {
         bbox: AABB<[f64; 2]>,
         target_layer: usize,
         preferred_cardinal_direction: CardinalDirection,
+        options: &AnterouterOptions,
     ) -> Result<(), ()> {
         if self
             .anteroute_fanout_on_bbox_in_cardinal_direction(
@@ -203,6 +219,7 @@ impl Anterouter {
                 bbox,
                 target_layer,
                 preferred_cardinal_direction,
+                options,
             )
             .is_ok()
         {
@@ -224,6 +241,7 @@ impl Anterouter {
                     bbox,
                     target_layer,
                     counterclockwise_turning_cardinal_direction,
+                    options,
                 )
                 .is_ok()
             {
@@ -241,6 +259,7 @@ impl Anterouter {
                     bbox,
                     target_layer,
                     clockwise_turning_cardinal_direction,
+                    options,
                 )
                 .is_ok()
             {
@@ -263,6 +282,7 @@ impl Anterouter {
         bbox: AABB<[f64; 2]>,
         target_layer: usize,
         cardinal_direction: CardinalDirection,
+        options: &AnterouterOptions,
     ) -> Result<(), ()> {
         let (_, dots) = self.place_fanout_via_on_bbox_in_cardinal_direction(
             autorouter,
@@ -271,6 +291,7 @@ impl Anterouter {
             bbox,
             target_layer,
             cardinal_direction,
+            options,
         )?;
 
         let layer = source_dot
@@ -313,6 +334,7 @@ impl Anterouter {
         bbox: AABB<[f64; 2]>,
         target_layer: usize,
         cardinal_direction: CardinalDirection,
+        options: &AnterouterOptions,
     ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), ()> {
         let source_layer = autorouter
             .board()
@@ -334,11 +356,21 @@ impl Anterouter {
             .shape()
             .center();
 
-        let bbox_to_anchor = Point::from(cardinal_direction) * 1.4;
+        let cardinal_direction_vector = Point::from(cardinal_direction);
+        /*bbox_to_anchor *= 1.0
+        + dbg!(
+            options.fanout_outer_length
+                / Euclidean::distance(bbox_to_anchor, point! {x: 0.0, y: 0.0})
+        );*/
         let bbox_anchor = point! {
-            x: center.x() + (bbox.upper()[0] - bbox.lower()[0]) / 2.0 * bbox_to_anchor.x(),
-            y: center.y() + (bbox.upper()[1] - bbox.lower()[1]) / 2.0 * bbox_to_anchor.y(),
+            x: (bbox.upper()[0] - bbox.lower()[0]) / 2.0 * cardinal_direction_vector.x(),
+            y: (bbox.upper()[1] - bbox.lower()[1]) / 2.0 * cardinal_direction_vector.y(),
         };
+        let pos = center
+            + bbox_anchor
+                * (1.0
+                    + options.fanout_clearance
+                        / Euclidean::distance(bbox_anchor, point! {x: 0.0, y: 0.0}));
 
         //let via_bbox_to_anchor = [-pin_bbox_to_anchor[0], -pin_bbox_to_anchor[1]];
 
@@ -349,10 +381,7 @@ impl Anterouter {
             ViaWeight {
                 from_layer: std::cmp::min(source_layer, target_layer),
                 to_layer: std::cmp::max(source_layer, target_layer),
-                circle: Circle {
-                    pos: bbox_anchor,
-                    r: 100.0,
-                },
+                circle: Circle { pos, r: 100.0 },
                 maybe_net: pin_maybe_net,
             },
             autorouter

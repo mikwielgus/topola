@@ -79,7 +79,7 @@
         {
           "presort_by": "RatlineIntersectionCountAndLength",
           "permutate": true,
-          "router_options": {
+          "router": {
             "routed_band_width": 100.0,
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true

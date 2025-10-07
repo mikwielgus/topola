@@ -4,11 +4,12 @@
 
 use std::ops::ControlFlow;
 
+use serde::{Deserialize, Serialize};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
     autorouter::{
-        anterouter::{Anterouter, AnterouterPlan},
+        anterouter::{Anterouter, AnterouterOptions, AnterouterPlan},
         invoker::GetDebugOverlayData,
         permutator::PlanarAutorouteExecutionPermutator,
         planar_autoroute::PlanarAutorouteContinueStatus,
@@ -22,6 +23,12 @@ use crate::{
     stepper::{Abort, EstimateProgress, Step},
 };
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub struct MultilayerAutorouterOptions {
+    pub anterouter: AnterouterOptions,
+    pub planar: AutorouterOptions,
+}
+
 pub struct MultilayerAutorouteExecutionStepper {
     planar: PlanarAutorouteExecutionPermutator,
 }
@@ -31,13 +38,13 @@ impl MultilayerAutorouteExecutionStepper {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: Vec<RatlineIndex>,
         plan: AnterouterPlan,
-        options: AutorouterOptions,
+        options: MultilayerAutorouterOptions,
     ) -> Result<Self, AutorouterError> {
         let mut assigner = Anterouter::new(plan);
-        assigner.anteroute(autorouter);
+        assigner.anteroute(autorouter, &options.anterouter);
 
         Ok(Self {
-            planar: PlanarAutorouteExecutionPermutator::new(autorouter, ratlines, options)?,
+            planar: PlanarAutorouteExecutionPermutator::new(autorouter, ratlines, options.planar)?,
         })
     }
 }

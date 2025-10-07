@@ -14,7 +14,7 @@
         ],
         {
           "presort_by": "RatlineIntersectionCountAndLength",
-          "router_options": {
+          "router": {
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true,
             "routed_band_width": 100.0
@@ -37,7 +37,7 @@
         ],
         {
           "presort_by": "RatlineIntersectionCountAndLength",
-          "router_options": {
+          "router": {
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true,
             "routed_band_width": 100.0

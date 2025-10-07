@@ -10,7 +10,9 @@ use crate::{
 };
 
 use egui::{Context, Ui};
-use topola::autorouter::{AutorouterOptions, PresortBy};
+use topola::autorouter::{
+    multilayer_autoroute::MultilayerAutorouterOptions, AutorouterOptions, PresortBy,
+};
 
 pub struct FileActions {
     pub open_design: Trigger,
@@ -334,7 +336,7 @@ impl RouteActions {
         tr: &Translator,
         have_workspace: bool,
         workspace_activities_enabled: bool,
-        autorouter_options: &mut AutorouterOptions,
+        multilayer_autorouter_options: &mut MultilayerAutorouterOptions,
     ) -> egui::InnerResponse<()> {
         ui.add_enabled_ui(have_workspace, |ui| {
             ui.add_enabled_ui(workspace_activities_enabled, |ui| {
@@ -345,33 +347,43 @@ impl RouteActions {
             ui.separator();
 
             ui.label(tr.text("tr-menu-route-routed-band-width"));
-
             ui.add(
                 egui::widgets::Slider::new(
-                    &mut autorouter_options.router_options.routed_band_width,
+                    &mut multilayer_autorouter_options.planar.router.routed_band_width,
                     1.0..=1000.0,
                 )
                 .suffix(""),
             );
 
+            ui.label(tr.text("tr-menu-route-fanout-clearance"));
+            ui.add(
+                egui::widgets::Slider::new(
+                    &mut multilayer_autorouter_options.anterouter.fanout_clearance,
+                    0.0..=1000.0,
+                )
+                .suffix(""),
+            );
+
+
             ui.separator();
 
             ui.menu_button(tr.text("tr-menu-options"), |ui| {
                 egui::ComboBox::from_label(tr.text("tr-menu-route-options-presort-by"))
-                    .selected_text(format!("{:?}", autorouter_options.presort_by))
+                    .selected_text(format!("{:?}", multilayer_autorouter_options.planar.presort_by))
                     .show_ui(ui, |ui| {
-                        ui.selectable_value(&mut autorouter_options.presort_by, PresortBy::RatlineIntersectionCountAndLength, tr.text("tr-menu-route-options-presort-by-ratline-intersection-count-and-length"));
-                        ui.selectable_value(&mut autorouter_options.presort_by, PresortBy::PairwiseDetours, tr.text("tr-menu-route-options-presort-by-pairwise-detours"));
+                        ui.selectable_value(&mut multilayer_autorouter_options.planar.presort_by, PresortBy::RatlineIntersectionCountAndLength, tr.text("tr-menu-route-options-presort-by-ratline-intersection-count-and-length"));
+                        ui.selectable_value(&mut multilayer_autorouter_options.planar.presort_by, PresortBy::PairwiseDetours, tr.text("tr-menu-route-options-presort-by-pairwise-detours"));
                     });
-                ui.checkbox(&mut autorouter_options.permutate, tr.text("tr-menu-route-options-permutate"));
+                ui.checkbox(&mut multilayer_autorouter_options.planar.permutate, tr.text("tr-menu-route-options-permutate"));
                 ui.checkbox(
-                    &mut autorouter_options
-                        .router_options
+                    &mut multilayer_autorouter_options
+                        .planar
+                        .router
                         .squeeze_through_under_bends,
                     tr.text("tr-menu-route-options-squeeze-through-under-bends"),
                 );
                 ui.checkbox(
-                    &mut autorouter_options.router_options.wrap_around_bands,
+                    &mut multilayer_autorouter_options.planar.router.wrap_around_bands,
                     tr.text("tr-menu-route-options-wrap-around-bands"),
                 );
             });

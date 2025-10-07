@@ -119,7 +119,11 @@ impl Workspace {
                             to_layer: 0,
                             circle: Circle {
                                 pos: interactive_input.pointer_pos,
-                                r: menu_bar.autorouter_options.router_options.routed_band_width
+                                r: menu_bar
+                                    .multilayer_autorouter_options
+                                    .planar
+                                    .router
+                                    .routed_band_width
                                     / 2.0,
                             },
                             maybe_net: Some(1234),
