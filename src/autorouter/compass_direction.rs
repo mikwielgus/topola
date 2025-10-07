@@ -33,9 +33,9 @@ impl CardinalDirection {
             }
         } else {
             if vector.y() > 0.0 {
-                Self::North
-            } else {
                 Self::South
+            } else {
+                Self::North
             }
         }
     }
