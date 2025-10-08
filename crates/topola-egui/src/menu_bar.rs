@@ -311,22 +311,8 @@ impl MenuBar {
                             workspace: &mut Workspace,
                             op: F,
                         ) {
-                            let mut selection = workspace.overlay.take_selection();
-                            if let Some(active_layer) = workspace.appearance_panel.active_layer {
-                                let active_layer = workspace
-                                    .interactor
-                                    .invoker()
-                                    .autorouter()
-                                    .board()
-                                    .layout()
-                                    .rules()
-                                    .layer_layername(active_layer)
-                                    .expect("unknown active layer");
-                                selection
-                                    .pin_selection
-                                    .0
-                                    .retain(|i| i.layer == active_layer);
-                            }
+                            let selection = workspace.overlay.take_selection();
+
                             if let Err(err) = workspace.interactor.schedule(op(selection)) {
                                 error_dialog.push_error("tr-module-invoker", format!("{}", err));
                             }
