@@ -348,6 +348,7 @@ impl Anterouter {
             .drawing()
             .primitive(source_dot)
             .maybe_net();
+        let bbox_center = point! {x: bbox.center()[0], y: bbox.center()[1]};
         let center = autorouter
             .board()
             .layout()
@@ -357,22 +358,19 @@ impl Anterouter {
             .center();
 
         let cardinal_direction_vector = Point::from(cardinal_direction);
-        /*bbox_to_anchor *= 1.0
-        + dbg!(
-            options.fanout_outer_length
-                / Euclidean::distance(bbox_to_anchor, point! {x: 0.0, y: 0.0})
-        );*/
+
         let bbox_anchor = point! {
             x: (bbox.upper()[0] - bbox.lower()[0]) / 2.0 * cardinal_direction_vector.x(),
             y: (bbox.upper()[1] - bbox.lower()[1]) / 2.0 * cardinal_direction_vector.y(),
         };
+        let bbox_anchor_with_clearance = bbox_anchor
+            * (1.0
+                + options.fanout_clearance
+                    / Euclidean::distance(bbox_anchor, point! {x: 0.0, y: 0.0}));
         let pos = center
-            + bbox_anchor
-                * (1.0
-                    + options.fanout_clearance
-                        / Euclidean::distance(bbox_anchor, point! {x: 0.0, y: 0.0}));
-
-        //let via_bbox_to_anchor = [-pin_bbox_to_anchor[0], -pin_bbox_to_anchor[1]];
+            + cardinal_direction_vector
+                * (bbox_center + bbox_anchor_with_clearance - center)
+                    .dot(cardinal_direction_vector);
 
         let mut board_edit = BoardEdit::new();
 
@@ -407,12 +405,5 @@ impl Anterouter {
         } else {
             Err(())
         }
-        /*let bbox = if let Some(poly) = autorouter.board().layout().drawing().geometry().compounds(dot).find(|(_, compound_weight)| {
-            matches!(compound_weight, CompoundWeight::Poly(..))
-        }) {
-            poly.ref_(autorouter.board().layout()).polygon()
-        } else {
-            //
-        }*/
     }
 }

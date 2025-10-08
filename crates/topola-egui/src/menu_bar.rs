@@ -48,7 +48,7 @@ impl MenuBar {
         Self {
             multilayer_autorouter_options: MultilayerAutorouterOptions {
                 anterouter: AnterouterOptions {
-                    fanout_clearance: 100.0,
+                    fanout_clearance: 200.0,
                 },
                 planar: AutorouterOptions {
                     presort_by: PresortBy::RatlineIntersectionCountAndLength,
