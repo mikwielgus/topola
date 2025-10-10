@@ -11,7 +11,11 @@ use serde::{Deserialize, Serialize};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
-    autorouter::{compass_direction::CardinalDirection, ratline::RatlineIndex, Autorouter},
+    autorouter::{
+        compass_direction::{CardinalDirection, CompassDirection, OrdinalDirection},
+        ratline::RatlineIndex,
+        Autorouter,
+    },
     board::edit::BoardEdit,
     drawing::{
         dot::FixedDotIndex,
@@ -157,7 +161,7 @@ impl Anterouter {
                 source_dot,
                 small_bbox,
                 target_layer,
-                CardinalDirection::nearest_to_vector(ratline_delta),
+                CardinalDirection::nearest_from_vector(ratline_delta),
                 options,
             )
             .is_ok()
@@ -190,7 +194,37 @@ impl Anterouter {
                 source_dot,
                 large_bbox,
                 target_layer,
-                CardinalDirection::nearest_to_vector(ratline_delta),
+                CardinalDirection::nearest_from_vector(ratline_delta),
+                options,
+            )
+            .is_ok()
+        {
+            return;
+        }
+
+        if self
+            .anteroute_fanout_on_bbox(
+                autorouter,
+                ratvertex,
+                source_dot,
+                small_bbox,
+                target_layer,
+                OrdinalDirection::nearest_from_vector(ratline_delta),
+                options,
+            )
+            .is_ok()
+        {
+            return;
+        }
+
+        if self
+            .anteroute_fanout_on_bbox(
+                autorouter,
+                ratvertex,
+                source_dot,
+                large_bbox,
+                target_layer,
+                OrdinalDirection::nearest_from_vector(ratline_delta),
                 options,
             )
             .is_ok()
@@ -208,17 +242,17 @@ impl Anterouter {
         source_dot: FixedDotIndex,
         bbox: AABB<[f64; 2]>,
         target_layer: usize,
-        preferred_cardinal_direction: CardinalDirection,
+        preferred_compass_direction: impl CompassDirection,
         options: &AnterouterOptions,
     ) -> Result<(), ()> {
         if self
-            .anteroute_fanout_on_bbox_in_cardinal_direction(
+            .anteroute_fanout_on_bbox_in_direction(
                 autorouter,
                 ratvertex,
                 source_dot,
                 bbox,
                 target_layer,
-                preferred_cardinal_direction,
+                preferred_compass_direction,
                 options,
             )
             .is_ok()
@@ -226,15 +260,15 @@ impl Anterouter {
             return Ok(());
         }
 
-        let mut counterclockwise_turning_cardinal_direction = preferred_cardinal_direction;
-        let mut clockwise_turning_cardinal_direction = preferred_cardinal_direction;
+        let mut counterclockwise_turning_cardinal_direction = preferred_compass_direction;
+        let mut clockwise_turning_cardinal_direction = preferred_compass_direction;
 
         loop {
             counterclockwise_turning_cardinal_direction =
                 counterclockwise_turning_cardinal_direction.turn_counterclockwise();
 
             if self
-                .anteroute_fanout_on_bbox_in_cardinal_direction(
+                .anteroute_fanout_on_bbox_in_direction(
                     autorouter,
                     ratvertex,
                     source_dot,
@@ -252,7 +286,7 @@ impl Anterouter {
                 clockwise_turning_cardinal_direction.turn_clockwise();
 
             if self
-                .anteroute_fanout_on_bbox_in_cardinal_direction(
+                .anteroute_fanout_on_bbox_in_direction(
                     autorouter,
                     ratvertex,
                     source_dot,
@@ -266,31 +300,31 @@ impl Anterouter {
                 return Ok(());
             }
 
-            if counterclockwise_turning_cardinal_direction == preferred_cardinal_direction
-                || clockwise_turning_cardinal_direction == preferred_cardinal_direction
+            if counterclockwise_turning_cardinal_direction == preferred_compass_direction
+                || clockwise_turning_cardinal_direction == preferred_compass_direction
             {
                 return Err(());
             }
         }
     }
 
-    fn anteroute_fanout_on_bbox_in_cardinal_direction(
+    fn anteroute_fanout_on_bbox_in_direction(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratvertex: NodeIndex<usize>,
         source_dot: FixedDotIndex,
         bbox: AABB<[f64; 2]>,
         target_layer: usize,
-        cardinal_direction: CardinalDirection,
+        direction: impl Into<Point>,
         options: &AnterouterOptions,
     ) -> Result<(), ()> {
-        let (_, dots) = self.place_fanout_via_on_bbox_in_cardinal_direction(
+        let (_, dots) = self.place_fanout_via_on_bbox_in_direction(
             autorouter,
             ratvertex,
             source_dot,
             bbox,
             target_layer,
-            cardinal_direction,
+            direction,
             options,
         )?;
 
@@ -326,14 +360,14 @@ impl Anterouter {
         Ok(())
     }
 
-    fn place_fanout_via_on_bbox_in_cardinal_direction(
+    fn place_fanout_via_on_bbox_in_direction(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratvertex: NodeIndex<usize>,
         source_dot: FixedDotIndex,
         bbox: AABB<[f64; 2]>,
         target_layer: usize,
-        cardinal_direction: CardinalDirection,
+        direction: impl Into<Point>,
         options: &AnterouterOptions,
     ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), ()> {
         let source_layer = autorouter
@@ -357,7 +391,7 @@ impl Anterouter {
             .shape()
             .center();
 
-        let cardinal_direction_vector = Point::from(cardinal_direction);
+        let cardinal_direction_vector = direction.into();
 
         let bbox_anchor = point! {
             x: (bbox.upper()[0] - bbox.lower()[0]) / 2.0 * cardinal_direction_vector.x(),

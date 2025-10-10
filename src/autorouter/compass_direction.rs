@@ -4,6 +4,12 @@
 
 use geo::Point;
 
+pub trait CompassDirection: Copy + PartialEq + Into<Point> {
+    fn nearest_from_vector(vector: Point) -> Self;
+    fn turn_clockwise(self) -> Self;
+    fn turn_counterclockwise(self) -> Self;
+}
+
 #[derive(Clone, Copy, Debug, Eq, PartialEq)]
 pub enum CardinalDirection {
     North,
@@ -13,8 +19,8 @@ pub enum CardinalDirection {
 }
 
 impl From<CardinalDirection> for Point {
-    fn from(compass_direction: CardinalDirection) -> Point {
-        match compass_direction {
+    fn from(cardinal_direction: CardinalDirection) -> Point {
+        match cardinal_direction {
             CardinalDirection::North => [0.0, -1.0].into(),
             CardinalDirection::West => [-1.0, 0.0].into(),
             CardinalDirection::South => [0.0, 1.0].into(),
@@ -23,8 +29,8 @@ impl From<CardinalDirection> for Point {
     }
 }
 
-impl CardinalDirection {
-    pub fn nearest_to_vector(vector: Point) -> Self {
+impl CompassDirection for CardinalDirection {
+    fn nearest_from_vector(vector: Point) -> Self {
         if vector.x().abs() > vector.y().abs() {
             if vector.x() > 0.0 {
                 Self::East
@@ -40,7 +46,16 @@ impl CardinalDirection {
         }
     }
 
-    pub fn turn_counterclockwise(self) -> Self {
+    fn turn_clockwise(self) -> Self {
+        match self {
+            Self::North => Self::East,
+            Self::East => Self::South,
+            Self::South => Self::West,
+            Self::West => Self::North,
+        }
+    }
+
+    fn turn_counterclockwise(self) -> Self {
         match self {
             Self::North => Self::West,
             Self::West => Self::South,
@@ -48,13 +63,55 @@ impl CardinalDirection {
             Self::East => Self::North,
         }
     }
+}
 
-    pub fn turn_clockwise(self) -> Self {
+#[derive(Clone, Copy, Debug, Eq, PartialEq)]
+pub enum OrdinalDirection {
+    NorthWest,
+    SouthWest,
+    SouthEast,
+    NorthEast,
+}
+
+impl From<OrdinalDirection> for Point {
+    fn from(ordinal_direction: OrdinalDirection) -> Point {
+        match ordinal_direction {
+            OrdinalDirection::NorthWest => [-1.0, -1.0].into(),
+            OrdinalDirection::SouthWest => [-1.0, 1.0].into(),
+            OrdinalDirection::SouthEast => [1.0, 1.0].into(),
+            OrdinalDirection::NorthEast => [1.0, -1.0].into(),
+        }
+    }
+}
+
+impl CompassDirection for OrdinalDirection {
+    fn nearest_from_vector(vector: Point) -> Self {
+        if vector.x() > 0.0 && vector.y() > 0.0 {
+            Self::SouthEast
+        } else if vector.x() > 0.0 && vector.y() < 0.0 {
+            Self::NorthEast
+        } else if vector.x() < 0.0 && vector.y() < 0.0 {
+            Self::NorthWest
+        } else {
+            Self::NorthEast
+        }
+    }
+
+    fn turn_clockwise(self) -> Self {
         match self {
-            Self::North => Self::East,
-            Self::East => Self::South,
-            Self::South => Self::West,
-            Self::West => Self::North,
+            Self::NorthWest => Self::SouthWest,
+            Self::SouthWest => Self::SouthEast,
+            Self::SouthEast => Self::SouthWest,
+            Self::NorthEast => Self::NorthWest,
+        }
+    }
+
+    fn turn_counterclockwise(self) -> Self {
+        match self {
+            Self::NorthWest => Self::SouthWest,
+            Self::SouthWest => Self::SouthEast,
+            Self::SouthEast => Self::NorthEast,
+            Self::NorthEast => Self::NorthWest,
         }
     }
 }
@@ -86,8 +143,8 @@ impl From<PrincipalWind> for Point {
     }
 }
 
-impl PrincipalWind {
-    pub fn nearest_to_vector(vector: Point) -> Self {
+impl CompassDirection for PrincipalWind {
+    fn nearest_from_vector(vector: Point) -> Self {
         if vector.x() == 0.0 && vector.y() == 0.0 {
             panic!("Zero vector has no direction");
         }
@@ -110,20 +167,7 @@ impl PrincipalWind {
         }
     }
 
-    pub fn turn_counterclockwise(self) -> Self {
-        match self {
-            Self::North => Self::NorthWest,
-            Self::NorthWest => Self::West,
-            Self::West => Self::SouthWest,
-            Self::SouthWest => Self::South,
-            Self::South => Self::SouthEast,
-            Self::SouthEast => Self::East,
-            Self::East => Self::NorthEast,
-            Self::NorthEast => Self::North,
-        }
-    }
-
-    pub fn turn_clockwise(self) -> Self {
+    fn turn_clockwise(self) -> Self {
         match self {
             Self::North => Self::NorthEast,
             Self::NorthEast => Self::East,
@@ -133,6 +177,19 @@ impl PrincipalWind {
             Self::SouthWest => Self::West,
             Self::West => Self::NorthWest,
             Self::NorthWest => Self::North,
+        }
+    }
+
+    fn turn_counterclockwise(self) -> Self {
+        match self {
+            Self::North => Self::NorthWest,
+            Self::NorthWest => Self::West,
+            Self::West => Self::SouthWest,
+            Self::SouthWest => Self::South,
+            Self::South => Self::SouthEast,
+            Self::SouthEast => Self::East,
+            Self::East => Self::NorthEast,
+            Self::NorthEast => Self::North,
         }
     }
 }
