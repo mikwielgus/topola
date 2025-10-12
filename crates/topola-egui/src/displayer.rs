@@ -167,7 +167,8 @@ impl<'a> Displayer<'a> {
             .interactor
             .invoker()
             .autorouter()
-            .ratsnest()
+            .ratsnests()
+            .on_principal_layer(0)
             .graph();
         for edge in graph.edge_references() {
             if edge.weight().band_termseg.is_some() {

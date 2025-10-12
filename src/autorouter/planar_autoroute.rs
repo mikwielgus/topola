@@ -185,10 +185,13 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
                 .find_loose_band_uid(band_termseg.into())
                 .expect("a completely routed band should've Seg's as ends");
 
-            autorouter.ratsnest.assign_band_termseg_to_ratline(
-                self.ratlines[self.curr_ratline_index],
-                band_termseg,
-            );
+            autorouter
+                .ratsnests
+                .on_principal_layer_mut(0)
+                .assign_band_termseg_to_ratline(
+                    self.ratlines[self.curr_ratline_index],
+                    band_termseg,
+                );
 
             let mut board_data_edit = BoardDataEdit::new();
 

@@ -78,7 +78,8 @@ impl<'a, M: AccessMesadata> SccRef<'a, M> {
         self.scc.node_indices().contains(
             &self
                 .autorouter
-                .ratsnest()
+                .ratsnests()
+                .on_principal_layer(0)
                 .graph()
                 .edge_endpoints(ratline)
                 .unwrap()
@@ -86,7 +87,8 @@ impl<'a, M: AccessMesadata> SccRef<'a, M> {
         ) && self.scc.node_indices().contains(
             &self
                 .autorouter
-                .ratsnest()
+                .ratsnests()
+                .on_principal_layer(0)
                 .graph()
                 .edge_endpoints(ratline)
                 .unwrap()

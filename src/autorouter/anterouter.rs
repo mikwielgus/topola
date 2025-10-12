@@ -66,7 +66,8 @@ impl Anterouter {
             let endpoint_dots = ratline.ref_(autorouter).endpoint_dots();
 
             autorouter
-                .ratsnest
+                .ratsnests
+                .on_principal_layer_mut(0)
                 .assign_layer_to_ratline(*ratline, *layer);
 
             if let Some(terminating_scheme) = self
@@ -75,13 +76,14 @@ impl Anterouter {
                 .get(&endpoint_dots.0)
             {
                 match terminating_scheme {
-                    TerminatingScheme::ExistingFixedDot(terminating_dot) => {
-                        autorouter.ratsnest.assign_terminating_dot_to_ratvertex(
+                    TerminatingScheme::ExistingFixedDot(terminating_dot) => autorouter
+                        .ratsnests
+                        .on_principal_layer_mut(0)
+                        .assign_terminating_dot_to_ratvertex(
                             endpoint_indices.0,
                             *layer,
                             *terminating_dot,
-                        )
-                    }
+                        ),
                     TerminatingScheme::Fanout => self.anteroute_fanout(
                         autorouter,
                         endpoint_indices.0,
@@ -99,13 +101,14 @@ impl Anterouter {
                 .get(&endpoint_dots.1)
             {
                 match terminating_scheme {
-                    TerminatingScheme::ExistingFixedDot(terminating_dot) => {
-                        autorouter.ratsnest.assign_terminating_dot_to_ratvertex(
+                    TerminatingScheme::ExistingFixedDot(terminating_dot) => autorouter
+                        .ratsnests
+                        .on_principal_layer_mut(0)
+                        .assign_terminating_dot_to_ratvertex(
                             endpoint_indices.1,
                             *layer,
                             *terminating_dot,
-                        )
-                    }
+                        ),
                     TerminatingScheme::Fanout => self.anteroute_fanout(
                         autorouter,
                         endpoint_indices.1,
@@ -430,11 +433,10 @@ impl Anterouter {
                             .layer()
                 })
                 .unwrap();
-            autorouter.ratsnest.assign_terminating_dot_to_ratvertex(
-                ratvertex,
-                target_layer,
-                *terminating_dot,
-            );
+            autorouter
+                .ratsnests
+                .on_principal_layer_mut(0)
+                .assign_terminating_dot_to_ratvertex(ratvertex, target_layer, *terminating_dot);
             Ok((via, dots))
         } else {
             Err(())

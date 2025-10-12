@@ -21,6 +21,7 @@ pub mod pointroute;
 pub mod presorter;
 pub mod ratline;
 pub mod ratsnest;
+pub mod ratsnests;
 pub mod remove_bands;
 pub mod scc;
 pub mod selection;

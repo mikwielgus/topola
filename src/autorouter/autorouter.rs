@@ -15,6 +15,7 @@ use crate::{
         multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouterOptions},
         permutator::PlanarAutorouteExecutionPermutator,
         planner::Planner,
+        ratsnests::Ratsnests,
     },
     board::{AccessMesadata, Board},
     drawing::band::BandTermsegIndex,
@@ -31,7 +32,7 @@ use super::{
     planar_autoroute::PlanarAutorouteExecutionStepper,
     pointroute::PointrouteExecutionStepper,
     ratline::RatlineIndex,
-    ratsnest::{Ratsnest, RatvertexNodeIndex},
+    ratsnest::RatvertexNodeIndex,
     remove_bands::RemoveBandsExecutionStepper,
     selection::{BandSelection, PinSelection},
 };
@@ -72,13 +73,13 @@ pub enum AutorouterError {
 #[derive(Getters)]
 pub struct Autorouter<M> {
     pub(super) board: Board<M>,
-    pub(super) ratsnest: Ratsnest,
+    pub(super) ratsnests: Ratsnests,
 }
 
 impl<M: AccessMesadata> Autorouter<M> {
     pub fn new(board: Board<M>) -> Result<Self, InsertionError> {
-        let ratsnest = Ratsnest::new(&board)?;
-        Ok(Self { board, ratsnest })
+        let ratsnests = Ratsnests::new(&board)?;
+        Ok(Self { board, ratsnests })
     }
 
     pub fn pointroute(
@@ -89,7 +90,8 @@ impl<M: AccessMesadata> Autorouter<M> {
     ) -> Result<PointrouteExecutionStepper, AutorouterError> {
         let ratvertex = self.find_selected_ratvertex(selection).unwrap();
         let origin_dot = match self
-            .ratsnest
+            .ratsnests
+            .on_principal_layer_mut(0)
             .graph()
             .node_weight(ratvertex)
             .unwrap()
@@ -302,20 +304,28 @@ impl<M: AccessMesadata> Autorouter<M> {
     }
 
     pub(super) fn selected_ratlines(&self, selection: &PinSelection) -> Vec<RatlineIndex> {
-        self.ratsnest
+        self.ratsnests()
+            .on_principal_layer(0)
             .graph()
             .edge_indices()
             .filter(|ratline| {
-                let (source, target) = self.ratsnest.graph().edge_endpoints(*ratline).unwrap();
+                let (source, target) = self
+                    .ratsnests()
+                    .on_principal_layer(0)
+                    .graph()
+                    .edge_endpoints(*ratline)
+                    .unwrap();
 
                 let source_ratvertex = self
-                    .ratsnest
+                    .ratsnests()
+                    .on_principal_layer(0)
                     .graph()
                     .node_weight(source)
                     .unwrap()
                     .node_index();
                 let to_ratvertex = self
-                    .ratsnest
+                    .ratsnests()
+                    .on_principal_layer(0)
                     .graph()
                     .node_weight(target)
                     .unwrap()
@@ -328,16 +338,21 @@ impl<M: AccessMesadata> Autorouter<M> {
     }
 
     fn find_selected_ratvertex(&self, selection: &PinSelection) -> Option<NodeIndex<usize>> {
-        self.ratsnest.graph().node_indices().find(|ratvertex| {
-            selection.contains_node(
-                &self.board,
-                self.ratsnest
-                    .graph()
-                    .node_weight(*ratvertex)
-                    .unwrap()
-                    .node_index()
-                    .into(),
-            )
-        })
+        self.ratsnests()
+            .on_principal_layer(0)
+            .graph()
+            .node_indices()
+            .find(|ratvertex| {
+                selection.contains_node(
+                    &self.board,
+                    self.ratsnests()
+                        .on_principal_layer(0)
+                        .graph()
+                        .node_weight(*ratvertex)
+                        .unwrap()
+                        .node_index()
+                        .into(),
+                )
+            })
     }
 }

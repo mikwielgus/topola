@@ -40,7 +40,7 @@ impl SccIntersectionsAndLengthPresorter {
         params: &PresortParams,
     ) -> Self {
         // FIXME: Unnecessary copy.
-        let mut filtered_ratsnest = autorouter.ratsnest().graph().clone();
+        let mut filtered_ratsnest = autorouter.ratsnests().on_principal_layer(0).graph().clone();
         filtered_ratsnest.retain_edges(|_g, i| ratlines.contains(&i));
 
         let mut sccs: Vec<_> = tarjan_scc(&filtered_ratsnest)

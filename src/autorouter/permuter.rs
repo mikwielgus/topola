@@ -87,14 +87,16 @@ impl PermuteRatlines for SccPermutationsRatlinePermuter {
             for ratline in self.original_ratlines.iter() {
                 if scc.node_indices().contains(
                     &autorouter
-                        .ratsnest()
+                        .ratsnests()
+                        .on_principal_layer(0)
                         .graph()
                         .edge_endpoints(*ratline)
                         .unwrap()
                         .0,
                 ) && scc.node_indices().contains(
                     &autorouter
-                        .ratsnest()
+                        .ratsnests()
+                        .on_principal_layer(0)
                         .graph()
                         .edge_endpoints(*ratline)
                         .unwrap()
