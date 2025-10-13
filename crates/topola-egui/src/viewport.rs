@@ -51,7 +51,9 @@ impl Viewport {
                         let latest_point = point! {x: latest_pos.x as f64, y: -latest_pos.y as f64};
 
                         let interactive_input = InteractiveInput {
-                            active_layer: workspace.appearance_panel.active_layer,
+                            active_layer: Some(
+                                menu_bar.multilayer_autoroute_options.planar.principal_layer,
+                            ),
                             pointer_pos: latest_point,
                             dt: ctx.input(|i| i.stable_dt),
                         };

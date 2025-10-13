@@ -7,8 +7,8 @@ use std::{collections::BTreeSet, ops::ControlFlow, path::Path, sync::mpsc::Sende
 use topola::{
     autorouter::{
         anterouter::AnterouterOptions, execution::Command, invoker::InvokerError,
-        multilayer_autoroute::MultilayerAutorouterOptions, selection::Selection, AutorouterOptions,
-        PresortBy,
+        multilayer_autoroute::MultilayerAutorouteOptions, selection::Selection,
+        PlanarAutorouteOptions, PresortBy,
     },
     board::AccessMesadata,
     interactor::{interaction::InteractionStepper, route_plan::RoutePlan},
@@ -26,7 +26,7 @@ use crate::{
 };
 
 pub struct MenuBar {
-    pub multilayer_autorouter_options: MultilayerAutorouterOptions,
+    pub multilayer_autoroute_options: MultilayerAutorouteOptions,
     pub is_placing_via: bool,
     pub show_ratsnest: bool,
     pub show_navmesh: bool,
@@ -46,11 +46,12 @@ pub struct MenuBar {
 impl MenuBar {
     pub fn new() -> Self {
         Self {
-            multilayer_autorouter_options: MultilayerAutorouterOptions {
+            multilayer_autoroute_options: MultilayerAutorouteOptions {
                 anterouter: AnterouterOptions {
                     fanout_clearance: 200.0,
                 },
-                planar: AutorouterOptions {
+                planar: PlanarAutorouteOptions {
+                    principal_layer: 0,
                     presort_by: PresortBy::RatlineIntersectionCountAndLength,
                     permutate: true,
                     router: RouterOptions {
@@ -166,7 +167,7 @@ impl MenuBar {
                             tr,
                             maybe_workspace.is_some(),
                             workspace_activities_enabled,
-                            &mut self.multilayer_autorouter_options,
+                            &mut self.multilayer_autoroute_options,
                         )
                     });
 
@@ -294,12 +295,10 @@ impl MenuBar {
                         .recalculate_topo_navmesh
                         .consume_key_triggered(ctx, ui)
                     {
-                        if let Some(active_layer) = workspace.appearance_panel.active_layer {
-                            workspace.overlay.recalculate_topo_navmesh(
-                                workspace.interactor.invoker().autorouter(),
-                                active_layer,
-                            );
-                        }
+                        workspace.overlay.recalculate_topo_navmesh(
+                            workspace.interactor.invoker().autorouter(),
+                            self.multilayer_autoroute_options.planar.principal_layer,
+                        );
                     } else if actions.place.place_via.consume_key_enabled(
                         ctx,
                         ui,
@@ -322,35 +321,35 @@ impl MenuBar {
                                 Command::RemoveBands(selection.band_selection)
                             })
                         } else if actions.route.topo_autoroute.consume_key_triggered(ctx, ui) {
-                            if let Some(active_layer) = workspace.appearance_panel.active_layer {
-                                let active_layer = workspace
-                                    .interactor
-                                    .invoker()
-                                    .autorouter()
-                                    .board()
-                                    .layout()
-                                    .rules()
-                                    .layer_layername(active_layer)
-                                    .expect("unknown active layer")
-                                    .to_string();
-                                schedule(error_dialog, workspace, |selection| {
-                                    Command::TopoAutoroute {
-                                        selection: selection.pin_selection,
-                                        allowed_edges: BTreeSet::new(),
-                                        active_layer,
-                                        routed_band_width: self
-                                            .multilayer_autorouter_options
-                                            .planar
-                                            .router
-                                            .routed_band_width,
-                                    }
-                                });
-                            }
+                            let active_layer_name = workspace
+                                .interactor
+                                .invoker()
+                                .autorouter()
+                                .board()
+                                .layout()
+                                .rules()
+                                .layer_layername(
+                                    self.multilayer_autoroute_options.planar.principal_layer,
+                                )
+                                .expect("unknown active layer")
+                                .to_string();
+                            schedule(error_dialog, workspace, |selection| {
+                                Command::TopoAutoroute {
+                                    selection: selection.pin_selection,
+                                    allowed_edges: BTreeSet::new(),
+                                    active_layer: active_layer_name,
+                                    routed_band_width: self
+                                        .multilayer_autoroute_options
+                                        .planar
+                                        .router
+                                        .routed_band_width,
+                                }
+                            });
                         } else if actions.route.autoroute.consume_key_triggered(ctx, ui) {
                             schedule(error_dialog, workspace, |selection| {
                                 Command::MultilayerAutoroute(
                                     selection.pin_selection,
-                                    self.multilayer_autorouter_options,
+                                    self.multilayer_autoroute_options,
                                 )
                             });
                         } else if actions
@@ -361,7 +360,7 @@ impl MenuBar {
                             schedule(error_dialog, workspace, |selection| {
                                 Command::Autoroute(
                                     selection.pin_selection,
-                                    self.multilayer_autorouter_options.planar,
+                                    self.multilayer_autoroute_options.planar,
                                 )
                             });
                         } else if actions
@@ -372,7 +371,7 @@ impl MenuBar {
                             schedule(error_dialog, workspace, |selection| {
                                 Command::CompareDetours(
                                     selection.pin_selection,
-                                    self.multilayer_autorouter_options.planar,
+                                    self.multilayer_autoroute_options.planar,
                                 )
                             });
                         } else if actions
@@ -388,12 +387,12 @@ impl MenuBar {
                             .place_route_plan
                             .consume_key_triggered(ctx, ui)
                         {
-                            if let Some(active_layer) = workspace.appearance_panel.active_layer {
-                                self.is_placing_via = false;
-                                workspace.interactor.interact(InteractionStepper::RoutePlan(
-                                    RoutePlan::new(active_layer),
-                                ));
-                            }
+                            self.is_placing_via = false;
+                            workspace.interactor.interact(InteractionStepper::RoutePlan(
+                                RoutePlan::new(
+                                    self.multilayer_autoroute_options.planar.principal_layer,
+                                ),
+                            ));
                         }
                     }
                 }

@@ -185,7 +185,8 @@ impl eframe::App for App {
 
         if self.menu_bar.show_appearance_panel {
             if let Some(workspace) = &mut self.maybe_workspace {
-                workspace.update_appearance_panel(ctx);
+                workspace
+                    .update_appearance_panel(ctx, &mut self.menu_bar.multilayer_autoroute_options);
             }
         }
 

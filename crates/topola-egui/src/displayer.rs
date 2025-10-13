@@ -78,7 +78,7 @@ impl<'a> Displayer<'a> {
         self.display_activity(menu_bar);
 
         if menu_bar.show_primitive_indices {
-            self.display_primitive_indices();
+            self.display_primitive_indices(menu_bar);
         }
     }
 
@@ -571,34 +571,35 @@ impl<'a> Displayer<'a> {
         }
     }
 
-    fn display_primitive_indices(&mut self) {
+    fn display_primitive_indices(&mut self, menu_bar: &MenuBar) {
         let board = self.workspace.interactor.invoker().autorouter().board();
 
-        if let Some(active_layer) = self.workspace.appearance_panel.active_layer {
-            for primitive in board.layout().drawing().layer_primitive_nodes(active_layer) {
-                let pos = primitive
-                    .primitive_ref(board.layout().drawing())
-                    .shape()
-                    .center();
+        for primitive in board
+            .layout()
+            .drawing()
+            .layer_primitive_nodes(menu_bar.multilayer_autoroute_options.planar.principal_layer)
+        {
+            let pos = primitive
+                .primitive_ref(board.layout().drawing())
+                .shape()
+                .center();
 
-                let color = if let Some(activity) = &mut self.workspace.interactor.maybe_activity()
-                {
-                    if activity.obstacles().contains(&primitive) {
-                        egui::Color32::from_rgb(255, 255, 255)
-                    } else {
-                        egui::Color32::from_rgb(150, 150, 150)
-                    }
-                } else {
+            let color = if let Some(activity) = &mut self.workspace.interactor.maybe_activity() {
+                if activity.obstacles().contains(&primitive) {
                     egui::Color32::from_rgb(255, 255, 255)
-                };
+                } else {
+                    egui::Color32::from_rgb(150, 150, 150)
+                }
+            } else {
+                egui::Color32::from_rgb(255, 255, 255)
+            };
 
-                self.painter.paint_text(
-                    pos,
-                    egui::Align2::CENTER_CENTER,
-                    &format!("{}", primitive.index()),
-                    color,
-                );
-            }
+            self.painter.paint_text(
+                pos,
+                egui::Align2::CENTER_CENTER,
+                &format!("{}", primitive.index()),
+                color,
+            );
         }
     }
 }

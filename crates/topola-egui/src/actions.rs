@@ -10,9 +10,7 @@ use crate::{
 };
 
 use egui::{Context, Ui};
-use topola::autorouter::{
-    multilayer_autoroute::MultilayerAutorouterOptions, AutorouterOptions, PresortBy,
-};
+use topola::autorouter::{multilayer_autoroute::MultilayerAutorouteOptions, PresortBy};
 
 pub struct FileActions {
     pub open_design: Trigger,
@@ -336,7 +334,7 @@ impl RouteActions {
         tr: &Translator,
         have_workspace: bool,
         workspace_activities_enabled: bool,
-        multilayer_autorouter_options: &mut MultilayerAutorouterOptions,
+        multilayer_autorouter_options: &mut MultilayerAutorouteOptions,
     ) -> egui::InnerResponse<()> {
         ui.add_enabled_ui(have_workspace, |ui| {
             ui.add_enabled_ui(workspace_activities_enabled, |ui| {

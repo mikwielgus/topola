@@ -12,7 +12,7 @@ use thiserror::Error;
 
 use crate::{
     autorouter::{
-        multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouterOptions},
+        multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouteOptions},
         permutator::PlanarAutorouteExecutionPermutator,
         planner::Planner,
         ratsnests::Ratsnests,
@@ -44,7 +44,8 @@ pub enum PresortBy {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub struct AutorouterOptions {
+pub struct PlanarAutorouteOptions {
+    pub principal_layer: usize,
     pub presort_by: PresortBy,
     pub permutate: bool,
     pub router: RouterOptions,
@@ -86,7 +87,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         &mut self,
         selection: &PinSelection,
         point: Point,
-        options: AutorouterOptions,
+        options: PlanarAutorouteOptions,
     ) -> Result<PointrouteExecutionStepper, AutorouterError> {
         let ratvertex = self.find_selected_ratvertex(selection).unwrap();
         let origin_dot = match self
@@ -114,7 +115,7 @@ impl<M: AccessMesadata> Autorouter<M> {
     pub fn multilayer_autoroute(
         &mut self,
         selection: &PinSelection,
-        options: MultilayerAutorouterOptions,
+        options: MultilayerAutorouteOptions,
     ) -> Result<MultilayerAutorouteExecutionStepper, AutorouterError> {
         let planner = Planner::new(self, &self.selected_ratlines(selection));
 
@@ -129,7 +130,7 @@ impl<M: AccessMesadata> Autorouter<M> {
     pub fn planar_autoroute(
         &mut self,
         selection: &PinSelection,
-        options: AutorouterOptions,
+        options: PlanarAutorouteOptions,
     ) -> Result<PlanarAutorouteExecutionPermutator, AutorouterError> {
         PlanarAutorouteExecutionPermutator::new(self, self.selected_ratlines(selection), options)
     }
@@ -137,7 +138,7 @@ impl<M: AccessMesadata> Autorouter<M> {
     pub(super) fn planar_autoroute_ratlines(
         &mut self,
         ratlines: Vec<RatlineIndex>,
-        options: AutorouterOptions,
+        options: PlanarAutorouteOptions,
     ) -> Result<PlanarAutorouteExecutionStepper, AutorouterError> {
         PlanarAutorouteExecutionStepper::new(self, ratlines, options)
     }
@@ -278,7 +279,7 @@ impl<M: AccessMesadata> Autorouter<M> {
     pub fn compare_detours(
         &mut self,
         selection: &PinSelection,
-        options: AutorouterOptions,
+        options: PlanarAutorouteOptions,
     ) -> Result<CompareDetoursExecutionStepper, AutorouterError> {
         let ratlines = self.selected_ratlines(selection);
         if ratlines.len() < 2 {
@@ -291,7 +292,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         &mut self,
         ratline1: RatlineIndex,
         ratline2: RatlineIndex,
-        options: AutorouterOptions,
+        options: PlanarAutorouteOptions,
     ) -> Result<CompareDetoursExecutionStepper, AutorouterError> {
         CompareDetoursExecutionStepper::new(self, ratline1, ratline2, options)
     }

@@ -20,7 +20,7 @@ use super::{
     invoker::GetDebugOverlayData,
     planar_autoroute::{PlanarAutorouteContinueStatus, PlanarAutorouteExecutionStepper},
     ratline::RatlineIndex,
-    Autorouter, AutorouterError, AutorouterOptions,
+    Autorouter, AutorouterError, PlanarAutorouteOptions,
 };
 
 pub struct CompareDetoursExecutionStepper {
@@ -38,7 +38,7 @@ impl CompareDetoursExecutionStepper {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratline1: RatlineIndex,
         ratline2: RatlineIndex,
-        options: AutorouterOptions,
+        options: PlanarAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
         Ok(Self {
             autoroute: autorouter.planar_autoroute_ratlines(vec![ratline1, ratline2], options)?,

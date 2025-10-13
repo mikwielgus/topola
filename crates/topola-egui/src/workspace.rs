@@ -8,7 +8,9 @@ use std::{
 };
 
 use topola::{
-    autorouter::{execution::Command, history::History},
+    autorouter::{
+        execution::Command, history::History, multilayer_autoroute::MultilayerAutorouteOptions,
+    },
     board::edit::BoardEdit,
     interactor::{
         activity::{InteractiveEvent, InteractiveEventKind, InteractiveInput},
@@ -120,7 +122,7 @@ impl Workspace {
                             circle: Circle {
                                 pos: interactive_input.pointer_pos,
                                 r: menu_bar
-                                    .multilayer_autorouter_options
+                                    .multilayer_autoroute_options
                                     .planar
                                     .router
                                     .routed_band_width
@@ -197,8 +199,12 @@ impl Workspace {
         }
     }
 
-    pub fn update_appearance_panel(&mut self, ctx: &egui::Context) {
+    pub fn update_appearance_panel(
+        &mut self,
+        ctx: &egui::Context,
+        options: &mut MultilayerAutorouteOptions,
+    ) {
         self.appearance_panel
-            .update(ctx, self.interactor.invoker().autorouter().board());
+            .update(ctx, self.interactor.invoker().autorouter().board(), options);
     }
 }

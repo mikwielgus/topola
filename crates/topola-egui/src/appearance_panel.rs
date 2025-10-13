@@ -3,15 +3,16 @@
 // SPDX-License-Identifier: MIT
 
 use egui::{widget_text::WidgetText, Context, Grid, ScrollArea, SidePanel};
-use topola::board::{AccessMesadata, Board};
+use topola::{
+    autorouter::multilayer_autoroute::MultilayerAutorouteOptions,
+    board::{AccessMesadata, Board},
+};
 
 pub struct AppearancePanel {
     // TODO:
     // In1.Cu shall be #7fc87f (#d5ecd5 when selected).
     // In2.Cu shall be #ce7d2c (#e8c39e when selected).
     pub visible: Box<[bool]>,
-
-    pub active_layer: Option<usize>,
 }
 
 impl AppearancePanel {
@@ -20,13 +21,15 @@ impl AppearancePanel {
         let visible = core::iter::repeat(true)
             .take(layer_count)
             .collect::<Box<[_]>>();
-        Self {
-            visible,
-            active_layer: Some(0),
-        }
+        Self { visible }
     }
 
-    pub fn update(&mut self, ctx: &Context, board: &Board<impl AccessMesadata>) {
+    pub fn update(
+        &mut self,
+        ctx: &Context,
+        board: &Board<impl AccessMesadata>,
+        options: &mut MultilayerAutorouteOptions,
+    ) {
         SidePanel::right("appearance_panel").show(ctx, |ui| {
             ui.label("Layers");
             let row_height = ui.spacing().interact_size.y;
@@ -49,8 +52,8 @@ impl AppearancePanel {
                                 // unnamed layers can't be used for routing
                                 if layername.is_some() {
                                     ui.radio_value(
-                                        &mut self.active_layer,
-                                        Some(layer),
+                                        &mut options.planar.principal_layer,
+                                        layer,
                                         WidgetText::default(),
                                     );
                                 } else {

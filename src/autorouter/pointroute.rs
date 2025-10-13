@@ -18,11 +18,11 @@ use crate::{
     stepper::Step,
 };
 
-use super::{Autorouter, AutorouterError, AutorouterOptions};
+use super::{Autorouter, AutorouterError, PlanarAutorouteOptions};
 
 pub struct PointrouteExecutionStepper {
     route: RouteStepper,
-    options: AutorouterOptions,
+    options: PlanarAutorouteOptions,
 }
 
 impl PointrouteExecutionStepper {
@@ -30,7 +30,7 @@ impl PointrouteExecutionStepper {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         origin: FixedDotIndex,
         point: Point,
-        options: AutorouterOptions,
+        options: PlanarAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
         let destination = autorouter.board.add_fixed_dot_infringably(
             &mut BoardEdit::new(), // TODO?

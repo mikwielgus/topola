@@ -11,7 +11,7 @@ use topola::autorouter::history::History;
 use topola::autorouter::invoker::Invoker;
 use topola::autorouter::selection::PinSelection;
 use topola::autorouter::Autorouter;
-use topola::autorouter::AutorouterOptions;
+use topola::autorouter::PlanarAutorouteOptions;
 use topola::autorouter::PresortBy;
 use topola::board::edit::BoardEdit;
 use topola::router::RouterOptions;
@@ -39,7 +39,7 @@ fn main() -> Result<(), std::io::Error> {
         history.do_(
             Command::Autoroute(
                 PinSelection::new_select_layer(&board, 0),
-                AutorouterOptions {
+                PlanarAutorouteOptions {
                     presort_by: PresortBy::RatlineIntersectionCountAndLength,
                     permutate: true,
                     router: RouterOptions {

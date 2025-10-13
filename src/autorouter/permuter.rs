@@ -12,7 +12,7 @@ use crate::{
     autorouter::{
         planar_autoroute::PlanarAutorouteExecutionStepper,
         presorter::SccIntersectionsAndLengthPresorter, ratline::RatlineIndex, scc::Scc, Autorouter,
-        AutorouterOptions,
+        PlanarAutorouteOptions,
     },
     drawing::graph::MakePrimitiveRef,
     geometry::{GenericNode, GetLayer},
@@ -39,7 +39,7 @@ impl RatlinesPermuter {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: Vec<RatlineIndex>,
         presorter: SccIntersectionsAndLengthPresorter,
-        options: &AutorouterOptions,
+        options: &PlanarAutorouteOptions,
     ) -> Self {
         RatlinesPermuter::SccPermutations(SccPermutationsRatlinePermuter::new(
             autorouter, ratlines, presorter, options,
@@ -60,7 +60,7 @@ impl SccPermutationsRatlinePermuter {
         _autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: Vec<RatlineIndex>,
         presorter: SccIntersectionsAndLengthPresorter,
-        _options: &AutorouterOptions,
+        _options: &PlanarAutorouteOptions,
     ) -> Self {
         // TODO: Instead of instantiating presorter again here, get it from
         // an argument.
@@ -120,7 +120,7 @@ impl RatlineCutsRatlinePermuter {
         _autorouter: &mut Autorouter<impl AccessMesadata>,
         _ratlines: Vec<RatlineIndex>,
         _presorter: SccIntersectionsAndLengthPresorter,
-        _options: &AutorouterOptions,
+        _options: &PlanarAutorouteOptions,
     ) -> Self {
         /*Self {
             sccs: presorter.dissolve(),

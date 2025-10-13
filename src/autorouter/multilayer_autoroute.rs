@@ -14,7 +14,7 @@ use crate::{
         permutator::PlanarAutorouteExecutionPermutator,
         planar_autoroute::PlanarAutorouteContinueStatus,
         ratline::RatlineIndex,
-        Autorouter, AutorouterError, AutorouterOptions,
+        Autorouter, AutorouterError, PlanarAutorouteOptions,
     },
     board::edit::BoardEdit,
     drawing::graph::PrimitiveIndex,
@@ -24,9 +24,9 @@ use crate::{
 };
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
-pub struct MultilayerAutorouterOptions {
+pub struct MultilayerAutorouteOptions {
     pub anterouter: AnterouterOptions,
-    pub planar: AutorouterOptions,
+    pub planar: PlanarAutorouteOptions,
 }
 
 pub struct MultilayerAutorouteExecutionStepper {
@@ -38,7 +38,7 @@ impl MultilayerAutorouteExecutionStepper {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: Vec<RatlineIndex>,
         plan: AnterouterPlan,
-        options: MultilayerAutorouterOptions,
+        options: MultilayerAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
         let mut assigner = Anterouter::new(plan);
         assigner.anteroute(autorouter, &options.anterouter);

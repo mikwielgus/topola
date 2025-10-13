@@ -26,7 +26,7 @@ use crate::{
 
 use super::{
     invoker::GetDebugOverlayData, ratline::RatlineIndex, Autorouter, AutorouterError,
-    AutorouterOptions,
+    PlanarAutorouteOptions,
 };
 
 /// Represents the current status of the autoroute operation.
@@ -53,7 +53,7 @@ pub struct PlanarAutorouteExecutionStepper {
     /// Records the changes to the board data, one routed band per item.
     board_data_edits: Vec<BoardDataEdit>,
     /// The options for the autorouting process, defining how routing should be carried out.
-    options: AutorouterOptions,
+    options: PlanarAutorouteOptions,
 }
 
 impl PlanarAutorouteExecutionStepper {
@@ -65,7 +65,7 @@ impl PlanarAutorouteExecutionStepper {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: Vec<RatlineIndex>,
-        options: AutorouterOptions,
+        options: PlanarAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
         if ratlines.is_empty() {
             return Err(AutorouterError::NothingToRoute);

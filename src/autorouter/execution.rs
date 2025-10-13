@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     autorouter::{
-        multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouterOptions},
+        multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouteOptions},
         permutator::PlanarAutorouteExecutionPermutator,
     },
     board::{edit::BoardEdit, AccessMesadata},
@@ -25,15 +25,15 @@ use super::{
     place_via::PlaceViaExecutionStepper,
     remove_bands::RemoveBandsExecutionStepper,
     selection::{BandSelection, PinSelection},
-    Autorouter, AutorouterOptions,
+    Autorouter, PlanarAutorouteOptions,
 };
 
 type Type = PinSelection;
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
 pub enum Command {
-    Autoroute(PinSelection, AutorouterOptions), // TODO: Rename to PlanarAutoroute.
-    MultilayerAutoroute(PinSelection, MultilayerAutorouterOptions),
+    Autoroute(PinSelection, PlanarAutorouteOptions), // TODO: Rename to PlanarAutoroute.
+    MultilayerAutoroute(PinSelection, MultilayerAutorouteOptions),
     TopoAutoroute {
         selection: PinSelection,
         #[serde(default, skip_serializing_if = "BTreeSet::is_empty")]
@@ -43,7 +43,7 @@ pub enum Command {
     },
     PlaceVia(ViaWeight),
     RemoveBands(BandSelection),
-    CompareDetours(Type, AutorouterOptions),
+    CompareDetours(Type, PlanarAutorouteOptions),
     MeasureLength(BandSelection),
 }
 
