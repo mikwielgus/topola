@@ -5,7 +5,6 @@
 use clap::Parser;
 use std::fs::File;
 use std::io::BufReader;
-use topola::autorouter::anterouter::AnterouterOptions;
 use topola::autorouter::execution::Command;
 use topola::autorouter::history::History;
 use topola::autorouter::invoker::Invoker;
@@ -40,6 +39,7 @@ fn main() -> Result<(), std::io::Error> {
             Command::Autoroute(
                 PinSelection::new_select_layer(&board, 0),
                 PlanarAutorouteOptions {
+                    principal_layer: 0,
                     presort_by: PresortBy::RatlineIntersectionCountAndLength,
                     permutate: true,
                     router: RouterOptions {

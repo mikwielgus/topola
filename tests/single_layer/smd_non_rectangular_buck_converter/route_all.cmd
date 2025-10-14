@@ -43,7 +43,8 @@
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true
           },
-          "permutate": false
+          "permutate": false,
+          "principal_layer": 0
         }
       ]
     }

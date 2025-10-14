@@ -55,7 +55,8 @@
             "squeeze_through_under_bends": true,
             "routed_band_width": 100.0
           },
-          "permutate": false
+          "permutate": false,
+          "principal_layer": 0
         }
       ]
     },
@@ -114,7 +115,8 @@
             "squeeze_through_under_bends": true,
             "routed_band_width": 100.0
           },
-          "permutate": false
+          "permutate": false,
+          "principal_layer": 0
         }
       ]
     },
@@ -173,7 +175,8 @@
             "squeeze_through_under_bends": true,
             "routed_band_width": 100.0
           },
-          "permutate": false
+          "permutate": false,
+          "principal_layer": 0
         }
       ]
     },
@@ -232,7 +235,8 @@
             "squeeze_through_under_bends": true,
             "routed_band_width": 100.0
           },
-          "permutate": false
+          "permutate": false,
+          "principal_layer": 0
         }
       ]
     }

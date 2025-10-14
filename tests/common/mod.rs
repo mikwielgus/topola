@@ -132,7 +132,8 @@ pub fn assert_navnode_count(
     expected_count: usize,
 ) {
     let (origin, destination) = autorouter
-        .ratsnest()
+        .ratsnests()
+        .on_principal_layer(0)
         .graph()
         .edge_indices()
         .collect::<Vec<_>>()
@@ -176,7 +177,12 @@ pub fn assert_that_all_single_layer_groundless_ratlines_are_autorouted(
 ) {
     let conncomps = ConncompsWithPrincipalLayer::new(autorouter.board(), 0);
 
-    for ratline in autorouter.ratsnest().graph().edge_indices() {
+    for ratline in autorouter
+        .ratsnests()
+        .on_principal_layer(0)
+        .graph()
+        .edge_indices()
+    {
         let (origin_dot, destination_dot) = ratline.ref_(autorouter).endpoint_dots();
 
         let origin_layer = autorouter
