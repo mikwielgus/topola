@@ -10,7 +10,7 @@ use specctra_core::mesadata::AccessMesadata;
 use crate::{
     autorouter::{
         anterouter::{AnterouterPlan, TerminatingScheme},
-        ratline::RatlineIndex,
+        ratline::RatlineUid,
         Autorouter,
     },
     drawing::{
@@ -27,7 +27,7 @@ pub struct Planner {
 }
 
 impl Planner {
-    pub fn new(autorouter: &Autorouter<impl AccessMesadata>, ratlines: &[RatlineIndex]) -> Self {
+    pub fn new(autorouter: &Autorouter<impl AccessMesadata>, ratlines: &[RatlineUid]) -> Self {
         let mut plan = AnterouterPlan {
             layer_map: ratlines
                 .iter()

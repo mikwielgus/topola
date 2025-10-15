@@ -9,7 +9,11 @@ use std::{
 
 use enum_dispatch::enum_dispatch;
 use geo::Point;
-use petgraph::{data::Element, graph::NodeIndex, prelude::StableUnGraph};
+use petgraph::{
+    data::Element,
+    graph::{EdgeIndex, NodeIndex},
+    prelude::StableUnGraph,
+};
 use spade::{handles::FixedVertexHandle, HasPosition, InsertionError, Point2};
 use specctra_core::mesadata::AccessMesadata;
 
@@ -27,10 +31,7 @@ use crate::{
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
 
-use super::{
-    conncomps::ConncompsWithPrincipalLayer,
-    ratline::{RatlineIndex, RatlineWeight},
-};
+use super::{conncomps::ConncompsWithPrincipalLayer, ratline::RatlineWeight};
 
 #[enum_dispatch(GetIndex)]
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -108,8 +109,10 @@ pub struct Ratsnest {
 }
 
 impl Ratsnest {
-    pub fn new(board: &Board<impl AccessMesadata>) -> Result<Self, InsertionError> {
-        let principal_layer = 0;
+    pub fn new(
+        board: &Board<impl AccessMesadata>,
+        principal_layer: usize,
+    ) -> Result<Self, InsertionError> {
         let conncomps = ConncompsWithPrincipalLayer::new(board, principal_layer);
 
         let mut this = Self {
@@ -239,16 +242,19 @@ impl Ratsnest {
             .insert(layer, terminating_dot);
     }
 
-    pub fn assign_layer_to_ratline(&mut self, ratline: RatlineIndex, layer: usize) {
-        self.graph.edge_weight_mut(ratline).unwrap().layer = layer;
+    pub fn assign_layer_to_ratline(&mut self, ratline_index: EdgeIndex<usize>, layer: usize) {
+        self.graph.edge_weight_mut(ratline_index).unwrap().layer = layer;
     }
 
     pub fn assign_band_termseg_to_ratline(
         &mut self,
-        ratline: RatlineIndex,
+        ratline_index: EdgeIndex<usize>,
         termseg: BandTermsegIndex,
     ) {
-        self.graph.edge_weight_mut(ratline).unwrap().band_termseg = Some(termseg);
+        self.graph
+            .edge_weight_mut(ratline_index)
+            .unwrap()
+            .band_termseg = Some(termseg);
     }
 
     pub fn graph(&self) -> &StableUnGraph<RatvertexWeight, RatlineWeight, usize> {

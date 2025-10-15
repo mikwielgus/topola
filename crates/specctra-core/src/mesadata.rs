@@ -21,11 +21,14 @@ pub trait AccessMesadata: AccessRules + std::panic::RefUnwindSafe {
     /// Renames a layer based on its index.
     fn bename_layer(&mut self, layer: usize, layername: String);
 
-    /// Retrieves the name of a layer by its index.
+    /// Retrieves the name of a layer from its index.
     fn layer_layername(&self, layer: usize) -> Option<&str>;
 
-    /// Retrieves the index of a layer by its name.
+    /// Retrieves the index of a layer from its name.
     fn layername_layer(&self, layername: &str) -> Option<usize>;
+
+    /// Return the number of the layers.
+    fn layer_count(&self) -> usize;
 
     /// Renames a net based on its index.
     fn bename_net(&mut self, net: usize, netname: String);
@@ -76,15 +79,18 @@ pub struct SpecctraMesadata {
     /// These rules are applied to all nets belonging to the respective net clas
     class_rules: BTreeMap<String, SpecctraRule>,
 
+    /// Number of layers.
+    layer_count: usize,
+
     // layername <-> layer for Layout
     /// A bidirectional map between layer indices and layer names, allowing translation
     /// between index-based layers in the layout and user-defined layer names.
-    pub layer_layername: BiBTreeMap<usize, String>,
+    layer_layername: BiBTreeMap<usize, String>,
 
     // netname <-> net for Layout
     /// A bidirectional map between network indices and network names in the PCB layout,
     /// providing an easy way to reference nets by name or index.
-    pub net_netname: BiBTreeMap<usize, String>,
+    net_netname: BiBTreeMap<usize, String>,
 
     // net -> netclass
     /// A map that associates network indices with their respective net class names.
@@ -105,6 +111,7 @@ impl SpecctraMesadata {
                 .enumerate()
                 .map(|(index, layer)| (index, layer.name.clone())),
         );
+        let layer_count = pcb.structure.layers.len();
 
         // assign IDs to all nets named in pcb.network
         let net_netname = {
@@ -157,6 +164,7 @@ impl SpecctraMesadata {
             structure_rule: SpecctraRule::from_dsn(&structure_rule),
             class_rules,
             layer_layername,
+            layer_count,
             net_netname,
             net_netclass,
         }
@@ -202,6 +210,10 @@ impl AccessMesadata for SpecctraMesadata {
 
     fn layername_layer(&self, layername: &str) -> Option<usize> {
         self.layer_layername.get_by_right(layername).copied()
+    }
+
+    fn layer_count(&self) -> usize {
+        self.layer_count
     }
 
     fn bename_net(&mut self, net: usize, netname: String) {

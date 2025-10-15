@@ -9,6 +9,7 @@ use topola::{
         conncomps::ConncompsWithPrincipalLayer,
         history::{History, HistoryError},
         invoker::{Invoker, InvokerError},
+        ratline::RatlineUid,
         Autorouter,
     },
     board::{edit::BoardEdit, AccessMesadata, Board},
@@ -125,7 +126,7 @@ pub fn assert_no_loose_nodes(autorouter: &Autorouter<impl AccessMesadata>) {
     }
 }
 
-pub fn assert_navnode_count(
+pub fn assert_layer_0_navnode_count(
     autorouter: &mut Autorouter<SpecctraMesadata>,
     origin_pin: &str,
     destination_pin: &str,
@@ -136,6 +137,10 @@ pub fn assert_navnode_count(
         .on_principal_layer(0)
         .graph()
         .edge_indices()
+        .map(|index| RatlineUid {
+            principal_layer: 0,
+            index,
+        })
         .collect::<Vec<_>>()
         .iter()
         .find_map(|ratline| {
@@ -175,13 +180,23 @@ pub fn assert_that_all_single_layer_groundless_ratlines_are_autorouted(
     autorouter: &mut Autorouter<impl AccessMesadata>,
     layername: &str,
 ) {
-    let conncomps = ConncompsWithPrincipalLayer::new(autorouter.board(), 0);
+    let layer = autorouter
+        .board()
+        .layout()
+        .rules()
+        .layername_layer(layername)
+        .unwrap();
+    let conncomps = ConncompsWithPrincipalLayer::new(autorouter.board(), layer);
 
     for ratline in autorouter
         .ratsnests()
-        .on_principal_layer(0)
+        .on_principal_layer(layer)
         .graph()
         .edge_indices()
+        .map(|index| RatlineUid {
+            principal_layer: 0,
+            index,
+        })
     {
         let (origin_dot, destination_dot) = ratline.ref_(autorouter).endpoint_dots();
 

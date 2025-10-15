@@ -31,7 +31,7 @@ use super::{
     place_via::PlaceViaExecutionStepper,
     planar_autoroute::PlanarAutorouteExecutionStepper,
     pointroute::PointrouteExecutionStepper,
-    ratline::RatlineIndex,
+    ratline::RatlineUid,
     ratsnest::RatvertexNodeIndex,
     remove_bands::RemoveBandsExecutionStepper,
     selection::{BandSelection, PinSelection},
@@ -89,7 +89,9 @@ impl<M: AccessMesadata> Autorouter<M> {
         point: Point,
         options: PlanarAutorouteOptions,
     ) -> Result<PointrouteExecutionStepper, AutorouterError> {
-        let ratvertex = self.find_selected_ratvertex(selection).unwrap();
+        let ratvertex = self
+            .find_selected_ratvertex(selection, options.principal_layer)
+            .unwrap();
         let origin_dot = match self
             .ratsnests
             .on_principal_layer_mut(0)
@@ -117,11 +119,14 @@ impl<M: AccessMesadata> Autorouter<M> {
         selection: &PinSelection,
         options: MultilayerAutorouteOptions,
     ) -> Result<MultilayerAutorouteExecutionStepper, AutorouterError> {
-        let planner = Planner::new(self, &self.selected_ratlines(selection));
+        let planner = Planner::new(
+            self,
+            &self.selected_ratlines(selection, options.planar.principal_layer),
+        );
 
         MultilayerAutorouteExecutionStepper::new(
             self,
-            self.selected_ratlines(selection),
+            self.selected_ratlines(selection, options.planar.principal_layer),
             planner.plan().clone(),
             options,
         )
@@ -132,27 +137,24 @@ impl<M: AccessMesadata> Autorouter<M> {
         selection: &PinSelection,
         options: PlanarAutorouteOptions,
     ) -> Result<PlanarAutorouteExecutionPermutator, AutorouterError> {
-        PlanarAutorouteExecutionPermutator::new(self, self.selected_ratlines(selection), options)
+        PlanarAutorouteExecutionPermutator::new(
+            self,
+            self.selected_ratlines(selection, options.principal_layer),
+            options,
+        )
     }
 
     pub(super) fn planar_autoroute_ratlines(
         &mut self,
-        ratlines: Vec<RatlineIndex>,
+        ratlines: Vec<RatlineUid>,
         options: PlanarAutorouteOptions,
     ) -> Result<PlanarAutorouteExecutionStepper, AutorouterError> {
         PlanarAutorouteExecutionStepper::new(self, ratlines, options)
     }
 
-    pub fn undo_planar_autoroute(
-        &mut self,
-        selection: &PinSelection,
-    ) -> Result<(), AutorouterError> {
-        self.undo_planar_autoroute_ratlines(self.selected_ratlines(selection))
-    }
-
     pub(super) fn undo_planar_autoroute_ratlines(
         &mut self,
-        ratlines: Vec<RatlineIndex>,
+        ratlines: Vec<RatlineUid>,
     ) -> Result<(), AutorouterError> {
         for ratline in ratlines.iter() {
             let band = ratline.ref_(self).band_termseg();
@@ -177,7 +179,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         M: Clone,
     {
         self.topo_autoroute_ratlines(
-            self.selected_ratlines(selection),
+            self.selected_ratlines(selection, active_layer),
             allowed_edges,
             active_layer,
             width,
@@ -187,7 +189,7 @@ impl<M: AccessMesadata> Autorouter<M> {
 
     pub(super) fn topo_autoroute_ratlines(
         &mut self,
-        ratlines: Vec<RatlineIndex>,
+        ratlines: Vec<RatlineUid>,
         allowed_edges: BTreeSet<ng::PieEdgeIndex>,
         active_layer: usize,
         width: f64,
@@ -281,7 +283,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         selection: &PinSelection,
         options: PlanarAutorouteOptions,
     ) -> Result<CompareDetoursExecutionStepper, AutorouterError> {
-        let ratlines = self.selected_ratlines(selection);
+        let ratlines = self.selected_ratlines(selection, options.principal_layer);
         if ratlines.len() < 2 {
             return Err(AutorouterError::NeedExactlyTwoRatlines);
         }
@@ -290,8 +292,8 @@ impl<M: AccessMesadata> Autorouter<M> {
 
     pub(super) fn compare_detours_ratlines(
         &mut self,
-        ratline1: RatlineIndex,
-        ratline2: RatlineIndex,
+        ratline1: RatlineUid,
+        ratline2: RatlineUid,
         options: PlanarAutorouteOptions,
     ) -> Result<CompareDetoursExecutionStepper, AutorouterError> {
         CompareDetoursExecutionStepper::new(self, ratline1, ratline2, options)
@@ -304,29 +306,33 @@ impl<M: AccessMesadata> Autorouter<M> {
         MeasureLengthExecutionStepper::new(selection)
     }
 
-    pub(super) fn selected_ratlines(&self, selection: &PinSelection) -> Vec<RatlineIndex> {
+    pub(super) fn selected_ratlines(
+        &self,
+        selection: &PinSelection,
+        principal_layer: usize,
+    ) -> Vec<RatlineUid> {
         self.ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(principal_layer)
             .graph()
             .edge_indices()
-            .filter(|ratline| {
+            .filter(|index| {
                 let (source, target) = self
                     .ratsnests()
-                    .on_principal_layer(0)
+                    .on_principal_layer(principal_layer)
                     .graph()
-                    .edge_endpoints(*ratline)
+                    .edge_endpoints(*index)
                     .unwrap();
 
                 let source_ratvertex = self
                     .ratsnests()
-                    .on_principal_layer(0)
+                    .on_principal_layer(principal_layer)
                     .graph()
                     .node_weight(source)
                     .unwrap()
                     .node_index();
                 let to_ratvertex = self
                     .ratsnests()
-                    .on_principal_layer(0)
+                    .on_principal_layer(principal_layer)
                     .graph()
                     .node_weight(target)
                     .unwrap()
@@ -335,19 +341,27 @@ impl<M: AccessMesadata> Autorouter<M> {
                 selection.contains_node(&self.board, source_ratvertex.into())
                     && selection.contains_node(&self.board, to_ratvertex.into())
             })
+            .map(|index| RatlineUid {
+                principal_layer,
+                index,
+            })
             .collect()
     }
 
-    fn find_selected_ratvertex(&self, selection: &PinSelection) -> Option<NodeIndex<usize>> {
+    fn find_selected_ratvertex(
+        &self,
+        selection: &PinSelection,
+        principal_layer: usize,
+    ) -> Option<NodeIndex<usize>> {
         self.ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(principal_layer)
             .graph()
             .node_indices()
             .find(|ratvertex| {
                 selection.contains_node(
                     &self.board,
                     self.ratsnests()
-                        .on_principal_layer(0)
+                        .on_principal_layer(principal_layer)
                         .graph()
                         .node_weight(*ratvertex)
                         .unwrap()

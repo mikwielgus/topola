@@ -19,7 +19,11 @@ use crate::{
 
 use super::{ratsnest::RatvertexNodeIndex, Autorouter};
 
-pub type RatlineIndex = EdgeIndex<usize>;
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct RatlineUid {
+    pub principal_layer: usize,
+    pub index: EdgeIndex<usize>,
+}
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RatlineWeight {
@@ -27,7 +31,7 @@ pub struct RatlineWeight {
     pub band_termseg: Option<BandTermsegIndex>,
 }
 
-impl<'a, M: AccessMesadata + 'a> MakeRef<'a, Autorouter<M>> for RatlineIndex {
+impl<'a, M: AccessMesadata + 'a> MakeRef<'a, Autorouter<M>> for RatlineUid {
     type Output = RatlineRef<'a, M>;
     fn ref_(&self, autorouter: &'a Autorouter<M>) -> RatlineRef<'a, M> {
         RatlineRef::new(*self, autorouter)
@@ -35,21 +39,24 @@ impl<'a, M: AccessMesadata + 'a> MakeRef<'a, Autorouter<M>> for RatlineIndex {
 }
 
 pub struct RatlineRef<'a, M: AccessMesadata> {
-    index: RatlineIndex,
+    uid: RatlineUid,
     autorouter: &'a Autorouter<M>,
 }
 
 impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
-    pub fn new(index: RatlineIndex, autorouter: &'a Autorouter<M>) -> Self {
-        Self { index, autorouter }
+    pub fn new(index: RatlineUid, autorouter: &'a Autorouter<M>) -> Self {
+        Self {
+            uid: index,
+            autorouter,
+        }
     }
 
     pub fn band_termseg(&self) -> BandTermsegIndex {
         self.autorouter
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(self.uid.principal_layer)
             .graph()
-            .edge_weight(self.index)
+            .edge_weight(self.uid.index)
             .unwrap()
             .band_termseg
             .unwrap()
@@ -59,15 +66,15 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         let (source, target) = self
             .autorouter
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(self.uid.principal_layer)
             .graph()
-            .edge_endpoints(self.index)
+            .edge_endpoints(self.uid.index)
             .unwrap();
 
         let source_dot = match self
             .autorouter
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(self.uid.principal_layer)
             .graph()
             .node_weight(source)
             .unwrap()
@@ -80,7 +87,7 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         let target_dot = match self
             .autorouter
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(self.uid.principal_layer)
             .graph()
             .node_weight(target)
             .unwrap()
@@ -97,15 +104,15 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         let (source, target) = self
             .autorouter
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(self.uid.principal_layer)
             .graph()
-            .edge_endpoints(self.index)
+            .edge_endpoints(self.uid.index)
             .unwrap();
 
         let source_dot = self
             .autorouter
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(self.uid.principal_layer)
             .graph()
             .node_weight(source)
             .unwrap()
@@ -116,7 +123,7 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         let target_dot = self
             .autorouter
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(self.uid.principal_layer)
             .graph()
             .node_weight(target)
             .unwrap()
@@ -131,9 +138,9 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
     pub fn layer(&self) -> usize {
         self.autorouter
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(self.uid.principal_layer)
             .graph()
-            .edge_weight(self.index)
+            .edge_weight(self.uid.index)
             .unwrap()
             .layer
     }
@@ -164,14 +171,18 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         })
     }
 
-    pub fn interiorly_cut_ratlines(&self) -> impl Iterator<Item = RatlineIndex> + '_ {
+    pub fn interiorly_cut_ratlines(&self) -> impl Iterator<Item = RatlineUid> + '_ {
         let self_line_segment = self.line_segment();
 
         self.autorouter
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(self.uid.principal_layer)
             .graph()
             .edge_indices()
+            .map(|index| RatlineUid {
+                principal_layer: self.uid.principal_layer,
+                index,
+            })
             .filter(move |other| {
                 let (self_source, self_target) = self.endpoint_indices();
                 let (other_source, other_target) = other.ref_(self.autorouter).endpoint_indices();
@@ -201,7 +212,7 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         let source_pos = self
             .autorouter
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(self.uid.principal_layer)
             .graph()
             .node_weight(source)
             .unwrap()
@@ -209,7 +220,7 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         let target_pos = self
             .autorouter
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(self.uid.principal_layer)
             .graph()
             .node_weight(target)
             .unwrap()
@@ -221,9 +232,9 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
     pub fn endpoint_indices(&self) -> (NodeIndex<usize>, NodeIndex<usize>) {
         self.autorouter
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(self.uid.principal_layer)
             .graph()
-            .edge_endpoints(self.index)
+            .edge_endpoints(self.uid.index)
             .unwrap()
     }
 }

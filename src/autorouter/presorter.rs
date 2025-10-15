@@ -7,7 +7,7 @@ use enum_dispatch::enum_dispatch;
 use petgraph::algo::tarjan_scc;
 use specctra_core::mesadata::AccessMesadata;
 
-use crate::autorouter::{ratline::RatlineIndex, scc::Scc, Autorouter};
+use crate::autorouter::{ratline::RatlineUid, scc::Scc, Autorouter};
 
 pub struct PresortParams {
     pub intersector_count_weight: f64,
@@ -19,8 +19,8 @@ pub trait PresortRatlines {
     fn presort_ratlines(
         &self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: &[RatlineIndex],
-    ) -> Vec<RatlineIndex>;
+        ratlines: &[RatlineUid],
+    ) -> Vec<RatlineUid>;
 }
 
 #[enum_dispatch(PresortRatlines)]
@@ -36,12 +36,16 @@ pub struct SccIntersectionsAndLengthPresorter {
 impl SccIntersectionsAndLengthPresorter {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: &[RatlineIndex],
+        ratlines: &[RatlineUid],
         params: &PresortParams,
     ) -> Self {
         // FIXME: Unnecessary copy.
-        let mut filtered_ratsnest = autorouter.ratsnests().on_principal_layer(0).graph().clone();
-        filtered_ratsnest.retain_edges(|_g, i| ratlines.contains(&i));
+        let mut filtered_ratsnest = autorouter
+            .ratsnests()
+            .on_principal_layer(ratlines[0].principal_layer)
+            .graph()
+            .clone();
+        filtered_ratsnest.retain_edges(|_g, i| ratlines.iter().any(|ratline| ratline.index == i));
 
         let mut sccs: Vec<_> = tarjan_scc(&filtered_ratsnest)
             .into_iter()
@@ -65,8 +69,8 @@ impl PresortRatlines for SccIntersectionsAndLengthPresorter {
     fn presort_ratlines(
         &self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: &[RatlineIndex],
-    ) -> Vec<RatlineIndex> {
+        ratlines: &[RatlineUid],
+    ) -> Vec<RatlineUid> {
         let mut presorted_ratlines = vec![];
 
         for scc in self.sccs.iter() {

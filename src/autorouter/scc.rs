@@ -8,7 +8,7 @@ use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
     autorouter::{
-        ratline::{RatlineIndex, RatlineWeight},
+        ratline::{RatlineUid, RatlineWeight},
         ratsnest::RatvertexWeight,
         Autorouter,
     },
@@ -27,7 +27,7 @@ pub struct Scc {
 impl Scc {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: &[RatlineIndex],
+        ratlines: &[RatlineUid],
         filtered_ratsnest: &StableUnGraph<RatvertexWeight, RatlineWeight, usize>,
         node_indices: Vec<NodeIndex<usize>>,
     ) -> Self {
@@ -40,10 +40,10 @@ impl Scc {
         for ratline in ratlines.iter() {
             if this
                 .node_indices
-                .contains(&filtered_ratsnest.edge_endpoints(*ratline).unwrap().0)
+                .contains(&filtered_ratsnest.edge_endpoints(ratline.index).unwrap().0)
                 && this
                     .node_indices
-                    .contains(&filtered_ratsnest.edge_endpoints(*ratline).unwrap().1)
+                    .contains(&filtered_ratsnest.edge_endpoints(ratline.index).unwrap().1)
             {
                 this.length += ratline.ref_(autorouter).length();
                 this.intersector_count +=
@@ -74,23 +74,23 @@ impl<'a, M: AccessMesadata> SccRef<'a, M> {
         Self { scc, autorouter }
     }
 
-    pub fn contains(&self, ratline: RatlineIndex) -> bool {
+    pub fn contains(&self, ratline: RatlineUid) -> bool {
         self.scc.node_indices().contains(
             &self
                 .autorouter
                 .ratsnests()
-                .on_principal_layer(0)
+                .on_principal_layer(ratline.principal_layer)
                 .graph()
-                .edge_endpoints(ratline)
+                .edge_endpoints(ratline.index)
                 .unwrap()
                 .0,
         ) && self.scc.node_indices().contains(
             &self
                 .autorouter
                 .ratsnests()
-                .on_principal_layer(0)
+                .on_principal_layer(ratline.principal_layer)
                 .graph()
-                .edge_endpoints(ratline)
+                .edge_endpoints(ratline.index)
                 .unwrap()
                 .1,
         )

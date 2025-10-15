@@ -19,15 +19,15 @@ use crate::{
 use super::{
     invoker::GetDebugOverlayData,
     planar_autoroute::{PlanarAutorouteContinueStatus, PlanarAutorouteExecutionStepper},
-    ratline::RatlineIndex,
+    ratline::RatlineUid,
     Autorouter, AutorouterError, PlanarAutorouteOptions,
 };
 
 pub struct CompareDetoursExecutionStepper {
     autoroute: PlanarAutorouteExecutionStepper,
     next_autoroute: Option<PlanarAutorouteExecutionStepper>,
-    ratline1: RatlineIndex,
-    ratline2: RatlineIndex,
+    ratline1: RatlineUid,
+    ratline2: RatlineUid,
     total_length1: f64,
     total_length2: f64,
     done: bool,
@@ -36,8 +36,8 @@ pub struct CompareDetoursExecutionStepper {
 impl CompareDetoursExecutionStepper {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratline1: RatlineIndex,
-        ratline2: RatlineIndex,
+        ratline1: RatlineUid,
+        ratline2: RatlineUid,
         options: PlanarAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
         Ok(Self {

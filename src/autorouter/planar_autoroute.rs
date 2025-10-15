@@ -25,7 +25,7 @@ use crate::{
 };
 
 use super::{
-    invoker::GetDebugOverlayData, ratline::RatlineIndex, Autorouter, AutorouterError,
+    invoker::GetDebugOverlayData, ratline::RatlineUid, Autorouter, AutorouterError,
     PlanarAutorouteOptions,
 };
 
@@ -43,7 +43,7 @@ pub enum PlanarAutorouteContinueStatus {
 #[derive(Getters)]
 pub struct PlanarAutorouteExecutionStepper {
     /// The ratlines which we are routing.
-    ratlines: Vec<RatlineIndex>,
+    ratlines: Vec<RatlineUid>,
     /// Keeps track of the current ratline being routed, if one is active.
     curr_ratline_index: usize,
     /// Stores the current route being processed, if any.
@@ -64,7 +64,7 @@ impl PlanarAutorouteExecutionStepper {
     /// and stores the associated data for future routing steps.
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: Vec<RatlineIndex>,
+        ratlines: Vec<RatlineUid>,
         options: PlanarAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
         if ratlines.is_empty() {
@@ -187,9 +187,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
 
             autorouter
                 .ratsnests
-                .on_principal_layer_mut(0)
+                .on_principal_layer_mut(self.options.principal_layer)
                 .assign_band_termseg_to_ratline(
-                    self.ratlines[self.curr_ratline_index],
+                    self.ratlines[self.curr_ratline_index].index,
                     band_termseg,
                 );
 
@@ -236,13 +236,13 @@ impl<M: AccessMesadata> Abort<Autorouter<M>> for PlanarAutorouteExecutionStepper
 }
 
 impl<M: AccessMesadata> Permutate<Autorouter<M>> for PlanarAutorouteExecutionStepper {
-    type Index = RatlineIndex;
+    type Index = RatlineUid;
     type Output = Result<(), AutorouterError>;
 
     fn permutate(
         &mut self,
         autorouter: &mut Autorouter<M>,
-        permutation: Vec<RatlineIndex>,
+        permutation: Vec<RatlineUid>,
     ) -> Result<(), AutorouterError> {
         let Some(new_index) = permutation
             .iter()

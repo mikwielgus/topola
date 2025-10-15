@@ -13,7 +13,7 @@ use crate::{
         invoker::GetDebugOverlayData,
         permutator::PlanarAutorouteExecutionPermutator,
         planar_autoroute::PlanarAutorouteContinueStatus,
-        ratline::RatlineIndex,
+        ratline::RatlineUid,
         Autorouter, AutorouterError, PlanarAutorouteOptions,
     },
     board::edit::BoardEdit,
@@ -36,7 +36,7 @@ pub struct MultilayerAutorouteExecutionStepper {
 impl MultilayerAutorouteExecutionStepper {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: Vec<RatlineIndex>,
+        ratlines: Vec<RatlineUid>,
         plan: AnterouterPlan,
         options: MultilayerAutorouteOptions,
     ) -> Result<Self, AutorouterError> {

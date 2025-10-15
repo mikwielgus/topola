@@ -12,7 +12,7 @@ use crate::{
         permuter::{PermuteRatlines, RatlinesPermuter},
         planar_autoroute::{PlanarAutorouteContinueStatus, PlanarAutorouteExecutionStepper},
         presorter::{PresortParams, PresortRatlines, SccIntersectionsAndLengthPresorter},
-        ratline::RatlineIndex,
+        ratline::RatlineUid,
         Autorouter, AutorouterError, PlanarAutorouteOptions,
     },
     board::edit::BoardEdit,
@@ -31,7 +31,7 @@ pub struct PlanarAutorouteExecutionPermutator {
 impl PlanarAutorouteExecutionPermutator {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: Vec<RatlineIndex>,
+        ratlines: Vec<RatlineUid>,
         options: PlanarAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
         let presorter = SccIntersectionsAndLengthPresorter::new(

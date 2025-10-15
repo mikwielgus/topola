@@ -178,27 +178,27 @@ impl<M: AccessMesadata + Clone> Invoker<M> {
             Command::TopoAutoroute {
                 selection,
                 allowed_edges,
-                active_layer,
+                active_layer: active_layer_name,
                 routed_band_width,
             } => {
-                let ratlines = self.autorouter.selected_ratlines(selection);
+                let active_layer = self
+                    .autorouter
+                    .board
+                    .layout()
+                    .rules()
+                    .layername_layer(active_layer_name)
+                    .unwrap();
+                let ratlines = self.autorouter.selected_ratlines(selection, active_layer);
 
                 // TODO: consider "presort by pairwise detours"
 
-                ExecutionStepper::TopoAutoroute(
-                    self.autorouter.topo_autoroute_ratlines(
-                        ratlines,
-                        allowed_edges.clone(),
-                        self.autorouter
-                            .board
-                            .layout()
-                            .rules()
-                            .layername_layer(active_layer)
-                            .unwrap(),
-                        *routed_band_width,
-                        None,
-                    )?,
-                )
+                ExecutionStepper::TopoAutoroute(self.autorouter.topo_autoroute_ratlines(
+                    ratlines,
+                    allowed_edges.clone(),
+                    active_layer,
+                    *routed_band_width,
+                    None,
+                )?)
             }
             Command::PlaceVia(weight) => {
                 ExecutionStepper::PlaceVia(self.autorouter.place_via(*weight)?)

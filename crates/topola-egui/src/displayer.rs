@@ -52,7 +52,7 @@ impl<'a> Displayer<'a> {
         self.display_layout(ctx);
 
         if menu_bar.show_ratsnest {
-            self.display_ratsnest();
+            self.display_ratsnest(menu_bar);
         }
 
         if menu_bar.show_navmesh || menu_bar.show_guide_circles || menu_bar.show_guide_bitangents {
@@ -161,14 +161,14 @@ impl<'a> Displayer<'a> {
         }
     }
 
-    fn display_ratsnest(&mut self) {
+    fn display_ratsnest(&mut self, menu_bar: &MenuBar) {
         let graph = self
             .workspace
             .interactor
             .invoker()
             .autorouter()
             .ratsnests()
-            .on_principal_layer(0)
+            .on_principal_layer(menu_bar.multilayer_autoroute_options.planar.principal_layer)
             .graph();
         for edge in graph.edge_references() {
             if edge.weight().band_termseg.is_some() {

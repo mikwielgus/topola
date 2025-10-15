@@ -5,7 +5,7 @@
 use std::collections::BTreeMap;
 
 use geo::{point, Distance, Euclidean, Point};
-use petgraph::graph::{EdgeIndex, NodeIndex};
+use petgraph::graph::NodeIndex;
 use rstar::{Envelope, RTreeObject, AABB};
 use serde::{Deserialize, Serialize};
 use specctra_core::mesadata::AccessMesadata;
@@ -13,7 +13,7 @@ use specctra_core::mesadata::AccessMesadata;
 use crate::{
     autorouter::{
         compass_direction::{CardinalDirection, CompassDirection, OrdinalDirection},
-        ratline::RatlineIndex,
+        ratline::RatlineUid,
         Autorouter,
     },
     board::edit::BoardEdit,
@@ -42,7 +42,7 @@ pub enum TerminatingScheme {
 
 #[derive(Clone, Debug)]
 pub struct AnterouterPlan {
-    pub layer_map: BTreeMap<RatlineIndex, usize>,
+    pub layer_map: BTreeMap<RatlineUid, usize>,
     pub ratline_endpoint_dot_to_terminating_scheme: BTreeMap<FixedDotIndex, TerminatingScheme>,
 }
 
@@ -67,8 +67,8 @@ impl Anterouter {
 
             autorouter
                 .ratsnests
-                .on_principal_layer_mut(0)
-                .assign_layer_to_ratline(*ratline, *layer);
+                .on_principal_layer_mut(ratline.principal_layer)
+                .assign_layer_to_ratline(ratline.index, *layer);
 
             if let Some(terminating_scheme) = self
                 .plan
@@ -126,7 +126,7 @@ impl Anterouter {
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratvertex: NodeIndex<usize>,
-        ratline: EdgeIndex<usize>,
+        ratline: RatlineUid,
         source_dot: FixedDotIndex,
         target_layer: usize,
         options: &AnterouterOptions,
