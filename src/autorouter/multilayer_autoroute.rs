@@ -18,7 +18,7 @@ use crate::{
     },
     board::edit::BoardEdit,
     drawing::graph::PrimitiveIndex,
-    geometry::primitive::PrimitiveShape,
+    geometry::{edit::Edit, primitive::PrimitiveShape},
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
     stepper::{Abort, EstimateProgress, Step},
 };
@@ -31,6 +31,7 @@ pub struct MultilayerAutorouteOptions {
 
 pub struct MultilayerAutorouteExecutionStepper {
     planar: PlanarAutorouteExecutionPermutator,
+    anteroute_edit: BoardEdit,
 }
 
 impl MultilayerAutorouteExecutionStepper {
@@ -41,10 +42,12 @@ impl MultilayerAutorouteExecutionStepper {
         options: MultilayerAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
         let mut assigner = Anterouter::new(plan);
-        assigner.anteroute(autorouter, &options.anterouter);
+        let mut anteroute_edit = BoardEdit::new();
+        assigner.anteroute(autorouter, &mut anteroute_edit, &options.anterouter);
 
         Ok(Self {
             planar: PlanarAutorouteExecutionPermutator::new(autorouter, ratlines, options.planar)?,
+            anteroute_edit,
         })
     }
 }
@@ -59,7 +62,14 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
         autorouter: &mut Autorouter<M>,
     ) -> Result<ControlFlow<Option<BoardEdit>, PlanarAutorouteContinueStatus>, AutorouterError>
     {
-        self.planar.step(autorouter)
+        match self.planar.step(autorouter) {
+            Ok(ControlFlow::Break(Some(edit))) => {
+                self.anteroute_edit.merge(edit);
+                // FIXME: Unnecessary large clone.
+                Ok(ControlFlow::Break(Some(self.anteroute_edit.clone())))
+            }
+            x => x,
+        }
     }
 }
 

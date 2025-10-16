@@ -58,6 +58,7 @@ impl Anterouter {
     pub fn anteroute(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
+        recorder: &mut BoardEdit,
         options: &AnterouterOptions,
     ) {
         // PERF: Unnecessary clone.
@@ -86,6 +87,7 @@ impl Anterouter {
                         ),
                     TerminatingScheme::Fanout => self.anteroute_fanout(
                         autorouter,
+                        recorder,
                         endpoint_indices.0,
                         *ratline,
                         endpoint_dots.0,
@@ -111,6 +113,7 @@ impl Anterouter {
                         ),
                     TerminatingScheme::Fanout => self.anteroute_fanout(
                         autorouter,
+                        recorder,
                         endpoint_indices.1,
                         *ratline,
                         endpoint_dots.1,
@@ -125,6 +128,7 @@ impl Anterouter {
     fn anteroute_fanout(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
+        recorder: &mut BoardEdit,
         ratvertex: NodeIndex<usize>,
         ratline: RatlineUid,
         source_dot: FixedDotIndex,
@@ -160,6 +164,7 @@ impl Anterouter {
         if self
             .anteroute_fanout_on_bbox(
                 autorouter,
+                recorder,
                 ratvertex,
                 source_dot,
                 small_bbox,
@@ -193,6 +198,7 @@ impl Anterouter {
         if self
             .anteroute_fanout_on_bbox(
                 autorouter,
+                recorder,
                 ratvertex,
                 source_dot,
                 large_bbox,
@@ -208,6 +214,7 @@ impl Anterouter {
         if self
             .anteroute_fanout_on_bbox(
                 autorouter,
+                recorder,
                 ratvertex,
                 source_dot,
                 small_bbox,
@@ -223,6 +230,7 @@ impl Anterouter {
         if self
             .anteroute_fanout_on_bbox(
                 autorouter,
+                recorder,
                 ratvertex,
                 source_dot,
                 large_bbox,
@@ -241,6 +249,7 @@ impl Anterouter {
     fn anteroute_fanout_on_bbox(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
+        recorder: &mut BoardEdit,
         ratvertex: NodeIndex<usize>,
         source_dot: FixedDotIndex,
         bbox: AABB<[f64; 2]>,
@@ -251,6 +260,7 @@ impl Anterouter {
         if self
             .anteroute_fanout_on_bbox_in_direction(
                 autorouter,
+                recorder,
                 ratvertex,
                 source_dot,
                 bbox,
@@ -273,6 +283,7 @@ impl Anterouter {
             if self
                 .anteroute_fanout_on_bbox_in_direction(
                     autorouter,
+                    recorder,
                     ratvertex,
                     source_dot,
                     bbox,
@@ -291,6 +302,7 @@ impl Anterouter {
             if self
                 .anteroute_fanout_on_bbox_in_direction(
                     autorouter,
+                    recorder,
                     ratvertex,
                     source_dot,
                     bbox,
@@ -314,6 +326,7 @@ impl Anterouter {
     fn anteroute_fanout_on_bbox_in_direction(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
+        recorder: &mut BoardEdit,
         ratvertex: NodeIndex<usize>,
         source_dot: FixedDotIndex,
         bbox: AABB<[f64; 2]>,
@@ -323,6 +336,7 @@ impl Anterouter {
     ) -> Result<(), ()> {
         let (_, dots) = self.place_fanout_via_on_bbox_in_direction(
             autorouter,
+            recorder,
             ratvertex,
             source_dot,
             bbox,
@@ -350,7 +364,7 @@ impl Anterouter {
             .unwrap();
 
         autorouter.board.layout_mut().add_fixed_seg(
-            &mut LayoutEdit::new(),
+            &mut recorder.layout_edit,
             source_dot,
             fanout_dot,
             FixedSegWeight(GeneralSegWeight {
@@ -366,6 +380,7 @@ impl Anterouter {
     fn place_fanout_via_on_bbox_in_direction(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
+        recorder: &mut BoardEdit,
         ratvertex: NodeIndex<usize>,
         source_dot: FixedDotIndex,
         bbox: AABB<[f64; 2]>,
@@ -409,10 +424,8 @@ impl Anterouter {
                 * (bbox_center + bbox_anchor_with_clearance - center)
                     .dot(cardinal_direction_vector);
 
-        let mut board_edit = BoardEdit::new();
-
         if let Ok((via, dots)) = autorouter.board.add_via(
-            &mut board_edit,
+            recorder,
             ViaWeight {
                 from_layer: std::cmp::min(source_layer, target_layer),
                 to_layer: std::cmp::max(source_layer, target_layer),
