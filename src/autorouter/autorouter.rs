@@ -18,7 +18,8 @@ use crate::{
         ratsnests::Ratsnests,
     },
     board::{AccessMesadata, Board},
-    drawing::band::BandTermsegIndex,
+    drawing::{band::BandTermsegIndex, graph::MakePrimitiveRef},
+    geometry::GetLayer,
     graph::MakeRef,
     layout::{via::ViaWeight, LayoutEdit, LayoutException},
     router::{navmesh::NavmeshError, ng, thetastar::ThetastarError, RouterOptions},
@@ -139,7 +140,7 @@ impl<M: AccessMesadata> Autorouter<M> {
     ) -> Result<PlanarAutorouteExecutionPermutator, AutorouterError> {
         PlanarAutorouteExecutionPermutator::new(
             self,
-            self.selected_ratlines(selection, options.principal_layer),
+            self.selected_planar_ratlines(selection, options.principal_layer),
             options,
         )
     }
@@ -344,6 +345,24 @@ impl<M: AccessMesadata> Autorouter<M> {
             .map(|index| RatlineUid {
                 principal_layer,
                 index,
+            })
+            .collect()
+    }
+
+    fn selected_planar_ratlines(&self, selection: &PinSelection, layer: usize) -> Vec<RatlineUid> {
+        self.selected_ratlines(selection, layer)
+            .into_iter()
+            .filter(|ratline| {
+                let (endpoint_dot1, endpoint_dot2) = ratline.ref_(self).endpoint_dots();
+
+                endpoint_dot1
+                    .primitive_ref(self.board().layout().drawing())
+                    .layer()
+                    == layer
+                    && endpoint_dot2
+                        .primitive_ref(self.board().layout().drawing())
+                        .layer()
+                        == layer
             })
             .collect()
     }

@@ -7,7 +7,7 @@ use enum_dispatch::enum_dispatch;
 use petgraph::algo::tarjan_scc;
 use specctra_core::mesadata::AccessMesadata;
 
-use crate::autorouter::{ratline::RatlineUid, scc::Scc, Autorouter};
+use crate::autorouter::{ratline::RatlineUid, scc::Scc, Autorouter, PlanarAutorouteOptions};
 
 pub struct PresortParams {
     pub intersector_count_weight: f64,
@@ -38,11 +38,12 @@ impl SccIntersectionsAndLengthPresorter {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: &[RatlineUid],
         params: &PresortParams,
+        options: &PlanarAutorouteOptions,
     ) -> Self {
         // FIXME: Unnecessary copy.
         let mut filtered_ratsnest = autorouter
             .ratsnests()
-            .on_principal_layer(ratlines[0].principal_layer)
+            .on_principal_layer(options.principal_layer)
             .graph()
             .clone();
         filtered_ratsnest.retain_edges(|_g, i| ratlines.iter().any(|ratline| ratline.index == i));

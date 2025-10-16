@@ -41,6 +41,7 @@ impl PlanarAutorouteExecutionPermutator {
                 intersector_count_weight: 1.0,
                 length_weight: 0.001,
             },
+            &options,
         );
         let initially_sorted_ratlines = presorter.presort_ratlines(autorouter, &ratlines);
         /*let permuter = RatlinesPermuter::SccPermutations(SccPermutationsRatlinePermuter::new(
