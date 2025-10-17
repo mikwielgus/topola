@@ -95,7 +95,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             .unwrap();
         let origin_dot = match self
             .ratsnests
-            .on_principal_layer_mut(0)
+            .on_principal_layer_mut(options.principal_layer)
             .graph()
             .node_weight(ratvertex)
             .unwrap()

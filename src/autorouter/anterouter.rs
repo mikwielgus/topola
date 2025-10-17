@@ -25,7 +25,7 @@ use crate::{
     },
     geometry::{shape::AccessShape, GenericNode, GetLayer},
     graph::{GenericIndex, MakeRef},
-    layout::{poly::MakePolygon, via::ViaWeight, LayoutEdit},
+    layout::{poly::MakePolygon, via::ViaWeight},
     math::Circle,
 };
 
@@ -79,7 +79,7 @@ impl Anterouter {
                 match terminating_scheme {
                     TerminatingScheme::ExistingFixedDot(terminating_dot) => autorouter
                         .ratsnests
-                        .on_principal_layer_mut(0)
+                        .on_principal_layer_mut(ratline.principal_layer)
                         .assign_terminating_dot_to_ratvertex(
                             endpoint_indices.0,
                             *layer,
@@ -105,7 +105,7 @@ impl Anterouter {
                 match terminating_scheme {
                     TerminatingScheme::ExistingFixedDot(terminating_dot) => autorouter
                         .ratsnests
-                        .on_principal_layer_mut(0)
+                        .on_principal_layer_mut(ratline.principal_layer)
                         .assign_terminating_dot_to_ratvertex(
                             endpoint_indices.1,
                             *layer,
@@ -166,6 +166,7 @@ impl Anterouter {
                 autorouter,
                 recorder,
                 ratvertex,
+                ratline,
                 source_dot,
                 small_bbox,
                 target_layer,
@@ -200,6 +201,7 @@ impl Anterouter {
                 autorouter,
                 recorder,
                 ratvertex,
+                ratline,
                 source_dot,
                 large_bbox,
                 target_layer,
@@ -216,6 +218,7 @@ impl Anterouter {
                 autorouter,
                 recorder,
                 ratvertex,
+                ratline,
                 source_dot,
                 small_bbox,
                 target_layer,
@@ -232,6 +235,7 @@ impl Anterouter {
                 autorouter,
                 recorder,
                 ratvertex,
+                ratline,
                 source_dot,
                 large_bbox,
                 target_layer,
@@ -251,6 +255,7 @@ impl Anterouter {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         recorder: &mut BoardEdit,
         ratvertex: NodeIndex<usize>,
+        ratline: RatlineUid,
         source_dot: FixedDotIndex,
         bbox: AABB<[f64; 2]>,
         target_layer: usize,
@@ -262,6 +267,7 @@ impl Anterouter {
                 autorouter,
                 recorder,
                 ratvertex,
+                ratline,
                 source_dot,
                 bbox,
                 target_layer,
@@ -285,6 +291,7 @@ impl Anterouter {
                     autorouter,
                     recorder,
                     ratvertex,
+                    ratline,
                     source_dot,
                     bbox,
                     target_layer,
@@ -304,6 +311,7 @@ impl Anterouter {
                     autorouter,
                     recorder,
                     ratvertex,
+                    ratline,
                     source_dot,
                     bbox,
                     target_layer,
@@ -328,6 +336,7 @@ impl Anterouter {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         recorder: &mut BoardEdit,
         ratvertex: NodeIndex<usize>,
+        ratline: RatlineUid,
         source_dot: FixedDotIndex,
         bbox: AABB<[f64; 2]>,
         target_layer: usize,
@@ -338,6 +347,7 @@ impl Anterouter {
             autorouter,
             recorder,
             ratvertex,
+            ratline,
             source_dot,
             bbox,
             target_layer,
@@ -385,6 +395,7 @@ impl Anterouter {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         recorder: &mut BoardEdit,
         ratvertex: NodeIndex<usize>,
+        ratline: RatlineUid,
         source_dot: FixedDotIndex,
         bbox: AABB<[f64; 2]>,
         target_layer: usize,
@@ -451,7 +462,7 @@ impl Anterouter {
                 .unwrap();
             autorouter
                 .ratsnests
-                .on_principal_layer_mut(0)
+                .on_principal_layer_mut(ratline.principal_layer)
                 .assign_terminating_dot_to_ratvertex(ratvertex, target_layer, *terminating_dot);
             Ok((via, dots))
         } else {
