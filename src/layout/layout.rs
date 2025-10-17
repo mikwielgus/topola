@@ -157,6 +157,7 @@ impl<R: AccessRules> Layout<R> {
         weight: ViaWeight,
     ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), LayoutException> {
         let compound = self.drawing.add_compound(recorder, weight.into());
+        let via = GenericIndex::<ViaWeight>::new(compound.index());
         let mut dots = vec![];
 
         for layer in weight.from_layer..=weight.to_layer {
@@ -180,7 +181,7 @@ impl<R: AccessRules> Layout<R> {
                         // trigger an infringement on its primitives. To take
                         // this situation into account, we also check if the
                         // via's center is inside the poly's polygon.
-                        self.remove_failed_via(recorder, compound, dots);
+                        self.remove_via(recorder, via, dots);
                         return Err(LayoutException::HasPointInPoly(HasPointInPoly(
                             enclosing_poly.ref_(self).shape(),
                             weight.circle.pos,
@@ -195,7 +196,7 @@ impl<R: AccessRules> Layout<R> {
                     );
                 }
                 Err(err) => {
-                    self.remove_failed_via(recorder, compound, dots);
+                    self.remove_via(recorder, via, dots);
                     return Err(err.into());
                 }
             }
@@ -204,13 +205,14 @@ impl<R: AccessRules> Layout<R> {
         Ok((GenericIndex::<ViaWeight>::new(compound.index()), dots))
     }
 
-    fn remove_failed_via(
+    pub fn remove_via(
         &mut self,
         recorder: &mut LayoutEdit,
-        compound: GenericIndex<CompoundWeight>,
+        via: GenericIndex<ViaWeight>,
         dots: Vec<FixedDotIndex>,
     ) {
-        self.drawing.remove_compound(recorder, compound);
+        self.drawing
+            .remove_compound(recorder, GenericIndex::<CompoundWeight>::new(via.index()));
 
         // Remove inserted dots.
         for dot in dots.iter().rev() {

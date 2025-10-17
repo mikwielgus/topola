@@ -334,7 +334,7 @@ impl Anterouter {
         direction: impl Into<Point>,
         options: &AnterouterOptions,
     ) -> Result<(), ()> {
-        let (_, dots) = self.place_fanout_via_on_bbox_in_direction(
+        let (via, dots) = self.place_fanout_via_on_bbox_in_direction(
             autorouter,
             recorder,
             ratvertex,
@@ -363,7 +363,7 @@ impl Anterouter {
             })
             .unwrap();
 
-        autorouter.board.layout_mut().add_fixed_seg(
+        if let Ok(_) = autorouter.board.layout_mut().add_fixed_seg(
             &mut recorder.layout_edit,
             source_dot,
             fanout_dot,
@@ -372,9 +372,12 @@ impl Anterouter {
                 layer,
                 maybe_net,
             }),
-        );
-
-        Ok(())
+        ) {
+            Ok(())
+        } else {
+            autorouter.board.remove_via(recorder, via, dots);
+            Err(())
+        }
     }
 
     fn place_fanout_via_on_bbox_in_direction(

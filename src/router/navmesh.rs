@@ -24,9 +24,10 @@ use crate::{
         bend::{FixedBendIndex, LooseBendIndex},
         dot::FixedDotIndex,
         gear::{GearIndex, GetOuterGears, WalkOutwards},
-        graph::PrimitiveIndex,
+        graph::{MakePrimitiveRef, PrimitiveIndex},
         rules::AccessRules,
     },
+    geometry::GetLayer,
     graph::{GenericIndex, GetIndex, MakeRef},
     layout::{CompoundEntryLabel, Layout},
     math::RotationSense,
@@ -157,6 +158,11 @@ impl Navmesh {
         destination: FixedDotIndex,
         options: RouterOptions,
     ) -> Result<Self, NavmeshError> {
+        assert!(
+            origin.primitive_ref(layout.drawing()).layer()
+                == destination.primitive_ref(layout.drawing()).layer()
+        );
+
         let mut graph: UnGraph<NavnodeWeight, (), usize> = UnGraph::default();
         let mut origin_navnode = None;
         let mut destination_navnode = None;

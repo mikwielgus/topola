@@ -125,6 +125,20 @@ impl<M: AccessMesadata> Board<M> {
         Ok((weight, dots))
     }
 
+    pub fn remove_via(
+        &mut self,
+        recorder: &mut BoardEdit,
+        via: GenericIndex<ViaWeight>,
+        dots: Vec<FixedDotIndex>,
+    ) {
+        for dot in dots.clone() {
+            self.pinname_nodes
+                .remove_by_value(&GenericNode::Primitive(dot.into()));
+        }
+
+        self.layout.remove_via(&mut recorder.layout_edit, via, dots);
+    }
+
     /// Adds a new fixed dot with an optional pin name.
     ///
     /// Inserts the dot into the layout and, if a pin name is provided, maps it to the created dot's node.
