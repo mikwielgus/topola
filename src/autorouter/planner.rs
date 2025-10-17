@@ -34,7 +34,7 @@ impl Planner {
                 .enumerate()
                 .map(|(i, ratline)| (*ratline, i % 2))
                 .collect(),
-            ratline_endpoint_dot_to_terminating_scheme: BTreeMap::new(),
+            ratline_terminating_schemes: BTreeMap::new(),
         };
 
         for ratline in ratlines {
@@ -45,8 +45,8 @@ impl Planner {
                 ratline.ref_(autorouter).endpoint_dots().0,
                 layer,
             ) {
-                plan.ratline_endpoint_dot_to_terminating_scheme.insert(
-                    ratline.ref_(autorouter).endpoint_dots().0,
+                plan.ratline_terminating_schemes.insert(
+                    (*ratline, ratline.ref_(autorouter).endpoint_dots().0),
                     terminating_scheme,
                 );
             }
@@ -56,8 +56,8 @@ impl Planner {
                 ratline.ref_(autorouter).endpoint_dots().1,
                 layer,
             ) {
-                plan.ratline_endpoint_dot_to_terminating_scheme.insert(
-                    ratline.ref_(autorouter).endpoint_dots().1,
+                plan.ratline_terminating_schemes.insert(
+                    (*ratline, ratline.ref_(autorouter).endpoint_dots().1),
                     terminating_scheme,
                 );
             }

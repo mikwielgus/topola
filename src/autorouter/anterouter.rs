@@ -43,7 +43,7 @@ pub enum TerminatingScheme {
 #[derive(Clone, Debug)]
 pub struct AnterouterPlan {
     pub layer_map: BTreeMap<RatlineUid, usize>,
-    pub ratline_endpoint_dot_to_terminating_scheme: BTreeMap<FixedDotIndex, TerminatingScheme>,
+    pub ratline_terminating_schemes: BTreeMap<(RatlineUid, FixedDotIndex), TerminatingScheme>,
 }
 
 pub struct Anterouter {
@@ -73,8 +73,8 @@ impl Anterouter {
 
             if let Some(terminating_scheme) = self
                 .plan
-                .ratline_endpoint_dot_to_terminating_scheme
-                .get(&endpoint_dots.0)
+                .ratline_terminating_schemes
+                .get(&(*ratline, endpoint_dots.0))
             {
                 match terminating_scheme {
                     TerminatingScheme::ExistingFixedDot(terminating_dot) => autorouter
@@ -99,8 +99,8 @@ impl Anterouter {
 
             if let Some(terminating_scheme) = self
                 .plan
-                .ratline_endpoint_dot_to_terminating_scheme
-                .get(&endpoint_dots.1)
+                .ratline_terminating_schemes
+                .get(&(*ratline, endpoint_dots.1))
             {
                 match terminating_scheme {
                     TerminatingScheme::ExistingFixedDot(terminating_dot) => autorouter
