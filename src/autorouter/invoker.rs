@@ -34,7 +34,7 @@ use super::{
     measure_length::MeasureLengthExecutionStepper,
     multilayer_autoroute::MultilayerAutorouteExecutionStepper,
     place_via::PlaceViaExecutionStepper,
-    planar_permutator::PlanarAutorouteExecutionPermutator,
+    planar_reconfigurator::PlanarAutorouteExecutionReconfigurator,
     remove_bands::RemoveBandsExecutionStepper,
     Autorouter, AutorouterError,
 };

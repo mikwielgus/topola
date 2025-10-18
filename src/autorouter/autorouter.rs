@@ -13,7 +13,7 @@ use thiserror::Error;
 use crate::{
     autorouter::{
         multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouteOptions},
-        planar_permutator::PlanarAutorouteExecutionPermutator,
+        planar_reconfigurator::PlanarAutorouteExecutionReconfigurator,
         planner::Planner,
         ratsnests::Ratsnests,
     },
@@ -69,7 +69,7 @@ pub enum AutorouterError {
     #[error("need exactly two ratlines")]
     NeedExactlyTwoRatlines,
     #[error("nothing to undo for permutation")]
-    NothingToUndoForPermutation,
+    NothingToUndoForReconfiguration,
 }
 
 #[derive(Getters)]
@@ -137,8 +137,8 @@ impl<M: AccessMesadata> Autorouter<M> {
         &mut self,
         selection: &PinSelection,
         options: PlanarAutorouteOptions,
-    ) -> Result<PlanarAutorouteExecutionPermutator, AutorouterError> {
-        PlanarAutorouteExecutionPermutator::new(
+    ) -> Result<PlanarAutorouteExecutionReconfigurator, AutorouterError> {
+        PlanarAutorouteExecutionReconfigurator::new(
             self,
             self.selected_planar_ratlines(selection, options.principal_layer),
             options,

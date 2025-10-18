@@ -29,19 +29,19 @@ pub trait PermuteRatlines {
 }
 
 #[enum_dispatch(PermuteRatlines)]
-pub enum RatlinePermuter {
-    RatlineCuts(RatlineCutsRatlinePermuter),
-    SccPermutations(SccPermutationsRatlinePermuter),
+pub enum PlanarReconfigurer {
+    RatlineCuts(RatlineCutsPlanarReconfigurer),
+    SccPermutations(SccPermutationsPlanarReconfigurer),
 }
 
-impl RatlinePermuter {
+impl PlanarReconfigurer {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: Vec<RatlineUid>,
         presorter: SccIntersectionsAndLengthPresorter,
         options: &PlanarAutorouteOptions,
     ) -> Self {
-        RatlinePermuter::SccPermutations(SccPermutationsRatlinePermuter::new(
+        PlanarReconfigurer::SccPermutations(SccPermutationsPlanarReconfigurer::new(
             autorouter, ratlines, presorter, options,
         ))
         /*RatlinesPermuter::RatlineCuts(RatlineCutsRatlinePermuter::new(
@@ -50,12 +50,12 @@ impl RatlinePermuter {
     }
 }
 
-pub struct SccPermutationsRatlinePermuter {
+pub struct SccPermutationsPlanarReconfigurer {
     sccs_permutations_iter: Skip<Permutations<std::vec::IntoIter<Scc>>>,
     original_ratlines: Vec<RatlineUid>,
 }
 
-impl SccPermutationsRatlinePermuter {
+impl SccPermutationsPlanarReconfigurer {
     pub fn new(
         _autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: Vec<RatlineUid>,
@@ -74,7 +74,7 @@ impl SccPermutationsRatlinePermuter {
     }
 }
 
-impl PermuteRatlines for SccPermutationsRatlinePermuter {
+impl PermuteRatlines for SccPermutationsPlanarReconfigurer {
     fn permute_ratlines(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
@@ -111,11 +111,11 @@ impl PermuteRatlines for SccPermutationsRatlinePermuter {
     }
 }
 
-pub struct RatlineCutsRatlinePermuter {
+pub struct RatlineCutsPlanarReconfigurer {
     //sccs: Vec<Vec<NodeIndex<usize>>>,
 }
 
-impl RatlineCutsRatlinePermuter {
+impl RatlineCutsPlanarReconfigurer {
     pub fn new(
         _autorouter: &mut Autorouter<impl AccessMesadata>,
         _ratlines: Vec<RatlineUid>,
@@ -129,7 +129,7 @@ impl RatlineCutsRatlinePermuter {
     }
 }
 
-impl PermuteRatlines for RatlineCutsRatlinePermuter {
+impl PermuteRatlines for RatlineCutsPlanarReconfigurer {
     fn permute_ratlines(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,

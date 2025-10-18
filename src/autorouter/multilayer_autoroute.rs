@@ -12,7 +12,7 @@ use crate::{
         anterouter::{Anterouter, AnterouterOptions, AnterouterPlan},
         invoker::GetDebugOverlayData,
         planar_autoroute::PlanarAutorouteContinueStatus,
-        planar_permutator::PlanarAutorouteExecutionPermutator,
+        planar_reconfigurator::PlanarAutorouteExecutionReconfigurator,
         ratline::RatlineUid,
         Autorouter, AutorouterError, PlanarAutorouteOptions,
     },
@@ -30,7 +30,7 @@ pub struct MultilayerAutorouteOptions {
 }
 
 pub struct MultilayerAutorouteExecutionStepper {
-    planar: PlanarAutorouteExecutionPermutator,
+    planar: PlanarAutorouteExecutionReconfigurator,
     anteroute_edit: BoardEdit,
 }
 
@@ -46,7 +46,11 @@ impl MultilayerAutorouteExecutionStepper {
         assigner.anteroute(autorouter, &mut anteroute_edit, &options.anterouter);
 
         Ok(Self {
-            planar: PlanarAutorouteExecutionPermutator::new(autorouter, ratlines, options.planar)?,
+            planar: PlanarAutorouteExecutionReconfigurator::new(
+                autorouter,
+                ratlines,
+                options.planar,
+            )?,
             anteroute_edit,
         })
     }

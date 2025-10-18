@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     autorouter::{
         multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouteOptions},
-        planar_permutator::PlanarAutorouteExecutionPermutator,
+        planar_reconfigurator::PlanarAutorouteExecutionReconfigurator,
     },
     board::{edit::BoardEdit, AccessMesadata},
     layout::via::ViaWeight,
@@ -50,7 +50,7 @@ pub enum Command {
 #[enum_dispatch(GetDebugOverlayData)]
 pub enum ExecutionStepper<M> {
     MultilayerAutoroute(MultilayerAutorouteExecutionStepper),
-    PlanarAutoroute(PlanarAutorouteExecutionPermutator),
+    PlanarAutoroute(PlanarAutorouteExecutionReconfigurator),
     TopoAutoroute(ng::AutorouteExecutionStepper<M>),
     PlaceVia(PlaceViaExecutionStepper),
     RemoveBands(RemoveBandsExecutionStepper),

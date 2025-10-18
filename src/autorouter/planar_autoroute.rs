@@ -21,7 +21,7 @@ use crate::{
     router::{
         navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper, RouteStepper, Router,
     },
-    stepper::{Abort, EstimateProgress, Permutate, Step},
+    stepper::{Abort, EstimateProgress, Reconfigure, Step},
 };
 
 use super::{
@@ -95,7 +95,7 @@ impl PlanarAutorouteExecutionStepper {
         index: usize,
     ) -> Result<(), AutorouterError> {
         if index >= self.board_data_edits.len() {
-            return Err(AutorouterError::NothingToUndoForPermutation);
+            return Err(AutorouterError::NothingToUndoForReconfiguration);
         }
 
         self.dissolve_route_stepper_and_push_layout_edit();
@@ -235,11 +235,11 @@ impl<M: AccessMesadata> Abort<Autorouter<M>> for PlanarAutorouteExecutionStepper
     }
 }
 
-impl<M: AccessMesadata> Permutate<Autorouter<M>> for PlanarAutorouteExecutionStepper {
+impl<M: AccessMesadata> Reconfigure<Autorouter<M>> for PlanarAutorouteExecutionStepper {
     type Index = RatlineUid;
     type Output = Result<(), AutorouterError>;
 
-    fn permutate(
+    fn reconfigure(
         &mut self,
         autorouter: &mut Autorouter<M>,
         permutation: Vec<RatlineUid>,
@@ -249,7 +249,7 @@ impl<M: AccessMesadata> Permutate<Autorouter<M>> for PlanarAutorouteExecutionSte
             .zip(self.ratlines.iter())
             .position(|(permuted, original)| *permuted != *original)
         else {
-            return Err(AutorouterError::NothingToUndoForPermutation);
+            return Err(AutorouterError::NothingToUndoForReconfiguration);
         };
         self.ratlines = permutation;
 

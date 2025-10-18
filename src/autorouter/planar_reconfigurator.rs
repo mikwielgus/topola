@@ -10,7 +10,7 @@ use crate::{
     autorouter::{
         invoker::GetDebugOverlayData,
         planar_autoroute::{PlanarAutorouteContinueStatus, PlanarAutorouteExecutionStepper},
-        planar_permuter::{PermuteRatlines, RatlinePermuter},
+        planar_reconfigurer::{PermuteRatlines, PlanarReconfigurer},
         presorter::{PresortParams, PresortRatlines, SccIntersectionsAndLengthPresorter},
         ratline::RatlineUid,
         Autorouter, AutorouterError, PlanarAutorouteOptions,
@@ -19,16 +19,16 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
-    stepper::{Abort, EstimateProgress, Permutate, Step},
+    stepper::{Abort, EstimateProgress, Reconfigure, Step},
 };
 
-pub struct PlanarAutorouteExecutionPermutator {
+pub struct PlanarAutorouteExecutionReconfigurator {
     stepper: PlanarAutorouteExecutionStepper,
-    permuter: RatlinePermuter,
+    reconfigurer: PlanarReconfigurer,
     options: PlanarAutorouteOptions,
 }
 
-impl PlanarAutorouteExecutionPermutator {
+impl PlanarAutorouteExecutionReconfigurator {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: Vec<RatlineUid>,
@@ -47,7 +47,7 @@ impl PlanarAutorouteExecutionPermutator {
         /*let permuter = RatlinesPermuter::SccPermutations(SccPermutationsRatlinePermuter::new(
             autorouter, ratlines, presorter, &options,
         ));*/
-        let permuter = RatlinePermuter::new(autorouter, ratlines, presorter, &options);
+        let reconfigurer = PlanarReconfigurer::new(autorouter, ratlines, presorter, &options);
 
         Ok(Self {
             stepper: PlanarAutorouteExecutionStepper::new(
@@ -56,14 +56,14 @@ impl PlanarAutorouteExecutionPermutator {
                 options,
             )?,
             // Note: I assume here that the first permutation is the same as the original order.
-            permuter,
+            reconfigurer,
             options,
         })
     }
 }
 
 impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteContinueStatus>
-    for PlanarAutorouteExecutionPermutator
+    for PlanarAutorouteExecutionReconfigurator
 {
     type Error = AutorouterError;
 
@@ -80,15 +80,16 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
                 }
 
                 loop {
-                    let Some(permutation) =
-                        self.permuter.permute_ratlines(autorouter, &self.stepper)
+                    let Some(permutation) = self
+                        .reconfigurer
+                        .permute_ratlines(autorouter, &self.stepper)
                     else {
                         return Ok(ControlFlow::Break(None));
                     };
 
-                    match self.stepper.permutate(autorouter, permutation) {
+                    match self.stepper.reconfigure(autorouter, permutation) {
                         Ok(()) => break,
-                        Err(AutorouterError::NothingToUndoForPermutation) => continue,
+                        Err(AutorouterError::NothingToUndoForReconfiguration) => continue,
                         Err(err) => return Err(err),
                     }
                 }
@@ -99,14 +100,14 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
     }
 }
 
-impl<M: AccessMesadata> Abort<Autorouter<M>> for PlanarAutorouteExecutionPermutator {
+impl<M: AccessMesadata> Abort<Autorouter<M>> for PlanarAutorouteExecutionReconfigurator {
     fn abort(&mut self, autorouter: &mut Autorouter<M>) {
         //self.permutations_iter.all(|_| true); // Why did I add this code here???
         self.stepper.abort(autorouter);
     }
 }
 
-impl EstimateProgress for PlanarAutorouteExecutionPermutator {
+impl EstimateProgress for PlanarAutorouteExecutionReconfigurator {
     type Value = f64;
 
     fn estimate_progress_value(&self) -> f64 {
@@ -120,7 +121,7 @@ impl EstimateProgress for PlanarAutorouteExecutionPermutator {
     }
 }
 
-impl GetDebugOverlayData for PlanarAutorouteExecutionPermutator {
+impl GetDebugOverlayData for PlanarAutorouteExecutionReconfigurator {
     fn maybe_thetastar(&self) -> Option<&ThetastarStepper<Navmesh, f64>> {
         self.stepper.maybe_thetastar()
     }
