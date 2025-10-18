@@ -236,7 +236,7 @@ impl<M: AccessMesadata> Abort<Autorouter<M>> for PlanarAutorouteExecutionStepper
 }
 
 impl<M: AccessMesadata> Reconfigure<Autorouter<M>> for PlanarAutorouteExecutionStepper {
-    type Index = RatlineUid;
+    type Configuration = Vec<RatlineUid>;
     type Output = Result<(), AutorouterError>;
 
     fn reconfigure(
