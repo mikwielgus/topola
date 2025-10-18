@@ -29,19 +29,19 @@ pub trait PermuteRatlines {
 }
 
 #[enum_dispatch(PermuteRatlines)]
-pub enum RatlinesPermuter {
+pub enum RatlinePermuter {
     RatlineCuts(RatlineCutsRatlinePermuter),
     SccPermutations(SccPermutationsRatlinePermuter),
 }
 
-impl RatlinesPermuter {
+impl RatlinePermuter {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
         ratlines: Vec<RatlineUid>,
         presorter: SccIntersectionsAndLengthPresorter,
         options: &PlanarAutorouteOptions,
     ) -> Self {
-        RatlinesPermuter::SccPermutations(SccPermutationsRatlinePermuter::new(
+        RatlinePermuter::SccPermutations(SccPermutationsRatlinePermuter::new(
             autorouter, ratlines, presorter, options,
         ))
         /*RatlinesPermuter::RatlineCuts(RatlineCutsRatlinePermuter::new(

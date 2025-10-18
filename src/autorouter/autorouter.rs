@@ -13,7 +13,7 @@ use thiserror::Error;
 use crate::{
     autorouter::{
         multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouteOptions},
-        permutator::PlanarAutorouteExecutionPermutator,
+        planar_permutator::PlanarAutorouteExecutionPermutator,
         planner::Planner,
         ratsnests::Ratsnests,
     },

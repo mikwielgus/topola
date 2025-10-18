@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     autorouter::{
         multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouteOptions},
-        permutator::PlanarAutorouteExecutionPermutator,
+        planar_permutator::PlanarAutorouteExecutionPermutator,
     },
     board::{edit::BoardEdit, AccessMesadata},
     layout::via::ViaWeight,

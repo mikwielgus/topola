@@ -9,8 +9,8 @@ use specctra_core::mesadata::AccessMesadata;
 use crate::{
     autorouter::{
         invoker::GetDebugOverlayData,
-        permuter::{PermuteRatlines, RatlinesPermuter},
         planar_autoroute::{PlanarAutorouteContinueStatus, PlanarAutorouteExecutionStepper},
+        planar_permuter::{PermuteRatlines, RatlinePermuter},
         presorter::{PresortParams, PresortRatlines, SccIntersectionsAndLengthPresorter},
         ratline::RatlineUid,
         Autorouter, AutorouterError, PlanarAutorouteOptions,
@@ -24,7 +24,7 @@ use crate::{
 
 pub struct PlanarAutorouteExecutionPermutator {
     stepper: PlanarAutorouteExecutionStepper,
-    permuter: RatlinesPermuter,
+    permuter: RatlinePermuter,
     options: PlanarAutorouteOptions,
 }
 
@@ -47,7 +47,7 @@ impl PlanarAutorouteExecutionPermutator {
         /*let permuter = RatlinesPermuter::SccPermutations(SccPermutationsRatlinePermuter::new(
             autorouter, ratlines, presorter, &options,
         ));*/
-        let permuter = RatlinesPermuter::new(autorouter, ratlines, presorter, &options);
+        let permuter = RatlinePermuter::new(autorouter, ratlines, presorter, &options);
 
         Ok(Self {
             stepper: PlanarAutorouteExecutionStepper::new(

@@ -11,8 +11,8 @@ use crate::{
     autorouter::{
         anterouter::{Anterouter, AnterouterOptions, AnterouterPlan},
         invoker::GetDebugOverlayData,
-        permutator::PlanarAutorouteExecutionPermutator,
         planar_autoroute::PlanarAutorouteContinueStatus,
+        planar_permutator::PlanarAutorouteExecutionPermutator,
         ratline::RatlineUid,
         Autorouter, AutorouterError, PlanarAutorouteOptions,
     },

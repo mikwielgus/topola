@@ -33,8 +33,8 @@ use super::{
     history::{History, HistoryError},
     measure_length::MeasureLengthExecutionStepper,
     multilayer_autoroute::MultilayerAutorouteExecutionStepper,
-    permutator::PlanarAutorouteExecutionPermutator,
     place_via::PlaceViaExecutionStepper,
+    planar_permutator::PlanarAutorouteExecutionPermutator,
     remove_bands::RemoveBandsExecutionStepper,
     Autorouter, AutorouterError,
 };
