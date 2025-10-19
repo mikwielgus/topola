@@ -389,12 +389,23 @@ impl<R: AccessRules> Layout<R> {
             .compounds(GenericIndex::<()>::new(primitive.index()))
             .find_map(|(_, compound)| {
                 if let CompoundWeight::Poly(_) = self.drawing().compound_weight(compound) {
-                    Some(compound)
+                    Some(GenericIndex::<PolyWeight>::new(compound.index()))
                 } else {
                     None
                 }
             })
-            .map(|compound| GenericIndex::<PolyWeight>::new(compound.index()))
+    }
+
+    pub fn fixed_dot_via(&self, dot: FixedDotIndex) -> Option<GenericIndex<ViaWeight>> {
+        self.drawing()
+            .compounds(GenericIndex::<()>::new(dot.index()))
+            .find_map(|(_, compound)| {
+                if let CompoundWeight::Via(_) = self.drawing().compound_weight(compound) {
+                    Some(GenericIndex::<ViaWeight>::new(compound.index()))
+                } else {
+                    None
+                }
+            })
     }
 
     /// Checks if a node is not a primitive part of a compound, and if yes, returns its apex and center
