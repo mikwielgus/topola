@@ -194,7 +194,7 @@ pub fn assert_that_all_single_layer_groundless_ratlines_are_autorouted(
         .graph()
         .edge_indices()
         .map(|index| RatlineUid {
-            principal_layer: 0,
+            principal_layer: layer,
             index,
         })
     {
