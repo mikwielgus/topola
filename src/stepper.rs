@@ -65,6 +65,11 @@ pub trait Reconfigure<Ctx> {
     ) -> Self::Output;
 }
 
+pub enum ReconfiguratorStatus<Re, Ru> {
+    Running(Ru),
+    Reconfigured(Re),
+}
+
 /// Steppers that can receive discrete events and act on them implement this
 /// trait.
 // XXX: Doesn't this violate the rule that stepper's future states are

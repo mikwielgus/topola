@@ -20,7 +20,7 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{edit::Edit, primitive::PrimitiveShape},
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
-    stepper::{Abort, EstimateProgress, Step},
+    stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Step},
 };
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
@@ -56,7 +56,8 @@ impl MultilayerAutorouteExecutionStepper {
     }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteContinueStatus>
+impl<M: AccessMesadata>
+    Step<Autorouter<M>, Option<BoardEdit>, ReconfiguratorStatus<(), PlanarAutorouteContinueStatus>>
     for MultilayerAutorouteExecutionStepper
 {
     type Error = AutorouterError;
@@ -64,8 +65,10 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
     fn step(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<ControlFlow<Option<BoardEdit>, PlanarAutorouteContinueStatus>, AutorouterError>
-    {
+    ) -> Result<
+        ControlFlow<Option<BoardEdit>, ReconfiguratorStatus<(), PlanarAutorouteContinueStatus>>,
+        AutorouterError,
+    > {
         match self.planar.step(autorouter) {
             Ok(ControlFlow::Break(Some(edit))) => {
                 self.anteroute_edit.merge(edit);

@@ -19,7 +19,7 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
-    stepper::{Abort, EstimateProgress, Reconfigure, Step},
+    stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Reconfigure, Step},
 };
 
 pub struct PlanarAutorouteExecutionReconfigurator {
@@ -62,7 +62,8 @@ impl PlanarAutorouteExecutionReconfigurator {
     }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteContinueStatus>
+impl<M: AccessMesadata>
+    Step<Autorouter<M>, Option<BoardEdit>, ReconfiguratorStatus<(), PlanarAutorouteContinueStatus>>
     for PlanarAutorouteExecutionReconfigurator
 {
     type Error = AutorouterError;
@@ -70,10 +71,15 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
     fn step(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<ControlFlow<Option<BoardEdit>, PlanarAutorouteContinueStatus>, AutorouterError>
-    {
+    ) -> Result<
+        ControlFlow<Option<BoardEdit>, ReconfiguratorStatus<(), PlanarAutorouteContinueStatus>>,
+        AutorouterError,
+    > {
         match self.stepper.step(autorouter) {
-            Ok(ok) => Ok(ok),
+            Ok(ControlFlow::Break(maybe_edit)) => Ok(ControlFlow::Break(maybe_edit)),
+            Ok(ControlFlow::Continue(status)) => {
+                Ok(ControlFlow::Continue(ReconfiguratorStatus::Running(status)))
+            }
             Err(err) => {
                 if !self.options.permutate {
                     return Err(err);
@@ -94,7 +100,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
                     }
                 }
 
-                self.stepper.step(autorouter)
+                Ok(ControlFlow::Continue(
+                    ReconfiguratorStatus::Reconfigured(()),
+                ))
             }
         }
     }

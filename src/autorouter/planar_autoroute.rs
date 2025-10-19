@@ -33,9 +33,9 @@ use super::{
 pub enum PlanarAutorouteContinueStatus {
     /// The autoroute is currently running and in progress.
     Running,
-    /// A specific segment has been successfully routed.
+    /// A band has been successfully routed.
     Routed(BandTermsegIndex),
-    /// A specific segment had been already routed and has been skipped.
+    /// A band had been already routed and has been skipped.
     Skipped(BandTermsegIndex),
 }
 
