@@ -8,12 +8,16 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     drawing::{
+        dot::FixedDotIndex,
         graph::{GetMaybeNet, IsInLayer},
         primitive::MakePrimitiveShape,
         rules::AccessRules,
         Drawing,
     },
-    geometry::primitive::{DotShape, PrimitiveShape},
+    geometry::{
+        compound::ManageCompounds,
+        primitive::{DotShape, PrimitiveShape},
+    },
     graph::{GenericIndex, GetIndex},
     layout::{CompoundEntryLabel, CompoundWeight},
     math::Circle,
@@ -31,6 +35,13 @@ impl<'a, R> Via<'a, R> {
         drawing: &'a Drawing<CompoundWeight, CompoundEntryLabel, R>,
     ) -> Self {
         Self { index, drawing }
+    }
+
+    pub fn dots(&self) -> impl Iterator<Item = FixedDotIndex> + '_ {
+        self.drawing
+            .geometry()
+            .compound_members(self.index.into())
+            .map(|(_, index)| FixedDotIndex::new(index.index()))
     }
 }
 

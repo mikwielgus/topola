@@ -37,20 +37,9 @@ impl ConncompsWithPrincipalLayer {
             }
         }
 
-        /*for layer in 0..board.layout().drawing().layer_count() {
-            if layer != principal_layer {
-                for primitive in board.layout().drawing().layer_primitive_nodes(layer) {
-                    if let Some(pinname) = board.node_pinname(&GenericNode::Primitive(primitive)) {
-                        if !principally_visited_pins.contains(pinname) {
-                            Self::unionize_by_primitive(board, &mut unionfind, primitive);
-                        }
-                    }
-                }
-            }
-        }*/
-
-        //TODO for pinname in board.pins() if !principally_visited_pins.contains(pinname) for node in board.pinname_nodes() unionize to first found element
-
+        // Pins can have padstacks that span multiple layers. To account for
+        // that, we have another loop to go over all the pins and connect all
+        // their primitives.
         for pinname in board.pinnames() {
             if principally_visited_pins.contains(pinname) {
                 let mut iter = board.pinname_nodes(pinname);
@@ -85,6 +74,8 @@ impl ConncompsWithPrincipalLayer {
             PrimitiveIndex::FixedSeg(seg) => {
                 let joints = board.layout().drawing().primitive(seg).joints();
                 unionfind.union(joints.0.index(), joints.1.index());
+                Self::unionize_fixed_dot_via(board, unionfind, joints.0);
+                Self::unionize_fixed_dot_via(board, unionfind, joints.1);
             }
             PrimitiveIndex::LoneLooseSeg(seg) => {
                 let joints = board.layout().drawing().primitive(seg).joints();
@@ -97,6 +88,8 @@ impl ConncompsWithPrincipalLayer {
             PrimitiveIndex::FixedBend(bend) => {
                 let joints = board.layout().drawing().primitive(bend).joints();
                 unionfind.union(joints.0.index(), joints.1.index());
+                Self::unionize_fixed_dot_via(board, unionfind, joints.0);
+                Self::unionize_fixed_dot_via(board, unionfind, joints.1);
             }
             PrimitiveIndex::LooseBend(bend) => {
                 let joints = board.layout().drawing().primitive(bend).joints();
@@ -115,6 +108,7 @@ impl ConncompsWithPrincipalLayer {
         match primitive {
             PrimitiveIndex::FixedDot(dot) => {
                 unionfind.union(common.index(), dot.index());
+                Self::unionize_fixed_dot_via(board, unionfind, dot);
             }
             PrimitiveIndex::LooseDot(dot) => {
                 unionfind.union(common.index(), dot.index());
@@ -122,7 +116,9 @@ impl ConncompsWithPrincipalLayer {
             PrimitiveIndex::FixedSeg(seg) => {
                 let joints = board.layout().drawing().primitive(seg).joints();
                 unionfind.union(common.index(), joints.0.index());
+                Self::unionize_fixed_dot_via(board, unionfind, joints.0);
                 unionfind.union(common.index(), joints.1.index());
+                Self::unionize_fixed_dot_via(board, unionfind, joints.1);
             }
             PrimitiveIndex::LoneLooseSeg(seg) => {
                 let joints = board.layout().drawing().primitive(seg).joints();
@@ -137,7 +133,9 @@ impl ConncompsWithPrincipalLayer {
             PrimitiveIndex::FixedBend(bend) => {
                 let joints = board.layout().drawing().primitive(bend).joints();
                 unionfind.union(common.index(), joints.0.index());
+                Self::unionize_fixed_dot_via(board, unionfind, joints.0);
                 unionfind.union(common.index(), joints.1.index());
+                Self::unionize_fixed_dot_via(board, unionfind, joints.1);
             }
             PrimitiveIndex::LooseBend(bend) => {
                 let joints = board.layout().drawing().primitive(bend).joints();
@@ -145,6 +143,18 @@ impl ConncompsWithPrincipalLayer {
                 unionfind.union(common.index(), joints.1.index());
             }
             _ => (),
+        }
+    }
+
+    fn unionize_fixed_dot_via(
+        board: &Board<impl AccessMesadata>,
+        unionfind: &mut UnionFind<usize>,
+        dot: FixedDotIndex,
+    ) {
+        if let Some(via) = board.layout().fixed_dot_via(dot) {
+            for via_dot in board.layout().via(via).dots() {
+                unionfind.union(dot.index(), via_dot.index());
+            }
         }
     }
 }
