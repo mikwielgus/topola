@@ -35,6 +35,22 @@ fn test_unrouted_lm317_breakout() {
 }
 
 #[test]
+fn test_astable_multivibrator() {
+    let mut invoker = common::create_invoker_and_assert(common::load_design(
+        "tests/multilayer/astable_multivibrator/astable_multivibrator.dsn",
+    ));
+
+    common::replay_and_assert_and_report(
+        &mut invoker,
+        "tests/multilayer/astable_multivibrator/autoroute_all.cmd",
+        "plain",
+    );
+
+    let (mut autorouter, ..) = invoker.dissolve();
+    common::assert_that_all_ratlines_besides_gnd_are_autorouted(&mut autorouter);
+}
+
+#[test]
 fn test_signal_integrity_test() {
     let invoker = common::create_invoker_and_assert(common::load_design(
         "tests/multilayer/signal_integrity_test/signal_integrity_test.dsn",

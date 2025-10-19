@@ -6,7 +6,7 @@ use std::{fs::File, io::BufReader};
 
 use topola::{
     autorouter::{
-        conncomps::ConncompsWithPrincipalLayer,
+        conncomps::Conncomps,
         history::{History, HistoryError},
         invoker::{Invoker, InvokerError},
         ratline::RatlineUid,
@@ -176,87 +176,49 @@ pub fn assert_layer_0_navnode_count(
     assert_eq!(navmesh.graph().node_count(), expected_count);
 }
 
-pub fn assert_that_all_single_layer_groundless_ratlines_are_autorouted(
+pub fn assert_that_all_ratlines_besides_gnd_are_autorouted(
     autorouter: &mut Autorouter<impl AccessMesadata>,
-    layername: &str,
 ) {
-    let layer = autorouter
-        .board()
-        .layout()
-        .rules()
-        .layername_layer(layername)
-        .unwrap();
-    let conncomps = ConncompsWithPrincipalLayer::new(autorouter.board(), layer);
+    let conncomps = Conncomps::new(autorouter.board());
+    assert!(autorouter.board().layout().drawing().layer_count() >= 1);
 
-    for ratline in autorouter
-        .ratsnests()
-        .on_principal_layer(layer)
-        .graph()
-        .edge_indices()
-        .map(|index| RatlineUid {
-            principal_layer: layer,
-            index,
-        })
-    {
-        let (origin_dot, destination_dot) = ratline.ref_(autorouter).endpoint_dots();
+    for principal_layer in 0..autorouter.board().layout().drawing().layer_count() {
+        for ratline in autorouter
+            .ratsnests()
+            .on_principal_layer(principal_layer)
+            .graph()
+            .edge_indices()
+            .map(|index| RatlineUid {
+                principal_layer,
+                index,
+            })
+        {
+            let (origin_dot, destination_dot) = ratline.ref_(autorouter).endpoint_dots();
 
-        let origin_layer = autorouter
-            .board()
-            .layout()
-            .drawing()
-            .primitive(origin_dot)
-            .layer();
-        let destination_layer = autorouter
-            .board()
-            .layout()
-            .drawing()
-            .primitive(destination_dot)
-            .layer();
-
-        if let (Some(origin_layername), Some(destination_layername)) = (
-            autorouter
+            let origin_net = autorouter
                 .board()
                 .layout()
-                .rules()
-                .layer_layername(origin_layer),
-            autorouter
+                .drawing()
+                .primitive(origin_dot)
+                .maybe_net();
+            let destination_net = autorouter
                 .board()
                 .layout()
-                .rules()
-                .layer_layername(destination_layer),
-        ) {
-            assert_eq!(origin_layername, destination_layername);
+                .drawing()
+                .primitive(destination_dot)
+                .maybe_net();
+            assert_eq!(origin_net, destination_net);
 
-            if origin_layername != layername {
-                continue;
-            }
-        } else {
-            assert!(false);
-        }
+            let net = origin_net.unwrap();
 
-        let origin_net = autorouter
-            .board()
-            .layout()
-            .drawing()
-            .primitive(origin_dot)
-            .maybe_net();
-        let destination_net = autorouter
-            .board()
-            .layout()
-            .drawing()
-            .primitive(destination_dot)
-            .maybe_net();
-        assert_eq!(origin_net, destination_net);
+            if let Some(netname) = autorouter.board().layout().rules().net_netname(net) {
+                // We don't route ground.
+                let origin = conncomps.unionfind().find(origin_dot.index());
+                let destination = conncomps.unionfind().find(destination_dot.index());
 
-        let net = origin_net.unwrap();
-
-        if let Some(netname) = autorouter.board().layout().rules().net_netname(net) {
-            // We don't route ground.
-            let org = conncomps.unionfind().find(origin_dot.index());
-            let desc = conncomps.unionfind().find(destination_dot.index());
-
-            if netname != "GND" {
-                assert_eq!(org, desc);
+                if netname != "GND" {
+                    assert_eq!(origin, destination);
+                }
             }
         }
     }

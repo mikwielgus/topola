@@ -18,6 +18,7 @@ use spade::{handles::FixedVertexHandle, HasPosition, InsertionError, Point2};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
+    autorouter::conncomps::Conncomps,
     board::Board,
     drawing::{
         band::BandTermsegIndex,
@@ -31,7 +32,7 @@ use crate::{
     triangulation::{GetTrianvertexNodeIndex, Triangulation},
 };
 
-use super::{conncomps::ConncompsWithPrincipalLayer, ratline::RatlineWeight};
+use super::ratline::RatlineWeight;
 
 #[enum_dispatch(GetIndex)]
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -113,7 +114,7 @@ impl Ratsnest {
         board: &Board<impl AccessMesadata>,
         principal_layer: usize,
     ) -> Result<Self, InsertionError> {
-        let conncomps = ConncompsWithPrincipalLayer::new(board, principal_layer);
+        let conncomps = Conncomps::new_with_principal_layer(board, principal_layer);
 
         let mut this = Self {
             graph: StableUnGraph::default(),

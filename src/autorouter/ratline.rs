@@ -7,6 +7,7 @@ use petgraph::graph::{EdgeIndex, NodeIndex};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
+    autorouter::{ratsnest::RatvertexNodeIndex, Autorouter},
     drawing::{
         band::BandTermsegIndex,
         dot::FixedDotIndex,
@@ -16,8 +17,6 @@ use crate::{
     graph::MakeRef,
     triangulation::GetTrianvertexNodeIndex,
 };
-
-use super::{ratsnest::RatvertexNodeIndex, Autorouter};
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct RatlineUid {

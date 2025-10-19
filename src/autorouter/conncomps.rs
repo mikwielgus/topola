@@ -1,7 +1,6 @@
 // SPDX-FileCopyrightText: 2025 Topola contributors
 //
 // SPDX-License-Identifier: MIT
-
 use std::collections::BTreeSet;
 
 use derive_getters::Getters;
@@ -16,12 +15,32 @@ use crate::{
 };
 
 #[derive(Clone, Getters)]
-pub struct ConncompsWithPrincipalLayer {
+pub struct Conncomps {
     unionfind: UnionFind<usize>,
 }
 
-impl ConncompsWithPrincipalLayer {
-    pub fn new(board: &Board<impl AccessMesadata>, principal_layer: usize) -> Self {
+impl Conncomps {
+    pub fn new(board: &Board<impl AccessMesadata>) -> Self {
+        let mut unionfind = UnionFind::new(board.layout().drawing().geometry().dot_index_bound());
+
+        for node in board.layout().drawing().primitive_nodes() {
+            Self::unionize_primitive_endpoint_dots(board, &mut unionfind, node);
+        }
+
+        // Pins can have padstacks that span multiple layers. To account for
+        // that, we have another loop to go over all the pins and connect all
+        // their primitives.
+        for pinname in board.pinnames() {
+            Self::unionize_pin(board, &mut unionfind, pinname);
+        }
+
+        Self { unionfind }
+    }
+
+    pub fn new_with_principal_layer(
+        board: &Board<impl AccessMesadata>,
+        principal_layer: usize,
+    ) -> Self {
         let mut principally_visited_pins = BTreeSet::new();
         let mut unionfind = UnionFind::new(board.layout().drawing().geometry().dot_index_bound());
 
@@ -42,23 +61,7 @@ impl ConncompsWithPrincipalLayer {
         // their primitives.
         for pinname in board.pinnames() {
             if principally_visited_pins.contains(pinname) {
-                let mut iter = board.pinname_nodes(pinname);
-                let Some(first_fixed_dot) = iter.find_map(|node| {
-                    if let GenericNode::Primitive(PrimitiveIndex::FixedDot(first_fixed_dot)) = node
-                    {
-                        Some(first_fixed_dot)
-                    } else {
-                        None
-                    }
-                }) else {
-                    continue;
-                };
-
-                for node in board.pinname_nodes(pinname) {
-                    if let GenericNode::Primitive(primitive) = node {
-                        Self::unionize_to_common(board, &mut unionfind, primitive, first_fixed_dot);
-                    }
-                }
+                Self::unionize_pin(board, &mut unionfind, pinname);
             }
         }
 
@@ -96,6 +99,29 @@ impl ConncompsWithPrincipalLayer {
                 unionfind.union(joints.0.index(), joints.1.index());
             }
             _ => (),
+        }
+    }
+
+    fn unionize_pin(
+        board: &Board<impl AccessMesadata>,
+        unionfind: &mut UnionFind<usize>,
+        pinname: &str,
+    ) {
+        let mut iter = board.pinname_nodes(pinname);
+        let Some(first_fixed_dot) = iter.find_map(|node| {
+            if let GenericNode::Primitive(PrimitiveIndex::FixedDot(first_fixed_dot)) = node {
+                Some(first_fixed_dot)
+            } else {
+                None
+            }
+        }) else {
+            return;
+        };
+
+        for node in board.pinname_nodes(pinname) {
+            if let GenericNode::Primitive(primitive) = node {
+                Self::unionize_to_common(board, unionfind, primitive, first_fixed_dot);
+            }
         }
     }
 

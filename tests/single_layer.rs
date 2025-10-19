@@ -35,10 +35,7 @@ fn autoroute_4x4_1206_led_matrix_breakout(variant: &str) {
     );
 
     let (mut autorouter, ..) = invoker.dissolve();
-    common::assert_that_all_single_layer_groundless_ratlines_are_autorouted(
-        &mut autorouter,
-        "F.Cu",
-    );
+    common::assert_that_all_ratlines_besides_gnd_are_autorouted(&mut autorouter);
 }
 
 #[apply(test_master)]
@@ -54,10 +51,7 @@ fn autoroute_4x4_1206_led_matrix_breakout_in_predefined_order(variant: &str) {
     );
 
     let (mut autorouter, ..) = invoker.dissolve();
-    common::assert_that_all_single_layer_groundless_ratlines_are_autorouted(
-        &mut autorouter,
-        "F.Cu",
-    );
+    common::assert_that_all_ratlines_besides_gnd_are_autorouted(&mut autorouter);
 }
 
 #[apply(test_master)]
@@ -73,10 +67,7 @@ fn autoroute_tht_de9_to_tht_de9(variant: &str) {
     );
 
     let (mut autorouter, ..) = invoker.dissolve();
-    common::assert_that_all_single_layer_groundless_ratlines_are_autorouted(
-        &mut autorouter,
-        "F.Cu",
-    );
+    common::assert_that_all_ratlines_besides_gnd_are_autorouted(&mut autorouter);
 }
 
 #[apply(test_master)]
@@ -91,10 +82,7 @@ fn autoroute_tht_de9_to_tht_de9_in_predefined_order(variant: &str) {
     );
 
     let (mut autorouter, ..) = invoker.dissolve();
-    common::assert_that_all_single_layer_groundless_ratlines_are_autorouted(
-        &mut autorouter,
-        "F.Cu",
-    );
+    common::assert_that_all_ratlines_besides_gnd_are_autorouted(&mut autorouter);
 }
 
 #[apply(test_master)]
@@ -110,10 +98,7 @@ fn autoroute_0603_breakout(variant: &str) {
 
     let (mut autorouter, ..) = invoker.dissolve();
 
-    common::assert_that_all_single_layer_groundless_ratlines_are_autorouted(
-        &mut autorouter,
-        "F.Cu",
-    );
+    common::assert_that_all_ratlines_besides_gnd_are_autorouted(&mut autorouter);
     //common::assert_number_of_conncomps(&mut autorouter, 2);
 }
 
@@ -132,10 +117,7 @@ fn autoroute_tht_diode_bridge_rectifier(variant: &str) {
 
     let (mut autorouter, ..) = invoker.dissolve();
 
-    common::assert_that_all_single_layer_groundless_ratlines_are_autorouted(
-        &mut autorouter,
-        "F.Cu",
-    );
+    common::assert_that_all_ratlines_besides_gnd_are_autorouted(&mut autorouter);
     //common::assert_number_of_conncomps(&mut autorouter, 4);
     common::assert_band_length(autorouter.board(), "J2-2", "D4-2", 15906.760439007436, 0.01);
 
@@ -172,10 +154,7 @@ fn autoroute_4x_3rd_order_smd_lc_filters(variant: &str) {
 
     let (mut autorouter, ..) = invoker.dissolve();
 
-    common::assert_that_all_single_layer_groundless_ratlines_are_autorouted(
-        &mut autorouter,
-        "F.Cu",
-    );
+    common::assert_that_all_ratlines_besides_gnd_are_autorouted(&mut autorouter);
     //common::assert_number_of_conncomps(&mut autorouter, 16);
 }
 
@@ -216,10 +195,7 @@ fn autoroute_vga_dac_breakout(variant: &str) {
 
     let (mut autorouter, ..) = invoker.dissolve();
 
-    common::assert_that_all_single_layer_groundless_ratlines_are_autorouted(
-        &mut autorouter,
-        "F.Cu",
-    );
+    common::assert_that_all_ratlines_besides_gnd_are_autorouted(&mut autorouter);
 }
 
 #[apply(test_master)]
@@ -237,9 +213,6 @@ fn autoroute_smd_non_rectangular_buck_converter(variant: &str) {
 
     let (mut autorouter, ..) = invoker.dissolve();
 
-    common::assert_that_all_single_layer_groundless_ratlines_are_autorouted(
-        &mut autorouter,
-        "F.Cu",
-    );
+    common::assert_that_all_ratlines_besides_gnd_are_autorouted(&mut autorouter);
     //common::assert_number_of_conncomps(&mut autorouter, 16);
 }
