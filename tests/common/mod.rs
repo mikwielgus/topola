@@ -6,7 +6,7 @@ use std::{fs::File, io::BufReader};
 
 use topola::{
     autorouter::{
-        conncomps::Conncomps,
+        connected_components::ConnectedComponents,
         history::{History, HistoryError},
         invoker::{Invoker, InvokerError},
         ratline::RatlineUid,
@@ -179,7 +179,7 @@ pub fn assert_layer_0_navnode_count(
 pub fn assert_that_all_ratlines_besides_gnd_are_autorouted(
     autorouter: &mut Autorouter<impl AccessMesadata>,
 ) {
-    let conncomps = Conncomps::new(autorouter.board());
+    let conncomps = ConnectedComponents::new(autorouter.board());
     assert!(autorouter.board().layout().drawing().layer_count() >= 1);
 
     for principal_layer in 0..autorouter.board().layout().drawing().layer_count() {

@@ -22,7 +22,7 @@ allowed_scopes = [
   "autorouter/autorouter",
   "autorouter/compare_detours",
   "autorouter/compass_direction",
-  "autorouter/conncomps",
+  "autorouter/connected_components",
   "autorouter/execution",
   "autorouter/history",
   "autorouter/invoker",

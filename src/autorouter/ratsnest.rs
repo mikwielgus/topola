@@ -18,7 +18,7 @@ use spade::{handles::FixedVertexHandle, HasPosition, InsertionError, Point2};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
-    autorouter::conncomps::Conncomps,
+    autorouter::connected_components::ConnectedComponents,
     board::Board,
     drawing::{
         band::BandTermsegIndex,
@@ -114,7 +114,7 @@ impl Ratsnest {
         board: &Board<impl AccessMesadata>,
         principal_layer: usize,
     ) -> Result<Self, InsertionError> {
-        let conncomps = Conncomps::new_with_principal_layer(board, principal_layer);
+        let conncomps = ConnectedComponents::new_with_principal_layer(board, principal_layer);
 
         let mut this = Self {
             graph: StableUnGraph::default(),

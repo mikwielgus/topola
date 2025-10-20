@@ -15,11 +15,11 @@ use crate::{
 };
 
 #[derive(Clone, Getters)]
-pub struct Conncomps {
+pub struct ConnectedComponents {
     unionfind: UnionFind<usize>,
 }
 
-impl Conncomps {
+impl ConnectedComponents {
     pub fn new(board: &Board<impl AccessMesadata>) -> Self {
         let mut unionfind = UnionFind::new(board.layout().drawing().geometry().dot_index_bound());
 
