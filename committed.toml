@@ -2,7 +2,7 @@
 #
 # SPDX-License-Identifier: MIT
 
-subject_length = 80
+subject_length = 90
 line_length = 100
 style = "conventional"
 merge_commit = false
