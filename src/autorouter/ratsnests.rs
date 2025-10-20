@@ -12,7 +12,7 @@ pub struct Ratsnests(Box<[Ratsnest]>);
 impl Ratsnests {
     pub fn new(board: &Board<impl AccessMesadata>) -> Result<Self, InsertionError> {
         Ok(Self(
-            (0..board.mesadata().layer_count())
+            (0..board.layout().drawing().layer_count())
                 .map(|principal_layer| Ratsnest::new(board, principal_layer))
                 .collect::<Result<Vec<_>, _>>()
                 .map(Vec::into_boxed_slice)?,

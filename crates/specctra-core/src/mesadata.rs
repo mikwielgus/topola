@@ -27,9 +27,6 @@ pub trait AccessMesadata: AccessRules + std::panic::RefUnwindSafe {
     /// Retrieves the index of a layer from its name.
     fn layername_layer(&self, layername: &str) -> Option<usize>;
 
-    /// Return the number of the layers.
-    fn layer_count(&self) -> usize;
-
     /// Renames a net based on its index.
     fn bename_net(&mut self, net: usize, netname: String);
 
@@ -78,9 +75,6 @@ pub struct SpecctraMesadata {
     /// A map from net class names to their specific `SpecctraRule` constraints.
     /// These rules are applied to all nets belonging to the respective net clas
     class_rules: BTreeMap<String, SpecctraRule>,
-
-    /// Number of layers.
-    layer_count: usize,
 
     // layername <-> layer for Layout
     /// A bidirectional map between layer indices and layer names, allowing translation
@@ -164,7 +158,6 @@ impl SpecctraMesadata {
             structure_rule: SpecctraRule::from_dsn(&structure_rule),
             class_rules,
             layer_layername,
-            layer_count,
             net_netname,
             net_netclass,
         }
@@ -210,10 +203,6 @@ impl AccessMesadata for SpecctraMesadata {
 
     fn layername_layer(&self, layername: &str) -> Option<usize> {
         self.layer_layername.get_by_right(layername).copied()
-    }
-
-    fn layer_count(&self) -> usize {
-        self.layer_count
     }
 
     fn bename_net(&mut self, net: usize, netname: String) {
