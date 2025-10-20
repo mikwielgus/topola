@@ -29,6 +29,19 @@ use super::{
     PlanarAutorouteOptions,
 };
 
+pub struct PlanarAutorouteConfiguration {
+    pub ratlines: Vec<RatlineUid>,
+}
+
+pub struct PlanarAutorouteCosts {
+    pub lengths: Vec<f64>,
+}
+
+pub struct PlanarAutorouteConfigurationResult {
+    pub configuration: PlanarAutorouteConfiguration,
+    pub costs: PlanarAutorouteCosts,
+}
+
 /// Represents the current status of the autoroute operation.
 pub enum PlanarAutorouteContinueStatus {
     /// The autoroute is currently running and in progress.
@@ -237,13 +250,13 @@ impl<M: AccessMesadata> Abort<Autorouter<M>> for PlanarAutorouteExecutionStepper
 
 impl<M: AccessMesadata> Reconfigure<Autorouter<M>> for PlanarAutorouteExecutionStepper {
     type Configuration = Vec<RatlineUid>;
-    type Output = Result<(), AutorouterError>;
+    type Output = Result<PlanarAutorouteConfigurationResult, AutorouterError>;
 
     fn reconfigure(
         &mut self,
         autorouter: &mut Autorouter<M>,
         permutation: Vec<RatlineUid>,
-    ) -> Result<(), AutorouterError> {
+    ) -> Result<PlanarAutorouteConfigurationResult, AutorouterError> {
         let Some(new_index) = permutation
             .iter()
             .zip(self.ratlines.iter())
@@ -251,10 +264,18 @@ impl<M: AccessMesadata> Reconfigure<Autorouter<M>> for PlanarAutorouteExecutionS
         else {
             return Err(AutorouterError::NothingToUndoForReconfiguration);
         };
-        self.ratlines = permutation;
+
+        let result = PlanarAutorouteConfigurationResult {
+            configuration: PlanarAutorouteConfiguration {
+                ratlines: std::mem::replace(&mut self.ratlines, permutation),
+            },
+            costs: PlanarAutorouteCosts {
+                lengths: vec![], // TODO.
+            },
+        };
 
         self.backtrace_to_index(autorouter, new_index)?;
-        Ok(())
+        Ok(result)
     }
 }
 

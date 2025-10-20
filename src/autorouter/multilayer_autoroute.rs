@@ -12,7 +12,7 @@ use crate::{
         anterouter::{Anterouter, AnterouterOptions, AnterouterPlan},
         invoker::GetDebugOverlayData,
         planar_autoroute::PlanarAutorouteContinueStatus,
-        planar_reconfigurator::PlanarAutorouteExecutionReconfigurator,
+        planar_reconfigurator::{PlanarAutorouteReconfigurator, PlanarReconfiguratorStatus},
         ratline::RatlineUid,
         Autorouter, AutorouterError, PlanarAutorouteOptions,
     },
@@ -30,8 +30,10 @@ pub struct MultilayerAutorouteOptions {
 }
 
 pub struct MultilayerAutorouteExecutionStepper {
-    planar: PlanarAutorouteExecutionReconfigurator,
+    planar: PlanarAutorouteReconfigurator,
     anteroute_edit: BoardEdit,
+    // TODO: Obviously, we need something more sophisticated here.
+    planar_autoroute_reconfiguration_count: u64,
 }
 
 impl MultilayerAutorouteExecutionStepper {
@@ -46,18 +48,14 @@ impl MultilayerAutorouteExecutionStepper {
         assigner.anteroute(autorouter, &mut anteroute_edit, &options.anterouter);
 
         Ok(Self {
-            planar: PlanarAutorouteExecutionReconfigurator::new(
-                autorouter,
-                ratlines,
-                options.planar,
-            )?,
+            planar: PlanarAutorouteReconfigurator::new(autorouter, ratlines, options.planar)?,
             anteroute_edit,
+            planar_autoroute_reconfiguration_count: 0,
         })
     }
 }
 
-impl<M: AccessMesadata>
-    Step<Autorouter<M>, Option<BoardEdit>, ReconfiguratorStatus<(), PlanarAutorouteContinueStatus>>
+impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarReconfiguratorStatus>
     for MultilayerAutorouteExecutionStepper
 {
     type Error = AutorouterError;
@@ -65,15 +63,18 @@ impl<M: AccessMesadata>
     fn step(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<
-        ControlFlow<Option<BoardEdit>, ReconfiguratorStatus<(), PlanarAutorouteContinueStatus>>,
-        AutorouterError,
-    > {
+    ) -> Result<ControlFlow<Option<BoardEdit>, PlanarReconfiguratorStatus>, AutorouterError> {
         match self.planar.step(autorouter) {
             Ok(ControlFlow::Break(Some(edit))) => {
                 self.anteroute_edit.merge(edit);
                 // FIXME: Unnecessary large clone.
                 Ok(ControlFlow::Break(Some(self.anteroute_edit.clone())))
+            }
+            Ok(ControlFlow::Continue(ReconfiguratorStatus::Reconfigured(result))) => {
+                self.planar_autoroute_reconfiguration_count += 1;
+                Ok(ControlFlow::Continue(ReconfiguratorStatus::Reconfigured(
+                    result,
+                )))
             }
             x => x,
         }

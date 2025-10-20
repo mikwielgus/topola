@@ -13,7 +13,7 @@ use thiserror::Error;
 use crate::{
     autorouter::{
         multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouteOptions},
-        planar_reconfigurator::PlanarAutorouteExecutionReconfigurator,
+        planar_reconfigurator::PlanarAutorouteReconfigurator,
         planner::Planner,
         ratsnests::Ratsnests,
     },
@@ -137,8 +137,8 @@ impl<M: AccessMesadata> Autorouter<M> {
         &mut self,
         selection: &PinSelection,
         options: PlanarAutorouteOptions,
-    ) -> Result<PlanarAutorouteExecutionReconfigurator, AutorouterError> {
-        PlanarAutorouteExecutionReconfigurator::new(
+    ) -> Result<PlanarAutorouteReconfigurator, AutorouterError> {
+        PlanarAutorouteReconfigurator::new(
             self,
             self.selected_planar_ratlines(selection, options.principal_layer),
             options,
