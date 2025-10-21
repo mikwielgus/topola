@@ -20,7 +20,6 @@ use crate::{
 };
 
 use super::{
-    compare_detours::CompareDetoursExecutionStepper,
     invoker::{GetDebugOverlayData, Invoker, InvokerError},
     measure_length::MeasureLengthExecutionStepper,
     place_via::PlaceViaExecutionStepper,
@@ -44,7 +43,6 @@ pub enum Command {
     },
     PlaceVia(ViaWeight),
     RemoveBands(BandSelection),
-    CompareDetours(Type, PlanarAutorouteOptions),
     MeasureLength(BandSelection),
 }
 
@@ -55,7 +53,6 @@ pub enum ExecutionStepper<M> {
     TopoAutoroute(ng::AutorouteExecutionStepper<M>),
     PlaceVia(PlaceViaExecutionStepper),
     RemoveBands(RemoveBandsExecutionStepper),
-    CompareDetours(CompareDetoursExecutionStepper),
     MeasureLength(MeasureLengthExecutionStepper),
 }
 
@@ -124,18 +121,6 @@ impl<M: AccessMesadata + Clone> ExecutionStepper<M> {
                 let edit = remove_bands.doit(autorouter)?;
                 ControlFlow::Break((edit, "finished removing bands".to_string()))
             }
-            ExecutionStepper::CompareDetours(compare_detours) => {
-                match compare_detours.step(autorouter)? {
-                    ControlFlow::Continue(()) => ControlFlow::Continue(()),
-                    ControlFlow::Break((total_length1, total_length2)) => ControlFlow::Break((
-                        None,
-                        format!(
-                            "total detour lengths are {} and {}",
-                            total_length1, total_length2
-                        ),
-                    )),
-                }
-            }
             ExecutionStepper::MeasureLength(measure_length) => {
                 let length = measure_length.doit(autorouter)?;
                 ControlFlow::Break((None, format!("Total length of selected bands: {}", length)))
@@ -181,7 +166,6 @@ impl<M: AccessMesadata + Clone> Abort<Invoker<M>> for ExecutionStepper<M> {
             }
             ExecutionStepper::PlaceVia(_place_via) => (), //place_via.abort(),
             ExecutionStepper::RemoveBands(_remove_bands) => (), //remove_bands.abort(),
-            ExecutionStepper::CompareDetours(_compare_detours) => (), //compare_detours.abort(),
             ExecutionStepper::MeasureLength(_measure_length) => (), //measure_length.abort(),
         }
     }
@@ -199,9 +183,6 @@ impl<M> EstimateProgress for ExecutionStepper<M> {
             ExecutionStepper::TopoAutoroute(toporoute) => toporoute.estimate_progress_value(),
             ExecutionStepper::PlaceVia(place_via) => place_via.estimate_progress_value(),
             ExecutionStepper::RemoveBands(remove_bands) => remove_bands.estimate_progress_value(),
-            ExecutionStepper::CompareDetours(compare_detours) => {
-                compare_detours.estimate_progress_value()
-            }
             ExecutionStepper::MeasureLength(measure_length) => {
                 measure_length.estimate_progress_value()
             }
@@ -217,9 +198,6 @@ impl<M> EstimateProgress for ExecutionStepper<M> {
             ExecutionStepper::TopoAutoroute(toporoute) => toporoute.estimate_progress_maximum(),
             ExecutionStepper::PlaceVia(place_via) => place_via.estimate_progress_maximum(),
             ExecutionStepper::RemoveBands(remove_bands) => remove_bands.estimate_progress_maximum(),
-            ExecutionStepper::CompareDetours(compare_detours) => {
-                compare_detours.estimate_progress_maximum()
-            }
             ExecutionStepper::MeasureLength(measure_length) => {
                 measure_length.estimate_progress_maximum()
             }

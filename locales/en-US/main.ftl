@@ -68,7 +68,10 @@ tr-menu-route-options-wrap-around-bands = Wrap around Bands
 ##
 
 tr-menu-inspect = Inspect
+
+# Unused.
 tr-menu-inspect-compare-detours = Compare Detours
+
 tr-menu-inspect-measure-length = Measure Length
 
 tr-menu-preferences = Preferences

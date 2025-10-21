@@ -390,19 +390,12 @@ impl RouteActions {
 }
 
 pub struct InspectActions {
-    pub compare_detours: Trigger,
     pub measure_length: Trigger,
 }
 
 impl InspectActions {
     pub fn new(tr: &Translator) -> Self {
         Self {
-            compare_detours: Action::new(
-                tr.text("tr-menu-inspect-compare-detours"),
-                egui::Modifiers::NONE,
-                egui::Key::Minus,
-            )
-            .into_trigger(),
             measure_length: Action::new(
                 tr.text("tr-menu-inspect-measure-length"),
                 egui::Modifiers::NONE,
@@ -414,7 +407,6 @@ impl InspectActions {
 
     pub fn render_menu(&mut self, ctx: &Context, ui: &mut Ui, workspace_activities_enabled: bool) {
         ui.add_enabled_ui(workspace_activities_enabled, |ui| {
-            self.compare_detours.button(ctx, ui);
             self.measure_length.button(ctx, ui);
         });
     }

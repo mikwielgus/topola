@@ -20,7 +20,6 @@ allowed_scopes = [
   # `find src -type f | awk '!/lib.rs|mod.rs/ { print "\"" substr($1, 1 + 4, length($1) - 4 - 3) "\","; }' | sort`.
   "autorouter/anterouter",
   "autorouter/autorouter",
-  "autorouter/compare_detours",
   "autorouter/compass_direction",
   "autorouter/connected_components",
   "autorouter/execution",

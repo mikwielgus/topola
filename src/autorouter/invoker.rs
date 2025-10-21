@@ -28,7 +28,6 @@ use crate::{
 };
 
 use super::{
-    compare_detours::CompareDetoursExecutionStepper,
     execution::{Command, ExecutionStepper},
     history::{History, HistoryError},
     measure_length::MeasureLengthExecutionStepper,
@@ -206,9 +205,6 @@ impl<M: AccessMesadata + Clone> Invoker<M> {
             Command::RemoveBands(selection) => {
                 ExecutionStepper::RemoveBands(self.autorouter.remove_bands(selection)?)
             }
-            Command::CompareDetours(selection, options) => ExecutionStepper::CompareDetours(
-                self.autorouter.compare_detours(selection, *options)?,
-            ),
             Command::MeasureLength(selection) => {
                 ExecutionStepper::MeasureLength(self.autorouter.measure_length(selection)?)
             }

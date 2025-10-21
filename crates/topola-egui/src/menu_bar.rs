@@ -365,17 +365,6 @@ impl MenuBar {
                             });
                         } else if actions
                             .inspect
-                            .compare_detours
-                            .consume_key_triggered(ctx, ui)
-                        {
-                            schedule(error_dialog, workspace, |selection| {
-                                Command::CompareDetours(
-                                    selection.pin_selection,
-                                    self.multilayer_autoroute_options.planar,
-                                )
-                            });
-                        } else if actions
-                            .inspect
                             .measure_length
                             .consume_key_triggered(ctx, ui)
                         {

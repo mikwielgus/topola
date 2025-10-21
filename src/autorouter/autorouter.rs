@@ -26,7 +26,6 @@ use crate::{
 };
 
 use super::{
-    compare_detours::CompareDetoursExecutionStepper,
     measure_length::MeasureLengthExecutionStepper,
     place_via::PlaceViaExecutionStepper,
     planar_autoroute::PlanarAutorouteExecutionStepper,
@@ -138,29 +137,6 @@ impl<M: AccessMesadata> Autorouter<M> {
         )
     }
 
-    pub(super) fn planar_autoroute_ratlines(
-        &mut self,
-        ratlines: Vec<RatlineUid>,
-        options: PlanarAutorouteOptions,
-    ) -> Result<PlanarAutorouteExecutionStepper, AutorouterError> {
-        PlanarAutorouteExecutionStepper::new(self, ratlines, options)
-    }
-
-    pub(super) fn undo_planar_autoroute_ratlines(
-        &mut self,
-        ratlines: Vec<RatlineUid>,
-    ) -> Result<(), AutorouterError> {
-        for ratline in ratlines.iter() {
-            let band = ratline.ref_(self).band_termseg();
-            self.board
-                .layout_mut()
-                .remove_band(&mut LayoutEdit::new(), band)
-                .map_err(|_| AutorouterError::CouldNotRemoveBand(band))?;
-        }
-
-        Ok(())
-    }
-
     pub fn topo_autoroute(
         &mut self,
         selection: &PinSelection,
@@ -270,27 +246,6 @@ impl<M: AccessMesadata> Autorouter<M> {
 
     pub fn undo_remove_bands(&mut self, _selection: &BandSelection) {
         todo!();
-    }
-
-    pub fn compare_detours(
-        &mut self,
-        selection: &PinSelection,
-        options: PlanarAutorouteOptions,
-    ) -> Result<CompareDetoursExecutionStepper, AutorouterError> {
-        let ratlines = self.selected_ratlines(selection, options.principal_layer);
-        if ratlines.len() < 2 {
-            return Err(AutorouterError::NeedExactlyTwoRatlines);
-        }
-        self.compare_detours_ratlines(ratlines[0], ratlines[1], options)
-    }
-
-    pub(super) fn compare_detours_ratlines(
-        &mut self,
-        ratline1: RatlineUid,
-        ratline2: RatlineUid,
-        options: PlanarAutorouteOptions,
-    ) -> Result<CompareDetoursExecutionStepper, AutorouterError> {
-        CompareDetoursExecutionStepper::new(self, ratline1, ratline2, options)
     }
 
     pub fn measure_length(

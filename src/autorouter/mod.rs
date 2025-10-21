@@ -4,7 +4,6 @@
 
 pub mod anterouter;
 mod autorouter;
-pub mod compare_detours;
 pub mod compass_direction;
 pub mod connected_components;
 pub mod execution;
