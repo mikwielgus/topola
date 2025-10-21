@@ -11,7 +11,6 @@ use crate::{
     autorouter::{
         anterouter::{Anterouter, AnterouterOptions, AnterouterPlan},
         invoker::GetDebugOverlayData,
-        planar_autoroute::PlanarAutorouteContinueStatus,
         planar_reconfigurator::{PlanarAutorouteReconfigurator, PlanarReconfiguratorStatus},
         ratline::RatlineUid,
         Autorouter, AutorouterError, PlanarAutorouteOptions,
@@ -20,7 +19,7 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{edit::Edit, primitive::PrimitiveShape},
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
-    stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Step},
+    stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Reconfigure, Step},
 };
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
@@ -32,8 +31,7 @@ pub struct MultilayerAutorouteOptions {
 pub struct MultilayerAutorouteExecutionStepper {
     planar: PlanarAutorouteReconfigurator,
     anteroute_edit: BoardEdit,
-    // TODO: Obviously, we need something more sophisticated here.
-    planar_autoroute_reconfiguration_count: u64,
+    options: MultilayerAutorouteOptions,
 }
 
 impl MultilayerAutorouteExecutionStepper {
@@ -43,14 +41,14 @@ impl MultilayerAutorouteExecutionStepper {
         plan: AnterouterPlan,
         options: MultilayerAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
-        let mut assigner = Anterouter::new(plan);
+        let mut anterouter = Anterouter::new(plan);
         let mut anteroute_edit = BoardEdit::new();
-        assigner.anteroute(autorouter, &mut anteroute_edit, &options.anterouter);
+        anterouter.anteroute(autorouter, &mut anteroute_edit, &options.anterouter);
 
         Ok(Self {
             planar: PlanarAutorouteReconfigurator::new(autorouter, ratlines, options.planar)?,
             anteroute_edit,
-            planar_autoroute_reconfiguration_count: 0,
+            options: options.clone(),
         })
     }
 }
@@ -70,12 +68,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarReconfigura
                 // FIXME: Unnecessary large clone.
                 Ok(ControlFlow::Break(Some(self.anteroute_edit.clone())))
             }
-            Ok(ControlFlow::Continue(ReconfiguratorStatus::Reconfigured(result))) => {
-                self.planar_autoroute_reconfiguration_count += 1;
-                Ok(ControlFlow::Continue(ReconfiguratorStatus::Reconfigured(
-                    result,
-                )))
-            }
+            Ok(ControlFlow::Continue(ReconfiguratorStatus::Reconfigured(result))) => Ok(
+                ControlFlow::Continue(ReconfiguratorStatus::Reconfigured(result)),
+            ),
             x => x,
         }
     }
@@ -84,6 +79,25 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarReconfigura
 impl<M: AccessMesadata> Abort<Autorouter<M>> for MultilayerAutorouteExecutionStepper {
     fn abort(&mut self, autorouter: &mut Autorouter<M>) {
         self.planar.abort(autorouter)
+    }
+}
+
+impl<M: AccessMesadata> Reconfigure<Autorouter<M>> for MultilayerAutorouteExecutionStepper {
+    type Configuration = AnterouterPlan;
+    type Output = Result<(), AutorouterError>;
+
+    fn reconfigure(
+        &mut self,
+        autorouter: &mut Autorouter<M>,
+        plan: AnterouterPlan,
+    ) -> Result<(), AutorouterError> {
+        self.planar.abort(autorouter);
+        autorouter.board.apply_edit(&self.anteroute_edit.reverse());
+
+        let mut anterouter = Anterouter::new(plan);
+        let mut anteroute_edit = BoardEdit::new();
+        anterouter.anteroute(autorouter, &mut anteroute_edit, &self.options.anterouter);
+        Ok(())
     }
 }
 

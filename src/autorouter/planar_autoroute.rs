@@ -29,20 +29,24 @@ use super::{
     PlanarAutorouteOptions,
 };
 
+#[derive(Clone, Debug)]
 pub struct PlanarAutorouteConfiguration {
     pub ratlines: Vec<RatlineUid>,
 }
 
+#[derive(Clone, Debug)]
 pub struct PlanarAutorouteCosts {
     pub lengths: Vec<f64>,
 }
 
+#[derive(Clone, Debug)]
 pub struct PlanarAutorouteConfigurationResult {
     pub configuration: PlanarAutorouteConfiguration,
     pub costs: PlanarAutorouteCosts,
 }
 
-/// Represents the current status of the autoroute operation.
+/// The current status of the autoroute operation.
+#[derive(Clone, Copy, Debug)]
 pub enum PlanarAutorouteContinueStatus {
     /// The autoroute is currently running and in progress.
     Running,

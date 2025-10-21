@@ -12,10 +12,9 @@ use thiserror::Error;
 
 use crate::{
     autorouter::{
-        multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouteOptions},
-        planar_reconfigurator::PlanarAutorouteReconfigurator,
-        planner::Planner,
-        ratsnests::Ratsnests,
+        multilayer_autoroute::MultilayerAutorouteOptions,
+        multilayer_reconfigurator::MultilayerAutorouteReconfigurator,
+        planar_reconfigurator::PlanarAutorouteReconfigurator, ratsnests::Ratsnests,
     },
     board::{AccessMesadata, Board},
     drawing::{band::BandTermsegIndex, graph::MakePrimitiveRef},
@@ -119,16 +118,10 @@ impl<M: AccessMesadata> Autorouter<M> {
         &mut self,
         selection: &PinSelection,
         options: MultilayerAutorouteOptions,
-    ) -> Result<MultilayerAutorouteExecutionStepper, AutorouterError> {
-        let planner = Planner::new(
-            self,
-            &self.selected_ratlines(selection, options.planar.principal_layer),
-        );
-
-        MultilayerAutorouteExecutionStepper::new(
+    ) -> Result<MultilayerAutorouteReconfigurator, AutorouterError> {
+        MultilayerAutorouteReconfigurator::new(
             self,
             self.selected_ratlines(selection, options.planar.principal_layer),
-            planner.plan().clone(),
             options,
         )
     }

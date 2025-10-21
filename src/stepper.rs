@@ -65,6 +65,7 @@ pub trait Reconfigure<Ctx> {
     ) -> Self::Output;
 }
 
+#[derive(Clone, Copy, Debug)]
 pub enum ReconfiguratorStatus<Re, Ru> {
     Running(Ru),
     Reconfigured(Re),

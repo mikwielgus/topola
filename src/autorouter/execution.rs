@@ -9,7 +9,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     autorouter::{
-        multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouteOptions},
+        multilayer_autoroute::MultilayerAutorouteOptions,
+        multilayer_reconfigurator::MultilayerAutorouteReconfigurator,
         planar_reconfigurator::PlanarAutorouteReconfigurator,
     },
     board::{edit::BoardEdit, AccessMesadata},
@@ -49,7 +50,7 @@ pub enum Command {
 
 #[enum_dispatch(GetDebugOverlayData)]
 pub enum ExecutionStepper<M> {
-    MultilayerAutoroute(MultilayerAutorouteExecutionStepper),
+    MultilayerAutoroute(MultilayerAutorouteReconfigurator),
     PlanarAutoroute(PlanarAutorouteReconfigurator),
     TopoAutoroute(ng::AutorouteExecutionStepper<M>),
     PlaceVia(PlaceViaExecutionStepper),

@@ -105,7 +105,6 @@ impl SpecctraMesadata {
                 .enumerate()
                 .map(|(index, layer)| (index, layer.name.clone())),
         );
-        let layer_count = pcb.structure.layers.len();
 
         // assign IDs to all nets named in pcb.network
         let net_netname = {

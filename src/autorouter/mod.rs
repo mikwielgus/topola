@@ -12,6 +12,8 @@ pub mod history;
 pub mod invoker;
 pub mod measure_length;
 pub mod multilayer_autoroute;
+pub mod multilayer_reconfigurator;
+pub mod multilayer_reconfigurer;
 pub mod place_via;
 pub mod planar_autoroute;
 pub mod planar_reconfigurator;

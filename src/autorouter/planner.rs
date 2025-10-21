@@ -28,12 +28,24 @@ pub struct Planner {
 
 impl Planner {
     pub fn new(autorouter: &Autorouter<impl AccessMesadata>, ratlines: &[RatlineUid]) -> Self {
-        let mut plan = AnterouterPlan {
-            layer_map: ratlines
+        Self::new_from_layer_map(
+            autorouter,
+            ratlines,
+            ratlines
                 .iter()
                 .enumerate()
                 .map(|(i, ratline)| (*ratline, i % 2))
                 .collect(),
+        )
+    }
+
+    pub fn new_from_layer_map(
+        autorouter: &Autorouter<impl AccessMesadata>,
+        ratlines: &[RatlineUid],
+        layer_map: BTreeMap<RatlineUid, usize>,
+    ) -> Self {
+        let mut plan = AnterouterPlan {
+            layer_map,
             ratline_terminating_schemes: BTreeMap::new(),
         };
 
