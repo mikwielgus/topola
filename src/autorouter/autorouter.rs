@@ -14,6 +14,7 @@ use crate::{
     autorouter::{
         multilayer_autoroute::MultilayerAutorouteOptions,
         multilayer_reconfigurator::MultilayerAutorouteReconfigurator,
+        planar_autoroute::PlanarAutorouteConfiguration,
         planar_reconfigurator::PlanarAutorouteReconfigurator, ratsnests::Ratsnests,
     },
     board::{AccessMesadata, Board},
@@ -132,7 +133,9 @@ impl<M: AccessMesadata> Autorouter<M> {
     ) -> Result<PlanarAutorouteReconfigurator, AutorouterError> {
         PlanarAutorouteReconfigurator::new(
             self,
-            self.selected_planar_ratlines(selection, options.principal_layer),
+            PlanarAutorouteConfiguration {
+                ratlines: self.selected_planar_ratlines(selection, options.principal_layer),
+            },
             options,
         )
     }

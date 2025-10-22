@@ -59,8 +59,8 @@ pub enum PlanarAutorouteContinueStatus {
 /// Manages the autorouting process across multiple ratlines.
 #[derive(Getters)]
 pub struct PlanarAutorouteExecutionStepper {
-    /// The ratlines which we are routing.
-    ratlines: Vec<RatlineUid>,
+    /// The stepper configuration, including the ratlines which we are routing.
+    configuration: PlanarAutorouteConfiguration,
     /// Keeps track of the current ratline being routed, if one is active.
     curr_ratline_index: usize,
     /// Stores the current route being processed, if any.
@@ -74,25 +74,22 @@ pub struct PlanarAutorouteExecutionStepper {
 }
 
 impl PlanarAutorouteExecutionStepper {
-    /// Initializes a new [`AutorouteExecutionStepper`] instance.
-    ///
-    /// This method sets up the routing process by accepting the execution properties.
-    /// It prepares the first ratline to route
-    /// and stores the associated data for future routing steps.
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: Vec<RatlineUid>,
+        configuration: PlanarAutorouteConfiguration,
         options: PlanarAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
-        if ratlines.is_empty() {
+        if configuration.ratlines.is_empty() {
             return Err(AutorouterError::NothingToRoute);
         };
 
-        let (origin, destination) = ratlines[0].ref_(autorouter).terminating_dots();
+        let (origin, destination) = configuration.ratlines[0]
+            .ref_(autorouter)
+            .terminating_dots();
         let mut router = Router::new(autorouter.board.layout_mut(), options.router);
 
         Ok(Self {
-            ratlines,
+            configuration,
             curr_ratline_index: 0,
             route: Some(router.route(
                 LayoutEdit::new(),
@@ -124,7 +121,9 @@ impl PlanarAutorouteExecutionStepper {
 
         autorouter.board.apply_edit(&board_edit.reverse());
 
-        let (origin, destination) = self.ratlines[index].ref_(autorouter).terminating_dots();
+        let (origin, destination) = self.configuration.ratlines[index]
+            .ref_(autorouter)
+            .terminating_dots();
         let mut router = Router::new(autorouter.board.layout_mut(), self.options.router);
 
         self.route = Some(router.route(
@@ -158,7 +157,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
     {
         // TODO: Use a proper state machine here for better readability?
 
-        if self.curr_ratline_index >= self.ratlines.len() {
+        if self.curr_ratline_index >= self.configuration().ratlines.len() {
             self.dissolve_route_stepper_and_push_layout_edit();
 
             return Ok(ControlFlow::Break(Some(BoardEdit::new_from_edits(
@@ -170,14 +169,14 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
             ))));
         }
 
+        let (origin, destination) = self.configuration().ratlines[self.curr_ratline_index]
+            .ref_(autorouter)
+            .terminating_dots();
+
         let Some(ref mut route) = self.route else {
             // May happen if stepper was aborted.
             return Ok(ControlFlow::Break(None));
         };
-
-        let (origin, destination) = self.ratlines[self.curr_ratline_index]
-            .ref_(autorouter)
-            .terminating_dots();
 
         let ret = if let Some(band_termseg) =
             autorouter.board.band_between_nodes(origin, destination)
@@ -206,7 +205,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
                 .ratsnests
                 .on_principal_layer_mut(self.options.principal_layer)
                 .assign_band_termseg_to_ratline(
-                    self.ratlines[self.curr_ratline_index].index,
+                    self.configuration().ratlines[self.curr_ratline_index].index,
                     band_termseg,
                 );
 
@@ -226,7 +225,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
 
         self.curr_ratline_index += 1;
 
-        if let Some(new_ratline) = self.ratlines.get(self.curr_ratline_index) {
+        if let Some(new_ratline) = self.configuration.ratlines.get(self.curr_ratline_index) {
             let (origin, destination) = new_ratline.ref_(autorouter).terminating_dots();
             let mut router = Router::new(autorouter.board.layout_mut(), self.options.router);
 
@@ -248,31 +247,30 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
 impl<M: AccessMesadata> Abort<Autorouter<M>> for PlanarAutorouteExecutionStepper {
     fn abort(&mut self, autorouter: &mut Autorouter<M>) {
         self.backtrace_to_index(autorouter, 0);
-        self.curr_ratline_index = self.ratlines.len();
+        self.curr_ratline_index = self.configuration.ratlines.len();
     }
 }
 
 impl<M: AccessMesadata> Reconfigure<Autorouter<M>> for PlanarAutorouteExecutionStepper {
-    type Configuration = Vec<RatlineUid>;
+    type Configuration = PlanarAutorouteConfiguration;
     type Output = Result<PlanarAutorouteConfigurationResult, AutorouterError>;
 
     fn reconfigure(
         &mut self,
         autorouter: &mut Autorouter<M>,
-        permutation: Vec<RatlineUid>,
+        new_configuration: PlanarAutorouteConfiguration,
     ) -> Result<PlanarAutorouteConfigurationResult, AutorouterError> {
-        let Some(new_index) = permutation
+        let Some(new_index) = new_configuration
+            .ratlines
             .iter()
-            .zip(self.ratlines.iter())
+            .zip(self.configuration.ratlines.iter())
             .position(|(permuted, original)| *permuted != *original)
         else {
             return Err(AutorouterError::NothingToUndoForReconfiguration);
         };
 
         let result = PlanarAutorouteConfigurationResult {
-            configuration: PlanarAutorouteConfiguration {
-                ratlines: std::mem::replace(&mut self.ratlines, permutation),
-            },
+            configuration: std::mem::replace(&mut self.configuration, new_configuration),
             costs: PlanarAutorouteCosts {
                 lengths: vec![], // TODO.
             },
@@ -294,7 +292,7 @@ impl EstimateProgress for PlanarAutorouteExecutionStepper {
     }
 
     fn estimate_progress_maximum(&self) -> f64 {
-        self.ratlines.len() as f64
+        self.configuration().ratlines.len() as f64
     }
 }
 

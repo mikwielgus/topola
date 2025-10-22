@@ -10,9 +10,11 @@ use specctra_core::mesadata::AccessMesadata;
 
 use crate::{
     autorouter::{
-        planar_autoroute::PlanarAutorouteExecutionStepper,
-        presorter::SccIntersectionsAndLengthPresorter, ratline::RatlineUid, scc::Scc, Autorouter,
-        PlanarAutorouteOptions,
+        planar_autoroute::{PlanarAutorouteConfiguration, PlanarAutorouteExecutionStepper},
+        presorter::SccIntersectionsAndLengthPresorter,
+        ratline::RatlineUid,
+        scc::Scc,
+        Autorouter, PlanarAutorouteOptions,
     },
     drawing::graph::MakePrimitiveRef,
     geometry::{GenericNode, GetLayer},
@@ -37,12 +39,15 @@ pub enum PlanarReconfigurer {
 impl PlanarReconfigurer {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: Vec<RatlineUid>,
+        input_configuration: PlanarAutorouteConfiguration,
         presorter: SccIntersectionsAndLengthPresorter,
         options: &PlanarAutorouteOptions,
     ) -> Self {
         PlanarReconfigurer::SccPermutations(SccPermutationsPlanarReconfigurer::new(
-            autorouter, ratlines, presorter, options,
+            autorouter,
+            input_configuration,
+            presorter,
+            options,
         ))
         /*RatlinesPermuter::RatlineCuts(RatlineCutsRatlinePermuter::new(
             autorouter, ratlines, presorter, options,
@@ -52,13 +57,13 @@ impl PlanarReconfigurer {
 
 pub struct SccPermutationsPlanarReconfigurer {
     sccs_permutations_iter: Skip<Permutations<std::vec::IntoIter<Scc>>>,
-    original_ratlines: Vec<RatlineUid>,
+    input_configuration: PlanarAutorouteConfiguration,
 }
 
 impl SccPermutationsPlanarReconfigurer {
     pub fn new(
         _autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: Vec<RatlineUid>,
+        input_configuration: PlanarAutorouteConfiguration,
         presorter: SccIntersectionsAndLengthPresorter,
         _options: &PlanarAutorouteOptions,
     ) -> Self {
@@ -69,7 +74,7 @@ impl SccPermutationsPlanarReconfigurer {
 
         Self {
             sccs_permutations_iter: sccs.into_iter().permutations(sccs_len).skip(1),
-            original_ratlines: ratlines,
+            input_configuration,
         }
     }
 }
@@ -84,7 +89,7 @@ impl PermuteRatlines for SccPermutationsPlanarReconfigurer {
         let mut ratlines = vec![];
 
         for scc in scc_permutation {
-            for ratline in self.original_ratlines.iter() {
+            for ratline in self.input_configuration.ratlines.iter() {
                 if scc.node_indices().contains(
                     &autorouter
                         .ratsnests()
@@ -135,7 +140,7 @@ impl PermuteRatlines for RatlineCutsPlanarReconfigurer {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         stepper: &PlanarAutorouteExecutionStepper,
     ) -> Option<Vec<RatlineUid>> {
-        let curr_ratline = stepper.ratlines()[*stepper.curr_ratline_index()];
+        let curr_ratline = stepper.configuration().ratlines[*stepper.curr_ratline_index()];
         let terminating_dots = curr_ratline.ref_(autorouter).terminating_dots();
         let bands_cut_by_ratline: Vec<_> = autorouter
             .board()
@@ -152,7 +157,8 @@ impl PermuteRatlines for RatlineCutsPlanarReconfigurer {
 
         // Find the first ratline corresponding to a band that is cut.
         let first_cut_ratline_index = stepper
-            .ratlines()
+            .configuration()
+            .ratlines
             .iter()
             .position(|ratline| {
                 for (band_uid, _) in &bands_cut_by_ratline {
@@ -169,7 +175,7 @@ impl PermuteRatlines for RatlineCutsPlanarReconfigurer {
 
         // Swap the first ratline corresponding to a band that is cut with the
         // ratline that we have failed routing.
-        let mut ratlines = stepper.ratlines().clone();
+        let mut ratlines = stepper.configuration().ratlines.clone();
         ratlines.swap(*stepper.curr_ratline_index(), first_cut_ratline_index);
 
         Some(ratlines)

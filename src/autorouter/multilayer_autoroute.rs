@@ -11,6 +11,7 @@ use crate::{
     autorouter::{
         anterouter::{Anterouter, AnterouterOptions, AnterouterPlan},
         invoker::GetDebugOverlayData,
+        planar_autoroute::PlanarAutorouteConfiguration,
         planar_reconfigurator::{PlanarAutorouteReconfigurator, PlanarReconfiguratorStatus},
         ratline::RatlineUid,
         Autorouter, AutorouterError, PlanarAutorouteOptions,
@@ -46,7 +47,11 @@ impl MultilayerAutorouteExecutionStepper {
         anterouter.anteroute(autorouter, &mut anteroute_edit, &options.anterouter);
 
         Ok(Self {
-            planar: PlanarAutorouteReconfigurator::new(autorouter, ratlines, options.planar)?,
+            planar: PlanarAutorouteReconfigurator::new(
+                autorouter,
+                PlanarAutorouteConfiguration { ratlines },
+                options.planar,
+            )?,
             anteroute_edit,
             options: options.clone(),
         })
