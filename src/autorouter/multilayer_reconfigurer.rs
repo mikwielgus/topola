@@ -7,8 +7,8 @@ use std::time::SystemTime;
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::autorouter::{
-    anterouter::AnterouterPlan, multilayer_autoroute::MultilayerAutorouteOptions, planner::Planner,
-    ratline::RatlineUid, Autorouter,
+    anterouter::AnterouterPlan, multilayer_autoroute::MultilayerAutorouteOptions,
+    multilayer_preconfigurer::MultilayerPreconfigurer, ratline::RatlineUid, Autorouter,
 };
 
 pub struct MultilayerReconfigurer {
@@ -30,7 +30,7 @@ impl MultilayerReconfigurer {
         &mut self,
         autorouter: &Autorouter<impl AccessMesadata>,
     ) -> Option<AnterouterPlan> {
-        let planner = Planner::new_from_layer_map(
+        let planner = MultilayerPreconfigurer::new_from_layer_map(
             autorouter,
             &self.original_ratlines,
             self.original_ratlines

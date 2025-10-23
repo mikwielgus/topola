@@ -21,17 +21,26 @@ use crate::{
     graph::MakeRef,
 };
 
+#[derive(Clone, Debug)]
+pub struct MultilayerAutoroutePreconfigurerInput {
+    pub ratlines: Vec<RatlineUid>,
+}
+
 #[derive(Getters)]
-pub struct Planner {
+pub struct MultilayerPreconfigurer {
     plan: AnterouterPlan,
 }
 
-impl Planner {
-    pub fn new(autorouter: &Autorouter<impl AccessMesadata>, ratlines: &[RatlineUid]) -> Self {
+impl MultilayerPreconfigurer {
+    pub fn new(
+        autorouter: &Autorouter<impl AccessMesadata>,
+        input: MultilayerAutoroutePreconfigurerInput,
+    ) -> Self {
         Self::new_from_layer_map(
             autorouter,
-            ratlines,
-            ratlines
+            &input.ratlines,
+            input
+                .ratlines
                 .iter()
                 .enumerate()
                 .map(|(i, ratline)| (*ratline, i % 2))

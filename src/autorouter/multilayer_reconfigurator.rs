@@ -13,10 +13,12 @@ use crate::{
             MultilayerAutorouteConfiguration, MultilayerAutorouteExecutionStepper,
             MultilayerAutorouteOptions,
         },
+        multilayer_preconfigurer::{
+            MultilayerAutoroutePreconfigurerInput, MultilayerPreconfigurer,
+        },
         multilayer_reconfigurer::MultilayerReconfigurer,
-        planar_reconfigurator::{PlanarAutorouteReconfiguratorInput, PlanarReconfiguratorStatus},
-        planner::Planner,
-        ratline::RatlineUid,
+        planar_preconfigurer::PlanarAutoroutePreconfigurerInput,
+        planar_reconfigurator::PlanarReconfiguratorStatus,
         Autorouter, AutorouterError,
     },
     board::edit::BoardEdit,
@@ -25,10 +27,6 @@ use crate::{
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
     stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Reconfigure, Step},
 };
-
-pub struct MultilayerAutorouteReconfiguratorInput {
-    pub ratlines: Vec<RatlineUid>,
-}
 
 pub type MultilayerReconfiguratorStatus = ReconfiguratorStatus<(), PlanarReconfiguratorStatus>;
 
@@ -43,13 +41,13 @@ pub struct MultilayerAutorouteReconfigurator {
 impl MultilayerAutorouteReconfigurator {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        input: MultilayerAutorouteReconfiguratorInput,
+        input: MultilayerAutoroutePreconfigurerInput,
         options: MultilayerAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
-        let planner = Planner::new(autorouter, &input.ratlines);
+        let planner = MultilayerPreconfigurer::new(autorouter, input.clone());
         let preconfiguration = MultilayerAutorouteConfiguration {
             plan: planner.plan().clone(),
-            planar: PlanarAutorouteReconfiguratorInput {
+            planar: PlanarAutoroutePreconfigurerInput {
                 ratlines: input.ratlines.clone(),
             },
         };

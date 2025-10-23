@@ -7,7 +7,15 @@ use enum_dispatch::enum_dispatch;
 use petgraph::algo::tarjan_scc;
 use specctra_core::mesadata::AccessMesadata;
 
-use crate::autorouter::{ratline::RatlineUid, scc::Scc, Autorouter, PlanarAutorouteOptions};
+use crate::autorouter::{
+    planar_autoroute::PlanarAutorouteConfiguration, ratline::RatlineUid, scc::Scc, Autorouter,
+    PlanarAutorouteOptions,
+};
+
+#[derive(Clone, Debug)]
+pub struct PlanarAutoroutePreconfigurerInput {
+    pub ratlines: Vec<RatlineUid>,
+}
 
 pub struct PresortParams {
     pub intersector_count_weight: f64,
@@ -15,28 +23,28 @@ pub struct PresortParams {
 }
 
 #[enum_dispatch]
-pub trait PresortRatlines {
-    fn presort_ratlines(
+pub trait PreconfigurePlanarAutoroute {
+    fn preconfigure(
         &self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: &[RatlineUid],
-    ) -> Vec<RatlineUid>;
+        input: PlanarAutoroutePreconfigurerInput,
+    ) -> PlanarAutorouteConfiguration;
 }
 
 #[enum_dispatch(PresortRatlines)]
-pub enum RatlinesPresorter {
-    SccIntersectionsLength(SccIntersectionsAndLengthPresorter),
+pub enum PlanarAutoroutePreconfigurer {
+    SccIntersectionsLength(SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer),
 }
 
 #[derive(Getters, Dissolve)]
-pub struct SccIntersectionsAndLengthPresorter {
+pub struct SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer {
     sccs: Vec<Scc>,
 }
 
-impl SccIntersectionsAndLengthPresorter {
+impl SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: &[RatlineUid],
+        input: PlanarAutoroutePreconfigurerInput,
         params: &PresortParams,
         options: &PlanarAutorouteOptions,
     ) -> Self {
@@ -46,11 +54,19 @@ impl SccIntersectionsAndLengthPresorter {
             .on_principal_layer(options.principal_layer)
             .graph()
             .clone();
-        filtered_ratsnest.retain_edges(|_g, i| ratlines.iter().any(|ratline| ratline.index == i));
+        filtered_ratsnest
+            .retain_edges(|_g, i| input.ratlines.iter().any(|ratline| ratline.index == i));
 
         let mut sccs: Vec<_> = tarjan_scc(&filtered_ratsnest)
             .into_iter()
-            .map(|node_indices| Scc::new(autorouter, ratlines, &filtered_ratsnest, node_indices))
+            .map(|node_indices| {
+                Scc::new(
+                    autorouter,
+                    &input.ratlines,
+                    &filtered_ratsnest,
+                    node_indices,
+                )
+            })
             .collect();
 
         sccs.sort_unstable_by(|a, b| {
@@ -66,22 +82,24 @@ impl SccIntersectionsAndLengthPresorter {
     }
 }
 
-impl PresortRatlines for SccIntersectionsAndLengthPresorter {
-    fn presort_ratlines(
+impl PreconfigurePlanarAutoroute for SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer {
+    fn preconfigure(
         &self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: &[RatlineUid],
-    ) -> Vec<RatlineUid> {
+        input: PlanarAutoroutePreconfigurerInput,
+    ) -> PlanarAutorouteConfiguration {
         let mut presorted_ratlines = vec![];
 
         for scc in self.sccs.iter() {
-            for ratline in ratlines.iter() {
+            for ratline in input.ratlines.iter() {
                 if scc.scc_ref(autorouter).contains(*ratline) {
                     presorted_ratlines.push(*ratline);
                 }
             }
         }
 
-        presorted_ratlines
+        PlanarAutorouteConfiguration {
+            ratlines: presorted_ratlines,
+        }
     }
 }

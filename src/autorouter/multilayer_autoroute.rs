@@ -11,10 +11,8 @@ use crate::{
     autorouter::{
         anterouter::{Anterouter, AnterouterOptions, AnterouterPlan},
         invoker::GetDebugOverlayData,
-        planar_reconfigurator::{
-            PlanarAutorouteReconfigurator, PlanarAutorouteReconfiguratorInput,
-            PlanarReconfiguratorStatus,
-        },
+        planar_preconfigurer::PlanarAutoroutePreconfigurerInput,
+        planar_reconfigurator::{PlanarAutorouteReconfigurator, PlanarReconfiguratorStatus},
         Autorouter, AutorouterError, PlanarAutorouteOptions,
     },
     board::edit::BoardEdit,
@@ -27,7 +25,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct MultilayerAutorouteConfiguration {
     pub plan: AnterouterPlan,
-    pub planar: PlanarAutorouteReconfiguratorInput,
+    pub planar: PlanarAutoroutePreconfigurerInput,
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]

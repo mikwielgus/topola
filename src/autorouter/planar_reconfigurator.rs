@@ -13,9 +13,11 @@ use crate::{
             PlanarAutorouteConfiguration, PlanarAutorouteConfigurationResult,
             PlanarAutorouteContinueStatus, PlanarAutorouteExecutionStepper,
         },
-        planar_reconfigurer::{PermuteRatlines, PlanarReconfigurer},
-        presorter::{PresortParams, PresortRatlines, SccIntersectionsAndLengthPresorter},
-        ratline::RatlineUid,
+        planar_preconfigurer::{
+            PlanarAutoroutePreconfigurerInput, PreconfigurePlanarAutoroute, PresortParams,
+            SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer,
+        },
+        planar_reconfigurer::{MakeNextPlanarAutorouteConfiguration, PlanarAutorouteReconfigurer},
         Autorouter, AutorouterError, PlanarAutorouteOptions,
     },
     board::edit::BoardEdit,
@@ -25,40 +27,37 @@ use crate::{
     stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Reconfigure, Step},
 };
 
-#[derive(Clone, Debug)]
-pub struct PlanarAutorouteReconfiguratorInput {
-    pub ratlines: Vec<RatlineUid>,
-}
-
 pub type PlanarReconfiguratorStatus =
     ReconfiguratorStatus<PlanarAutorouteConfigurationResult, PlanarAutorouteContinueStatus>;
 
 pub struct PlanarAutorouteReconfigurator {
     stepper: PlanarAutorouteExecutionStepper,
-    reconfigurer: PlanarReconfigurer,
+    reconfigurer: PlanarAutorouteReconfigurer,
     options: PlanarAutorouteOptions,
 }
 
 impl PlanarAutorouteReconfigurator {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        input: PlanarAutorouteReconfiguratorInput,
+        input: PlanarAutoroutePreconfigurerInput,
         options: PlanarAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
-        let presorter = SccIntersectionsAndLengthPresorter::new(
+        let preconfigurer = SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer::new(
             autorouter,
-            &input.ratlines,
+            input.clone(),
             &PresortParams {
                 intersector_count_weight: 1.0,
                 length_weight: 0.001,
             },
             &options,
         );
-        let preconfiguration = PlanarAutorouteConfiguration {
-            ratlines: presorter.presort_ratlines(autorouter, &input.ratlines),
-        };
-        let reconfigurer =
-            PlanarReconfigurer::new(autorouter, preconfiguration.clone(), presorter, &options);
+        let preconfiguration = preconfigurer.preconfigure(autorouter, input);
+        let reconfigurer = PlanarAutorouteReconfigurer::new(
+            autorouter,
+            preconfiguration.clone(),
+            preconfigurer,
+            &options,
+        );
 
         Ok(Self {
             stepper: PlanarAutorouteExecutionStepper::new(autorouter, preconfiguration, options)?,
@@ -89,9 +88,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarReconfigura
                 }
 
                 loop {
-                    let Some(permutation) = self
+                    let Some(configuration) = self
                         .reconfigurer
-                        .permute_ratlines(autorouter, &self.stepper)
+                        .next_configuration(autorouter, &self.stepper)
                     else {
                         return Ok(ControlFlow::Break(None));
                     };
@@ -99,7 +98,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarReconfigura
                     match self.stepper.reconfigure(
                         autorouter,
                         PlanarAutorouteConfiguration {
-                            ratlines: permutation,
+                            ratlines: configuration,
                         },
                     ) {
                         Ok(result) => {

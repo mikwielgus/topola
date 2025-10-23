@@ -13,13 +13,10 @@ use thiserror::Error;
 use crate::{
     autorouter::{
         multilayer_autoroute::MultilayerAutorouteOptions,
-        multilayer_reconfigurator::{
-            MultilayerAutorouteReconfigurator, MultilayerAutorouteReconfiguratorInput,
-        },
-        planar_reconfigurator::{
-            PlanarAutorouteReconfigurator, PlanarAutorouteReconfiguratorInput,
-        },
-        ratsnests::Ratsnests,
+        multilayer_preconfigurer::MultilayerAutoroutePreconfigurerInput,
+        multilayer_reconfigurator::MultilayerAutorouteReconfigurator,
+        planar_preconfigurer::PlanarAutoroutePreconfigurerInput,
+        planar_reconfigurator::PlanarAutorouteReconfigurator, ratsnests::Ratsnests,
     },
     board::{AccessMesadata, Board},
     drawing::{band::BandTermsegIndex, graph::MakePrimitiveRef},
@@ -33,7 +30,6 @@ use crate::{
 use super::{
     measure_length::MeasureLengthExecutionStepper,
     place_via::PlaceViaExecutionStepper,
-    planar_autoroute::PlanarAutorouteExecutionStepper,
     pointroute::PointrouteExecutionStepper,
     ratline::RatlineUid,
     ratsnest::RatvertexNodeIndex,
@@ -125,7 +121,7 @@ impl<M: AccessMesadata> Autorouter<M> {
     ) -> Result<MultilayerAutorouteReconfigurator, AutorouterError> {
         MultilayerAutorouteReconfigurator::new(
             self,
-            MultilayerAutorouteReconfiguratorInput {
+            MultilayerAutoroutePreconfigurerInput {
                 ratlines: self.selected_ratlines(selection, options.planar.principal_layer),
             },
             options,
@@ -139,7 +135,7 @@ impl<M: AccessMesadata> Autorouter<M> {
     ) -> Result<PlanarAutorouteReconfigurator, AutorouterError> {
         PlanarAutorouteReconfigurator::new(
             self,
-            PlanarAutorouteReconfiguratorInput {
+            PlanarAutoroutePreconfigurerInput {
                 ratlines: self.selected_planar_ratlines(selection, options.principal_layer),
             },
             options,
