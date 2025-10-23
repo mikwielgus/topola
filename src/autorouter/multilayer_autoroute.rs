@@ -11,9 +11,10 @@ use crate::{
     autorouter::{
         anterouter::{Anterouter, AnterouterOptions, AnterouterPlan},
         invoker::GetDebugOverlayData,
-        planar_autoroute::PlanarAutorouteConfiguration,
-        planar_reconfigurator::{PlanarAutorouteReconfigurator, PlanarReconfiguratorStatus},
-        ratline::RatlineUid,
+        planar_reconfigurator::{
+            PlanarAutorouteReconfigurator, PlanarAutorouteReconfiguratorInput,
+            PlanarReconfiguratorStatus,
+        },
         Autorouter, AutorouterError, PlanarAutorouteOptions,
     },
     board::edit::BoardEdit,
@@ -22,6 +23,12 @@ use crate::{
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
     stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Reconfigure, Step},
 };
+
+#[derive(Clone, Debug)]
+pub struct MultilayerAutorouteConfiguration {
+    pub plan: AnterouterPlan,
+    pub planar: PlanarAutorouteReconfiguratorInput,
+}
 
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct MultilayerAutorouteOptions {
@@ -38,18 +45,17 @@ pub struct MultilayerAutorouteExecutionStepper {
 impl MultilayerAutorouteExecutionStepper {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: Vec<RatlineUid>,
-        plan: AnterouterPlan,
+        configuration: MultilayerAutorouteConfiguration,
         options: MultilayerAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
-        let mut anterouter = Anterouter::new(plan);
+        let mut anterouter = Anterouter::new(configuration.plan);
         let mut anteroute_edit = BoardEdit::new();
         anterouter.anteroute(autorouter, &mut anteroute_edit, &options.anterouter);
 
         Ok(Self {
             planar: PlanarAutorouteReconfigurator::new(
                 autorouter,
-                PlanarAutorouteConfiguration { ratlines },
+                configuration.planar,
                 options.planar,
             )?,
             anteroute_edit,

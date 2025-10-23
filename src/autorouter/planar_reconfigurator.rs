@@ -15,6 +15,7 @@ use crate::{
         },
         planar_reconfigurer::{PermuteRatlines, PlanarReconfigurer},
         presorter::{PresortParams, PresortRatlines, SccIntersectionsAndLengthPresorter},
+        ratline::RatlineUid,
         Autorouter, AutorouterError, PlanarAutorouteOptions,
     },
     board::edit::BoardEdit,
@@ -23,6 +24,12 @@ use crate::{
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
     stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Reconfigure, Step},
 };
+
+#[derive(Clone, Debug)]
+pub struct PlanarAutorouteReconfiguratorInput {
+    pub ratlines: Vec<RatlineUid>,
+}
+
 pub type PlanarReconfiguratorStatus =
     ReconfiguratorStatus<PlanarAutorouteConfigurationResult, PlanarAutorouteContinueStatus>;
 
@@ -35,12 +42,12 @@ pub struct PlanarAutorouteReconfigurator {
 impl PlanarAutorouteReconfigurator {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        input_configuration: PlanarAutorouteConfiguration,
+        input: PlanarAutorouteReconfiguratorInput,
         options: PlanarAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
         let presorter = SccIntersectionsAndLengthPresorter::new(
             autorouter,
-            &input_configuration.ratlines,
+            &input.ratlines,
             &PresortParams {
                 intersector_count_weight: 1.0,
                 length_weight: 0.001,
@@ -48,10 +55,10 @@ impl PlanarAutorouteReconfigurator {
             &options,
         );
         let preconfiguration = PlanarAutorouteConfiguration {
-            ratlines: presorter.presort_ratlines(autorouter, &input_configuration.ratlines),
+            ratlines: presorter.presort_ratlines(autorouter, &input.ratlines),
         };
         let reconfigurer =
-            PlanarReconfigurer::new(autorouter, input_configuration, presorter, &options);
+            PlanarReconfigurer::new(autorouter, preconfiguration.clone(), presorter, &options);
 
         Ok(Self {
             stepper: PlanarAutorouteExecutionStepper::new(autorouter, preconfiguration, options)?,

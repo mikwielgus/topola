@@ -9,9 +9,12 @@ use specctra_core::mesadata::AccessMesadata;
 use crate::{
     autorouter::{
         invoker::GetDebugOverlayData,
-        multilayer_autoroute::{MultilayerAutorouteExecutionStepper, MultilayerAutorouteOptions},
+        multilayer_autoroute::{
+            MultilayerAutorouteConfiguration, MultilayerAutorouteExecutionStepper,
+            MultilayerAutorouteOptions,
+        },
         multilayer_reconfigurer::MultilayerReconfigurer,
-        planar_reconfigurator::PlanarReconfiguratorStatus,
+        planar_reconfigurator::{PlanarAutorouteReconfiguratorInput, PlanarReconfiguratorStatus},
         planner::Planner,
         ratline::RatlineUid,
         Autorouter, AutorouterError,
@@ -22,6 +25,10 @@ use crate::{
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
     stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Reconfigure, Step},
 };
+
+pub struct MultilayerAutorouteReconfiguratorInput {
+    pub ratlines: Vec<RatlineUid>,
+}
 
 pub type MultilayerReconfiguratorStatus = ReconfiguratorStatus<(), PlanarReconfiguratorStatus>;
 
@@ -36,17 +43,22 @@ pub struct MultilayerAutorouteReconfigurator {
 impl MultilayerAutorouteReconfigurator {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: Vec<RatlineUid>,
+        input: MultilayerAutorouteReconfiguratorInput,
         options: MultilayerAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
-        let planner = Planner::new(autorouter, &ratlines);
-        let reconfigurer = MultilayerReconfigurer::new(autorouter, ratlines.clone(), &options);
+        let planner = Planner::new(autorouter, &input.ratlines);
+        let preconfiguration = MultilayerAutorouteConfiguration {
+            plan: planner.plan().clone(),
+            planar: PlanarAutorouteReconfiguratorInput {
+                ratlines: input.ratlines.clone(),
+            },
+        };
+        let reconfigurer = MultilayerReconfigurer::new(autorouter, input.ratlines, &options);
 
         Ok(Self {
             stepper: MultilayerAutorouteExecutionStepper::new(
                 autorouter,
-                ratlines,
-                planner.plan().clone(),
+                preconfiguration,
                 options,
             )?,
             reconfigurer,
