@@ -154,7 +154,9 @@ impl<M: AccessMesadata> Autorouter<M> {
         M: Clone,
     {
         self.topo_autoroute_ratlines(
-            self.selected_ratlines(selection, active_layer),
+            self.selected_ratlines(selection, active_layer)
+                .into_iter()
+                .collect(),
             allowed_edges,
             active_layer,
             width,
@@ -264,7 +266,7 @@ impl<M: AccessMesadata> Autorouter<M> {
         &self,
         selection: &PinSelection,
         principal_layer: usize,
-    ) -> Vec<RatlineUid> {
+    ) -> BTreeSet<RatlineUid> {
         self.ratsnests()
             .on_principal_layer(principal_layer)
             .graph()
@@ -302,7 +304,11 @@ impl<M: AccessMesadata> Autorouter<M> {
             .collect()
     }
 
-    fn selected_planar_ratlines(&self, selection: &PinSelection, layer: usize) -> Vec<RatlineUid> {
+    fn selected_planar_ratlines(
+        &self,
+        selection: &PinSelection,
+        layer: usize,
+    ) -> BTreeSet<RatlineUid> {
         self.selected_ratlines(selection, layer)
             .into_iter()
             .filter(|ratline| {

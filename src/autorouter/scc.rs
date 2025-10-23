@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+use std::collections::BTreeSet;
+
 use derive_getters::Getters;
 use petgraph::{graph::NodeIndex, prelude::StableUnGraph};
 use specctra_core::mesadata::AccessMesadata;
@@ -27,7 +29,7 @@ pub struct Scc {
 impl Scc {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        ratlines: &[RatlineUid],
+        ratlines: &BTreeSet<RatlineUid>,
         filtered_ratsnest: &StableUnGraph<RatvertexWeight, RatlineWeight, usize>,
         node_indices: Vec<NodeIndex<usize>>,
     ) -> Self {

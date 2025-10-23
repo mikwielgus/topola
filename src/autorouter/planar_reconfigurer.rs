@@ -39,14 +39,14 @@ pub enum PlanarAutorouteReconfigurer {
 impl PlanarAutorouteReconfigurer {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,
-        input_configuration: PlanarAutorouteConfiguration,
+        preconfiguration: PlanarAutorouteConfiguration,
         presorter: SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer,
         options: &PlanarAutorouteOptions,
     ) -> Self {
         PlanarAutorouteReconfigurer::SccPermutations(
             SccPermutationsPlanarAutorouteReconfigurer::new(
                 autorouter,
-                input_configuration,
+                preconfiguration,
                 presorter,
                 options,
             ),
@@ -65,7 +65,7 @@ pub struct SccPermutationsPlanarAutorouteReconfigurer {
 impl SccPermutationsPlanarAutorouteReconfigurer {
     pub fn new(
         _autorouter: &mut Autorouter<impl AccessMesadata>,
-        input_configuration: PlanarAutorouteConfiguration,
+        preconfiguration: PlanarAutorouteConfiguration,
         presorter: SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer,
         _options: &PlanarAutorouteOptions,
     ) -> Self {
@@ -76,7 +76,7 @@ impl SccPermutationsPlanarAutorouteReconfigurer {
 
         Self {
             sccs_permutations_iter: sccs.into_iter().permutations(sccs_len).skip(1),
-            initial_configuration: input_configuration,
+            initial_configuration: preconfiguration,
         }
     }
 }

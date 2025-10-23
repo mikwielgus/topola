@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT
 
+use std::collections::BTreeSet;
+
 use derive_getters::{Dissolve, Getters};
 use enum_dispatch::enum_dispatch;
 use petgraph::algo::tarjan_scc;
@@ -14,7 +16,7 @@ use crate::autorouter::{
 
 #[derive(Clone, Debug)]
 pub struct PlanarAutoroutePreconfigurerInput {
-    pub ratlines: Vec<RatlineUid>,
+    pub ratlines: BTreeSet<RatlineUid>,
 }
 
 pub struct PresortParams {

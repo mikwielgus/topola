@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::BTreeMap;
+use std::collections::{BTreeMap, BTreeSet};
 
 use derive_getters::Getters;
 use specctra_core::mesadata::AccessMesadata;
@@ -23,7 +23,7 @@ use crate::{
 
 #[derive(Clone, Debug)]
 pub struct MultilayerAutoroutePreconfigurerInput {
-    pub ratlines: Vec<RatlineUid>,
+    pub ratlines: BTreeSet<RatlineUid>,
 }
 
 #[derive(Getters)]
@@ -50,7 +50,7 @@ impl MultilayerPreconfigurer {
 
     pub fn new_from_layer_map(
         autorouter: &Autorouter<impl AccessMesadata>,
-        ratlines: &[RatlineUid],
+        ratlines: &BTreeSet<RatlineUid>,
         layer_map: BTreeMap<RatlineUid, usize>,
     ) -> Self {
         let mut plan = AnterouterPlan {

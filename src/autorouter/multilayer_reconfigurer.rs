@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::time::SystemTime;
+use std::{collections::BTreeSet, time::SystemTime};
 
 use specctra_core::mesadata::AccessMesadata;
 
@@ -12,13 +12,13 @@ use crate::autorouter::{
 };
 
 pub struct MultilayerReconfigurer {
-    original_ratlines: Vec<RatlineUid>,
+    original_ratlines: BTreeSet<RatlineUid>,
 }
 
 impl MultilayerReconfigurer {
     pub fn new(
         autorouter: &Autorouter<impl AccessMesadata>,
-        ratlines: Vec<RatlineUid>,
+        ratlines: BTreeSet<RatlineUid>,
         options: &MultilayerAutorouteOptions,
     ) -> Self {
         Self {

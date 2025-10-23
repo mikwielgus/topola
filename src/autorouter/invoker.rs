@@ -192,7 +192,7 @@ impl<M: AccessMesadata + Clone> Invoker<M> {
                 // TODO: consider "presort by pairwise detours"
 
                 ExecutionStepper::TopoAutoroute(self.autorouter.topo_autoroute_ratlines(
-                    ratlines,
+                    ratlines.into_iter().collect(),
                     allowed_edges.clone(),
                     active_layer,
                     *routed_band_width,
