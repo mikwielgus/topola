@@ -7,6 +7,8 @@
 
 pub mod edit;
 
+use std::collections::btree_map::Entry as BTreeMapEntry;
+
 use edit::{BoardDataEdit, BoardEdit};
 pub use specctra_core::mesadata::AccessMesadata;
 
@@ -402,8 +404,23 @@ impl<M: AccessMesadata> Board<M> {
     }
 
     fn remove_pinname_node(&mut self, recorder: &mut BoardDataEdit, node: NodeIndex) {
-        let prev = self.pinname_nodes.remove_by_value(&node);
-        recorder.pinname_nodes.insert(node, (prev, None));
+        let Some(prev) = self.pinname_nodes.remove_by_value(&node) else {
+            return;
+        };
+
+        let to_be_inserted = (Some(prev), None);
+        match recorder.pinname_nodes.entry(node) {
+            BTreeMapEntry::Occupied(mut occ) => {
+                if let (None, Some(_)) = occ.get() {
+                    occ.remove();
+                } else {
+                    *occ.get_mut() = to_be_inserted;
+                }
+            }
+            BTreeMapEntry::Vacant(vac) => {
+                vac.insert(to_be_inserted);
+            }
+        }
     }
 
     pub fn apply_edit(&mut self, edit: &BoardEdit) {
