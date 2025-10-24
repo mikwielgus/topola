@@ -11,7 +11,7 @@ use std::{
 ///
 /// - Each key can have multiple associated values (`BTreeSet<V>`).
 /// - Each value maps to exactly one key (i.e., it's unique across keys).
-#[derive(Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct BiBTreeMapSet<K, V> {
     key_to_values: BTreeMap<K, BTreeSet<V>>, // Forward mapping: key -> set of values.
     value_to_key: BTreeMap<V, K>,            // Reverse mapping: value -> key.

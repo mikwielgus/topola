@@ -81,10 +81,10 @@ impl<'a> ResolvedSelector<'a> {
 #[derive(Debug, Getters)]
 pub struct Board<M> {
     layout: Layout<M>,
-    bands_by_id: BiBTreeMap<EtchedPath, BandUid>,
-    // TODO: Simplify access logic to these members so that `#[getter(skip)]`s can be removed.
     #[getter(skip)]
     pinname_nodes: BiBTreeMapSet<String, NodeIndex>,
+    bands_by_id: BiBTreeMap<EtchedPath, BandUid>,
+    // TODO: Simplify access logic to these members so that `#[getter(skip)]`s can be removed.
     #[getter(skip)]
     band_bandname: BiBTreeMap<BandUid, BandName>,
 }
@@ -117,8 +117,11 @@ impl<M: AccessMesadata> Board<M> {
 
         if let Some(pin) = maybe_pin {
             for dot in dots.clone() {
-                self.pinname_nodes
-                    .insert(pin.clone(), GenericNode::Primitive(dot.into()));
+                self.insert_pinname_node(
+                    &mut recorder.board_data_edit,
+                    pin.clone(),
+                    GenericNode::Primitive(dot.into()),
+                );
             }
         }
 
@@ -132,8 +135,10 @@ impl<M: AccessMesadata> Board<M> {
         dots: Vec<FixedDotIndex>,
     ) {
         for dot in dots.clone() {
-            self.pinname_nodes
-                .remove_by_value(&GenericNode::Primitive(dot.into()));
+            self.remove_pinname_node(
+                &mut recorder.board_data_edit,
+                GenericNode::Primitive(dot.into()),
+            );
         }
 
         self.layout.remove_via(&mut recorder.layout_edit, via, dots);
@@ -153,8 +158,11 @@ impl<M: AccessMesadata> Board<M> {
             .add_fixed_dot_infringably(&mut recorder.layout_edit, weight);
 
         if let Some(pin) = maybe_pin {
-            self.pinname_nodes
-                .insert(pin, GenericNode::Primitive(dot.into()));
+            self.insert_pinname_node(
+                &mut recorder.board_data_edit,
+                pin,
+                GenericNode::Primitive(dot.into()),
+            );
         }
 
         dot
@@ -176,8 +184,11 @@ impl<M: AccessMesadata> Board<M> {
                 .add_fixed_seg_infringably(&mut recorder.layout_edit, from, to, weight);
 
         if let Some(pin) = maybe_pin {
-            self.pinname_nodes
-                .insert(pin, GenericNode::Primitive(seg.into()));
+            self.insert_pinname_node(
+                &mut recorder.board_data_edit,
+                pin,
+                GenericNode::Primitive(seg.into()),
+            );
         }
 
         seg
@@ -200,15 +211,24 @@ impl<M: AccessMesadata> Board<M> {
 
         if let Some(pin) = maybe_pin {
             for i in nodes {
-                self.pinname_nodes
-                    .insert(pin.clone(), GenericNode::Primitive(*i));
+                self.insert_pinname_node(
+                    &mut recorder.board_data_edit,
+                    pin.clone(),
+                    GenericNode::Primitive(*i),
+                );
             }
 
-            self.pinname_nodes
-                .insert(pin.clone(), GenericNode::Primitive(apex.into()));
+            self.insert_pinname_node(
+                &mut recorder.board_data_edit,
+                pin.clone(),
+                GenericNode::Primitive(apex.into()),
+            );
 
-            self.pinname_nodes
-                .insert(pin, GenericNode::Compound(poly.into()));
+            self.insert_pinname_node(
+                &mut recorder.board_data_edit,
+                pin,
+                GenericNode::Compound(poly.into()),
+            );
         }
 
         poly
@@ -371,7 +391,28 @@ impl<M: AccessMesadata> Board<M> {
             .copied()
     }
 
+    fn insert_pinname_node(
+        &mut self,
+        recorder: &mut BoardDataEdit,
+        pinname: String,
+        node: NodeIndex,
+    ) {
+        self.pinname_nodes.insert(pinname.clone(), node);
+        recorder.pinname_nodes.insert(node, (None, Some(pinname)));
+    }
+
+    fn remove_pinname_node(&mut self, recorder: &mut BoardDataEdit, node: NodeIndex) {
+        let prev = self.pinname_nodes.remove_by_value(&node);
+        recorder.pinname_nodes.insert(node, (prev, None));
+    }
+
     pub fn apply_edit(&mut self, edit: &BoardEdit) {
+        for (node, (maybe_old_pinname, _)) in &edit.board_data_edit.pinname_nodes {
+            if maybe_old_pinname.is_some() {
+                self.pinname_nodes.remove_by_value(node);
+            }
+        }
+
         for (bandname, (maybe_old_band_uid, _)) in &edit.board_data_edit.bands_by_name {
             if maybe_old_band_uid.is_some() {
                 self.band_bandname.remove_by_right(bandname);
@@ -395,6 +436,12 @@ impl<M: AccessMesadata> Board<M> {
         for (ep, (_, maybe_new_band_uid)) in &edit.board_data_edit.bands_by_id {
             if let Some(band_uid) = maybe_new_band_uid {
                 self.bands_by_id.insert(*ep, *band_uid);
+            }
+        }
+
+        for (node, (_, maybe_new_pinname)) in &edit.board_data_edit.pinname_nodes {
+            if let Some(pinname) = maybe_new_pinname {
+                self.pinname_nodes.insert(pinname.clone(), *node);
             }
         }
     }
