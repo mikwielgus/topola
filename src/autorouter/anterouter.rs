@@ -62,18 +62,13 @@ impl Anterouter {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         recorder: &mut BoardEdit,
         options: &AnterouterOptions,
-    ) -> BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex> {
+    ) -> BTreeMap<(RatlineUid, FixedDotIndex), FixedDotIndex> {
         let mut terminating_dot_map = BTreeMap::new();
 
         // PERF: Unnecessary clone.
         for (ratline, layer) in self.plan.layer_map.clone().iter() {
             let endpoint_indices = ratline.ref_(autorouter).endpoint_indices();
             let endpoint_dots = ratline.ref_(autorouter).endpoint_dots();
-
-            autorouter
-                .ratsnests
-                .on_principal_layer_mut(ratline.principal_layer)
-                .assign_layer_to_ratline(ratline.index, *layer);
 
             if let Some(terminating_scheme) = self
                 .plan
@@ -82,8 +77,7 @@ impl Anterouter {
             {
                 match terminating_scheme {
                     TerminatingScheme::ExistingFixedDot(terminating_dot) => {
-                        terminating_dot_map
-                            .insert((*ratline, endpoint_dots.0, *layer), *terminating_dot);
+                        terminating_dot_map.insert((*ratline, endpoint_dots.0), *terminating_dot);
                     }
                     TerminatingScheme::Fanout => self.anteroute_fanout(
                         autorouter,
@@ -105,8 +99,7 @@ impl Anterouter {
             {
                 match terminating_scheme {
                     TerminatingScheme::ExistingFixedDot(terminating_dot) => {
-                        terminating_dot_map
-                            .insert((*ratline, endpoint_dots.1, *layer), *terminating_dot);
+                        terminating_dot_map.insert((*ratline, endpoint_dots.1), *terminating_dot);
                     }
                     TerminatingScheme::Fanout => self.anteroute_fanout(
                         autorouter,
@@ -134,7 +127,7 @@ impl Anterouter {
         source_dot: FixedDotIndex,
         target_layer: usize,
         options: &AnterouterOptions,
-        terminating_dot_map: &mut BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
+        terminating_dot_map: &mut BTreeMap<(RatlineUid, FixedDotIndex), FixedDotIndex>,
     ) {
         let mut ratline_delta: Point = ratline.ref_(autorouter).line_segment().delta().into();
 
@@ -266,7 +259,7 @@ impl Anterouter {
         target_layer: usize,
         preferred_compass_direction: impl CompassDirection,
         options: &AnterouterOptions,
-        terminating_dot_map: &mut BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
+        terminating_dot_map: &mut BTreeMap<(RatlineUid, FixedDotIndex), FixedDotIndex>,
     ) -> Result<(), ()> {
         if self
             .anteroute_fanout_on_bbox_in_direction(
@@ -351,7 +344,7 @@ impl Anterouter {
         target_layer: usize,
         direction: impl Into<Point>,
         options: &AnterouterOptions,
-        terminating_dot_map: &mut BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
+        terminating_dot_map: &mut BTreeMap<(RatlineUid, FixedDotIndex), FixedDotIndex>,
     ) -> Result<(), ()> {
         let (via, dots) = self.place_fanout_via_on_bbox_in_direction(
             autorouter,
@@ -412,7 +405,7 @@ impl Anterouter {
         target_layer: usize,
         direction: impl Into<Point>,
         options: &AnterouterOptions,
-        terminating_dot_map: &mut BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
+        terminating_dot_map: &mut BTreeMap<(RatlineUid, FixedDotIndex), FixedDotIndex>,
     ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), ()> {
         let source_layer = autorouter
             .board()
@@ -472,7 +465,7 @@ impl Anterouter {
                             .layer()
                 })
                 .unwrap();
-            terminating_dot_map.insert((ratline, source_dot, target_layer), *terminating_dot);
+            terminating_dot_map.insert((ratline, source_dot), *terminating_dot);
             Ok((via, dots))
         } else {
             Err(())

@@ -20,7 +20,7 @@ use crate::{
 #[derive(Clone, Debug)]
 pub struct PlanarAutoroutePreconfigurerInput {
     pub ratlines: BTreeSet<RatlineUid>,
-    pub terminating_dot_map: BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
+    pub terminating_dot_map: BTreeMap<(RatlineUid, FixedDotIndex), FixedDotIndex>,
 }
 
 pub struct PresortParams {

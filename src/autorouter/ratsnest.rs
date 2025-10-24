@@ -221,10 +221,6 @@ impl Ratsnest {
         Ok(())
     }
 
-    pub fn assign_layer_to_ratline(&mut self, ratline_index: EdgeIndex<usize>, layer: usize) {
-        self.graph.edge_weight_mut(ratline_index).unwrap().layer = layer;
-    }
-
     pub fn assign_band_termseg_to_ratline(
         &mut self,
         ratline_index: EdgeIndex<usize>,

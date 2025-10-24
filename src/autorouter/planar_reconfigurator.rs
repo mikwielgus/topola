@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::{collections::BTreeMap, ops::ControlFlow};
+use std::ops::ControlFlow;
 
 use specctra_core::mesadata::AccessMesadata;
 
@@ -10,8 +10,8 @@ use crate::{
     autorouter::{
         invoker::GetDebugOverlayData,
         planar_autoroute::{
-            PlanarAutorouteConfiguration, PlanarAutorouteConfigurationResult,
-            PlanarAutorouteContinueStatus, PlanarAutorouteExecutionStepper,
+            PlanarAutorouteConfigurationResult, PlanarAutorouteContinueStatus,
+            PlanarAutorouteExecutionStepper,
         },
         planar_preconfigurer::{
             PlanarAutoroutePreconfigurerInput, PreconfigurePlanarAutoroute, PresortParams,

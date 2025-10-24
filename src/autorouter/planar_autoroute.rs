@@ -32,7 +32,7 @@ use super::{
 #[derive(Clone, Debug)]
 pub struct PlanarAutorouteConfiguration {
     pub ratlines: Vec<RatlineUid>,
-    pub terminating_dot_map: BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
+    pub terminating_dot_map: BTreeMap<(RatlineUid, FixedDotIndex), FixedDotIndex>,
 }
 
 impl PlanarAutorouteConfiguration {
@@ -43,16 +43,14 @@ impl PlanarAutorouteConfiguration {
     ) -> (FixedDotIndex, FixedDotIndex) {
         let ratline = self.ratlines[ratline_index];
         let endpoint_dots = ratline.ref_(autorouter).endpoint_dots();
-        let layer = ratline.ref_(autorouter).layer();
-
         (
             *self
                 .terminating_dot_map
-                .get(&(ratline, endpoint_dots.0, layer))
+                .get(&(ratline, endpoint_dots.0))
                 .unwrap_or(&endpoint_dots.0),
             *self
                 .terminating_dot_map
-                .get(&(ratline, endpoint_dots.1, layer))
+                .get(&(ratline, endpoint_dots.1))
                 .unwrap_or(&endpoint_dots.1),
         )
     }
