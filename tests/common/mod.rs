@@ -17,7 +17,7 @@ use topola::{
         graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex},
         primitive::MakePrimitiveShape,
     },
-    geometry::{shape::MeasureLength, GenericNode, GetLayer},
+    geometry::{shape::MeasureLength, GenericNode},
     graph::{GetIndex, MakeRef},
     router::{navmesh::Navmesh, RouterOptions},
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},

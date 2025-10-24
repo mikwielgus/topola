@@ -5,7 +5,7 @@
 //! Manages autorouting of ratlines in a layout, tracking status and processed
 //! routing steps.
 
-use std::ops::ControlFlow;
+use std::{collections::BTreeMap, ops::ControlFlow};
 
 use derive_getters::Getters;
 
@@ -14,7 +14,7 @@ use crate::{
         edit::{BoardDataEdit, BoardEdit},
         AccessMesadata,
     },
-    drawing::{band::BandTermsegIndex, graph::PrimitiveIndex},
+    drawing::{band::BandTermsegIndex, dot::FixedDotIndex, graph::PrimitiveIndex},
     geometry::{edit::Edit, primitive::PrimitiveShape},
     graph::MakeRef,
     layout::LayoutEdit,
@@ -32,6 +32,30 @@ use super::{
 #[derive(Clone, Debug)]
 pub struct PlanarAutorouteConfiguration {
     pub ratlines: Vec<RatlineUid>,
+    pub terminating_dot_map: BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
+}
+
+impl PlanarAutorouteConfiguration {
+    pub fn ratline_terminating_dots(
+        &self,
+        autorouter: &Autorouter<impl AccessMesadata>,
+        ratline_index: usize,
+    ) -> (FixedDotIndex, FixedDotIndex) {
+        let ratline = self.ratlines[ratline_index];
+        let endpoint_dots = ratline.ref_(autorouter).endpoint_dots();
+        let layer = ratline.ref_(autorouter).layer();
+
+        (
+            *self
+                .terminating_dot_map
+                .get(&(ratline, endpoint_dots.0, layer))
+                .unwrap_or(&endpoint_dots.0),
+            *self
+                .terminating_dot_map
+                .get(&(ratline, endpoint_dots.1, layer))
+                .unwrap_or(&endpoint_dots.1),
+        )
+    }
 }
 
 #[derive(Clone, Debug)]
@@ -83,9 +107,7 @@ impl PlanarAutorouteExecutionStepper {
             return Err(AutorouterError::NothingToRoute);
         };
 
-        let (origin, destination) = configuration.ratlines[0]
-            .ref_(autorouter)
-            .terminating_dots();
+        let (origin, destination) = configuration.ratline_terminating_dots(autorouter, 0);
         let mut router = Router::new(autorouter.board.layout_mut(), options.router);
 
         Ok(Self {
@@ -121,9 +143,9 @@ impl PlanarAutorouteExecutionStepper {
 
         autorouter.board.apply_edit(&board_edit.reverse());
 
-        let (origin, destination) = self.configuration.ratlines[index]
-            .ref_(autorouter)
-            .terminating_dots();
+        let (origin, destination) = self
+            .configuration
+            .ratline_terminating_dots(autorouter, index);
         let mut router = Router::new(autorouter.board.layout_mut(), self.options.router);
 
         self.route = Some(router.route(
@@ -169,9 +191,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
             ))));
         }
 
-        let (origin, destination) = self.configuration().ratlines[self.curr_ratline_index]
-            .ref_(autorouter)
-            .terminating_dots();
+        let (origin, destination) = self
+            .configuration
+            .ratline_terminating_dots(autorouter, self.curr_ratline_index);
 
         let Some(ref mut route) = self.route else {
             // May happen if stepper was aborted.
@@ -226,7 +248,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
         self.curr_ratline_index += 1;
 
         if let Some(new_ratline) = self.configuration.ratlines.get(self.curr_ratline_index) {
-            let (origin, destination) = new_ratline.ref_(autorouter).terminating_dots();
+            let (origin, destination) = self
+                .configuration
+                .ratline_terminating_dots(autorouter, self.curr_ratline_index);
             let mut router = Router::new(autorouter.board.layout_mut(), self.options.router);
 
             self.dissolve_route_stepper_and_push_layout_edit();

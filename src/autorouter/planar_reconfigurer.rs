@@ -8,17 +8,12 @@ use enum_dispatch::enum_dispatch;
 use itertools::{Itertools, Permutations};
 use specctra_core::mesadata::AccessMesadata;
 
-use crate::{
-    autorouter::{
-        planar_autoroute::{PlanarAutorouteConfiguration, PlanarAutorouteExecutionStepper},
-        planar_preconfigurer::SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer,
-        ratline::RatlineUid,
-        scc::Scc,
-        Autorouter, PlanarAutorouteOptions,
-    },
-    drawing::graph::MakePrimitiveRef,
-    geometry::{GenericNode, GetLayer},
-    graph::MakeRef,
+use crate::autorouter::{
+    planar_autoroute::{PlanarAutorouteConfiguration, PlanarAutorouteExecutionStepper},
+    planar_preconfigurer::SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer,
+    ratline::RatlineUid,
+    scc::Scc,
+    Autorouter, PlanarAutorouteOptions,
 };
 
 #[enum_dispatch]
@@ -27,12 +22,12 @@ pub trait MakeNextPlanarAutorouteConfiguration {
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
         stepper: &PlanarAutorouteExecutionStepper,
-    ) -> Option<Vec<RatlineUid>>;
+    ) -> Option<PlanarAutorouteConfiguration>;
 }
 
 #[enum_dispatch(MakeNextPlanarAutorouteConfiguration)]
 pub enum PlanarAutorouteReconfigurer {
-    RatlineCuts(RatlineCutsPlanarAutorouteReconfigurer),
+    //RatlineCuts(RatlineCutsPlanarAutorouteReconfigurer),
     SccPermutations(SccPermutationsPlanarAutorouteReconfigurer),
 }
 
@@ -59,7 +54,7 @@ impl PlanarAutorouteReconfigurer {
 
 pub struct SccPermutationsPlanarAutorouteReconfigurer {
     sccs_permutations_iter: Skip<Permutations<std::vec::IntoIter<Scc>>>,
-    initial_configuration: PlanarAutorouteConfiguration,
+    preconfiguration: PlanarAutorouteConfiguration,
 }
 
 impl SccPermutationsPlanarAutorouteReconfigurer {
@@ -76,7 +71,7 @@ impl SccPermutationsPlanarAutorouteReconfigurer {
 
         Self {
             sccs_permutations_iter: sccs.into_iter().permutations(sccs_len).skip(1),
-            initial_configuration: preconfiguration,
+            preconfiguration,
         }
     }
 }
@@ -86,12 +81,12 @@ impl MakeNextPlanarAutorouteConfiguration for SccPermutationsPlanarAutorouteReco
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
         _stepper: &PlanarAutorouteExecutionStepper,
-    ) -> Option<Vec<RatlineUid>> {
+    ) -> Option<PlanarAutorouteConfiguration> {
         let scc_permutation = self.sccs_permutations_iter.next()?;
         let mut ratlines = vec![];
 
         for scc in scc_permutation {
-            for ratline in self.initial_configuration.ratlines.iter() {
+            for ratline in self.preconfiguration.ratlines.iter() {
                 if scc.node_indices().contains(
                     &autorouter
                         .ratsnests()
@@ -114,7 +109,10 @@ impl MakeNextPlanarAutorouteConfiguration for SccPermutationsPlanarAutorouteReco
             }
         }
 
-        Some(ratlines)
+        Some(PlanarAutorouteConfiguration {
+            ratlines,
+            ..self.preconfiguration.clone()
+        })
     }
 }
 
@@ -122,7 +120,7 @@ pub struct RatlineCutsPlanarAutorouteReconfigurer {
     //sccs: Vec<Vec<NodeIndex<usize>>>,
 }
 
-impl RatlineCutsPlanarAutorouteReconfigurer {
+/*impl RatlineCutsPlanarAutorouteReconfigurer {
     pub fn new(
         _autorouter: &mut Autorouter<impl AccessMesadata>,
         _ratlines: Vec<RatlineUid>,
@@ -134,16 +132,19 @@ impl RatlineCutsPlanarAutorouteReconfigurer {
         }*/
         Self {}
     }
-}
+}*/
 
-impl MakeNextPlanarAutorouteConfiguration for RatlineCutsPlanarAutorouteReconfigurer {
+/*impl MakeNextPlanarAutorouteConfiguration for RatlineCutsPlanarAutorouteReconfigurer {
     fn next_configuration(
         &mut self,
         autorouter: &mut Autorouter<impl AccessMesadata>,
         stepper: &PlanarAutorouteExecutionStepper,
     ) -> Option<Vec<RatlineUid>> {
         let curr_ratline = stepper.configuration().ratlines[*stepper.curr_ratline_index()];
-        let terminating_dots = curr_ratline.ref_(autorouter).terminating_dots();
+        let terminating_dots = stepper
+            .configuration()
+            .terminating_dots
+            .get(&(curr_ratline,));
         let bands_cut_by_ratline: Vec<_> = autorouter
             .board()
             .layout()
@@ -182,4 +183,4 @@ impl MakeNextPlanarAutorouteConfiguration for RatlineCutsPlanarAutorouteReconfig
 
         Some(ratlines)
     }
-}
+}*/

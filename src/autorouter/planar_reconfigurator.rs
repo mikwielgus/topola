@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::ops::ControlFlow;
+use std::{collections::BTreeMap, ops::ControlFlow};
 
 use specctra_core::mesadata::AccessMesadata;
 
@@ -95,12 +95,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarReconfigura
                         return Ok(ControlFlow::Break(None));
                     };
 
-                    match self.stepper.reconfigure(
-                        autorouter,
-                        PlanarAutorouteConfiguration {
-                            ratlines: configuration,
-                        },
-                    ) {
+                    match self.stepper.reconfigure(autorouter, configuration) {
                         Ok(result) => {
                             return Ok(ControlFlow::Continue(ReconfiguratorStatus::Reconfigured(
                                 result,

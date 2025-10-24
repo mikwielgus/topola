@@ -48,12 +48,16 @@ impl MultilayerAutorouteExecutionStepper {
     ) -> Result<Self, AutorouterError> {
         let mut anterouter = Anterouter::new(configuration.plan);
         let mut anteroute_edit = BoardEdit::new();
-        anterouter.anteroute(autorouter, &mut anteroute_edit, &options.anterouter);
+        let terminating_dot_map =
+            anterouter.anteroute(autorouter, &mut anteroute_edit, &options.anterouter);
 
         Ok(Self {
             planar: PlanarAutorouteReconfigurator::new(
                 autorouter,
-                configuration.planar,
+                PlanarAutoroutePreconfigurerInput {
+                    terminating_dot_map,
+                    ..configuration.planar
+                },
                 options.planar,
             )?,
             anteroute_edit,

@@ -99,41 +99,6 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         (source_dot, target_dot)
     }
 
-    pub fn terminating_dots(&self) -> (FixedDotIndex, FixedDotIndex) {
-        let (source, target) = self
-            .autorouter
-            .ratsnests()
-            .on_principal_layer(self.uid.principal_layer)
-            .graph()
-            .edge_endpoints(self.uid.index)
-            .unwrap();
-
-        let source_dot = self
-            .autorouter
-            .ratsnests()
-            .on_principal_layer(self.uid.principal_layer)
-            .graph()
-            .node_weight(source)
-            .unwrap()
-            .layer_terminating_dots
-            .get(&self.layer())
-            .copied()
-            .unwrap_or(self.endpoint_dots().0);
-        let target_dot = self
-            .autorouter
-            .ratsnests()
-            .on_principal_layer(self.uid.principal_layer)
-            .graph()
-            .node_weight(target)
-            .unwrap()
-            .layer_terminating_dots
-            .get(&self.layer())
-            .copied()
-            .unwrap_or(self.endpoint_dots().1);
-
-        (source_dot, target_dot)
-    }
-
     pub fn layer(&self) -> usize {
         self.autorouter
             .ratsnests()

@@ -7,7 +7,7 @@ use geo::Point;
 use petgraph::graph::NodeIndex;
 use serde::{Deserialize, Serialize};
 use spade::InsertionError;
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 use thiserror::Error;
 
 use crate::{
@@ -137,6 +137,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             self,
             PlanarAutoroutePreconfigurerInput {
                 ratlines: self.selected_planar_ratlines(selection, options.principal_layer),
+                terminating_dot_map: BTreeMap::new(),
             },
             options,
         )
@@ -196,7 +197,7 @@ impl<M: AccessMesadata> Autorouter<M> {
             active_layer,
             allowed_edges,
             ratlines.into_iter().filter_map(|ratline| {
-                let (origin, destination) = ratline.ref_(self).terminating_dots();
+                let (origin, destination) = ratline.ref_(self).endpoint_dots();
 
                 if navmesh
                     .as_ref()

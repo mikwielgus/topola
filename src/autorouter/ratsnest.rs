@@ -9,11 +9,7 @@ use std::{
 
 use enum_dispatch::enum_dispatch;
 use geo::Point;
-use petgraph::{
-    data::Element,
-    graph::{EdgeIndex, NodeIndex},
-    prelude::StableUnGraph,
-};
+use petgraph::{data::Element, graph::EdgeIndex, prelude::StableUnGraph};
 use spade::{handles::FixedVertexHandle, HasPosition, InsertionError, Point2};
 use specctra_core::mesadata::AccessMesadata;
 
@@ -54,7 +50,6 @@ impl From<RatvertexNodeIndex> for crate::layout::NodeIndex {
 pub struct RatvertexWeight {
     vertex: RatvertexNodeIndex,
     pub pos: Point,
-    pub layer_terminating_dots: BTreeMap<usize, FixedDotIndex>,
 }
 
 impl GetTrianvertexNodeIndex<RatvertexNodeIndex> for RatvertexWeight {
@@ -191,11 +186,7 @@ impl Ratsnest {
                     return Ok(());
                 }
 
-                triangulation.add_vertex(RatvertexWeight {
-                    vertex,
-                    pos,
-                    layer_terminating_dots: BTreeMap::new(),
-                })?;
+                triangulation.add_vertex(RatvertexWeight { vertex, pos })?;
                 Ok(())
             };
 
@@ -228,19 +219,6 @@ impl Ratsnest {
         }
 
         Ok(())
-    }
-
-    pub fn assign_terminating_dot_to_ratvertex(
-        &mut self,
-        node_index: NodeIndex<usize>,
-        layer: usize,
-        terminating_dot: FixedDotIndex,
-    ) {
-        self.graph
-            .node_weight_mut(node_index)
-            .unwrap()
-            .layer_terminating_dots
-            .insert(layer, terminating_dot);
     }
 
     pub fn assign_layer_to_ratline(&mut self, ratline_index: EdgeIndex<usize>, layer: usize) {

@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::ops::ControlFlow;
+use std::{collections::BTreeMap, ops::ControlFlow};
 
 use specctra_core::mesadata::AccessMesadata;
 
@@ -49,6 +49,7 @@ impl MultilayerAutorouteReconfigurator {
             plan: planner.plan().clone(),
             planar: PlanarAutoroutePreconfigurerInput {
                 ratlines: input.ratlines.clone(),
+                terminating_dot_map: BTreeMap::new(),
             },
         };
         let reconfigurer = MultilayerReconfigurer::new(autorouter, input.ratlines, &options);

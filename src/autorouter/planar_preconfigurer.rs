@@ -2,21 +2,25 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::BTreeSet;
+use std::collections::{BTreeMap, BTreeSet};
 
 use derive_getters::{Dissolve, Getters};
 use enum_dispatch::enum_dispatch;
 use petgraph::algo::tarjan_scc;
 use specctra_core::mesadata::AccessMesadata;
 
-use crate::autorouter::{
-    planar_autoroute::PlanarAutorouteConfiguration, ratline::RatlineUid, scc::Scc, Autorouter,
-    PlanarAutorouteOptions,
+use crate::{
+    autorouter::{
+        planar_autoroute::PlanarAutorouteConfiguration, ratline::RatlineUid, scc::Scc, Autorouter,
+        PlanarAutorouteOptions,
+    },
+    drawing::dot::FixedDotIndex,
 };
 
 #[derive(Clone, Debug)]
 pub struct PlanarAutoroutePreconfigurerInput {
     pub ratlines: BTreeSet<RatlineUid>,
+    pub terminating_dot_map: BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
 }
 
 pub struct PresortParams {
@@ -102,6 +106,7 @@ impl PreconfigurePlanarAutoroute for SccIntersectionsAndLengthRatlinePlanarAutor
 
         PlanarAutorouteConfiguration {
             ratlines: presorted_ratlines,
+            terminating_dot_map: input.terminating_dot_map,
         }
     }
 }

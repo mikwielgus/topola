@@ -4,6 +4,7 @@
 
 use std::collections::BTreeMap;
 
+use derive_getters::Getters;
 use geo::{point, Distance, Euclidean, Point};
 use petgraph::graph::NodeIndex;
 use rstar::{Envelope, RTreeObject, AABB};
@@ -46,6 +47,7 @@ pub struct AnterouterPlan {
     pub ratline_terminating_schemes: BTreeMap<(RatlineUid, FixedDotIndex), TerminatingScheme>,
 }
 
+#[derive(Getters)]
 pub struct Anterouter {
     plan: AnterouterPlan,
 }
@@ -60,7 +62,9 @@ impl Anterouter {
         autorouter: &mut Autorouter<impl AccessMesadata>,
         recorder: &mut BoardEdit,
         options: &AnterouterOptions,
-    ) {
+    ) -> BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex> {
+        let mut terminating_dot_map = BTreeMap::new();
+
         // PERF: Unnecessary clone.
         for (ratline, layer) in self.plan.layer_map.clone().iter() {
             let endpoint_indices = ratline.ref_(autorouter).endpoint_indices();
@@ -77,14 +81,10 @@ impl Anterouter {
                 .get(&(*ratline, endpoint_dots.0))
             {
                 match terminating_scheme {
-                    TerminatingScheme::ExistingFixedDot(terminating_dot) => autorouter
-                        .ratsnests
-                        .on_principal_layer_mut(ratline.principal_layer)
-                        .assign_terminating_dot_to_ratvertex(
-                            endpoint_indices.0,
-                            *layer,
-                            *terminating_dot,
-                        ),
+                    TerminatingScheme::ExistingFixedDot(terminating_dot) => {
+                        terminating_dot_map
+                            .insert((*ratline, endpoint_dots.0, *layer), *terminating_dot);
+                    }
                     TerminatingScheme::Fanout => self.anteroute_fanout(
                         autorouter,
                         recorder,
@@ -93,6 +93,7 @@ impl Anterouter {
                         endpoint_dots.0,
                         *layer,
                         options,
+                        &mut terminating_dot_map,
                     ),
                 }
             }
@@ -103,14 +104,10 @@ impl Anterouter {
                 .get(&(*ratline, endpoint_dots.1))
             {
                 match terminating_scheme {
-                    TerminatingScheme::ExistingFixedDot(terminating_dot) => autorouter
-                        .ratsnests
-                        .on_principal_layer_mut(ratline.principal_layer)
-                        .assign_terminating_dot_to_ratvertex(
-                            endpoint_indices.1,
-                            *layer,
-                            *terminating_dot,
-                        ),
+                    TerminatingScheme::ExistingFixedDot(terminating_dot) => {
+                        terminating_dot_map
+                            .insert((*ratline, endpoint_dots.1, *layer), *terminating_dot);
+                    }
                     TerminatingScheme::Fanout => self.anteroute_fanout(
                         autorouter,
                         recorder,
@@ -119,10 +116,13 @@ impl Anterouter {
                         endpoint_dots.1,
                         *layer,
                         options,
+                        &mut terminating_dot_map,
                     ),
                 }
             }
         }
+
+        terminating_dot_map
     }
 
     fn anteroute_fanout(
@@ -134,6 +134,7 @@ impl Anterouter {
         source_dot: FixedDotIndex,
         target_layer: usize,
         options: &AnterouterOptions,
+        terminating_dot_map: &mut BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
     ) {
         let mut ratline_delta: Point = ratline.ref_(autorouter).line_segment().delta().into();
 
@@ -172,6 +173,7 @@ impl Anterouter {
                 target_layer,
                 CardinalDirection::nearest_from_vector(ratline_delta),
                 options,
+                terminating_dot_map,
             )
             .is_ok()
         {
@@ -207,6 +209,7 @@ impl Anterouter {
                 target_layer,
                 CardinalDirection::nearest_from_vector(ratline_delta),
                 options,
+                terminating_dot_map,
             )
             .is_ok()
         {
@@ -224,6 +227,7 @@ impl Anterouter {
                 target_layer,
                 OrdinalDirection::nearest_from_vector(ratline_delta),
                 options,
+                terminating_dot_map,
             )
             .is_ok()
         {
@@ -241,6 +245,7 @@ impl Anterouter {
                 target_layer,
                 OrdinalDirection::nearest_from_vector(ratline_delta),
                 options,
+                terminating_dot_map,
             )
             .is_ok()
         {
@@ -261,6 +266,7 @@ impl Anterouter {
         target_layer: usize,
         preferred_compass_direction: impl CompassDirection,
         options: &AnterouterOptions,
+        terminating_dot_map: &mut BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
     ) -> Result<(), ()> {
         if self
             .anteroute_fanout_on_bbox_in_direction(
@@ -273,6 +279,7 @@ impl Anterouter {
                 target_layer,
                 preferred_compass_direction,
                 options,
+                terminating_dot_map,
             )
             .is_ok()
         {
@@ -297,6 +304,7 @@ impl Anterouter {
                     target_layer,
                     counterclockwise_turning_cardinal_direction,
                     options,
+                    terminating_dot_map,
                 )
                 .is_ok()
             {
@@ -317,6 +325,7 @@ impl Anterouter {
                     target_layer,
                     clockwise_turning_cardinal_direction,
                     options,
+                    terminating_dot_map,
                 )
                 .is_ok()
             {
@@ -342,6 +351,7 @@ impl Anterouter {
         target_layer: usize,
         direction: impl Into<Point>,
         options: &AnterouterOptions,
+        terminating_dot_map: &mut BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
     ) -> Result<(), ()> {
         let (via, dots) = self.place_fanout_via_on_bbox_in_direction(
             autorouter,
@@ -353,6 +363,7 @@ impl Anterouter {
             target_layer,
             direction,
             options,
+            terminating_dot_map,
         )?;
 
         let layer = source_dot
@@ -401,6 +412,7 @@ impl Anterouter {
         target_layer: usize,
         direction: impl Into<Point>,
         options: &AnterouterOptions,
+        terminating_dot_map: &mut BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
     ) -> Result<(GenericIndex<ViaWeight>, Vec<FixedDotIndex>), ()> {
         let source_layer = autorouter
             .board()
@@ -460,10 +472,7 @@ impl Anterouter {
                             .layer()
                 })
                 .unwrap();
-            autorouter
-                .ratsnests
-                .on_principal_layer_mut(ratline.principal_layer)
-                .assign_terminating_dot_to_ratvertex(ratvertex, target_layer, *terminating_dot);
+            terminating_dot_map.insert((ratline, source_dot, target_layer), *terminating_dot);
             Ok((via, dots))
         } else {
             Err(())
