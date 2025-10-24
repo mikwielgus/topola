@@ -13,7 +13,7 @@ use crate::{
         dot::FixedDotIndex,
         graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex},
     },
-    geometry::shape::MeasureLength,
+    geometry::{shape::MeasureLength, GetLayer},
     graph::MakeRef,
     triangulation::GetTrianvertexNodeIndex,
 };
@@ -26,7 +26,6 @@ pub struct RatlineUid {
 
 #[derive(Debug, Default, Clone, Copy)]
 pub struct RatlineWeight {
-    pub layer: usize,
     pub band_termseg: Option<BandTermsegIndex>,
 }
 
@@ -99,16 +98,6 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
         (source_dot, target_dot)
     }
 
-    pub fn layer(&self) -> usize {
-        self.autorouter
-            .ratsnests()
-            .on_principal_layer(self.uid.principal_layer)
-            .graph()
-            .edge_weight(self.uid.index)
-            .unwrap()
-            .layer
-    }
-
     pub fn net(&self) -> usize {
         self.endpoint_dots()
             .0
@@ -117,12 +106,31 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
             .unwrap()
     }
 
-    fn cut_primitives(&self) -> impl Iterator<Item = PrimitiveIndex> + '_ {
-        self.autorouter
-            .board()
-            .layout()
-            .drawing()
-            .cut(self.line_segment(), 0.0, self.layer())
+    fn cut_primitives(&self) -> Box<dyn Iterator<Item = PrimitiveIndex> + '_> {
+        let endpoint_dots = self.endpoint_dots();
+
+        if endpoint_dots
+            .0
+            .primitive_ref(self.autorouter.board().layout().drawing())
+            .layer()
+            == endpoint_dots
+                .1
+                .primitive_ref(self.autorouter.board().layout().drawing())
+                .layer()
+        {
+            let layer = endpoint_dots
+                .0
+                .primitive_ref(self.autorouter.board().layout().drawing())
+                .layer();
+
+            Box::new(self.autorouter.board().layout().drawing().cut(
+                self.line_segment(),
+                0.0,
+                layer,
+            ))
+        } else {
+            Box::new(std::iter::empty())
+        }
     }
 
     pub fn cut_other_net_primitives(&self) -> impl Iterator<Item = PrimitiveIndex> + '_ {

@@ -11,7 +11,6 @@ use specctra_core::mesadata::AccessMesadata;
 use crate::autorouter::{
     planar_autoroute::{PlanarAutorouteConfiguration, PlanarAutorouteExecutionStepper},
     planar_preconfigurer::SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer,
-    ratline::RatlineUid,
     scc::Scc,
     Autorouter, PlanarAutorouteOptions,
 };
