@@ -390,6 +390,7 @@ impl Anterouter {
             Ok(())
         } else {
             autorouter.board.remove_via(recorder, via, dots);
+            terminating_dot_map.remove(&(ratline, source_dot));
             Err(())
         }
     }
