@@ -56,7 +56,7 @@ impl MultilayerAutorouteExecutionStepper {
                 autorouter,
                 PlanarAutoroutePreconfigurerInput {
                     terminating_dot_map,
-                    ..configuration.planar
+                    ratlines: configuration.planar.ratlines,
                 },
                 options.planar,
             )?,
@@ -96,20 +96,20 @@ impl<M: AccessMesadata> Abort<Autorouter<M>> for MultilayerAutorouteExecutionSte
 }
 
 impl<M: AccessMesadata> Reconfigure<Autorouter<M>> for MultilayerAutorouteExecutionStepper {
-    type Configuration = AnterouterPlan;
+    type Configuration = MultilayerAutorouteConfiguration;
     type Output = Result<(), AutorouterError>;
 
     fn reconfigure(
         &mut self,
         autorouter: &mut Autorouter<M>,
-        plan: AnterouterPlan,
+        new_configuration: MultilayerAutorouteConfiguration,
     ) -> Result<(), AutorouterError> {
         self.planar.abort(autorouter);
+
+        // FIXME: this somehow corrupts internal state.
         autorouter.board.apply_edit(&self.anteroute_edit.reverse());
 
-        let mut anterouter = Anterouter::new(plan);
-        let mut anteroute_edit = BoardEdit::new();
-        anterouter.anteroute(autorouter, &mut anteroute_edit, &self.options.anterouter);
+        *self = Self::new(autorouter, new_configuration, self.options)?;
         Ok(())
     }
 }

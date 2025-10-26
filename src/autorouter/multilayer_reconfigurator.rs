@@ -45,6 +45,7 @@ impl MultilayerAutorouteReconfigurator {
         options: MultilayerAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
         let preconfigurer = MultilayerPreconfigurer::new(autorouter, input.clone());
+
         let preconfiguration = MultilayerAutorouteConfiguration {
             plan: preconfigurer.plan().clone(),
             planar: PlanarAutoroutePreconfigurerInput {
@@ -52,7 +53,8 @@ impl MultilayerAutorouteReconfigurator {
                 terminating_dot_map: BTreeMap::new(),
             },
         };
-        let reconfigurer = MultilayerReconfigurer::new(autorouter, input.ratlines, &options);
+        let reconfigurer =
+            MultilayerReconfigurer::new(autorouter, preconfiguration.clone(), &options);
 
         Ok(Self {
             stepper: MultilayerAutorouteExecutionStepper::new(
@@ -72,11 +74,11 @@ impl MultilayerAutorouteReconfigurator {
     ) -> Result<ControlFlow<Option<BoardEdit>, MultilayerReconfiguratorStatus>, AutorouterError>
     {
         loop {
-            let Some(plan) = self.reconfigurer.next_configuration(autorouter) else {
+            let Some(configuration) = self.reconfigurer.next_configuration(autorouter) else {
                 return Ok(ControlFlow::Break(None));
             };
 
-            match self.stepper.reconfigure(autorouter, plan) {
+            match self.stepper.reconfigure(autorouter, configuration) {
                 Ok(_) => {
                     return Ok(ControlFlow::Continue(
                         ReconfiguratorStatus::Reconfigured(()),

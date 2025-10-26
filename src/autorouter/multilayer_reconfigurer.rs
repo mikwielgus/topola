@@ -2,45 +2,51 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::{collections::BTreeSet, time::SystemTime};
+use std::{collections::BTreeMap, time::SystemTime};
 
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::autorouter::{
-    anterouter::AnterouterPlan, multilayer_autoroute::MultilayerAutorouteOptions,
-    multilayer_preconfigurer::MultilayerPreconfigurer, ratline::RatlineUid, Autorouter,
+    multilayer_autoroute::{MultilayerAutorouteConfiguration, MultilayerAutorouteOptions},
+    planar_preconfigurer::PlanarAutoroutePreconfigurerInput,
+    Autorouter,
 };
 
 pub struct MultilayerReconfigurer {
-    original_ratlines: BTreeSet<RatlineUid>,
+    preconfiguration: MultilayerAutorouteConfiguration,
 }
 
 impl MultilayerReconfigurer {
     pub fn new(
-        autorouter: &Autorouter<impl AccessMesadata>,
-        ratlines: BTreeSet<RatlineUid>,
-        options: &MultilayerAutorouteOptions,
+        _autorouter: &Autorouter<impl AccessMesadata>,
+        preconfiguration: MultilayerAutorouteConfiguration,
+        _options: &MultilayerAutorouteOptions,
     ) -> Self {
-        Self {
-            original_ratlines: ratlines,
-        }
+        Self { preconfiguration }
     }
 
     pub fn next_configuration(
         &mut self,
-        autorouter: &Autorouter<impl AccessMesadata>,
-    ) -> Option<AnterouterPlan> {
-        let planner = MultilayerPreconfigurer::new_from_layer_map(
-            autorouter,
-            &self.original_ratlines,
-            self.original_ratlines
-                .iter()
-                .enumerate()
-                .map(|(_, ratline)| (*ratline, Self::crude_random_bit()))
-                .collect(),
-        );
+        _autorouter: &Autorouter<impl AccessMesadata>,
+    ) -> Option<MultilayerAutorouteConfiguration> {
+        let mut new_anterouter_plan = self.preconfiguration.plan.clone();
+        new_anterouter_plan.layer_map = self
+            .preconfiguration
+            .planar
+            .ratlines
+            .iter()
+            .enumerate()
+            //.map(|(i, ratline)| (*ratline, i % 2))
+            .map(|(_, ratline)| (*ratline, Self::crude_random_bit()))
+            .collect();
 
-        Some(planner.plan().clone())
+        Some(MultilayerAutorouteConfiguration {
+            plan: new_anterouter_plan,
+            planar: PlanarAutoroutePreconfigurerInput {
+                ratlines: self.preconfiguration.planar.ratlines.clone(),
+                terminating_dot_map: BTreeMap::new(),
+            },
+        })
     }
 
     fn crude_random_bit() -> usize {

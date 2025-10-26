@@ -83,16 +83,16 @@ impl<K: Eq + Ord + Clone, V: Eq + Ord + Clone> BiBTreeMapSet<K, V> {
     /// Removes a value from the reverse map and the key from the forward map if
     /// it no longer has any values.
     pub fn remove_by_value(&mut self, value: &V) -> Option<K> {
-        if let Some(k) = self.value_to_key.remove(value) {
+        if let Some(key) = self.value_to_key.remove(value) {
             // Remove the value from the key's value set.
-            if let Some(set) = self.key_to_values.get_mut(&k) {
+            if let Some(set) = self.key_to_values.get_mut(&key) {
                 set.remove(value);
                 // Remove the key if it no longer has any values.
                 if set.is_empty() {
-                    self.key_to_values.remove(&k);
+                    self.key_to_values.remove(&key);
                 }
             }
-            Some(k)
+            Some(key)
         } else {
             None
         }
