@@ -35,16 +35,10 @@ pub struct AnterouterOptions {
     pub fanout_clearance: f64,
 }
 
-#[derive(Clone, Copy, Debug)]
-pub enum TerminatingScheme {
-    ExistingFixedDot(FixedDotIndex),
-    Fanout,
-}
-
 #[derive(Clone, Debug)]
 pub struct AnterouterPlan {
     pub layer_map: BTreeMap<RatlineUid, usize>,
-    pub ratline_terminating_schemes: BTreeMap<(RatlineUid, FixedDotIndex), TerminatingScheme>,
+    pub static_terminating_dot_map: BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,
 }
 
 #[derive(Getters)]
@@ -70,48 +64,42 @@ impl Anterouter {
             let endpoint_indices = ratline.ref_(autorouter).endpoint_indices();
             let endpoint_dots = ratline.ref_(autorouter).endpoint_dots();
 
-            if let Some(terminating_scheme) = self
-                .plan
-                .ratline_terminating_schemes
-                .get(&(*ratline, endpoint_dots.0))
+            if let Some(terminating_dot) =
+                self.plan
+                    .static_terminating_dot_map
+                    .get(&(*ratline, endpoint_dots.0, *layer))
             {
-                match terminating_scheme {
-                    TerminatingScheme::ExistingFixedDot(terminating_dot) => {
-                        terminating_dot_map.insert((*ratline, endpoint_dots.0), *terminating_dot);
-                    }
-                    TerminatingScheme::Fanout => self.anteroute_fanout(
-                        autorouter,
-                        recorder,
-                        endpoint_indices.0,
-                        *ratline,
-                        endpoint_dots.0,
-                        *layer,
-                        options,
-                        &mut terminating_dot_map,
-                    ),
-                }
+                terminating_dot_map.insert((*ratline, endpoint_dots.0), *terminating_dot);
+            } else {
+                self.anteroute_fanout(
+                    autorouter,
+                    recorder,
+                    endpoint_indices.0,
+                    *ratline,
+                    endpoint_dots.0,
+                    *layer,
+                    options,
+                    &mut terminating_dot_map,
+                );
             }
 
-            if let Some(terminating_scheme) = self
-                .plan
-                .ratline_terminating_schemes
-                .get(&(*ratline, endpoint_dots.1))
+            if let Some(terminating_dot) =
+                self.plan
+                    .static_terminating_dot_map
+                    .get(&(*ratline, endpoint_dots.1, *layer))
             {
-                match terminating_scheme {
-                    TerminatingScheme::ExistingFixedDot(terminating_dot) => {
-                        terminating_dot_map.insert((*ratline, endpoint_dots.1), *terminating_dot);
-                    }
-                    TerminatingScheme::Fanout => self.anteroute_fanout(
-                        autorouter,
-                        recorder,
-                        endpoint_indices.1,
-                        *ratline,
-                        endpoint_dots.1,
-                        *layer,
-                        options,
-                        &mut terminating_dot_map,
-                    ),
-                }
+                terminating_dot_map.insert((*ratline, endpoint_dots.1), *terminating_dot);
+            } else {
+                self.anteroute_fanout(
+                    autorouter,
+                    recorder,
+                    endpoint_indices.1,
+                    *ratline,
+                    endpoint_dots.1,
+                    *layer,
+                    options,
+                    &mut terminating_dot_map,
+                );
             }
         }
 

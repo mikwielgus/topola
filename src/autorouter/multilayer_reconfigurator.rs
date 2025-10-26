@@ -44,9 +44,9 @@ impl MultilayerAutorouteReconfigurator {
         input: MultilayerAutoroutePreconfigurerInput,
         options: MultilayerAutorouteOptions,
     ) -> Result<Self, AutorouterError> {
-        let planner = MultilayerPreconfigurer::new(autorouter, input.clone());
+        let preconfigurer = MultilayerPreconfigurer::new(autorouter, input.clone());
         let preconfiguration = MultilayerAutorouteConfiguration {
-            plan: planner.plan().clone(),
+            plan: preconfigurer.plan().clone(),
             planar: PlanarAutoroutePreconfigurerInput {
                 ratlines: input.ratlines.clone(),
                 terminating_dot_map: BTreeMap::new(),
