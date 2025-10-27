@@ -39,7 +39,7 @@ impl MultilayerPreconfigurer {
                 .ratlines
                 .iter()
                 .enumerate()
-                .map(|(i, ratline)| (*ratline, i % 2))
+                .map(|(_i, ratline)| (*ratline, ratline.ref_(autorouter).preferred_layer()))
                 .collect(),
         )
     }

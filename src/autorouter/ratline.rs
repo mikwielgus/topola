@@ -106,31 +106,41 @@ impl<'a, M: AccessMesadata> RatlineRef<'a, M> {
             .unwrap()
     }
 
-    fn cut_primitives(&self) -> Box<dyn Iterator<Item = PrimitiveIndex> + '_> {
+    pub fn layer(&self) -> Option<usize> {
         let endpoint_dots = self.endpoint_dots();
 
-        if endpoint_dots
+        (endpoint_dots
             .0
             .primitive_ref(self.autorouter.board().layout().drawing())
             .layer()
             == endpoint_dots
                 .1
                 .primitive_ref(self.autorouter.board().layout().drawing())
-                .layer()
-        {
-            let layer = endpoint_dots
+                .layer())
+        .then_some(
+            endpoint_dots
                 .0
                 .primitive_ref(self.autorouter.board().layout().drawing())
-                .layer();
+                .layer(),
+        )
+    }
 
-            Box::new(self.autorouter.board().layout().drawing().cut(
-                self.line_segment(),
-                0.0,
-                layer,
-            ))
-        } else {
-            Box::new(std::iter::empty())
-        }
+    pub fn preferred_layer(&self) -> usize {
+        self.layer().unwrap_or(self.uid.principal_layer)
+    }
+
+    fn cut_primitives(&self) -> Box<dyn Iterator<Item = PrimitiveIndex> + '_> {
+        let Some(layer) = self.layer() else {
+            return Box::new(std::iter::empty());
+        };
+
+        Box::new(
+            self.autorouter
+                .board()
+                .layout()
+                .drawing()
+                .cut(self.line_segment(), 0.0, layer),
+        )
     }
 
     pub fn cut_other_net_primitives(&self) -> impl Iterator<Item = PrimitiveIndex> + '_ {
