@@ -12,7 +12,9 @@ use crate::{
         anterouter::{Anterouter, AnterouterOptions, AnterouterPlan},
         invoker::GetDebugOverlayData,
         planar_preconfigurer::PlanarAutoroutePreconfigurerInput,
-        planar_reconfigurator::{PlanarAutorouteReconfigurator, PlanarReconfiguratorStatus},
+        planar_reconfigurator::{
+            PlanarAutorouteReconfigurator, PlanarAutorouteReconfiguratorStatus,
+        },
         Autorouter, AutorouterError, PlanarAutorouteOptions,
     },
     board::edit::BoardEdit,
@@ -66,7 +68,7 @@ impl MultilayerAutorouteExecutionStepper {
     }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarReconfiguratorStatus>
+impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteReconfiguratorStatus>
     for MultilayerAutorouteExecutionStepper
 {
     type Error = AutorouterError;
@@ -74,7 +76,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarReconfigura
     fn step(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<ControlFlow<Option<BoardEdit>, PlanarReconfiguratorStatus>, AutorouterError> {
+    ) -> Result<ControlFlow<Option<BoardEdit>, PlanarAutorouteReconfiguratorStatus>, AutorouterError>
+    {
         match self.planar.step(autorouter) {
             Ok(ControlFlow::Break(Some(edit))) => {
                 self.anteroute_edit.merge(edit);

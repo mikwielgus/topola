@@ -16,9 +16,13 @@ use crate::{
         multilayer_preconfigurer::{
             MultilayerAutoroutePreconfigurerInput, MultilayerPreconfigurer,
         },
-        multilayer_reconfigurer::MultilayerReconfigurer,
+        multilayer_reconfigurer::{
+            MakeNextMultilayerAutorouteConfiguration, MultilayerAutorouteReconfigurer,
+            UniformRandomLayersMultilayerAutorouteReconfigurer,
+        },
+        planar_autoroute::PlanarAutorouteConfigurationStatus,
         planar_preconfigurer::PlanarAutoroutePreconfigurerInput,
-        planar_reconfigurator::PlanarReconfiguratorStatus,
+        planar_reconfigurator::PlanarAutorouteReconfiguratorStatus,
         Autorouter, AutorouterError,
     },
     board::edit::BoardEdit,
@@ -28,14 +32,13 @@ use crate::{
     stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Reconfigure, Step},
 };
 
-pub type MultilayerReconfiguratorStatus = ReconfiguratorStatus<(), PlanarReconfiguratorStatus>;
+pub type MultilayerReconfiguratorStatus =
+    ReconfiguratorStatus<(), PlanarAutorouteReconfiguratorStatus>;
 
 pub struct MultilayerAutorouteReconfigurator {
     stepper: MultilayerAutorouteExecutionStepper,
-    reconfigurer: MultilayerReconfigurer,
+    reconfigurer: MultilayerAutorouteReconfigurer,
     options: MultilayerAutorouteOptions,
-    // TODO: Obviously, we need something more sophisticated here.
-    planar_autoroute_reconfiguration_count: u64,
 }
 
 impl MultilayerAutorouteReconfigurator {
@@ -53,8 +56,13 @@ impl MultilayerAutorouteReconfigurator {
                 terminating_dot_map: BTreeMap::new(),
             },
         };
-        let reconfigurer =
-            MultilayerReconfigurer::new(autorouter, preconfiguration.clone(), &options);
+        let reconfigurer = MultilayerAutorouteReconfigurer::UniformRandomLayers(
+            UniformRandomLayersMultilayerAutorouteReconfigurer::new(
+                autorouter,
+                preconfiguration.clone(),
+                &options,
+            ),
+        );
 
         Ok(Self {
             stepper: MultilayerAutorouteExecutionStepper::new(
@@ -64,18 +72,27 @@ impl MultilayerAutorouteReconfigurator {
             )?,
             reconfigurer,
             options,
-            planar_autoroute_reconfiguration_count: 0,
         })
     }
 
     fn reconfigure<M: AccessMesadata>(
         &mut self,
         autorouter: &mut Autorouter<M>,
+        planar_result: Result<PlanarAutorouteConfigurationStatus, AutorouterError>,
     ) -> Result<ControlFlow<Option<BoardEdit>, MultilayerReconfiguratorStatus>, AutorouterError>
     {
         loop {
-            let Some(configuration) = self.reconfigurer.next_configuration(autorouter) else {
-                return Ok(ControlFlow::Break(None));
+            let configuration = match self
+                .reconfigurer
+                .next_configuration(autorouter, planar_result.clone())
+            {
+                ControlFlow::Continue(()) => {
+                    return Ok(ControlFlow::Continue(ReconfiguratorStatus::Running(
+                        ReconfiguratorStatus::Reconfigured(planar_result?),
+                    )))
+                }
+                ControlFlow::Break(None) => return Ok(ControlFlow::Break(None)),
+                ControlFlow::Break(Some(configuration)) => configuration,
             };
 
             match self.stepper.reconfigure(autorouter, configuration) {
@@ -109,18 +126,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, MultilayerReconfi
                 )))
             }
             Ok(ControlFlow::Continue(ReconfiguratorStatus::Reconfigured(status))) => {
-                self.planar_autoroute_reconfiguration_count += 1;
-
-                if self.planar_autoroute_reconfiguration_count >= 100 {
-                    self.planar_autoroute_reconfiguration_count = 0;
-                    self.reconfigure(autorouter)
-                } else {
-                    Ok(ControlFlow::Continue(ReconfiguratorStatus::Running(
-                        ReconfiguratorStatus::Reconfigured(status),
-                    )))
-                }
+                self.reconfigure(autorouter, Ok(status))
             }
-            Err(_) => self.reconfigure(autorouter),
+            Err(err) => self.reconfigure(autorouter, Err(err)),
         }
     }
 }

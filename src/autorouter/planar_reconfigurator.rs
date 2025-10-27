@@ -10,7 +10,7 @@ use crate::{
     autorouter::{
         invoker::GetDebugOverlayData,
         planar_autoroute::{
-            PlanarAutorouteConfigurationResult, PlanarAutorouteContinueStatus,
+            PlanarAutorouteConfigurationStatus, PlanarAutorouteContinueStatus,
             PlanarAutorouteExecutionStepper,
         },
         planar_preconfigurer::{
@@ -27,8 +27,8 @@ use crate::{
     stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Reconfigure, Step},
 };
 
-pub type PlanarReconfiguratorStatus =
-    ReconfiguratorStatus<PlanarAutorouteConfigurationResult, PlanarAutorouteContinueStatus>;
+pub type PlanarAutorouteReconfiguratorStatus =
+    ReconfiguratorStatus<PlanarAutorouteConfigurationStatus, PlanarAutorouteContinueStatus>;
 
 pub struct PlanarAutorouteReconfigurator {
     stepper: PlanarAutorouteExecutionStepper,
@@ -68,7 +68,7 @@ impl PlanarAutorouteReconfigurator {
     }
 }
 
-impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarReconfiguratorStatus>
+impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteReconfiguratorStatus>
     for PlanarAutorouteReconfigurator
 {
     type Error = AutorouterError;
@@ -76,7 +76,8 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarReconfigura
     fn step(
         &mut self,
         autorouter: &mut Autorouter<M>,
-    ) -> Result<ControlFlow<Option<BoardEdit>, PlanarReconfiguratorStatus>, AutorouterError> {
+    ) -> Result<ControlFlow<Option<BoardEdit>, PlanarAutorouteReconfiguratorStatus>, AutorouterError>
+    {
         match self.stepper.step(autorouter) {
             Ok(ControlFlow::Break(maybe_edit)) => Ok(ControlFlow::Break(maybe_edit)),
             Ok(ControlFlow::Continue(status)) => {

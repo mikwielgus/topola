@@ -62,7 +62,7 @@ pub struct PlanarAutorouteCosts {
 }
 
 #[derive(Clone, Debug)]
-pub struct PlanarAutorouteConfigurationResult {
+pub struct PlanarAutorouteConfigurationStatus {
     pub configuration: PlanarAutorouteConfiguration,
     pub costs: PlanarAutorouteCosts,
 }
@@ -275,13 +275,13 @@ impl<M: AccessMesadata> Abort<Autorouter<M>> for PlanarAutorouteExecutionStepper
 
 impl<M: AccessMesadata> Reconfigure<Autorouter<M>> for PlanarAutorouteExecutionStepper {
     type Configuration = PlanarAutorouteConfiguration;
-    type Output = Result<PlanarAutorouteConfigurationResult, AutorouterError>;
+    type Output = Result<PlanarAutorouteConfigurationStatus, AutorouterError>;
 
     fn reconfigure(
         &mut self,
         autorouter: &mut Autorouter<M>,
         new_configuration: PlanarAutorouteConfiguration,
-    ) -> Result<PlanarAutorouteConfigurationResult, AutorouterError> {
+    ) -> Result<PlanarAutorouteConfigurationStatus, AutorouterError> {
         let Some(new_index) = new_configuration
             .ratlines
             .iter()
@@ -291,7 +291,7 @@ impl<M: AccessMesadata> Reconfigure<Autorouter<M>> for PlanarAutorouteExecutionS
             return Err(AutorouterError::NothingToUndoForReconfiguration);
         };
 
-        let result = PlanarAutorouteConfigurationResult {
+        let result = PlanarAutorouteConfigurationStatus {
             configuration: std::mem::replace(&mut self.configuration, new_configuration),
             costs: PlanarAutorouteCosts {
                 lengths: vec![], // TODO.
