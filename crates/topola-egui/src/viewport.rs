@@ -55,7 +55,13 @@ impl Viewport {
                                 menu_bar.multilayer_autoroute_options.planar.principal_layer,
                             ),
                             pointer_pos: latest_point,
-                            dt: ctx.input(|i| i.stable_dt),
+                            dt: ctx.input(|i| {
+                                if i.stable_dt <= i.predicted_dt {
+                                    i.stable_dt
+                                } else {
+                                    i.predicted_dt
+                                }
+                            }),
                         };
 
                         workspace.advance_state_by_dt(
