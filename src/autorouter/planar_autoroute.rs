@@ -245,7 +245,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
 
         self.curr_ratline_index += 1;
 
-        if let Some(new_ratline) = self.configuration.ratlines.get(self.curr_ratline_index) {
+        if let Some(..) = self.configuration.ratlines.get(self.curr_ratline_index) {
             let (origin, destination) = self
                 .configuration
                 .ratline_terminating_dots(autorouter, self.curr_ratline_index);
@@ -294,7 +294,7 @@ impl<M: AccessMesadata> Reconfigure<Autorouter<M>> for PlanarAutorouteExecutionS
         let result = PlanarAutorouteConfigurationStatus {
             configuration: std::mem::replace(&mut self.configuration, new_configuration),
             costs: PlanarAutorouteCosts {
-                lengths: vec![], // TODO.
+                lengths: (0..*self.curr_ratline_index()).map(|_| 0.0).collect(),
             },
         };
 

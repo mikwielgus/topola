@@ -17,8 +17,8 @@ use crate::{
             MultilayerAutoroutePreconfigurerInput, MultilayerPreconfigurer,
         },
         multilayer_reconfigurer::{
+            IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer,
             MakeNextMultilayerAutorouteConfiguration, MultilayerAutorouteReconfigurer,
-            UniformRandomLayersMultilayerAutorouteReconfigurer,
         },
         planar_autoroute::PlanarAutorouteConfigurationStatus,
         planar_preconfigurer::PlanarAutoroutePreconfigurerInput,
@@ -57,7 +57,7 @@ impl MultilayerAutorouteReconfigurator {
             },
         };
         let reconfigurer = MultilayerAutorouteReconfigurer::UniformRandomLayers(
-            UniformRandomLayersMultilayerAutorouteReconfigurer::new(
+            IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer::new(
                 autorouter,
                 preconfiguration.clone(),
                 &options,

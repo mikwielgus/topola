@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::{collections::BTreeMap, ops::ControlFlow, time::SystemTime};
+use std::{collections::BTreeMap, ops::ControlFlow};
 
 use enum_dispatch::enum_dispatch;
 use specctra_core::mesadata::AccessMesadata;
@@ -25,67 +25,69 @@ pub trait MakeNextMultilayerAutorouteConfiguration {
 
 #[enum_dispatch(MakeNextMultilayerAutorouteConfiguration)]
 pub enum MultilayerAutorouteReconfigurer {
-    UniformRandomLayers(UniformRandomLayersMultilayerAutorouteReconfigurer),
+    UniformRandomLayers(IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer),
 }
 
-pub struct UniformRandomLayersMultilayerAutorouteReconfigurer {
-    preconfiguration: MultilayerAutorouteConfiguration,
+pub struct IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer {
+    last_configuration: MultilayerAutorouteConfiguration,
     planar_autoroute_reconfiguration_count: u64,
 }
 
-impl UniformRandomLayersMultilayerAutorouteReconfigurer {
+impl IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer {
     pub fn new(
         _autorouter: &Autorouter<impl AccessMesadata>,
         preconfiguration: MultilayerAutorouteConfiguration,
         _options: &MultilayerAutorouteOptions,
     ) -> Self {
         Self {
-            preconfiguration,
+            last_configuration: preconfiguration,
             planar_autoroute_reconfiguration_count: 0,
         }
-    }
-
-    fn crude_random_bit() -> usize {
-        let duration_since_epoch = SystemTime::now()
-            .duration_since(SystemTime::UNIX_EPOCH)
-            .unwrap();
-        let timestamp_nanos = duration_since_epoch.as_nanos();
-        (timestamp_nanos % 2) as usize
     }
 }
 
 impl MakeNextMultilayerAutorouteConfiguration
-    for UniformRandomLayersMultilayerAutorouteReconfigurer
+    for IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer
 {
     fn next_configuration(
         &mut self,
-        _autorouter: &Autorouter<impl AccessMesadata>,
+        autorouter: &Autorouter<impl AccessMesadata>,
         planar_result: Result<PlanarAutorouteConfigurationStatus, AutorouterError>,
     ) -> ControlFlow<Option<MultilayerAutorouteConfiguration>> {
-        if self.planar_autoroute_reconfiguration_count < 100 {
+        if self.planar_autoroute_reconfiguration_count < 10 {
             self.planar_autoroute_reconfiguration_count += 1;
             return ControlFlow::Continue(());
         }
 
         self.planar_autoroute_reconfiguration_count = 0;
 
-        let mut new_anterouter_plan = self.preconfiguration.plan.clone();
-        new_anterouter_plan.layer_map = self
-            .preconfiguration
-            .planar
-            .ratlines
-            .iter()
-            .enumerate()
-            //.map(|(i, ratline)| (*ratline, i % 2))
-            .map(|(_, ratline)| (*ratline, Self::crude_random_bit()))
-            .collect();
+        let Ok(planar_status) = planar_result else {
+            return ControlFlow::Break(None);
+        };
 
-        ControlFlow::Break(Some(MultilayerAutorouteConfiguration {
+        let mut new_anterouter_plan = self.last_configuration.plan.clone();
+
+        for ratline_index in
+            planar_status.costs.lengths.len()..planar_status.configuration.ratlines.len()
+        {
+            *new_anterouter_plan
+                .layer_map
+                .get_mut(&planar_status.configuration.ratlines[ratline_index])
+                .unwrap() += 1;
+            *new_anterouter_plan
+                .layer_map
+                .get_mut(&planar_status.configuration.ratlines[ratline_index])
+                .unwrap() %= autorouter.board().layout().drawing().layer_count();
+        }
+
+        self.last_configuration = MultilayerAutorouteConfiguration {
             plan: new_anterouter_plan,
             planar: PlanarAutoroutePreconfigurerInput {
-                ratlines: self.preconfiguration.planar.ratlines.clone(),
+                ratlines: self.last_configuration.planar.ratlines.clone(),
                 terminating_dot_map: BTreeMap::new(),
             },
-        }))
+        };
+
+        ControlFlow::Break(Some(self.last_configuration.clone()))
     }
 }
