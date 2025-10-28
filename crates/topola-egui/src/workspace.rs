@@ -5,6 +5,7 @@
 use std::{
     ops::ControlFlow,
     sync::mpsc::{channel, Receiver, Sender},
+    time::Instant,
 };
 
 use topola::{
@@ -77,14 +78,26 @@ impl Workspace {
         error_dialog: &mut ErrorDialog,
         frame_timestep: f32,
         interactive_input: &InteractiveInput,
-    ) {
+    ) -> bool {
+        let instant = Instant::now();
+
         self.update_counter += interactive_input.dt;
         while self.update_counter >= frame_timestep {
             self.update_counter -= frame_timestep;
+
             if let ControlFlow::Break(()) = self.update_state(tr, error_dialog, interactive_input) {
-                break;
+                return true;
+            }
+
+            // Hard limit: never spend more time on advancing state than the
+            // duration of last frame to prevent stuttering.
+            // Of course, this does not safeguard against infinite loops.
+            if instant.elapsed().as_secs_f32() >= interactive_input.dt {
+                return false;
             }
         }
+
+        true
     }
 
     pub fn update_state_for_event(

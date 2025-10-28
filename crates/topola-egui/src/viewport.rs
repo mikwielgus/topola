@@ -59,6 +59,8 @@ impl Viewport {
                                 if i.stable_dt <= i.predicted_dt {
                                     i.stable_dt
                                 } else {
+                                    // Clamp dt to egui's predicted dt to
+                                    // additionally safeguard against stuttering.
                                     i.predicted_dt
                                 }
                             }),
