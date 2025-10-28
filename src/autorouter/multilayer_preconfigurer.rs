@@ -88,6 +88,14 @@ impl MultilayerPreconfigurer {
         ratline_endpoint_dot: FixedDotIndex,
         layer: usize,
     ) -> Option<FixedDotIndex> {
+        if layer
+            == ratline_endpoint_dot
+                .primitive_ref(autorouter.board().layout().drawing())
+                .layer()
+        {
+            return Some(ratline_endpoint_dot);
+        }
+
         let pinname = autorouter
             .board()
             .node_pinname(&GenericNode::Primitive(ratline_endpoint_dot.into()))
