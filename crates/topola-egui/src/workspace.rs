@@ -76,14 +76,21 @@ impl Workspace {
         &mut self,
         tr: &Translator,
         error_dialog: &mut ErrorDialog,
-        frame_timestep: f32,
+        maybe_update_timestep: Option<f32>,
         interactive_input: &InteractiveInput,
     ) -> bool {
         let instant = Instant::now();
 
-        self.update_counter += interactive_input.dt;
-        while self.update_counter >= frame_timestep {
-            self.update_counter -= frame_timestep;
+        if maybe_update_timestep.is_some() {
+            self.update_counter += interactive_input.dt;
+        }
+
+        while maybe_update_timestep
+            .is_none_or(|update_timestep| self.update_counter >= update_timestep)
+        {
+            if let Some(update_timestep) = maybe_update_timestep {
+                self.update_counter -= update_timestep;
+            }
 
             if let ControlFlow::Break(()) = self.update_state(tr, error_dialog, interactive_input) {
                 return true;

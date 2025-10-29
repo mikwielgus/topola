@@ -69,7 +69,7 @@ impl Viewport {
                         workspace.advance_state_by_dt(
                             tr,
                             error_dialog,
-                            menu_bar.update_timestep,
+                            menu_bar.fix_step_rate.then_some(menu_bar.update_timestep),
                             &interactive_input,
                         );
 

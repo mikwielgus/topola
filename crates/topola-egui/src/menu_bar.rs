@@ -40,6 +40,7 @@ pub struct MenuBar {
     pub show_origin_destination: bool,
     pub show_primitive_indices: bool,
     pub show_appearance_panel: bool,
+    pub fix_step_rate: bool,
     pub update_timestep: f32,
 }
 
@@ -74,7 +75,8 @@ impl MenuBar {
             show_origin_destination: false,
             show_primitive_indices: false,
             show_appearance_panel: true,
-            update_timestep: 0.1,
+            fix_step_rate: false,
+            update_timestep: 0.25,
         }
     }
 
@@ -167,20 +169,13 @@ impl MenuBar {
                     ui.menu_button(tr.text("tr-menu-debug"), |ui| {
                         actions.debug.render_menu(ctx, ui, self);
 
-                        ui.separator();
-
-                        ui.label(tr.text("tr-menu-debug-frame-timestep"));
-                        ui.add(
-                            // NOTE: Frame timestep slider's minimal value
-                            // should not go down to zero seconds because this
-                            // will leave no time for the GUI to update until
-                            // the currently performed action finishes, which
-                            // may leave the GUI unresponsive during that time,
-                            // or even freeze the application if the action
-                            // fails to end in reasonable time.
-                            egui::widgets::Slider::new(&mut self.update_timestep, 0.001..=3.0)
-                                .suffix(" s"),
-                        );
+                        ui.add_enabled_ui(self.fix_step_rate, |ui| {
+                            ui.label(tr.text("tr-menu-debug-update-timestep"));
+                            ui.add(
+                                egui::widgets::Slider::new(&mut self.update_timestep, 0.01..=3.0)
+                                    .suffix(" s"),
+                            );
+                        });
                     });
 
                     ui.menu_button(tr.text("tr-menu-help"), |ui| {
