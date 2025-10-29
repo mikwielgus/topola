@@ -165,16 +165,7 @@ impl EditActions {
 pub struct ViewActions {
     pub zoom_to_fit: Switch,
     pub show_ratsnest: Switch,
-    pub show_navmesh: Switch,
-    pub show_guide_circles: Switch,
-    pub show_guide_bitangents: Switch,
-    pub show_triangulation: Switch,
-    pub show_triangulation_constraints: Switch,
-    pub show_pathfinding_scores: Switch,
-    pub show_topo_navmesh: Switch,
-    pub show_bboxes: Switch,
     pub show_origin_destination: Switch,
-    pub show_primitive_indices: Switch,
     pub show_appearance_panel: Switch,
 }
 
@@ -183,32 +174,8 @@ impl ViewActions {
         Self {
             zoom_to_fit: Action::new_keyless(tr.text("tr-menu-view-zoom-to-fit")).into_switch(),
             show_ratsnest: Action::new_keyless(tr.text("tr-menu-view-show-ratsnest")).into_switch(),
-            show_navmesh: Action::new_keyless(tr.text("tr-menu-view-show-navmesh")).into_switch(),
-            show_guide_circles: Action::new_keyless(tr.text("tr-menu-view-show-guide-circles"))
-                .into_switch(),
-            show_guide_bitangents: Action::new_keyless(
-                tr.text("tr-menu-view-show-guide-bitangents"),
-            )
-            .into_switch(),
-            show_triangulation: Action::new_keyless(tr.text("tr-menu-view-show-triangulation"))
-                .into_switch(),
-            show_triangulation_constraints: Action::new_keyless(
-                tr.text("tr-menu-view-show-triangulation-constraints"),
-            )
-            .into_switch(),
-            show_pathfinding_scores: Action::new_keyless(
-                tr.text("tr-menu-view-show-pathfinding-scores"),
-            )
-            .into_switch(),
-            show_topo_navmesh: Action::new_keyless(tr.text("tr-menu-view-show-topo-navmesh"))
-                .into_switch(),
-            show_bboxes: Action::new_keyless(tr.text("tr-menu-view-show-bboxes")).into_switch(),
             show_origin_destination: Action::new_keyless(
                 tr.text("tr-menu-view-show-origin-destination"),
-            )
-            .into_switch(),
-            show_primitive_indices: Action::new_keyless(
-                tr.text("tr-menu-view-show-primitive-indices"),
             )
             .into_switch(),
             show_appearance_panel: Action::new_keyless(tr.text("tr-menu-view-show-layer-manager"))
@@ -231,24 +198,8 @@ impl ViewActions {
         ui.separator();
         ui.add_enabled_ui(have_workspace, |ui| {
             self.show_ratsnest.checkbox(ui, &mut menu_bar.show_ratsnest);
-            self.show_navmesh.checkbox(ui, &mut menu_bar.show_navmesh);
-            self.show_guide_circles
-                .checkbox(ui, &mut menu_bar.show_guide_circles);
-            self.show_guide_bitangents
-                .checkbox(ui, &mut menu_bar.show_guide_bitangents);
-            self.show_triangulation
-                .checkbox(ui, &mut menu_bar.show_triangulation);
-            self.show_triangulation_constraints
-                .checkbox(ui, &mut menu_bar.show_triangulation_constraints);
-            self.show_pathfinding_scores
-                .checkbox(ui, &mut menu_bar.show_pathfinding_scores);
-            self.show_topo_navmesh
-                .checkbox(ui, &mut menu_bar.show_topo_navmesh);
-            self.show_bboxes.checkbox(ui, &mut menu_bar.show_bboxes);
             self.show_origin_destination
                 .checkbox(ui, &mut menu_bar.show_origin_destination);
-            self.show_primitive_indices
-                .checkbox(ui, &mut menu_bar.show_primitive_indices);
         });
 
         ui.separator();
@@ -412,6 +363,68 @@ impl InspectActions {
     }
 }
 
+pub struct DebugActions {
+    pub show_navmesh: Switch,
+    pub show_guide_circles: Switch,
+    pub show_guide_bitangents: Switch,
+    pub show_triangulation: Switch,
+    pub show_triangulation_constraints: Switch,
+    pub show_pathfinding_scores: Switch,
+    pub show_topo_navmesh: Switch,
+    pub show_bboxes: Switch,
+    pub show_primitive_indices: Switch,
+}
+
+impl DebugActions {
+    pub fn new(tr: &Translator) -> Self {
+        Self {
+            show_navmesh: Action::new_keyless(tr.text("tr-menu-debug-show-navmesh")).into_switch(),
+            show_guide_circles: Action::new_keyless(tr.text("tr-menu-debug-show-guide-circles"))
+                .into_switch(),
+            show_guide_bitangents: Action::new_keyless(
+                tr.text("tr-menu-debug-show-guide-bitangents"),
+            )
+            .into_switch(),
+            show_triangulation: Action::new_keyless(tr.text("tr-menu-debug-show-triangulation"))
+                .into_switch(),
+            show_triangulation_constraints: Action::new_keyless(
+                tr.text("tr-menu-debug-show-triangulation-constraints"),
+            )
+            .into_switch(),
+            show_pathfinding_scores: Action::new_keyless(
+                tr.text("tr-menu-debug-show-pathfinding-scores"),
+            )
+            .into_switch(),
+            show_topo_navmesh: Action::new_keyless(tr.text("tr-menu-debug-show-topo-navmesh"))
+                .into_switch(),
+            show_bboxes: Action::new_keyless(tr.text("tr-menu-debug-show-bboxes")).into_switch(),
+            show_primitive_indices: Action::new_keyless(
+                tr.text("tr-menu-debug-show-primitive-indices"),
+            )
+            .into_switch(),
+        }
+    }
+
+    pub fn render_menu(&mut self, _ctx: &Context, ui: &mut Ui, menu_bar: &mut MenuBar) {
+        self.show_navmesh.checkbox(ui, &mut menu_bar.show_navmesh);
+        self.show_guide_circles
+            .checkbox(ui, &mut menu_bar.show_guide_circles);
+        self.show_guide_bitangents
+            .checkbox(ui, &mut menu_bar.show_guide_bitangents);
+        self.show_triangulation
+            .checkbox(ui, &mut menu_bar.show_triangulation);
+        self.show_triangulation_constraints
+            .checkbox(ui, &mut menu_bar.show_triangulation_constraints);
+        self.show_pathfinding_scores
+            .checkbox(ui, &mut menu_bar.show_pathfinding_scores);
+        self.show_topo_navmesh
+            .checkbox(ui, &mut menu_bar.show_topo_navmesh);
+        self.show_bboxes.checkbox(ui, &mut menu_bar.show_bboxes);
+        self.show_primitive_indices
+            .checkbox(ui, &mut menu_bar.show_primitive_indices);
+    }
+}
+
 pub struct HelpActions {
     pub online_documentation: Trigger,
 }
@@ -441,6 +454,7 @@ pub struct Actions {
     pub place: PlaceActions,
     pub route: RouteActions,
     pub inspect: InspectActions,
+    pub debug: DebugActions,
     pub help: HelpActions,
 }
 
@@ -453,6 +467,7 @@ impl Actions {
             place: PlaceActions::new(tr),
             route: RouteActions::new(tr),
             inspect: InspectActions::new(tr),
+            debug: DebugActions::new(tr),
             help: HelpActions::new(tr),
         }
     }

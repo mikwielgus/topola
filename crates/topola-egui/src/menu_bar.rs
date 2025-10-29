@@ -40,7 +40,7 @@ pub struct MenuBar {
     pub show_origin_destination: bool,
     pub show_primitive_indices: bool,
     pub show_appearance_panel: bool,
-    pub frame_timestep: f32,
+    pub update_timestep: f32,
 }
 
 impl MenuBar {
@@ -74,7 +74,7 @@ impl MenuBar {
             show_origin_destination: false,
             show_primitive_indices: false,
             show_appearance_panel: true,
-            frame_timestep: 0.1,
+            update_timestep: 0.1,
         }
     }
 
@@ -129,21 +129,6 @@ impl MenuBar {
                             viewport,
                             maybe_workspace.is_some(),
                         );
-
-                        ui.separator();
-
-                        ui.label(tr.text("tr-menu-view-frame-timestep"));
-                        ui.add(
-                            // NOTE: Frame timestep slider's minimal value
-                            // should not go down to zero seconds because this
-                            // will leave no time for the GUI to update until
-                            // the currently performed action finishes, which
-                            // may leave the GUI unresponsive during that time,
-                            // or even freeze the application if the action
-                            // fails to end in reasonable time.
-                            egui::widgets::Slider::new(&mut self.frame_timestep, 0.001..=3.0)
-                                .suffix(" s"),
-                        );
                     });
 
                     // NOTE: we could disable the entire range of menus below
@@ -178,6 +163,25 @@ impl MenuBar {
                     });
 
                     Self::update_preferences_menu(ctx, ui, tr);
+
+                    ui.menu_button(tr.text("tr-menu-debug"), |ui| {
+                        actions.debug.render_menu(ctx, ui, self);
+
+                        ui.separator();
+
+                        ui.label(tr.text("tr-menu-debug-frame-timestep"));
+                        ui.add(
+                            // NOTE: Frame timestep slider's minimal value
+                            // should not go down to zero seconds because this
+                            // will leave no time for the GUI to update until
+                            // the currently performed action finishes, which
+                            // may leave the GUI unresponsive during that time,
+                            // or even freeze the application if the action
+                            // fails to end in reasonable time.
+                            egui::widgets::Slider::new(&mut self.update_timestep, 0.001..=3.0)
+                                .suffix(" s"),
+                        );
+                    });
 
                     ui.menu_button(tr.text("tr-menu-help"), |ui| {
                         actions.help.render_menu(ctx, ui, online_documentation_url)
@@ -353,6 +357,17 @@ impl MenuBar {
                                 )
                             });
                         } else if actions
+                            .place
+                            .place_route_plan
+                            .consume_key_triggered(ctx, ui)
+                        {
+                            self.is_placing_via = false;
+                            workspace.interactor.interact(InteractionStepper::RoutePlan(
+                                RoutePlan::new(
+                                    self.multilayer_autoroute_options.planar.principal_layer,
+                                ),
+                            ));
+                        } else if actions
                             .route
                             .planar_autoroute
                             .consume_key_triggered(ctx, ui)
@@ -371,17 +386,6 @@ impl MenuBar {
                             schedule(error_dialog, workspace, |selection| {
                                 Command::MeasureLength(selection.band_selection)
                             });
-                        } else if actions
-                            .place
-                            .place_route_plan
-                            .consume_key_triggered(ctx, ui)
-                        {
-                            self.is_placing_via = false;
-                            workspace.interactor.interact(InteractionStepper::RoutePlan(
-                                RoutePlan::new(
-                                    self.multilayer_autoroute_options.planar.principal_layer,
-                                ),
-                            ));
                         }
                     }
                 }

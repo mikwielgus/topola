@@ -21,19 +21,9 @@ tr-menu-edit-remove-bands = Remove Bands
 tr-menu-view = View
 tr-menu-view-zoom-to-fit = Zoom to Fit
 tr-menu-view-show-ratsnest = Show Ratsnest
-tr-menu-view-show-navmesh = Show Navmesh
-tr-menu-view-show-guide-circles = Show Guide-Circles
-tr-menu-view-show-guide-bitangents = Show Guide-Bitangents
-tr-menu-view-show-triangulation = Show Triangulation
-tr-menu-view-show-triangulation-constraints = Show Triangulation Constraints
-tr-menu-view-show-pathfinding-scores = Show Pathfinding Scores
-tr-menu-view-show-topo-navmesh = Show Topological Navmesh
-tr-menu-view-show-bboxes = Show BBoxes
 tr-menu-view-show-origin-destination = Show Origin–Destination
-tr-menu-view-show-primitive-indices = Show Primitive Indices
 tr-menu-view-show-layer-manager = Show Layer Manager
 tr-menu-view-kdb-scroll-delta-factor = Keyboard scroll delta factor
-tr-menu-view-frame-timestep = Frame Timestep
 
 tr-menu-place = Place
 tr-menu-place-place-via = Place Via
@@ -46,10 +36,22 @@ tr-menu-route-topo-autoroute = Topological planar Autoroute
 tr-menu-route-routed-band-width = Routed Band Width
 tr-menu-route-fanout-clearance = Fanout Clearance
 
+tr-menu-debug = Debug
+tr-menu-debug-show-navmesh = Show Navmesh
+tr-menu-debug-show-guide-circles = Show Guide-Circles
+tr-menu-debug-show-guide-bitangents = Show Guide-Bitangents
+tr-menu-debug-show-triangulation = Show Triangulation
+tr-menu-debug-show-triangulation-constraints = Show Triangulation Constraints
+tr-menu-debug-show-pathfinding-scores = Show Pathfinding Scores
+tr-menu-debug-show-topo-navmesh = Show Topological Navmesh
+tr-menu-debug-show-bboxes = Show BBoxes
+tr-menu-debug-show-primitive-indices = Show Primitive Indices
+tr-menu-debug-update-timestep = Update Timestep
+
 tr-menu-help = Help
 tr-menu-help-online-documentation = Online Documentation
 
-# Misnamed tag, TODO fix this.
+# Misnamed tag. TODO fix this.
 tr-menu-options = Options
 
 tr-menu-route-options-presort-by = Presort by
@@ -58,9 +60,9 @@ tr-menu-route-options-presort-by-pairwise-detours = Pairwise Detours
 
 tr-menu-route-options-permutate = Permutate
 
-## Continuously applied, so use frequentative or imperfective aspect
-## if possible, e.g. in Polish it should be "przeciskaj pod taśmami"
-## (frequentative) instead of "przeciśnij pod taśmami".
+## Continuously applied, so use frequentative or imperfective aspect if
+## possible, e.g. in Polish it should be "przeciskaj pod taśmami" (imperfective)
+## instead of "przeciśnij pod taśmami".
 
 tr-menu-route-options-squeeze-through-under-bends = Squeeze through under Bends
 tr-menu-route-options-wrap-around-bands = Wrap around Bands
