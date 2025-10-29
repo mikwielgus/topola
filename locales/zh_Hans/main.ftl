@@ -64,3 +64,4 @@ tr-menu-debug-show-guide-bitangents = 显示双切线
 tr-menu-debug-show-primitive-indices = 显示图元索引‌
 tr-menu-route-planar-autoroute = 平面自动布线
 tr-menu-route-fanout-clearance = 扇出间距‌
+tr-menu-debug = 调试
