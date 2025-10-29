@@ -64,3 +64,5 @@ tr-menu-debug-show-guide-circles = Zeige Führungskreise
 tr-menu-debug-show-primitive-indices = Zeige primitive Indizes
 tr-menu-route-planar-autoroute = planares Autorouten
 tr-menu-route-fanout-clearance = Fanout-Mindestabstand
+tr-menu-debug = Debuggen
+tr-menu-debug-fix-step-rate = Schrittweite festsetzen
