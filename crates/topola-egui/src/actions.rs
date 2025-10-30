@@ -364,6 +364,8 @@ impl InspectActions {
 }
 
 pub struct DebugActions {
+    pub highlight_obstacles: Switch,
+    pub show_ghosts: Switch,
     pub show_navmesh: Switch,
     pub show_guide_circles: Switch,
     pub show_guide_bitangents: Switch,
@@ -379,6 +381,9 @@ pub struct DebugActions {
 impl DebugActions {
     pub fn new(tr: &Translator) -> Self {
         Self {
+            highlight_obstacles: Action::new_keyless(tr.text("tr-menu-debug-highlight-obstacles"))
+                .into_switch(),
+            show_ghosts: Action::new_keyless(tr.text("tr-menu-debug-show-ghosts")).into_switch(),
             show_navmesh: Action::new_keyless(tr.text("tr-menu-debug-show-navmesh")).into_switch(),
             show_guide_circles: Action::new_keyless(tr.text("tr-menu-debug-show-guide-circles"))
                 .into_switch(),
@@ -409,6 +414,9 @@ impl DebugActions {
     }
 
     pub fn render_menu(&mut self, _ctx: &Context, ui: &mut Ui, menu_bar: &mut MenuBar) {
+        self.highlight_obstacles
+            .checkbox(ui, &mut menu_bar.highlight_obstacles);
+        self.show_ghosts.checkbox(ui, &mut menu_bar.show_ghosts);
         self.show_navmesh.checkbox(ui, &mut menu_bar.show_navmesh);
         self.show_guide_circles
             .checkbox(ui, &mut menu_bar.show_guide_circles);

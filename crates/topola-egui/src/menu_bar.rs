@@ -28,6 +28,8 @@ use crate::{
 pub struct MenuBar {
     pub multilayer_autoroute_options: MultilayerAutorouteOptions,
     pub is_placing_via: bool,
+    pub highlight_obstacles: bool,
+    pub show_ghosts: bool,
     pub show_ratsnest: bool,
     pub show_navmesh: bool,
     pub show_guide_circles: bool,
@@ -63,6 +65,8 @@ impl MenuBar {
                 },
             },
             is_placing_via: false,
+            highlight_obstacles: false,
+            show_ghosts: false,
             show_ratsnest: true,
             show_navmesh: false,
             show_guide_circles: false,

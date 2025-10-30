@@ -49,7 +49,7 @@ impl<'a> Displayer<'a> {
     }
 
     pub fn update(&mut self, ctx: &egui::Context, menu_bar: &MenuBar) {
-        self.display_layout(ctx);
+        self.display_layout(ctx, menu_bar);
 
         if menu_bar.show_ratsnest {
             self.display_ratsnest(menu_bar);
@@ -82,7 +82,7 @@ impl<'a> Displayer<'a> {
         }
     }
 
-    fn display_layout(&mut self, ctx: &egui::Context) {
+    fn display_layout(&mut self, ctx: &egui::Context, menu_bar: &MenuBar) {
         let board = self.workspace.interactor.invoker().autorouter().board();
         let active_polygons = self
             .workspace
@@ -109,7 +109,8 @@ impl<'a> Displayer<'a> {
                             .color(board.layout().rules().layer_layername(i))
                             .highlighted
                     } else if let Some(activity) = &mut self.workspace.interactor.maybe_activity() {
-                        if activity.obstacles().contains(&primitive) {
+                        if menu_bar.highlight_obstacles && activity.obstacles().contains(&primitive)
+                        {
                             self.config
                                 .colors(ctx)
                                 .layers
@@ -527,9 +528,11 @@ impl<'a> Displayer<'a> {
         let board = self.workspace.interactor.invoker().autorouter().board();
 
         if let Some(activity) = self.workspace.interactor.maybe_activity() {
-            for ghost in activity.ghosts() {
-                self.painter
-                    .paint_primitive(ghost, egui::Color32::from_rgb(75, 75, 150));
+            if menu_bar.show_ghosts {
+                for ghost in activity.ghosts() {
+                    self.painter
+                        .paint_primitive(ghost, egui::Color32::from_rgb(75, 75, 150));
+                }
             }
 
             if let ActivityStepper::Interaction(InteractionStepper::RoutePlan(rp)) =
@@ -585,7 +588,7 @@ impl<'a> Displayer<'a> {
                 .center();
 
             let color = if let Some(activity) = &mut self.workspace.interactor.maybe_activity() {
-                if activity.obstacles().contains(&primitive) {
+                if menu_bar.highlight_obstacles && activity.obstacles().contains(&primitive) {
                     egui::Color32::from_rgb(255, 255, 255)
                 } else {
                     egui::Color32::from_rgb(150, 150, 150)

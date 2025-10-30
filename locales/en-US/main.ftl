@@ -37,6 +37,8 @@ tr-menu-route-routed-band-width = Routed Band Width
 tr-menu-route-fanout-clearance = Fanout Clearance
 
 tr-menu-debug = Debug
+tr-menu-debug-highlight-obstacles = Highlight Obstacles
+tr-menu-debug-show-ghosts = Show Ghosts
 tr-menu-debug-show-navmesh = Show Navmesh
 tr-menu-debug-show-guide-circles = Show Guide-Circles
 tr-menu-debug-show-guide-bitangents = Show Guide-Bitangents
