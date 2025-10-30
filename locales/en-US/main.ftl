@@ -47,7 +47,8 @@ tr-menu-debug-show-topo-navmesh = Show Topological Navmesh
 tr-menu-debug-show-bboxes = Show BBoxes
 tr-menu-debug-show-primitive-indices = Show Primitive Indices
 tr-menu-debug-fix-step-rate = Fix Step Rate
-tr-menu-debug-update-timestep = Update Timestep
+tr-menu-debug-step-rate = Step Rate
+tr-menu-debug-step-rate-unit = steps/s
 
 tr-menu-help = Help
 tr-menu-help-online-documentation = Online Documentation
@@ -61,9 +62,9 @@ tr-menu-route-options-presort-by-pairwise-detours = Pairwise Detours
 
 tr-menu-route-options-permutate = Permutate
 
-## Continuously applied, so use frequentative or imperfective aspect if
-## possible, e.g. in Polish it should be "przeciskaj pod taśmami" (imperfective)
-## instead of "przeciśnij pod taśmami".
+## This refers to behavior that is continuously applied, so use frequentative or
+## imperfective aspect if possible, e.g. in Polish it should be "przeciskaj pod
+## taśmami" (imperfective) instead of "przeciśnij pod taśmami".
 
 tr-menu-route-options-squeeze-through-under-bends = Squeeze through under Bends
 tr-menu-route-options-wrap-around-bands = Wrap around Bands
@@ -71,10 +72,6 @@ tr-menu-route-options-wrap-around-bands = Wrap around Bands
 ##
 
 tr-menu-inspect = Inspect
-
-# Unused.
-tr-menu-inspect-compare-detours = Compare Detours
-
 tr-menu-inspect-measure-length = Measure Length
 
 tr-menu-preferences = Preferences

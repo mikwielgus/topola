@@ -41,7 +41,7 @@ pub struct MenuBar {
     pub show_primitive_indices: bool,
     pub show_appearance_panel: bool,
     pub fix_step_rate: bool,
-    pub update_timestep: f32,
+    pub step_rate: f32,
 }
 
 impl MenuBar {
@@ -76,7 +76,7 @@ impl MenuBar {
             show_primitive_indices: false,
             show_appearance_panel: true,
             fix_step_rate: false,
-            update_timestep: 0.25,
+            step_rate: 1.0,
         }
     }
 
@@ -170,10 +170,13 @@ impl MenuBar {
                         actions.debug.render_menu(ctx, ui, self);
 
                         ui.add_enabled_ui(self.fix_step_rate, |ui| {
-                            ui.label(tr.text("tr-menu-debug-update-timestep"));
+                            ui.label(tr.text("tr-menu-debug-step-rate"));
                             ui.add(
-                                egui::widgets::Slider::new(&mut self.update_timestep, 0.01..=3.0)
-                                    .suffix(" s"),
+                                egui::widgets::Slider::new(&mut self.step_rate, 100.0..=0.1)
+                                    .suffix(format!(
+                                        " {}",
+                                        tr.text("tr-menu-debug-step-rate-unit")
+                                    )),
                             );
                         });
                     });
