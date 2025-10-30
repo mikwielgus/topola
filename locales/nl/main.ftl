@@ -62,3 +62,7 @@ tr-menu-debug-show-guide-bitangents = Toon gids-bitangent
 tr-menu-debug-show-primitive-indices = Primitieve indices weergeven
 tr-menu-route-planar-autoroute = Planaire Autoroute
 tr-menu-route-fanout-clearance = Uitwaaieringsvrijgave
+tr-menu-debug = Foutopsporing
+tr-menu-debug-fix-step-rate = Vaste stappentempo
+tr-menu-debug-step-rate = Stappentempo
+tr-menu-debug-step-rate-unit = stappen/s
