@@ -66,3 +66,5 @@ tr-menu-debug = Foutopsporing
 tr-menu-debug-fix-step-rate = Vaste stappentempo
 tr-menu-debug-step-rate = Stappentempo
 tr-menu-debug-step-rate-unit = stappen/s
+tr-menu-debug-highlight-obstacles = Obstakels markeren
+tr-menu-debug-show-ghosts = Toon spoken
