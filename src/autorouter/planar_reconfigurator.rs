@@ -24,7 +24,9 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
-    stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Reconfigure, Step},
+    stepper::{
+        Abort, EstimateLinearProgress, LinearProgress, ReconfiguratorStatus, Reconfigure, Step,
+    },
 };
 
 pub type PlanarAutorouteReconfiguratorStatus =
@@ -118,17 +120,11 @@ impl<M: AccessMesadata> Abort<Autorouter<M>> for PlanarAutorouteReconfigurator {
     }
 }
 
-impl EstimateProgress for PlanarAutorouteReconfigurator {
+impl EstimateLinearProgress for PlanarAutorouteReconfigurator {
     type Value = f64;
 
-    fn estimate_progress_value(&self) -> f64 {
-        // TODO.
-        self.stepper.estimate_progress_value()
-    }
-
-    fn estimate_progress_maximum(&self) -> f64 {
-        // TODO.
-        self.stepper.estimate_progress_maximum()
+    fn estimate_linear_progress(&self) -> LinearProgress<f64> {
+        self.stepper.estimate_linear_progress()
     }
 }
 

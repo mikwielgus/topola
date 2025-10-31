@@ -6,7 +6,7 @@
 
 use crate::{
     board::{edit::BoardEdit, AccessMesadata},
-    stepper::EstimateProgress,
+    stepper::EstimateLinearProgress,
 };
 
 use super::{invoker::GetDebugOverlayData, selection::BandSelection, Autorouter, AutorouterError};
@@ -48,7 +48,7 @@ impl RemoveBandsExecutionStepper {
     }
 }
 
-impl EstimateProgress for RemoveBandsExecutionStepper {
+impl EstimateLinearProgress for RemoveBandsExecutionStepper {
     type Value = f64;
 }
 impl GetDebugOverlayData for RemoveBandsExecutionStepper {}

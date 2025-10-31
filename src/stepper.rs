@@ -4,6 +4,8 @@
 
 use core::ops::ControlFlow;
 
+use derive_getters::Getters;
+
 /// This trait represents a linearly advanceable state whose advancement may
 /// break or fail with many different return values, and to which part of
 /// the information, called the context, has to be supplied on each call as a
@@ -81,15 +83,23 @@ pub trait OnEvent<Ctx, Event> {
     fn on_event(&mut self, context: &mut Ctx, event: Event) -> Self::Output;
 }
 
+#[derive(Clone, Copy, Debug, Getters)]
+pub struct LinearProgress<V> {
+    value: V,
+    maximum: V,
+}
+
+impl<V> LinearProgress<V> {
+    pub fn new(value: V, maximum: V) -> Self {
+        Self { value, maximum }
+    }
+}
+
 /// Some steppers report estimates of how far they are from completion.
-pub trait EstimateProgress {
+pub trait EstimateLinearProgress {
     type Value: Default;
 
-    fn estimate_progress_value(&self) -> Self::Value {
-        Self::Value::default()
-    }
-
-    fn estimate_progress_maximum(&self) -> Self::Value {
-        Self::Value::default()
+    fn estimate_linear_progress(&self) -> LinearProgress<Self::Value> {
+        LinearProgress::new(Self::Value::default(), Self::Value::default())
     }
 }

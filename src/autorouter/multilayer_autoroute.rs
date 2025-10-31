@@ -21,7 +21,9 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{edit::Edit, primitive::PrimitiveShape},
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
-    stepper::{Abort, EstimateProgress, ReconfiguratorStatus, Reconfigure, Step},
+    stepper::{
+        Abort, EstimateLinearProgress, LinearProgress, ReconfiguratorStatus, Reconfigure, Step,
+    },
 };
 
 #[derive(Clone, Debug)]
@@ -117,15 +119,11 @@ impl<M: AccessMesadata> Reconfigure<Autorouter<M>> for MultilayerAutorouteExecut
     }
 }
 
-impl EstimateProgress for MultilayerAutorouteExecutionStepper {
+impl EstimateLinearProgress for MultilayerAutorouteExecutionStepper {
     type Value = f64;
 
-    fn estimate_progress_value(&self) -> f64 {
-        self.planar.estimate_progress_value()
-    }
-
-    fn estimate_progress_maximum(&self) -> f64 {
-        self.planar.estimate_progress_maximum()
+    fn estimate_linear_progress(&self) -> LinearProgress<f64> {
+        self.planar.estimate_linear_progress()
     }
 }
 

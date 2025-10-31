@@ -12,7 +12,7 @@ use crate::{
         AccessMesadata,
     },
     layout::{via::ViaWeight, LayoutEdit},
-    stepper::EstimateProgress,
+    stepper::EstimateLinearProgress,
 };
 
 use super::{invoker::GetDebugOverlayData, Autorouter, AutorouterError};
@@ -53,7 +53,7 @@ impl PlaceViaExecutionStepper {
     }
 }
 
-impl EstimateProgress for PlaceViaExecutionStepper {
+impl EstimateLinearProgress for PlaceViaExecutionStepper {
     type Value = f64;
 }
 impl GetDebugOverlayData for PlaceViaExecutionStepper {}

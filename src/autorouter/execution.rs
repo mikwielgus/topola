@@ -16,7 +16,7 @@ use crate::{
     board::{edit::BoardEdit, AccessMesadata},
     layout::via::ViaWeight,
     router::ng,
-    stepper::{Abort, EstimateProgress, Step},
+    stepper::{Abort, EstimateLinearProgress, LinearProgress, Step},
 };
 
 use super::{
@@ -173,33 +173,20 @@ impl<M: AccessMesadata + Clone> Abort<Invoker<M>> for ExecutionStepper<M> {
 
 // Since enum_dispatch does not really support generics, we implement this the
 // long way.
-impl<M> EstimateProgress for ExecutionStepper<M> {
+impl<M> EstimateLinearProgress for ExecutionStepper<M> {
     type Value = f64;
 
-    fn estimate_progress_value(&self) -> f64 {
-        match self {
-            ExecutionStepper::MultilayerAutoroute(autoroute) => autoroute.estimate_progress_value(),
-            ExecutionStepper::PlanarAutoroute(autoroute) => autoroute.estimate_progress_value(),
-            ExecutionStepper::TopoAutoroute(toporoute) => toporoute.estimate_progress_value(),
-            ExecutionStepper::PlaceVia(place_via) => place_via.estimate_progress_value(),
-            ExecutionStepper::RemoveBands(remove_bands) => remove_bands.estimate_progress_value(),
-            ExecutionStepper::MeasureLength(measure_length) => {
-                measure_length.estimate_progress_value()
-            }
-        }
-    }
-
-    fn estimate_progress_maximum(&self) -> f64 {
+    fn estimate_linear_progress(&self) -> LinearProgress<f64> {
         match self {
             ExecutionStepper::MultilayerAutoroute(autoroute) => {
-                autoroute.estimate_progress_maximum()
+                autoroute.estimate_linear_progress()
             }
-            ExecutionStepper::PlanarAutoroute(autoroute) => autoroute.estimate_progress_maximum(),
-            ExecutionStepper::TopoAutoroute(toporoute) => toporoute.estimate_progress_maximum(),
-            ExecutionStepper::PlaceVia(place_via) => place_via.estimate_progress_maximum(),
-            ExecutionStepper::RemoveBands(remove_bands) => remove_bands.estimate_progress_maximum(),
+            ExecutionStepper::PlanarAutoroute(autoroute) => autoroute.estimate_linear_progress(),
+            ExecutionStepper::TopoAutoroute(toporoute) => toporoute.estimate_linear_progress(),
+            ExecutionStepper::PlaceVia(place_via) => place_via.estimate_linear_progress(),
+            ExecutionStepper::RemoveBands(remove_bands) => remove_bands.estimate_linear_progress(),
             ExecutionStepper::MeasureLength(measure_length) => {
-                measure_length.estimate_progress_maximum()
+                measure_length.estimate_linear_progress()
             }
         }
     }

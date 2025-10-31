@@ -20,7 +20,7 @@ use thiserror::Error;
 
 use std::cmp::Ordering;
 
-use crate::stepper::{EstimateProgress, Step};
+use crate::stepper::{EstimateLinearProgress, LinearProgress, Step};
 
 #[derive(Copy, Clone, Debug)]
 pub struct MinScored<K, T>(pub K, pub T);
@@ -443,7 +443,7 @@ where
     }
 }
 
-impl<G, K> EstimateProgress for ThetastarStepper<G, K>
+impl<G, K> EstimateLinearProgress for ThetastarStepper<G, K>
 where
     G: GraphBase,
     G::NodeId: Eq + Ord,
@@ -452,11 +452,7 @@ where
 {
     type Value = K;
 
-    fn estimate_progress_value(&self) -> K {
-        self.progress_estimate_value
-    }
-
-    fn estimate_progress_maximum(&self) -> K {
-        self.progress_estimate_maximum
+    fn estimate_linear_progress(&self) -> LinearProgress<Self::Value> {
+        LinearProgress::new(self.progress_estimate_value, self.progress_estimate_maximum)
     }
 }
