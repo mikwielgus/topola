@@ -18,7 +18,8 @@ obtain these.
 
 ### Obtaining the source
 
-Clone the [repository](https://codeberg.org/topola/topola):
+From your command line, clone the
+[repository](https://codeberg.org/topola/topola):
 
     git clone https://codeberg.org/topola/topola.git
 
@@ -30,7 +31,7 @@ Change your working directory to your clone of Topola's repository:
 
 ### Command-line application
 
-Topola has a command-line application written with the help of the
+Topola has a command-line application (CLI) written with the help of the
 [`clap`](https://docs.rs/clap/latest/clap/) library.
 
 #### Installation from source
@@ -44,18 +45,23 @@ application:
 
     cargo install --locked --path crates/topola-cli
 
-You can then invoke the application from your terminal as `topola`.
+You can then invoke the application from your terminal as `topola`. For example,
+
+    topola --help
+
+will display an explanation of the available command-line options and arguments.
 
 #### Debug build
 
-If you do not want to install new software on your system, or are interested in
-debugging or developing Topola, you can build a debug executable of the Topola's
-command-line application inside your working directory by running
+If you do not want to install new software on your system, or are interested
+in developing or debugging Topola, you need to build a debug executable of the
+Topola's command-line application inside your working directory by running
 
     cargo build -p topola-cli
 
-Once built, you can invoke the debug executable by replacing the `topola`
-command with `cargo run -p topola-cli -- `.
+Once built, you can invoke the debug executable by writing `cargo run -p
+topola-cli --` in the same place and with same arguments as you would write an
+installed `topola` command.
 
 #### Autorouting example
 
@@ -90,12 +96,13 @@ Topola has a graphical user interface (GUI) application written using the
 For displaying dialog boxes, Topola's GUI application uses the
 [Rusty File Dialogs](https://docs.rs/rfd/latest/rfd/) library.
 
-Due to technical constraints, these libraries have multiple runtime dependencies
-that are not managed by Cargo, and as such, it is impossible to determine
-whether these dependencies have been satisfied during compilation, but only once
-the application has been launched. Because of that, Topola may crash on startup,
-or have the file selection dialog not appear. If you encounter any problems,
-read the
+**_NOTE:_** Due to technical constraints, these libraries have multiple runtime dependencies
+that are not managed by the Rust's package manager, Cargo, and as such, it is
+impossible to determine whether these dependencies have been satisfied during
+compilation, but only once the application has been launched. Unfortunately,
+because of that, Topola may crash on startup or have file selection dialog not
+appear on some systems due to unsatisfied runtime dependencies. If you encounter
+any problems, read the
 [*Troubleshooting unmanaged runtime dependencies*](#troubleshooting-unmanaged-runtime-dependencies)
 subsection.
 
@@ -188,15 +195,16 @@ When trying to locate the source of a bug, it may be helpful to enable
 Wikipedia article needs improvement), which are nothing else but somewhat
 enchanced assertions.
 
-Unfortunately, the
-[contracts](https://docs.rs/contracts/latest/contracts/) library which we have
-been using enforces post-conditions via closures, which have deal-breaking
-limitations. To bypass these we have forked and modified it to use `try` blocks
-instead. The fork is vendored in the [vendored/contracts/](vendored/contracts/)
-directory.
+Regrettably, the [contracts](https://docs.rs/contracts/latest/contracts/)
+library which we have been using enforces post-conditions using closures.
+Borrow semantics of these closures cause compile errors for some function
+signatures, which is a deal-breaking limitation. Hence, to bypass this problem,
+we maintain our own fork of this library to use `try` blocks instead. Our
+fork's [repository](https://codeberg.org/topola/contracts-try) is available
+on Codeberg.
 
-However, `try` blocks are not present in stable Rust yet, so to use these you
-need to set up your toolchain to use a nightly version of Rust.
+However, `try` blocks are not present in stable Rust yet, so to be able to
+proceed you need to set up your toolchain to use a nightly version of Rust.
 
 #### Nightly Rust
 
@@ -211,12 +219,13 @@ You can go back to stable with
 #### Enabling contracts
 
 To enable contracts, simply add a `--no-default-features` switch. This switches
-off a default feature that prevents contracts from executing. For example, to
-build tests with contracts, simply run
+off a default feature called `disable_contracts` that was expanding every
+contract to a no-op during Rust's macro expansion. For instance, to build tests
+with contracts, simply run
 
     cargo test --no-default-features
 
-Of course, you can enable contracts for any build target. For instance, the
+Of course, you can enable contracts for any build target. For example, the
 following command will build the Topola's GUI application with debug profile and
 contracts enabled:
 

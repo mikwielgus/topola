@@ -7,13 +7,7 @@ SPDX-License-Identifier: MIT
 # Topola
 
 [Topola](https://topola.dev) is a work-in-progress interactive
-topological router in Rust.
-
-The project is funded by the [NLnet Foundation](https://nlnet.nl/) from
-the [NGI0 Entrust](https://nlnet.nl/entrust/) fund.
-
-<img src="./assets/logos/nlnet/nlnet.png" alt="NLnet Foundation banner" width="200"/>
-<img src="./assets/logos/ngi0/entrust.svg" alt="NGI0 Entrust banner" width="200"/>
+topological router for printed circuit boards (PCBs) in Rust.
 
 ## Chat
 
@@ -49,7 +43,17 @@ Topola is licensed under the [MIT licence](LICENSES/MIT.txt). Files present in
 the `assets/` directory are dual-licensed as under MIT or
 [Creative Commons Attribution 4.0 International](LICENSES/CC-BY-4.0.txt)
 licence. The file `crates/planar-incr-embed/src/math.rs` is dual-licensed as under
-MIT or [Apache 2.0](LICENSES/Apache-2.0.txt) license.
+MIT or [Apache 2.0](LICENSES/Apache-2.0.txt) licence.
+
+## Acknowledgements
+
+This project is funded through the NGI0 Entrust Fund, a fund established by
+NLnet with financial support from the European Commission's Next Generation
+Internet programme, under the aegis of DG Communications Networks, Content and
+Technology under grant agreement No 101069594.
+
+<img src="./assets/logos/nlnet/nlnet.png" alt="NLnet Foundation banner" width="200"/>
+<img src="./assets/logos/ngi0/entrust.svg" alt="NGI0 Entrust banner" width="200"/>
 
 ## Gallery
 
