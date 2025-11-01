@@ -20,7 +20,7 @@ use thiserror::Error;
 
 use std::cmp::Ordering;
 
-use crate::stepper::{EstimateLinearProgress, LinearProgress, Step};
+use crate::stepper::{EstimateLinearProgress, LinearScale, Step};
 
 #[derive(Copy, Clone, Debug)]
 pub struct MinScored<K, T>(pub K, pub T);
@@ -451,8 +451,13 @@ where
     K: Measure + Copy + Sub<Output = K>,
 {
     type Value = K;
+    type Subscale = ();
 
-    fn estimate_linear_progress(&self) -> LinearProgress<Self::Value> {
-        LinearProgress::new(self.progress_estimate_value, self.progress_estimate_maximum)
+    fn estimate_linear_progress(&self) -> LinearScale<Self::Value> {
+        LinearScale::new(
+            self.progress_estimate_value,
+            self.progress_estimate_maximum,
+            (),
+        )
     }
 }

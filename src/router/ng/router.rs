@@ -233,10 +233,6 @@ impl<R: AccessRules + Clone + std::panic::RefUnwindSafe> AutorouteExecutionStepp
     }
 }
 
-impl<M> EstimateLinearProgress for AutorouteExecutionStepper<M> {
-    type Value = f64;
-}
-
 impl<M> GetDebugOverlayData for AutorouteExecutionStepper<M> {
     fn maybe_topo_navmesh(&self) -> Option<pie::navmesh::NavmeshRef<'_, super::PieNavmeshBase>> {
         Some(pie::navmesh::NavmeshRef {

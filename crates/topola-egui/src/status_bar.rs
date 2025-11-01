@@ -43,15 +43,26 @@ impl StatusBar {
                 let linear_progress = activity.estimate_linear_progress();
                 let value = linear_progress.value();
                 let maximum = linear_progress.maximum();
+                let ratio = *value as f32 / *maximum as f32;
 
-                ui.add(
-                    egui::ProgressBar::new((value / maximum) as f32).text(format!(
-                        "{:.1} ({:.1}/{:.1})",
-                        value / maximum * 100.0,
-                        value,
-                        maximum
-                    )),
-                );
+                ui.add(egui::ProgressBar::new(ratio).text(format!(
+                    "{:.1}% ({:.1}/{:.1})",
+                    ratio * 100.0,
+                    value,
+                    maximum
+                )));
+
+                let linear_subprogress = linear_progress.subscale();
+                let value = linear_subprogress.value();
+                let maximum = linear_subprogress.maximum();
+                let ratio = *value as f32 / *maximum as f32;
+
+                ui.add(egui::ProgressBar::new(ratio).text(format!(
+                    "{:.1}% ({:.1}/{:.1})",
+                    ratio * 100.0,
+                    value,
+                    maximum
+                )));
             }
         });
     }

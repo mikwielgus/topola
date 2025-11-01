@@ -84,22 +84,36 @@ pub trait OnEvent<Ctx, Event> {
 }
 
 #[derive(Clone, Copy, Debug, Getters)]
-pub struct LinearProgress<V> {
+pub struct LinearScale<V, S = ()> {
     value: V,
     maximum: V,
+    subscale: S,
 }
 
-impl<V> LinearProgress<V> {
-    pub fn new(value: V, maximum: V) -> Self {
-        Self { value, maximum }
+impl<V, S> LinearScale<V, S> {
+    pub fn new(value: V, maximum: V, subscale: S) -> Self {
+        Self {
+            value,
+            maximum,
+            subscale,
+        }
+    }
+}
+
+impl<V: Default> Default for LinearScale<V> {
+    fn default() -> Self {
+        Self {
+            value: V::default(),
+            maximum: V::default(),
+            subscale: (),
+        }
     }
 }
 
 /// Some steppers report estimates of how far they are from completion.
 pub trait EstimateLinearProgress {
-    type Value: Default;
+    type Value;
+    type Subscale;
 
-    fn estimate_linear_progress(&self) -> LinearProgress<Self::Value> {
-        LinearProgress::new(Self::Value::default(), Self::Value::default())
-    }
+    fn estimate_linear_progress(&self) -> LinearScale<Self::Value, Self::Subscale>;
 }

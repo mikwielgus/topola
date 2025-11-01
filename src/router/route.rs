@@ -19,7 +19,7 @@ use crate::{
         thetastar::{ThetastarError, ThetastarStepper},
         Router, RouterThetastarStrategy,
     },
-    stepper::{EstimateLinearProgress, LinearProgress, Step},
+    stepper::{EstimateLinearProgress, LinearScale, Step},
 };
 
 #[derive(Getters, Dissolve)]
@@ -101,8 +101,9 @@ impl<R: AccessRules> Step<Router<'_, R>, BandTermsegIndex> for RouteStepper {
 
 impl EstimateLinearProgress for RouteStepper {
     type Value = f64;
+    type Subscale = ();
 
-    fn estimate_linear_progress(&self) -> LinearProgress<f64> {
+    fn estimate_linear_progress(&self) -> LinearScale<f64> {
         self.thetastar.estimate_linear_progress()
     }
 }

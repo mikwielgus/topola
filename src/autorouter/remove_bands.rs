@@ -4,10 +4,7 @@
 
 //! Provides functionality to remove bands from the layout.
 
-use crate::{
-    board::{edit::BoardEdit, AccessMesadata},
-    stepper::EstimateLinearProgress,
-};
+use crate::board::{edit::BoardEdit, AccessMesadata};
 
 use super::{invoker::GetDebugOverlayData, selection::BandSelection, Autorouter, AutorouterError};
 
@@ -48,7 +45,4 @@ impl RemoveBandsExecutionStepper {
     }
 }
 
-impl EstimateLinearProgress for RemoveBandsExecutionStepper {
-    type Value = f64;
-}
 impl GetDebugOverlayData for RemoveBandsExecutionStepper {}

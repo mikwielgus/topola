@@ -21,7 +21,7 @@ use crate::{
     router::{
         navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper, RouteStepper, Router,
     },
-    stepper::{Abort, EstimateLinearProgress, LinearProgress, Reconfigure, Step},
+    stepper::{Abort, EstimateLinearProgress, LinearScale, Reconfigure, Step},
 };
 
 use super::{
@@ -304,16 +304,22 @@ impl<M: AccessMesadata> Reconfigure<Autorouter<M>> for PlanarAutorouteExecutionS
 }
 
 impl EstimateLinearProgress for PlanarAutorouteExecutionStepper {
-    type Value = f64;
+    type Value = usize;
+    type Subscale = LinearScale<f64>;
 
-    fn estimate_linear_progress(&self) -> LinearProgress<f64> {
-        LinearProgress::new(
-            self.curr_ratline_index as f64
-                + self.route.as_ref().map_or(0.0, |route| {
-                    route.estimate_linear_progress().value()
-                        / route.estimate_linear_progress().maximum()
-                }),
-            self.configuration().ratlines.len() as f64,
+    fn estimate_linear_progress(&self) -> LinearScale<usize, LinearScale<f64>> {
+        LinearScale::new(
+            self.curr_ratline_index,
+            self.configuration().ratlines.len(),
+            LinearScale::new(
+                self.route
+                    .as_ref()
+                    .map_or(0.0, |route| *route.estimate_linear_progress().value()),
+                self.route
+                    .as_ref()
+                    .map_or(0.0, |route| *route.estimate_linear_progress().maximum()),
+                (),
+            ),
         )
     }
 }

@@ -16,7 +16,7 @@ use crate::{
     board::{edit::BoardEdit, AccessMesadata},
     layout::via::ViaWeight,
     router::ng,
-    stepper::{Abort, EstimateLinearProgress, LinearProgress, Step},
+    stepper::{Abort, EstimateLinearProgress, LinearScale, Step},
 };
 
 use super::{
@@ -172,21 +172,28 @@ impl<M: AccessMesadata + Clone> Abort<Invoker<M>> for ExecutionStepper<M> {
 }
 
 // Since enum_dispatch does not really support generics, we implement this the
-// long way.
+// long way by using `match`.
 impl<M> EstimateLinearProgress for ExecutionStepper<M> {
-    type Value = f64;
+    type Value = usize;
+    type Subscale = LinearScale<f64>;
 
-    fn estimate_linear_progress(&self) -> LinearProgress<f64> {
+    fn estimate_linear_progress(&self) -> LinearScale<usize, LinearScale<f64>> {
         match self {
             ExecutionStepper::MultilayerAutoroute(autoroute) => {
                 autoroute.estimate_linear_progress()
             }
             ExecutionStepper::PlanarAutoroute(autoroute) => autoroute.estimate_linear_progress(),
-            ExecutionStepper::TopoAutoroute(toporoute) => toporoute.estimate_linear_progress(),
-            ExecutionStepper::PlaceVia(place_via) => place_via.estimate_linear_progress(),
-            ExecutionStepper::RemoveBands(remove_bands) => remove_bands.estimate_linear_progress(),
-            ExecutionStepper::MeasureLength(measure_length) => {
-                measure_length.estimate_linear_progress()
+            ExecutionStepper::TopoAutoroute(..) => {
+                LinearScale::new(0, 0, LinearScale::new(0.0, 0.0, ()))
+            }
+            ExecutionStepper::PlaceVia(..) => {
+                LinearScale::new(0, 0, LinearScale::new(0.0, 0.0, ()))
+            }
+            ExecutionStepper::RemoveBands(..) => {
+                LinearScale::new(0, 0, LinearScale::new(0.0, 0.0, ()))
+            }
+            ExecutionStepper::MeasureLength(..) => {
+                LinearScale::new(0, 0, LinearScale::new(0.0, 0.0, ()))
             }
         }
     }
