@@ -64,3 +64,7 @@ tr-menu-route-planar-autoroute = 平面自动布线
 tr-menu-route-fanout-clearance = 扇出间距‌
 tr-menu-debug = 调试
 tr-menu-debug-fix-step-rate = 固定步进速率
+tr-menu-debug-highlight-obstacles = 高亮障碍物
+tr-menu-debug-show-ghosts = 显示虚影
+tr-menu-debug-step-rate = 步进速率
+tr-menu-debug-step-rate-unit = 步/秒
