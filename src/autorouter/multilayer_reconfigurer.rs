@@ -30,6 +30,7 @@ pub enum MultilayerAutorouteReconfigurer {
 
 pub struct IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer {
     last_configuration: MultilayerAutorouteConfiguration,
+    maybe_last_planar_status: Option<PlanarAutorouteConfigurationStatus>,
     maybe_best_planar_status: Option<PlanarAutorouteConfigurationStatus>,
     planar_autoroute_reconfiguration_count: u64,
 }
@@ -42,6 +43,7 @@ impl IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer {
     ) -> Self {
         Self {
             last_configuration: preconfiguration,
+            maybe_last_planar_status: None,
             maybe_best_planar_status: None,
             planar_autoroute_reconfiguration_count: 0,
         }
@@ -61,6 +63,8 @@ impl MakeNextMultilayerAutorouteConfiguration
         let Ok(planar_status) = planar_result else {
             return ControlFlow::Break(None);
         };
+
+        self.maybe_last_planar_status = Some(planar_status.clone());
 
         if self
             .maybe_best_planar_status
