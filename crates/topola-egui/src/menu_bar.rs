@@ -176,7 +176,7 @@ impl MenuBar {
                         ui.add_enabled_ui(self.fix_step_rate, |ui| {
                             ui.label(tr.text("tr-menu-debug-step-rate"));
                             ui.add(
-                                egui::widgets::Slider::new(&mut self.step_rate, 100.0..=0.1)
+                                egui::widgets::Slider::new(&mut self.step_rate, 0.1..=1000.0)
                                     .suffix(format!(
                                         " {}",
                                         tr.text("tr-menu-debug-step-rate-unit")
