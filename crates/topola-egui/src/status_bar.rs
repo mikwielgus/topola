@@ -4,7 +4,10 @@
 
 use std::ops::ControlFlow;
 
-use topola::{interactor::activity::ActivityStepperWithStatus, stepper::EstimateLinearProgress};
+use topola::{
+    interactor::activity::ActivityStepperWithStatus,
+    stepper::{EstimateProgress, GetMaybeReconfigurationTriggerProgress},
+};
 
 use crate::{translator::Translator, viewport::Viewport};
 
@@ -40,21 +43,32 @@ impl StatusBar {
             ));
 
             if let Some(activity) = maybe_activity {
-                let linear_progress = activity.estimate_linear_progress();
-                let value = linear_progress.value();
-                let maximum = linear_progress.maximum();
+                let progress = activity.estimate_progress();
+                let value = progress.value();
+                let maximum = progress.reference();
                 let ratio = *value as f32 / *maximum as f32;
 
-                ui.add(egui::ProgressBar::new(ratio).text(format!(
-                    "{:.1}% ({:.1}/{:.1})",
-                    ratio * 100.0,
-                    value,
-                    maximum
-                )));
+                if let Some(trigger_progress) = activity.reconfiguration_trigger_progress() {
+                    ui.add(egui::ProgressBar::new(ratio).text(format!(
+                        "{:.1}% ({:.1}/{:.1}) (sma: {:.1}, min: {:.1}))",
+                        ratio * 100.0,
+                        value,
+                        maximum,
+                        trigger_progress.value(),
+                        trigger_progress.reference(),
+                    )));
+                } else {
+                    ui.add(egui::ProgressBar::new(ratio).text(format!(
+                        "{:.1}% ({:.1}/{:.1})",
+                        ratio * 100.0,
+                        value,
+                        maximum
+                    )));
+                }
 
-                let linear_subprogress = linear_progress.subscale();
+                let linear_subprogress = progress.subscale();
                 let value = linear_subprogress.value();
-                let maximum = linear_subprogress.maximum();
+                let maximum = linear_subprogress.reference();
                 let ratio = *value as f32 / *maximum as f32;
 
                 ui.add(egui::ProgressBar::new(ratio).text(format!(

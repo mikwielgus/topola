@@ -39,7 +39,7 @@ pub struct Workspace {
         Receiver<std::io::Result<Result<History, serde_json::Error>>>,
     ),
 
-    update_counter: f32,
+    dt_accumulator: f32,
 }
 
 impl Workspace {
@@ -65,7 +65,7 @@ impl Workspace {
                 )
             })?,
             history_channel: channel(),
-            update_counter: 0.0,
+            dt_accumulator: 0.0,
         })
     }
 
@@ -82,12 +82,12 @@ impl Workspace {
         let instant = Instant::now();
 
         if maybe_step_rate.is_some() {
-            self.update_counter += interactive_input.dt;
+            self.dt_accumulator += interactive_input.dt;
         }
 
-        while maybe_step_rate.is_none_or(|step_rate| self.update_counter >= 1.0 / step_rate) {
+        while maybe_step_rate.is_none_or(|step_rate| self.dt_accumulator >= 1.0 / step_rate) {
             if let Some(step_rate) = maybe_step_rate {
-                self.update_counter -= 1.0 / step_rate;
+                self.dt_accumulator -= 1.0 / step_rate;
             }
 
             if let ControlFlow::Break(()) = self.update_state(tr, error_dialog, interactive_input) {

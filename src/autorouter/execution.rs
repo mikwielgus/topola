@@ -16,7 +16,7 @@ use crate::{
     board::{edit::BoardEdit, AccessMesadata},
     layout::via::ViaWeight,
     router::ng,
-    stepper::{Abort, EstimateLinearProgress, LinearScale, Step},
+    stepper::{Abort, EstimateProgress, GetMaybeReconfigurationTriggerProgress, LinearScale, Step},
 };
 
 use super::{
@@ -173,16 +173,14 @@ impl<M: AccessMesadata + Clone> Abort<Invoker<M>> for ExecutionStepper<M> {
 
 // Since enum_dispatch does not really support generics, we implement this the
 // long way by using `match`.
-impl<M> EstimateLinearProgress for ExecutionStepper<M> {
+impl<M> EstimateProgress for ExecutionStepper<M> {
     type Value = usize;
     type Subscale = LinearScale<f64>;
 
-    fn estimate_linear_progress(&self) -> LinearScale<usize, LinearScale<f64>> {
+    fn estimate_progress(&self) -> LinearScale<usize, LinearScale<f64>> {
         match self {
-            ExecutionStepper::MultilayerAutoroute(autoroute) => {
-                autoroute.estimate_linear_progress()
-            }
-            ExecutionStepper::PlanarAutoroute(autoroute) => autoroute.estimate_linear_progress(),
+            ExecutionStepper::MultilayerAutoroute(autoroute) => autoroute.estimate_progress(),
+            ExecutionStepper::PlanarAutoroute(autoroute) => autoroute.estimate_progress(),
             ExecutionStepper::TopoAutoroute(..) => {
                 LinearScale::new(0, 0, LinearScale::new(0.0, 0.0, ()))
             }
@@ -195,6 +193,25 @@ impl<M> EstimateLinearProgress for ExecutionStepper<M> {
             ExecutionStepper::MeasureLength(..) => {
                 LinearScale::new(0, 0, LinearScale::new(0.0, 0.0, ()))
             }
+        }
+    }
+}
+
+// Since enum_dispatch does not really support generics, we implement this the
+// long way by using `match`.
+impl<M> GetMaybeReconfigurationTriggerProgress for ExecutionStepper<M> {
+    type Subscale = ();
+
+    fn reconfiguration_trigger_progress(&self) -> Option<LinearScale<f64>> {
+        match self {
+            ExecutionStepper::MultilayerAutoroute(autoroute) => {
+                autoroute.reconfiguration_trigger_progress()
+            }
+            ExecutionStepper::PlanarAutoroute(autoroute) => None,
+            ExecutionStepper::TopoAutoroute(..) => None,
+            ExecutionStepper::PlaceVia(..) => None,
+            ExecutionStepper::RemoveBands(..) => None,
+            ExecutionStepper::MeasureLength(..) => None,
         }
     }
 }

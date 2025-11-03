@@ -25,7 +25,9 @@ use crate::{
         ng,
         thetastar::ThetastarStepper,
     },
-    stepper::{Abort, EstimateLinearProgress, LinearScale, OnEvent, Step},
+    stepper::{
+        Abort, EstimateProgress, GetMaybeReconfigurationTriggerProgress, LinearScale, OnEvent, Step,
+    },
 };
 
 /// Stores the interactive input data from the user.
@@ -99,17 +101,30 @@ impl<M: AccessMesadata + Clone> Abort<Invoker<M>> for ActivityStepper<M> {
 }
 
 // Since enum_dispatch does not really support generics, we implement this the
-// long way.
-impl<M> EstimateLinearProgress for ActivityStepper<M> {
+// long way by using `match`.
+impl<M> EstimateProgress for ActivityStepper<M> {
     type Value = usize;
     type Subscale = LinearScale<f64>;
 
-    fn estimate_linear_progress(&self) -> LinearScale<usize, LinearScale<f64>> {
+    fn estimate_progress(&self) -> LinearScale<usize, LinearScale<f64>> {
         match self {
             ActivityStepper::Interaction(..) => {
                 LinearScale::new(0, 0, LinearScale::new(0.0, 0.0, ()))
             }
-            ActivityStepper::Execution(execution) => execution.estimate_linear_progress(),
+            ActivityStepper::Execution(execution) => execution.estimate_progress(),
+        }
+    }
+}
+
+// Since enum_dispatch does not really support generics, we implement this the
+// long way by using `match`.
+impl<M> GetMaybeReconfigurationTriggerProgress for ActivityStepper<M> {
+    type Subscale = ();
+
+    fn reconfiguration_trigger_progress(&self) -> Option<LinearScale<f64>> {
+        match self {
+            ActivityStepper::Interaction(..) => None,
+            ActivityStepper::Execution(execution) => execution.reconfiguration_trigger_progress(),
         }
     }
 }
@@ -195,12 +210,20 @@ impl<M: AccessMesadata + Clone> OnEvent<ActivityContext<'_, M>, InteractiveEvent
     }
 }
 
-impl<M> EstimateLinearProgress for ActivityStepperWithStatus<M> {
+impl<M> EstimateProgress for ActivityStepperWithStatus<M> {
     type Value = usize;
     type Subscale = LinearScale<f64>;
 
-    fn estimate_linear_progress(&self) -> LinearScale<usize, LinearScale<f64>> {
-        self.activity.estimate_linear_progress()
+    fn estimate_progress(&self) -> LinearScale<usize, LinearScale<f64>> {
+        self.activity.estimate_progress()
+    }
+}
+
+impl<M> GetMaybeReconfigurationTriggerProgress for ActivityStepperWithStatus<M> {
+    type Subscale = ();
+
+    fn reconfiguration_trigger_progress(&self) -> Option<LinearScale<f64>> {
+        self.activity.reconfiguration_trigger_progress()
     }
 }
 

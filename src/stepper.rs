@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 use core::ops::ControlFlow;
+use std::{collections::VecDeque, time::Instant};
 
 use derive_getters::Getters;
 
@@ -86,34 +87,104 @@ pub trait OnEvent<Ctx, Event> {
 #[derive(Clone, Copy, Debug, Getters)]
 pub struct LinearScale<V, S = ()> {
     value: V,
-    maximum: V,
+    reference: V,
     subscale: S,
 }
 
 impl<V, S> LinearScale<V, S> {
-    pub fn new(value: V, maximum: V, subscale: S) -> Self {
+    pub fn new(value: V, reference: V, subscale: S) -> Self {
         Self {
             value,
-            maximum,
+            reference,
             subscale,
         }
     }
 }
 
-impl<V: Default> Default for LinearScale<V> {
-    fn default() -> Self {
-        Self {
-            value: V::default(),
-            maximum: V::default(),
-            subscale: (),
-        }
-    }
-}
-
 /// Some steppers report estimates of how far they are from completion.
-pub trait EstimateLinearProgress {
+pub trait EstimateProgress {
     type Value;
     type Subscale;
 
-    fn estimate_linear_progress(&self) -> LinearScale<Self::Value, Self::Subscale>;
+    fn estimate_progress(&self) -> LinearScale<Self::Value, Self::Subscale>;
+}
+
+pub trait GetMaybeReconfigurationTriggerProgress {
+    type Subscale;
+
+    fn reconfiguration_trigger_progress(&self) -> Option<LinearScale<f64, Self::Subscale>>;
+}
+
+#[derive(Clone, Debug, Getters)]
+pub struct SmaRateReconfigurationTrigger {
+    #[getter(skip)]
+    sample_buffer: VecDeque<f64>,
+    #[getter(skip)]
+    last_instant: Instant,
+    #[getter(skip)]
+    last_value: f64,
+    maybe_sma_rate_per_sec: Option<f64>,
+    #[getter(skip)]
+    sample_buffer_size: usize,
+    #[getter(skip)]
+    sampling_interval_secs: f64,
+    min_sma_rate_per_sec: f64,
+}
+
+impl SmaRateReconfigurationTrigger {
+    pub fn new(
+        sample_buffer_size: usize,
+        sampling_interval_secs: f64,
+        min_sma_rate_per_sec: f64,
+    ) -> Self {
+        Self {
+            sample_buffer: VecDeque::new(),
+            last_instant: Instant::now(),
+            last_value: 0.0,
+            maybe_sma_rate_per_sec: None,
+            sample_buffer_size,
+            sampling_interval_secs,
+            min_sma_rate_per_sec,
+        }
+    }
+
+    pub fn update(&mut self, value: f64) -> bool {
+        let elapsed = self.last_instant.elapsed();
+        let delta = value - self.last_value;
+
+        if elapsed.as_secs_f64() >= self.sampling_interval_secs {
+            let count = (elapsed.as_secs_f64() / self.sampling_interval_secs) as usize;
+            let mut total_pushed = 0.0;
+            let mut total_popped = 0.0;
+
+            for _ in 0..count {
+                let pushed = delta.max(0.0) / count as f64;
+                self.sample_buffer.push_back(delta.max(0.0) / count as f64);
+                total_pushed += pushed;
+
+                if self.sample_buffer.len() > self.sample_buffer_size {
+                    total_popped += self.sample_buffer.pop_front().unwrap_or_default();
+                }
+            }
+
+            if let Some(sma_rate_per_sec) = self.maybe_sma_rate_per_sec {
+                self.maybe_sma_rate_per_sec = Some(
+                    sma_rate_per_sec
+                        + (total_pushed - total_popped) / self.sample_buffer_size as f64,
+                )
+            } else if self.sample_buffer.len() >= self.sample_buffer_size {
+                self.maybe_sma_rate_per_sec =
+                    Some(self.sample_buffer.iter().sum::<f64>() / self.sample_buffer_size as f64)
+            }
+
+            self.last_instant = Instant::now();
+            self.last_value = value;
+        }
+
+        if let Some(sma_rate_per_sec) = self.maybe_sma_rate_per_sec {
+            sma_rate_per_sec >= self.min_sma_rate_per_sec
+        } else {
+            true
+        }
+    }
 }

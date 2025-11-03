@@ -30,7 +30,8 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
     stepper::{
-        Abort, EstimateLinearProgress, LinearScale, ReconfiguratorStatus, Reconfigure, Step,
+        Abort, EstimateProgress, GetMaybeReconfigurationTriggerProgress, LinearScale,
+        ReconfiguratorStatus, Reconfigure, SmaRateReconfigurationTrigger, Step,
     },
 };
 
@@ -39,6 +40,7 @@ pub type MultilayerReconfiguratorStatus =
 
 pub struct MultilayerAutorouteReconfigurator {
     stepper: MultilayerAutorouteExecutionStepper,
+    reconfiguration_trigger: SmaRateReconfigurationTrigger,
     reconfigurer: MultilayerAutorouteReconfigurer,
     options: MultilayerAutorouteOptions,
 }
@@ -72,6 +74,7 @@ impl MultilayerAutorouteReconfigurator {
                 preconfiguration,
                 options,
             )?,
+            reconfiguration_trigger: SmaRateReconfigurationTrigger::new(10, 0.5, 0.5),
             reconfigurer,
             options,
         })
@@ -83,6 +86,9 @@ impl MultilayerAutorouteReconfigurator {
         planar_result: Result<PlanarAutorouteConfigurationStatus, AutorouterError>,
     ) -> Result<ControlFlow<Option<BoardEdit>, MultilayerReconfiguratorStatus>, AutorouterError>
     {
+        // Reset the reconfiguration trigger.
+        self.reconfiguration_trigger = SmaRateReconfigurationTrigger::new(4, 0.5, 0.5);
+
         loop {
             let configuration = match self
                 .reconfigurer
@@ -120,6 +126,9 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, MultilayerReconfi
         autorouter: &mut Autorouter<M>,
     ) -> Result<ControlFlow<Option<BoardEdit>, MultilayerReconfiguratorStatus>, AutorouterError>
     {
+        self.reconfiguration_trigger
+            .update(*self.estimate_progress().value() as f64);
+
         match self.stepper.step(autorouter) {
             Ok(ControlFlow::Break(maybe_edit)) => Ok(ControlFlow::Break(maybe_edit)),
             Ok(ControlFlow::Continue(ReconfiguratorStatus::Running(status))) => {
@@ -141,12 +150,24 @@ impl<M: AccessMesadata> Abort<Autorouter<M>> for MultilayerAutorouteReconfigurat
     }
 }
 
-impl EstimateLinearProgress for MultilayerAutorouteReconfigurator {
+impl EstimateProgress for MultilayerAutorouteReconfigurator {
     type Value = usize;
     type Subscale = LinearScale<f64>;
 
-    fn estimate_linear_progress(&self) -> LinearScale<usize, LinearScale<f64>> {
-        self.stepper.estimate_linear_progress()
+    fn estimate_progress(&self) -> LinearScale<usize, LinearScale<f64>> {
+        self.stepper.estimate_progress()
+    }
+}
+
+impl GetMaybeReconfigurationTriggerProgress for MultilayerAutorouteReconfigurator {
+    type Subscale = ();
+
+    fn reconfiguration_trigger_progress(&self) -> Option<LinearScale<f64>> {
+        Some(LinearScale::new(
+            (*self.reconfiguration_trigger.maybe_sma_rate_per_sec())?,
+            *self.reconfiguration_trigger.min_sma_rate_per_sec(),
+            (),
+        ))
     }
 }
 
