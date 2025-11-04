@@ -216,3 +216,21 @@ fn autoroute_smd_non_rectangular_buck_converter(variant: &str) {
     common::assert_that_all_ratlines_besides_gnd_are_autorouted(&mut autorouter);
     //common::assert_number_of_conncomps(&mut autorouter, 16);
 }
+
+#[apply(test_master)]
+fn autoroute_triangle_problem(variant: &str) {
+    let path = "tests/single_layer/triangle_problem/triangle_problem.dsn";
+    let autorouter = common::load_design(&path);
+
+    let mut invoker = common::create_invoker_and_assert(autorouter);
+
+    common::replay_and_assert_and_report(
+        &mut invoker,
+        "tests/single_layer/triangle_problem/route_all.cmd",
+        variant,
+    );
+
+    let (mut autorouter, ..) = invoker.dissolve();
+
+    common::assert_that_all_ratlines_besides_gnd_are_autorouted(&mut autorouter);
+}
