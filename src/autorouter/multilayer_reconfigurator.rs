@@ -74,7 +74,7 @@ impl MultilayerAutorouteReconfigurator {
                 preconfiguration,
                 options,
             )?,
-            reconfiguration_trigger: SmaRateReconfigurationTrigger::new(10, 0.5, 0.5),
+            reconfiguration_trigger: SmaRateReconfigurationTrigger::new(4, 0.5, 0.5),
             reconfigurer,
             options,
         })
@@ -90,10 +90,10 @@ impl MultilayerAutorouteReconfigurator {
         self.reconfiguration_trigger = SmaRateReconfigurationTrigger::new(4, 0.5, 0.5);
 
         loop {
-            let configuration = match self
-                .reconfigurer
-                .next_configuration(autorouter, planar_result.clone())
-            {
+            self.reconfigurer
+                .process_planar_result(autorouter, planar_result.clone());
+
+            let configuration = match self.reconfigurer.next_configuration(autorouter) {
                 ControlFlow::Continue(()) => {
                     return Ok(ControlFlow::Continue(ReconfiguratorStatus::Running(
                         ReconfiguratorStatus::Reconfigured(planar_result?),

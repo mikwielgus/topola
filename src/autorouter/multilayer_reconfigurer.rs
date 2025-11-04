@@ -16,10 +16,15 @@ use crate::autorouter::{
 
 #[enum_dispatch]
 pub trait MakeNextMultilayerAutorouteConfiguration {
-    fn next_configuration(
+    fn process_planar_result(
         &mut self,
         autorouter: &Autorouter<impl AccessMesadata>,
         planar_result: Result<PlanarAutorouteConfigurationStatus, AutorouterError>,
+    );
+
+    fn next_configuration(
+        &mut self,
+        autorouter: &Autorouter<impl AccessMesadata>,
     ) -> ControlFlow<Option<MultilayerAutorouteConfiguration>>;
 }
 
@@ -53,15 +58,15 @@ impl IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer {
 impl MakeNextMultilayerAutorouteConfiguration
     for IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer
 {
-    fn next_configuration(
+    fn process_planar_result(
         &mut self,
-        autorouter: &Autorouter<impl AccessMesadata>,
+        _autorouter: &Autorouter<impl AccessMesadata>,
         planar_result: Result<PlanarAutorouteConfigurationStatus, AutorouterError>,
-    ) -> ControlFlow<Option<MultilayerAutorouteConfiguration>> {
+    ) {
         self.planar_autoroute_reconfiguration_count += 1;
 
         let Ok(planar_status) = planar_result else {
-            return ControlFlow::Break(None);
+            return;
         };
 
         self.maybe_last_planar_status = Some(planar_status.clone());
@@ -73,7 +78,12 @@ impl MakeNextMultilayerAutorouteConfiguration
         {
             self.maybe_best_planar_status = Some(planar_status.clone());
         }
+    }
 
+    fn next_configuration(
+        &mut self,
+        autorouter: &Autorouter<impl AccessMesadata>,
+    ) -> ControlFlow<Option<MultilayerAutorouteConfiguration>> {
         if self.planar_autoroute_reconfiguration_count < 10 {
             return ControlFlow::Continue(());
         }
@@ -82,17 +92,21 @@ impl MakeNextMultilayerAutorouteConfiguration
 
         let mut new_anterouter_plan = self.last_configuration.plan.clone();
 
+        let Some(ref last_planar_status) = self.maybe_last_planar_status else {
+            return ControlFlow::Break(None);
+        };
+
         if let Some(ref best_planar_status) = self.maybe_best_planar_status {
-            for ratline_index in
-                best_planar_status.costs.lengths.len()..planar_status.configuration.ratlines.len()
+            for ratline_index in best_planar_status.costs.lengths.len()
+                ..last_planar_status.configuration.ratlines.len()
             {
                 *new_anterouter_plan
                     .layer_map
-                    .get_mut(&planar_status.configuration.ratlines[ratline_index])
+                    .get_mut(&last_planar_status.configuration.ratlines[ratline_index])
                     .unwrap() += 1;
                 *new_anterouter_plan
                     .layer_map
-                    .get_mut(&planar_status.configuration.ratlines[ratline_index])
+                    .get_mut(&last_planar_status.configuration.ratlines[ratline_index])
                     .unwrap() %= autorouter.board().layout().drawing().layer_count();
             }
         }
