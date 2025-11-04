@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::{collections::BTreeMap, ops::ControlFlow};
+use std::collections::BTreeMap;
 
 use enum_dispatch::enum_dispatch;
 use specctra_core::mesadata::AccessMesadata;
@@ -25,7 +25,7 @@ pub trait MakeNextMultilayerAutorouteConfiguration {
     fn next_configuration(
         &mut self,
         autorouter: &Autorouter<impl AccessMesadata>,
-    ) -> ControlFlow<Option<MultilayerAutorouteConfiguration>>;
+    ) -> Option<MultilayerAutorouteConfiguration>;
 }
 
 #[enum_dispatch(MakeNextMultilayerAutorouteConfiguration)]
@@ -37,7 +37,6 @@ pub struct IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer {
     last_configuration: MultilayerAutorouteConfiguration,
     maybe_last_planar_status: Option<PlanarAutorouteConfigurationStatus>,
     maybe_best_planar_status: Option<PlanarAutorouteConfigurationStatus>,
-    planar_autoroute_reconfiguration_count: u64,
 }
 
 impl IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer {
@@ -50,7 +49,6 @@ impl IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer {
             last_configuration: preconfiguration,
             maybe_last_planar_status: None,
             maybe_best_planar_status: None,
-            planar_autoroute_reconfiguration_count: 0,
         }
     }
 }
@@ -63,8 +61,6 @@ impl MakeNextMultilayerAutorouteConfiguration
         _autorouter: &Autorouter<impl AccessMesadata>,
         planar_result: Result<PlanarAutorouteConfigurationStatus, AutorouterError>,
     ) {
-        self.planar_autoroute_reconfiguration_count += 1;
-
         let Ok(planar_status) = planar_result else {
             return;
         };
@@ -83,17 +79,11 @@ impl MakeNextMultilayerAutorouteConfiguration
     fn next_configuration(
         &mut self,
         autorouter: &Autorouter<impl AccessMesadata>,
-    ) -> ControlFlow<Option<MultilayerAutorouteConfiguration>> {
-        if self.planar_autoroute_reconfiguration_count < 10 {
-            return ControlFlow::Continue(());
-        }
-
-        self.planar_autoroute_reconfiguration_count = 0;
-
+    ) -> Option<MultilayerAutorouteConfiguration> {
         let mut new_anterouter_plan = self.last_configuration.plan.clone();
 
         let Some(ref last_planar_status) = self.maybe_last_planar_status else {
-            return ControlFlow::Break(None);
+            return None;
         };
 
         if let Some(ref best_planar_status) = self.maybe_best_planar_status {
@@ -119,6 +109,6 @@ impl MakeNextMultilayerAutorouteConfiguration
             },
         };
 
-        ControlFlow::Break(Some(self.last_configuration.clone()))
+        Some(self.last_configuration.clone())
     }
 }

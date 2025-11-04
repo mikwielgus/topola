@@ -122,7 +122,9 @@ pub struct SmaRateReconfigurationTrigger {
     #[getter(skip)]
     last_instant: Instant,
     #[getter(skip)]
-    last_value: f64,
+    last_max_value: f64,
+    #[getter(skip)]
+    incoming_max_value: f64,
     maybe_sma_rate_per_sec: Option<f64>,
     #[getter(skip)]
     sample_buffer_size: usize,
@@ -140,7 +142,8 @@ impl SmaRateReconfigurationTrigger {
         Self {
             sample_buffer: VecDeque::new(),
             last_instant: Instant::now(),
-            last_value: 0.0,
+            last_max_value: 0.0,
+            incoming_max_value: 0.0,
             maybe_sma_rate_per_sec: None,
             sample_buffer_size,
             sampling_interval_secs,
@@ -149,17 +152,19 @@ impl SmaRateReconfigurationTrigger {
     }
 
     pub fn update(&mut self, value: f64) -> bool {
+        self.incoming_max_value = self.incoming_max_value.max(value);
+
         let elapsed = self.last_instant.elapsed();
-        let delta = value - self.last_value;
 
         if elapsed.as_secs_f64() >= self.sampling_interval_secs {
+            let delta = self.incoming_max_value - self.last_max_value;
             let count = (elapsed.as_secs_f64() / self.sampling_interval_secs) as usize;
             let mut total_pushed = 0.0;
             let mut total_popped = 0.0;
 
             for _ in 0..count {
-                let pushed = delta.max(0.0) / count as f64;
-                self.sample_buffer.push_back(delta.max(0.0) / count as f64);
+                let pushed = delta / count as f64;
+                self.sample_buffer.push_back(delta / count as f64);
                 total_pushed += pushed;
 
                 if self.sample_buffer.len() > self.sample_buffer_size {
@@ -178,7 +183,7 @@ impl SmaRateReconfigurationTrigger {
             }
 
             self.last_instant = Instant::now();
-            self.last_value = value;
+            self.last_max_value = self.incoming_max_value;
         }
 
         if let Some(sma_rate_per_sec) = self.maybe_sma_rate_per_sec {

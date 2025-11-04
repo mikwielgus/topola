@@ -74,7 +74,7 @@ impl MultilayerAutorouteReconfigurator {
                 preconfiguration,
                 options,
             )?,
-            reconfiguration_trigger: SmaRateReconfigurationTrigger::new(4, 0.5, 0.5),
+            reconfiguration_trigger: SmaRateReconfigurationTrigger::new(10, 0.5, 0.1),
             reconfigurer,
             options,
         })
@@ -83,24 +83,15 @@ impl MultilayerAutorouteReconfigurator {
     fn reconfigure<M: AccessMesadata>(
         &mut self,
         autorouter: &mut Autorouter<M>,
-        planar_result: Result<PlanarAutorouteConfigurationStatus, AutorouterError>,
     ) -> Result<ControlFlow<Option<BoardEdit>, MultilayerReconfiguratorStatus>, AutorouterError>
     {
         // Reset the reconfiguration trigger.
-        self.reconfiguration_trigger = SmaRateReconfigurationTrigger::new(4, 0.5, 0.5);
+        self.reconfiguration_trigger = SmaRateReconfigurationTrigger::new(10, 0.5, 0.1);
 
         loop {
-            self.reconfigurer
-                .process_planar_result(autorouter, planar_result.clone());
-
             let configuration = match self.reconfigurer.next_configuration(autorouter) {
-                ControlFlow::Continue(()) => {
-                    return Ok(ControlFlow::Continue(ReconfiguratorStatus::Running(
-                        ReconfiguratorStatus::Reconfigured(planar_result?),
-                    )))
-                }
-                ControlFlow::Break(None) => return Ok(ControlFlow::Break(None)),
-                ControlFlow::Break(Some(configuration)) => configuration,
+                None => return Ok(ControlFlow::Break(None)),
+                Some(configuration) => configuration,
             };
 
             match self.stepper.reconfigure(autorouter, configuration) {
@@ -126,8 +117,12 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, MultilayerReconfi
         autorouter: &mut Autorouter<M>,
     ) -> Result<ControlFlow<Option<BoardEdit>, MultilayerReconfiguratorStatus>, AutorouterError>
     {
-        self.reconfiguration_trigger
-            .update(*self.estimate_progress().value() as f64);
+        if !self
+            .reconfiguration_trigger
+            .update(*self.estimate_progress().value() as f64)
+        {
+            return self.reconfigure(autorouter);
+        }
 
         match self.stepper.step(autorouter) {
             Ok(ControlFlow::Break(maybe_edit)) => Ok(ControlFlow::Break(maybe_edit)),
@@ -137,9 +132,17 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, MultilayerReconfi
                 )))
             }
             Ok(ControlFlow::Continue(ReconfiguratorStatus::Reconfigured(status))) => {
-                self.reconfigure(autorouter, Ok(status))
+                self.reconfigurer
+                    .process_planar_result(autorouter, Ok(status));
+                Ok(ControlFlow::Continue(
+                    ReconfiguratorStatus::Reconfigured(()),
+                ))
             }
-            Err(err) => self.reconfigure(autorouter, Err(err)),
+            Err(err) => {
+                self.reconfigurer
+                    .process_planar_result(autorouter, Err(err.clone()));
+                Err(err)
+            }
         }
     }
 }
