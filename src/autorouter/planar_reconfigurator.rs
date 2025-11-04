@@ -25,8 +25,8 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
     stepper::{
-        Abort, EstimateProgress, LinearScale, ReconfiguratorStatus, Reconfigure, Step,
-        TimeVsProgressAccumulatorTimeout,
+        Abort, EstimateProgress, GetTimeoutProgress, LinearScale, ReconfiguratorStatus,
+        Reconfigure, Step, TimeVsProgressAccumulatorTimeout,
     },
 };
 
@@ -145,6 +145,18 @@ impl EstimateProgress for PlanarAutorouteReconfigurator {
 
     fn estimate_progress(&self) -> LinearScale<usize, LinearScale<f64>> {
         self.stepper.estimate_progress()
+    }
+}
+
+impl GetTimeoutProgress for PlanarAutorouteReconfigurator {
+    type Subscale = ();
+
+    fn timeout_progress(&self) -> Option<LinearScale<f64>> {
+        Some(LinearScale::new(
+            self.timeout.start_instant().elapsed().as_secs_f64(),
+            *self.timeout.progress_accumulator(),
+            (),
+        ))
     }
 }
 

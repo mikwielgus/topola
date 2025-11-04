@@ -48,14 +48,14 @@ impl StatusBar {
                 let maximum = progress.maximum();
                 let ratio = *value as f32 / *maximum as f32;
 
-                if let Some(trigger_progress) = activity.timeout_progress() {
+                if let Some(timeout_progress) = activity.timeout_progress() {
                     ui.add(egui::ProgressBar::new(ratio).text(format!(
                         "{:.1}% ({:.1}/{:.1}) (timeout: {:.1}/{:.1}))",
                         ratio * 100.0,
                         value,
                         maximum,
-                        trigger_progress.value(),
-                        trigger_progress.maximum(),
+                        timeout_progress.value(),
+                        timeout_progress.maximum(),
                     )));
                 } else {
                     ui.add(egui::ProgressBar::new(ratio).text(format!(
@@ -71,12 +71,23 @@ impl StatusBar {
                 let maximum = linear_subprogress.maximum();
                 let ratio = *value as f32 / *maximum as f32;
 
-                ui.add(egui::ProgressBar::new(ratio).text(format!(
-                    "{:.1}% ({:.1}/{:.1})",
-                    ratio * 100.0,
-                    value,
-                    maximum
-                )));
+                if let Some(timeout_progress) = activity.timeout_progress() {
+                    ui.add(egui::ProgressBar::new(ratio).text(format!(
+                        "{:.1}% ({:.1}/{:.1}) (timeout: {:.1}/{:.1}))",
+                        ratio * 100.0,
+                        value,
+                        maximum,
+                        timeout_progress.subscale().value(),
+                        timeout_progress.subscale().maximum(),
+                    )));
+                } else {
+                    ui.add(egui::ProgressBar::new(ratio).text(format!(
+                        "{:.1}% ({:.1}/{:.1})",
+                        ratio * 100.0,
+                        value,
+                        maximum
+                    )));
+                }
             }
         });
     }

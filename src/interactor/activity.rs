@@ -117,9 +117,9 @@ impl<M> EstimateProgress for ActivityStepper<M> {
 // Since enum_dispatch does not really support generics, we implement this the
 // long way by using `match`.
 impl<M> GetTimeoutProgress for ActivityStepper<M> {
-    type Subscale = ();
+    type Subscale = LinearScale<f64>;
 
-    fn timeout_progress(&self) -> Option<LinearScale<f64>> {
+    fn timeout_progress(&self) -> Option<LinearScale<f64, LinearScale<f64>>> {
         match self {
             ActivityStepper::Interaction(..) => None,
             ActivityStepper::Execution(execution) => execution.timeout_progress(),
@@ -218,9 +218,9 @@ impl<M> EstimateProgress for ActivityStepperWithStatus<M> {
 }
 
 impl<M> GetTimeoutProgress for ActivityStepperWithStatus<M> {
-    type Subscale = ();
+    type Subscale = LinearScale<f64>;
 
-    fn timeout_progress(&self) -> Option<LinearScale<f64>> {
+    fn timeout_progress(&self) -> Option<LinearScale<f64, LinearScale<f64>>> {
         self.activity.timeout_progress()
     }
 }

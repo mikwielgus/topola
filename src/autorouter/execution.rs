@@ -200,9 +200,9 @@ impl<M> EstimateProgress for ExecutionStepper<M> {
 // Since enum_dispatch does not really support generics, we implement this the
 // long way by using `match`.
 impl<M> GetTimeoutProgress for ExecutionStepper<M> {
-    type Subscale = ();
+    type Subscale = LinearScale<f64>;
 
-    fn timeout_progress(&self) -> Option<LinearScale<f64>> {
+    fn timeout_progress(&self) -> Option<LinearScale<f64, LinearScale<f64>>> {
         match self {
             ExecutionStepper::MultilayerAutoroute(autoroute) => autoroute.timeout_progress(),
             ExecutionStepper::PlanarAutoroute(autoroute) => None,

@@ -73,7 +73,7 @@ impl MultilayerAutorouteReconfigurator {
                 preconfiguration,
                 options,
             )?,
-            timeout: TimeVsProgressAccumulatorTimeout::new(10.0, 5.0),
+            timeout: TimeVsProgressAccumulatorTimeout::new(10.0, 1.0),
             reconfigurer,
             options,
         })
@@ -161,13 +161,13 @@ impl EstimateProgress for MultilayerAutorouteReconfigurator {
 }
 
 impl GetTimeoutProgress for MultilayerAutorouteReconfigurator {
-    type Subscale = ();
+    type Subscale = LinearScale<f64>;
 
-    fn timeout_progress(&self) -> Option<LinearScale<f64>> {
+    fn timeout_progress(&self) -> Option<LinearScale<f64, LinearScale<f64>>> {
         Some(LinearScale::new(
             self.timeout.start_instant().elapsed().as_secs_f64(),
             *self.timeout.progress_accumulator(),
-            (),
+            self.stepper.planar().timeout_progress()?,
         ))
     }
 }

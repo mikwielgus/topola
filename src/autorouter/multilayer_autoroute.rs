@@ -4,6 +4,7 @@
 
 use std::ops::ControlFlow;
 
+use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 use specctra_core::mesadata::AccessMesadata;
 
@@ -36,9 +37,12 @@ pub struct MultilayerAutorouteOptions {
     pub planar: PlanarAutorouteOptions,
 }
 
+#[derive(Getters)]
 pub struct MultilayerAutorouteExecutionStepper {
     planar: PlanarAutorouteReconfigurator,
+    #[getter(skip)]
     anteroute_edit: BoardEdit,
+    #[getter(skip)]
     options: MultilayerAutorouteOptions,
 }
 
