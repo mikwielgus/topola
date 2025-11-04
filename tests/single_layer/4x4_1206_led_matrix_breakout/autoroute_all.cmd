@@ -204,7 +204,11 @@
             "wrap_around_bands": true,
             "squeeze_through_under_bends": true
           },
-          "principal_layer": 0
+          "principal_layer": 0,
+          "timeout": {
+            "initial": 1.0,
+            "progress_bonus": 0.005
+          }
         }
       ]
     }

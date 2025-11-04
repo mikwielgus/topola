@@ -120,7 +120,15 @@
               "routed_band_width": 100.0,
               "wrap_around_bands": true,
               "squeeze_through_under_bends": true
+            },
+            "timeout": {
+              "initial": 1.0,
+              "progress_bonus": 0.005
             }
+          },
+          "timeout": {
+            "initial": 5.0,
+            "progress_bonus": 0.5
           }
         }
       ]

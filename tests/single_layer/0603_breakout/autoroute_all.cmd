@@ -20,7 +20,11 @@
             "routed_band_width": 100.0
           },
           "permutate": false,
-          "principal_layer": 0
+          "principal_layer": 0,
+          "timeout": {
+            "initial": 1.0,
+            "progress_bonus": 0.005
+          }
         }
       ]
     },
@@ -44,7 +48,11 @@
             "routed_band_width": 100.0
           },
           "permutate": false,
-          "principal_layer": 0
+          "principal_layer": 0,
+          "timeout": {
+            "initial": 1.0,
+            "progress_bonus": 0.005
+          }
         }
       ]
     }
