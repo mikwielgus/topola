@@ -163,7 +163,7 @@ impl SmaRateReconfigurationTrigger {
             let mut total_popped = 0.0;
 
             for _ in 0..count {
-                let pushed = delta / count as f64;
+                let pushed = (delta / count as f64) / self.sampling_interval_secs;
                 self.sample_buffer.push_back(delta / count as f64);
                 total_pushed += pushed;
 
