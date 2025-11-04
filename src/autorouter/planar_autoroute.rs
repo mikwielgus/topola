@@ -317,7 +317,7 @@ impl EstimateProgress for PlanarAutorouteExecutionStepper {
                     .map_or(0.0, |route| *route.estimate_progress().value()),
                 self.route
                     .as_ref()
-                    .map_or(0.0, |route| *route.estimate_progress().reference()),
+                    .map_or(0.0, |route| *route.estimate_progress().maximum()),
                 (),
             ),
         )

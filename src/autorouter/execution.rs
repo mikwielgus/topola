@@ -16,7 +16,7 @@ use crate::{
     board::{edit::BoardEdit, AccessMesadata},
     layout::via::ViaWeight,
     router::ng,
-    stepper::{Abort, EstimateProgress, GetMaybeReconfigurationTriggerProgress, LinearScale, Step},
+    stepper::{Abort, EstimateProgress, GetTimeoutProgress, LinearScale, Step},
 };
 
 use super::{
@@ -199,14 +199,12 @@ impl<M> EstimateProgress for ExecutionStepper<M> {
 
 // Since enum_dispatch does not really support generics, we implement this the
 // long way by using `match`.
-impl<M> GetMaybeReconfigurationTriggerProgress for ExecutionStepper<M> {
+impl<M> GetTimeoutProgress for ExecutionStepper<M> {
     type Subscale = ();
 
-    fn reconfiguration_trigger_progress(&self) -> Option<LinearScale<f64>> {
+    fn timeout_progress(&self) -> Option<LinearScale<f64>> {
         match self {
-            ExecutionStepper::MultilayerAutoroute(autoroute) => {
-                autoroute.reconfiguration_trigger_progress()
-            }
+            ExecutionStepper::MultilayerAutoroute(autoroute) => autoroute.timeout_progress(),
             ExecutionStepper::PlanarAutoroute(autoroute) => None,
             ExecutionStepper::TopoAutoroute(..) => None,
             ExecutionStepper::PlaceVia(..) => None,

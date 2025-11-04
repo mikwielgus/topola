@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT
 
 use core::ops::ControlFlow;
-use std::{collections::VecDeque, time::Instant};
+use std::time::Instant;
 
 use derive_getters::Getters;
 
@@ -87,7 +87,7 @@ pub trait OnEvent<Ctx, Event> {
 #[derive(Clone, Copy, Debug, Getters)]
 pub struct LinearScale<V, S = ()> {
     value: V,
-    reference: V,
+    maximum: V,
     subscale: S,
 }
 
@@ -95,7 +95,7 @@ impl<V, S> LinearScale<V, S> {
     pub fn new(value: V, reference: V, subscale: S) -> Self {
         Self {
             value,
-            reference,
+            maximum: reference,
             subscale,
         }
     }
@@ -109,87 +109,38 @@ pub trait EstimateProgress {
     fn estimate_progress(&self) -> LinearScale<Self::Value, Self::Subscale>;
 }
 
-pub trait GetMaybeReconfigurationTriggerProgress {
+pub trait GetTimeoutProgress {
     type Subscale;
 
-    fn reconfiguration_trigger_progress(&self) -> Option<LinearScale<f64, Self::Subscale>>;
+    fn timeout_progress(&self) -> Option<LinearScale<f64, Self::Subscale>>;
 }
 
 #[derive(Clone, Debug, Getters)]
-pub struct SmaRateReconfigurationTrigger {
-    #[getter(skip)]
-    sample_buffer: VecDeque<f64>,
-    #[getter(skip)]
-    last_instant: Instant,
+pub struct TimeVsProgressAccumulatorTimeout {
+    start_instant: Instant,
     #[getter(skip)]
     last_max_value: f64,
+    progress_accumulator: f64,
     #[getter(skip)]
-    incoming_max_value: f64,
-    maybe_sma_rate_per_sec: Option<f64>,
-    #[getter(skip)]
-    sample_buffer_size: usize,
-    #[getter(skip)]
-    sampling_interval_secs: f64,
-    min_sma_rate_per_sec: f64,
+    progress_bonus_s: f64,
 }
 
-impl SmaRateReconfigurationTrigger {
-    pub fn new(
-        sample_buffer_size: usize,
-        sampling_interval_secs: f64,
-        min_sma_rate_per_sec: f64,
-    ) -> Self {
+impl TimeVsProgressAccumulatorTimeout {
+    pub fn new(initial_timeout_s: f64, progress_bonus_s: f64) -> Self {
         Self {
-            sample_buffer: VecDeque::new(),
-            last_instant: Instant::now(),
+            start_instant: Instant::now(),
             last_max_value: 0.0,
-            incoming_max_value: 0.0,
-            maybe_sma_rate_per_sec: None,
-            sample_buffer_size,
-            sampling_interval_secs,
-            min_sma_rate_per_sec,
+            progress_accumulator: initial_timeout_s,
+            progress_bonus_s,
         }
     }
 
     pub fn update(&mut self, value: f64) -> bool {
-        self.incoming_max_value = self.incoming_max_value.max(value);
-
-        let elapsed = self.last_instant.elapsed();
-
-        if elapsed.as_secs_f64() >= self.sampling_interval_secs {
-            let delta = self.incoming_max_value - self.last_max_value;
-            let count = (elapsed.as_secs_f64() / self.sampling_interval_secs) as usize;
-            let mut total_pushed = 0.0;
-            let mut total_popped = 0.0;
-
-            for _ in 0..count {
-                let pushed = (delta / count as f64) / self.sampling_interval_secs;
-                self.sample_buffer.push_back(delta / count as f64);
-                total_pushed += pushed;
-
-                if self.sample_buffer.len() > self.sample_buffer_size {
-                    total_popped += self.sample_buffer.pop_front().unwrap_or_default();
-                }
-            }
-
-            if let Some(sma_rate_per_sec) = self.maybe_sma_rate_per_sec {
-                self.maybe_sma_rate_per_sec = Some(
-                    sma_rate_per_sec
-                        + (total_pushed - total_popped) / self.sample_buffer_size as f64,
-                )
-            } else if self.sample_buffer.len() >= self.sample_buffer_size {
-                self.maybe_sma_rate_per_sec =
-                    Some(self.sample_buffer.iter().sum::<f64>() / self.sample_buffer_size as f64)
-            }
-
-            self.last_instant = Instant::now();
-            self.last_max_value = self.incoming_max_value;
+        if value > self.last_max_value {
+            self.progress_accumulator += (value - self.last_max_value) * self.progress_bonus_s;
+            self.last_max_value = value;
         }
 
-        if let Some(sma_rate_per_sec) = self.maybe_sma_rate_per_sec {
-            sma_rate_per_sec >= self.min_sma_rate_per_sec
-        } else {
-            true
-        }
+        self.start_instant.elapsed().as_secs_f64() < self.progress_accumulator
     }
 }

@@ -25,8 +25,8 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
     stepper::{
-        Abort, EstimateProgress, LinearScale, ReconfiguratorStatus, Reconfigure,
-        SmaRateReconfigurationTrigger, Step,
+        Abort, EstimateProgress, LinearScale, ReconfiguratorStatus, Reconfigure, Step,
+        TimeVsProgressAccumulatorTimeout,
     },
 };
 
@@ -35,7 +35,7 @@ pub type PlanarAutorouteReconfiguratorStatus =
 
 pub struct PlanarAutorouteReconfigurator {
     stepper: PlanarAutorouteExecutionStepper,
-    reconfiguration_trigger: SmaRateReconfigurationTrigger,
+    timeout: TimeVsProgressAccumulatorTimeout,
     reconfigurer: PlanarAutorouteReconfigurer,
     options: PlanarAutorouteOptions,
 }
@@ -65,7 +65,7 @@ impl PlanarAutorouteReconfigurator {
 
         Ok(Self {
             stepper: PlanarAutorouteExecutionStepper::new(autorouter, preconfiguration, options)?,
-            reconfiguration_trigger: SmaRateReconfigurationTrigger::new(5, 0.5, 0.1),
+            timeout: TimeVsProgressAccumulatorTimeout::new(3.0, 1.0),
             // Note: I assume here that the first permutation is the same as the original order.
             reconfigurer,
             options,
@@ -77,7 +77,7 @@ impl PlanarAutorouteReconfigurator {
         autorouter: &mut Autorouter<impl AccessMesadata>,
     ) -> Result<ControlFlow<Option<BoardEdit>, PlanarAutorouteReconfiguratorStatus>, AutorouterError>
     {
-        self.reconfiguration_trigger = SmaRateReconfigurationTrigger::new(5, 0.5, 0.1);
+        self.timeout = TimeVsProgressAccumulatorTimeout::new(3.0, 1.0);
 
         loop {
             let Some(configuration) = self
@@ -111,7 +111,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteRe
     ) -> Result<ControlFlow<Option<BoardEdit>, PlanarAutorouteReconfiguratorStatus>, AutorouterError>
     {
         if !self
-            .reconfiguration_trigger
+            .timeout
             .update(*self.estimate_progress().value() as f64)
         {
             return self.reconfigure(autorouter);

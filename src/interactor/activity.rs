@@ -25,9 +25,7 @@ use crate::{
         ng,
         thetastar::ThetastarStepper,
     },
-    stepper::{
-        Abort, EstimateProgress, GetMaybeReconfigurationTriggerProgress, LinearScale, OnEvent, Step,
-    },
+    stepper::{Abort, EstimateProgress, GetTimeoutProgress, LinearScale, OnEvent, Step},
 };
 
 /// Stores the interactive input data from the user.
@@ -118,13 +116,13 @@ impl<M> EstimateProgress for ActivityStepper<M> {
 
 // Since enum_dispatch does not really support generics, we implement this the
 // long way by using `match`.
-impl<M> GetMaybeReconfigurationTriggerProgress for ActivityStepper<M> {
+impl<M> GetTimeoutProgress for ActivityStepper<M> {
     type Subscale = ();
 
-    fn reconfiguration_trigger_progress(&self) -> Option<LinearScale<f64>> {
+    fn timeout_progress(&self) -> Option<LinearScale<f64>> {
         match self {
             ActivityStepper::Interaction(..) => None,
-            ActivityStepper::Execution(execution) => execution.reconfiguration_trigger_progress(),
+            ActivityStepper::Execution(execution) => execution.timeout_progress(),
         }
     }
 }
@@ -219,11 +217,11 @@ impl<M> EstimateProgress for ActivityStepperWithStatus<M> {
     }
 }
 
-impl<M> GetMaybeReconfigurationTriggerProgress for ActivityStepperWithStatus<M> {
+impl<M> GetTimeoutProgress for ActivityStepperWithStatus<M> {
     type Subscale = ();
 
-    fn reconfiguration_trigger_progress(&self) -> Option<LinearScale<f64>> {
-        self.activity.reconfiguration_trigger_progress()
+    fn timeout_progress(&self) -> Option<LinearScale<f64>> {
+        self.activity.timeout_progress()
     }
 }
 

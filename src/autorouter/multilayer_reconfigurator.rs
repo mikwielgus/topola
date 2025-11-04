@@ -20,7 +20,6 @@ use crate::{
             IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer,
             MakeNextMultilayerAutorouteConfiguration, MultilayerAutorouteReconfigurer,
         },
-        planar_autoroute::PlanarAutorouteConfigurationStatus,
         planar_preconfigurer::PlanarAutoroutePreconfigurerInput,
         planar_reconfigurator::PlanarAutorouteReconfiguratorStatus,
         Autorouter, AutorouterError,
@@ -30,8 +29,8 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
     stepper::{
-        Abort, EstimateProgress, GetMaybeReconfigurationTriggerProgress, LinearScale,
-        ReconfiguratorStatus, Reconfigure, SmaRateReconfigurationTrigger, Step,
+        Abort, EstimateProgress, GetTimeoutProgress, LinearScale, ReconfiguratorStatus,
+        Reconfigure, Step, TimeVsProgressAccumulatorTimeout,
     },
 };
 
@@ -40,7 +39,7 @@ pub type MultilayerReconfiguratorStatus =
 
 pub struct MultilayerAutorouteReconfigurator {
     stepper: MultilayerAutorouteExecutionStepper,
-    reconfiguration_trigger: SmaRateReconfigurationTrigger,
+    timeout: TimeVsProgressAccumulatorTimeout,
     reconfigurer: MultilayerAutorouteReconfigurer,
     options: MultilayerAutorouteOptions,
 }
@@ -74,7 +73,7 @@ impl MultilayerAutorouteReconfigurator {
                 preconfiguration,
                 options,
             )?,
-            reconfiguration_trigger: SmaRateReconfigurationTrigger::new(20, 0.5, 0.1),
+            timeout: TimeVsProgressAccumulatorTimeout::new(10.0, 5.0),
             reconfigurer,
             options,
         })
@@ -86,7 +85,7 @@ impl MultilayerAutorouteReconfigurator {
     ) -> Result<ControlFlow<Option<BoardEdit>, MultilayerReconfiguratorStatus>, AutorouterError>
     {
         // Reset the reconfiguration trigger.
-        self.reconfiguration_trigger = SmaRateReconfigurationTrigger::new(20, 1.0, 0.1);
+        self.timeout = TimeVsProgressAccumulatorTimeout::new(10.0, 5.0);
 
         loop {
             let Some(configuration) = self.reconfigurer.next_configuration(autorouter) else {
@@ -117,7 +116,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, MultilayerReconfi
     ) -> Result<ControlFlow<Option<BoardEdit>, MultilayerReconfiguratorStatus>, AutorouterError>
     {
         if !self
-            .reconfiguration_trigger
+            .timeout
             .update(*self.estimate_progress().value() as f64)
         {
             return self.reconfigure(autorouter);
@@ -161,13 +160,13 @@ impl EstimateProgress for MultilayerAutorouteReconfigurator {
     }
 }
 
-impl GetMaybeReconfigurationTriggerProgress for MultilayerAutorouteReconfigurator {
+impl GetTimeoutProgress for MultilayerAutorouteReconfigurator {
     type Subscale = ();
 
-    fn reconfiguration_trigger_progress(&self) -> Option<LinearScale<f64>> {
+    fn timeout_progress(&self) -> Option<LinearScale<f64>> {
         Some(LinearScale::new(
-            (*self.reconfiguration_trigger.maybe_sma_rate_per_sec())?,
-            *self.reconfiguration_trigger.min_sma_rate_per_sec(),
+            self.timeout.start_instant().elapsed().as_secs_f64(),
+            *self.timeout.progress_accumulator(),
             (),
         ))
     }
