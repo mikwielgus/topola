@@ -73,6 +73,9 @@ tr-menu-route-options-wrap-around-bands = Wrap around Bands
 
 ##
 
+tr-menu-route-options-multilayer-timeout = Multilayer Timeout
+tr-menu-route-options-planar-timeout = Planar Timeout
+
 tr-menu-inspect = Inspect
 tr-menu-inspect-measure-length = Measure Length
 

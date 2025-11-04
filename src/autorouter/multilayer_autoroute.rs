@@ -22,7 +22,10 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::{edit::Edit, primitive::PrimitiveShape},
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
-    stepper::{Abort, EstimateProgress, LinearScale, ReconfiguratorStatus, Reconfigure, Step},
+    stepper::{
+        Abort, EstimateProgress, LinearScale, ReconfiguratorStatus, Reconfigure, Step,
+        TimeoutOptions,
+    },
 };
 
 #[derive(Clone, Debug)]
@@ -35,6 +38,7 @@ pub struct MultilayerAutorouteConfiguration {
 pub struct MultilayerAutorouteOptions {
     pub anterouter: AnterouterOptions,
     pub planar: PlanarAutorouteOptions,
+    pub timeout: TimeoutOptions,
 }
 
 #[derive(Getters)]

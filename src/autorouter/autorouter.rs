@@ -24,6 +24,7 @@ use crate::{
     graph::MakeRef,
     layout::{via::ViaWeight, LayoutEdit, LayoutException},
     router::{navmesh::NavmeshError, ng, thetastar::ThetastarError, RouterOptions},
+    stepper::TimeoutOptions,
     triangulation::GetTrianvertexNodeIndex,
 };
 
@@ -49,6 +50,7 @@ pub struct PlanarAutorouteOptions {
     pub presort_by: PresortBy,
     pub permutate: bool,
     pub router: RouterOptions,
+    pub timeout: TimeoutOptions,
 }
 
 #[derive(Error, Debug, Clone)]

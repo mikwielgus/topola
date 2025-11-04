@@ -14,6 +14,7 @@ use topola::{
     interactor::{interaction::InteractionStepper, route_plan::RoutePlan},
     router::RouterOptions,
     specctra::{design::SpecctraDesign, ParseError, ParseErrorContext as SpecctraLoadingError},
+    stepper::TimeoutOptions,
 };
 
 use crate::{
@@ -62,6 +63,14 @@ impl MenuBar {
                         wrap_around_bands: true,
                         squeeze_through_under_bends: true,
                     },
+                    timeout: TimeoutOptions {
+                        initial: 1.0,
+                        progress_bonus: 0.005,
+                    },
+                },
+                timeout: TimeoutOptions {
+                    initial: 5.0,
+                    progress_bonus: 0.5,
                 },
             },
             is_placing_via: false,

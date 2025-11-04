@@ -73,7 +73,7 @@ impl MultilayerAutorouteReconfigurator {
                 preconfiguration,
                 options,
             )?,
-            timeout: TimeVsProgressAccumulatorTimeout::new(10.0, 1.0),
+            timeout: TimeVsProgressAccumulatorTimeout::new_from_options(options.timeout),
             reconfigurer,
             options,
         })
@@ -85,7 +85,7 @@ impl MultilayerAutorouteReconfigurator {
     ) -> Result<ControlFlow<Option<BoardEdit>, MultilayerReconfiguratorStatus>, AutorouterError>
     {
         // Reset the reconfiguration trigger.
-        self.timeout = TimeVsProgressAccumulatorTimeout::new(10.0, 5.0);
+        self.timeout = TimeVsProgressAccumulatorTimeout::new_from_options(self.options.timeout);
 
         loop {
             let Some(configuration) = self.reconfigurer.next_configuration(autorouter) else {

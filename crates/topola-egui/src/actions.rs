@@ -335,6 +335,38 @@ impl RouteActions {
                     &mut multilayer_autorouter_options.planar.router.wrap_around_bands,
                     tr.text("tr-menu-route-options-wrap-around-bands"),
                 );
+
+                ui.label(tr.text("tr-menu-route-options-multilayer-timeout"));
+                ui.add(
+                    egui::widgets::Slider::new(
+                        &mut multilayer_autorouter_options.timeout.initial,
+                        0.0..=1000.0,
+                    ).text("initial")
+                    .suffix(" s"),
+                );
+                ui.add(
+                    egui::widgets::Slider::new(
+                        &mut multilayer_autorouter_options.timeout.progress_bonus,
+                        0.0..=100.0,
+                    ).text("progress bonus")
+                    .suffix(" s/ratline"),
+                );
+
+                ui.label(tr.text("tr-menu-route-options-planar-timeout"));
+                ui.add(
+                    egui::widgets::Slider::new(
+                        &mut multilayer_autorouter_options.planar.timeout.initial,
+                        0.0..=1000.0,
+                    ).text("initial")
+                    .suffix(" s"),
+                );
+                ui.add(
+                    egui::widgets::Slider::new(
+                        &mut multilayer_autorouter_options.planar.timeout.progress_bonus,
+                        0.0..=100.0,
+                    ).text("progress bonus")
+                    .suffix(" s/length units"),
+                );
             });
         })
     }

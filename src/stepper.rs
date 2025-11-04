@@ -6,6 +6,7 @@ use core::ops::ControlFlow;
 use std::time::Instant;
 
 use derive_getters::Getters;
+use serde::{Deserialize, Serialize};
 
 /// This trait represents a linearly advanceable state whose advancement may
 /// break or fail with many different return values, and to which part of
@@ -115,6 +116,12 @@ pub trait GetTimeoutProgress {
     fn timeout_progress(&self) -> Option<LinearScale<f64, Self::Subscale>>;
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Serialize)]
+pub struct TimeoutOptions {
+    pub initial: f64,
+    pub progress_bonus: f64,
+}
+
 #[derive(Clone, Debug, Getters)]
 pub struct TimeVsProgressAccumulatorTimeout {
     start_instant: Instant,
@@ -122,22 +129,26 @@ pub struct TimeVsProgressAccumulatorTimeout {
     last_max_value: f64,
     progress_accumulator: f64,
     #[getter(skip)]
-    progress_bonus_s: f64,
+    progress_time_bonus_s: f64,
 }
 
 impl TimeVsProgressAccumulatorTimeout {
-    pub fn new(initial_timeout_s: f64, progress_bonus_s: f64) -> Self {
+    pub fn new(initial_timeout_value_s: f64, progress_bonus_s: f64) -> Self {
         Self {
             start_instant: Instant::now(),
             last_max_value: 0.0,
-            progress_accumulator: initial_timeout_s,
-            progress_bonus_s,
+            progress_accumulator: initial_timeout_value_s,
+            progress_time_bonus_s: progress_bonus_s,
         }
+    }
+
+    pub fn new_from_options(options: TimeoutOptions) -> Self {
+        Self::new(options.initial, options.progress_bonus)
     }
 
     pub fn update(&mut self, value: f64) -> bool {
         if value > self.last_max_value {
-            self.progress_accumulator += (value - self.last_max_value) * self.progress_bonus_s;
+            self.progress_accumulator += (value - self.last_max_value) * self.progress_time_bonus_s;
             self.last_max_value = value;
         }
 

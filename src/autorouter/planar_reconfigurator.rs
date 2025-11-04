@@ -65,7 +65,7 @@ impl PlanarAutorouteReconfigurator {
 
         Ok(Self {
             stepper: PlanarAutorouteExecutionStepper::new(autorouter, preconfiguration, options)?,
-            timeout: TimeVsProgressAccumulatorTimeout::new(3.0, 1.0),
+            timeout: TimeVsProgressAccumulatorTimeout::new_from_options(options.timeout),
             // Note: I assume here that the first permutation is the same as the original order.
             reconfigurer,
             options,
@@ -77,7 +77,7 @@ impl PlanarAutorouteReconfigurator {
         autorouter: &mut Autorouter<impl AccessMesadata>,
     ) -> Result<ControlFlow<Option<BoardEdit>, PlanarAutorouteReconfiguratorStatus>, AutorouterError>
     {
-        self.timeout = TimeVsProgressAccumulatorTimeout::new(3.0, 1.0);
+        self.timeout = TimeVsProgressAccumulatorTimeout::new_from_options(self.options.timeout);
 
         loop {
             let Some(configuration) = self
@@ -112,7 +112,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteRe
     {
         if !self
             .timeout
-            .update(*self.estimate_progress().value() as f64)
+            .update(*self.estimate_progress().subscale().value() as f64)
         {
             return self.reconfigure(autorouter);
         }
@@ -134,7 +134,6 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteRe
 
 impl<M: AccessMesadata> Abort<Autorouter<M>> for PlanarAutorouteReconfigurator {
     fn abort(&mut self, autorouter: &mut Autorouter<M>) {
-        //self.permutations_iter.all(|_| true); // Why did I add this code here???
         self.stepper.abort(autorouter);
     }
 }
