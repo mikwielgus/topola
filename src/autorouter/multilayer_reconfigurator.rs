@@ -74,24 +74,23 @@ impl MultilayerAutorouteReconfigurator {
                 preconfiguration,
                 options,
             )?,
-            reconfiguration_trigger: SmaRateReconfigurationTrigger::new(10, 0.5, 0.1),
+            reconfiguration_trigger: SmaRateReconfigurationTrigger::new(20, 0.5, 0.1),
             reconfigurer,
             options,
         })
     }
 
-    fn reconfigure<M: AccessMesadata>(
+    fn reconfigure(
         &mut self,
-        autorouter: &mut Autorouter<M>,
+        autorouter: &mut Autorouter<impl AccessMesadata>,
     ) -> Result<ControlFlow<Option<BoardEdit>, MultilayerReconfiguratorStatus>, AutorouterError>
     {
         // Reset the reconfiguration trigger.
-        self.reconfiguration_trigger = SmaRateReconfigurationTrigger::new(10, 0.5, 0.1);
+        self.reconfiguration_trigger = SmaRateReconfigurationTrigger::new(20, 1.0, 0.1);
 
         loop {
-            let configuration = match self.reconfigurer.next_configuration(autorouter) {
-                None => return Ok(ControlFlow::Break(None)),
-                Some(configuration) => configuration,
+            let Some(configuration) = self.reconfigurer.next_configuration(autorouter) else {
+                return Ok(ControlFlow::Break(None));
             };
 
             match self.stepper.reconfigure(autorouter, configuration) {
@@ -141,7 +140,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, MultilayerReconfi
             Err(err) => {
                 self.reconfigurer
                     .process_planar_result(autorouter, Err(err.clone()));
-                Err(err)
+                self.reconfigure(autorouter)
             }
         }
     }

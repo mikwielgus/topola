@@ -24,7 +24,10 @@ use crate::{
     drawing::graph::PrimitiveIndex,
     geometry::primitive::PrimitiveShape,
     router::{navcord::Navcord, navmesh::Navmesh, thetastar::ThetastarStepper},
-    stepper::{Abort, EstimateProgress, LinearScale, ReconfiguratorStatus, Reconfigure, Step},
+    stepper::{
+        Abort, EstimateProgress, LinearScale, ReconfiguratorStatus, Reconfigure,
+        SmaRateReconfigurationTrigger, Step,
+    },
 };
 
 pub type PlanarAutorouteReconfiguratorStatus =
@@ -32,6 +35,7 @@ pub type PlanarAutorouteReconfiguratorStatus =
 
 pub struct PlanarAutorouteReconfigurator {
     stepper: PlanarAutorouteExecutionStepper,
+    reconfiguration_trigger: SmaRateReconfigurationTrigger,
     reconfigurer: PlanarAutorouteReconfigurer,
     options: PlanarAutorouteOptions,
 }
@@ -61,10 +65,38 @@ impl PlanarAutorouteReconfigurator {
 
         Ok(Self {
             stepper: PlanarAutorouteExecutionStepper::new(autorouter, preconfiguration, options)?,
+            reconfiguration_trigger: SmaRateReconfigurationTrigger::new(5, 0.5, 0.1),
             // Note: I assume here that the first permutation is the same as the original order.
             reconfigurer,
             options,
         })
+    }
+
+    fn reconfigure(
+        &mut self,
+        autorouter: &mut Autorouter<impl AccessMesadata>,
+    ) -> Result<ControlFlow<Option<BoardEdit>, PlanarAutorouteReconfiguratorStatus>, AutorouterError>
+    {
+        self.reconfiguration_trigger = SmaRateReconfigurationTrigger::new(5, 0.5, 0.1);
+
+        loop {
+            let Some(configuration) = self
+                .reconfigurer
+                .next_configuration(autorouter, &self.stepper)
+            else {
+                return Ok(ControlFlow::Break(None));
+            };
+
+            match self.stepper.reconfigure(autorouter, configuration) {
+                Ok(result) => {
+                    return Ok(ControlFlow::Continue(ReconfiguratorStatus::Reconfigured(
+                        result,
+                    )))
+                }
+                Err(AutorouterError::NothingToUndoForReconfiguration) => continue,
+                Err(err) => return Err(err),
+            }
+        }
     }
 }
 
@@ -78,6 +110,13 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteRe
         autorouter: &mut Autorouter<M>,
     ) -> Result<ControlFlow<Option<BoardEdit>, PlanarAutorouteReconfiguratorStatus>, AutorouterError>
     {
+        if !self
+            .reconfiguration_trigger
+            .update(*self.estimate_progress().value() as f64)
+        {
+            return self.reconfigure(autorouter);
+        }
+
         match self.stepper.step(autorouter) {
             Ok(ControlFlow::Break(maybe_edit)) => Ok(ControlFlow::Break(maybe_edit)),
             Ok(ControlFlow::Continue(status)) => {
@@ -87,25 +126,7 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteRe
                 if !self.options.permutate {
                     return Err(err);
                 }
-
-                loop {
-                    let Some(configuration) = self
-                        .reconfigurer
-                        .next_configuration(autorouter, &self.stepper)
-                    else {
-                        return Ok(ControlFlow::Break(None));
-                    };
-
-                    match self.stepper.reconfigure(autorouter, configuration) {
-                        Ok(result) => {
-                            return Ok(ControlFlow::Continue(ReconfiguratorStatus::Reconfigured(
-                                result,
-                            )))
-                        }
-                        Err(AutorouterError::NothingToUndoForReconfiguration) => continue,
-                        Err(err) => return Err(err),
-                    }
-                }
+                self.reconfigure(autorouter)
             }
         }
     }

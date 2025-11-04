@@ -19,7 +19,7 @@ use crate::autorouter::{
 pub trait MakeNextPlanarAutorouteConfiguration {
     fn next_configuration(
         &mut self,
-        autorouter: &mut Autorouter<impl AccessMesadata>,
+        autorouter: &Autorouter<impl AccessMesadata>,
         stepper: &PlanarAutorouteExecutionStepper,
     ) -> Option<PlanarAutorouteConfiguration>;
 }
@@ -78,7 +78,7 @@ impl SccPermutationsPlanarAutorouteReconfigurer {
 impl MakeNextPlanarAutorouteConfiguration for SccPermutationsPlanarAutorouteReconfigurer {
     fn next_configuration(
         &mut self,
-        autorouter: &mut Autorouter<impl AccessMesadata>,
+        autorouter: &Autorouter<impl AccessMesadata>,
         _stepper: &PlanarAutorouteExecutionStepper,
     ) -> Option<PlanarAutorouteConfiguration> {
         let scc_permutation = self.sccs_permutations_iter.next()?;
