@@ -15,6 +15,7 @@ use topola::autorouter::PresortBy;
 use topola::board::edit::BoardEdit;
 use topola::router::RouterOptions;
 use topola::specctra::design::SpecctraDesign;
+use topola::stepper::TimeoutOptions;
 
 pub mod cli;
 use cli::Cli;
@@ -46,6 +47,10 @@ fn main() -> Result<(), std::io::Error> {
                         wrap_around_bands: true,
                         squeeze_through_under_bends: false,
                         routed_band_width: 100.0,
+                    },
+                    timeout: TimeoutOptions {
+                        initial: 1.0,
+                        progress_bonus: 0.005,
                     },
                 },
             ),
