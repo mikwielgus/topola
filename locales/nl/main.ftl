@@ -68,3 +68,5 @@ tr-menu-debug-step-rate = Stappentempo
 tr-menu-debug-step-rate-unit = stappen/s
 tr-menu-debug-highlight-obstacles = Obstakels markeren
 tr-menu-debug-show-ghosts = Toon spoken
+tr-menu-route-options-multilayer-timeout = Meerlaagse timeout
+tr-menu-route-options-planar-timeout = Planaire timeout
