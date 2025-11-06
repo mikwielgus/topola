@@ -64,3 +64,4 @@ tr-menu-route-planar-autoroute = planares Autorouten
 tr-menu-route-fanout-clearance = Fanout-Mindestabstand
 tr-menu-debug = Debuggen
 tr-menu-debug-fix-step-rate = Schrittweite festsetzen
+tr-menu-debug-highlight-obstacles = Hindernisse Hervorheben
