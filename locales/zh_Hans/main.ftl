@@ -68,3 +68,5 @@ tr-menu-debug-highlight-obstacles = 高亮障碍物
 tr-menu-debug-show-ghosts = 显示虚影
 tr-menu-debug-step-rate = 步进速率
 tr-menu-debug-step-rate-unit = 步/秒
+tr-menu-route-options-multilayer-timeout = 多层超时
+tr-menu-route-options-planar-timeout = 平面超时
