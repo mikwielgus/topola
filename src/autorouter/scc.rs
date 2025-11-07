@@ -26,6 +26,14 @@ pub struct Scc {
     length: f64,
 }
 
+impl PartialEq for Scc {
+    fn eq(&self, other: &Self) -> bool {
+        self.node_indices == other.node_indices
+    }
+}
+
+impl Eq for Scc {}
+
 impl Scc {
     pub fn new(
         autorouter: &mut Autorouter<impl AccessMesadata>,

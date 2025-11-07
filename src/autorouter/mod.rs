@@ -14,6 +14,7 @@ pub mod multilayer_autoroute;
 pub mod multilayer_preconfigurer;
 pub mod multilayer_reconfigurator;
 pub mod multilayer_reconfigurer;
+pub mod permsearch;
 pub mod place_via;
 pub mod planar_autoroute;
 pub mod planar_preconfigurer;

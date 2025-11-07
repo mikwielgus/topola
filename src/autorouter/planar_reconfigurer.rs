@@ -9,6 +9,7 @@ use itertools::{Itertools, Permutations};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::autorouter::{
+    permsearch::Permsearch,
     planar_autoroute::{PlanarAutorouteConfiguration, PlanarAutorouteExecutionStepper},
     planar_preconfigurer::SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer,
     scc::Scc,
@@ -52,7 +53,7 @@ impl PlanarAutorouteReconfigurer {
 }
 
 pub struct SccPermutationsPlanarAutorouteReconfigurer {
-    sccs_permutations_iter: Skip<Permutations<std::vec::IntoIter<Scc>>>,
+    sccs_permsearch: Permsearch<Scc>,
     preconfiguration: PlanarAutorouteConfiguration,
 }
 
@@ -66,10 +67,9 @@ impl SccPermutationsPlanarAutorouteReconfigurer {
         // TODO: Instead of instantiating presorter again here, get it from
         // an argument.
         let sccs = presorter.dissolve();
-        let sccs_len = sccs.len();
 
         Self {
-            sccs_permutations_iter: sccs.into_iter().permutations(sccs_len).skip(1),
+            sccs_permsearch: Permsearch::new(sccs),
             preconfiguration,
         }
     }
@@ -79,9 +79,19 @@ impl MakeNextPlanarAutorouteConfiguration for SccPermutationsPlanarAutorouteReco
     fn next_configuration(
         &mut self,
         autorouter: &Autorouter<impl AccessMesadata>,
-        _stepper: &PlanarAutorouteExecutionStepper,
+        stepper: &PlanarAutorouteExecutionStepper,
     ) -> Option<PlanarAutorouteConfiguration> {
-        let scc_permutation = self.sccs_permutations_iter.next()?;
+        let scc_index = self
+            .sccs_permsearch
+            .curr_permutation()
+            .iter()
+            .position(|scc| {
+                scc.scc_ref(autorouter)
+                    .contains(self.preconfiguration.ratlines[*stepper.curr_ratline_index()])
+            })
+            .unwrap();
+
+        let scc_permutation = self.sccs_permsearch.step(scc_index + 1)?;
         let mut ratlines = vec![];
 
         for scc in scc_permutation {
