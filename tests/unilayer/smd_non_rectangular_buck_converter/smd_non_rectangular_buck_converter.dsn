@@ -1,4 +1,4 @@
-(pcb /media/Projects/Projects/rust/topola/tests/single_layer/smd_non_rectangular_buck_converter/smd_non_rectangular_buck_converter.dsn
+(pcb /media/Projects/Projects/rust/topola/tests/unilayer/smd_non_rectangular_buck_converter/smd_non_rectangular_buck_converter.dsn
   (parser
     (string_quote ")
     (space_in_quoted_tokens on)

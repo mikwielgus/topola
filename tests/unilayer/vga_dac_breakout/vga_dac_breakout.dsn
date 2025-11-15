@@ -1,4 +1,4 @@
-(pcb /home/mikolaj/proj/topola/tests/single_layer/vga_dac_breakout/vga_dac_breakout.dsn
+(pcb /home/mikolaj/proj/topola/tests/unilayer/vga_dac_breakout/vga_dac_breakout.dsn
   (parser
     (string_quote ")
     (space_in_quoted_tokens on)

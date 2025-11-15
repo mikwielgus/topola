@@ -1,4 +1,4 @@
-(pcb /home/mikolaj/proj/topola/tests/single_layer/short_squeeze_through_under_bends/short_squeeze_through_under_bends.dsn
+(pcb /home/mikolaj/proj/topola/tests/unilayer/short_squeeze_through_under_bends/short_squeeze_through_under_bends.dsn
   (parser
     (string_quote ")
     (space_in_quoted_tokens on)

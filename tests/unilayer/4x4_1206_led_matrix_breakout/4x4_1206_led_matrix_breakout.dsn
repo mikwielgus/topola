@@ -1,4 +1,4 @@
-(pcb /home/mikolaj/proj/topola/tests/single_layer/4x4_1206_led_matrix_breakout/4x4_1206_led_matrix_breakout.dsn
+(pcb /home/mikolaj/proj/topola/tests/unilayer/4x4_1206_led_matrix_breakout/4x4_1206_led_matrix_breakout.dsn
   (parser
     (string_quote ")
     (space_in_quoted_tokens on)

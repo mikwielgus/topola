@@ -68,7 +68,7 @@ installed `topola` command.
 As an example, running the following commands will autoroute a KiCad
 project of a simple THT diode bridge rectifier:
 
-    cd tests/single_layer/tht_diode_bridge_rectifier/
+    cd tests/unilayer/tht_diode_bridge_rectifier/
     topola tht_diode_bridge_rectifier.dsn
 
 (Obviously, to use the debug executable, replace the second command with
