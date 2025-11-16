@@ -77,6 +77,13 @@ impl<
             > 0)
     }
 
+    pub fn exists_constraint(&self, from: I, to: I) -> bool {
+        self.cdt.exists_constraint(
+            self.trianvertex_to_handle[from].unwrap(),
+            self.trianvertex_to_handle[to].unwrap(),
+        )
+    }
+
     pub fn intersects_constraint(&self, from: &VW, to: &VW) -> bool {
         self.cdt
             .intersects_constraint(from.position(), to.position())

@@ -16,7 +16,7 @@ use crate::{
     geometry::primitive::PrimitiveShape,
     graph::GenericIndex,
     layout::{poly::PolyWeight, Layout},
-    stepper::{Abort, EstimateProgress},
+    stepper::Abort,
 };
 
 use super::{

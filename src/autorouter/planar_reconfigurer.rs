@@ -2,10 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::iter::Skip;
-
 use enum_dispatch::enum_dispatch;
-use itertools::{Itertools, Permutations};
 use specctra_core::mesadata::AccessMesadata;
 
 use crate::autorouter::{

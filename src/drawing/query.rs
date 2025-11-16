@@ -10,6 +10,7 @@ use crate::{
     drawing::{
         graph::{GetMaybeNet, MakePrimitiveRef},
         primitive::MakePrimitiveShape,
+        seg::SeqLooseSegIndex,
         Collision, Infringement,
     },
     geometry::{
@@ -105,15 +106,22 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         v.push(joints.0.into());
         v.push(joints.1.into());
 
-        if let Some(seg0) = self.primitive(joints.0).seg() {
-            v.push(seg0.into());
-        }
-
-        if let Some(seg1) = self.primitive(joints.1).seg() {
-            v.push(seg1.into());
-        }
-
+        v.extend(
+            self.collect_bend_bow_segs(bend)
+                .map(Into::<PrimitiveIndex>::into),
+        );
         v
+    }
+
+    pub fn collect_bend_bow_segs(
+        &self,
+        bend: LooseBendIndex,
+    ) -> impl Iterator<Item = SeqLooseSegIndex> {
+        let joints = self.primitive(bend).joints();
+        self.primitive(joints.0)
+            .seg()
+            .into_iter()
+            .chain(self.primitive(joints.1).seg().into_iter())
     }
 
     pub fn cut(

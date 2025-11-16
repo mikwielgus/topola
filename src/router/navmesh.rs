@@ -249,6 +249,7 @@ impl Navmesh {
 
         for prenavedge in prenavmesh.triangulation().edge_references() {
             Self::add_prenavedge_to_repr_as_quadrinavedges(
+                layout,
                 &mut graph,
                 &prenavnode_to_navnodes,
                 &overlapping_prenavnodes_unions,
@@ -266,6 +267,7 @@ impl Navmesh {
         // quadrinavedges exist for every one of them.
         for constraint in prenavmesh.constraints() {
             Self::add_prenavedge_to_repr_as_quadrinavedges(
+                layout,
                 &mut graph,
                 &prenavnode_to_navnodes,
                 &overlapping_prenavnodes_unions,
@@ -364,26 +366,27 @@ impl Navmesh {
             PrenavmeshNodeIndex,
             Vec<(NodeIndex<usize>, NodeIndex<usize>)>,
         >,
-        trianvertex: PrenavmeshNodeIndex,
-        node: BinavnodeNodeIndex,
+        prenavnode: PrenavmeshNodeIndex,
+        binavnode: BinavnodeNodeIndex,
     ) {
         let navnode1 = graph.add_node(NavnodeWeight {
-            binavnode: node,
+            binavnode,
             maybe_sense: Some(RotationSense::Counterclockwise),
         });
 
         let navnode2 = graph.add_node(NavnodeWeight {
-            binavnode: node,
+            binavnode,
             maybe_sense: Some(RotationSense::Clockwise),
         });
 
         prenavnode_to_navnodes
-            .get_mut(&trianvertex)
+            .get_mut(&prenavnode)
             .unwrap()
             .push((navnode1, navnode2));
     }
 
     fn add_prenavedge_to_repr_as_quadrinavedges(
+        layout: &Layout<impl AccessRules>,
         graph: &mut UnGraph<NavnodeWeight, (), usize>,
         prenavnode_to_navnodes: &BTreeMap<
             PrenavmeshNodeIndex,
@@ -403,6 +406,7 @@ impl Navmesh {
         ));
 
         Self::add_prenavedge_as_quadrinavedges(
+            layout,
             graph,
             prenavnode_to_navnodes,
             from_prenavnode_repr,
@@ -411,6 +415,7 @@ impl Navmesh {
     }
 
     fn add_prenavedge_as_quadrinavedges(
+        layout: &Layout<impl AccessRules>,
         graph: &mut UnGraph<NavnodeWeight, (), usize>,
         prenavnode_to_navnodes: &BTreeMap<
             PrenavmeshNodeIndex,
@@ -420,13 +425,56 @@ impl Navmesh {
         to_prenavnode: PrenavmeshNodeIndex,
     ) {
         for (from_navnode1, from_navnode2) in prenavnode_to_navnodes[&from_prenavnode].iter() {
-            for (to_navnode1, to_navnode2) in prenavnode_to_navnodes[&to_prenavnode].iter() {
+            let from_binavnode = graph.node_weight(*from_navnode1).unwrap().binavnode;
+
+            if let Some((to_navnode1, to_navnode2)) = prenavnode_to_navnodes[&to_prenavnode]
+                .iter()
+                .find(|(to_navnode1, _)| {
+                    let to_binavnode = graph.node_weight(*to_navnode1).unwrap().binavnode;
+
+                    Self::are_binavnodes_joined(layout, from_binavnode, to_binavnode)
+                })
+            {
+                // Add binavedge.
                 graph.update_edge(*from_navnode1, *to_navnode1, ());
+                graph.update_edge(*from_navnode2, *to_navnode2, ());
+
+                continue;
+            }
+
+            for (to_navnode1, to_navnode2) in prenavnode_to_navnodes[&to_prenavnode].iter() {
+                // Add binavedge.
+                graph.update_edge(*from_navnode1, *to_navnode1, ());
+                graph.update_edge(*from_navnode2, *to_navnode2, ());
+
+                // Add two more navedges to upgrade the binavedge to form a
+                // quadrinavedge.
                 graph.update_edge(*from_navnode1, *to_navnode2, ());
                 graph.update_edge(*from_navnode2, *to_navnode1, ());
-                graph.update_edge(*from_navnode2, *to_navnode2, ());
             }
         }
+    }
+
+    fn are_binavnodes_joined(
+        layout: &Layout<impl AccessRules>,
+        from_binavnode: BinavnodeNodeIndex,
+        to_binavnode: BinavnodeNodeIndex,
+    ) -> bool {
+        let BinavnodeNodeIndex::LooseBend(from_bend) = from_binavnode else {
+            return false;
+        };
+
+        let BinavnodeNodeIndex::LooseBend(to_bend) = to_binavnode else {
+            return false;
+        };
+
+        let from_bend_bow_segs: Vec<_> =
+            layout.drawing().collect_bend_bow_segs(from_bend).collect();
+        let to_bend_bow_segs: Vec<_> = layout.drawing().collect_bend_bow_segs(to_bend).collect();
+
+        from_bend_bow_segs
+            .iter()
+            .any(|seg| to_bend_bow_segs.contains(seg))
     }
 
     /// Returns the origin node.
