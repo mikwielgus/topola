@@ -424,12 +424,23 @@ impl Navmesh {
         from_prenavnode: PrenavmeshNodeIndex,
         to_prenavnode: PrenavmeshNodeIndex,
     ) {
-        for (from_navnode1, from_navnode2) in prenavnode_to_navnodes[&from_prenavnode].iter() {
+        let mut maybe_lowest_join: Option<(usize, usize)> = None;
+
+        for (from_index, (from_navnode1, from_navnode2)) in prenavnode_to_navnodes[&from_prenavnode]
+            .iter()
+            .rev()
+            .enumerate()
+        {
             let from_binavnode = graph.node_weight(*from_navnode1).unwrap().binavnode;
 
-            if let Some((to_navnode1, to_navnode2)) = prenavnode_to_navnodes[&to_prenavnode]
+            // If binavnodes are found to be joined, only add a single binavedge
+            // between them.
+            if let Some((to_index, (to_navnode1, to_navnode2))) = prenavnode_to_navnodes
+                [&to_prenavnode]
                 .iter()
-                .find(|(to_navnode1, _)| {
+                .rev()
+                .enumerate()
+                .find(|(_, (to_navnode1, _))| {
                     let to_binavnode = graph.node_weight(*to_navnode1).unwrap().binavnode;
 
                     Self::are_binavnodes_joined(layout, from_binavnode, to_binavnode)
@@ -439,10 +450,23 @@ impl Navmesh {
                 graph.update_edge(*from_navnode1, *to_navnode1, ());
                 graph.update_edge(*from_navnode2, *to_navnode2, ());
 
+                maybe_lowest_join = Some((from_index, to_index));
                 continue;
             }
 
-            for (to_navnode1, to_navnode2) in prenavnode_to_navnodes[&to_prenavnode].iter() {
+            for (to_index, (to_navnode1, to_navnode2)) in prenavnode_to_navnodes[&to_prenavnode]
+                .iter()
+                .rev()
+                .enumerate()
+            {
+                // Don't create navedges that would cross through and thus
+                // infringe joins of navnodes outwards of them.
+                if maybe_lowest_join.is_some_and(|lowest_join| {
+                    from_index >= lowest_join.0 || to_index >= lowest_join.1
+                }) {
+                    continue;
+                }
+
                 // Add binavedge.
                 graph.update_edge(*from_navnode1, *to_navnode1, ());
                 graph.update_edge(*from_navnode2, *to_navnode2, ());
