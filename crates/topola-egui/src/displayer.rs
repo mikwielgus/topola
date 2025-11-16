@@ -391,13 +391,10 @@ impl<'a> Displayer<'a> {
                 for PrenavmeshConstraint(from_weight, to_weight) in
                     navmesh.prenavmesh().constraints().iter()
                 {
-                    let from = from_weight.pos + [100.0, 100.0].into();
-                    let to = to_weight.pos + [100.0, 100.0].into();
-
                     self.painter.paint_line_segment(
-                        from,
-                        to,
-                        egui::Stroke::new(1.0, egui::Color32::from_rgb(255, 255, 0)),
+                        from_weight.pos,
+                        to_weight.pos,
+                        egui::Stroke::new(5.0, egui::Color32::from_rgb(255, 255, 255)),
                     )
                 }
             }
