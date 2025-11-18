@@ -104,19 +104,19 @@ impl SccSearchNode {
         let mut expanded_nodes = vec![];
 
         if let Some(resized) = self.clone().resize(length) {
-            if let Some(permuted_resized) = resized.permute() {
+            if let Some((permuted_resized, changed_count)) = resized.permute() {
                 expanded_nodes.push((
-                    0.1,
-                    (self.curr_permutation.len() - length) as f64,
+                    changed_count as f64 / 100.0,
+                    (self.curr_permutation.len() - permuted_resized.length) as f64,
                     permuted_resized,
                 ));
             }
         }
 
-        if let Some(permuted) = self.clone().permute() {
+        if let Some((permuted, changed_count)) = self.clone().permute() {
             expanded_nodes.push((
-                0.1,
-                (self.curr_permutation.len() - self.length) as f64,
+                changed_count as f64 / 100.0,
+                (self.curr_permutation.len() - permuted.length) as f64,
                 permuted,
             ));
         }
@@ -141,12 +141,19 @@ impl SccSearchNode {
         })
     }
 
-    fn permute(mut self) -> Option<Self> {
+    fn permute(mut self) -> Option<(Self, usize)> {
+        let mut changed_count = 0;
+
         for (i, element) in self.permutations.next()?.iter().enumerate() {
-            self.curr_permutation[i] = element.clone();
+            if self.curr_permutation[i] != *element {
+                self.curr_permutation[i] = element.clone();
+
+                // FIXME: Uncommenting this breaks the 4x4_1206_led_matrix test.
+                changed_count += 1;
+            }
         }
 
-        Some(self)
+        Some((self, changed_count))
     }
 }
 
