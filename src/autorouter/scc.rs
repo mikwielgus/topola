@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::BTreeSet;
+use std::{cmp::Ordering, collections::BTreeSet};
 
 use derive_getters::Getters;
 use petgraph::{graph::NodeIndex, prelude::StableUnGraph};
@@ -24,6 +24,18 @@ pub struct Scc {
 
     intersector_count: usize,
     length: f64,
+}
+
+impl Ord for Scc {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.node_indices.cmp(&other.node_indices)
+    }
+}
+
+impl PartialOrd for Scc {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
 }
 
 impl PartialEq for Scc {

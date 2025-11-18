@@ -2,15 +2,24 @@
 //
 // SPDX-License-Identifier: MIT
 
+use std::{
+    cmp::Ordering,
+    iter::{Skip, Take},
+};
+
+use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
+use itertools::{Itertools, Permutations};
 use specctra_core::mesadata::AccessMesadata;
 
-use crate::autorouter::{
-    permsearch::Permsearch,
-    planar_autoroute::{PlanarAutorouteConfiguration, PlanarAutorouteExecutionStepper},
-    planar_preconfigurer::SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer,
-    scc::Scc,
-    Autorouter, PlanarAutorouteOptions,
+use crate::{
+    astar::Astar,
+    autorouter::{
+        planar_autoroute::{PlanarAutorouteConfiguration, PlanarAutorouteExecutionStepper},
+        planar_preconfigurer::SccIntersectionsAndLengthRatlinePlanarAutoroutePreconfigurer,
+        scc::Scc,
+        Autorouter, PlanarAutorouteOptions,
+    },
 };
 
 #[enum_dispatch]
@@ -49,8 +58,98 @@ impl PlanarAutorouteReconfigurer {
     }
 }
 
+#[derive(Clone, Debug, Getters)]
+struct SccSearchNode {
+    curr_permutation: Vec<Scc>,
+    #[getter(skip)]
+    permutations: Skip<Permutations<Take<std::vec::IntoIter<Scc>>>>,
+    #[getter(skip)]
+    length: usize,
+}
+
+impl Ord for SccSearchNode {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.curr_permutation.cmp(&other.curr_permutation)
+    }
+}
+
+impl PartialOrd for SccSearchNode {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Eq for SccSearchNode {}
+
+impl PartialEq for SccSearchNode {
+    fn eq(&self, other: &Self) -> bool {
+        self.curr_permutation == other.curr_permutation
+    }
+}
+
+impl SccSearchNode {
+    pub fn new(sccs: Vec<Scc>) -> Self {
+        let len = sccs.len();
+
+        Self {
+            curr_permutation: sccs.clone(),
+            permutations: sccs.into_iter().take(len).permutations(0).skip(0),
+            length: 0,
+        }
+    }
+
+    pub fn expand(&self, length: usize) -> Vec<(f64, f64, Self)> {
+        let mut expanded_nodes = vec![];
+
+        if let Some(resized) = self.clone().resize(length) {
+            if let Some(permuted_resized) = resized.permute() {
+                expanded_nodes.push((
+                    0.1,
+                    (self.curr_permutation.len() - length) as f64,
+                    permuted_resized,
+                ));
+            }
+        }
+
+        if let Some(permuted) = self.clone().permute() {
+            expanded_nodes.push((
+                0.1,
+                (self.curr_permutation.len() - self.length) as f64,
+                permuted,
+            ));
+        }
+
+        expanded_nodes
+    }
+
+    fn resize(self, length: usize) -> Option<Self> {
+        if length == self.length {
+            return None;
+        }
+
+        Some(Self {
+            curr_permutation: self.curr_permutation.clone(),
+            permutations: self
+                .curr_permutation
+                .into_iter()
+                .take(length)
+                .permutations(length)
+                .skip(1),
+            length,
+        })
+    }
+
+    fn permute(mut self) -> Option<Self> {
+        for (i, element) in self.permutations.next()?.iter().enumerate() {
+            self.curr_permutation[i] = element.clone();
+        }
+
+        Some(self)
+    }
+}
+
 pub struct SccPermutationsPlanarAutorouteReconfigurer {
-    sccs_permsearch: Permsearch<Scc>,
+    sccs_search: Astar<SccSearchNode, f64>,
     preconfiguration: PlanarAutorouteConfiguration,
 }
 
@@ -66,7 +165,7 @@ impl SccPermutationsPlanarAutorouteReconfigurer {
         let sccs = presorter.dissolve();
 
         Self {
-            sccs_permsearch: Permsearch::new(sccs),
+            sccs_search: Astar::new(SccSearchNode::new(sccs)),
             preconfiguration,
         }
     }
@@ -79,7 +178,8 @@ impl MakeNextPlanarAutorouteConfiguration for SccPermutationsPlanarAutorouteReco
         stepper: &PlanarAutorouteExecutionStepper,
     ) -> Option<PlanarAutorouteConfiguration> {
         let scc_index = self
-            .sccs_permsearch
+            .sccs_search
+            .curr_node()
             .curr_permutation()
             .iter()
             .position(|scc| {
@@ -88,10 +188,13 @@ impl MakeNextPlanarAutorouteConfiguration for SccPermutationsPlanarAutorouteReco
             })
             .unwrap();
 
-        let scc_permutation = self.sccs_permsearch.step(scc_index + 1)?;
+        let next_search_node = self
+            .sccs_search
+            .expand(&self.sccs_search.curr_node().expand(scc_index + 1))?;
+        let next_permutation = next_search_node.curr_permutation();
         let mut ratlines = vec![];
 
-        for scc in scc_permutation {
+        for scc in next_permutation {
             for ratline in self.preconfiguration.ratlines.iter() {
                 if scc.node_indices().contains(
                     &autorouter

@@ -312,7 +312,7 @@ impl<'a> Displayer<'a> {
                             .get(&navnode)
                             .map_or_else(String::new, |s| format!("g={:.2}", s));
                         let estimate_score_text = thetastar
-                            .cost_to_goal_estimate_scores()
+                            .estimated_costs()
                             .get(&navnode)
                             .map_or_else(String::new, |s| format!("(f={:.2})", s));
                         let debug_text = activity.navnode_debug_text(navnode).unwrap_or("");

@@ -21,6 +21,7 @@
 pub mod graph;
 #[macro_use]
 pub mod drawing;
+pub mod astar;
 pub mod autorouter;
 pub mod bimapset;
 pub mod board;
@@ -29,6 +30,7 @@ pub mod interactor;
 pub mod layout;
 pub mod math;
 pub mod router;
+pub mod scored;
 pub mod specctra;
 pub mod stepper;
 pub mod triangulation;

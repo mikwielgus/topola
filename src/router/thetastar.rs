@@ -18,51 +18,8 @@ use petgraph::algo::Measure;
 use petgraph::visit::{EdgeRef, GraphBase, IntoEdgeReferences, IntoEdges};
 use thiserror::Error;
 
-use std::cmp::Ordering;
-
+use crate::scored::MinScored;
 use crate::stepper::{EstimateProgress, LinearScale, Step};
-
-#[derive(Copy, Clone, Debug)]
-pub struct MinScored<K, T>(pub K, pub T);
-
-impl<K: PartialOrd, T> PartialEq for MinScored<K, T> {
-    #[inline]
-    fn eq(&self, other: &MinScored<K, T>) -> bool {
-        self.cmp(other) == Ordering::Equal
-    }
-}
-
-impl<K: PartialOrd, T> Eq for MinScored<K, T> {}
-
-impl<K: PartialOrd, T> PartialOrd for MinScored<K, T> {
-    #[inline]
-    fn partial_cmp(&self, other: &MinScored<K, T>) -> Option<Ordering> {
-        Some(self.cmp(other))
-    }
-}
-
-impl<K: PartialOrd, T> Ord for MinScored<K, T> {
-    #[inline]
-    fn cmp(&self, other: &MinScored<K, T>) -> Ordering {
-        let a = &self.0;
-        let b = &other.0;
-        if a == b {
-            Ordering::Equal
-        } else if a < b {
-            Ordering::Greater
-        } else if a > b {
-            Ordering::Less
-        } else if a.ne(a) && b.ne(b) {
-            // these are the NaN cases
-            Ordering::Equal
-        } else if a.ne(a) {
-            // Order NaN less, so that it is last in the MinScore order
-            Ordering::Less
-        } else {
-            Ordering::Greater
-        }
-    }
-}
 
 #[derive(Debug)]
 pub struct PathTracker<G>
@@ -179,7 +136,7 @@ where
     /// Also known as the g-scores, or just g.
     scores: BTreeMap<G::NodeId, K>,
     /// Also known as the f-scores, or just f.
-    cost_to_goal_estimate_scores: BTreeMap<G::NodeId, K>,
+    estimated_costs: BTreeMap<G::NodeId, K>,
     #[getter(skip)]
     path_tracker: PathTracker<G>,
     // FIXME: To work around edge references borrowing from the graph we collect then reiterate over them.
@@ -218,7 +175,7 @@ where
             graph,
             frontier: BinaryHeap::new(),
             scores: BTreeMap::new(),
-            cost_to_goal_estimate_scores: BTreeMap::new(),
+            estimated_costs: BTreeMap::new(),
             path_tracker: PathTracker::<G>::new(),
             edge_ids: Vec::new(),
             progress_estimate_value: K::default(),
@@ -288,7 +245,7 @@ where
                         return Ok(ControlFlow::Break((cost, path, result)));
                     }
 
-                    match self.cost_to_goal_estimate_scores.entry(navnode) {
+                    match self.estimated_costs.entry(navnode) {
                         Entry::Occupied(mut entry) => {
                             // If the node has already been visited with an equal or lower
                             // estimated score than now, then we do not need to re-visit it.
