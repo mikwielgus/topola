@@ -69,7 +69,9 @@ struct SccSearchNode {
 
 impl Ord for SccSearchNode {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.curr_permutation.cmp(&other.curr_permutation)
+        self.curr_permutation
+            .cmp(&other.curr_permutation)
+            .then(self.length.cmp(&other.length))
     }
 }
 
@@ -83,7 +85,7 @@ impl Eq for SccSearchNode {}
 
 impl PartialEq for SccSearchNode {
     fn eq(&self, other: &Self) -> bool {
-        self.curr_permutation == other.curr_permutation
+        self.curr_permutation == other.curr_permutation && self.length == other.length
     }
 }
 
