@@ -36,30 +36,37 @@ impl<N: Clone + Ord, S: Add<S, Output = S> + Copy + Default + PartialOrd> Astar<
     }
 
     pub fn expand(&mut self, new_nodes: &[(S, S, N)]) -> Option<N> {
-        let curr_g_score = self.g_scores.get(&self.curr_node).unwrap().clone();
-
-        for (edge_g_cost, h_heuristic, node) in new_nodes {
-            match self.g_scores.entry(node.clone()) {
-                Entry::Occupied(mut entry) => {
-                    let entry_score = *entry.get();
-
-                    if curr_g_score + *edge_g_cost >= entry_score {
-                        continue;
-                    }
-
-                    entry.insert(curr_g_score + *edge_g_cost);
-                }
-                Entry::Vacant(entry) => {
-                    entry.insert(curr_g_score + *edge_g_cost);
-                }
-            }
-
-            self.frontier.push(MinScored(
-                curr_g_score + *edge_g_cost + *h_heuristic,
-                node.clone(),
-            ));
+        for new_node in new_nodes {
+            self.push(new_node.clone());
         }
 
+        self.pop()
+    }
+
+    pub fn push(&mut self, new_node: (S, S, N)) {
+        let curr_g_score = self.g_scores.get(&self.curr_node).unwrap().clone();
+        let (edge_g_cost, h_heuristic, node) = new_node;
+
+        match self.g_scores.entry(node.clone()) {
+            Entry::Occupied(mut entry) => {
+                let entry_score = *entry.get();
+
+                if curr_g_score + edge_g_cost >= entry_score {
+                    return;
+                }
+
+                entry.insert(curr_g_score + edge_g_cost);
+            }
+            Entry::Vacant(entry) => {
+                entry.insert(curr_g_score + edge_g_cost);
+            }
+        }
+
+        self.frontier
+            .push(MinScored(curr_g_score + edge_g_cost + h_heuristic, node));
+    }
+
+    pub fn pop(&mut self) -> Option<N> {
         MinScored(_ /*f_score*/, self.curr_node) = self.frontier.pop()?;
         Some(self.curr_node.clone())
     }
