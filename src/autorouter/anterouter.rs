@@ -35,7 +35,7 @@ pub struct AnterouterOptions {
     pub fanout_clearance: f64,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct AnterouterPlan {
     pub layer_map: BTreeMap<RatlineUid, usize>,
     pub static_terminating_dot_map: BTreeMap<(RatlineUid, FixedDotIndex, usize), FixedDotIndex>,

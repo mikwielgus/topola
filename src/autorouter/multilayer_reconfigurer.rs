@@ -2,16 +2,21 @@
 //
 // SPDX-License-Identifier: MIT
 
-use std::collections::BTreeMap;
+use std::{cmp::Ordering, collections::BTreeMap};
 
+use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
 use specctra_core::mesadata::AccessMesadata;
 
-use crate::autorouter::{
-    multilayer_autoroute::{MultilayerAutorouteConfiguration, MultilayerAutorouteOptions},
-    planar_autoroute::PlanarAutorouteConfigurationStatus,
-    planar_preconfigurer::PlanarAutoroutePreconfigurerInput,
-    Autorouter, AutorouterError,
+use crate::{
+    astar::Astar,
+    autorouter::{
+        multilayer_autoroute::{MultilayerAutorouteConfiguration, MultilayerAutorouteOptions},
+        planar_autoroute::PlanarAutorouteConfigurationStatus,
+        planar_preconfigurer::PlanarAutoroutePreconfigurerInput,
+        ratline::RatlineUid,
+        Autorouter, AutorouterError,
+    },
 };
 
 #[enum_dispatch]
@@ -33,10 +38,56 @@ pub enum MultilayerAutorouteReconfigurer {
     UniformRandomLayers(IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer),
 }
 
+#[derive(Clone, Debug, Getters)]
+struct SearchNode {
+    configuration: MultilayerAutorouteConfiguration,
+}
+
+impl Ord for SearchNode {
+    fn cmp(&self, other: &Self) -> Ordering {
+        self.configuration.cmp(&other.configuration)
+    }
+}
+
+impl PartialOrd for SearchNode {
+    fn partial_cmp(&self, other: &Self) -> Option<Ordering> {
+        Some(self.cmp(other))
+    }
+}
+
+impl Eq for SearchNode {}
+
+impl PartialEq for SearchNode {
+    fn eq(&self, other: &Self) -> bool {
+        self.configuration == other.configuration
+    }
+}
+
+impl SearchNode {
+    pub fn new(configuration: MultilayerAutorouteConfiguration) -> Self {
+        Self { configuration }
+    }
+
+    pub fn revise_ratline(self, ratline_uid: RatlineUid, layer_count: usize) -> Self {
+        let mut new_anterouter_plan = self.configuration.plan.clone();
+
+        *new_anterouter_plan.layer_map.get_mut(&ratline_uid).unwrap() += 1;
+        *new_anterouter_plan.layer_map.get_mut(&ratline_uid).unwrap() %= layer_count;
+
+        Self {
+            configuration: MultilayerAutorouteConfiguration {
+                plan: new_anterouter_plan,
+                planar: PlanarAutoroutePreconfigurerInput {
+                    ratlines: self.configuration.planar.ratlines.clone(),
+                    terminating_dot_map: BTreeMap::new(),
+                },
+            },
+        }
+    }
+}
+
 pub struct IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer {
-    last_configuration: MultilayerAutorouteConfiguration,
-    maybe_last_planar_status: Option<PlanarAutorouteConfigurationStatus>,
-    maybe_best_planar_status: Option<PlanarAutorouteConfigurationStatus>,
+    configuration_search: Astar<SearchNode, f64>,
 }
 
 impl IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer {
@@ -46,9 +97,7 @@ impl IncrementFailedRatlineLayersMultilayerAutorouteReconfigurer {
         _options: &MultilayerAutorouteOptions,
     ) -> Self {
         Self {
-            last_configuration: preconfiguration,
-            maybe_last_planar_status: None,
-            maybe_best_planar_status: None,
+            configuration_search: Astar::new(SearchNode::new(preconfiguration)),
         }
     }
 }
@@ -58,57 +107,32 @@ impl MakeNextMultilayerAutorouteConfiguration
 {
     fn process_planar_result(
         &mut self,
-        _autorouter: &Autorouter<impl AccessMesadata>,
+        autorouter: &Autorouter<impl AccessMesadata>,
         planar_result: Result<PlanarAutorouteConfigurationStatus, AutorouterError>,
     ) {
         let Ok(planar_status) = planar_result else {
             return;
         };
 
-        self.maybe_last_planar_status = Some(planar_status.clone());
-
-        if self
-            .maybe_best_planar_status
-            .as_ref()
-            .is_none_or(|status| status.costs.lengths.len() < planar_status.costs.lengths.len())
-        {
-            self.maybe_best_planar_status = Some(planar_status.clone());
-        }
+        self.configuration_search.push((
+            0.1,
+            (planar_status.configuration.ratlines.len() - planar_status.costs.lengths.len()) as f64,
+            self.configuration_search
+                .curr_node()
+                .clone()
+                .revise_ratline(
+                    planar_status.configuration.ratlines[planar_status.costs.lengths.len()],
+                    autorouter.board().layout().drawing().layer_count(),
+                ),
+        ));
     }
 
     fn next_configuration(
         &mut self,
-        autorouter: &Autorouter<impl AccessMesadata>,
+        _autorouter: &Autorouter<impl AccessMesadata>,
     ) -> Option<MultilayerAutorouteConfiguration> {
-        let mut new_anterouter_plan = self.last_configuration.plan.clone();
-
-        let Some(ref last_planar_status) = self.maybe_last_planar_status else {
-            return None;
-        };
-
-        if let Some(ref best_planar_status) = self.maybe_best_planar_status {
-            for ratline_index in best_planar_status.costs.lengths.len()
-                ..last_planar_status.configuration.ratlines.len()
-            {
-                *new_anterouter_plan
-                    .layer_map
-                    .get_mut(&last_planar_status.configuration.ratlines[ratline_index])
-                    .unwrap() += 1;
-                *new_anterouter_plan
-                    .layer_map
-                    .get_mut(&last_planar_status.configuration.ratlines[ratline_index])
-                    .unwrap() %= autorouter.board().layout().drawing().layer_count();
-            }
-        }
-
-        self.last_configuration = MultilayerAutorouteConfiguration {
-            plan: new_anterouter_plan,
-            planar: PlanarAutoroutePreconfigurerInput {
-                ratlines: self.last_configuration.planar.ratlines.clone(),
-                terminating_dot_map: BTreeMap::new(),
-            },
-        };
-
-        Some(self.last_configuration.clone())
+        self.configuration_search
+            .pop()
+            .map(|node| node.configuration().clone())
     }
 }

@@ -28,7 +28,7 @@ use crate::{
     },
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct MultilayerAutorouteConfiguration {
     pub plan: AnterouterPlan,
     pub planar: PlanarAutoroutePreconfigurerInput,

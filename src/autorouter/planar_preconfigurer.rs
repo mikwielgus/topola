@@ -17,7 +17,7 @@ use crate::{
     drawing::dot::FixedDotIndex,
 };
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct PlanarAutoroutePreconfigurerInput {
     pub ratlines: BTreeSet<RatlineUid>,
     pub terminating_dot_map: BTreeMap<(RatlineUid, FixedDotIndex), FixedDotIndex>,

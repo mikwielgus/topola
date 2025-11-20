@@ -60,17 +60,17 @@ impl PlanarAutorouteReconfigurer {
 
 #[derive(Clone, Debug, Getters)]
 struct SccSearchNode {
-    curr_permutation: Vec<Scc>,
+    permutation: Vec<Scc>,
     #[getter(skip)]
-    permutations: Skip<Permutations<Take<std::vec::IntoIter<Scc>>>>,
+    permutations_iter: Skip<Permutations<Take<std::vec::IntoIter<Scc>>>>,
     #[getter(skip)]
     length: usize,
 }
 
 impl Ord for SccSearchNode {
     fn cmp(&self, other: &Self) -> Ordering {
-        self.curr_permutation
-            .cmp(&other.curr_permutation)
+        self.permutation
+            .cmp(&other.permutation)
             .then(self.length.cmp(&other.length))
     }
 }
@@ -85,7 +85,7 @@ impl Eq for SccSearchNode {}
 
 impl PartialEq for SccSearchNode {
     fn eq(&self, other: &Self) -> bool {
-        self.curr_permutation == other.curr_permutation && self.length == other.length
+        self.permutation == other.permutation && self.length == other.length
     }
 }
 
@@ -94,8 +94,8 @@ impl SccSearchNode {
         let len = sccs.len();
 
         Self {
-            curr_permutation: sccs.clone(),
-            permutations: sccs.into_iter().take(len).permutations(0).skip(0),
+            permutation: sccs.clone(),
+            permutations_iter: sccs.into_iter().take(len).permutations(0).skip(0),
             length: 0,
         }
     }
@@ -107,7 +107,7 @@ impl SccSearchNode {
             if let Some((permuted_resized, changed_count)) = resized.permute() {
                 expanded_nodes.push((
                     changed_count as f64 / 100.0,
-                    (self.curr_permutation.len() - permuted_resized.length) as f64,
+                    (self.permutation.len() - permuted_resized.length) as f64,
                     permuted_resized,
                 ));
             }
@@ -116,7 +116,7 @@ impl SccSearchNode {
         if let Some((permuted, changed_count)) = self.clone().permute() {
             expanded_nodes.push((
                 changed_count as f64 / 100.0,
-                (self.curr_permutation.len() - permuted.length) as f64,
+                (self.permutation.len() - permuted.length) as f64,
                 permuted,
             ));
         }
@@ -130,9 +130,9 @@ impl SccSearchNode {
         }
 
         Some(Self {
-            curr_permutation: self.curr_permutation.clone(),
-            permutations: self
-                .curr_permutation
+            permutation: self.permutation.clone(),
+            permutations_iter: self
+                .permutation
                 .into_iter()
                 .take(length)
                 .permutations(length)
@@ -144,11 +144,9 @@ impl SccSearchNode {
     fn permute(mut self) -> Option<(Self, usize)> {
         let mut changed_count = 0;
 
-        for (i, element) in self.permutations.next()?.iter().enumerate() {
-            if self.curr_permutation[i] != *element {
-                self.curr_permutation[i] = element.clone();
-
-                // FIXME: Uncommenting this breaks the 4x4_1206_led_matrix test.
+        for (i, element) in self.permutations_iter.next()?.iter().enumerate() {
+            if self.permutation[i] != *element {
+                self.permutation[i] = element.clone();
                 changed_count += 1;
             }
         }
@@ -158,7 +156,7 @@ impl SccSearchNode {
 }
 
 pub struct SccPermutationsPlanarAutorouteReconfigurer {
-    sccs_search: Astar<SccSearchNode, f64>,
+    configuration_search: Astar<SccSearchNode, f64>,
     preconfiguration: PlanarAutorouteConfiguration,
 }
 
@@ -174,7 +172,7 @@ impl SccPermutationsPlanarAutorouteReconfigurer {
         let sccs = presorter.dissolve();
 
         Self {
-            sccs_search: Astar::new(SccSearchNode::new(sccs)),
+            configuration_search: Astar::new(SccSearchNode::new(sccs)),
             preconfiguration,
         }
     }
@@ -187,9 +185,9 @@ impl MakeNextPlanarAutorouteConfiguration for SccPermutationsPlanarAutorouteReco
         stepper: &PlanarAutorouteExecutionStepper,
     ) -> Option<PlanarAutorouteConfiguration> {
         let scc_index = self
-            .sccs_search
+            .configuration_search
             .curr_node()
-            .curr_permutation()
+            .permutation()
             .iter()
             .position(|scc| {
                 scc.scc_ref(autorouter)
@@ -198,9 +196,9 @@ impl MakeNextPlanarAutorouteConfiguration for SccPermutationsPlanarAutorouteReco
             .unwrap();
 
         let next_search_node = self
-            .sccs_search
-            .expand(&self.sccs_search.curr_node().expand(scc_index + 1))?;
-        let next_permutation = next_search_node.curr_permutation();
+            .configuration_search
+            .expand(&self.configuration_search.curr_node().expand(scc_index + 1))?;
+        let next_permutation = next_search_node.permutation();
         let mut ratlines = vec![];
 
         for scc in next_permutation {
