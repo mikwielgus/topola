@@ -141,9 +141,17 @@ impl PlanarAutorouteExecutionStepper {
 
         autorouter.board.apply_edit(&board_edit.reverse());
 
+        self.curr_ratline_index = index;
+        Ok(self.start_routing_ratline(autorouter)?)
+    }
+
+    fn start_routing_ratline(
+        &mut self,
+        autorouter: &mut Autorouter<impl AccessMesadata>,
+    ) -> Result<(), AutorouterError> {
         let (origin, destination) = self
             .configuration
-            .ratline_terminating_dots(autorouter, index);
+            .ratline_terminating_dots(autorouter, self.curr_ratline_index);
         let mut router = Router::new(autorouter.board.layout_mut(), self.options.router);
 
         self.route = Some(router.route(
@@ -153,7 +161,6 @@ impl PlanarAutorouteExecutionStepper {
             self.options.router.routed_band_width,
         )?);
 
-        self.curr_ratline_index = index;
         Ok(())
     }
 
@@ -245,21 +252,14 @@ impl<M: AccessMesadata> Step<Autorouter<M>, Option<BoardEdit>, PlanarAutorouteCo
 
         self.curr_ratline_index += 1;
 
-        if let Some(..) = self.configuration.ratlines.get(self.curr_ratline_index) {
-            let (origin, destination) = self
-                .configuration
-                .ratline_terminating_dots(autorouter, self.curr_ratline_index);
-            let mut router = Router::new(autorouter.board.layout_mut(), self.options.router);
-
+        if self
+            .configuration
+            .ratlines
+            .get(self.curr_ratline_index)
+            .is_some()
+        {
             self.dissolve_route_stepper_and_push_layout_edit();
-            let recorder = LayoutEdit::new();
-
-            self.route = Some(router.route(
-                recorder,
-                origin,
-                destination,
-                self.options.router.routed_band_width,
-            )?);
+            self.start_routing_ratline(autorouter);
         }
 
         Ok(ControlFlow::Continue(ret))
