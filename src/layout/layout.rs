@@ -36,7 +36,7 @@ use crate::{
     graph::{GenericIndex, GetIndex, MakeRef},
     layout::{
         poly::{add_poly_with_nodes_intern, MakePolygon, PolyWeight},
-        via::{Via, ViaWeight},
+        via::{ViaRef, ViaWeight},
     },
     math::RotationSense,
 };
@@ -476,8 +476,8 @@ impl<R: AccessRules> Layout<R> {
         self.drawing.rules_mut()
     }
 
-    pub fn via(&self, index: GenericIndex<ViaWeight>) -> Via<'_, R> {
-        Via::new(index, self.drawing())
+    pub fn via_ref(&self, index: GenericIndex<ViaWeight>) -> ViaRef<'_, R> {
+        ViaRef::new(index, self.drawing())
     }
 }
 

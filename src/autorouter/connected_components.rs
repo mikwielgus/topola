@@ -21,20 +21,23 @@ pub struct ConnectedComponents {
 
 impl ConnectedComponents {
     pub fn new(board: &Board<impl AccessMesadata>) -> Self {
-        let mut unionfind = UnionFind::new(board.layout().drawing().geometry().dot_index_bound());
+        let mut dot_unionfind =
+            UnionFind::new(board.layout().drawing().geometry().dot_index_bound());
 
         for node in board.layout().drawing().primitive_nodes() {
-            Self::unionize_primitive_endpoint_dots(board, &mut unionfind, node);
+            Self::unionize_primitive_endpoint_dots(board, &mut dot_unionfind, node);
         }
 
         // Pins can have padstacks that span multiple layers. To account for
         // that, we have another loop to go over all the pins and connect all
         // their primitives.
         for pinname in board.pinnames() {
-            Self::unionize_pin(board, &mut unionfind, pinname);
+            Self::unionize_pin(board, &mut dot_unionfind, pinname);
         }
 
-        Self { unionfind }
+        Self {
+            unionfind: dot_unionfind,
+        }
     }
 
     pub fn new_with_principal_layer(
@@ -70,33 +73,33 @@ impl ConnectedComponents {
 
     fn unionize_primitive_endpoint_dots(
         board: &Board<impl AccessMesadata>,
-        unionfind: &mut UnionFind<usize>,
+        dot_unionfind: &mut UnionFind<usize>,
         primitive: PrimitiveIndex,
     ) {
         match primitive {
             PrimitiveIndex::FixedSeg(seg) => {
                 let joints = board.layout().drawing().primitive(seg).joints();
-                unionfind.union(joints.0.index(), joints.1.index());
-                Self::unionize_fixed_dot_via(board, unionfind, joints.0);
-                Self::unionize_fixed_dot_via(board, unionfind, joints.1);
+                dot_unionfind.union(joints.0.index(), joints.1.index());
+                Self::unionize_fixed_dot_via(board, dot_unionfind, joints.0);
+                Self::unionize_fixed_dot_via(board, dot_unionfind, joints.1);
             }
             PrimitiveIndex::LoneLooseSeg(seg) => {
                 let joints = board.layout().drawing().primitive(seg).joints();
-                unionfind.union(joints.0.index(), joints.1.index());
+                dot_unionfind.union(joints.0.index(), joints.1.index());
             }
             PrimitiveIndex::SeqLooseSeg(seg) => {
                 let joints = board.layout().drawing().primitive(seg).joints();
-                unionfind.union(joints.0.index(), joints.1.index());
+                dot_unionfind.union(joints.0.index(), joints.1.index());
             }
             PrimitiveIndex::FixedBend(bend) => {
                 let joints = board.layout().drawing().primitive(bend).joints();
-                unionfind.union(joints.0.index(), joints.1.index());
-                Self::unionize_fixed_dot_via(board, unionfind, joints.0);
-                Self::unionize_fixed_dot_via(board, unionfind, joints.1);
+                dot_unionfind.union(joints.0.index(), joints.1.index());
+                Self::unionize_fixed_dot_via(board, dot_unionfind, joints.0);
+                Self::unionize_fixed_dot_via(board, dot_unionfind, joints.1);
             }
             PrimitiveIndex::LooseBend(bend) => {
                 let joints = board.layout().drawing().primitive(bend).joints();
-                unionfind.union(joints.0.index(), joints.1.index());
+                dot_unionfind.union(joints.0.index(), joints.1.index());
             }
             _ => (),
         }
@@ -104,7 +107,7 @@ impl ConnectedComponents {
 
     fn unionize_pin(
         board: &Board<impl AccessMesadata>,
-        unionfind: &mut UnionFind<usize>,
+        dot_unionfind: &mut UnionFind<usize>,
         pinname: &str,
     ) {
         let mut iter = board.pinname_nodes(pinname);
@@ -120,53 +123,53 @@ impl ConnectedComponents {
 
         for node in board.pinname_nodes(pinname) {
             if let GenericNode::Primitive(primitive) = node {
-                Self::unionize_to_common(board, unionfind, primitive, first_fixed_dot);
+                Self::unionize_to_common(board, dot_unionfind, primitive, first_fixed_dot);
             }
         }
     }
 
     fn unionize_to_common(
         board: &Board<impl AccessMesadata>,
-        unionfind: &mut UnionFind<usize>,
+        dot_unionfind: &mut UnionFind<usize>,
         primitive: PrimitiveIndex,
         common: FixedDotIndex,
     ) {
         match primitive {
             PrimitiveIndex::FixedDot(dot) => {
-                unionfind.union(common.index(), dot.index());
-                Self::unionize_fixed_dot_via(board, unionfind, dot);
+                dot_unionfind.union(common.index(), dot.index());
+                Self::unionize_fixed_dot_via(board, dot_unionfind, dot);
             }
             PrimitiveIndex::LooseDot(dot) => {
-                unionfind.union(common.index(), dot.index());
+                dot_unionfind.union(common.index(), dot.index());
             }
             PrimitiveIndex::FixedSeg(seg) => {
                 let joints = board.layout().drawing().primitive(seg).joints();
-                unionfind.union(common.index(), joints.0.index());
-                Self::unionize_fixed_dot_via(board, unionfind, joints.0);
-                unionfind.union(common.index(), joints.1.index());
-                Self::unionize_fixed_dot_via(board, unionfind, joints.1);
+                dot_unionfind.union(common.index(), joints.0.index());
+                Self::unionize_fixed_dot_via(board, dot_unionfind, joints.0);
+                dot_unionfind.union(common.index(), joints.1.index());
+                Self::unionize_fixed_dot_via(board, dot_unionfind, joints.1);
             }
             PrimitiveIndex::LoneLooseSeg(seg) => {
                 let joints = board.layout().drawing().primitive(seg).joints();
-                unionfind.union(common.index(), joints.0.index());
-                unionfind.union(common.index(), joints.1.index());
+                dot_unionfind.union(common.index(), joints.0.index());
+                dot_unionfind.union(common.index(), joints.1.index());
             }
             PrimitiveIndex::SeqLooseSeg(seg) => {
                 let joints = board.layout().drawing().primitive(seg).joints();
-                unionfind.union(common.index(), joints.0.index());
-                unionfind.union(common.index(), joints.1.index());
+                dot_unionfind.union(common.index(), joints.0.index());
+                dot_unionfind.union(common.index(), joints.1.index());
             }
             PrimitiveIndex::FixedBend(bend) => {
                 let joints = board.layout().drawing().primitive(bend).joints();
-                unionfind.union(common.index(), joints.0.index());
-                Self::unionize_fixed_dot_via(board, unionfind, joints.0);
-                unionfind.union(common.index(), joints.1.index());
-                Self::unionize_fixed_dot_via(board, unionfind, joints.1);
+                dot_unionfind.union(common.index(), joints.0.index());
+                Self::unionize_fixed_dot_via(board, dot_unionfind, joints.0);
+                dot_unionfind.union(common.index(), joints.1.index());
+                Self::unionize_fixed_dot_via(board, dot_unionfind, joints.1);
             }
             PrimitiveIndex::LooseBend(bend) => {
                 let joints = board.layout().drawing().primitive(bend).joints();
-                unionfind.union(common.index(), joints.0.index());
-                unionfind.union(common.index(), joints.1.index());
+                dot_unionfind.union(common.index(), joints.0.index());
+                dot_unionfind.union(common.index(), joints.1.index());
             }
             _ => (),
         }
@@ -174,12 +177,12 @@ impl ConnectedComponents {
 
     fn unionize_fixed_dot_via(
         board: &Board<impl AccessMesadata>,
-        unionfind: &mut UnionFind<usize>,
+        dot_unionfind: &mut UnionFind<usize>,
         dot: FixedDotIndex,
     ) {
         if let Some(via) = board.layout().fixed_dot_via(dot) {
-            for via_dot in board.layout().via(via).dots() {
-                unionfind.union(dot.index(), via_dot.index());
+            for via_dot in board.layout().via_ref(via).dots() {
+                dot_unionfind.union(dot.index(), via_dot.index());
             }
         }
     }

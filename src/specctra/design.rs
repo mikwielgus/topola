@@ -6,7 +6,7 @@
 //! Design DSN file, creating the [`Board`] object from the file, as well as
 //! exporting the session file
 
-use std::collections::{btree_map::Entry as BTreeMapEntry, BTreeMap};
+use std::collections::{btree_map::Entry as BTreeMapEntry, BTreeMap, BTreeSet};
 
 use geo::{Euclidean, Length, Line, Point, Rotate};
 use itertools::Itertools;
@@ -16,13 +16,14 @@ use crate::{
     board::{edit::BoardEdit, AccessMesadata, Board},
     drawing::{
         dot::{FixedDotIndex, FixedDotWeight, GeneralDotWeight},
-        graph::{GetMaybeNet, MakePrimitiveRef},
+        graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex},
         primitive::MakePrimitiveShape,
         seg::{FixedSegWeight, GeneralSegWeight},
         Drawing,
     },
-    geometry::{primitive::PrimitiveShape, GetLayer, GetWidth},
-    layout::{poly::SolidPolyWeight, Layout},
+    geometry::{primitive::PrimitiveShape, shape::AccessShape, GetLayer, GetWidth},
+    graph::GenericIndex,
+    layout::{poly::SolidPolyWeight, via::ViaWeight, Layout},
     math::{self, Circle},
     specctra::{
         mesadata::SpecctraMesadata,
@@ -77,10 +78,32 @@ impl SpecctraDesign {
         let drawing = board.layout().drawing();
 
         let mut net_outs = BTreeMap::<usize, structure::NetOut>::new();
+
+        // Since we iterate over primitives, keep track of added vias to prevent
+        // creation of duplicates.
+        let mut visited_vias: BTreeSet<GenericIndex<ViaWeight>> = BTreeSet::new();
+
         for index in drawing.primitive_nodes() {
             let primitive = index.primitive_ref(drawing);
 
             if let Some(net) = primitive.maybe_net() {
+                let net_out = match net_outs.entry(net) {
+                    BTreeMapEntry::Occupied(occ) => occ.into_mut(),
+                    BTreeMapEntry::Vacant(vac) => vac.insert(structure::NetOut {
+                        name: mesadata
+                            .net_netname(net)
+                            .ok_or_else(|| {
+                                std::io::Error::new(
+                                    std::io::ErrorKind::InvalidData,
+                                    format!("tried to reference invalid net ID {}", net),
+                                )
+                            })?
+                            .to_owned(),
+                        wire: Vec::new(),
+                        via: Vec::new(),
+                    }),
+                };
+
                 let coords = match primitive.shape() {
                     PrimitiveShape::Seg(seg) => {
                         vec![
@@ -106,12 +129,37 @@ impl SpecctraDesign {
                             .collect()
                     }
 
-                    // Intentionally skipped for now.
-                    // Topola stores trace segments and dots joining them
-                    // as separate objects, but the Specctra formats and KiCad
-                    // appear to consider them implicit.
-                    // TODO: Vias
-                    PrimitiveShape::Dot(_) => continue,
+                    PrimitiveShape::Dot(dot_shape) => {
+                        let PrimitiveIndex::FixedDot(dot) = index else {
+                            continue;
+                        };
+
+                        if let Some(via) = board.layout().fixed_dot_via(dot) {
+                            if !visited_vias.contains(&via) {
+                                net_out.via.push(structure::Via {
+                                    name: "__Via".to_string(),
+                                    x: dot_shape.center().x(),
+                                    y: dot_shape.center().y(),
+                                    net: mesadata
+                                        .net_netname(net)
+                                        .ok_or_else(|| {
+                                            std::io::Error::new(
+                                                std::io::ErrorKind::InvalidData,
+                                                format!(
+                                                    "tried to reference invalid net ID {}",
+                                                    net
+                                                ),
+                                            )
+                                        })?
+                                        .to_owned(),
+                                });
+
+                                visited_vias.insert(via);
+                            }
+                        }
+
+                        continue;
+                    }
                 };
 
                 let wire = structure::WireOut {
@@ -133,22 +181,6 @@ impl SpecctraDesign {
                     },
                 };
 
-                let net_out = match net_outs.entry(net) {
-                    BTreeMapEntry::Occupied(occ) => occ.into_mut(),
-                    BTreeMapEntry::Vacant(vac) => vac.insert(structure::NetOut {
-                        name: mesadata
-                            .net_netname(net)
-                            .ok_or_else(|| {
-                                std::io::Error::new(
-                                    std::io::ErrorKind::InvalidData,
-                                    format!("tried to reference invalid net ID {}", net),
-                                )
-                            })?
-                            .to_owned(),
-                        wire: Vec::new(),
-                        via: Vec::new(),
-                    }),
-                };
                 net_out.wire.push(wire);
             }
         }
@@ -163,7 +195,23 @@ impl SpecctraDesign {
                     },
                     library_out: structure::Library {
                         images: Vec::new(),
-                        padstacks: Vec::new(),
+                        padstacks: vec![structure::Padstack {
+                            name: "__Via".to_string(),
+                            // TODO: Use correct sizes and have all layers.
+                            shapes: vec![
+                                structure::Shape::Circle(structure::Circle {
+                                    layer: "F.Cu".to_string(),
+                                    diameter: 500.0,
+                                    offset: None,
+                                }),
+                                structure::Shape::Circle(structure::Circle {
+                                    layer: "B.Cu".to_string(),
+                                    diameter: 500.0,
+                                    offset: None,
+                                }),
+                            ],
+                            attach: None,
+                        }],
                     },
                     network_out: structure::NetworkOut {
                         net: net_outs.into_values().collect(),

@@ -688,7 +688,6 @@ pub struct Via {
     #[anon]
     pub y: f64,
     pub net: String,
-    pub r#type: String,
 }
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
