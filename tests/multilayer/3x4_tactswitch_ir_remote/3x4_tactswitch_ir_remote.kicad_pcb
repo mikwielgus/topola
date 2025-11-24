@@ -126,6 +126,7 @@
 		(property "Value" "SW_Push"
 			(at 3.75 6.7 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "3a6d2c8d-db59-4cda-b3a1-0ffd82842b34")
 			(effects
 				(font
@@ -473,6 +474,7 @@
 		(property "Value" "SW_Push"
 			(at 3.75 6.7 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "3d1c9fa3-e519-4142-ada1-0057424bc5b5")
 			(effects
 				(font
@@ -820,6 +822,7 @@
 		(property "Value" "SW_Push"
 			(at 3.75 6.7 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "a47d4999-ab24-4b63-8e5e-3f366891fce6")
 			(effects
 				(font
@@ -1167,6 +1170,7 @@
 		(property "Value" "SW_Push"
 			(at 3.75 6.7 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "55a4c7cc-6cd6-4d1e-8e6f-434a5239044f")
 			(effects
 				(font
@@ -1514,6 +1518,7 @@
 		(property "Value" "SW_Push"
 			(at 3.75 6.7 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "eed611f8-24eb-49da-8781-8789a3ca431a")
 			(effects
 				(font
@@ -1861,6 +1866,7 @@
 		(property "Value" "100n"
 			(at 0 1.43 90)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "e6befaaf-5f44-4d6d-b7f1-6384fc76d632")
 			(effects
 				(font
@@ -2525,6 +2531,7 @@
 		(property "Value" "SW_Push"
 			(at 3.75 6.7 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "d4834149-cf5a-467f-870c-36216306984d")
 			(effects
 				(font
@@ -2872,6 +2879,7 @@
 		(property "Value" "22p"
 			(at 0 1.43 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "0b1ff7d6-ef21-40b7-b0f6-fb900bff2d9c")
 			(effects
 				(font
@@ -3071,6 +3079,7 @@
 		(property "Value" "SW_Push"
 			(at 3.75 6.7 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "1feb45ee-05a9-40a5-943f-9730fb973227")
 			(effects
 				(font
@@ -3417,6 +3426,7 @@
 		(property "Value" "Crystal_GND23"
 			(at 0 2.95 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "c4226244-1fd4-4c79-8066-2951047361bb")
 			(effects
 				(font
@@ -3592,6 +3602,7 @@
 		(property "Value" "Conn_01x06_Pin"
 			(at 1 6.11 90)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "a5801cb0-c42e-4b3f-a57d-38585d411845")
 			(effects
 				(font
@@ -3800,7 +3811,7 @@
 			(uuid "e51697a0-b3b3-4d73-b97d-2bd6f09af610")
 		)
 		(fp_text user "${REFERENCE}"
-			(at 1 2 0)
+			(at 3.81 2 0)
 			(layer "F.Fab")
 			(uuid "5459bc2b-728c-4dcb-8fa0-c2f74f020113")
 			(effects
@@ -3909,6 +3920,7 @@
 		(property "Value" "220"
 			(at 0 1.43 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "be7f979d-e81b-4daa-9697-4029e3fac1f9")
 			(effects
 				(font
@@ -4108,6 +4120,7 @@
 		(property "Value" "SW_Push"
 			(at 3.75 6.7 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "86d4b2d2-30f7-40c8-b526-33be3db397c9")
 			(effects
 				(font
@@ -4455,6 +4468,7 @@
 		(property "Value" "SW_Push"
 			(at 3.75 6.7 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "52912cc7-eb36-4948-b4ab-f429c6f66e92")
 			(effects
 				(font
@@ -4802,6 +4816,7 @@
 		(property "Value" "SW_Push"
 			(at 3.75 6.7 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "6add5eba-23b1-446a-9dd0-22f97037a09f")
 			(effects
 				(font
@@ -5149,6 +5164,7 @@
 		(property "Value" "470u"
 			(at 0 3.1 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "81301725-a0b5-4d3b-9f6c-48d318aaef93")
 			(effects
 				(font
@@ -5368,6 +5384,7 @@
 		(property "Value" "SW_Push"
 			(at 3.75 6.7 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "d4126e94-44d7-4ce2-a6ec-7bcfa22bc506")
 			(effects
 				(font
@@ -5715,6 +5732,7 @@
 		(property "Value" "ATmega328P-AU"
 			(at 0 5.85 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "4c5a6b12-0274-4611-b572-25d8d3bf6492")
 			(effects
 				(font
@@ -6458,6 +6476,7 @@
 		(property "Value" "SW_Push"
 			(at 3.75 6.7 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "ad0e4314-9792-49cc-867e-307d87b8fc55")
 			(effects
 				(font
@@ -6805,6 +6824,7 @@
 		(property "Value" "22p"
 			(at 0 1.43 0)
 			(layer "F.Fab")
+			(hide yes)
 			(uuid "23f47e9a-de74-43a5-8d86-eccbf09eae89")
 			(effects
 				(font
@@ -6996,8 +7016,8 @@
 		(uuid "213cdb2b-c7b4-4586-baad-38c258733707")
 	)
 	(gr_circle
-		(center 142.875 65.405)
-		(end 144.145 65.405)
+		(center 142.875 64.77)
+		(end 144.145 64.77)
 		(stroke
 			(width 0.05)
 			(type default)
@@ -7007,8 +7027,8 @@
 		(uuid "5bfb202c-5627-475d-852b-79d07888d5b5")
 	)
 	(gr_circle
-		(center 173.355 65.405)
-		(end 174.625 65.405)
+		(center 173.355 64.77)
+		(end 174.625 64.77)
 		(stroke
 			(width 0.05)
 			(type default)
@@ -7018,7 +7038,7 @@
 		(uuid "7852eae7-4cc0-425b-8530-f69f3a06fbe0")
 	)
 	(gr_rect
-		(start 140.97 63.5)
+		(start 140.97 62.865)
 		(end 175.26 111.76)
 		(stroke
 			(width 0.05)
