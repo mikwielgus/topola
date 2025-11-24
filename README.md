@@ -57,7 +57,10 @@ Technology under grant agreement No 101069594.
 
 ## Gallery
 
-![Animation. There's a rubber band-like trace following cursor,
+![A printed circuit board layout of an IR remote with a 3x4 tactswitch
+keyboard.](./assets/screenshots/3x4_tactswitch_ir_remote.png "3x4 tactswitch IR remote")
+
+![Animation. There is a rubber band-like trace following cursor,
 navigating a very simple maze. The maze and the trace are red, the
 background is solid black but also very slightly white and dark
 blue.](./assets/screencasts/pre-egui_interactive_routing.gif "Interactive routing")
