@@ -57,8 +57,11 @@ Technology under grant agreement No 101069594.
 
 ## Gallery
 
-![A printed circuit board layout of an IR remote with a 3x4 tactswitch
-keyboard.](./assets/screenshots/3x4_tactswitch_ir_remote.png "3x4 tactswitch IR remote")
+![Screenshot of a PCB layout of an IR remote with a 3x4 tactswitch keyboard,
+displayed in KiCad.](./assets/screenshots/3x4_tactswitch_ir_remote.png "3x4 tactswitch IR remote board in KiCad")
+
+![Screenshot of a PCB layout of a 4x4 1206 LED matrix breakout board, displayed
+in KiCad](./assets/screenshots/4x4_1206_led_matrix_breakout.png "4x4 1206 LED matrix breakout board in KiCad")
 
 ![Animation. There is a rubber band-like trace following cursor,
 navigating a very simple maze. The maze and the trace are red, the
