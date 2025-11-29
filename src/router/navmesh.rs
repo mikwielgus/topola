@@ -25,6 +25,7 @@ use crate::{
         dot::FixedDotIndex,
         gear::{GearIndex, GetOuterGears, WalkOutwards},
         graph::{MakePrimitiveRef, PrimitiveIndex},
+        primitive::GetJoints,
         rules::AccessRules,
     },
     geometry::GetLayer,
@@ -443,7 +444,7 @@ impl Navmesh {
                 .find(|(_, (to_navnode1, _))| {
                     let to_binavnode = graph.node_weight(*to_navnode1).unwrap().binavnode;
 
-                    Self::are_binavnodes_joined(layout, from_binavnode, to_binavnode)
+                    Self::are_binavnodes_joined_and_same_sense(layout, from_binavnode, to_binavnode)
                 })
             {
                 // Add binavedge.
@@ -479,7 +480,7 @@ impl Navmesh {
         }
     }
 
-    fn are_binavnodes_joined(
+    fn are_binavnodes_joined_and_same_sense(
         layout: &Layout<impl AccessRules>,
         from_binavnode: BinavnodeNodeIndex,
         to_binavnode: BinavnodeNodeIndex,
@@ -496,9 +497,34 @@ impl Navmesh {
             layout.drawing().collect_bend_bow_segs(from_bend).collect();
         let to_bend_bow_segs: Vec<_> = layout.drawing().collect_bend_bow_segs(to_bend).collect();
 
-        from_bend_bow_segs
+        let Some(common_seg) = from_bend_bow_segs
             .iter()
-            .any(|seg| to_bend_bow_segs.contains(seg))
+            .find(|seg| to_bend_bow_segs.contains(seg))
+        else {
+            return false;
+        };
+
+        // Besides checking if binavnodes are joined, we make sure that they
+        // have the same rotation sense.
+
+        let from_bend_joints = layout.drawing().primitive(from_bend).joints();
+        let to_bend_joints = layout.drawing().primitive(to_bend).joints();
+
+        let (from_joints, to_joints) = if layout.drawing().primitive(*common_seg).joints().0.index()
+            == from_bend_joints.0.index()
+            || layout.drawing().primitive(*common_seg).joints().0.index()
+                == from_bend_joints.1.index()
+        {
+            (from_bend_joints, to_bend_joints)
+        } else {
+            (to_bend_joints, from_bend_joints)
+        };
+
+        [from_joints.0, from_joints.1].iter().position(|joint| {
+            joint.index() == layout.drawing().primitive(*common_seg).joints().0.index()
+        }) != [to_joints.0, to_joints.1].iter().position(|joint| {
+            joint.index() == layout.drawing().primitive(*common_seg).joints().1.index()
+        })
     }
 
     /// Returns the origin node.
