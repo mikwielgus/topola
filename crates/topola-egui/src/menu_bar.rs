@@ -85,7 +85,7 @@ impl MenuBar {
             show_pathfinding_scores: false,
             show_topo_navmesh: false,
             show_bboxes: false,
-            show_origin_destination: false,
+            show_origin_destination: true,
             show_primitive_indices: false,
             show_appearance_panel: true,
             fix_step_rate: false,
