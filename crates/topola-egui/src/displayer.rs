@@ -28,6 +28,7 @@ use topola::{
         navmesh::{BinavnodeNodeIndex, Navmesh, NavnodeIndex},
         ng::pie,
         prenavmesh::PrenavmeshConstraint,
+        thetastar::ThetastarState,
     },
 };
 
@@ -223,25 +224,26 @@ impl<'a> Displayer<'a> {
                         }
                     }
 
-                    let stroke = 'blk: {
-                        if let Some(navcord) = activity.maybe_navcord() {
-                            if let (Some(source_pos), Some(target_pos)) = (
-                                navcord.path.iter().position(|node| *node == edge.source()),
-                                navcord.path.iter().position(|node| *node == edge.target()),
-                            ) {
-                                if target_pos == source_pos + 1 || source_pos == target_pos + 1 {
-                                    break 'blk egui::Stroke::new(
-                                        5.0,
-                                        egui::Color32::from_rgb(250, 250, 0),
-                                    );
+                    if menu_bar.show_navmesh {
+                        let stroke = 'blk: {
+                            if let Some(navcord) = activity.maybe_navcord() {
+                                if let (Some(source_pos), Some(target_pos)) = (
+                                    navcord.path.iter().position(|node| *node == edge.source()),
+                                    navcord.path.iter().position(|node| *node == edge.target()),
+                                ) {
+                                    if target_pos == source_pos + 1 || source_pos == target_pos + 1
+                                    {
+                                        break 'blk egui::Stroke::new(
+                                            5.0,
+                                            egui::Color32::from_rgb(250, 250, 0),
+                                        );
+                                    }
                                 }
                             }
-                        }
 
-                        egui::Stroke::new(1.0, egui::Color32::from_rgb(125, 125, 125))
-                    };
+                            egui::Stroke::new(1.0, egui::Color32::from_rgb(125, 125, 125))
+                        };
 
-                    if menu_bar.show_navmesh {
                         self.painter.paint_line_segment(from, to, stroke);
                     }
 
@@ -274,6 +276,34 @@ impl<'a> Displayer<'a> {
                             text,
                             egui::Color32::from_rgb(255, 255, 255),
                         );
+                    }
+                }
+
+                if menu_bar.show_navmesh {
+                    match thetastar.state() {
+                        ThetastarState::BacktrackAndProbeOnLineOfSight(_, edge)
+                        | ThetastarState::ProbeOnNavedge(_, edge) => {
+                            let edge_from = PrimitiveIndex::from(
+                                navmesh.node_weight(edge.0).unwrap().binavnode,
+                            )
+                            .primitive_ref(board.layout().drawing())
+                            .shape()
+                            .center();
+
+                            let edge_to = PrimitiveIndex::from(
+                                navmesh.node_weight(edge.1).unwrap().binavnode,
+                            )
+                            .primitive_ref(board.layout().drawing())
+                            .shape()
+                            .center();
+
+                            self.painter.paint_line_segment(
+                                edge_from,
+                                edge_to,
+                                egui::Stroke::new(5.0, egui::Color32::from_rgb(255, 0, 255)),
+                            );
+                        }
+                        _ => (),
                     }
                 }
 

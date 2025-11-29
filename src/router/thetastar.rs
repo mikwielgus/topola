@@ -116,10 +116,10 @@ pub enum ThetastarState<N: Copy, E: Copy> {
 /// on the navmesh.
 ///
 /// Conditional repeated backtracking is our improvement to Theta*: if
-/// line-of-sight routing fails if a condition is met, continue trying to draw
-/// from parent of the parent navnode, and so on. This is different from Theta*
-/// because in Theta* there is only one backtracking step -- only one attempt to
-/// do line-of-sight routing.
+/// line-of-sight routing fails, for as long as a condition is met, continue
+/// trying to draw from parent of the parent navnode, and so on. This is
+/// different from Theta* because in Theta* there is only one backtracking step
+/// -- only one attempt to do line-of-sight routing.
 #[derive(Getters)]
 pub struct ThetastarStepper<G, K>
 where
