@@ -28,7 +28,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     ) -> Result<Line, NoBitangents> {
         let from_circle = self.head_circle(head, width);
         let to_circle = Circle {
-            pos: self.primitive(into).weight().0.circle.pos,
+            pos: self.primitive_ref(into).weight().0.circle.pos,
             r: 0.0,
         };
 
@@ -124,7 +124,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
 
     pub fn head_sense(&self, head: &Head) -> Option<RotationSense> {
         if let Head::Cane(head) = head {
-            let joints = self.primitive(head.cane.bend).joints();
+            let joints = self.primitive_ref(head.cane.bend).joints();
 
             if head.face() == joints.0.into() {
                 Some(RotationSense::Counterclockwise)
@@ -206,7 +206,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 r: 0.0,
             },
             Head::Cane(head) => {
-                if let Some(inner) = self.primitive(head.cane.bend).inner() {
+                if let Some(inner) = self.primitive_ref(head.cane.bend).inner() {
                     self.bend_circle(
                         inner.into(),
                         width,
@@ -214,7 +214,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                     )
                 } else {
                     self.dot_circle(
-                        self.primitive(head.cane.bend).core().into(),
+                        self.primitive_ref(head.cane.bend).core().into(),
                         width,
                         self.conditions(head.face().into()).as_ref(),
                     )
@@ -224,7 +224,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     }
 
     fn rear(&self, head: CaneHead) -> DotIndex {
-        self.primitive(head.cane.seg)
+        self.primitive_ref(head.cane.seg)
             .other_joint(head.cane.dot.into())
     }
 }

@@ -129,7 +129,7 @@ impl Navcord {
             let bend_length = match self.head {
                 Head::Cane(old_cane_head) => layout
                     .drawing()
-                    .primitive(old_cane_head.cane.bend)
+                    .primitive_ref(old_cane_head.cane.bend)
                     .shape()
                     .length(),
                 Head::Bare(..) => 0.0,
@@ -148,7 +148,7 @@ impl Navcord {
             let prev_bend_length = match old_head {
                 Head::Cane(old_cane_head) => layout
                     .drawing()
-                    .primitive(old_cane_head.cane.bend)
+                    .primitive_ref(old_cane_head.cane.bend)
                     .shape()
                     .length(),
                 Head::Bare(..) => 0.0,

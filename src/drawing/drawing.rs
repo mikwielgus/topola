@@ -177,7 +177,7 @@ impl<CW, Cel, R> Drawing<CW, Cel, R> {
         &mut self.rules
     }
 
-    pub fn primitive<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<'_, W, CW, Cel, R> {
+    pub fn primitive_ref<W>(&self, index: GenericIndex<W>) -> GenericPrimitive<'_, W, CW, Cel, R> {
         GenericPrimitive::new(index, self)
     }
 
@@ -260,10 +260,10 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
                 LooseIndex::Bend(bend) => {
                     bends.push(bend);
 
-                    let bend_primitive = self.primitive(bend);
+                    let bend_primitive = self.primitive_ref(bend);
                     let inner = bend_primitive.inner();
 
-                    for outer in self.primitive(bend).outers().collect::<Vec<_>>() {
+                    for outer in self.primitive_ref(bend).outers().collect::<Vec<_>>() {
                         outers.push(outer);
                         self.reattach_bend(recorder, outer, inner);
                     }
@@ -555,8 +555,8 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         filter: &impl Fn(&Self, PrimitiveIndex, PrimitiveIndex) -> bool,
     ) -> Result<GenericIndex<LooseBendWeight>, Infringement> {
         let core = match inner {
-            BendIndex::Fixed(bend) => self.primitive(bend).core(),
-            BendIndex::Loose(bend) => self.primitive(bend).core(),
+            BendIndex::Fixed(bend) => self.primitive_ref(bend).core(),
+            BendIndex::Loose(bend) => self.primitive_ref(bend).core(),
         };
         let bend = self.recording_geometry_with_rtree.add_bend(
             recorder,
@@ -621,10 +621,10 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
             self.reattach_bend(recorder, gear, Some(cane.bend));
         }
 
-        for outer in self.primitive(cane.bend).outers().collect::<Vec<_>>() {
+        for outer in self.primitive_ref(cane.bend).outers().collect::<Vec<_>>() {
             self.update_this_and_outward_bows(recorder, outer)
                 .inspect_err(|_| {
-                    let joint = self.primitive(cane.bend).other_joint(cane.dot);
+                    let joint = self.primitive_ref(cane.bend).other_joint(cane.dot);
                     self.remove_cane(recorder, &cane, joint);
                 })?;
         }
@@ -640,7 +640,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     ) -> Result<(), DrawingException> {
         self.update_bow(recorder, around)?;
 
-        let mut outwards = self.primitive(around).outwards();
+        let mut outwards = self.primitive_ref(around).outwards();
         while let Some(rail) = outwards.walk_next(self) {
             self.update_bow(recorder, rail)?;
         }
@@ -653,7 +653,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         recorder: &mut DrawingEdit<CW, Cel>,
         rail: LooseBendIndex,
     ) -> Result<(), DrawingException> {
-        let rail_primitive = self.primitive(rail);
+        let rail_primitive = self.primitive_ref(rail);
         let joints = rail_primitive.joints();
         let width = rail_primitive.width();
 
@@ -786,11 +786,11 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         cane: &Cane,
         face: LooseDotIndex,
     ) {
-        let outers = self.primitive(cane.bend).outers().collect::<Vec<_>>();
+        let outers = self.primitive_ref(cane.bend).outers().collect::<Vec<_>>();
 
         // Removing a loose bend affects its outer bends.
         for outer in &outers {
-            self.reattach_bend(recorder, *outer, self.primitive(cane.bend).inner());
+            self.reattach_bend(recorder, *outer, self.primitive_ref(cane.bend).inner());
         }
 
         self.recording_geometry_with_rtree

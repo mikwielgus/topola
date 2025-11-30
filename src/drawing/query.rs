@@ -90,7 +90,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
     pub fn collect_bend_outward_bows(&self, bend: LooseBendIndex) -> Vec<PrimitiveIndex> {
         let mut v = vec![];
 
-        let mut outwards = self.primitive(bend).outwards();
+        let mut outwards = self.primitive_ref(bend).outwards();
         while let Some(next) = outwards.walk_next(self) {
             v.append(&mut self.collect_bend_bow(next));
         }
@@ -102,7 +102,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         let mut v: Vec<PrimitiveIndex> = vec![];
         v.push(bend.into());
 
-        let joints = self.primitive(bend).joints();
+        let joints = self.primitive_ref(bend).joints();
         v.push(joints.0.into());
         v.push(joints.1.into());
 
@@ -117,11 +117,11 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Drawing<CW, Cel, R> {
         &self,
         bend: LooseBendIndex,
     ) -> impl Iterator<Item = SeqLooseSegIndex> {
-        let joints = self.primitive(bend).joints();
-        self.primitive(joints.0)
+        let joints = self.primitive_ref(bend).joints();
+        self.primitive_ref(joints.0)
             .seg()
             .into_iter()
-            .chain(self.primitive(joints.1).seg().into_iter())
+            .chain(self.primitive_ref(joints.1).seg().into_iter())
     }
 
     pub fn cut(

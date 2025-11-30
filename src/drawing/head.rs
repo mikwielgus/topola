@@ -103,8 +103,15 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> MeasureLength for HeadRef<'_, CW, Cel
         match self.head {
             Head::Bare(..) => 0.0,
             Head::Cane(cane_head) => {
-                self.drawing.primitive(cane_head.cane.seg).shape().length()
-                    + self.drawing.primitive(cane_head.cane.bend).shape().length()
+                self.drawing
+                    .primitive_ref(cane_head.cane.seg)
+                    .shape()
+                    .length()
+                    + self
+                        .drawing
+                        .primitive_ref(cane_head.cane.bend)
+                        .shape()
+                        .length()
             }
         }
     }

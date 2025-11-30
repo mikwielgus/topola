@@ -63,9 +63,9 @@ pub enum GearRef<'a, CW, Cel, R> {
 impl<'a, CW, Cel, R> GearRef<'a, CW, Cel, R> {
     pub fn new(index: GearIndex, drawing: &'a Drawing<CW, Cel, R>) -> Self {
         match index {
-            GearIndex::FixedDot(dot) => drawing.primitive(dot).into(),
-            GearIndex::FixedBend(bend) => drawing.primitive(bend).into(),
-            GearIndex::LooseBend(bend) => drawing.primitive(bend).into(),
+            GearIndex::FixedDot(dot) => drawing.primitive_ref(dot).into(),
+            GearIndex::FixedBend(bend) => drawing.primitive_ref(bend).into(),
+            GearIndex::LooseBend(bend) => drawing.primitive_ref(bend).into(),
         }
     }
 }
@@ -102,7 +102,7 @@ impl<CW: Clone, Cel: Copy, R: AccessRules> Walker<&Drawing<CW, Cel, R>> for Draw
 
     fn walk_next(&mut self, drawing: &Drawing<CW, Cel, R>) -> Option<Self::Item> {
         let front = self.frontier.pop_front()?;
-        self.frontier.extend(drawing.primitive(front).outers());
+        self.frontier.extend(drawing.primitive_ref(front).outers());
 
         Some(front)
     }

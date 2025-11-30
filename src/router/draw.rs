@@ -192,7 +192,7 @@ impl<R: AccessRules> Draw for Layout<R> {
     fn undo_cane(&mut self, recorder: &mut LayoutEdit, head: CaneHead) -> Option<Head> {
         let prev_dot = self
             .drawing()
-            .primitive(head.cane.seg)
+            .primitive_ref(head.cane.seg)
             .other_joint(head.cane.dot.into());
 
         self.remove_cane(recorder, &head.cane, head.face);
@@ -337,7 +337,10 @@ impl<R: AccessRules> DrawPrivate for Layout<R> {
         };
 
         Ok(CaneHead {
-            face: self.drawing().primitive(cane.bend).other_joint(cane.dot),
+            face: self
+                .drawing()
+                .primitive_ref(cane.bend)
+                .other_joint(cane.dot),
             cane,
         })
     }

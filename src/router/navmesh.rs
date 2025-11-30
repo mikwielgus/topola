@@ -6,6 +6,7 @@ use std::collections::BTreeMap;
 
 use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
+use geo::Point;
 use petgraph::{
     data::DataMap,
     graph::UnGraph,
@@ -25,10 +26,10 @@ use crate::{
         dot::FixedDotIndex,
         gear::{GearIndex, GetOuterGears, WalkOutwards},
         graph::{MakePrimitiveRef, PrimitiveIndex},
-        primitive::GetJoints,
+        primitive::{GetJoints, MakePrimitiveShape},
         rules::AccessRules,
     },
-    geometry::GetLayer,
+    geometry::{primitive::PrimitiveShape, shape::AccessShape, GetLayer},
     graph::{GenericIndex, GetIndex, MakeRef},
     layout::{CompoundEntryLabel, Layout},
     math::RotationSense,
@@ -36,7 +37,7 @@ use crate::{
 };
 
 use super::{
-    prenavmesh::{Prenavmesh, PrenavmeshNodeIndex},
+    prenavmesh::{Prenavmesh, PrenavnodeNodeIndex},
     RouterOptions,
 };
 
@@ -66,11 +67,11 @@ pub enum BinavnodeNodeIndex {
     LooseBend(LooseBendIndex),
 }
 
-impl From<PrenavmeshNodeIndex> for BinavnodeNodeIndex {
-    fn from(node: PrenavmeshNodeIndex) -> Self {
+impl From<PrenavnodeNodeIndex> for BinavnodeNodeIndex {
+    fn from(node: PrenavnodeNodeIndex) -> Self {
         match node {
-            PrenavmeshNodeIndex::FixedDot(dot) => BinavnodeNodeIndex::FixedDot(dot),
-            PrenavmeshNodeIndex::FixedBend(bend) => BinavnodeNodeIndex::FixedBend(bend),
+            PrenavnodeNodeIndex::FixedDot(dot) => BinavnodeNodeIndex::FixedDot(dot),
+            PrenavnodeNodeIndex::FixedBend(bend) => BinavnodeNodeIndex::FixedBend(bend),
         }
     }
 }
@@ -224,7 +225,7 @@ impl Navmesh {
                     while let Some(outward) = outwards.walk_next(layout.drawing()) {
                         if layout
                             .drawing()
-                            .primitive(outward)
+                            .primitive_ref(outward)
                             .outers()
                             .collect::<Vec<_>>()
                             .is_empty()
@@ -280,7 +281,7 @@ impl Navmesh {
         // Copy prenavedges of prenavnodes union representatives to all elements
         // for each union.
         for prenavnode in prenavmesh.triangulation().node_identifiers() {
-            let repr = PrenavmeshNodeIndex::FixedDot(GenericIndex::new(
+            let repr = PrenavnodeNodeIndex::FixedDot(GenericIndex::new(
                 overlapping_prenavnodes_unions.find(prenavnode.index()),
             ));
 
@@ -330,7 +331,7 @@ impl Navmesh {
     fn unionize_with_overlapees(
         layout: &Layout<impl AccessRules>,
         overlapping_prenavnodes_unions: &mut UnionFind<usize>,
-        prenavnode: PrenavmeshNodeIndex,
+        prenavnode: PrenavnodeNodeIndex,
     ) {
         // Ignore overlaps of a fillet.
         if layout
@@ -364,10 +365,10 @@ impl Navmesh {
     fn add_prenavnode_as_binavnode(
         graph: &mut UnGraph<NavnodeWeight, (), usize>,
         prenavnode_to_navnodes: &mut BTreeMap<
-            PrenavmeshNodeIndex,
+            PrenavnodeNodeIndex,
             Vec<(NodeIndex<usize>, NodeIndex<usize>)>,
         >,
-        prenavnode: PrenavmeshNodeIndex,
+        prenavnode: PrenavnodeNodeIndex,
         binavnode: BinavnodeNodeIndex,
     ) {
         let navnode1 = graph.add_node(NavnodeWeight {
@@ -390,19 +391,19 @@ impl Navmesh {
         layout: &Layout<impl AccessRules>,
         graph: &mut UnGraph<NavnodeWeight, (), usize>,
         prenavnode_to_navnodes: &BTreeMap<
-            PrenavmeshNodeIndex,
+            PrenavnodeNodeIndex,
             Vec<(NodeIndex<usize>, NodeIndex<usize>)>,
         >,
         overlapping_prenavnodes_unions: &UnionFind<usize>,
-        from_prenavnode: PrenavmeshNodeIndex,
-        to_prenavnode: PrenavmeshNodeIndex,
+        from_prenavnode: PrenavnodeNodeIndex,
+        to_prenavnode: PrenavnodeNodeIndex,
     ) {
         // We assume prenavmesh nodes are fixed dots. This is an ugly shortcut,
         // since fixed bends also can be prenavnodes, but it works for now.
-        let from_prenavnode_repr = PrenavmeshNodeIndex::FixedDot(GenericIndex::new(
+        let from_prenavnode_repr = PrenavnodeNodeIndex::FixedDot(GenericIndex::new(
             overlapping_prenavnodes_unions.find(from_prenavnode.index().into()),
         ));
-        let to_prenavnode_repr = PrenavmeshNodeIndex::FixedDot(GenericIndex::new(
+        let to_prenavnode_repr = PrenavnodeNodeIndex::FixedDot(GenericIndex::new(
             overlapping_prenavnodes_unions.find(to_prenavnode.index().into()),
         ));
 
@@ -419,11 +420,11 @@ impl Navmesh {
         layout: &Layout<impl AccessRules>,
         graph: &mut UnGraph<NavnodeWeight, (), usize>,
         prenavnode_to_navnodes: &BTreeMap<
-            PrenavmeshNodeIndex,
+            PrenavnodeNodeIndex,
             Vec<(NodeIndex<usize>, NodeIndex<usize>)>,
         >,
-        from_prenavnode: PrenavmeshNodeIndex,
-        to_prenavnode: PrenavmeshNodeIndex,
+        from_prenavnode: PrenavnodeNodeIndex,
+        to_prenavnode: PrenavnodeNodeIndex,
     ) {
         let mut maybe_lowest_join: Option<(usize, usize)> = None;
 
@@ -507,12 +508,22 @@ impl Navmesh {
         // Besides checking if binavnodes are joined, we make sure that they
         // have the same rotation sense.
 
-        let from_bend_joints = layout.drawing().primitive(from_bend).joints();
-        let to_bend_joints = layout.drawing().primitive(to_bend).joints();
+        let from_bend_joints = layout.drawing().primitive_ref(from_bend).joints();
+        let to_bend_joints = layout.drawing().primitive_ref(to_bend).joints();
 
-        let (from_joints, to_joints) = if layout.drawing().primitive(*common_seg).joints().0.index()
+        let (from_joints, to_joints) = if layout
+            .drawing()
+            .primitive_ref(*common_seg)
+            .joints()
+            .0
+            .index()
             == from_bend_joints.0.index()
-            || layout.drawing().primitive(*common_seg).joints().0.index()
+            || layout
+                .drawing()
+                .primitive_ref(*common_seg)
+                .joints()
+                .0
+                .index()
                 == from_bend_joints.1.index()
         {
             (from_bend_joints, to_bend_joints)
@@ -521,9 +532,21 @@ impl Navmesh {
         };
 
         [from_joints.0, from_joints.1].iter().position(|joint| {
-            joint.index() == layout.drawing().primitive(*common_seg).joints().0.index()
+            joint.index()
+                == layout
+                    .drawing()
+                    .primitive_ref(*common_seg)
+                    .joints()
+                    .0
+                    .index()
         }) != [to_joints.0, to_joints.1].iter().position(|joint| {
-            joint.index() == layout.drawing().primitive(*common_seg).joints().1.index()
+            joint.index()
+                == layout
+                    .drawing()
+                    .primitive_ref(*common_seg)
+                    .joints()
+                    .1
+                    .index()
         })
     }
 

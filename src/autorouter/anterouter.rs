@@ -138,7 +138,7 @@ impl Anterouter {
                 .board()
                 .layout()
                 .drawing()
-                .primitive(source_dot)
+                .primitive_ref(source_dot)
                 .shape()
                 .envelope()
         };
@@ -400,20 +400,20 @@ impl Anterouter {
             .board()
             .layout()
             .drawing()
-            .primitive(source_dot)
+            .primitive_ref(source_dot)
             .layer();
         let pin_maybe_net = autorouter
             .board()
             .layout()
             .drawing()
-            .primitive(source_dot)
+            .primitive_ref(source_dot)
             .maybe_net();
         let bbox_center = point! {x: bbox.center()[0], y: bbox.center()[1]};
         let center = autorouter
             .board()
             .layout()
             .drawing()
-            .primitive(source_dot)
+            .primitive_ref(source_dot)
             .shape()
             .center();
 

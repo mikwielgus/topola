@@ -31,28 +31,28 @@ use super::{navmesh::NavmeshError, RouterOptions};
 /// of the prenavmesh nodes into more nodes, called navnodes.
 #[enum_dispatch(GetIndex, MakePrimitive)]
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub enum PrenavmeshNodeIndex {
+pub enum PrenavnodeNodeIndex {
     FixedDot(FixedDotIndex),
     FixedBend(FixedBendIndex),
 }
 
-impl From<PrenavmeshNodeIndex> for PrimitiveIndex {
-    fn from(node: PrenavmeshNodeIndex) -> Self {
+impl From<PrenavnodeNodeIndex> for PrimitiveIndex {
+    fn from(node: PrenavnodeNodeIndex) -> Self {
         match node {
-            PrenavmeshNodeIndex::FixedDot(dot) => PrimitiveIndex::FixedDot(dot),
-            PrenavmeshNodeIndex::FixedBend(bend) => PrimitiveIndex::FixedBend(bend),
+            PrenavnodeNodeIndex::FixedDot(dot) => PrimitiveIndex::FixedDot(dot),
+            PrenavnodeNodeIndex::FixedBend(bend) => PrimitiveIndex::FixedBend(bend),
         }
     }
 }
 
 #[derive(Clone, Copy)]
 pub struct PrenavmeshWeight {
-    pub node: PrenavmeshNodeIndex,
+    pub node: PrenavnodeNodeIndex,
     pub pos: Point,
 }
 
-impl GetTrianvertexNodeIndex<PrenavmeshNodeIndex> for PrenavmeshWeight {
-    fn node_index(&self) -> PrenavmeshNodeIndex {
+impl GetTrianvertexNodeIndex<PrenavnodeNodeIndex> for PrenavmeshWeight {
+    fn node_index(&self) -> PrenavnodeNodeIndex {
         self.node
     }
 }
@@ -99,7 +99,7 @@ impl PrenavmeshConstraint {
         layout: &Layout<impl AccessRules>,
         seg: LoneLooseSegIndex,
     ) -> Self {
-        let (from_dot, to_dot) = layout.drawing().primitive(seg).joints();
+        let (from_dot, to_dot) = layout.drawing().primitive_ref(seg).joints();
         Self::new_from_fixed_dot_pair(layout, from_dot, to_dot)
     }
 
@@ -107,24 +107,24 @@ impl PrenavmeshConstraint {
         layout: &Layout<impl AccessRules>,
         seg: SeqLooseSegIndex,
     ) -> Self {
-        let (from_joint, to_joint) = layout.drawing().primitive(seg).joints();
+        let (from_joint, to_joint) = layout.drawing().primitive_ref(seg).joints();
 
         let from_dot = match from_joint {
             DotIndex::Fixed(dot) => dot,
             DotIndex::Loose(dot) => {
-                let bend = layout.drawing().primitive(dot).bend();
+                let bend = layout.drawing().primitive_ref(dot).bend();
 
-                layout.drawing().primitive(bend).core()
+                layout.drawing().primitive_ref(bend).core()
             }
         };
 
-        let to_bend = layout.drawing().primitive(to_joint).bend();
-        let to_dot = layout.drawing().primitive(to_bend).core();
+        let to_bend = layout.drawing().primitive_ref(to_joint).bend();
+        let to_dot = layout.drawing().primitive_ref(to_bend).core();
         Self::new_from_fixed_dot_pair(layout, from_dot, to_dot)
     }
 
     pub fn new_from_fixed_seg(layout: &Layout<impl AccessRules>, seg: FixedSegIndex) -> Self {
-        let (from_dot, to_dot) = layout.drawing().primitive(seg).joints();
+        let (from_dot, to_dot) = layout.drawing().primitive_ref(seg).joints();
         Self::new_from_fixed_dot_pair(layout, from_dot, to_dot)
     }
 }
@@ -144,29 +144,29 @@ impl PrenavnodeToHandleMap {
     }
 }
 
-impl Index<PrenavmeshNodeIndex> for PrenavnodeToHandleMap {
+impl Index<PrenavnodeNodeIndex> for PrenavnodeToHandleMap {
     type Output = Option<FixedVertexHandle>;
 
-    fn index(&self, prenavnode: PrenavmeshNodeIndex) -> &Self::Output {
+    fn index(&self, prenavnode: PrenavnodeNodeIndex) -> &Self::Output {
         match prenavnode {
-            PrenavmeshNodeIndex::FixedDot(dot) => &self.fixed_dot_to_handle[dot.index()],
-            PrenavmeshNodeIndex::FixedBend(bend) => &self.fixed_bend_to_handle[bend.index()],
+            PrenavnodeNodeIndex::FixedDot(dot) => &self.fixed_dot_to_handle[dot.index()],
+            PrenavnodeNodeIndex::FixedBend(bend) => &self.fixed_bend_to_handle[bend.index()],
         }
     }
 }
 
-impl IndexMut<PrenavmeshNodeIndex> for PrenavnodeToHandleMap {
-    fn index_mut(&mut self, prenavnode: PrenavmeshNodeIndex) -> &mut Self::Output {
+impl IndexMut<PrenavnodeNodeIndex> for PrenavnodeToHandleMap {
+    fn index_mut(&mut self, prenavnode: PrenavnodeNodeIndex) -> &mut Self::Output {
         match prenavnode {
-            PrenavmeshNodeIndex::FixedDot(dot) => &mut self.fixed_dot_to_handle[dot.index()],
-            PrenavmeshNodeIndex::FixedBend(bend) => &mut self.fixed_bend_to_handle[bend.index()],
+            PrenavnodeNodeIndex::FixedDot(dot) => &mut self.fixed_dot_to_handle[dot.index()],
+            PrenavnodeNodeIndex::FixedBend(bend) => &mut self.fixed_bend_to_handle[bend.index()],
         }
     }
 }
 
 #[derive(Clone, Getters)]
 pub struct Prenavmesh {
-    triangulation: Triangulation<PrenavmeshNodeIndex, PrenavnodeToHandleMap, PrenavmeshWeight, ()>,
+    triangulation: Triangulation<PrenavnodeNodeIndex, PrenavnodeToHandleMap, PrenavmeshWeight, ()>,
     constraints: Vec<PrenavmeshConstraint>,
 }
 
@@ -185,8 +185,8 @@ impl Prenavmesh {
             constraints: vec![],
         };
 
-        let layer = layout.drawing().primitive(origin).layer();
-        let maybe_net = layout.drawing().primitive(origin).maybe_net();
+        let layer = layout.drawing().primitive_ref(origin).layer();
+        let maybe_net = layout.drawing().primitive_ref(origin).maybe_net();
 
         for node in layout.drawing().layer_primitive_nodes(layer) {
             let primitive = node.primitive_ref(layout.drawing());
@@ -270,7 +270,7 @@ impl Prenavmesh {
                 // fixed segs that do not cause an intersection.
                 match node {
                     PrimitiveIndex::FixedSeg(seg) => {
-                        let (from_dot, to_dot) = layout.drawing().primitive(seg).joints();
+                        let (from_dot, to_dot) = layout.drawing().primitive_ref(seg).joints();
 
                         if Self::is_fixed_dot_filleted(layout, from_dot)
                             && Self::is_fixed_dot_filleted(layout, to_dot)

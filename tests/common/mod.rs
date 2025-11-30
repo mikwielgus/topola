@@ -199,13 +199,13 @@ pub fn assert_that_all_ratlines_besides_gnd_are_autorouted(
                 .board()
                 .layout()
                 .drawing()
-                .primitive(origin_dot)
+                .primitive_ref(origin_dot)
                 .maybe_net();
             let destination_net = autorouter
                 .board()
                 .layout()
                 .drawing()
-                .primitive(destination_dot)
+                .primitive_ref(destination_dot)
                 .maybe_net();
             assert_eq!(origin_net, destination_net);
 

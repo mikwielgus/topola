@@ -81,10 +81,10 @@ pub enum Loose<'a, CW, Cel, R> {
 impl<'a, CW, Cel, R> Loose<'a, CW, Cel, R> {
     pub fn new(index: LooseIndex, drawing: &'a Drawing<CW, Cel, R>) -> Self {
         match index {
-            LooseIndex::Dot(dot) => drawing.primitive(dot).into(),
-            LooseIndex::LoneSeg(seg) => drawing.primitive(seg).into(),
-            LooseIndex::SeqSeg(seg) => drawing.primitive(seg).into(),
-            LooseIndex::Bend(bend) => drawing.primitive(bend).into(),
+            LooseIndex::Dot(dot) => drawing.primitive_ref(dot).into(),
+            LooseIndex::LoneSeg(seg) => drawing.primitive_ref(seg).into(),
+            LooseIndex::SeqSeg(seg) => drawing.primitive_ref(seg).into(),
+            LooseIndex::Bend(bend) => drawing.primitive_ref(bend).into(),
         }
     }
 }

@@ -579,7 +579,12 @@ impl<'a> Displayer<'a> {
                     let (origin, destination) = (navmesh.origin(), navmesh.destination());
                     self.painter.paint_solid_circle(
                         Circle {
-                            pos: board.layout().drawing().primitive(origin).shape().center(),
+                            pos: board
+                                .layout()
+                                .drawing()
+                                .primitive_ref(origin)
+                                .shape()
+                                .center(),
                             r: 150.0,
                         },
                         egui::Color32::from_rgb(255, 255, 100),
@@ -589,7 +594,7 @@ impl<'a> Displayer<'a> {
                             pos: board
                                 .layout()
                                 .drawing()
-                                .primitive(destination)
+                                .primitive_ref(destination)
                                 .shape()
                                 .center(),
                             r: 150.0,

@@ -190,7 +190,7 @@ impl<R: AccessRules> ThetastarStrategy<Navmesh, f64, BandTermsegIndex>
         let end_point = self
             .layout
             .drawing()
-            .primitive(self.destination)
+            .primitive_ref(self.destination)
             .shape()
             .center();
 

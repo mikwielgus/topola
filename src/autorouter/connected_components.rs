@@ -78,27 +78,27 @@ impl ConnectedComponents {
     ) {
         match primitive {
             PrimitiveIndex::FixedSeg(seg) => {
-                let joints = board.layout().drawing().primitive(seg).joints();
+                let joints = board.layout().drawing().primitive_ref(seg).joints();
                 dot_unionfind.union(joints.0.index(), joints.1.index());
                 Self::unionize_fixed_dot_via(board, dot_unionfind, joints.0);
                 Self::unionize_fixed_dot_via(board, dot_unionfind, joints.1);
             }
             PrimitiveIndex::LoneLooseSeg(seg) => {
-                let joints = board.layout().drawing().primitive(seg).joints();
+                let joints = board.layout().drawing().primitive_ref(seg).joints();
                 dot_unionfind.union(joints.0.index(), joints.1.index());
             }
             PrimitiveIndex::SeqLooseSeg(seg) => {
-                let joints = board.layout().drawing().primitive(seg).joints();
+                let joints = board.layout().drawing().primitive_ref(seg).joints();
                 dot_unionfind.union(joints.0.index(), joints.1.index());
             }
             PrimitiveIndex::FixedBend(bend) => {
-                let joints = board.layout().drawing().primitive(bend).joints();
+                let joints = board.layout().drawing().primitive_ref(bend).joints();
                 dot_unionfind.union(joints.0.index(), joints.1.index());
                 Self::unionize_fixed_dot_via(board, dot_unionfind, joints.0);
                 Self::unionize_fixed_dot_via(board, dot_unionfind, joints.1);
             }
             PrimitiveIndex::LooseBend(bend) => {
-                let joints = board.layout().drawing().primitive(bend).joints();
+                let joints = board.layout().drawing().primitive_ref(bend).joints();
                 dot_unionfind.union(joints.0.index(), joints.1.index());
             }
             _ => (),
@@ -143,31 +143,31 @@ impl ConnectedComponents {
                 dot_unionfind.union(common.index(), dot.index());
             }
             PrimitiveIndex::FixedSeg(seg) => {
-                let joints = board.layout().drawing().primitive(seg).joints();
+                let joints = board.layout().drawing().primitive_ref(seg).joints();
                 dot_unionfind.union(common.index(), joints.0.index());
                 Self::unionize_fixed_dot_via(board, dot_unionfind, joints.0);
                 dot_unionfind.union(common.index(), joints.1.index());
                 Self::unionize_fixed_dot_via(board, dot_unionfind, joints.1);
             }
             PrimitiveIndex::LoneLooseSeg(seg) => {
-                let joints = board.layout().drawing().primitive(seg).joints();
+                let joints = board.layout().drawing().primitive_ref(seg).joints();
                 dot_unionfind.union(common.index(), joints.0.index());
                 dot_unionfind.union(common.index(), joints.1.index());
             }
             PrimitiveIndex::SeqLooseSeg(seg) => {
-                let joints = board.layout().drawing().primitive(seg).joints();
+                let joints = board.layout().drawing().primitive_ref(seg).joints();
                 dot_unionfind.union(common.index(), joints.0.index());
                 dot_unionfind.union(common.index(), joints.1.index());
             }
             PrimitiveIndex::FixedBend(bend) => {
-                let joints = board.layout().drawing().primitive(bend).joints();
+                let joints = board.layout().drawing().primitive_ref(bend).joints();
                 dot_unionfind.union(common.index(), joints.0.index());
                 Self::unionize_fixed_dot_via(board, dot_unionfind, joints.0);
                 dot_unionfind.union(common.index(), joints.1.index());
                 Self::unionize_fixed_dot_via(board, dot_unionfind, joints.1);
             }
             PrimitiveIndex::LooseBend(bend) => {
-                let joints = board.layout().drawing().primitive(bend).joints();
+                let joints = board.layout().drawing().primitive_ref(bend).joints();
                 dot_unionfind.union(common.index(), joints.0.index());
                 dot_unionfind.union(common.index(), joints.1.index());
             }

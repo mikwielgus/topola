@@ -150,11 +150,11 @@ fn is_apex<R>(
     dot: FixedDotIndex,
 ) -> bool {
     !drawing
-        .primitive(dot)
+        .primitive_ref(dot)
         .segs()
         .iter()
         .any(|seg| matches!(seg, SegIndex::Fixed(..)))
-        && drawing.primitive(dot).bends().is_empty()
+        && drawing.primitive_ref(dot).bends().is_empty()
         // FIXME: Only the following should be needed to make sure dot is an apex.
         // But for some reason I had to keep the above part.
         || drawing

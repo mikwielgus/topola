@@ -196,7 +196,7 @@ impl Ratsnest {
                 // should only go to their centerpoints.
                 if board.layout().drawing().compounds(dot).next().is_none() {
                     handle_ratvertex_weight(
-                        board.layout().drawing().primitive(dot).maybe_net(),
+                        board.layout().drawing().primitive_ref(dot).maybe_net(),
                         RatvertexNodeIndex::FixedDot(dot),
                         node.primitive_ref(board.layout().drawing())
                             .shape()
