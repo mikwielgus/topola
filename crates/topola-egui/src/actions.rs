@@ -407,6 +407,7 @@ pub struct DebugActions {
     pub show_topo_navmesh: Switch,
     pub show_bboxes: Switch,
     pub show_primitive_indices: Switch,
+    pub show_endpoint_tangents: Switch,
     pub fix_update_timestep: Switch,
 }
 
@@ -440,6 +441,10 @@ impl DebugActions {
                 tr.text("tr-menu-debug-show-primitive-indices"),
             )
             .into_switch(),
+            show_endpoint_tangents: Action::new_keyless(
+                tr.text("tr-menu-debug-show-bend-endpoint-tangents"),
+            )
+            .into_switch(),
             fix_update_timestep: Action::new_keyless(tr.text("tr-menu-debug-fix-step-rate"))
                 .into_switch(),
         }
@@ -465,6 +470,8 @@ impl DebugActions {
         self.show_bboxes.checkbox(ui, &mut menu_bar.show_bboxes);
         self.show_primitive_indices
             .checkbox(ui, &mut menu_bar.show_primitive_indices);
+        self.show_endpoint_tangents
+            .checkbox(ui, &mut menu_bar.show_bend_endpoint_tangents);
 
         ui.separator();
 

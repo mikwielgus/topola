@@ -18,7 +18,7 @@ use topola::{
         head::GetFace,
         primitive::MakePrimitiveShape,
     },
-    geometry::{shape::AccessShape, GenericNode},
+    geometry::{primitive::PrimitiveShape, shape::AccessShape, GenericNode},
     graph::{GetIndex, MakeRef},
     interactor::{activity::ActivityStepper, interaction::InteractionStepper},
     layout::poly::MakePolygon,
@@ -77,6 +77,10 @@ impl<'a> Displayer<'a> {
         }
 
         self.display_activity(menu_bar);
+
+        if menu_bar.show_bend_endpoint_tangents {
+            self.display_bend_endpoint_tangents(menu_bar);
+        }
 
         if menu_bar.show_primitive_indices {
             self.display_primitive_indices(menu_bar);
@@ -603,6 +607,50 @@ impl<'a> Displayer<'a> {
                     );
                 }
             }
+        }
+    }
+
+    fn display_bend_endpoint_tangents(&mut self, menu_bar: &MenuBar) {
+        let board = self.workspace.interactor.invoker().autorouter().board();
+
+        for primitive in board
+            .layout()
+            .drawing()
+            .layer_primitive_nodes(menu_bar.multilayer_autoroute_options.planar.principal_layer)
+        {
+            let PrimitiveShape::Bend(bend_shape) =
+                primitive.primitive_ref(board.layout().drawing()).shape()
+            else {
+                continue;
+            };
+
+            self.painter.paint_solid_circle(
+                Circle {
+                    pos: bend_shape.from,
+                    r: 50.0,
+                },
+                egui::Color32::from_rgb(0, 0, 255),
+            );
+
+            self.painter.paint_line_segment(
+                bend_shape.from,
+                bend_shape.from + bend_shape.from_tangent_ray(),
+                egui::Stroke::new(3.0, egui::Color32::from_rgb(0, 0, 255)),
+            );
+
+            self.painter.paint_solid_circle(
+                Circle {
+                    pos: bend_shape.to,
+                    r: 50.0,
+                },
+                egui::Color32::from_rgb(0, 0, 255),
+            );
+
+            self.painter.paint_line_segment(
+                bend_shape.to,
+                bend_shape.to + bend_shape.to_tangent_ray(),
+                egui::Stroke::new(3.0, egui::Color32::from_rgb(0, 0, 255)),
+            );
         }
     }
 

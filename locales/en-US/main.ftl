@@ -48,6 +48,7 @@ tr-menu-debug-show-pathfinding-scores = Show Pathfinding Scores
 tr-menu-debug-show-topo-navmesh = Show Topological Navmesh
 tr-menu-debug-show-bboxes = Show BBoxes
 tr-menu-debug-show-primitive-indices = Show Primitive Indices
+tr-menu-debug-show-bend-endpoint-tangents = Show Bend Endpoint Tangents
 tr-menu-debug-fix-step-rate = Fix Step Rate
 tr-menu-debug-step-rate = Step Rate
 tr-menu-debug-step-rate-unit = steps/s
