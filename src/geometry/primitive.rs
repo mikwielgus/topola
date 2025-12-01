@@ -294,7 +294,8 @@ impl BendShape {
     /// Determines if the provided point lies in the swept region between the rays cast by tangents
     /// to the arc endpoints of the bend's outer circle, starting at `from` and `to`.
     pub fn between_tangent_rays(&self, point: Point) -> bool {
-        math::between_vectors(point, self.from_tangent_ray(), self.to_tangent_ray())
+        math::perp_dot_product(point - self.from, self.from_tangent_ray()) > 0.001
+            && math::perp_dot_product(point - self.to, self.to_tangent_ray()) < -0.001
     }
 
     pub fn from_tangent_ray(&self) -> Point {

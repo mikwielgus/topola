@@ -6,7 +6,6 @@ use std::collections::BTreeMap;
 
 use derive_getters::Getters;
 use enum_dispatch::enum_dispatch;
-use geo::Point;
 use petgraph::{
     data::DataMap,
     graph::UnGraph,
@@ -461,6 +460,22 @@ impl Navmesh {
                 .rev()
                 .enumerate()
             {
+                let to_binavnode = graph.node_weight(*to_navnode1).unwrap().binavnode;
+
+                // One binavnode covers another with bend tangent rays, so don't
+                // add a quadrinavedge.
+                if Self::is_binavnode_behind_binavnode_endpoint_rays(
+                    layout,
+                    from_binavnode,
+                    to_binavnode,
+                ) || Self::is_binavnode_behind_binavnode_endpoint_rays(
+                    layout,
+                    to_binavnode,
+                    from_binavnode,
+                ) {
+                    continue;
+                }
+
                 // Don't create navedges that would cross through and thus
                 // infringe joins of navnodes outwards of them.
                 if maybe_lowest_join.is_some_and(|lowest_join| {
@@ -548,6 +563,36 @@ impl Navmesh {
                     .1
                     .index()
         })
+    }
+
+    fn is_binavnode_behind_binavnode_endpoint_rays(
+        layout: &Layout<impl AccessRules>,
+        binavnode_with_arms: BinavnodeNodeIndex,
+        checked_binavnode: BinavnodeNodeIndex,
+    ) -> bool {
+        let BinavnodeNodeIndex::LooseBend(bend_with_arms) = binavnode_with_arms else {
+            return false;
+        };
+
+        let checked_center = match checked_binavnode {
+            BinavnodeNodeIndex::FixedDot(dot) => {
+                // FIXME: This has a lot of false positives, so we return false instead.
+                return false;
+                //dot.primitive_ref(layout.drawing()).shape().center()
+            }
+            BinavnodeNodeIndex::LooseBend(bend) => {
+                bend.primitive_ref(layout.drawing()).shape().center()
+            }
+            _ => unreachable!(),
+        };
+
+        let PrimitiveShape::Bend(bend_with_arms_shape) =
+            bend_with_arms.primitive_ref(layout.drawing()).shape()
+        else {
+            unreachable!();
+        };
+
+        bend_with_arms_shape.between_tangent_rays(checked_center)
     }
 
     /// Returns the origin node.
