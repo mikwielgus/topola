@@ -45,6 +45,12 @@ the `assets/` directory are dual-licensed as under MIT or
 licence. The file `crates/planar-incr-embed/src/math.rs` is dual-licensed as under
 MIT or [Apache 2.0](LICENSES/Apache-2.0.txt) licence.
 
+### Inbound licence is outbound licence
+
+Unless you explicitly state otherwise, any contribution intentionally submitted
+for inclusion in the work by you will be licensed as described above, without
+any additional terms or conditions.
+
 ## Acknowledgements
 
 This project is funded through the NGI0 Entrust Fund, a fund established by
