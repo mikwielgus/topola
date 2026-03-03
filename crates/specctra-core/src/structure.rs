@@ -263,16 +263,11 @@ pub struct Image {
     #[anon]
     pub name: String,
     #[vec("outline")]
-    pub outlines: Vec<Outline>,
+    pub outlines: Vec<Shape>,
     #[vec("pin")]
     pub pins: Vec<Pin>,
     #[anon]
     pub keepouts: Keepouts,
-}
-
-#[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
-pub struct Outline {
-    pub path: Path,
 }
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
