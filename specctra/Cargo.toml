@@ -1,0 +1,16 @@
+# SPDX-FileCopyrightText: 2024 Topola contributors
+#
+# SPDX-License-Identifier: MIT
+
+[package]
+name = "specctra"
+version = "0.1.0"
+edition = "2021"
+
+[dependencies]
+bimap = "0.6"
+geo-types = { version = "0.7", features = ["serde"] }
+serde.workspace = true
+specctra_derive.path = "../specctra_derive"
+thiserror.workspace = true
+utf8-chars = "3.0"

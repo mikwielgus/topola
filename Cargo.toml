@@ -3,84 +3,19 @@
 # SPDX-License-Identifier: MIT
 
 [workspace]
-members = [".", "crates/*", "crates/*/fuzz"]
+members = ["specctra", "specctra_derive", "topola", "topola-egui"]
+default-members = ["specctra", "specctra_derive", "topola"]
 resolver = "2"
 
 [workspace.dependencies]
 derive-getters = "0.5"
-log = "0.4"
-rstar = "0.12"
-serde_json = "1.0"
-spade = "2.13"
+derive_more = { version = "2.1", features = ["from"] }
+serde = { version = "1", features = ["derive", "rc"] }
 thiserror = "2.0"
-
-[workspace.dependencies.bimap]
-version = "0.6.3"
-features = ["serde"]
-
-[workspace.dependencies.geo-types]
-version = "0.7"
-default-features = false
-features = ["serde"]
-
-[workspace.dependencies.geo]
-version = "0.29"
-default-features = false
-features = ["spade", "use-serde"]
-
-[workspace.dependencies.petgraph]
-git = "https://codeberg.org/topola/petgraph.git"
-features = ["serde-1"]
-
-[workspace.dependencies.serde]
-version = "1"
-features = ["derive", "rc"]
-
-[package]
-name = "topola"
-description = "Work-in-progress free and open-source topological (rubberband) router and autorouter for printed circuit boards (PCBs)"
-version = "0.1.0"
-edition = "2021"
-
-[features]
-default = ["disable_contracts"]
-disable_contracts = ["contracts-try/disable_contracts"]
-
-[dependencies]
-approx = "0.5"
-bimap.workspace = true
-contracts-try = "0.7"
-derive-getters.workspace = true
-enum_dispatch = "0.3"
-geo.workspace = true
-itertools = "0.14"
-log.workspace = true
-petgraph.workspace = true
-ron = "0.10"
-rstar.workspace = true
-serde.workspace = true
-spade.workspace = true
-thiserror.workspace = true
-
-[dependencies.planar-incr-embed]
-path = "crates/planar-incr-embed"
-features = ["serde"]
-
-[dependencies.specctra-core]
-path = "crates/specctra-core"
-features = ["rstar"]
-
-[dev-dependencies]
-serde_json.workspace = true
-proptest = "1.6"
-rstest = "0.26.1"
-rstest_reuse = "0.7.0"
-
-[package.metadata.docs.rs]
-cargo-args = ["-Zunstable-options", "-Zrustdoc-scrape-examples"]
+undoredo = { version = "0.8", features = ["stable-vec"] }
 
 [profile.release]
-opt-level = 2 # fast and small wasm
+opt-level = 2 # Fast and small WASM.
 
 # Optimize all dependencies even in debug builds:
 [profile.dev.package."*"]

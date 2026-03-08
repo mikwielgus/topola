@@ -1,0 +1,15 @@
+[package]
+name = "topola"
+description = "Work-in-progress free and open-source topological (rubberband) router and autorouter for printed circuit boards (PCBs)"
+version = "0.1.0"
+edition = "2024"
+
+[dependencies]
+derive-getters.workspace = true
+derive_more.workspace = true
+serde.workspace = true
+stable-vec = "0.4"
+undoredo.workspace = true
+
+[dev-dependencies]
+walkdir = "2.5"
