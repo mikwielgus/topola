@@ -43,18 +43,7 @@ impl Displayer {
                     y: p[1] as f32,
                 })
                 .collect::<Vec<_>>(),
-            egui::Stroke::new(20.0 / viewport.scale_factor(), egui::Color32::WHITE),
+            egui::Stroke::new(5.0 / viewport.scale_factor(), egui::Color32::WHITE),
         );
-        ui.painter().line(
-            vec![
-                Pos2::new(0.0, 0.0),
-                Pos2::new(100.0, 100.0),
-                Pos2::new(100.0, 500.0),
-            ],
-            egui::Stroke::new(2.0, egui::Color32::GOLD),
-        );
-        ui.painter()
-            .circle_filled(egui::pos2(0.0, 0.0), 2.0, egui::Color32::RED);
-        //workspace.board.layout().boundary()
     }
 }

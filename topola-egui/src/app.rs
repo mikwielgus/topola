@@ -54,6 +54,7 @@ impl App {
                 Board::from_specctra(data.unwrap()),
                 &self.translator,
             ));
+            self.viewport.scheduled_zoom_to_fit = true;
         }
     }
 
