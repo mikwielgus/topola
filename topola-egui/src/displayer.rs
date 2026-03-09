@@ -4,7 +4,7 @@
 
 use egui::Pos2;
 
-use crate::{menu_bar::MenuBar, workspace::Workspace};
+use crate::{viewport::Viewport, workspace::Workspace};
 
 pub struct Displayer {}
 
@@ -18,9 +18,10 @@ impl Displayer {
         ctx: &egui::Context,
         ui: &egui::Ui,
         //menu_bar: &MenuBar,
+        viewport: &Viewport,
         workspace: &Workspace,
     ) {
-        self.display_layout(ctx, ui, /*menu_bar,*/ workspace);
+        self.display_layout(ctx, ui, /*menu_bar,*/ viewport, workspace);
     }
 
     pub fn display_layout(
@@ -28,6 +29,7 @@ impl Displayer {
         ctx: &egui::Context,
         ui: &egui::Ui,
         //menu_bar: &MenuBar,
+        viewport: &Viewport,
         workspace: &Workspace,
     ) {
         ui.painter().line(
@@ -41,7 +43,7 @@ impl Displayer {
                     y: p[1] as f32,
                 })
                 .collect::<Vec<_>>(),
-            egui::Stroke::new(500.0, egui::Color32::WHITE),
+            egui::Stroke::new(20.0 / viewport.scale_factor(), egui::Color32::WHITE),
         );
         ui.painter().line(
             vec![
