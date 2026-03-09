@@ -8,7 +8,7 @@ use specctra::{error::ParseErrorContext, structure::DsnFile};
 use topola::Board;
 use unic_langid::langid;
 
-use crate::{menu_bar::MenuBar, translator::Translator, workspace::Workspace};
+use crate::{menu_bar::MenuBar, translator::Translator, viewport::Viewport, workspace::Workspace};
 
 pub struct App {
     translator: Translator,
@@ -19,7 +19,7 @@ pub struct App {
     ),
 
     menu_bar: MenuBar,
-    view_rect: egui::Rect,
+    viewport: Viewport,
     workspace: Option<Workspace>,
 }
 
@@ -29,10 +29,7 @@ impl Default for App {
             translator: Translator::new(langid!("en-US")),
             content_channel: channel(),
             menu_bar: MenuBar::new(),
-            view_rect: egui::Rect::from_min_max(
-                egui::pos2(-100.0, 100.0),
-                egui::pos2(100.0, 100.0),
-            ),
+            viewport: Viewport::new(),
             workspace: None,
         }
     }
@@ -130,14 +127,7 @@ impl eframe::App for App {
 
         self.update_state();
 
-        egui::CentralPanel::default().show(ctx, |ui| {
-            egui::Scene::new()
-                .zoom_range(0.001..=1000.0)
-                .show(ui, &mut self.view_rect, |ui| {
-                    ui.painter()
-                        .circle_filled(egui::pos2(0.0, 0.0), 20.0, egui::Color32::RED);
-                });
-        });
+        self.viewport.update(ctx, self.workspace.as_mut());
 
         self.update_locale();
         self.update_title(ctx);

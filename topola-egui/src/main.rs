@@ -7,9 +7,12 @@
 mod action;
 mod actions;
 mod app;
+mod displayer;
 mod menu_bar;
 mod translator;
+mod viewport;
 mod workspace;
+
 use crate::app::App;
 
 // When compiling natively:

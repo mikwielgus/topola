@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use derive_getters::Dissolve;
+use derive_getters::{Dissolve, Getters};
 use stable_vec::StableVec;
 use undoredo::{ApplyDelta, Delta, FlushDelta, Recorder};
 
@@ -101,7 +101,7 @@ pub struct Via {
     radius: u64,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Getters)]
 pub struct Layout {
     boundary: Vec<[i64; 2]>,
     place_boundary: Vec<[i64; 2]>,
