@@ -1,3 +1,7 @@
+# SPDX-FileCopyrightText: 2026 Topola contributors
+#
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
 [package]
 name = "topola"
 description = "Work-in-progress free and open-source topological (rubberband) router and autorouter for printed circuit boards (PCBs)"
@@ -8,6 +12,7 @@ edition = "2024"
 derive-getters.workspace = true
 derive_more.workspace = true
 serde.workspace = true
+specctra = { path = "../specctra" }
 stable-vec = "0.4"
 undoredo.workspace = true
 

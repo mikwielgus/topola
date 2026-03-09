@@ -1,6 +1,6 @@
 // SPDX-FileCopyrightText: 2026 Topola contributors
 //
-// SPDX-License-Identifier: MIT OR Apache-2.0
+// SPDX-License-Identifier: MIT
 
 use derive_getters::{Dissolve, Getters};
 use undoredo::{ApplyDelta, Delta, FlushDelta};
@@ -18,9 +18,9 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new() -> Self {
+    pub fn new(boundary: Vec<[i64; 2]>) -> Self {
         Self {
-            layout: Layout::new(),
+            layout: Layout::new(boundary),
         }
     }
 }

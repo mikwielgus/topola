@@ -1,6 +1,9 @@
 // SPDX-FileCopyrightText: 2026 Topola contributors
 //
-// SPDX-License-Identifier: MIT OR Apache-2.0
+// SPDX-License-Identifier: MIT
 
 mod board;
 mod layout;
+mod specctra;
+
+pub use crate::board::Board;

@@ -1,34 +1,48 @@
+# SPDX-FileCopyrightText: 2024 Topola contributors
+#
+# SPDX-License-Identifier: MIT OR Apache-2.0
+
 [package]
 name = "topola-egui"
 description = "Graphical user interface for Topola PCB router in Egui/Eframe framework."
 version = "0.1.0"
 edition = "2024"
 
+[features]
+default = ["xdg-portal"]
+gtk3 = ["rfd/gtk3"]
+xdg-portal = ["rfd/xdg-portal"]
+
 [package.metadata.docs.rs]
 all-features = true
 targets = ["x86_64-unknown-linux-gnu", "wasm32-unknown-unknown"]
 
 [dependencies]
-egui = "0.33.0"
-eframe = { version = "0.33.0", default-features = false, features = [
-    "accesskit",     # Make egui compatible with screen readers. NOTE: adds a lot of dependencies.
+derive-getters.workspace = true
+egui = "0.33"
+eframe = { version = "0.33", default-features = false, features = [
+    #"accesskit",     # Make egui compatible with screen readers. NOTE: adds a lot of dependencies.
     "default_fonts", # Embed the default egui fonts.
     "glow",          # Use the glow rendering backend. Alternative: "wgpu".
     "persistence",   # Enable restoring app state when restarting the app.
     "wayland",       # To support Linux (and CI).
     "x11",           # To support older Linux distributions (restores one of the default features).
 ] }
-log = "0.4.27"
-topola = { version = "0.1", path = "../topola" }
+fluent-templates = "0.13"
+log = "0.4"
+rfd = { version = "0.17", default-features = false }
+specctra = { path = "../specctra" }
+topola = { path = "../topola" }
+unic-langid = { version = "0.9", features = ["macros", "serde"] }
 
-# You only need serde if you want app persistence:
-serde = { version = "1.0.219", features = ["derive"] }
+serde = { version = "1.0", features = ["derive"] }
 
 # Native:
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
-env_logger = "0.11.8"
+futures-lite = "2.6"
+env_logger = "0.11"
 
 # Web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]
-wasm-bindgen-futures = "0.4.50"
-web-sys = "0.3.70" # to access the DOM to hide the loading text.
+wasm-bindgen-futures = "0.4"
+web-sys = "0.3" # To access the DOM to hide the loading text.

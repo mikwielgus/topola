@@ -11,7 +11,7 @@ merge_commit = false
 allowed_scopes = [
   # Generated using `ls crates | awk '{ print "\"" $1 "\","; }' | sort`.
   "planar-incr-embed",
-  "specctra-core",
+  "specctra",
   "specctra_derive",
   "topola-cli",
   "topola-egui",

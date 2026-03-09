@@ -3,13 +3,13 @@
 // SPDX-License-Identifier: MIT
 
 use derive_getters::Getters;
-use fluent_templates::{static_loader, Loader};
+use fluent_templates::{Loader, static_loader};
 use serde::{Deserialize, Serialize};
 use unic_langid::LanguageIdentifier;
 
 static_loader! {
     static LOCALES = {
-        locales: "../../locales",
+        locales: "../locales",
         fallback_language: "en-US",
     };
 }

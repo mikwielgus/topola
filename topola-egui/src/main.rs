@@ -1,11 +1,16 @@
 // SPDX-FileCopyrightText: 2026 Topola contributors
 //
-// SPDX-License-Identifier: MIT
+// SPDX-License-Identifier: MIT OR Apache-2.0
 
 #![cfg_attr(not(debug_assertions), windows_subsystem = "windows")] // hide console window on Windows in release
 
+mod action;
+mod actions;
 mod app;
-use app::App;
+mod menu_bar;
+mod translator;
+mod workspace;
+use crate::app::App;
 
 // When compiling natively:
 #[cfg(not(target_arch = "wasm32"))]
