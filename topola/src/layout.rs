@@ -25,10 +25,11 @@ impl JointId {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Joint {
-    position: [i64; 2],
-    radius: u64,
+    pub position: [i64; 2],
+    pub layer: usize,
+    pub radius: u64,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -48,10 +49,11 @@ impl SegmentId {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Segment {
-    endpoints: [JointId; 2],
-    half_width: u64,
+    pub endpoints: [JointId; 2],
+    pub layer: usize,
+    pub half_width: u64,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -71,11 +73,12 @@ impl ArcId {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Arc {
-    endpoints: [JointId; 2],
-    focus: [i64; 2],
-    half_width: u64,
+    pub endpoints: [JointId; 2],
+    pub focus: [i64; 2],
+    pub layer: usize,
+    pub half_width: u64,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -95,10 +98,11 @@ impl ViaId {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Copy, Debug)]
 pub struct Via {
-    endpoints: [JointId; 2],
-    radius: u64,
+    pub endpoints: [JointId; 2],
+    pub layer: usize,
+    pub radius: u64,
 }
 
 #[derive(Clone, Debug, Getters)]

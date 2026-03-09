@@ -4,6 +4,7 @@
 
 mod board;
 mod layout;
+mod navmesher;
 mod specctra;
 
 pub use crate::board::Board;

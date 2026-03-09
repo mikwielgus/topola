@@ -5,14 +5,16 @@
 use derive_getters::{Dissolve, Getters};
 use undoredo::{ApplyDelta, Delta, FlushDelta};
 
-use crate::layout::{Layout, LayoutHalfDelta};
+use crate::layout::{
+    Arc, ArcId, Joint, JointId, Layout, LayoutHalfDelta, Segment, SegmentId, Via, ViaId,
+};
 
 struct Layer {
     name: String,
     index: usize,
 }
 
-#[derive(Getters)]
+#[derive(Clone, Debug, Getters)]
 pub struct Board {
     layout: Layout,
 }
@@ -22,6 +24,22 @@ impl Board {
         Self {
             layout: Layout::new(boundary),
         }
+    }
+
+    pub fn add_joint(&mut self, joint: Joint) -> JointId {
+        self.layout.add_joint(joint)
+    }
+
+    pub fn add_segment(&mut self, segment: Segment) -> SegmentId {
+        self.layout.add_segment(segment)
+    }
+
+    pub fn add_arc(&mut self, arc: Arc) -> ArcId {
+        self.layout.add_arc(arc)
+    }
+
+    pub fn add_via(&mut self, via: Via) -> ViaId {
+        self.layout.add_via(via)
     }
 }
 
