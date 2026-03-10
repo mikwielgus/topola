@@ -4,6 +4,7 @@
 
 mod board;
 mod layout;
+mod math;
 mod navmesher;
 mod specctra;
 

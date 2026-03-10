@@ -26,7 +26,7 @@ impl Viewport {
             let mut scene_rect = self.scene_rect.clone();
 
             egui::Scene::new()
-                .zoom_range(0.0001..=10000.0)
+                .zoom_range(0.00001..=10000.0)
                 .show(ui, &mut scene_rect, |ui| {
                     if let Some(ref workspace) = workspace {
                         let mut displayer = Displayer::new();

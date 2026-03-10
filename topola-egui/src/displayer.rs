@@ -45,5 +45,13 @@ impl Displayer {
                 .collect::<Vec<_>>(),
             egui::Stroke::new(5.0 / viewport.scale_factor(), egui::Color32::WHITE),
         );
+
+        for (_, joint) in workspace.board.layout().joints().collection() {
+            ui.painter().circle_filled(
+                egui::Pos2::new(joint.position[0] as f32, joint.position[1] as f32),
+                joint.radius as f32,
+                egui::Color32::RED,
+            );
+        }
     }
 }
