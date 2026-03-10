@@ -2,9 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use egui::Pos2;
-
 use crate::{viewport::Viewport, workspace::Workspace};
+use topola::{Joint, Polygon};
 
 pub struct Displayer {}
 
@@ -47,11 +46,47 @@ impl Displayer {
         );
 
         for (_, joint) in workspace.board.layout().joints().collection() {
-            ui.painter().circle_filled(
-                egui::Pos2::new(joint.position[0] as f32, joint.position[1] as f32),
-                joint.radius as f32,
-                egui::Color32::RED,
-            );
+            self.paint_joint(ctx, ui, viewport, joint);
         }
+
+        // TODO.
+
+        for (_, polygon) in workspace.board.layout().polygons().collection() {
+            self.paint_polygon(ctx, ui, viewport, polygon);
+        }
+    }
+
+    fn paint_joint(
+        &mut self,
+        ctx: &egui::Context,
+        ui: &egui::Ui,
+        viewport: &Viewport,
+        joint: &Joint,
+    ) {
+        ui.painter().circle_filled(
+            egui::Pos2::new(joint.position[0] as f32, joint.position[1] as f32),
+            joint.radius as f32,
+            egui::Color32::RED,
+        );
+    }
+
+    fn paint_polygon(
+        &mut self,
+        ctx: &egui::Context,
+        ui: &egui::Ui,
+        viewport: &Viewport,
+        polygon: &Polygon,
+    ) {
+        let points: Vec<egui::Pos2> = polygon
+            .vertices
+            .iter()
+            .map(|v| egui::pos2(v[0] as f32, v[1] as f32))
+            .collect();
+
+        ui.painter().add(egui::Shape::convex_polygon(
+            points,
+            egui::Color32::RED,
+            egui::Stroke::new(5.0 / viewport.scale_factor(), egui::Color32::RED),
+        ));
     }
 }

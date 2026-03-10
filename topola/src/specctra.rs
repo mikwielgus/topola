@@ -7,7 +7,11 @@ use specctra::{
     structure::{DsnFile, Shape},
 };
 
-use crate::{board::Board, layout::Joint, math::Vector2};
+use crate::{
+    board::Board,
+    layout::{Joint, Polygon},
+    math::Vector2,
+};
 
 impl Board {
     pub fn from_specctra(dsn: DsnFile) -> Self {
@@ -51,6 +55,17 @@ impl Board {
                                 (circle.diameter / 2.0) as u64,
                                 false,
                             ),
+                            Shape::Rect(rect) => Self::place_rect(
+                                &mut board,
+                                place.point_with_rotation(),
+                                pin.point_with_rotation(),
+                                rect.x1,
+                                rect.y1,
+                                rect.x2,
+                                rect.y2,
+                                0,
+                                false,
+                            ),
                             _ => (),
                         }
                     }
@@ -76,7 +91,7 @@ impl Board {
         });
     }
 
-    /*pub fn place_rect(
+    pub fn place_rect(
         board: &mut Board,
         place: PointWithRotation,
         pin: PointWithRotation,
@@ -88,15 +103,15 @@ impl Board {
         flip: bool,
     ) {
         board.add_polygon(Polygon {
-            vertices: [
+            vertices: vec![
                 Self::pos(place, pin, x1, y1, flip),
                 Self::pos(place, pin, x2, y1, flip),
                 Self::pos(place, pin, x2, y2, flip),
                 Self::pos(place, pin, x1, y2, flip),
             ],
             layer,
-        })
-    }*/
+        });
+    }
 
     fn pos(
         place: PointWithRotation,
