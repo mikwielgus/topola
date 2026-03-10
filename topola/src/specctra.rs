@@ -47,6 +47,7 @@ impl Board {
                                 &mut board,
                                 place.point_with_rotation(),
                                 pin.point_with_rotation(),
+                                0,
                                 (circle.diameter / 2.0) as u64,
                                 false,
                             ),
@@ -64,17 +65,38 @@ impl Board {
         board: &mut Board,
         place: PointWithRotation,
         pin: PointWithRotation,
+        layer: usize,
         radius: u64,
         flip: bool,
     ) {
-        let pos = Self::pos(place, pin, 0.0, 0.0, flip);
-
         board.add_joint(Joint {
-            position: [pos.x, pos.y],
-            layer: 0,
+            position: Self::pos(place, pin, 0.0, 0.0, flip),
+            layer,
             radius,
         });
     }
+
+    /*pub fn place_rect(
+        board: &mut Board,
+        place: PointWithRotation,
+        pin: PointWithRotation,
+        x1: f64,
+        y1: f64,
+        x2: f64,
+        y2: f64,
+        layer: usize,
+        flip: bool,
+    ) {
+        board.add_polygon(Polygon {
+            vertices: [
+                Self::pos(place, pin, x1, y1, flip),
+                Self::pos(place, pin, x2, y1, flip),
+                Self::pos(place, pin, x2, y2, flip),
+                Self::pos(place, pin, x1, y2, flip),
+            ],
+            layer,
+        })
+    }*/
 
     fn pos(
         place: PointWithRotation,
@@ -82,13 +104,13 @@ impl Board {
         x: f64,
         y: f64,
         flip: bool,
-    ) -> Vector2<i64> {
+    ) -> [i64; 2] {
         let pos = (Vector2::new(x, y) + Vector2::new(pin.pos.x(), pin.pos.y()))
             .rotate_around_point_degrees(pin.rot, Vector2::new(pin.pos.x(), pin.pos.y()));
         let pos = (Vector2::new(place.pos.x(), place.pos.y())
             + flip.then_some(Vector2::new(-pos.x, pos.y)).unwrap_or(pos))
         .rotate_around_point_degrees(place.rot, Vector2::new(place.pos.x(), place.pos.y()));
 
-        Vector2::new(pos.x as i64, pos.y as i64)
+        [pos.x as i64, pos.y as i64]
     }
 }

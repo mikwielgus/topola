@@ -6,7 +6,8 @@ use derive_getters::{Dissolve, Getters};
 use undoredo::{ApplyDelta, Delta, FlushDelta};
 
 use crate::layout::{
-    Arc, ArcId, Joint, JointId, Layout, LayoutHalfDelta, Segment, SegmentId, Via, ViaId,
+    Arc, ArcId, Joint, JointId, Layout, LayoutHalfDelta, Polygon, PolygonId, Segment, SegmentId,
+    Via, ViaId,
 };
 
 struct Layer {
@@ -40,6 +41,10 @@ impl Board {
 
     pub fn add_via(&mut self, via: Via) -> ViaId {
         self.layout.add_via(via)
+    }
+
+    pub fn add_polygon(&mut self, polygon: Polygon) -> PolygonId {
+        self.layout.add_polygon(polygon)
     }
 }
 

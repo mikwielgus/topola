@@ -7,7 +7,7 @@ use derive_getters::Getters;
 
 use crate::{
     Board,
-    layout::{Arc, ArcId, Joint, JointId, Segment, SegmentId, Via, ViaId},
+    layout::{Arc, ArcId, Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
 };
 
 #[derive(Clone, Debug, Getters)]
@@ -122,5 +122,10 @@ impl NavmesherBoard {
     pub fn insert_via(&mut self, via: Via) -> ViaId {
         // TODO: Insert into navmesh.
         self.board.add_via(via)
+    }
+
+    pub fn insert_polygon(&mut self, polygon: Polygon) -> PolygonId {
+        // TODO: Insert into navmesh.
+        self.board.add_polygon(polygon)
     }
 }

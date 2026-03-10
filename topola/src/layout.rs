@@ -12,7 +12,7 @@ use undoredo::{ApplyDelta, Delta, FlushDelta, Recorder};
 pub struct JointId(usize);
 
 impl JointId {
-    /// Wrap a vertex index in a newtype struct.
+    /// Wrap a joint index in a newtype struct.
     #[inline]
     pub fn new(id: usize) -> Self {
         Self(id)
@@ -36,7 +36,7 @@ pub struct Joint {
 pub struct SegmentId(usize);
 
 impl SegmentId {
-    /// Wrap a vertex index in a newtype struct.
+    /// Wrap a segment index in a newtype struct.
     #[inline]
     pub fn new(id: usize) -> Self {
         Self(id)
@@ -60,7 +60,7 @@ pub struct Segment {
 pub struct ArcId(usize);
 
 impl ArcId {
-    /// Wrap a vertex index in a newtype struct.
+    /// Wrap an arc index in a newtype struct.
     #[inline]
     pub fn new(id: usize) -> Self {
         Self(id)
@@ -85,7 +85,7 @@ pub struct Arc {
 pub struct ViaId(usize);
 
 impl ViaId {
-    /// Wrap a vertex index in a newtype struct.
+    /// Wrap a via index in a newtype struct.
     #[inline]
     pub fn new(id: usize) -> Self {
         Self(id)
@@ -105,6 +105,29 @@ pub struct Via {
     pub radius: u64,
 }
 
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct PolygonId(usize);
+
+impl PolygonId {
+    /// Wrap a polygon index in a newtype struct.
+    #[inline]
+    pub fn new(id: usize) -> Self {
+        Self(id)
+    }
+
+    /// Returns the underlying index.
+    #[inline]
+    pub fn id(self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Polygon {
+    pub vertices: Vec<[i64; 2]>,
+    pub layer: usize,
+}
+
 #[derive(Clone, Debug, Getters)]
 pub struct Layout {
     boundary: Vec<[i64; 2]>,
@@ -113,6 +136,7 @@ pub struct Layout {
     segments: Recorder<StableVec<Segment>>,
     arcs: Recorder<StableVec<Arc>>,
     vias: Recorder<StableVec<Via>>,
+    polygons: Recorder<StableVec<Polygon>>,
 }
 
 impl Layout {
@@ -124,6 +148,7 @@ impl Layout {
             segments: Recorder::new(StableVec::new()),
             arcs: Recorder::new(StableVec::new()),
             vias: Recorder::new(StableVec::new()),
+            polygons: Recorder::new(StableVec::new()),
         }
     }
 
@@ -142,6 +167,10 @@ impl Layout {
     pub fn add_via(&mut self, via: Via) -> ViaId {
         ViaId::new(self.vias.push(via))
     }
+
+    pub fn add_polygon(&mut self, polygon: Polygon) -> PolygonId {
+        PolygonId::new(self.polygons.push(polygon))
+    }
 }
 
 #[derive(Clone, Debug, Dissolve)]
@@ -150,6 +179,7 @@ pub struct LayoutHalfDelta {
     segments: BTreeMap<usize, Segment>,
     arcs: BTreeMap<usize, Arc>,
     vias: BTreeMap<usize, Via>,
+    polygons: BTreeMap<usize, Polygon>,
 }
 
 impl ApplyDelta<LayoutHalfDelta> for Layout {
@@ -167,6 +197,9 @@ impl ApplyDelta<LayoutHalfDelta> for Layout {
 
         let vias_delta = Delta::with_removed_inserted(removed.vias, inserted.vias);
         self.vias.apply_delta(&vias_delta);
+
+        let polygons_delta = Delta::with_removed_inserted(removed.polygons, inserted.polygons);
+        self.polygons.apply_delta(&polygons_delta);
     }
 }
 
@@ -176,6 +209,7 @@ impl FlushDelta<LayoutHalfDelta> for Layout {
         let (removed_segments, inserted_segments) = self.segments.flush_delta().dissolve();
         let (removed_arcs, inserted_arcs) = self.arcs.flush_delta().dissolve();
         let (removed_vias, inserted_vias) = self.vias.flush_delta().dissolve();
+        let (removed_polygons, inserted_polygons) = self.polygons.flush_delta().dissolve();
 
         Delta::with_removed_inserted(
             LayoutHalfDelta {
@@ -183,12 +217,14 @@ impl FlushDelta<LayoutHalfDelta> for Layout {
                 segments: removed_segments,
                 arcs: removed_arcs,
                 vias: removed_vias,
+                polygons: removed_polygons,
             },
             LayoutHalfDelta {
                 joints: inserted_joints,
                 segments: inserted_segments,
                 arcs: inserted_arcs,
                 vias: inserted_vias,
+                polygons: inserted_polygons,
             },
         )
     }
