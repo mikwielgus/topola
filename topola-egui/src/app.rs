@@ -128,6 +128,10 @@ impl eframe::App for App {
 
         self.update_state();
 
+        if let Some(ref mut workspace) = self.workspace {
+            workspace.update_appearance_panel(ctx);
+        }
+
         self.viewport.update(ctx, self.workspace.as_mut());
 
         self.update_locale();

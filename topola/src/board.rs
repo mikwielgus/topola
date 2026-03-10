@@ -26,9 +26,9 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(boundary: Vec<[i64; 2]>) -> Self {
+    pub fn new(boundary: Vec<[i64; 2]>, layer_count: usize) -> Self {
         Self {
-            layout: Layout::new(boundary),
+            layout: Layout::new(boundary, layer_count),
             layer_names: BiBTreeMap::new(),
             net_names: BiBTreeMap::new(),
         }
@@ -36,11 +36,12 @@ impl Board {
 
     pub fn with_names(
         boundary: Vec<[i64; 2]>,
+        layer_count: usize,
         layer_names: BiBTreeMap<usize, String>,
         net_names: BiBTreeMap<usize, String>,
     ) -> Self {
         Self {
-            layout: Layout::new(boundary),
+            layout: Layout::new(boundary, layer_count),
             layer_names,
             net_names,
         }
@@ -66,20 +67,20 @@ impl Board {
         self.layout.add_polygon(polygon)
     }
 
-    pub fn layer_name(&self, layer: usize) -> &str {
-        &self.layer_names.get_by_left(&layer).unwrap()
+    pub fn layer_name(&self, layer: usize) -> Option<&str> {
+        self.layer_names.get_by_left(&layer).map(String::as_str)
     }
 
-    pub fn layer_id(&self, name: &str) -> usize {
-        *self.layer_names.get_by_right(name).unwrap()
+    pub fn layer_id(&self, name: &str) -> Option<usize> {
+        self.layer_names.get_by_right(name).copied()
     }
 
-    pub fn net_name(&self, net: usize) -> &str {
-        &self.net_names.get_by_left(&net).unwrap()
+    pub fn net_name(&self, net: usize) -> Option<&str> {
+        self.net_names.get_by_left(&net).map(String::as_str)
     }
 
-    pub fn net_id(&self, name: &str) -> usize {
-        *self.net_names.get_by_right(name).unwrap()
+    pub fn net_id(&self, name: &str) -> Option<usize> {
+        self.net_names.get_by_right(name).copied()
     }
 }
 

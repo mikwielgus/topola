@@ -132,6 +132,8 @@ pub struct Polygon {
 pub struct Layout {
     boundary: Vec<[i64; 2]>,
     place_boundary: Vec<[i64; 2]>,
+    layer_count: usize,
+
     joints: Recorder<StableVec<Joint>>,
     segments: Recorder<StableVec<Segment>>,
     arcs: Recorder<StableVec<Arc>>,
@@ -140,10 +142,12 @@ pub struct Layout {
 }
 
 impl Layout {
-    pub fn new(boundary: Vec<[i64; 2]>) -> Self {
+    pub fn new(boundary: Vec<[i64; 2]>, layer_count: usize) -> Self {
         Self {
             boundary: boundary.clone(),
             place_boundary: boundary,
+            layer_count,
+
             joints: Recorder::new(StableVec::new()),
             segments: Recorder::new(StableVec::new()),
             arcs: Recorder::new(StableVec::new()),

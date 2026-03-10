@@ -52,6 +52,7 @@ impl Board {
                 .into_iter()
                 .map(|p| [p.x as i64, p.y as i64])
                 .collect(),
+            dsn.pcb.structure.layers.len(),
             layer_names,
             net_names,
         );
@@ -251,7 +252,7 @@ impl Board {
     }
 
     fn layer(board: &Board, layers: &[Layer], name: &str, front: bool) -> usize {
-        let image_layer = board.layer_id(name);
+        let image_layer = board.layer_id(name).unwrap();
 
         if front {
             image_layer
