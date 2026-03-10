@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT
 
+use bimap::BiBTreeMap;
 use derive_getters::{Dissolve, Getters};
 use undoredo::{ApplyDelta, Delta, FlushDelta};
 
@@ -18,12 +19,30 @@ struct Layer {
 #[derive(Clone, Debug, Getters)]
 pub struct Board {
     layout: Layout,
+    #[getter(skip)]
+    layer_names: BiBTreeMap<usize, String>,
+    #[getter(skip)]
+    net_names: BiBTreeMap<usize, String>,
 }
 
 impl Board {
     pub fn new(boundary: Vec<[i64; 2]>) -> Self {
         Self {
             layout: Layout::new(boundary),
+            layer_names: BiBTreeMap::new(),
+            net_names: BiBTreeMap::new(),
+        }
+    }
+
+    pub fn with_names(
+        boundary: Vec<[i64; 2]>,
+        layer_names: BiBTreeMap<usize, String>,
+        net_names: BiBTreeMap<usize, String>,
+    ) -> Self {
+        Self {
+            layout: Layout::new(boundary),
+            layer_names,
+            net_names,
         }
     }
 
@@ -45,6 +64,22 @@ impl Board {
 
     pub fn add_polygon(&mut self, polygon: Polygon) -> PolygonId {
         self.layout.add_polygon(polygon)
+    }
+
+    pub fn layer_name(&self, layer: usize) -> &str {
+        &self.layer_names.get_by_left(&layer).unwrap()
+    }
+
+    pub fn layer_id(&self, name: &str) -> usize {
+        *self.layer_names.get_by_right(name).unwrap()
+    }
+
+    pub fn net_name(&self, net: usize) -> &str {
+        &self.net_names.get_by_left(&net).unwrap()
+    }
+
+    pub fn net_id(&self, name: &str) -> usize {
+        *self.net_names.get_by_right(name).unwrap()
     }
 }
 

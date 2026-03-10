@@ -2,9 +2,10 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use bimap::BiBTreeMap;
 use specctra::{
     math::PointWithRotation,
-    structure::{DsnFile, Point, Shape},
+    structure::{DsnFile, Layer, Point, Shape},
 };
 
 use crate::{
@@ -16,7 +17,33 @@ use crate::{
 
 impl Board {
     pub fn from_specctra(dsn: DsnFile) -> Self {
-        let mut board = Board::new(
+        let layer_names = BiBTreeMap::from_iter(
+            dsn.pcb
+                .structure
+                .layers
+                .iter()
+                .enumerate()
+                .map(|(index, layer)| (index, layer.name.clone())),
+        );
+
+        // assign IDs to all nets named in pcb.network
+        let net_names = {
+            let mut tmp: Vec<_> = dsn
+                .pcb
+                .network
+                .classes
+                .iter()
+                .flat_map(|class| &class.nets)
+                .chain(dsn.pcb.network.nets.iter().map(|net| &net.name))
+                .collect();
+            // deduplicate net names
+            tmp.sort_unstable();
+            tmp.dedup();
+
+            BiBTreeMap::from_iter(tmp.into_iter().cloned().enumerate())
+        };
+
+        let mut board = Board::with_names(
             dsn.pcb
                 .structure
                 .boundary
@@ -25,7 +52,28 @@ impl Board {
                 .into_iter()
                 .map(|p| [p.x as i64, p.y as i64])
                 .collect(),
+            layer_names,
+            net_names,
         );
+
+        // Mapping of pin -> net prepared for adding pins.
+        let pin_nets = dsn
+            .pcb
+            .network
+            .nets
+            .iter()
+            .filter_map(|net_pin_assignments| {
+                // Resolve the id so we don't work with strings.
+                let net = board.net_id(&net_pin_assignments.name);
+
+                net_pin_assignments.pins.as_ref().map(|pins| {
+                    // Take the list of pins
+                    // and for each pin output (pin name, net id).
+                    pins.names.iter().map(move |pinname| (pinname.clone(), net))
+                })
+            })
+            // Flatten the nested iters into a single stream of tuples.
+            .flatten();
 
         // Add pins from components.
         for component in &dsn.pcb.placement.components {
@@ -38,54 +86,65 @@ impl Board {
                 .unwrap();
 
             for place in &component.places {
-                /*let place_side_is_front = place.side == "front";
+                let place_side_is_front = place.side == "front";
                 let get_layer = |board: &Board, name: &str| {
                     Self::layer(board, &dsn.pcb.structure.layers, name, place_side_is_front)
-                };*/
+                };
 
                 for pin in &image.pins {
                     let padstack = dsn.pcb.library.find_padstack_by_name(&pin.name).unwrap();
 
                     for shape in padstack.shapes.iter() {
                         match shape {
-                            Shape::Circle(circle) => Self::place_circle(
-                                &mut board,
-                                place.point_with_rotation(),
-                                pin.point_with_rotation(),
-                                0,
-                                (circle.diameter / 2.0) as u64,
-                                false,
-                            ),
-                            Shape::Rect(rect) => Self::place_rect(
-                                &mut board,
-                                place.point_with_rotation(),
-                                pin.point_with_rotation(),
-                                rect.x1,
-                                rect.y1,
-                                rect.x2,
-                                rect.y2,
-                                0,
-                                false,
-                            ),
-                            Shape::Path(path) => Self::place_path(
-                                &mut board,
-                                place.point_with_rotation(),
-                                pin.point_with_rotation(),
-                                &path.coords,
-                                path.width,
-                                0,
-                                false,
-                            ),
-                            Shape::Polygon(polygon) => Self::place_polygon(
-                                &mut board,
-                                place.point_with_rotation(),
-                                pin.point_with_rotation(),
-                                &polygon.coords,
-                                polygon.width,
-                                0,
-                                false,
-                            ),
-                            _ => (),
+                            Shape::Circle(circle) => {
+                                let layer = get_layer(&board, &circle.layer);
+                                Self::place_circle(
+                                    &mut board,
+                                    place.point_with_rotation(),
+                                    pin.point_with_rotation(),
+                                    layer,
+                                    (circle.diameter / 2.0) as u64,
+                                    false,
+                                )
+                            }
+                            Shape::Rect(rect) => {
+                                let layer = get_layer(&board, &rect.layer);
+                                Self::place_rect(
+                                    &mut board,
+                                    place.point_with_rotation(),
+                                    pin.point_with_rotation(),
+                                    rect.x1,
+                                    rect.y1,
+                                    rect.x2,
+                                    rect.y2,
+                                    layer,
+                                    false,
+                                )
+                            }
+                            Shape::Path(path) => {
+                                let layer = get_layer(&board, &path.layer);
+                                Self::place_path(
+                                    &mut board,
+                                    place.point_with_rotation(),
+                                    pin.point_with_rotation(),
+                                    &path.coords,
+                                    path.width,
+                                    layer,
+                                    false,
+                                )
+                            }
+                            Shape::Polygon(polygon) => {
+                                let layer = get_layer(&board, &polygon.layer);
+                                Self::place_polygon(
+                                    &mut board,
+                                    place.point_with_rotation(),
+                                    pin.point_with_rotation(),
+                                    &polygon.coords,
+                                    polygon.width,
+                                    layer,
+                                    false,
+                                )
+                            }
                         }
                     }
                 }
@@ -95,7 +154,7 @@ impl Board {
         board
     }
 
-    pub fn place_circle(
+    fn place_circle(
         board: &mut Board,
         place: PointWithRotation,
         pin: PointWithRotation,
@@ -110,7 +169,7 @@ impl Board {
         });
     }
 
-    pub fn place_rect(
+    fn place_rect(
         board: &mut Board,
         place: PointWithRotation,
         pin: PointWithRotation,
@@ -132,7 +191,7 @@ impl Board {
         });
     }
 
-    pub fn place_path(
+    fn place_path(
         board: &mut Board,
         place: PointWithRotation,
         pin: PointWithRotation,
@@ -175,7 +234,7 @@ impl Board {
         }
     }
 
-    pub fn place_polygon(
+    fn place_polygon(
         board: &mut Board,
         place: PointWithRotation,
         pin: PointWithRotation,
@@ -189,6 +248,16 @@ impl Board {
             .map(|coord| Self::pos(place, pin, coord.x, coord.y, flip))
             .collect();
         board.add_polygon(Polygon { vertices, layer });
+    }
+
+    fn layer(board: &Board, layers: &[Layer], name: &str, front: bool) -> usize {
+        let image_layer = board.layer_id(name);
+
+        if front {
+            image_layer
+        } else {
+            layers.len() - image_layer - 1
+        }
     }
 
     fn pos(
