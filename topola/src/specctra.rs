@@ -4,7 +4,7 @@
 
 use specctra::{
     math::PointWithRotation,
-    structure::{DsnFile, Shape},
+    structure::{DsnFile, Point, Shape},
 };
 
 use crate::{
@@ -66,6 +66,16 @@ impl Board {
                                 0,
                                 false,
                             ),
+                            // ... TODO.
+                            Shape::Polygon(polygon) => Self::place_polygon(
+                                &mut board,
+                                place.point_with_rotation(),
+                                pin.point_with_rotation(),
+                                &polygon.coords,
+                                polygon.width,
+                                0,
+                                false,
+                            ),
                             _ => (),
                         }
                     }
@@ -111,6 +121,22 @@ impl Board {
             ],
             layer,
         });
+    }
+
+    pub fn place_polygon(
+        board: &mut Board,
+        place: PointWithRotation,
+        pin: PointWithRotation,
+        coords: &[Point],
+        width: f64,
+        layer: usize,
+        flip: bool,
+    ) {
+        let vertices: Vec<[i64; 2]> = coords
+            .iter()
+            .map(|coord| Self::pos(place, pin, coord.x, coord.y, flip))
+            .collect();
+        board.add_polygon(Polygon { vertices, layer });
     }
 
     fn pos(
