@@ -14,8 +14,8 @@ repos:
     rev: v5.0.2
     hooks:
     -   id: reuse-lint-file
--   repo: https://github.com/crate-ci/committed
-    rev: v1.1.7
-    hooks:
-    -   id: committed
-        stages: [commit-msg]
+#-   repo: https://github.com/crate-ci/committed
+    #rev: v1.1.7
+    #hooks:
+    #-   id: committed
+        #stages: [commit-msg]

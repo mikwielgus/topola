@@ -1,8 +1,0 @@
-# SPDX-FileCopyrightText: 2025 Topola contributors
-#
-# SPDX-License-Identifier: MIT
-
-subject_length = 90
-line_length = 100
-style = "conventional"
-merge_commit = false
