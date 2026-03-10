@@ -51,7 +51,7 @@ impl SegmentId {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Segment {
-    pub endpoints: [JointId; 2],
+    pub endjoints: [JointId; 2],
     pub layer: usize,
     pub half_width: u64,
 }
@@ -170,6 +170,14 @@ impl Layout {
 
     pub fn add_polygon(&mut self, polygon: Polygon) -> PolygonId {
         PolygonId::new(self.polygons.push(polygon))
+    }
+
+    pub fn segment_endpoints(&self, segment: SegmentId) -> [[i64; 2]; 2] {
+        let endjoints = self.segments.get(&segment.id()).unwrap().endjoints;
+        [
+            self.joints.get(&endjoints[0].id()).unwrap().position,
+            self.joints.get(&endjoints[1].id()).unwrap().position,
+        ]
     }
 }
 

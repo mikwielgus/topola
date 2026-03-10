@@ -8,6 +8,7 @@ use specctra::{
 };
 
 use crate::{
+    Segment,
     board::Board,
     layout::{Joint, Polygon},
     math::Vector2,
@@ -26,7 +27,7 @@ impl Board {
                 .collect(),
         );
 
-        // add pins from components
+        // Add pins from components.
         for component in &dsn.pcb.placement.components {
             let image = dsn
                 .pcb
@@ -66,7 +67,15 @@ impl Board {
                                 0,
                                 false,
                             ),
-                            // ... TODO.
+                            Shape::Path(path) => Self::place_path(
+                                &mut board,
+                                place.point_with_rotation(),
+                                pin.point_with_rotation(),
+                                &path.coords,
+                                path.width,
+                                0,
+                                false,
+                            ),
                             Shape::Polygon(polygon) => Self::place_polygon(
                                 &mut board,
                                 place.point_with_rotation(),
@@ -121,6 +130,49 @@ impl Board {
             ],
             layer,
         });
+    }
+
+    pub fn place_path(
+        board: &mut Board,
+        place: PointWithRotation,
+        pin: PointWithRotation,
+        coords: &[Point],
+        width: f64,
+        layer: usize,
+        flip: bool,
+    ) {
+        // Add the first coordinate in the wire path as a dot and save its index.
+        let mut prev_pos = Self::pos(place, pin, coords[0].x, coords[0].y, flip);
+        let mut prev_joint = board.add_joint(Joint {
+            position: prev_pos,
+            layer,
+            radius: (width / 2.0) as u64,
+        });
+
+        // Iterate through path coords starting from the second.
+        for coord in coords.iter().skip(1) {
+            let pos = Self::pos(place, pin, coord.x, coord.y, flip);
+
+            if pos == prev_pos {
+                continue;
+            }
+
+            let joint = board.add_joint(Joint {
+                position: pos,
+                radius: (width / 2.0) as u64,
+                layer,
+            });
+
+            // Add a seg between the current and previous coords.
+            let _ = board.add_segment(Segment {
+                endjoints: [prev_joint, joint],
+                layer,
+                half_width: (width / 2.0) as u64,
+            });
+
+            prev_pos = pos;
+            prev_joint = joint;
+        }
     }
 
     pub fn place_polygon(

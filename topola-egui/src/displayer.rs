@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{viewport::Viewport, workspace::Workspace};
-use topola::{Joint, Polygon};
+use topola::{Joint, Polygon, Segment, SegmentId};
 
 pub struct Displayer {}
 
@@ -49,7 +49,18 @@ impl Displayer {
             self.paint_joint(ctx, ui, viewport, joint);
         }
 
-        // TODO.
+        for (i, segment) in workspace.board.layout().segments().collection() {
+            self.paint_segment(
+                ctx,
+                ui,
+                viewport,
+                segment,
+                workspace
+                    .board
+                    .layout()
+                    .segment_endpoints(SegmentId::new(i)),
+            );
+        }
 
         for (_, polygon) in workspace.board.layout().polygons().collection() {
             self.paint_polygon(ctx, ui, viewport, polygon);
@@ -64,9 +75,26 @@ impl Displayer {
         joint: &Joint,
     ) {
         ui.painter().circle_filled(
-            egui::Pos2::new(joint.position[0] as f32, joint.position[1] as f32),
+            egui::pos2(joint.position[0] as f32, joint.position[1] as f32),
             joint.radius as f32,
             egui::Color32::RED,
+        );
+    }
+
+    fn paint_segment(
+        &mut self,
+        ctx: &egui::Context,
+        ui: &egui::Ui,
+        viewport: &Viewport,
+        segment: &Segment,
+        endpoints: [[i64; 2]; 2],
+    ) {
+        ui.painter().line_segment(
+            [
+                egui::pos2(endpoints[0][0] as f32, endpoints[0][1] as f32),
+                egui::pos2(endpoints[1][0] as f32, endpoints[1][1] as f32),
+            ],
+            egui::Stroke::new(segment.half_width as f32 * 2.0, egui::Color32::RED),
         );
     }
 
