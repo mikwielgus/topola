@@ -21,6 +21,7 @@ impl Displayer {
         workspace: &Workspace,
     ) {
         self.display_layout(ctx, ui, /*menu_bar,*/ viewport, workspace);
+        self.display_navmeshes(ctx, ui, viewport, workspace);
     }
 
     pub fn display_layout(
@@ -173,5 +174,60 @@ impl Displayer {
             color,
             egui::Stroke::new(5.0 / viewport.scale_factor(), color),
         ));
+    }
+
+    fn display_navmeshes(
+        &mut self,
+        ctx: &egui::Context,
+        ui: &egui::Ui,
+        viewport: &Viewport,
+        workspace: &Workspace,
+    ) {
+        for layer in 0..*workspace.navmesher_board.board().layout().layer_count() {
+            if workspace.appearance_panel.visible[layer] {
+                for navmesh in workspace.navmesher_board.navmesher().layers()[layer].navmeshes() {
+                    for edge_geom in navmesh
+                        .triangulation()
+                        .rtreed_dcel()
+                        .edges_rtree()
+                        .as_ref()
+                        .iter()
+                    {
+                        let (from_vertex, to_vertex) = navmesh
+                            .triangulation()
+                            .rtreed_dcel()
+                            .dcel()
+                            .edge_endpoints(edge_geom.data);
+                        let from = navmesh
+                            .triangulation()
+                            .rtreed_dcel()
+                            .dcel()
+                            .vertex_weight(from_vertex)
+                            .position();
+                        let to = navmesh
+                            .triangulation()
+                            .rtreed_dcel()
+                            .dcel()
+                            .vertex_weight(to_vertex)
+                            .position();
+                        ui.painter().line_segment(
+                            [
+                                egui::pos2(*from.x() as f32, *from.y() as f32),
+                                egui::pos2(*to.x() as f32, *to.y() as f32),
+                            ],
+                            egui::Stroke::new(
+                                10.0,
+                                workspace
+                                    .appearance_panel
+                                    .colors(ctx)
+                                    .layers
+                                    .color(workspace.navmesher_board.board().layer_name(layer))
+                                    .normal,
+                            ),
+                        );
+                    }
+                }
+            }
+        }
     }
 }

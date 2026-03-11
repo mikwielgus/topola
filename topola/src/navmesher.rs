@@ -7,7 +7,7 @@ use derive_getters::Getters;
 
 use crate::{
     Board,
-    layout::{Arc, ArcId, Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
+    layout::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
 };
 
 #[derive(Clone, Debug, Getters)]
@@ -19,8 +19,8 @@ pub struct LayerNavmesher {
 impl LayerNavmesher {
     pub fn new() -> Self {
         Self {
-            navmeshes: Vec::new(),
-            inflation_factors: Vec::new(),
+            navmeshes: vec![RecordingTriangulator::new()],
+            inflation_factors: vec![0.0],
         }
     }
 
@@ -28,7 +28,7 @@ impl LayerNavmesher {
         let polygon: Vec<[i64; 2]> = polygon.into_iter().collect();
 
         for i in 0..self.navmeshes.len() {
-            self.navmeshes[i].insert_polygon(Self::inflate_polygon(
+            self.navmeshes[i].insert_polygon_and_rebuild(Self::inflate_polygon(
                 polygon.clone(),
                 self.inflation_factors[i],
             ));
@@ -118,23 +118,34 @@ impl NavmesherBoard {
         let cy = joint.position[1];
         let r = joint.radius as i64;
 
+        [
+            [cx + r, cy + r / 2],
+            [cx + r / 2, cy + r],
+            [cx - r / 2, cy + r],
+            [cx - r, cy + r / 2],
+            [cx - r, cy - r / 2],
+            [cx - r / 2, cy - r],
+            [cx + r / 2, cy - r],
+            [cx + r, cy - r / 2],
+        ]
+
         // 1.082392... = 1 / cos(π/8)
         // 0.414213... = tan(π/8)
 
         // Approximate multipliers as fractions.
-        let r1 = (r * 277 + 128) / 256; // round(r * 1.0823922)
+        /*let r1 = (r * 277 + 128) / 256; // round(r * 1.0823922)
         let r2 = (r * 106 + 128) / 256; // round(r * 0.41421356)
 
         [
-            [cx + r1, cy],      // right
-            [cx + r2, cy + r2], // top-right
-            [cx, cy + r1],      // top
-            [cx - r2, cy + r2], // top-left
-            [cx - r1, cy],      // left
-            [cx - r2, cy - r2], // bottom-left
-            [cx, cy - r1],      // bottom
-            [cx + r2, cy - r2], // bottom-right
-        ]
+            [cx + r1, cy],
+            [cx + r2, cy + r2],
+            [cx, cy + r1],
+            [cx - r2, cy + r2],
+            [cx - r1, cy],
+            [cx - r2, cy - r2],
+            [cx, cy - r1],
+            [cx + r2, cy - r2],
+        ]*/
     }
 
     pub fn insert_segment(&mut self, segment: Segment) -> SegmentId {

@@ -7,8 +7,7 @@ use derive_getters::{Dissolve, Getters};
 use undoredo::{ApplyDelta, Delta, FlushDelta};
 
 use crate::layout::{
-    Arc, ArcId, Joint, JointId, Layout, LayoutHalfDelta, Polygon, PolygonId, Segment, SegmentId,
-    Via, ViaId,
+    Joint, JointId, Layout, LayoutHalfDelta, Polygon, PolygonId, Segment, SegmentId, Via, ViaId,
 };
 
 struct Layer {

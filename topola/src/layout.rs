@@ -57,31 +57,6 @@ pub struct Segment {
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
-pub struct ArcId(usize);
-
-impl ArcId {
-    /// Wrap an arc index in a newtype struct.
-    #[inline]
-    pub fn new(id: usize) -> Self {
-        Self(id)
-    }
-
-    /// Returns the underlying index.
-    #[inline]
-    pub fn id(self) -> usize {
-        self.0
-    }
-}
-
-#[derive(Clone, Copy, Debug)]
-pub struct Arc {
-    pub endpoints: [JointId; 2],
-    pub focus: [i64; 2],
-    pub layer: usize,
-    pub half_width: u64,
-}
-
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct ViaId(usize);
 
 impl ViaId {
