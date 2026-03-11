@@ -103,8 +103,8 @@ impl Board {
                                     &mut board,
                                     place.point_with_rotation(),
                                     pin.point_with_rotation(),
-                                    layer,
                                     (circle.diameter / 2.0) as u64,
+                                    layer,
                                     !place_side_is_front,
                                 )
                             }
@@ -152,6 +152,84 @@ impl Board {
             }
         }
 
+        for via in &dsn.pcb.wiring.vias {
+            let net = board.net_id(&via.net);
+            let padstack = dsn.pcb.library.find_padstack_by_name(&via.name).unwrap();
+
+            let get_layer = |board: &Board, name: &str| {
+                Self::layer(board, &dsn.pcb.structure.layers, name, true)
+            };
+
+            for shape in &padstack.shapes {
+                match shape {
+                    Shape::Circle(circle) => {
+                        let layer = get_layer(&board, &circle.layer);
+                        Self::place_circle(
+                            &mut board,
+                            PointWithRotation::from_xy(via.x, via.y),
+                            PointWithRotation::default(),
+                            (circle.diameter / 2.0) as u64,
+                            layer,
+                            false,
+                        )
+                    }
+                    Shape::Rect(rect) => {
+                        let layer = get_layer(&board, &rect.layer);
+                        Self::place_rect(
+                            &mut board,
+                            PointWithRotation::from_xy(via.x, via.y),
+                            PointWithRotation::default(),
+                            rect.x1,
+                            rect.y1,
+                            rect.x2,
+                            rect.y2,
+                            layer,
+                            false,
+                        )
+                    }
+                    Shape::Path(path) => {
+                        let layer = get_layer(&board, &path.layer);
+                        Self::place_path(
+                            &mut board,
+                            PointWithRotation::from_xy(via.x, via.y),
+                            PointWithRotation::default(),
+                            &path.coords,
+                            path.width,
+                            layer,
+                            false,
+                        )
+                    }
+                    Shape::Polygon(polygon) => {
+                        let layer = get_layer(&board, &polygon.layer);
+                        Self::place_polygon(
+                            &mut board,
+                            PointWithRotation::from_xy(via.x, via.y),
+                            PointWithRotation::default(),
+                            &polygon.coords,
+                            polygon.width,
+                            layer,
+                            false,
+                        )
+                    }
+                };
+            }
+        }
+
+        for wire in dsn.pcb.wiring.wires.iter() {
+            let layer = board.layer_id(&wire.path.layer).unwrap();
+            let net = board.net_id(&wire.net);
+
+            Self::place_path(
+                &mut board,
+                PointWithRotation::default(),
+                PointWithRotation::default(),
+                &wire.path.coords,
+                wire.path.width,
+                layer,
+                false,
+            );
+        }
+
         board
     }
 
@@ -159,8 +237,8 @@ impl Board {
         board: &mut Board,
         place: PointWithRotation,
         pin: PointWithRotation,
-        layer: usize,
         radius: u64,
+        layer: usize,
         flip: bool,
     ) {
         board.add_joint(Joint {
