@@ -169,7 +169,8 @@ impl NavmesherBoard {
         let dx = x2 - x1;
         let dy = y2 - y1;
 
-        let approx_len = std::cmp::max(dx.abs(), dy.abs()) + std::cmp::min(dx.abs(), dy.abs()) / 2;
+        let approx_len =
+            std::cmp::max(dx.abs(), dy.abs()) + 3 * std::cmp::min(dx.abs(), dy.abs()) / 8;
 
         // Perpendicular vector scaled to half-width.
         let px = -dy * (half_width as i64) / approx_len;
