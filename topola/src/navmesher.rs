@@ -17,6 +17,13 @@ pub struct LayerNavmesher {
 }
 
 impl LayerNavmesher {
+    pub fn new() -> Self {
+        Self {
+            navmeshes: Vec::new(),
+            inflation_factors: Vec::new(),
+        }
+    }
+
     pub fn insert_polygon(&mut self, polygon: impl IntoIterator<Item = [i64; 2]>) {
         let polygon: Vec<[i64; 2]> = polygon.into_iter().collect();
 
@@ -67,6 +74,14 @@ pub struct Navmesher {
 }
 
 impl Navmesher {
+    pub fn new(layer_count: usize) -> Self {
+        Self {
+            layers: std::iter::repeat_with(LayerNavmesher::new)
+                .take(layer_count)
+                .collect(),
+        }
+    }
+
     pub fn insert_polygon(&mut self, layer: usize, polygon: impl IntoIterator<Item = [i64; 2]>) {
         self.layers[layer].insert_polygon(polygon);
     }
@@ -79,10 +94,23 @@ pub struct NavmesherBoard {
 }
 
 impl NavmesherBoard {
+    pub fn with_board(board: Board) -> Self {
+        let mut navmesher = Navmesher::new(*board.layout().layer_count());
+
+        for (_, joint) in board.layout().joints().collection() {
+            Self::insert_joint_in_navmesher(&mut navmesher, *joint);
+        }
+
+        Self { navmesher, board }
+    }
+
     pub fn insert_joint(&mut self, joint: Joint) -> JointId {
-        self.navmesher
-            .insert_polygon(joint.layer, Self::joint_circumscribed_octagon(joint));
+        Self::insert_joint_in_navmesher(&mut self.navmesher, joint);
         self.board.add_joint(joint)
+    }
+
+    fn insert_joint_in_navmesher(navmesher: &mut Navmesher, joint: Joint) {
+        navmesher.insert_polygon(joint.layer, Self::joint_circumscribed_octagon(joint));
     }
 
     fn joint_circumscribed_octagon(joint: Joint) -> [[i64; 2]; 8] {

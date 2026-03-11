@@ -12,3 +12,4 @@ pub use crate::board::Board;
 pub use crate::layout::{
     Joint, JointId, Layout, Polygon, PolygonId, Segment, SegmentId, Via, ViaId,
 };
+pub use crate::navmesher::NavmesherBoard;

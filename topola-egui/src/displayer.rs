@@ -33,7 +33,8 @@ impl Displayer {
     ) {
         ui.painter().line(
             workspace
-                .board
+                .navmesher_board
+                .board()
                 .layout()
                 .boundary()
                 .iter()
@@ -45,7 +46,13 @@ impl Displayer {
             egui::Stroke::new(5.0 / viewport.scale_factor(), egui::Color32::WHITE),
         );
 
-        for (_, joint) in workspace.board.layout().joints().collection() {
+        for (_, joint) in workspace
+            .navmesher_board
+            .board()
+            .layout()
+            .joints()
+            .collection()
+        {
             if workspace.appearance_panel.visible[joint.layer] {
                 self.paint_joint(
                     ctx,
@@ -56,13 +63,19 @@ impl Displayer {
                         .appearance_panel
                         .colors(ctx)
                         .layers
-                        .color(workspace.board.layer_name(joint.layer))
+                        .color(workspace.navmesher_board.board().layer_name(joint.layer))
                         .normal,
                 );
             }
         }
 
-        for (i, segment) in workspace.board.layout().segments().collection() {
+        for (i, segment) in workspace
+            .navmesher_board
+            .board()
+            .layout()
+            .segments()
+            .collection()
+        {
             if workspace.appearance_panel.visible[segment.layer] {
                 self.paint_segment(
                     ctx,
@@ -70,20 +83,27 @@ impl Displayer {
                     viewport,
                     segment,
                     workspace
-                        .board
+                        .navmesher_board
+                        .board()
                         .layout()
                         .segment_endpoints(SegmentId::new(i)),
                     workspace
                         .appearance_panel
                         .colors(ctx)
                         .layers
-                        .color(workspace.board.layer_name(segment.layer))
+                        .color(workspace.navmesher_board.board().layer_name(segment.layer))
                         .normal,
                 );
             }
         }
 
-        for (_, polygon) in workspace.board.layout().polygons().collection() {
+        for (_, polygon) in workspace
+            .navmesher_board
+            .board()
+            .layout()
+            .polygons()
+            .collection()
+        {
             if workspace.appearance_panel.visible[polygon.layer] {
                 self.paint_polygon(
                     ctx,
@@ -94,7 +114,7 @@ impl Displayer {
                         .appearance_panel
                         .colors(ctx)
                         .layers
-                        .color(workspace.board.layer_name(polygon.layer))
+                        .color(workspace.navmesher_board.board().layer_name(polygon.layer))
                         .normal,
                 );
             }

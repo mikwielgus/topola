@@ -52,14 +52,14 @@ impl Viewport {
     }
 
     fn boundary_bounding_box(workspace: &Workspace) -> egui::Rect {
-        let first = workspace.board.layout().boundary()[0];
+        let first = workspace.navmesher_board.board().layout().boundary()[0];
 
         let mut min_x = first[0];
         let mut max_x = first[0];
         let mut min_y = first[1];
         let mut max_y = first[1];
 
-        for point in workspace.board.layout().boundary()[1..].iter() {
+        for point in workspace.navmesher_board.board().layout().boundary()[1..].iter() {
             if point[0] < min_x {
                 min_x = point[0];
             }

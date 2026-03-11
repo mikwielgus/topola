@@ -2,12 +2,12 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use topola::Board;
+use topola::{Board, NavmesherBoard};
 
 use crate::{appearance_panel::AppearancePanel, translator::Translator};
 
 pub struct Workspace {
-    pub board: Board,
+    pub navmesher_board: NavmesherBoard,
     pub appearance_panel: AppearancePanel,
 }
 
@@ -16,12 +16,13 @@ impl Workspace {
         let appearance_panel = AppearancePanel::new(&board);
 
         Self {
-            board,
+            navmesher_board: NavmesherBoard::with_board(board),
             appearance_panel,
         }
     }
 
     pub fn update_appearance_panel(&mut self, ctx: &egui::Context) {
-        self.appearance_panel.update(ctx, &self.board);
+        self.appearance_panel
+            .update(ctx, &self.navmesher_board.board());
     }
 }
