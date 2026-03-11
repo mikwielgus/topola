@@ -150,7 +150,7 @@ impl Displayer {
 
         ui.painter().add(egui::Shape::convex_polygon(
             points,
-            egui::Color32::RED,
+            color,
             egui::Stroke::new(5.0 / viewport.scale_factor(), color),
         ));
     }

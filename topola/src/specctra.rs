@@ -105,7 +105,7 @@ impl Board {
                                     pin.point_with_rotation(),
                                     layer,
                                     (circle.diameter / 2.0) as u64,
-                                    false,
+                                    !place_side_is_front,
                                 )
                             }
                             Shape::Rect(rect) => {
@@ -119,7 +119,7 @@ impl Board {
                                     rect.x2,
                                     rect.y2,
                                     layer,
-                                    false,
+                                    !place_side_is_front,
                                 )
                             }
                             Shape::Path(path) => {
@@ -131,7 +131,7 @@ impl Board {
                                     &path.coords,
                                     path.width,
                                     layer,
-                                    false,
+                                    !place_side_is_front,
                                 )
                             }
                             Shape::Polygon(polygon) => {
@@ -143,7 +143,7 @@ impl Board {
                                     &polygon.coords,
                                     polygon.width,
                                     layer,
-                                    false,
+                                    !place_side_is_front,
                                 )
                             }
                         }
