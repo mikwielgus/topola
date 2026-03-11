@@ -55,10 +55,6 @@ impl Board {
         self.layout.add_segment(segment)
     }
 
-    pub fn add_arc(&mut self, arc: Arc) -> ArcId {
-        self.layout.add_arc(arc)
-    }
-
     pub fn add_via(&mut self, via: Via) -> ViaId {
         self.layout.add_via(via)
     }

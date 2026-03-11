@@ -114,11 +114,6 @@ impl NavmesherBoard {
         self.board.add_segment(segment)
     }
 
-    pub fn insert_arc(&mut self, arc: Arc) -> ArcId {
-        // TODO: Insert into navmesh.
-        self.board.add_arc(arc)
-    }
-
     pub fn insert_via(&mut self, via: Via) -> ViaId {
         // TODO: Insert into navmesh.
         self.board.add_via(via)

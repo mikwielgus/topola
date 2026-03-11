@@ -136,7 +136,6 @@ pub struct Layout {
 
     joints: Recorder<StableVec<Joint>>,
     segments: Recorder<StableVec<Segment>>,
-    arcs: Recorder<StableVec<Arc>>,
     vias: Recorder<StableVec<Via>>,
     polygons: Recorder<StableVec<Polygon>>,
 }
@@ -150,7 +149,6 @@ impl Layout {
 
             joints: Recorder::new(StableVec::new()),
             segments: Recorder::new(StableVec::new()),
-            arcs: Recorder::new(StableVec::new()),
             vias: Recorder::new(StableVec::new()),
             polygons: Recorder::new(StableVec::new()),
         }
@@ -162,10 +160,6 @@ impl Layout {
 
     pub fn add_segment(&mut self, segment: Segment) -> SegmentId {
         SegmentId::new(self.segments.push(segment))
-    }
-
-    pub fn add_arc(&mut self, arc: Arc) -> ArcId {
-        ArcId::new(self.arcs.push(arc))
     }
 
     pub fn add_via(&mut self, via: Via) -> ViaId {
@@ -189,7 +183,6 @@ impl Layout {
 pub struct LayoutHalfDelta {
     joints: BTreeMap<usize, Joint>,
     segments: BTreeMap<usize, Segment>,
-    arcs: BTreeMap<usize, Arc>,
     vias: BTreeMap<usize, Via>,
     polygons: BTreeMap<usize, Polygon>,
 }
@@ -204,9 +197,6 @@ impl ApplyDelta<LayoutHalfDelta> for Layout {
         let segments_delta = Delta::with_removed_inserted(removed.segments, inserted.segments);
         self.segments.apply_delta(&segments_delta);
 
-        let arcs_delta = Delta::with_removed_inserted(removed.arcs, inserted.arcs);
-        self.arcs.apply_delta(&arcs_delta);
-
         let vias_delta = Delta::with_removed_inserted(removed.vias, inserted.vias);
         self.vias.apply_delta(&vias_delta);
 
@@ -219,7 +209,6 @@ impl FlushDelta<LayoutHalfDelta> for Layout {
     fn flush_delta(&mut self) -> Delta<LayoutHalfDelta> {
         let (removed_joints, inserted_joints) = self.joints.flush_delta().dissolve();
         let (removed_segments, inserted_segments) = self.segments.flush_delta().dissolve();
-        let (removed_arcs, inserted_arcs) = self.arcs.flush_delta().dissolve();
         let (removed_vias, inserted_vias) = self.vias.flush_delta().dissolve();
         let (removed_polygons, inserted_polygons) = self.polygons.flush_delta().dissolve();
 
@@ -227,14 +216,12 @@ impl FlushDelta<LayoutHalfDelta> for Layout {
             LayoutHalfDelta {
                 joints: removed_joints,
                 segments: removed_segments,
-                arcs: removed_arcs,
                 vias: removed_vias,
                 polygons: removed_polygons,
             },
             LayoutHalfDelta {
                 joints: inserted_joints,
                 segments: inserted_segments,
-                arcs: inserted_arcs,
                 vias: inserted_vias,
                 polygons: inserted_polygons,
             },
