@@ -101,6 +101,10 @@ impl NavmesherBoard {
             Self::insert_joint_in_navmesher(&mut navmesher, *joint);
         }
 
+        for (_, polygon) in board.layout().polygons().collection() {
+            Self::insert_polygon_in_navmesher(&mut navmesher, polygon.clone());
+        }
+
         Self { navmesher, board }
     }
 
@@ -159,7 +163,11 @@ impl NavmesherBoard {
     }
 
     pub fn insert_polygon(&mut self, polygon: Polygon) -> PolygonId {
-        // TODO: Insert into navmesh.
+        Self::insert_polygon_in_navmesher(&mut self.navmesher, polygon.clone());
         self.board.add_polygon(polygon)
+    }
+
+    fn insert_polygon_in_navmesher(navmesher: &mut Navmesher, polygon: Polygon) {
+        navmesher.insert_polygon(polygon.layer, polygon.vertices);
     }
 }
