@@ -217,12 +217,13 @@ impl Displayer {
                             ],
                             egui::Stroke::new(
                                 10.0,
-                                workspace
-                                    .appearance_panel
-                                    .colors(ctx)
-                                    .layers
-                                    .color(workspace.navmesher_board.board().layer_name(layer))
-                                    .normal,
+                                egui::Color32::WHITE,
+                                /*workspace
+                                .appearance_panel
+                                .colors(ctx)
+                                .layers
+                                .color(workspace.navmesher_board.board().layer_name(layer))
+                                .normal,*/
                             ),
                         );
                     }

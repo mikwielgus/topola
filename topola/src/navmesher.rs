@@ -101,6 +101,10 @@ impl NavmesherBoard {
             Self::insert_joint_in_navmesher(&mut navmesher, *joint);
         }
 
+        for (i, segment) in board.layout().segments().collection() {
+            Self::insert_segment_in_navmesher(&mut navmesher, &board, SegmentId::new(i), *segment);
+        }
+
         for (_, polygon) in board.layout().polygons().collection() {
             Self::insert_polygon_in_navmesher(&mut navmesher, polygon.clone());
         }
@@ -132,29 +136,51 @@ impl NavmesherBoard {
             [cx + r / 2, cy - r],
             [cx + r, cy - r / 2],
         ]
-
-        // 1.082392... = 1 / cos(π/8)
-        // 0.414213... = tan(π/8)
-
-        // Approximate multipliers as fractions.
-        /*let r1 = (r * 277 + 128) / 256; // round(r * 1.0823922)
-        let r2 = (r * 106 + 128) / 256; // round(r * 0.41421356)
-
-        [
-            [cx + r1, cy],
-            [cx + r2, cy + r2],
-            [cx, cy + r1],
-            [cx - r2, cy + r2],
-            [cx - r1, cy],
-            [cx - r2, cy - r2],
-            [cx, cy - r1],
-            [cx + r2, cy - r2],
-        ]*/
     }
 
     pub fn insert_segment(&mut self, segment: Segment) -> SegmentId {
-        // TODO: Insert into navmesh.
-        self.board.add_segment(segment)
+        let segment_id = self.board.add_segment(segment);
+        Self::insert_segment_in_navmesher(&mut self.navmesher, &self.board, segment_id, segment);
+
+        segment_id
+    }
+
+    fn insert_segment_in_navmesher(
+        navmesher: &mut Navmesher,
+        board: &Board,
+        segment_id: SegmentId,
+        segment: Segment,
+    ) {
+        let endpoints = board.layout().segment_endpoints(segment_id);
+
+        navmesher.insert_polygon(
+            segment.layer,
+            Self::inflated_segment(
+                endpoints[0][0],
+                endpoints[0][1],
+                endpoints[1][0],
+                endpoints[1][1],
+                segment.half_width,
+            ),
+        )
+    }
+
+    fn inflated_segment(x1: i64, y1: i64, x2: i64, y2: i64, half_width: u64) -> [[i64; 2]; 4] {
+        let dx = x2 - x1;
+        let dy = y2 - y1;
+
+        let approx_len = std::cmp::max(dx.abs(), dy.abs()) + std::cmp::min(dx.abs(), dy.abs()) / 2;
+
+        // Perpendicular vector scaled to half-width.
+        let px = -dy * (half_width as i64) / approx_len;
+        let py = dx * (half_width as i64) / approx_len;
+
+        [
+            [x1 + px, y1 + py],
+            [x2 + px, y2 + py],
+            [x2 - px, y2 - py],
+            [x1 - px, y1 - py],
+        ]
     }
 
     pub fn insert_via(&mut self, via: Via) -> ViaId {
