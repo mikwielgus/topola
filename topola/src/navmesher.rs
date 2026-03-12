@@ -12,13 +12,15 @@ use crate::{
 
 #[derive(Clone, Debug, Getters)]
 pub struct LayerNavmesher {
+    boundary: Vec<[i64; 2]>,
     navmeshes: Vec<RecordingTriangulator<i64>>,
     inflation_factors: Vec<f64>,
 }
 
 impl LayerNavmesher {
-    pub fn new() -> Self {
+    pub fn new(boundary: impl IntoIterator<Item = [i64; 2]>) -> Self {
         Self {
+            boundary: boundary.into_iter().collect(),
             navmeshes: vec![RecordingTriangulator::new()],
             inflation_factors: vec![0.0],
         }
@@ -28,10 +30,10 @@ impl LayerNavmesher {
         let polygon: Vec<[i64; 2]> = polygon.into_iter().collect();
 
         for i in 0..self.navmeshes.len() {
-            self.navmeshes[i].insert_polygon_and_rebuild(Self::inflate_polygon(
-                polygon.clone(),
-                self.inflation_factors[i],
-            ));
+            self.navmeshes[i].insert_polygon_and_rebuild(
+                Self::inflate_polygon(polygon.clone(), self.inflation_factors[i]),
+                self.boundary.clone(),
+            );
         }
     }
 
@@ -74,9 +76,11 @@ pub struct Navmesher {
 }
 
 impl Navmesher {
-    pub fn new(layer_count: usize) -> Self {
+    pub fn new(boundary: impl IntoIterator<Item = [i64; 2]>, layer_count: usize) -> Self {
+        let boundary: Vec<[i64; 2]> = boundary.into_iter().collect();
+
         Self {
-            layers: std::iter::repeat_with(LayerNavmesher::new)
+            layers: std::iter::repeat_with(|| LayerNavmesher::new(boundary.clone()))
                 .take(layer_count)
                 .collect(),
         }
@@ -95,7 +99,10 @@ pub struct NavmesherBoard {
 
 impl NavmesherBoard {
     pub fn with_board(board: Board) -> Self {
-        let mut navmesher = Navmesher::new(*board.layout().layer_count());
+        let mut navmesher = Navmesher::new(
+            board.layout().boundary().clone(),
+            *board.layout().layer_count(),
+        );
 
         for (_, joint) in board.layout().joints().collection() {
             Self::insert_joint_in_navmesher(&mut navmesher, *joint);

@@ -50,6 +50,8 @@ impl Board {
                 .coords()
                 .into_owned()
                 .into_iter()
+                .skip(1)
+                .rev()
                 .map(|p| [p.x as i64, p.y as i64])
                 .collect(),
             dsn.pcb.structure.layers.len(),
