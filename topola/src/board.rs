@@ -7,7 +7,8 @@ use derive_getters::{Dissolve, Getters};
 use undoredo::{ApplyDelta, Delta, FlushDelta};
 
 use crate::layout::{
-    Joint, JointId, Layout, LayoutHalfDelta, Polygon, PolygonId, Segment, SegmentId, Via, ViaId,
+    Joint, JointId, Layout, LayoutHalfDelta, NetId, Polygon, PolygonId, Segment, SegmentId, Via,
+    ViaId,
 };
 
 struct Layer {
@@ -21,7 +22,7 @@ pub struct Board {
     #[getter(skip)]
     layer_names: BiBTreeMap<usize, String>,
     #[getter(skip)]
-    net_names: BiBTreeMap<usize, String>,
+    net_names: BiBTreeMap<NetId, String>,
 }
 
 impl Board {
@@ -37,7 +38,7 @@ impl Board {
         boundary: Vec<[i64; 2]>,
         layer_count: usize,
         layer_names: BiBTreeMap<usize, String>,
-        net_names: BiBTreeMap<usize, String>,
+        net_names: BiBTreeMap<NetId, String>,
     ) -> Self {
         Self {
             layout: Layout::new(boundary, layer_count),
@@ -70,11 +71,11 @@ impl Board {
         self.layer_names.get_by_right(name).copied()
     }
 
-    pub fn net_name(&self, net: usize) -> Option<&str> {
+    pub fn net_name(&self, net: NetId) -> Option<&str> {
         self.net_names.get_by_left(&net).map(String::as_str)
     }
 
-    pub fn net_id(&self, name: &str) -> Option<usize> {
+    pub fn net_id(&self, name: &str) -> Option<NetId> {
         self.net_names.get_by_right(name).copied()
     }
 }

@@ -9,6 +9,23 @@ use stable_vec::StableVec;
 use undoredo::{ApplyDelta, Delta, FlushDelta, Recorder};
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct NetId(usize);
+
+impl NetId {
+    /// Wrap a joint index in a newtype struct.
+    #[inline]
+    pub fn new(id: usize) -> Self {
+        Self(id)
+    }
+
+    /// Returns the underlying index.
+    #[inline]
+    pub fn id(self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct JointId(usize);
 
 impl JointId {
@@ -30,6 +47,7 @@ pub struct Joint {
     pub position: [i64; 2],
     pub layer: usize,
     pub radius: u64,
+    pub net: NetId,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -54,6 +72,7 @@ pub struct Segment {
     pub endjoints: [JointId; 2],
     pub layer: usize,
     pub half_width: u64,
+    pub net: NetId,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -78,6 +97,7 @@ pub struct Via {
     pub endpoints: [JointId; 2],
     pub layer: usize,
     pub radius: u64,
+    pub net: NetId,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -101,6 +121,7 @@ impl PolygonId {
 pub struct Polygon {
     pub vertices: Vec<[i64; 2]>,
     pub layer: usize,
+    pub net: NetId,
 }
 
 #[derive(Clone, Debug, Getters)]

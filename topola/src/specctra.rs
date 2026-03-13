@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use std::collections::BTreeMap;
+
 use bimap::BiBTreeMap;
 use specctra::{
     math::PointWithRotation,
@@ -11,7 +13,7 @@ use specctra::{
 use crate::{
     Segment,
     board::Board,
-    layout::{Joint, Polygon},
+    layout::{Joint, NetId, Polygon},
     math::Vector2,
 };
 
@@ -40,7 +42,12 @@ impl Board {
             tmp.sort_unstable();
             tmp.dedup();
 
-            BiBTreeMap::from_iter(tmp.into_iter().cloned().enumerate())
+            BiBTreeMap::from_iter(
+                tmp.into_iter()
+                    .cloned()
+                    .enumerate()
+                    .map(|(i, v)| (NetId::new(i), v)),
+            )
         };
 
         let mut board = Board::with_names(
@@ -60,14 +67,14 @@ impl Board {
         );
 
         // Mapping of pin -> net prepared for adding pins.
-        let pin_nets = dsn
+        let pin_nets: BTreeMap<String, NetId> = dsn
             .pcb
             .network
             .nets
             .iter()
             .filter_map(|net_pin_assignments| {
                 // Resolve the id so we don't work with strings.
-                let net = board.net_id(&net_pin_assignments.name);
+                let net = board.net_id(&net_pin_assignments.name).unwrap();
 
                 net_pin_assignments.pins.as_ref().map(|pins| {
                     // Take the list of pins
@@ -76,7 +83,8 @@ impl Board {
                 })
             })
             // Flatten the nested iters into a single stream of tuples.
-            .flatten();
+            .flatten()
+            .collect();
 
         // Add pins from components.
         for component in &dsn.pcb.placement.components {
@@ -95,6 +103,8 @@ impl Board {
                 };
 
                 for pin in &image.pins {
+                    let pin_name = format!("{}-{}", place.name, pin.id);
+                    let net = pin_nets.get(&pin_name).copied().unwrap();
                     let padstack = dsn.pcb.library.find_padstack_by_name(&pin.name).unwrap();
 
                     for shape in padstack.shapes.iter() {
@@ -107,6 +117,7 @@ impl Board {
                                     pin.point_with_rotation(),
                                     (circle.diameter / 2.0) as u64,
                                     layer,
+                                    net,
                                     !place_side_is_front,
                                 )
                             }
@@ -121,6 +132,7 @@ impl Board {
                                     rect.x2,
                                     rect.y2,
                                     layer,
+                                    net,
                                     !place_side_is_front,
                                 )
                             }
@@ -133,6 +145,7 @@ impl Board {
                                     &path.coords,
                                     path.width,
                                     layer,
+                                    net,
                                     !place_side_is_front,
                                 )
                             }
@@ -145,6 +158,7 @@ impl Board {
                                     &polygon.coords,
                                     polygon.width,
                                     layer,
+                                    net,
                                     !place_side_is_front,
                                 )
                             }
@@ -155,7 +169,7 @@ impl Board {
         }
 
         for via in &dsn.pcb.wiring.vias {
-            let net = board.net_id(&via.net);
+            let net = board.net_id(&via.net).unwrap();
             let padstack = dsn.pcb.library.find_padstack_by_name(&via.name).unwrap();
 
             let get_layer = |board: &Board, name: &str| {
@@ -172,6 +186,7 @@ impl Board {
                             PointWithRotation::default(),
                             (circle.diameter / 2.0) as u64,
                             layer,
+                            net,
                             false,
                         )
                     }
@@ -186,6 +201,7 @@ impl Board {
                             rect.x2,
                             rect.y2,
                             layer,
+                            net,
                             false,
                         )
                     }
@@ -198,6 +214,7 @@ impl Board {
                             &path.coords,
                             path.width,
                             layer,
+                            net,
                             false,
                         )
                     }
@@ -210,6 +227,7 @@ impl Board {
                             &polygon.coords,
                             polygon.width,
                             layer,
+                            net,
                             false,
                         )
                     }
@@ -219,7 +237,7 @@ impl Board {
 
         for wire in dsn.pcb.wiring.wires.iter() {
             let layer = board.layer_id(&wire.path.layer).unwrap();
-            let net = board.net_id(&wire.net);
+            let net = board.net_id(&wire.net).unwrap();
 
             Self::place_path(
                 &mut board,
@@ -228,6 +246,7 @@ impl Board {
                 &wire.path.coords,
                 wire.path.width,
                 layer,
+                net,
                 false,
             );
         }
@@ -241,11 +260,13 @@ impl Board {
         pin: PointWithRotation,
         radius: u64,
         layer: usize,
+        net: NetId,
         flip: bool,
     ) {
         board.add_joint(Joint {
             position: Self::pos(place, pin, 0.0, 0.0, flip),
             layer,
+            net,
             radius,
         });
     }
@@ -259,6 +280,7 @@ impl Board {
         x2: f64,
         y2: f64,
         layer: usize,
+        net: NetId,
         flip: bool,
     ) {
         board.add_polygon(Polygon {
@@ -269,6 +291,7 @@ impl Board {
                 Self::pos(place, pin, x1, y2, flip),
             ],
             layer,
+            net,
         });
     }
 
@@ -279,6 +302,7 @@ impl Board {
         coords: &[Point],
         width: f64,
         layer: usize,
+        net: NetId,
         flip: bool,
     ) {
         // Add the first coordinate in the wire path as a dot and save its index.
@@ -287,6 +311,7 @@ impl Board {
             position: prev_pos,
             layer,
             radius: (width / 2.0) as u64,
+            net,
         });
 
         // Iterate through path coords starting from the second.
@@ -299,8 +324,9 @@ impl Board {
 
             let joint = board.add_joint(Joint {
                 position: pos,
-                radius: (width / 2.0) as u64,
                 layer,
+                radius: (width / 2.0) as u64,
+                net,
             });
 
             // Add a seg between the current and previous coords.
@@ -308,6 +334,7 @@ impl Board {
                 endjoints: [prev_joint, joint],
                 layer,
                 half_width: (width / 2.0) as u64,
+                net,
             });
 
             prev_pos = pos;
@@ -322,13 +349,18 @@ impl Board {
         coords: &[Point],
         width: f64,
         layer: usize,
+        net: NetId,
         flip: bool,
     ) {
         let vertices: Vec<[i64; 2]> = coords
             .iter()
             .map(|coord| Self::pos(place, pin, coord.x, coord.y, flip))
             .collect();
-        board.add_polygon(Polygon { vertices, layer });
+        board.add_polygon(Polygon {
+            vertices,
+            layer,
+            net,
+        });
     }
 
     fn layer(board: &Board, layers: &[Layer], name: &str, front: bool) -> usize {
