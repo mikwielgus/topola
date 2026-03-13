@@ -6,6 +6,10 @@ use std::collections::BTreeMap;
 
 use derive_getters::{Dissolve, Getters};
 use derive_more::Constructor;
+use rstar::{
+    RTree,
+    primitives::{GeomWithData, Rectangle},
+};
 use serde::{Deserialize, Serialize};
 use stable_vec::StableVec;
 use undoredo::{ApplyDelta, Delta, FlushDelta, Recorder};
@@ -64,10 +68,16 @@ pub struct Layout {
     layer_count: usize,
 
     pins: StableVec<Pin>,
+
     joints: Recorder<StableVec<Joint>>,
     segments: Recorder<StableVec<Segment>>,
     vias: Recorder<StableVec<Via>>,
     polygons: Recorder<StableVec<Polygon>>,
+
+    joints_rtree: Recorder<RTree<GeomWithData<Rectangle<[i64; 3]>, JointId>>>,
+    segments_rtree: Recorder<RTree<GeomWithData<Rectangle<[i64; 3]>, SegmentId>>>,
+    vias_rtree: Recorder<RTree<GeomWithData<Rectangle<[i64; 3]>, ViaId>>>,
+    polygons_rtree: Recorder<RTree<GeomWithData<Rectangle<[i64; 3]>, PolygonId>>>,
 }
 
 impl Layout {
@@ -78,10 +88,16 @@ impl Layout {
             layer_count,
 
             pins: StableVec::new(),
+
             joints: Recorder::new(StableVec::new()),
             segments: Recorder::new(StableVec::new()),
             vias: Recorder::new(StableVec::new()),
             polygons: Recorder::new(StableVec::new()),
+
+            joints_rtree: Recorder::new(RTree::new()),
+            segments_rtree: Recorder::new(RTree::new()),
+            vias_rtree: Recorder::new(RTree::new()),
+            polygons_rtree: Recorder::new(RTree::new()),
         }
     }
 
@@ -90,8 +106,12 @@ impl Layout {
     }
 
     pub fn add_joint(&mut self, joint: Joint) -> JointId {
+        let bbox = joint.bbox();
         let pin_id = joint.pin;
         let joint_id = JointId::new(self.joints.push(joint));
+
+        self.joints_rtree
+            .insert(GeomWithData::new(bbox, joint_id), ());
 
         if let Some(pin_id) = pin_id {
             self.pins[pin_id.id()].joints.push(joint_id);
@@ -103,6 +123,10 @@ impl Layout {
     pub fn add_segment(&mut self, segment: Segment) -> SegmentId {
         let pin_id = segment.pin;
         let segment_id = SegmentId::new(self.segments.push(segment));
+        let bbox = self.segment_bbox(segment_id);
+
+        self.segments_rtree
+            .insert(GeomWithData::new(bbox, segment_id), ());
 
         if let Some(pin_id) = pin_id {
             self.pins[pin_id.id()].segments.push(segment_id);
@@ -112,8 +136,11 @@ impl Layout {
     }
 
     pub fn add_via(&mut self, via: Via) -> ViaId {
+        //let bbox = via.bbox();
         let pin_id = via.pin;
         let via_id = ViaId::new(self.vias.push(via));
+
+        //self.vias_rtree.insert(GeomWithData::new(bbox, via_id), ());
 
         if let Some(pin_id) = pin_id {
             self.pins[pin_id.id()].vias.push(via_id);
@@ -123,8 +150,12 @@ impl Layout {
     }
 
     pub fn add_polygon(&mut self, polygon: Polygon) -> PolygonId {
+        let bbox = polygon.bbox();
         let pin_id = polygon.pin;
         let polygon_id = PolygonId::new(self.polygons.push(polygon));
+
+        self.polygons_rtree
+            .insert(GeomWithData::new(bbox, polygon_id), ());
 
         if let Some(pin_id) = pin_id {
             self.pins[pin_id.id()].polygons.push(polygon_id);
@@ -133,12 +164,25 @@ impl Layout {
         polygon_id
     }
 
-    pub fn segment_endpoints(&self, segment: SegmentId) -> [[i64; 2]; 2] {
-        let endjoints = self.segments.get(&segment.id()).unwrap().endjoints;
+    pub fn segment_endpoints(&self, segment_id: SegmentId) -> [[i64; 2]; 2] {
+        let endjoints = self.segments.get(&segment_id.id()).unwrap().endjoints;
         [
             self.joints.get(&endjoints[0].id()).unwrap().position,
             self.joints.get(&endjoints[1].id()).unwrap().position,
         ]
+    }
+
+    pub fn segment_bbox(&self, segment_id: SegmentId) -> Rectangle<[i64; 3]> {
+        let endpoints = self.segment_endpoints(segment_id);
+        let layer = self.segments.get(&segment_id.id()).unwrap().layer as i64;
+        let half_width = self.segments.get(&segment_id.id()).unwrap().half_width as i64;
+
+        let min_x = std::cmp::min(endpoints[0][0], endpoints[1][0]) - half_width;
+        let min_y = std::cmp::min(endpoints[0][1], endpoints[1][1]) - half_width;
+        let max_x = std::cmp::max(endpoints[0][0], endpoints[1][0]) + half_width;
+        let max_y = std::cmp::max(endpoints[0][1], endpoints[1][1]) + half_width;
+
+        Rectangle::from_corners([min_x, min_y, layer], [max_x, max_y, layer])
     }
 
     pub fn pin(&self, pin: PinId) -> &Pin {

@@ -13,6 +13,7 @@ bimap = "0.6"
 dearcut = { version = "0.1", features = ["undoredo"] }
 derive-getters.workspace = true
 derive_more.workspace = true
+rstar = "0.12"
 serde.workspace = true
 specctra = { path = "../specctra" }
 stable-vec = "0.4"

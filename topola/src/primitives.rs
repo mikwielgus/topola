@@ -2,21 +2,14 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use derive_more::{Constructor, From};
+use derive_more::Constructor;
+use rstar::{AABB, Envelope, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     layout::{NetId, PinId},
     selection::PinSelector,
 };
-
-#[derive(Clone, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize)]
-pub enum PrimitiveId {
-    Joint(JointId),
-    Segment(SegmentId),
-    Via(ViaId),
-    Polygon(PolygonId),
-}
 
 #[derive(
     Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
@@ -41,6 +34,21 @@ pub struct Joint {
 }
 
 impl Joint {
+    pub fn bbox(&self) -> Rectangle<[i64; 3]> {
+        Rectangle::from_aabb(AABB::from_corners(
+            [
+                self.position[0] - self.radius as i64,
+                self.position[1] - self.radius as i64,
+                self.layer as i64,
+            ],
+            [
+                self.position[0] + self.radius as i64,
+                self.position[1] + self.radius as i64,
+                self.layer as i64,
+            ],
+        ))
+    }
+
     pub fn pin_selector(&self) -> Option<PinSelector> {
         Some(PinSelector {
             pin: self.pin?,
@@ -95,7 +103,7 @@ impl ViaId {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Via {
-    pub endpoints: [JointId; 2],
+    pub endjoints: [JointId; 2],
     pub layer: usize, // ??? This should be a range.
     pub radius: u64,
     pub net: NetId,
@@ -103,6 +111,10 @@ pub struct Via {
 }
 
 impl Via {
+    /*pub fn bbox(&self) -> Rectangle<[i64; 3]> {
+        //
+    }*/
+
     pub fn pin_selector(&self) -> Option<PinSelector> {
         Some(PinSelector {
             pin: self.pin?,
@@ -133,6 +145,15 @@ pub struct Polygon {
 }
 
 impl Polygon {
+    pub fn bbox(&self) -> Rectangle<[i64; 3]> {
+        Rectangle::from_aabb(self.vertices.clone().into_iter().fold(
+            AABB::new_empty(),
+            |aabb, vertex| {
+                aabb.merged(&AABB::from_point([vertex[0], vertex[1], self.layer as i64]))
+            },
+        ))
+    }
+
     pub fn pin_selector(&self) -> Option<PinSelector> {
         Some(PinSelector {
             pin: self.pin?,
