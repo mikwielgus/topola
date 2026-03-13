@@ -5,6 +5,7 @@
 mod board;
 mod layout;
 mod math;
+mod navmesh;
 mod navmesher;
 mod primitives;
 mod selection;

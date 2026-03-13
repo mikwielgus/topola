@@ -2,71 +2,40 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use dearcut::RecordingTriangulator;
 use derive_getters::Getters;
 
 use crate::{
     Board,
-    primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
+    navmesh::Navmesh,
+    primitives::{Joint, JointId, Polygon, PolygonId, PrimitiveId, Segment, SegmentId, Via, ViaId},
 };
 
 #[derive(Clone, Debug, Getters)]
 pub struct LayerNavmesher {
     boundary: Vec<[i64; 2]>,
-    navmeshes: Vec<RecordingTriangulator<i64>>,
-    inflation_factors: Vec<f64>,
+    navmeshes: Vec<Navmesh>,
 }
 
 impl LayerNavmesher {
-    pub fn new(boundary: impl IntoIterator<Item = [i64; 2]>) -> Self {
+    fn new(boundary: impl IntoIterator<Item = [i64; 2]>) -> Self {
+        let boundary: Vec<[i64; 2]> = boundary.into_iter().collect();
+
         Self {
-            boundary: boundary.into_iter().collect(),
-            navmeshes: vec![RecordingTriangulator::new()],
-            inflation_factors: vec![0.0],
+            boundary: boundary.clone(),
+            navmeshes: vec![Navmesh::new(boundary)],
         }
     }
 
-    pub fn insert_polygon(&mut self, polygon: impl IntoIterator<Item = [i64; 2]>) {
+    fn insert_primitive_in_polygon(
+        &mut self,
+        primitive_id: PrimitiveId,
+        polygon: impl IntoIterator<Item = [i64; 2]>,
+    ) {
         let polygon: Vec<[i64; 2]> = polygon.into_iter().collect();
 
         for i in 0..self.navmeshes.len() {
-            self.navmeshes[i].insert_polygon_and_rebuild(
-                Self::inflate_polygon(polygon.clone(), self.inflation_factors[i]),
-                self.boundary.clone(),
-            );
+            self.navmeshes[i].insert_polygon(primitive_id, polygon.clone());
         }
-    }
-
-    fn inflate_polygon(
-        polygon: impl IntoIterator<Item = [i64; 2]>,
-        inflation_factor: f64,
-    ) -> impl IntoIterator<Item = [i64; 2]> {
-        let polygon: Vec<[i64; 2]> = polygon.into_iter().collect();
-
-        // Centroid.
-        let cx = polygon.iter().map(|p| p[0] as f64).sum::<f64>() / polygon.len() as f64;
-        let cy = polygon.iter().map(|p| p[1] as f64).sum::<f64>() / polygon.len() as f64;
-
-        polygon.into_iter().map(move |[px, py]| {
-            // Delta.
-            let dx = px as f64 - cx;
-            let dy = py as f64 - cy;
-            let d = (dx * dx + dy * dy).sqrt();
-
-            // Normalize delta.
-            let nx = dx / d;
-            let ny = dy / d;
-
-            // Shift away from centroid.
-            let fx = px as f64 + nx * inflation_factor;
-            let fy = py as f64 + ny * inflation_factor;
-
-            // Round away from centroid.
-            let rx = if fx >= cx { fx.ceil() } else { fx.floor() };
-            let ry = if fy >= cy { fy.ceil() } else { fy.floor() };
-
-            [rx as i64, ry as i64]
-        })
     }
 }
 
@@ -76,7 +45,7 @@ pub struct Navmesher {
 }
 
 impl Navmesher {
-    pub fn new(boundary: impl IntoIterator<Item = [i64; 2]>, layer_count: usize) -> Self {
+    fn new(boundary: impl IntoIterator<Item = [i64; 2]>, layer_count: usize) -> Self {
         let boundary: Vec<[i64; 2]> = boundary.into_iter().collect();
 
         Self {
@@ -86,46 +55,9 @@ impl Navmesher {
         }
     }
 
-    pub fn insert_polygon(&mut self, layer: usize, polygon: impl IntoIterator<Item = [i64; 2]>) {
-        self.layers[layer].insert_polygon(polygon);
-    }
-}
-
-#[derive(Clone, Debug, Getters)]
-pub struct NavmesherBoard {
-    navmesher: Navmesher,
-    board: Board,
-}
-
-impl NavmesherBoard {
-    pub fn with_board(board: Board) -> Self {
-        let mut navmesher = Navmesher::new(
-            board.layout().boundary().clone(),
-            *board.layout().layer_count(),
-        );
-
-        for (_, joint) in board.layout().joints().collection() {
-            Self::insert_joint_in_navmesher(&mut navmesher, *joint);
-        }
-
-        for (i, segment) in board.layout().segments().collection() {
-            Self::insert_segment_in_navmesher(&mut navmesher, &board, SegmentId::new(i), *segment);
-        }
-
-        for (_, polygon) in board.layout().polygons().collection() {
-            Self::insert_polygon_in_navmesher(&mut navmesher, polygon.clone());
-        }
-
-        Self { navmesher, board }
-    }
-
-    pub fn insert_joint(&mut self, joint: Joint) -> JointId {
-        Self::insert_joint_in_navmesher(&mut self.navmesher, joint);
-        self.board.add_joint(joint)
-    }
-
-    fn insert_joint_in_navmesher(navmesher: &mut Navmesher, joint: Joint) {
-        navmesher.insert_polygon(joint.layer, Self::joint_circumscribed_octagon(joint));
+    fn insert_joint(&mut self, joint_id: JointId, joint: Joint) {
+        self.layers[joint.layer]
+            .insert_primitive_in_polygon(joint_id.into(), Self::joint_circumscribed_octagon(joint));
     }
 
     fn joint_circumscribed_octagon(joint: Joint) -> [[i64; 2]; 8] {
@@ -145,23 +77,11 @@ impl NavmesherBoard {
         ]
     }
 
-    pub fn insert_segment(&mut self, segment: Segment) -> SegmentId {
-        let segment_id = self.board.add_segment(segment);
-        Self::insert_segment_in_navmesher(&mut self.navmesher, &self.board, segment_id, segment);
-
-        segment_id
-    }
-
-    fn insert_segment_in_navmesher(
-        navmesher: &mut Navmesher,
-        board: &Board,
-        segment_id: SegmentId,
-        segment: Segment,
-    ) {
+    fn insert_segment(&mut self, board: &Board, segment_id: SegmentId, segment: Segment) {
         let endpoints = board.layout().segment_endpoints(segment_id);
 
-        navmesher.insert_polygon(
-            segment.layer,
+        self.layers[segment.layer].insert_primitive_in_polygon(
+            segment_id.into(),
             Self::inflated_segment(
                 endpoints[0][0],
                 endpoints[0][1],
@@ -191,17 +111,65 @@ impl NavmesherBoard {
         ]
     }
 
+    fn insert_polygon(&mut self, polygon_id: PolygonId, polygon: Polygon) {
+        self.layers[polygon.layer].insert_primitive_in_polygon(polygon_id.into(), polygon.vertices);
+    }
+}
+
+#[derive(Clone, Debug, Getters)]
+pub struct NavmesherBoard {
+    navmesher: Navmesher,
+    board: Board,
+}
+
+impl NavmesherBoard {
+    pub fn with_board(board: Board) -> Self {
+        let mut navmesher = Navmesher::new(
+            board.layout().boundary().clone(),
+            *board.layout().layer_count(),
+        );
+
+        for (i, joint) in board.layout().joints().collection() {
+            navmesher.insert_joint(JointId::new(i).into(), *joint);
+        }
+
+        for (i, segment) in board.layout().segments().collection() {
+            navmesher.insert_segment(&board, SegmentId::new(i), *segment);
+        }
+
+        // TODO: Vias.
+
+        for (i, polygon) in board.layout().polygons().collection() {
+            navmesher.insert_polygon(PolygonId::new(i), polygon.clone());
+        }
+
+        Self { navmesher, board }
+    }
+
+    pub fn insert_joint(&mut self, joint: Joint) -> JointId {
+        let joint_id = self.board.add_joint(joint);
+        self.navmesher.insert_joint(joint_id, joint);
+
+        joint_id
+    }
+
+    pub fn insert_segment(&mut self, segment: Segment) -> SegmentId {
+        let segment_id = self.board.add_segment(segment);
+        self.navmesher
+            .insert_segment(&self.board, segment_id, segment);
+
+        segment_id
+    }
+
     pub fn insert_via(&mut self, via: Via) -> ViaId {
         // TODO: Insert into navmesh.
         self.board.add_via(via)
     }
 
     pub fn insert_polygon(&mut self, polygon: Polygon) -> PolygonId {
-        Self::insert_polygon_in_navmesher(&mut self.navmesher, polygon.clone());
-        self.board.add_polygon(polygon)
-    }
+        let polygon_id = self.board.add_polygon(polygon.clone());
+        self.navmesher.insert_polygon(polygon_id, polygon);
 
-    fn insert_polygon_in_navmesher(navmesher: &mut Navmesher, polygon: Polygon) {
-        navmesher.insert_polygon(polygon.layer, polygon.vertices);
+        polygon_id
     }
 }
