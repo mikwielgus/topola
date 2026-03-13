@@ -187,7 +187,6 @@ impl Displayer {
             if workspace.appearance_panel.visible[layer] {
                 for navmesh in workspace.navmesher_board.navmesher().layers()[layer].navmeshes() {
                     for edge_geom in navmesh
-                        .triangulator()
                         .triangulation()
                         .rtreed_dcel()
                         .edges_rtree()
@@ -195,20 +194,17 @@ impl Displayer {
                         .iter()
                     {
                         let (from_vertex, to_vertex) = navmesh
-                            .triangulator()
                             .triangulation()
                             .rtreed_dcel()
                             .dcel()
                             .edge_endpoints(edge_geom.data);
                         let from = navmesh
-                            .triangulator()
                             .triangulation()
                             .rtreed_dcel()
                             .dcel()
                             .vertex_weight(from_vertex)
                             .position();
                         let to = navmesh
-                            .triangulator()
                             .triangulation()
                             .rtreed_dcel()
                             .dcel()

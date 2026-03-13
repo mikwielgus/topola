@@ -10,7 +10,7 @@ edition = "2024"
 
 [dependencies]
 bimap = "0.6"
-dearcut = { version = "0.2", features = ["undoredo"] }
+dearcut = { version = "0.1", features = ["undoredo"] }
 derive-getters.workspace = true
 derive_more.workspace = true
 serde.workspace = true
