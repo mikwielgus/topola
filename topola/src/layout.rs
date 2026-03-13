@@ -9,6 +9,42 @@ use stable_vec::StableVec;
 use undoredo::{ApplyDelta, Delta, FlushDelta, Recorder};
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+pub struct PinId(usize);
+
+impl PinId {
+    /// Wrap a pin index in a newtype struct.
+    #[inline]
+    pub fn new(id: usize) -> Self {
+        Self(id)
+    }
+
+    /// Returns the underlying index.
+    #[inline]
+    pub fn id(self) -> usize {
+        self.0
+    }
+}
+
+#[derive(Clone, Debug)]
+pub struct Pin {
+    joints: Vec<JointId>,
+    segments: Vec<SegmentId>,
+    vias: Vec<ViaId>,
+    polygons: Vec<PolygonId>,
+}
+
+impl Pin {
+    pub fn new() -> Self {
+        Self {
+            joints: Vec::new(),
+            segments: Vec::new(),
+            vias: Vec::new(),
+            polygons: Vec::new(),
+        }
+    }
+}
+
+#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
 pub struct NetId(usize);
 
 impl NetId {
@@ -48,6 +84,7 @@ pub struct Joint {
     pub layer: usize,
     pub radius: u64,
     pub net: NetId,
+    pub pin: Option<PinId>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -73,6 +110,7 @@ pub struct Segment {
     pub layer: usize,
     pub half_width: u64,
     pub net: NetId,
+    pub pin: Option<PinId>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -98,6 +136,7 @@ pub struct Via {
     pub layer: usize,
     pub radius: u64,
     pub net: NetId,
+    pub pin: Option<PinId>,
 }
 
 #[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -122,6 +161,7 @@ pub struct Polygon {
     pub vertices: Vec<[i64; 2]>,
     pub layer: usize,
     pub net: NetId,
+    pub pin: Option<PinId>,
 }
 
 #[derive(Clone, Debug, Getters)]
@@ -130,6 +170,7 @@ pub struct Layout {
     place_boundary: Vec<[i64; 2]>,
     layer_count: usize,
 
+    pins: StableVec<Pin>,
     joints: Recorder<StableVec<Joint>>,
     segments: Recorder<StableVec<Segment>>,
     vias: Recorder<StableVec<Via>>,
@@ -143,6 +184,7 @@ impl Layout {
             place_boundary: boundary,
             layer_count,
 
+            pins: StableVec::new(),
             joints: Recorder::new(StableVec::new()),
             segments: Recorder::new(StableVec::new()),
             vias: Recorder::new(StableVec::new()),
@@ -150,20 +192,52 @@ impl Layout {
         }
     }
 
+    pub fn add_pin(&mut self) -> PinId {
+        PinId::new(self.pins.push(Pin::new()))
+    }
+
     pub fn add_joint(&mut self, joint: Joint) -> JointId {
-        JointId::new(self.joints.push(joint))
+        let pin_id = joint.pin;
+        let joint_id = JointId::new(self.joints.push(joint));
+
+        if let Some(pin_id) = pin_id {
+            self.pins[pin_id.id()].joints.push(joint_id);
+        }
+
+        joint_id
     }
 
     pub fn add_segment(&mut self, segment: Segment) -> SegmentId {
-        SegmentId::new(self.segments.push(segment))
+        let pin_id = segment.pin;
+        let segment_id = SegmentId::new(self.segments.push(segment));
+
+        if let Some(pin_id) = pin_id {
+            self.pins[pin_id.id()].segments.push(segment_id);
+        }
+
+        segment_id
     }
 
     pub fn add_via(&mut self, via: Via) -> ViaId {
-        ViaId::new(self.vias.push(via))
+        let pin_id = via.pin;
+        let via_id = ViaId::new(self.vias.push(via));
+
+        if let Some(pin_id) = pin_id {
+            self.pins[pin_id.id()].vias.push(via_id);
+        }
+
+        via_id
     }
 
     pub fn add_polygon(&mut self, polygon: Polygon) -> PolygonId {
-        PolygonId::new(self.polygons.push(polygon))
+        let pin_id = polygon.pin;
+        let polygon_id = PolygonId::new(self.polygons.push(polygon));
+
+        if let Some(pin_id) = pin_id {
+            self.pins[pin_id.id()].polygons.push(polygon_id);
+        }
+
+        polygon_id
     }
 
     pub fn segment_endpoints(&self, segment: SegmentId) -> [[i64; 2]; 2] {
@@ -172,6 +246,10 @@ impl Layout {
             self.joints.get(&endjoints[0].id()).unwrap().position,
             self.joints.get(&endjoints[1].id()).unwrap().position,
         ]
+    }
+
+    pub fn pin(&self, pin: PinId) -> &Pin {
+        &self.pins[pin.id()]
     }
 }
 

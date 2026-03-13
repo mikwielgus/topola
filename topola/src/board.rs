@@ -7,14 +7,9 @@ use derive_getters::{Dissolve, Getters};
 use undoredo::{ApplyDelta, Delta, FlushDelta};
 
 use crate::layout::{
-    Joint, JointId, Layout, LayoutHalfDelta, NetId, Polygon, PolygonId, Segment, SegmentId, Via,
-    ViaId,
+    Joint, JointId, Layout, LayoutHalfDelta, NetId, PinId, Polygon, PolygonId, Segment, SegmentId,
+    Via, ViaId,
 };
-
-struct Layer {
-    name: String,
-    index: usize,
-}
 
 #[derive(Clone, Debug, Getters)]
 pub struct Board {
@@ -23,6 +18,8 @@ pub struct Board {
     layer_names: BiBTreeMap<usize, String>,
     #[getter(skip)]
     net_names: BiBTreeMap<NetId, String>,
+    #[getter(skip)]
+    pin_names: BiBTreeMap<PinId, String>,
 }
 
 impl Board {
@@ -31,6 +28,7 @@ impl Board {
             layout: Layout::new(boundary, layer_count),
             layer_names: BiBTreeMap::new(),
             net_names: BiBTreeMap::new(),
+            pin_names: BiBTreeMap::new(),
         }
     }
 
@@ -44,7 +42,19 @@ impl Board {
             layout: Layout::new(boundary, layer_count),
             layer_names,
             net_names,
+            pin_names: BiBTreeMap::new(),
         }
+    }
+
+    pub fn ensure_pin(&mut self, pin_name: String) -> PinId {
+        if let Some(pin) = self.pin_names.get_by_right(&pin_name) {
+            return *pin;
+        };
+
+        let pin_id = self.layout.add_pin();
+        self.pin_names.insert(pin_id, pin_name);
+
+        pin_id
     }
 
     pub fn add_joint(&mut self, joint: Joint) -> JointId {

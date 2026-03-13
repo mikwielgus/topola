@@ -13,7 +13,7 @@ use specctra::{
 use crate::{
     Segment,
     board::Board,
-    layout::{Joint, NetId, Polygon},
+    layout::{Joint, NetId, PinId, Polygon},
     math::Vector2,
 };
 
@@ -104,6 +104,7 @@ impl Board {
 
                 for pin in &image.pins {
                     let pin_name = format!("{}-{}", place.name, pin.id);
+                    let pin_id = board.ensure_pin(pin_name.clone());
                     let net = pin_nets.get(&pin_name).copied().unwrap();
                     let padstack = dsn.pcb.library.find_padstack_by_name(&pin.name).unwrap();
 
@@ -118,6 +119,7 @@ impl Board {
                                     (circle.diameter / 2.0) as u64,
                                     layer,
                                     net,
+                                    Some(pin_id),
                                     !place_side_is_front,
                                 )
                             }
@@ -133,6 +135,7 @@ impl Board {
                                     rect.y2,
                                     layer,
                                     net,
+                                    Some(pin_id),
                                     !place_side_is_front,
                                 )
                             }
@@ -146,6 +149,7 @@ impl Board {
                                     path.width,
                                     layer,
                                     net,
+                                    Some(pin_id),
                                     !place_side_is_front,
                                 )
                             }
@@ -159,6 +163,7 @@ impl Board {
                                     polygon.width,
                                     layer,
                                     net,
+                                    Some(pin_id),
                                     !place_side_is_front,
                                 )
                             }
@@ -187,6 +192,7 @@ impl Board {
                             (circle.diameter / 2.0) as u64,
                             layer,
                             net,
+                            None,
                             false,
                         )
                     }
@@ -202,6 +208,7 @@ impl Board {
                             rect.y2,
                             layer,
                             net,
+                            None,
                             false,
                         )
                     }
@@ -215,6 +222,7 @@ impl Board {
                             path.width,
                             layer,
                             net,
+                            None,
                             false,
                         )
                     }
@@ -228,6 +236,7 @@ impl Board {
                             polygon.width,
                             layer,
                             net,
+                            None,
                             false,
                         )
                     }
@@ -247,6 +256,7 @@ impl Board {
                 wire.path.width,
                 layer,
                 net,
+                None,
                 false,
             );
         }
@@ -257,16 +267,18 @@ impl Board {
     fn place_circle(
         board: &mut Board,
         place: PointWithRotation,
-        pin: PointWithRotation,
+        pin_pos: PointWithRotation,
         radius: u64,
         layer: usize,
         net: NetId,
+        pin: Option<PinId>,
         flip: bool,
     ) {
         board.add_joint(Joint {
-            position: Self::pos(place, pin, 0.0, 0.0, flip),
+            position: Self::pos(place, pin_pos, 0.0, 0.0, flip),
             layer,
             net,
+            pin,
             radius,
         });
     }
@@ -274,49 +286,53 @@ impl Board {
     fn place_rect(
         board: &mut Board,
         place: PointWithRotation,
-        pin: PointWithRotation,
+        pin_pos: PointWithRotation,
         x1: f64,
         y1: f64,
         x2: f64,
         y2: f64,
         layer: usize,
         net: NetId,
+        pin: Option<PinId>,
         flip: bool,
     ) {
         board.add_polygon(Polygon {
             vertices: vec![
-                Self::pos(place, pin, x1, y1, flip),
-                Self::pos(place, pin, x2, y1, flip),
-                Self::pos(place, pin, x2, y2, flip),
-                Self::pos(place, pin, x1, y2, flip),
+                Self::pos(place, pin_pos, x1, y1, flip),
+                Self::pos(place, pin_pos, x2, y1, flip),
+                Self::pos(place, pin_pos, x2, y2, flip),
+                Self::pos(place, pin_pos, x1, y2, flip),
             ],
             layer,
             net,
+            pin,
         });
     }
 
     fn place_path(
         board: &mut Board,
         place: PointWithRotation,
-        pin: PointWithRotation,
+        pin_pos: PointWithRotation,
         coords: &[Point],
         width: f64,
         layer: usize,
         net: NetId,
+        pin: Option<PinId>,
         flip: bool,
     ) {
         // Add the first coordinate in the wire path as a dot and save its index.
-        let mut prev_pos = Self::pos(place, pin, coords[0].x, coords[0].y, flip);
+        let mut prev_pos = Self::pos(place, pin_pos, coords[0].x, coords[0].y, flip);
         let mut prev_joint = board.add_joint(Joint {
             position: prev_pos,
             layer,
             radius: (width / 2.0) as u64,
             net,
+            pin,
         });
 
         // Iterate through path coords starting from the second.
         for coord in coords.iter().skip(1) {
-            let pos = Self::pos(place, pin, coord.x, coord.y, flip);
+            let pos = Self::pos(place, pin_pos, coord.x, coord.y, flip);
 
             if pos == prev_pos {
                 continue;
@@ -327,6 +343,7 @@ impl Board {
                 layer,
                 radius: (width / 2.0) as u64,
                 net,
+                pin,
             });
 
             // Add a seg between the current and previous coords.
@@ -335,6 +352,7 @@ impl Board {
                 layer,
                 half_width: (width / 2.0) as u64,
                 net,
+                pin,
             });
 
             prev_pos = pos;
@@ -345,21 +363,23 @@ impl Board {
     fn place_polygon(
         board: &mut Board,
         place: PointWithRotation,
-        pin: PointWithRotation,
+        pin_pos: PointWithRotation,
         coords: &[Point],
         width: f64,
         layer: usize,
         net: NetId,
+        pin: Option<PinId>,
         flip: bool,
     ) {
         let vertices: Vec<[i64; 2]> = coords
             .iter()
-            .map(|coord| Self::pos(place, pin, coord.x, coord.y, flip))
+            .map(|coord| Self::pos(place, pin_pos, coord.x, coord.y, flip))
             .collect();
         board.add_polygon(Polygon {
             vertices,
             layer,
             net,
+            pin,
         });
     }
 
