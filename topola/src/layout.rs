@@ -5,19 +5,19 @@
 use std::collections::BTreeMap;
 
 use derive_getters::{Dissolve, Getters};
+use derive_more::Constructor;
+use serde::{Deserialize, Serialize};
 use stable_vec::StableVec;
 use undoredo::{ApplyDelta, Delta, FlushDelta, Recorder};
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+use crate::selection::PinSelector;
+
+#[derive(
+    Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
+)]
 pub struct PinId(usize);
 
 impl PinId {
-    /// Wrap a pin index in a newtype struct.
-    #[inline]
-    pub fn new(id: usize) -> Self {
-        Self(id)
-    }
-
     /// Returns the underlying index.
     #[inline]
     pub fn id(self) -> usize {
@@ -44,16 +44,12 @@ impl Pin {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(
+    Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
+)]
 pub struct NetId(usize);
 
 impl NetId {
-    /// Wrap a joint index in a newtype struct.
-    #[inline]
-    pub fn new(id: usize) -> Self {
-        Self(id)
-    }
-
     /// Returns the underlying index.
     #[inline]
     pub fn id(self) -> usize {
@@ -61,16 +57,12 @@ impl NetId {
     }
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+#[derive(
+    Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
+)]
 pub struct JointId(usize);
 
 impl JointId {
-    /// Wrap a joint index in a newtype struct.
-    #[inline]
-    pub fn new(id: usize) -> Self {
-        Self(id)
-    }
-
     /// Returns the underlying index.
     #[inline]
     pub fn id(self) -> usize {
@@ -87,16 +79,21 @@ pub struct Joint {
     pub pin: Option<PinId>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+impl Joint {
+    pub fn pin_selector(&self) -> Option<PinSelector> {
+        Some(PinSelector {
+            pin: self.pin?,
+            layer: self.layer,
+        })
+    }
+}
+
+#[derive(
+    Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
+)]
 pub struct SegmentId(usize);
 
 impl SegmentId {
-    /// Wrap a segment index in a newtype struct.
-    #[inline]
-    pub fn new(id: usize) -> Self {
-        Self(id)
-    }
-
     /// Returns the underlying index.
     #[inline]
     pub fn id(self) -> usize {
@@ -113,16 +110,21 @@ pub struct Segment {
     pub pin: Option<PinId>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+impl Segment {
+    pub fn pin_selector(&self) -> Option<PinSelector> {
+        Some(PinSelector {
+            pin: self.pin?,
+            layer: self.layer,
+        })
+    }
+}
+
+#[derive(
+    Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
+)]
 pub struct ViaId(usize);
 
 impl ViaId {
-    /// Wrap a via index in a newtype struct.
-    #[inline]
-    pub fn new(id: usize) -> Self {
-        Self(id)
-    }
-
     /// Returns the underlying index.
     #[inline]
     pub fn id(self) -> usize {
@@ -133,22 +135,27 @@ impl ViaId {
 #[derive(Clone, Copy, Debug)]
 pub struct Via {
     pub endpoints: [JointId; 2],
-    pub layer: usize,
+    pub layer: usize, // ??? This should be a range.
     pub radius: u64,
     pub net: NetId,
     pub pin: Option<PinId>,
 }
 
-#[derive(Clone, Copy, Debug, Eq, Ord, PartialEq, PartialOrd)]
+impl Via {
+    pub fn pin_selector(&self) -> Option<PinSelector> {
+        Some(PinSelector {
+            pin: self.pin?,
+            layer: self.layer,
+        })
+    }
+}
+
+#[derive(
+    Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
+)]
 pub struct PolygonId(usize);
 
 impl PolygonId {
-    /// Wrap a polygon index in a newtype struct.
-    #[inline]
-    pub fn new(id: usize) -> Self {
-        Self(id)
-    }
-
     /// Returns the underlying index.
     #[inline]
     pub fn id(self) -> usize {
@@ -162,6 +169,15 @@ pub struct Polygon {
     pub layer: usize,
     pub net: NetId,
     pub pin: Option<PinId>,
+}
+
+impl Polygon {
+    pub fn pin_selector(&self) -> Option<PinSelector> {
+        Some(PinSelector {
+            pin: self.pin?,
+            layer: self.layer,
+        })
+    }
 }
 
 #[derive(Clone, Debug, Getters)]

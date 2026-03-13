@@ -6,6 +6,7 @@ mod board;
 mod layout;
 mod math;
 mod navmesher;
+mod selection;
 mod specctra;
 
 pub use crate::board::Board;
