@@ -6,9 +6,9 @@ use bimap::BiBTreeMap;
 use derive_getters::{Dissolve, Getters};
 use undoredo::{ApplyDelta, Delta, FlushDelta};
 
-use crate::layout::{
-    Joint, JointId, Layout, LayoutHalfDelta, NetId, PinId, Polygon, PolygonId, Segment, SegmentId,
-    Via, ViaId,
+use crate::{
+    layout::{Layout, LayoutHalfDelta, NetId, PinId},
+    primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
 };
 
 #[derive(Clone, Debug, Getters)]

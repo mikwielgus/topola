@@ -7,7 +7,7 @@ use derive_getters::Getters;
 
 use crate::{
     Board,
-    layout::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
+    primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
 };
 
 #[derive(Clone, Debug, Getters)]

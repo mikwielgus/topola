@@ -6,11 +6,11 @@ mod board;
 mod layout;
 mod math;
 mod navmesher;
+mod primitives;
 mod selection;
 mod specctra;
 
 pub use crate::board::Board;
-pub use crate::layout::{
-    Joint, JointId, Layout, Polygon, PolygonId, Segment, SegmentId, Via, ViaId,
-};
+pub use crate::layout::Layout;
 pub use crate::navmesher::NavmesherBoard;
+pub use crate::primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId};

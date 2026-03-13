@@ -13,8 +13,9 @@ use specctra::{
 use crate::{
     Segment,
     board::Board,
-    layout::{Joint, NetId, PinId, Polygon},
+    layout::{NetId, PinId},
     math::Vector2,
+    primitives::{Joint, Polygon},
 };
 
 impl Board {
