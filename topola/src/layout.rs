@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use stable_vec::StableVec;
 use undoredo::{ApplyDelta, Delta, FlushDelta, Recorder};
 
-use crate::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId, Vector2};
+use crate::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2, Via, ViaId};
 
 #[derive(
     Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
@@ -172,6 +172,19 @@ impl Layout {
         ]
     }
 
+    pub fn segment_contains_point(&self, segment_id: SegmentId, point: Vector2<i64>) -> bool {
+        let endpoints = self.segment_endpoints(segment_id);
+        let segment = self.segments.get(&segment_id.id()).unwrap();
+        let vertices = crate::math::inflated_segment(
+            endpoints[0].x,
+            endpoints[0].y,
+            endpoints[1].x,
+            endpoints[1].y,
+            segment.half_width,
+        );
+        point.inside_polygon(&vertices)
+    }
+
     pub fn segment_bbox(&self, segment_id: SegmentId) -> Rectangle<[i64; 3]> {
         let endpoints = self.segment_endpoints(segment_id);
         let layer = self.segments.get(&segment_id.id()).unwrap().layer as i64;
@@ -188,23 +201,30 @@ impl Layout {
     pub fn locate_joints_at_point(
         &self,
         layer: usize,
-        point: [i64; 2],
+        point: Vector2<i64>,
     ) -> impl Iterator<Item = JointId> {
         self.joints_rtree
             .as_ref()
-            .locate_all_at_point(&[point[0], point[1], layer as i64])
+            .locate_all_at_point(&[point.x, point.y, layer as i64])
             .map(|geom_with_data| geom_with_data.data)
+            .filter(move |joint_id| {
+                self.joints
+                    .get(&joint_id.id())
+                    .unwrap()
+                    .contains_point(point)
+            })
     }
 
     pub fn locate_segments_at_point(
         &self,
         layer: usize,
-        point: [i64; 2],
+        point: Vector2<i64>,
     ) -> impl Iterator<Item = SegmentId> {
         self.segments_rtree
             .as_ref()
-            .locate_all_at_point(&[point[0], point[1], layer as i64])
+            .locate_all_at_point(&[point.x, point.y, layer as i64])
             .map(|geom_with_data| geom_with_data.data)
+            .filter(move |segment_id| self.segment_contains_point(*segment_id, point))
     }
 
     // TODO: vias.
@@ -212,12 +232,18 @@ impl Layout {
     pub fn locate_polygons_at_point(
         &self,
         layer: usize,
-        point: [i64; 2],
+        point: Vector2<i64>,
     ) -> impl Iterator<Item = PolygonId> {
         self.polygons_rtree
             .as_ref()
-            .locate_all_at_point(&[point[0], point[1], layer as i64])
+            .locate_all_at_point(&[point.x, point.y, layer as i64])
             .map(|geom_with_data| geom_with_data.data)
+            .filter(move |polygon_id| {
+                self.polygons
+                    .get(&polygon_id.id())
+                    .unwrap()
+                    .contains_point(point)
+            })
     }
 
     pub fn pin(&self, pin: PinId) -> &Pin {

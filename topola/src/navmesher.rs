@@ -6,6 +6,7 @@ use dearcut::RecordingTriangulator;
 use derive_getters::Getters;
 
 use crate::{
+    math,
     Board,
     primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
 };
@@ -162,33 +163,16 @@ impl NavmesherBoard {
 
         navmesher.insert_polygon(
             segment.layer,
-            Self::inflated_segment(
+            math::inflated_segment(
                 endpoints[0].x,
                 endpoints[0].y,
                 endpoints[1].x,
                 endpoints[1].y,
                 segment.half_width,
-            ),
+            )
+            .into_iter()
+            .map(Into::into),
         )
-    }
-
-    fn inflated_segment(x1: i64, y1: i64, x2: i64, y2: i64, half_width: u64) -> [[i64; 2]; 4] {
-        let dx = x2 - x1;
-        let dy = y2 - y1;
-
-        let approx_len =
-            std::cmp::max(dx.abs(), dy.abs()) + 3 * std::cmp::min(dx.abs(), dy.abs()) / 8;
-
-        // Perpendicular vector scaled to half-width.
-        let px = -dy * (half_width as i64) / approx_len;
-        let py = dx * (half_width as i64) / approx_len;
-
-        [
-            [x1 + px, y1 + py],
-            [x2 + px, y2 + py],
-            [x2 - px, y2 - py],
-            [x1 - px, y1 - py],
-        ]
     }
 
     pub fn insert_via(&mut self, via: Via) -> ViaId {

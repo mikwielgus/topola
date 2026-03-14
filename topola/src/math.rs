@@ -57,6 +57,33 @@ impl_inside_polygon!(f64);
 impl_inside_polygon!(i32);
 impl_inside_polygon!(i64);
 
+/// Returns the four vertices of a segment inflated by `half_width`, forming a convex
+/// quadrilateral. The segment goes from (x1, y1) to (x2, y2).
+pub fn inflated_segment(
+    x1: i64,
+    y1: i64,
+    x2: i64,
+    y2: i64,
+    half_width: u64,
+) -> [Vector2<i64>; 4] {
+    let dx = x2 - x1;
+    let dy = y2 - y1;
+
+    let approx_len =
+        std::cmp::max(dx.abs(), dy.abs()) + 3 * std::cmp::min(dx.abs(), dy.abs()) / 8;
+
+    // Perpendicular vector scaled to half-width.
+    let px = -dy * (half_width as i64) / approx_len;
+    let py = dx * (half_width as i64) / approx_len;
+
+    [
+        Vector2::new(x1 + px, y1 + py),
+        Vector2::new(x2 + px, y2 + py),
+        Vector2::new(x2 - px, y2 - py),
+        Vector2::new(x1 - px, y1 - py),
+    ]
+}
+
 macro_rules! impl_rotate_around_point {
     ($t:ty) => {
         impl Vector2<$t> {
