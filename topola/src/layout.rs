@@ -213,6 +213,8 @@ impl ApplyDelta<LayoutHalfDelta> for Layout {
 
         let polygons_delta = Delta::with_removed_inserted(removed.polygons, inserted.polygons);
         self.polygons.apply_delta(&polygons_delta);
+
+        // TODO R-trees.
     }
 }
 
@@ -222,6 +224,8 @@ impl FlushDelta<LayoutHalfDelta> for Layout {
         let (removed_segments, inserted_segments) = self.segments.flush_delta().dissolve();
         let (removed_vias, inserted_vias) = self.vias.flush_delta().dissolve();
         let (removed_polygons, inserted_polygons) = self.polygons.flush_delta().dissolve();
+
+        // TODO R-trees.
 
         Delta::with_removed_inserted(
             LayoutHalfDelta {

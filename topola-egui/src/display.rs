@@ -5,9 +5,9 @@
 use crate::{viewport::Viewport, workspace::Workspace};
 use topola::{Joint, Polygon, Segment, SegmentId};
 
-pub struct Displayer {}
+pub struct Display {}
 
-impl Displayer {
+impl Display {
     pub fn new() -> Self {
         Self {}
     }
@@ -21,6 +21,7 @@ impl Displayer {
         workspace: &Workspace,
     ) {
         self.display_layout(ctx, ui, /*menu_bar,*/ viewport, workspace);
+        self.display_bboxes(ctx, ui, viewport, workspace);
         self.display_navmeshes(ctx, ui, viewport, workspace);
     }
 
@@ -174,6 +175,90 @@ impl Displayer {
             color,
             egui::Stroke::new(5.0 / viewport.scale_factor(), color),
         ));
+    }
+
+    fn display_bboxes(
+        &mut self,
+        ctx: &egui::Context,
+        ui: &egui::Ui,
+        viewport: &Viewport,
+        workspace: &Workspace,
+    ) {
+        for (_, joint) in workspace
+            .navmesher_board
+            .board()
+            .layout()
+            .joints()
+            .collection()
+        {
+            if workspace.appearance_panel.visible[joint.layer] {
+                ui.painter().rect_stroke(
+                    egui::Rect {
+                        min: egui::pos2(
+                            joint.bbox().lower()[0] as f32,
+                            joint.bbox().lower()[1] as f32,
+                        ),
+                        max: egui::pos2(
+                            joint.bbox().upper()[0] as f32,
+                            joint.bbox().upper()[1] as f32,
+                        ),
+                    },
+                    egui::CornerRadius::ZERO,
+                    egui::Stroke::new(5.0, egui::Color32::GRAY),
+                    egui::StrokeKind::Middle,
+                );
+            }
+        }
+
+        for (i, segment) in workspace
+            .navmesher_board
+            .board()
+            .layout()
+            .segments()
+            .collection()
+        {
+            if workspace.appearance_panel.visible[segment.layer] {
+                let endpoints = workspace
+                    .navmesher_board
+                    .board()
+                    .layout()
+                    .segment_endpoints(SegmentId::new(i));
+
+                ui.painter().rect_stroke(
+                    egui::Rect::from_two_pos(
+                        egui::pos2(endpoints[0][0] as f32, endpoints[0][1] as f32),
+                        egui::pos2(endpoints[1][0] as f32, endpoints[1][1] as f32),
+                    ),
+                    egui::CornerRadius::ZERO,
+                    egui::Stroke::new(5.0, egui::Color32::GRAY),
+                    egui::StrokeKind::Middle,
+                );
+            }
+        }
+
+        // TODO: vias.
+
+        for (i, polygon) in workspace
+            .navmesher_board
+            .board()
+            .layout()
+            .polygons()
+            .collection()
+        {
+            if workspace.appearance_panel.visible[polygon.layer] {
+                let bbox = polygon.bbox();
+
+                ui.painter().rect_stroke(
+                    egui::Rect {
+                        min: egui::pos2(bbox.lower()[0] as f32, bbox.lower()[1] as f32),
+                        max: egui::pos2(bbox.upper()[0] as f32, bbox.upper()[1] as f32),
+                    },
+                    egui::CornerRadius::ZERO,
+                    egui::Stroke::new(5.0, egui::Color32::GRAY),
+                    egui::StrokeKind::Middle,
+                );
+            }
+        }
     }
 
     fn display_navmeshes(

@@ -4,7 +4,7 @@
 
 use egui::Pos2;
 
-use crate::{displayer::Displayer, workspace::Workspace};
+use crate::{display::Display, workspace::Workspace};
 
 pub struct Viewport {
     pub scene_rect: egui::Rect,
@@ -29,7 +29,7 @@ impl Viewport {
                 .zoom_range(0.00001..=10000.0)
                 .show(ui, &mut scene_rect, |ui| {
                     if let Some(ref workspace) = workspace {
-                        let mut displayer = Displayer::new();
+                        let mut displayer = Display::new();
                         displayer.update(ctx, ui, &self, workspace);
                     }
                 });
