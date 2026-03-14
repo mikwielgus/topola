@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use stable_vec::StableVec;
 use undoredo::{ApplyDelta, Delta, FlushDelta, Recorder};
 
-use crate::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId};
+use crate::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId, Vector2};
 
 #[derive(
     Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
@@ -164,7 +164,7 @@ impl Layout {
         polygon_id
     }
 
-    pub fn segment_endpoints(&self, segment_id: SegmentId) -> [[i64; 2]; 2] {
+    pub fn segment_endpoints(&self, segment_id: SegmentId) -> [Vector2<i64>; 2] {
         let endjoints = self.segments.get(&segment_id.id()).unwrap().endjoints;
         [
             self.joints.get(&endjoints[0].id()).unwrap().position,
@@ -177,10 +177,10 @@ impl Layout {
         let layer = self.segments.get(&segment_id.id()).unwrap().layer as i64;
         let half_width = self.segments.get(&segment_id.id()).unwrap().half_width as i64;
 
-        let min_x = std::cmp::min(endpoints[0][0], endpoints[1][0]) - half_width;
-        let min_y = std::cmp::min(endpoints[0][1], endpoints[1][1]) - half_width;
-        let max_x = std::cmp::max(endpoints[0][0], endpoints[1][0]) + half_width;
-        let max_y = std::cmp::max(endpoints[0][1], endpoints[1][1]) + half_width;
+        let min_x = std::cmp::min(endpoints[0].x, endpoints[1].x) - half_width;
+        let min_y = std::cmp::min(endpoints[0].y, endpoints[1].y) - half_width;
+        let max_x = std::cmp::max(endpoints[0].x, endpoints[1].x) + half_width;
+        let max_y = std::cmp::max(endpoints[0].y, endpoints[1].y) + half_width;
 
         Rectangle::from_corners([min_x, min_y, layer], [max_x, max_y, layer])
     }

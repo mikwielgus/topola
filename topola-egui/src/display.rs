@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{viewport::Viewport, workspace::Workspace};
-use topola::{Joint, Polygon, Segment, SegmentId};
+use topola::{Joint, Polygon, Segment, SegmentId, Vector2};
 
 pub struct Display {}
 
@@ -132,7 +132,7 @@ impl Display {
         color: egui::Color32,
     ) {
         ui.painter().circle_filled(
-            egui::pos2(joint.position[0] as f32, joint.position[1] as f32),
+            egui::pos2(joint.position.x as f32, joint.position.y as f32),
             joint.radius as f32,
             color,
         );
@@ -144,13 +144,13 @@ impl Display {
         ui: &egui::Ui,
         viewport: &Viewport,
         segment: &Segment,
-        endpoints: [[i64; 2]; 2],
+        endpoints: [Vector2<i64>; 2],
         color: egui::Color32,
     ) {
         ui.painter().line_segment(
             [
-                egui::pos2(endpoints[0][0] as f32, endpoints[0][1] as f32),
-                egui::pos2(endpoints[1][0] as f32, endpoints[1][1] as f32),
+                egui::pos2(endpoints[0].x as f32, endpoints[0].y as f32),
+                egui::pos2(endpoints[1].x as f32, endpoints[1].y as f32),
             ],
             egui::Stroke::new(segment.half_width as f32 * 2.0, color),
         );
@@ -167,7 +167,7 @@ impl Display {
         let points: Vec<egui::Pos2> = polygon
             .vertices
             .iter()
-            .map(|v| egui::pos2(v[0] as f32, v[1] as f32))
+            .map(|v| egui::pos2(v.x as f32, v.y as f32))
             .collect();
 
         ui.painter().add(egui::Shape::convex_polygon(
@@ -226,8 +226,8 @@ impl Display {
 
                 ui.painter().rect_stroke(
                     egui::Rect::from_two_pos(
-                        egui::pos2(endpoints[0][0] as f32, endpoints[0][1] as f32),
-                        egui::pos2(endpoints[1][0] as f32, endpoints[1][1] as f32),
+                        egui::pos2(endpoints[0].x as f32, endpoints[0].y as f32),
+                        egui::pos2(endpoints[1].x as f32, endpoints[1].y as f32),
                     ),
                     egui::CornerRadius::ZERO,
                     egui::Stroke::new(5.0, egui::Color32::GRAY),

@@ -129,8 +129,8 @@ impl NavmesherBoard {
     }
 
     fn joint_circumscribed_octagon(joint: Joint) -> [[i64; 2]; 8] {
-        let cx = joint.position[0];
-        let cy = joint.position[1];
+        let cx = joint.position.x;
+        let cy = joint.position.y;
         let r = joint.radius as i64;
 
         [
@@ -163,10 +163,10 @@ impl NavmesherBoard {
         navmesher.insert_polygon(
             segment.layer,
             Self::inflated_segment(
-                endpoints[0][0],
-                endpoints[0][1],
-                endpoints[1][0],
-                endpoints[1][1],
+                endpoints[0].x,
+                endpoints[0].y,
+                endpoints[1].x,
+                endpoints[1].y,
                 segment.half_width,
             ),
         )
@@ -202,6 +202,9 @@ impl NavmesherBoard {
     }
 
     fn insert_polygon_in_navmesher(navmesher: &mut Navmesher, polygon: Polygon) {
-        navmesher.insert_polygon(polygon.layer, polygon.vertices);
+        navmesher.insert_polygon(
+            polygon.layer,
+            polygon.vertices.into_iter().map(Into::into),
+        );
     }
 }

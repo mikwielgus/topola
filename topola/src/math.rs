@@ -4,11 +4,58 @@
 
 use derive_more::{Add, Constructor, From, Into, Sub};
 
-#[derive(Add, Clone, Constructor, Copy, Debug, From, Into, Sub)]
+#[derive(Add, Clone, Constructor, Copy, Debug, Eq, From, Into, PartialEq, Sub)]
 pub struct Vector2<T> {
     pub x: T,
     pub y: T,
 }
+
+impl<T: Copy> From<[T; 2]> for Vector2<T> {
+    fn from(from: [T; 2]) -> Self {
+        Self {
+            x: from[0],
+            y: from[1],
+        }
+    }
+}
+
+impl<T: Copy> From<Vector2<T>> for [T; 2] {
+    fn from(from: Vector2<T>) -> Self {
+        [from.x, from.y]
+    }
+}
+
+// Check if the point (px, py) is inside the polygon using the ray-casting
+// algorithm.
+macro_rules! impl_inside_polygon {
+    ($type:ty) => {
+        impl Vector2<$type> {
+            pub fn inside_polygon(&self, polygon: &[Vector2<$type>]) -> bool {
+                let mut inside = false;
+                let n = polygon.len();
+                let px = &self.x;
+                let py = &self.y;
+
+                let mut p1 = &polygon[n - 1];
+                for p2 in polygon.iter() {
+                    if (*py > p1.y) != (*py > p2.y) {
+                        if *px < (p2.x - p1.x) * (*py - p1.y) / (p2.y - p1.y) + p1.x {
+                            inside = !inside;
+                        }
+                    }
+                    p1 = p2;
+                }
+
+                inside
+            }
+        }
+    };
+}
+
+impl_inside_polygon!(f32);
+impl_inside_polygon!(f64);
+impl_inside_polygon!(i32);
+impl_inside_polygon!(i64);
 
 macro_rules! impl_rotate_around_point {
     ($t:ty) => {

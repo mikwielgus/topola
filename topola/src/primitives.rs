@@ -9,6 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     layout::{NetId, PinId},
     selection::PinSelector,
+    Vector2,
 };
 
 #[derive(
@@ -26,7 +27,7 @@ impl JointId {
 
 #[derive(Clone, Copy, Debug)]
 pub struct Joint {
-    pub position: [i64; 2],
+    pub position: Vector2<i64>,
     pub layer: usize,
     pub radius: u64,
     pub net: NetId,
@@ -37,16 +38,21 @@ impl Joint {
     pub fn bbox(&self) -> Rectangle<[i64; 3]> {
         Rectangle::from_aabb(AABB::from_corners(
             [
-                self.position[0] - self.radius as i64,
-                self.position[1] - self.radius as i64,
+                self.position.x - self.radius as i64,
+                self.position.y - self.radius as i64,
                 self.layer as i64,
             ],
             [
-                self.position[0] + self.radius as i64,
-                self.position[1] + self.radius as i64,
+                self.position.x + self.radius as i64,
+                self.position.y + self.radius as i64,
                 self.layer as i64,
             ],
         ))
+    }
+
+    pub fn contains_point(&self, point: Vector2<i64>) -> bool {
+        (point.x - self.position.x).pow(2) as u64 + (point.y - self.position.y).pow(2) as u64
+            <= self.radius.pow(2)
     }
 
     pub fn pin_selector(&self) -> Option<PinSelector> {
@@ -138,7 +144,7 @@ impl PolygonId {
 
 #[derive(Clone, Debug)]
 pub struct Polygon {
-    pub vertices: Vec<[i64; 2]>,
+    pub vertices: Vec<Vector2<i64>>,
     pub layer: usize,
     pub net: NetId,
     pub pin: Option<PinId>,
@@ -149,9 +155,15 @@ impl Polygon {
         Rectangle::from_aabb(self.vertices.clone().into_iter().fold(
             AABB::new_empty(),
             |aabb, vertex| {
-                aabb.merged(&AABB::from_point([vertex[0], vertex[1], self.layer as i64]))
+                aabb.merged(&AABB::from_point([vertex.x, vertex.y, self.layer as i64]))
             },
         ))
+    }
+
+    pub fn contains_point(&self, point: Vector2<i64>) -> bool {
+        /*Vector2::from(point)
+        .inside_polygon(&self.vertices.iter().map(Into::into).collect::<Vec<_>>())*/
+        false
     }
 
     pub fn pin_selector(&self) -> Option<PinSelector> {

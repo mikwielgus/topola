@@ -14,8 +14,8 @@ use crate::{
     Segment,
     board::Board,
     layout::{NetId, PinId},
-    math::Vector2,
     primitives::{Joint, Polygon},
+    Vector2,
 };
 
 impl Board {
@@ -322,7 +322,7 @@ impl Board {
         flip: bool,
     ) {
         // Add the first coordinate in the wire path as a dot and save its index.
-        let mut prev_pos = Self::pos(place, pin_pos, coords[0].x, coords[0].y, flip);
+        let mut prev_pos: Vector2<i64> = Self::pos(place, pin_pos, coords[0].x, coords[0].y, flip);
         let mut prev_joint = board.add_joint(Joint {
             position: prev_pos,
             layer,
@@ -372,7 +372,7 @@ impl Board {
         pin: Option<PinId>,
         flip: bool,
     ) {
-        let vertices: Vec<[i64; 2]> = coords
+        let vertices: Vec<Vector2<i64>> = coords
             .iter()
             .map(|coord| Self::pos(place, pin_pos, coord.x, coord.y, flip))
             .collect();
@@ -400,13 +400,13 @@ impl Board {
         x: f64,
         y: f64,
         flip: bool,
-    ) -> [i64; 2] {
+    ) -> Vector2<i64> {
         let pos = (Vector2::new(x, y) + Vector2::new(pin.pos.x(), pin.pos.y()))
             .rotate_around_point_degrees(pin.rot, Vector2::new(pin.pos.x(), pin.pos.y()));
         let pos = (Vector2::new(place.pos.x(), place.pos.y())
             + flip.then_some(Vector2::new(-pos.x, pos.y)).unwrap_or(pos))
         .rotate_around_point_degrees(place.rot, Vector2::new(place.pos.x(), place.pos.y()));
 
-        [pos.x as i64, pos.y as i64]
+        Vector2::new(pos.x as i64, pos.y as i64)
     }
 }

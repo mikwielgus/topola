@@ -12,5 +12,6 @@ mod specctra;
 
 pub use crate::board::Board;
 pub use crate::layout::Layout;
+pub use crate::math::Vector2;
 pub use crate::navmesher::NavmesherBoard;
 pub use crate::primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId};
