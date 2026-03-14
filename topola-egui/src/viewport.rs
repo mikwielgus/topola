@@ -25,36 +25,47 @@ impl Viewport {
     pub fn update(&mut self, ctx: &egui::Context, workspace: Option<&mut Workspace>) {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
+                ui.ctx().request_repaint();
+
                 let zoom_range = 0.00001..=10000.0;
 
                 let viewport_rect = ui.available_rect_before_wrap();
                 let mut scene_rect = self.scene_rect.clone();
 
-                egui::Scene::new()
+                let response = egui::Scene::new()
                     .zoom_range(zoom_range.clone())
+                    //.sense(egui::Sense::hover())
                     .show(ui, &mut scene_rect, |ui| {
                         if let Some(ref workspace) = workspace {
                             let mut display = Display::new();
                             display.update(ctx, ui, &self, workspace);
                         }
-                    });
+                    })
+                    .response;
 
                 self.scene_rect = scene_rect;
 
                 let scene_to_viewport =
                     Self::fit_to_rect_in_scene(viewport_rect, scene_rect, zoom_range.into());
 
-                let response = ui.interact(viewport_rect, ui.id(), egui::Sense::click_and_drag());
-                let pointer_scene_pos = scene_to_viewport.inverse()
-                    * (response.interact_pointer_pos().unwrap_or_else(|| {
-                        ctx.input(|i| i.pointer.interact_pos().unwrap_or_default())
-                    }));
-
                 if let Some(workspace) = workspace {
-                    dbg!(workspace.navmesher_board.board().point_pin_selector(
-                        0,
-                        Vector2::new(pointer_scene_pos.x as i64, pointer_scene_pos.y as i64)
-                    ));
+                    if let Some(pointer_viewport_pos) = ctx.input(|i| i.pointer.interact_pos()) {
+                        let pointer_scene_pos = scene_to_viewport.inverse() * pointer_viewport_pos;
+
+                        if response.clicked() {
+                            if let Some(pin_selector) =
+                                workspace.navmesher_board.board().point_pin_selector(
+                                    0,
+                                    Vector2::new(
+                                        pointer_scene_pos.x as i64,
+                                        pointer_scene_pos.y as i64,
+                                    ),
+                                )
+                            {
+                                workspace.pin_selection.toggle(pin_selector);
+                            }
+                        }
+                    }
 
                     self.zoom_to_fit_if_scheduled(workspace);
                 }

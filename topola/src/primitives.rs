@@ -140,6 +140,6 @@ impl Polygon {
     }
 
     pub fn contains_point(&self, point: Vector2<i64>) -> bool {
-        dbg!(point.inside_polygon(&self.vertices))
+        point.inside_polygon(&self.vertices)
     }
 }
