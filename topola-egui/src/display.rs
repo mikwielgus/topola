@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{viewport::Viewport, workspace::Workspace};
-use topola::{Joint, Polygon, Segment, SegmentId, Vector2};
+use topola::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2};
 
 pub struct Display {}
 
@@ -48,7 +48,7 @@ impl Display {
             egui::Stroke::new(5.0 / viewport.scale_factor(), egui::Color32::WHITE),
         );
 
-        for (_, joint) in workspace
+        for (joint_index, joint) in workspace
             .navmesher_board
             .board()
             .layout()
@@ -61,17 +61,22 @@ impl Display {
                     ui,
                     viewport,
                     joint,
-                    workspace
-                        .appearance_panel
-                        .colors(ctx)
-                        .layers
-                        .color(workspace.navmesher_board.board().layer_name(joint.layer))
-                        .normal,
+                    workspace.appearance_panel.layer_color(
+                        ctx,
+                        workspace.navmesher_board.board().layer_name(joint.layer),
+                        workspace
+                            .navmesher_board
+                            .board()
+                            .pin_selection_contains_joint(
+                                &workspace.pin_selection,
+                                JointId::new(joint_index),
+                            ),
+                    ),
                 );
             }
         }
 
-        for (i, segment) in workspace
+        for (segment_index, segment) in workspace
             .navmesher_board
             .board()
             .layout()
@@ -88,18 +93,25 @@ impl Display {
                         .navmesher_board
                         .board()
                         .layout()
-                        .segment_endpoints(SegmentId::new(i)),
-                    workspace
-                        .appearance_panel
-                        .colors(ctx)
-                        .layers
-                        .color(workspace.navmesher_board.board().layer_name(segment.layer))
-                        .normal,
+                        .segment_endpoints(SegmentId::new(segment_index)),
+                    workspace.appearance_panel.layer_color(
+                        ctx,
+                        workspace.navmesher_board.board().layer_name(segment.layer),
+                        workspace
+                            .navmesher_board
+                            .board()
+                            .pin_selection_contains_segment(
+                                &workspace.pin_selection,
+                                SegmentId::new(segment_index),
+                            ),
+                    ),
                 );
             }
         }
 
-        for (_, polygon) in workspace
+        // TODO: Vias.
+
+        for (polygon_index, polygon) in workspace
             .navmesher_board
             .board()
             .layout()
@@ -112,12 +124,17 @@ impl Display {
                     ui,
                     viewport,
                     polygon,
-                    workspace
-                        .appearance_panel
-                        .colors(ctx)
-                        .layers
-                        .color(workspace.navmesher_board.board().layer_name(polygon.layer))
-                        .normal,
+                    workspace.appearance_panel.layer_color(
+                        ctx,
+                        workspace.navmesher_board.board().layer_name(polygon.layer),
+                        workspace
+                            .navmesher_board
+                            .board()
+                            .pin_selection_contains_polygon(
+                                &workspace.pin_selection,
+                                PolygonId::new(polygon_index),
+                            ),
+                    ),
                 );
             }
         }

@@ -10,6 +10,7 @@ use crate::{
     layout::{Layout, LayoutHalfDelta, NetId, PinId},
     math::Vector2,
     primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
+    selection::PinSelection,
     selection::PinSelector,
 };
 
@@ -120,6 +121,44 @@ impl Board {
         }
 
         None
+    }
+
+    pub fn pin_selection_contains_joint(
+        &self,
+        pin_selection: &PinSelection,
+        joint_id: JointId,
+    ) -> bool {
+        let Some(pin_selector) = self.joint_pin_selector(joint_id) else {
+            return false;
+        };
+
+        pin_selection.0.contains(&pin_selector)
+    }
+
+    pub fn pin_selection_contains_segment(
+        &self,
+        pin_selection: &PinSelection,
+        segment_id: SegmentId,
+    ) -> bool {
+        let Some(pin_selector) = self.segment_pin_selector(segment_id) else {
+            return false;
+        };
+
+        pin_selection.0.contains(&pin_selector)
+    }
+
+    // TODO: Vias.
+
+    pub fn pin_selection_contains_polygon(
+        &self,
+        pin_selection: &PinSelection,
+        polygon_id: PolygonId,
+    ) -> bool {
+        let Some(pin_selector) = self.polygon_pin_selector(polygon_id) else {
+            return false;
+        };
+
+        pin_selection.0.contains(&pin_selector)
     }
 
     pub fn pin_name(&self, pin: PinId) -> Option<&str> {
