@@ -25,7 +25,7 @@ impl<T: Copy> From<Vector2<T>> for [T; 2] {
     }
 }
 
-// Check if the point (px, py) is inside the polygon using the ray-casting
+// Check if the point (px, py) is inside a polygon using the ray-casting
 // algorithm.
 macro_rules! impl_inside_polygon {
     ($type:ty) => {

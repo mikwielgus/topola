@@ -7,9 +7,9 @@ use rstar::{AABB, Envelope, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    Vector2,
     layout::{NetId, PinId},
     selection::PinSelector,
-    Vector2,
 };
 
 #[derive(
@@ -152,18 +152,18 @@ pub struct Polygon {
 
 impl Polygon {
     pub fn bbox(&self) -> Rectangle<[i64; 3]> {
-        Rectangle::from_aabb(self.vertices.clone().into_iter().fold(
-            AABB::new_empty(),
-            |aabb, vertex| {
-                aabb.merged(&AABB::from_point([vertex.x, vertex.y, self.layer as i64]))
-            },
-        ))
+        Rectangle::from_aabb(
+            self.vertices
+                .clone()
+                .into_iter()
+                .fold(AABB::new_empty(), |aabb, vertex| {
+                    aabb.merged(&AABB::from_point([vertex.x, vertex.y, self.layer as i64]))
+                }),
+        )
     }
 
     pub fn contains_point(&self, point: Vector2<i64>) -> bool {
-        /*Vector2::from(point)
-        .inside_polygon(&self.vertices.iter().map(Into::into).collect::<Vec<_>>())*/
-        false
+        point.inside_polygon(&self.vertices)
     }
 
     pub fn pin_selector(&self) -> Option<PinSelector> {
