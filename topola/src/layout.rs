@@ -185,6 +185,41 @@ impl Layout {
         Rectangle::from_corners([min_x, min_y, layer], [max_x, max_y, layer])
     }
 
+    pub fn locate_joints_at_point(
+        &self,
+        layer: usize,
+        point: [i64; 2],
+    ) -> impl Iterator<Item = JointId> {
+        self.joints_rtree
+            .as_ref()
+            .locate_all_at_point(&[point[0], point[1], layer as i64])
+            .map(|geom_with_data| geom_with_data.data)
+    }
+
+    pub fn locate_segments_at_point(
+        &self,
+        layer: usize,
+        point: [i64; 2],
+    ) -> impl Iterator<Item = SegmentId> {
+        self.segments_rtree
+            .as_ref()
+            .locate_all_at_point(&[point[0], point[1], layer as i64])
+            .map(|geom_with_data| geom_with_data.data)
+    }
+
+    // TODO: vias.
+
+    pub fn locate_polygons_at_point(
+        &self,
+        layer: usize,
+        point: [i64; 2],
+    ) -> impl Iterator<Item = PolygonId> {
+        self.polygons_rtree
+            .as_ref()
+            .locate_all_at_point(&[point[0], point[1], layer as i64])
+            .map(|geom_with_data| geom_with_data.data)
+    }
+
     pub fn pin(&self, pin: PinId) -> &Pin {
         &self.pins[pin.id()]
     }

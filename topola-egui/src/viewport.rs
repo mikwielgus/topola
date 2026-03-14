@@ -29,8 +29,8 @@ impl Viewport {
                 .zoom_range(0.00001..=10000.0)
                 .show(ui, &mut scene_rect, |ui| {
                     if let Some(ref workspace) = workspace {
-                        let mut displayer = Display::new();
-                        displayer.update(ctx, ui, &self, workspace);
+                        let mut display = Display::new();
+                        display.update(ctx, ui, &self, workspace);
                     }
                 });
 
