@@ -54,13 +54,6 @@ impl Joint {
         (point.x - self.position.x).pow(2) as u64 + (point.y - self.position.y).pow(2) as u64
             <= self.radius.pow(2)
     }
-
-    pub fn pin_selector(&self) -> Option<PinSelector> {
-        Some(PinSelector {
-            pin: self.pin?,
-            layer: self.layer,
-        })
-    }
 }
 
 #[derive(
@@ -83,15 +76,6 @@ pub struct Segment {
     pub half_width: u64,
     pub net: NetId,
     pub pin: Option<PinId>,
-}
-
-impl Segment {
-    pub fn pin_selector(&self) -> Option<PinSelector> {
-        Some(PinSelector {
-            pin: self.pin?,
-            layer: self.layer,
-        })
-    }
 }
 
 #[derive(
@@ -120,13 +104,6 @@ impl Via {
     /*pub fn bbox(&self) -> Rectangle<[i64; 3]> {
         //
     }*/
-
-    pub fn pin_selector(&self) -> Option<PinSelector> {
-        Some(PinSelector {
-            pin: self.pin?,
-            layer: self.layer,
-        })
-    }
 }
 
 #[derive(
@@ -163,13 +140,6 @@ impl Polygon {
     }
 
     pub fn contains_point(&self, point: Vector2<i64>) -> bool {
-        point.inside_polygon(&self.vertices)
-    }
-
-    pub fn pin_selector(&self) -> Option<PinSelector> {
-        Some(PinSelector {
-            pin: self.pin?,
-            layer: self.layer,
-        })
+        dbg!(point.inside_polygon(&self.vertices))
     }
 }

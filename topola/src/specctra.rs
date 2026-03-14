@@ -60,7 +60,7 @@ impl Board {
                 .into_iter()
                 .skip(1)
                 .rev()
-                .map(|p| [p.x as i64, p.y as i64])
+                .map(|p| Vector2::new(p.x as i64, p.y as i64))
                 .collect(),
             dsn.pcb.structure.layers.len(),
             layer_names,

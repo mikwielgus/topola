@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use egui::Pos2;
+use topola::Vector2;
 
 use crate::{display::Display, workspace::Workspace};
 
@@ -23,23 +24,72 @@ impl Viewport {
 
     pub fn update(&mut self, ctx: &egui::Context, workspace: Option<&mut Workspace>) {
         egui::CentralPanel::default().show(ctx, |ui| {
-            let mut scene_rect = self.scene_rect.clone();
+            egui::Frame::canvas(ui.style()).show(ui, |ui| {
+                let zoom_range = 0.00001..=10000.0;
 
-            egui::Scene::new()
-                .zoom_range(0.00001..=10000.0)
-                .show(ui, &mut scene_rect, |ui| {
-                    if let Some(ref workspace) = workspace {
-                        let mut display = Display::new();
-                        display.update(ctx, ui, &self, workspace);
-                    }
-                });
+                let viewport_rect = ui.available_rect_before_wrap();
+                let mut scene_rect = self.scene_rect.clone();
 
-            self.scene_rect = scene_rect;
+                egui::Scene::new()
+                    .zoom_range(zoom_range.clone())
+                    .show(ui, &mut scene_rect, |ui| {
+                        if let Some(ref workspace) = workspace {
+                            let mut display = Display::new();
+                            display.update(ctx, ui, &self, workspace);
+                        }
+                    });
 
-            if let Some(workspace) = workspace {
-                self.zoom_to_fit_if_scheduled(workspace);
-            }
+                self.scene_rect = scene_rect;
+
+                let scene_to_viewport =
+                    Self::fit_to_rect_in_scene(viewport_rect, scene_rect, zoom_range.into());
+
+                let response = ui.interact(viewport_rect, ui.id(), egui::Sense::click_and_drag());
+                let pointer_scene_pos = scene_to_viewport.inverse()
+                    * (response.interact_pointer_pos().unwrap_or_else(|| {
+                        ctx.input(|i| i.pointer.interact_pos().unwrap_or_default())
+                    }));
+
+                if let Some(workspace) = workspace {
+                    dbg!(workspace.navmesher_board.board().point_pin_selector(
+                        0,
+                        Vector2::new(pointer_scene_pos.x as i64, pointer_scene_pos.y as i64)
+                    ));
+
+                    self.zoom_to_fit_if_scheduled(workspace);
+                }
+            })
         });
+    }
+
+    /// Copied from egui/containers/scene.rs and modified.
+    ///
+    /// Creates a transformation that fits a given scene rectangle into the available screen size.
+    ///
+    /// The resulting visual scene bounds can be larger, due to letterboxing.
+    ///
+    /// Returns the transformation from `scene` to `global` coordinates.
+    fn fit_to_rect_in_scene(
+        rect_in_viewport: egui::Rect,
+        rect_in_scene: egui::Rect,
+        zoom_range: egui::Rangef,
+    ) -> egui::emath::TSTransform {
+        // Compute the scale factor to fit the bounding rectangle into the available screen size:
+        let scale = rect_in_viewport.size() / rect_in_scene.size();
+
+        // Use the smaller of the two scales to ensure the whole rectangle fits on the screen:
+        let scale = scale.min_elem();
+
+        // Clamp scale to what is allowed
+        let scale = zoom_range.clamp(scale);
+
+        // Compute the translation to center the bounding rect in the screen:
+        let center_in_global = rect_in_viewport.center().to_vec2();
+        let center_scene = rect_in_scene.center().to_vec2();
+
+        // Set the transformation to scale and then translate to center.
+        egui::emath::TSTransform::from_translation(center_in_global - scale * center_scene)
+            * egui::emath::TSTransform::from_scaling(scale)
     }
 
     fn zoom_to_fit_if_scheduled(&mut self, workspace: &Workspace) {

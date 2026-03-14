@@ -8,41 +8,43 @@ use undoredo::{ApplyDelta, Delta, FlushDelta};
 
 use crate::{
     layout::{Layout, LayoutHalfDelta, NetId, PinId},
+    math::Vector2,
     primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
+    selection::PinSelector,
 };
 
 #[derive(Clone, Debug, Getters)]
 pub struct Board {
     layout: Layout,
     #[getter(skip)]
+    pin_names: BiBTreeMap<PinId, String>,
+    #[getter(skip)]
     layer_names: BiBTreeMap<usize, String>,
     #[getter(skip)]
     net_names: BiBTreeMap<NetId, String>,
-    #[getter(skip)]
-    pin_names: BiBTreeMap<PinId, String>,
 }
 
 impl Board {
-    pub fn new(boundary: Vec<[i64; 2]>, layer_count: usize) -> Self {
+    pub fn new(boundary: Vec<Vector2<i64>>, layer_count: usize) -> Self {
         Self {
-            layout: Layout::new(boundary, layer_count),
+            layout: Layout::new(boundary.into_iter().map(Into::into).collect(), layer_count),
+            pin_names: BiBTreeMap::new(),
             layer_names: BiBTreeMap::new(),
             net_names: BiBTreeMap::new(),
-            pin_names: BiBTreeMap::new(),
         }
     }
 
     pub fn with_names(
-        boundary: Vec<[i64; 2]>,
+        boundary: Vec<Vector2<i64>>,
         layer_count: usize,
         layer_names: BiBTreeMap<usize, String>,
         net_names: BiBTreeMap<NetId, String>,
     ) -> Self {
         Self {
-            layout: Layout::new(boundary, layer_count),
+            layout: Layout::new(boundary.into_iter().map(Into::into).collect(), layer_count),
+            pin_names: BiBTreeMap::new(),
             layer_names,
             net_names,
-            pin_names: BiBTreeMap::new(),
         }
     }
 
@@ -73,20 +75,75 @@ impl Board {
         self.layout.add_polygon(polygon)
     }
 
+    pub fn joint_pin_selector(&self, joint_id: JointId) -> Option<PinSelector> {
+        let joint = self.layout.joint(joint_id);
+
+        Some(PinSelector {
+            pin: self.pin_name(joint.pin?)?.to_string(),
+            layer: self.layer_name(joint.layer)?.to_string(),
+        })
+    }
+
+    pub fn segment_pin_selector(&self, segment_id: SegmentId) -> Option<PinSelector> {
+        let segment = self.layout.segment(segment_id);
+
+        Some(PinSelector {
+            pin: self.pin_name(segment.pin?)?.to_string(),
+            layer: self.layer_name(segment.layer)?.to_string(),
+        })
+    }
+
+    // TODO: Vias.
+
+    pub fn polygon_pin_selector(&self, polygon_id: PolygonId) -> Option<PinSelector> {
+        let polygon = self.layout.polygon(polygon_id);
+
+        Some(PinSelector {
+            pin: self.pin_name(polygon.pin?)?.to_string(),
+            layer: self.layer_name(polygon.layer)?.to_string(),
+        })
+    }
+
+    pub fn point_pin_selector(&self, layer: usize, point: Vector2<i64>) -> Option<PinSelector> {
+        if let Some(joint_id) = self.layout.locate_joints_at_point(layer, point).next() {
+            return self.joint_pin_selector(joint_id);
+        }
+
+        if let Some(segment_id) = self.layout.locate_segments_at_point(layer, point).next() {
+            return self.segment_pin_selector(segment_id);
+        }
+
+        // TODO: Vias.
+
+        if let Some(polygon_id) = self.layout.locate_polygons_at_point(layer, point).next() {
+            return self.polygon_pin_selector(polygon_id);
+        }
+
+        None
+    }
+
+    pub fn pin_name(&self, pin: PinId) -> Option<&str> {
+        self.pin_names.get_by_left(&pin).map(String::as_str)
+    }
+
+    pub fn pin_id(&self, pin_name: &str) -> Option<PinId> {
+        self.pin_names.get_by_right(pin_name).copied()
+    }
+
     pub fn layer_name(&self, layer: usize) -> Option<&str> {
         self.layer_names.get_by_left(&layer).map(String::as_str)
     }
 
-    pub fn layer_id(&self, name: &str) -> Option<usize> {
-        self.layer_names.get_by_right(name).copied()
+    pub fn layer_id(&self, layer_name: &str) -> Option<usize> {
+        self.layer_names.get_by_right(layer_name).copied()
     }
 
     pub fn net_name(&self, net: NetId) -> Option<&str> {
         self.net_names.get_by_left(&net).map(String::as_str)
     }
 
-    pub fn net_id(&self, name: &str) -> Option<NetId> {
-        self.net_names.get_by_right(name).copied()
+    pub fn net_id(&self, net_name: &str) -> Option<NetId> {
+        self.net_names.get_by_right(net_name).copied()
     }
 }
 

@@ -246,8 +246,20 @@ impl Layout {
             })
     }
 
-    pub fn pin(&self, pin: PinId) -> &Pin {
-        &self.pins[pin.id()]
+    pub fn joint(&self, joint_id: JointId) -> &Joint {
+        self.joints.get(&joint_id.id()).unwrap()
+    }
+
+    pub fn segment(&self, segment_id: SegmentId) -> &Segment {
+        self.segments.get(&segment_id.id()).unwrap()
+    }
+
+    pub fn polygon(&self, polygon_id: PolygonId) -> &Polygon {
+        self.polygons.get(&polygon_id.id()).unwrap()
+    }
+
+    pub fn pin(&self, pin_id: PinId) -> &Pin {
+        &self.pins[pin_id.id()]
     }
 }
 

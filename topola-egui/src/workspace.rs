@@ -2,13 +2,14 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use topola::{Board, NavmesherBoard};
+use topola::{Board, NavmesherBoard, PinSelection};
 
 use crate::{appearance_panel::AppearancePanel, translator::Translator};
 
 pub struct Workspace {
     pub navmesher_board: NavmesherBoard,
     pub appearance_panel: AppearancePanel,
+    pub pin_selection: PinSelection,
 }
 
 impl Workspace {
@@ -18,6 +19,7 @@ impl Workspace {
         Self {
             navmesher_board: NavmesherBoard::with_board(board),
             appearance_panel,
+            pin_selection: PinSelection::new(),
         }
     }
 

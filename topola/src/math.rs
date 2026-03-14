@@ -25,21 +25,35 @@ impl<T: Copy> From<Vector2<T>> for [T; 2] {
     }
 }
 
-// Check if the point (px, py) is inside a polygon using the ray-casting
-// algorithm.
+// Checks if the point (px, py) is inside a polygon using the ray-casting
+// algorithm. Division is not used to avoid integer truncation errors.
 macro_rules! impl_inside_polygon {
     ($type:ty) => {
         impl Vector2<$type> {
             pub fn inside_polygon(&self, polygon: &[Vector2<$type>]) -> bool {
                 let mut inside = false;
                 let n = polygon.len();
-                let px = &self.x;
-                let py = &self.y;
+                let px = self.x;
+                let py = self.y;
 
                 let mut p1 = &polygon[n - 1];
+
                 for p2 in polygon.iter() {
-                    if (*py > p1.y) != (*py > p2.y) {
-                        if *px < (p2.x - p1.x) * (*py - p1.y) / (p2.y - p1.y) + p1.x {
+                    let dy = p2.y - p1.y;
+                    let zero = 0 as $type;
+
+                    if dy != zero && (py > p1.y) != (py > p2.y) {
+                        let dx = p2.x - p1.x;
+                        let t = py - p1.y;
+                        let s = px - p1.x;
+
+                        let crosses = if dy > zero {
+                            s * dy < dx * t
+                        } else {
+                            s * dy > dx * t
+                        };
+
+                        if crosses {
                             inside = !inside;
                         }
                     }
@@ -59,18 +73,11 @@ impl_inside_polygon!(i64);
 
 /// Returns the four vertices of a segment inflated by `half_width`, forming a convex
 /// quadrilateral. The segment goes from (x1, y1) to (x2, y2).
-pub fn inflated_segment(
-    x1: i64,
-    y1: i64,
-    x2: i64,
-    y2: i64,
-    half_width: u64,
-) -> [Vector2<i64>; 4] {
+pub fn inflated_segment(x1: i64, y1: i64, x2: i64, y2: i64, half_width: u64) -> [Vector2<i64>; 4] {
     let dx = x2 - x1;
     let dy = y2 - y1;
 
-    let approx_len =
-        std::cmp::max(dx.abs(), dy.abs()) + 3 * std::cmp::min(dx.abs(), dy.abs()) / 8;
+    let approx_len = std::cmp::max(dx.abs(), dy.abs()) + 3 * std::cmp::min(dx.abs(), dy.abs()) / 8;
 
     // Perpendicular vector scaled to half-width.
     let px = -dy * (half_width as i64) / approx_len;
