@@ -11,11 +11,10 @@ use specctra::{
 };
 
 use crate::{
-    Segment,
+    Segment, Vector2,
     board::Board,
     layout::{NetId, PinId},
     primitives::{Joint, Polygon},
-    Vector2,
 };
 
 impl Board {
@@ -105,8 +104,12 @@ impl Board {
 
                 for pin in &image.pins {
                     let pin_name = format!("{}-{}", place.name, pin.id);
+
+                    let Some(net) = pin_nets.get(&pin_name).copied() else {
+                        continue;
+                    };
+
                     let pin_id = board.ensure_pin(pin_name.clone());
-                    let net = pin_nets.get(&pin_name).copied().unwrap();
                     let padstack = dsn.pcb.library.find_padstack_by_name(&pin.name).unwrap();
 
                     for shape in padstack.shapes.iter() {
