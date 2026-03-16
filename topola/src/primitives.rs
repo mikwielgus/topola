@@ -9,15 +9,8 @@ use serde::{Deserialize, Serialize};
 use crate::{
     Vector2,
     layout::{NetId, PinId},
+    selection::PinSelector,
 };
-
-#[derive(Clone, Copy, Debug)]
-pub enum PrimitiveId {
-    Joint(JointId),
-    Segment(SegmentId),
-    Via(ViaId),
-    Polygon(PolygonId),
-}
 
 #[derive(
     Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
