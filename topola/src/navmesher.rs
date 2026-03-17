@@ -9,17 +9,18 @@ use crate::{
     math,
     Board,
     primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
+    Vector2,
 };
 
 #[derive(Clone, Debug, Getters)]
 pub struct LayerNavmesher {
-    boundary: Vec<[i64; 2]>,
+    boundary: Vec<Vector2<i64>>,
     navmeshes: Vec<RecordingTriangulator<i64>>,
     inflation_factors: Vec<f64>,
 }
 
 impl LayerNavmesher {
-    pub fn new(boundary: impl IntoIterator<Item = [i64; 2]>) -> Self {
+    pub fn new(boundary: impl IntoIterator<Item = Vector2<i64>>) -> Self {
         Self {
             boundary: boundary.into_iter().collect(),
             navmeshes: vec![RecordingTriangulator::new()],
@@ -27,31 +28,33 @@ impl LayerNavmesher {
         }
     }
 
-    pub fn insert_polygon(&mut self, polygon: impl IntoIterator<Item = [i64; 2]>) {
-        let polygon: Vec<[i64; 2]> = polygon.into_iter().collect();
+    pub fn insert_polygon(&mut self, polygon: impl IntoIterator<Item = Vector2<i64>>) {
+        let polygon: Vec<Vector2<i64>> = polygon.into_iter().collect();
 
         for i in 0..self.navmeshes.len() {
             self.navmeshes[i].insert_polygon_and_rebuild(
-                Self::inflate_polygon(polygon.clone(), self.inflation_factors[i]),
-                self.boundary.clone(),
+                Self::inflate_polygon(polygon.clone(), self.inflation_factors[i])
+                    .into_iter()
+                    .map(Into::into),
+                self.boundary.iter().cloned().map(Into::into),
             );
         }
     }
 
     fn inflate_polygon(
-        polygon: impl IntoIterator<Item = [i64; 2]>,
+        polygon: Vec<Vector2<i64>>,
         inflation_factor: f64,
-    ) -> impl IntoIterator<Item = [i64; 2]> {
-        let polygon: Vec<[i64; 2]> = polygon.into_iter().collect();
-
+    ) -> impl IntoIterator<Item = Vector2<i64>> {
         // Centroid.
-        let cx = polygon.iter().map(|p| p[0] as f64).sum::<f64>() / polygon.len() as f64;
-        let cy = polygon.iter().map(|p| p[1] as f64).sum::<f64>() / polygon.len() as f64;
+        let cx = polygon.iter().map(|p| p.x as f64).sum::<f64>() / polygon.len() as f64;
+        let cy = polygon.iter().map(|p| p.y as f64).sum::<f64>() / polygon.len() as f64;
 
-        polygon.into_iter().map(move |[px, py]| {
+        polygon.into_iter().map(move |p| {
+            let px = p.x as f64;
+            let py = p.y as f64;
             // Delta.
-            let dx = px as f64 - cx;
-            let dy = py as f64 - cy;
+            let dx = px - cx;
+            let dy = py - cy;
             let d = (dx * dx + dy * dy).sqrt();
 
             // Normalize delta.
@@ -59,14 +62,14 @@ impl LayerNavmesher {
             let ny = dy / d;
 
             // Shift away from centroid.
-            let fx = px as f64 + nx * inflation_factor;
-            let fy = py as f64 + ny * inflation_factor;
+            let fx = px + nx * inflation_factor;
+            let fy = py + ny * inflation_factor;
 
             // Round away from centroid.
             let rx = if fx >= cx { fx.ceil() } else { fx.floor() };
             let ry = if fy >= cy { fy.ceil() } else { fy.floor() };
 
-            [rx as i64, ry as i64]
+            Vector2::new(rx as i64, ry as i64)
         })
     }
 }
@@ -77,8 +80,8 @@ pub struct Navmesher {
 }
 
 impl Navmesher {
-    pub fn new(boundary: impl IntoIterator<Item = [i64; 2]>, layer_count: usize) -> Self {
-        let boundary: Vec<[i64; 2]> = boundary.into_iter().collect();
+    pub fn new(boundary: impl IntoIterator<Item = Vector2<i64>>, layer_count: usize) -> Self {
+        let boundary: Vec<Vector2<i64>> = boundary.into_iter().collect();
 
         Self {
             layers: std::iter::repeat_with(|| LayerNavmesher::new(boundary.clone()))
@@ -87,7 +90,7 @@ impl Navmesher {
         }
     }
 
-    pub fn insert_polygon(&mut self, layer: usize, polygon: impl IntoIterator<Item = [i64; 2]>) {
+    pub fn insert_polygon(&mut self, layer: usize, polygon: impl IntoIterator<Item = Vector2<i64>>) {
         self.layers[layer].insert_polygon(polygon);
     }
 }
@@ -101,7 +104,11 @@ pub struct NavmesherBoard {
 impl NavmesherBoard {
     pub fn with_board(board: Board) -> Self {
         let mut navmesher = Navmesher::new(
-            board.layout().boundary().clone(),
+            board
+                .layout()
+                .boundary()
+                .iter()
+                .map(|p| Vector2::new(p[0], p[1])),
             *board.layout().layer_count(),
         );
 
@@ -129,20 +136,20 @@ impl NavmesherBoard {
         navmesher.insert_polygon(joint.layer, Self::joint_circumscribed_octagon(joint));
     }
 
-    fn joint_circumscribed_octagon(joint: Joint) -> [[i64; 2]; 8] {
+    fn joint_circumscribed_octagon(joint: Joint) -> [Vector2<i64>; 8] {
         let cx = joint.position.x;
         let cy = joint.position.y;
         let r = joint.radius as i64;
 
         [
-            [cx + r, cy + r / 2],
-            [cx + r / 2, cy + r],
-            [cx - r / 2, cy + r],
-            [cx - r, cy + r / 2],
-            [cx - r, cy - r / 2],
-            [cx - r / 2, cy - r],
-            [cx + r / 2, cy - r],
-            [cx + r, cy - r / 2],
+            Vector2::new(cx + r, cy + r / 2),
+            Vector2::new(cx + r / 2, cy + r),
+            Vector2::new(cx - r / 2, cy + r),
+            Vector2::new(cx - r, cy + r / 2),
+            Vector2::new(cx - r, cy - r / 2),
+            Vector2::new(cx - r / 2, cy - r),
+            Vector2::new(cx + r / 2, cy - r),
+            Vector2::new(cx + r, cy - r / 2),
         ]
     }
 
@@ -169,9 +176,7 @@ impl NavmesherBoard {
                 endpoints[1].x,
                 endpoints[1].y,
                 segment.half_width,
-            )
-            .into_iter()
-            .map(Into::into),
+            ),
         )
     }
 
@@ -186,9 +191,6 @@ impl NavmesherBoard {
     }
 
     fn insert_polygon_in_navmesher(navmesher: &mut Navmesher, polygon: Polygon) {
-        navmesher.insert_polygon(
-            polygon.layer,
-            polygon.vertices.into_iter().map(Into::into),
-        );
+        navmesher.insert_polygon(polygon.layer, polygon.vertices);
     }
 }
