@@ -9,7 +9,6 @@ use serde::{Deserialize, Serialize};
 use crate::{
     Vector2,
     layout::{NetId, PinId},
-    selection::PinSelector,
 };
 
 #[derive(
