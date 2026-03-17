@@ -4,11 +4,36 @@
 
 use dearcut::RecordingTriangulator;
 use derive_getters::Getters;
+use derive_more::Constructor;
+use serde::{Deserialize, Serialize};
+use undoredo::Recorder;
 
 use crate::{
     Board, Vector2, math,
     primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
 };
+
+#[derive(
+    Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
+)]
+pub struct NavpolygonId {
+    layer: usize,
+    navmesh_id: usize,
+}
+
+impl NavpolygonId {
+    /// Layer of the navpolygon.
+    #[inline]
+    pub fn layer(self) -> usize {
+        self.layer
+    }
+
+    /// Index of the navpolygon on the navmesh at its layer.
+    #[inline]
+    pub fn navmesh_id(self) -> usize {
+        self.navmesh_id
+    }
+}
 
 #[derive(Clone, Debug, Getters)]
 pub struct LayerNavmesher {
@@ -26,17 +51,20 @@ impl LayerNavmesher {
         }
     }
 
-    pub fn insert_polygon(&mut self, polygon: impl IntoIterator<Item = Vector2<i64>>) {
+    pub fn insert_navpolygon(&mut self, polygon: impl IntoIterator<Item = Vector2<i64>>) -> usize {
         let polygon: Vec<Vector2<i64>> = polygon.into_iter().collect();
+        let mut index = 0;
 
         for i in 0..self.navmeshes.len() {
-            self.navmeshes[i].insert_polygon_and_rebuild(
+            index = self.navmeshes[i].insert_polygon_and_rebuild(
                 Self::inflate_polygon(polygon.clone(), self.inflation_factors[i])
                     .into_iter()
                     .map(Into::into),
                 self.boundary.iter().cloned().map(Into::into),
             );
         }
+
+        index
     }
 
     fn inflate_polygon(
@@ -88,12 +116,12 @@ impl Navmesher {
         }
     }
 
-    pub fn insert_polygon(
+    pub fn insert_navpolygon(
         &mut self,
         layer: usize,
         polygon: impl IntoIterator<Item = Vector2<i64>>,
-    ) {
-        self.layers[layer].insert_polygon(polygon);
+    ) -> NavpolygonId {
+        NavpolygonId::new(layer, self.layers[layer].insert_navpolygon(polygon))
     }
 }
 
@@ -101,6 +129,10 @@ impl Navmesher {
 pub struct NavmesherBoard {
     navmesher: Navmesher,
     board: Board,
+
+    joint_navpolygons: Recorder<Vec<NavpolygonId>>,
+    segment_navpolygons: Recorder<Vec<NavpolygonId>>,
+    polygon_navpolygons: Recorder<Vec<NavpolygonId>>,
 }
 
 impl NavmesherBoard {
@@ -115,32 +147,50 @@ impl NavmesherBoard {
                 *board.layout().layer_count(),
             ),
             board,
+
+            joint_navpolygons: Recorder::new(Vec::new()),
+            segment_navpolygons: Recorder::new(Vec::new()),
+            polygon_navpolygons: Recorder::new(Vec::new()),
         };
 
-        for (_, joint) in this.board.layout().joints().collection() {
-            this.navmesher
-                .insert_polygon(joint.layer, Self::joint_bounding_octagon(*joint));
-        }
-
-        for (i, segment) in this.board.layout().segments().collection() {
-            this.navmesher.insert_polygon(
-                segment.layer,
-                this.segment_bounding_rectangle(SegmentId::new(i), *segment),
+        for (i, joint) in this.board.layout().joints().collection() {
+            this.joint_navpolygons.insert(
+                i,
+                this.navmesher
+                    .insert_navpolygon(joint.layer, Self::joint_bounding_octagon(*joint)),
             );
         }
 
-        for (_, polygon) in this.board.layout().polygons().collection() {
-            this.navmesher
-                .insert_polygon(polygon.layer, polygon.vertices.clone());
+        for (i, segment) in this.board.layout().segments().collection() {
+            this.segment_navpolygons.insert(
+                i,
+                this.navmesher.insert_navpolygon(
+                    segment.layer,
+                    this.segment_bounding_rectangle(SegmentId::new(i), *segment),
+                ),
+            );
+        }
+
+        for (i, polygon) in this.board.layout().polygons().collection() {
+            this.polygon_navpolygons.insert(
+                i,
+                this.navmesher
+                    .insert_navpolygon(polygon.layer, polygon.vertices.clone()),
+            );
         }
 
         this
     }
 
     pub fn insert_joint(&mut self, joint: Joint) -> JointId {
-        self.navmesher
-            .insert_polygon(joint.layer, Self::joint_bounding_octagon(joint));
-        self.board.add_joint(joint)
+        let joint_id = self.board.add_joint(joint);
+        self.joint_navpolygons.insert(
+            joint_id.id(),
+            self.navmesher
+                .insert_navpolygon(joint.layer, Self::joint_bounding_octagon(joint)),
+        );
+
+        joint_id
     }
 
     fn joint_bounding_octagon(joint: Joint) -> [Vector2<i64>; 8] {
@@ -162,9 +212,12 @@ impl NavmesherBoard {
 
     pub fn insert_segment(&mut self, segment: Segment) -> SegmentId {
         let segment_id = self.board.add_segment(segment);
-        self.navmesher.insert_polygon(
-            segment.layer,
-            self.segment_bounding_rectangle(segment_id, segment),
+        self.segment_navpolygons.insert(
+            segment_id.id(),
+            self.navmesher.insert_navpolygon(
+                segment.layer,
+                self.segment_bounding_rectangle(segment_id, segment),
+            ),
         );
 
         segment_id
@@ -191,8 +244,13 @@ impl NavmesherBoard {
     }
 
     pub fn insert_polygon(&mut self, polygon: Polygon) -> PolygonId {
-        self.navmesher
-            .insert_polygon(polygon.layer, polygon.vertices.clone());
-        self.board.add_polygon(polygon)
+        let polygon_id = self.board.add_polygon(polygon.clone());
+        self.polygon_navpolygons.insert(
+            polygon_id.id(),
+            self.navmesher
+                .insert_navpolygon(polygon.layer, polygon.vertices),
+        );
+
+        polygon_id
     }
 }
