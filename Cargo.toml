@@ -9,7 +9,7 @@ resolver = "2"
 
 [workspace.dependencies]
 derive-getters = "0.5"
-derive_more = { version = "2.1", features = ["add", "constructor", "from", "into"] }
+derive_more = { version = "2.1", features = ["full"] }
 serde = { version = "1", features = ["derive", "rc"] }
 thiserror = "2.0"
 undoredo = { version = "0.8", features = ["stable-vec"] }

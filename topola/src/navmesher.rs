@@ -234,7 +234,7 @@ impl NavmesherBoard {
     pub fn insert_joint(&mut self, joint: Joint) -> JointId {
         let joint_id = self.board.add_joint(joint);
         self.joint_multiobstacles.insert(
-            joint_id.id(),
+            joint_id.index(),
             self.navmesher
                 .insert_multiobstacle(joint.layer, Self::joint_bounding_octagon(joint)),
         );
@@ -262,7 +262,7 @@ impl NavmesherBoard {
     pub fn insert_segment(&mut self, segment: Segment) -> SegmentId {
         let segment_id = self.board.add_segment(segment);
         self.segment_multiobstacles.insert(
-            segment_id.id(),
+            segment_id.index(),
             self.navmesher.insert_multiobstacle(
                 segment.layer,
                 self.segment_bounding_rectangle(segment_id, segment),
@@ -295,7 +295,7 @@ impl NavmesherBoard {
     pub fn insert_polygon(&mut self, polygon: Polygon) -> PolygonId {
         let polygon_id = self.board.add_polygon(polygon.clone());
         self.polygon_multiobstacles.insert(
-            polygon_id.id(),
+            polygon_id.index(),
             self.navmesher
                 .insert_multiobstacle(polygon.layer, polygon.vertices),
         );

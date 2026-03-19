@@ -11,6 +11,13 @@ use crate::{
     layout::{NetId, PinId},
 };
 
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+pub enum PrimitiveId {
+    Joint(JointId),
+    Segment(SegmentId),
+    Polygon(PolygonId),
+}
+
 #[derive(
     Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
 )]
@@ -19,7 +26,7 @@ pub struct JointId(usize);
 impl JointId {
     /// Returns the underlying index.
     #[inline]
-    pub fn id(self) -> usize {
+    pub fn index(self) -> usize {
         self.0
     }
 }
@@ -63,7 +70,7 @@ pub struct SegmentId(usize);
 impl SegmentId {
     /// Returns the underlying index.
     #[inline]
-    pub fn id(self) -> usize {
+    pub fn index(self) -> usize {
         self.0
     }
 }
@@ -85,7 +92,7 @@ pub struct ViaId(usize);
 impl ViaId {
     /// Returns the underlying index.
     #[inline]
-    pub fn id(self) -> usize {
+    pub fn index(self) -> usize {
         self.0
     }
 }
@@ -113,7 +120,7 @@ pub struct PolygonId(usize);
 impl PolygonId {
     /// Returns the underlying index.
     #[inline]
-    pub fn id(self) -> usize {
+    pub fn index(self) -> usize {
         self.0
     }
 }

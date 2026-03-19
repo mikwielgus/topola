@@ -7,6 +7,7 @@ mod layout;
 mod math;
 mod navmesher;
 mod primitives;
+//mod ratsnests;
 mod selection;
 mod specctra;
 

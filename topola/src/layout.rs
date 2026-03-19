@@ -165,16 +165,16 @@ impl Layout {
     }
 
     pub fn segment_endpoints(&self, segment_id: SegmentId) -> [Vector2<i64>; 2] {
-        let endjoints = self.segments.get(&segment_id.id()).unwrap().endjoints;
+        let endjoints = self.segments.get(&segment_id.index()).unwrap().endjoints;
         [
-            self.joints.get(&endjoints[0].id()).unwrap().position,
-            self.joints.get(&endjoints[1].id()).unwrap().position,
+            self.joints.get(&endjoints[0].index()).unwrap().position,
+            self.joints.get(&endjoints[1].index()).unwrap().position,
         ]
     }
 
     pub fn segment_contains_point(&self, segment_id: SegmentId, point: Vector2<i64>) -> bool {
         let endpoints = self.segment_endpoints(segment_id);
-        let segment = self.segments.get(&segment_id.id()).unwrap();
+        let segment = self.segments.get(&segment_id.index()).unwrap();
         let vertices = crate::math::inflated_segment(
             endpoints[0].x,
             endpoints[0].y,
@@ -187,8 +187,8 @@ impl Layout {
 
     pub fn segment_bbox(&self, segment_id: SegmentId) -> Rectangle<[i64; 3]> {
         let endpoints = self.segment_endpoints(segment_id);
-        let layer = self.segments.get(&segment_id.id()).unwrap().layer as i64;
-        let half_width = self.segments.get(&segment_id.id()).unwrap().half_width as i64;
+        let layer = self.segments.get(&segment_id.index()).unwrap().layer as i64;
+        let half_width = self.segments.get(&segment_id.index()).unwrap().half_width as i64;
 
         let min_x = std::cmp::min(endpoints[0].x, endpoints[1].x) - half_width;
         let min_y = std::cmp::min(endpoints[0].y, endpoints[1].y) - half_width;
@@ -209,7 +209,7 @@ impl Layout {
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |joint_id| {
                 self.joints
-                    .get(&joint_id.id())
+                    .get(&joint_id.index())
                     .unwrap()
                     .contains_point(point)
             })
@@ -240,22 +240,22 @@ impl Layout {
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |polygon_id| {
                 self.polygons
-                    .get(&polygon_id.id())
+                    .get(&polygon_id.index())
                     .unwrap()
                     .contains_point(point)
             })
     }
 
     pub fn joint(&self, joint_id: JointId) -> &Joint {
-        self.joints.get(&joint_id.id()).unwrap()
+        self.joints.get(&joint_id.index()).unwrap()
     }
 
     pub fn segment(&self, segment_id: SegmentId) -> &Segment {
-        self.segments.get(&segment_id.id()).unwrap()
+        self.segments.get(&segment_id.index()).unwrap()
     }
 
     pub fn polygon(&self, polygon_id: PolygonId) -> &Polygon {
-        self.polygons.get(&polygon_id.id()).unwrap()
+        self.polygons.get(&polygon_id.index()).unwrap()
     }
 
     pub fn pin(&self, pin_id: PinId) -> &Pin {
