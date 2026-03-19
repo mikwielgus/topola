@@ -54,7 +54,7 @@ impl Viewport {
 
                         if response.clicked() {
                             if let Some(pin_selector) =
-                                workspace.navmesher_board.board().point_pin_selector(
+                                workspace.autorouter.board().point_pin_selector(
                                     0,
                                     Vector2::new(
                                         pointer_scene_pos.x as i64,
@@ -113,14 +113,14 @@ impl Viewport {
     }
 
     fn boundary_bounding_box(workspace: &Workspace) -> egui::Rect {
-        let first = workspace.navmesher_board.board().layout().boundary()[0];
+        let first = workspace.autorouter.board().layout().boundary()[0];
 
         let mut min_x = first[0];
         let mut max_x = first[0];
         let mut min_y = first[1];
         let mut max_y = first[1];
 
-        for point in workspace.navmesher_board.board().layout().boundary()[1..].iter() {
+        for point in workspace.autorouter.board().layout().boundary()[1..].iter() {
             if point[0] < min_x {
                 min_x = point[0];
             }

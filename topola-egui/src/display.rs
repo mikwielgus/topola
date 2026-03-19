@@ -23,9 +23,10 @@ impl Display {
         self.display_layout(ctx, ui, /*menu_bar,*/ viewport, workspace);
         self.display_bboxes(ctx, ui, viewport, workspace);
         self.display_navmeshes(ctx, ui, viewport, workspace);
+        //self.display_ratsnest(ctx, ui, viewport, workspace);
     }
 
-    pub fn display_layout(
+    fn display_layout(
         &mut self,
         ctx: &egui::Context,
         ui: &egui::Ui,
@@ -35,7 +36,7 @@ impl Display {
     ) {
         ui.painter().line(
             workspace
-                .navmesher_board
+                .autorouter
                 .board()
                 .layout()
                 .boundary()
@@ -48,13 +49,7 @@ impl Display {
             egui::Stroke::new(5.0 / viewport.scale_factor(), egui::Color32::WHITE),
         );
 
-        for (joint_index, joint) in workspace
-            .navmesher_board
-            .board()
-            .layout()
-            .joints()
-            .collection()
-        {
+        for (joint_index, joint) in workspace.autorouter.board().layout().joints().collection() {
             if workspace.appearance_panel.visible[joint.layer] {
                 self.paint_joint(
                     ctx,
@@ -63,21 +58,18 @@ impl Display {
                     joint,
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        workspace.navmesher_board.board().layer_name(joint.layer),
-                        workspace
-                            .navmesher_board
-                            .board()
-                            .pin_selection_contains_joint(
-                                &workspace.pin_selection,
-                                JointId::new(joint_index),
-                            ),
+                        workspace.autorouter.board().layer_name(joint.layer),
+                        workspace.autorouter.board().pin_selection_contains_joint(
+                            &workspace.pin_selection,
+                            JointId::new(joint_index),
+                        ),
                     ),
                 );
             }
         }
 
         for (segment_index, segment) in workspace
-            .navmesher_board
+            .autorouter
             .board()
             .layout()
             .segments()
@@ -90,20 +82,17 @@ impl Display {
                     viewport,
                     segment,
                     workspace
-                        .navmesher_board
+                        .autorouter
                         .board()
                         .layout()
                         .segment_endpoints(SegmentId::new(segment_index)),
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        workspace.navmesher_board.board().layer_name(segment.layer),
-                        workspace
-                            .navmesher_board
-                            .board()
-                            .pin_selection_contains_segment(
-                                &workspace.pin_selection,
-                                SegmentId::new(segment_index),
-                            ),
+                        workspace.autorouter.board().layer_name(segment.layer),
+                        workspace.autorouter.board().pin_selection_contains_segment(
+                            &workspace.pin_selection,
+                            SegmentId::new(segment_index),
+                        ),
                     ),
                 );
             }
@@ -112,7 +101,7 @@ impl Display {
         // TODO: Vias.
 
         for (polygon_index, polygon) in workspace
-            .navmesher_board
+            .autorouter
             .board()
             .layout()
             .polygons()
@@ -126,14 +115,11 @@ impl Display {
                     polygon,
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        workspace.navmesher_board.board().layer_name(polygon.layer),
-                        workspace
-                            .navmesher_board
-                            .board()
-                            .pin_selection_contains_polygon(
-                                &workspace.pin_selection,
-                                PolygonId::new(polygon_index),
-                            ),
+                        workspace.autorouter.board().layer_name(polygon.layer),
+                        workspace.autorouter.board().pin_selection_contains_polygon(
+                            &workspace.pin_selection,
+                            PolygonId::new(polygon_index),
+                        ),
                     ),
                 );
             }
@@ -201,13 +187,7 @@ impl Display {
         viewport: &Viewport,
         workspace: &Workspace,
     ) {
-        for (_, joint) in workspace
-            .navmesher_board
-            .board()
-            .layout()
-            .joints()
-            .collection()
-        {
+        for (_, joint) in workspace.autorouter.board().layout().joints().collection() {
             if workspace.appearance_panel.visible[joint.layer] {
                 ui.painter().rect_stroke(
                     egui::Rect {
@@ -228,7 +208,7 @@ impl Display {
         }
 
         for (i, segment) in workspace
-            .navmesher_board
+            .autorouter
             .board()
             .layout()
             .segments()
@@ -236,7 +216,7 @@ impl Display {
         {
             if workspace.appearance_panel.visible[segment.layer] {
                 let endpoints = workspace
-                    .navmesher_board
+                    .autorouter
                     .board()
                     .layout()
                     .segment_endpoints(SegmentId::new(i));
@@ -256,7 +236,7 @@ impl Display {
         // TODO: vias.
 
         for (i, polygon) in workspace
-            .navmesher_board
+            .autorouter
             .board()
             .layout()
             .polygons()
@@ -285,10 +265,10 @@ impl Display {
         viewport: &Viewport,
         workspace: &Workspace,
     ) {
-        for layer in 0..*workspace.navmesher_board.board().layout().layer_count() {
+        for layer in 0..*workspace.autorouter.board().layout().layer_count() {
             if workspace.appearance_panel.visible[layer] {
                 for navmesh in
-                    workspace.navmesher_board.navmesher().layer_navmeshers()[layer].navmeshes()
+                    workspace.autorouter.navmesher().layer_navmeshers()[layer].navmeshes()
                 {
                     for edge_geom in navmesh
                         .triangulation()
@@ -334,5 +314,14 @@ impl Display {
                 }
             }
         }
+    }
+
+    fn display_ratsnest(
+        ctx: &egui::Context,
+        ui: &egui::Ui,
+        viewport: &Viewport,
+        workspace: &Workspace,
+    ) {
+        //
     }
 }
