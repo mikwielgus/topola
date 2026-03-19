@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{viewport::Viewport, workspace::Workspace};
-use topola::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2};
+use topola::{
+    Joint, JointId, PinSelection, Polygon, PolygonId, PrimitiveId, Ratline, Segment, SegmentId,
+    Vector2,
+};
 
 pub struct Display {}
 
@@ -23,7 +26,7 @@ impl Display {
         self.display_layout(ctx, ui, /*menu_bar,*/ viewport, workspace);
         self.display_bboxes(ctx, ui, viewport, workspace);
         self.display_navmeshes(ctx, ui, viewport, workspace);
-        //self.display_ratsnest(ctx, ui, viewport, workspace);
+        self.display_ratsnest(ctx, ui, viewport, workspace);
     }
 
     fn display_layout(
@@ -317,11 +320,31 @@ impl Display {
     }
 
     fn display_ratsnest(
-        ctx: &egui::Context,
+        &mut self,
+        _ctx: &egui::Context,
         ui: &egui::Ui,
-        viewport: &Viewport,
+        _viewport: &Viewport,
         workspace: &Workspace,
     ) {
-        //
+        for ratline in workspace.autorouter.ratsnest().ratlines() {
+            let layers = *ratline.endpoint_layers();
+            let endpoints = *ratline.endpoints();
+
+            if !workspace.appearance_panel.visible[layers[0]]
+                || !workspace.appearance_panel.visible[layers[1]]
+            {
+                continue;
+            }
+
+            //let stroke_width = 2.0 / viewport.scale_factor().max(1e-6);
+
+            ui.painter().line_segment(
+                [
+                    egui::pos2(endpoints[0].x as f32, endpoints[0].y as f32),
+                    egui::pos2(endpoints[1].x as f32, endpoints[1].y as f32),
+                ],
+                egui::Stroke::new(10.0, egui::Color32::BLUE),
+            );
+        }
     }
 }

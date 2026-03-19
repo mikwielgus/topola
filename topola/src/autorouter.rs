@@ -6,13 +6,14 @@ use derive_getters::Getters;
 use undoredo::Recorder;
 
 use crate::{
-    Board, Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2, Via, ViaId,
+    Board, Joint, JointId, Polygon, PolygonId, Ratsnest, Segment, SegmentId, Vector2, Via, ViaId,
     navmesher::{MultiObstacleId, Navmesher},
 };
 
 #[derive(Clone, Debug, Getters)]
 pub struct Autorouter {
     navmesher: Navmesher,
+    ratsnest: Ratsnest,
     board: Board,
 
     joint_multiobstacles: Recorder<Vec<MultiObstacleId>>,
@@ -31,6 +32,7 @@ impl Autorouter {
                     .map(|p| Vector2::new(p[0], p[1])),
                 *board.layout().layer_count(),
             ),
+            ratsnest: Ratsnest::new(&board),
             board,
 
             joint_multiobstacles: Recorder::new(Vec::new()),
