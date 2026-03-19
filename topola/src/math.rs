@@ -168,3 +168,50 @@ impl_polygon_centroid!(f32);
 impl_polygon_centroid!(f64);
 impl_polygon_centroid!(i32);
 impl_polygon_centroid!(i64);
+
+/// Kruskal's minimum spanning tree algorithm.
+pub fn kruskal_mst<W: Copy + Ord>(
+    vertex_count: usize,
+    edges: &[(W, [usize; 2])],
+) -> Vec<[usize; 2]> {
+    let mut sorted_edges = edges.to_vec();
+    sorted_edges.sort_by_key(|(w, _)| *w);
+
+    let mut unionfind: polygon_unionfind::UnionFind<Vec<usize>, Vec<usize>> =
+        polygon_unionfind::UnionFind::with_len(vertex_count);
+    let mut min_spanning_tree = Vec::new();
+
+    for (_, uv) in sorted_edges {
+        if unionfind.union(uv[0], uv[1]) {
+            min_spanning_tree.push(uv);
+        }
+    }
+
+    min_spanning_tree
+}
+
+#[cfg(test)]
+mod tests {
+    use super::kruskal_mst;
+
+    #[test]
+    fn kruskal_mst_on_path_graph() {
+        // Path graph. Graph edges just form a sequence without cycle.
+        let edges = [(1, [0, 1]), (2, [1, 2]), (3, [2, 3])];
+        let mst = kruskal_mst(4, &edges);
+
+        assert_eq!(mst.len(), 3);
+        assert_eq!(mst, [[0, 1], [1, 2], [2, 3]]);
+    }
+
+    #[test]
+    fn kruskal_mst_on_triangle() {
+        // Triangle graph. Graph edges form a triangle.
+        let edges = [(1, [0, 1]), (2, [1, 2]), (3, [0, 2])];
+        let mst = kruskal_mst(3, &edges);
+
+        assert_eq!(mst.len(), 2);
+        assert!(mst.contains(&[0, 1]));
+        assert!(mst.contains(&[1, 2]));
+    }
+}

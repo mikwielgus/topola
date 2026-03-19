@@ -14,8 +14,10 @@ dearcut = { version = "0.3", features = ["serde", "undoredo"] }
 derive-getters.workspace = true
 derive_more.workspace = true
 i_triangle = "0.40"
+polygon_unionfind = "0.5"
 rstar = "0.12"
 serde.workspace = true
+spade = "2.15"
 specctra = { path = "../specctra" }
 stable-vec = "0.4"
 undoredo.workspace = true
