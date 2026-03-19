@@ -287,7 +287,9 @@ impl Display {
     ) {
         for layer in 0..*workspace.navmesher_board.board().layout().layer_count() {
             if workspace.appearance_panel.visible[layer] {
-                for navmesh in workspace.navmesher_board.navmesher().layers()[layer].navmeshes() {
+                for navmesh in
+                    workspace.navmesher_board.navmesher().layer_navmeshers()[layer].navmeshes()
+                {
                     for edge_geom in navmesh
                         .triangulation()
                         .rtreed_dcel()
