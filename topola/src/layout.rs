@@ -164,6 +164,12 @@ impl Layout {
         polygon_id
     }
 
+    pub fn segment_center(&self, segment_id: SegmentId) -> Vector2<i64> {
+        let endpoints = self.segment_endpoints(segment_id);
+
+        (endpoints[0] + endpoints[1]) / 2
+    }
+
     pub fn segment_endpoints(&self, segment_id: SegmentId) -> [Vector2<i64>; 2] {
         let endjoints = self.segments.get(&segment_id.index()).unwrap().endjoints;
         [

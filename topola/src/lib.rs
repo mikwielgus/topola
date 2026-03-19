@@ -7,7 +7,7 @@ mod layout;
 mod math;
 mod navmesher;
 mod primitives;
-//mod ratsnests;
+mod ratsnest;
 mod selection;
 mod specctra;
 
@@ -15,5 +15,8 @@ pub use crate::board::Board;
 pub use crate::layout::Layout;
 pub use crate::math::Vector2;
 pub use crate::navmesher::NavmesherBoard;
-pub use crate::primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId};
+pub use crate::primitives::{
+    Joint, JointId, Polygon, PolygonId, PrimitiveId, Segment, SegmentId, Via, ViaId,
+};
+pub use crate::ratsnest::{Ratline, Ratsnest};
 pub use crate::selection::{PinSelection, PinSelector};

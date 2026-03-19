@@ -56,6 +56,10 @@ impl Joint {
         ))
     }
 
+    pub fn center(&self) -> Vector2<i64> {
+        self.position
+    }
+
     pub fn contains_point(&self, point: Vector2<i64>) -> bool {
         (point.x - self.position.x).pow(2) as u64 + (point.y - self.position.y).pow(2) as u64
             <= self.radius.pow(2)
@@ -143,6 +147,10 @@ impl Polygon {
                     aabb.merged(&AABB::from_point([vertex.x, vertex.y, self.layer as i64]))
                 }),
         )
+    }
+
+    pub fn center(&self) -> Vector2<i64> {
+        Vector2::<i64>::polygon_centroid(&self.vertices)
     }
 
     pub fn contains_point(&self, point: Vector2<i64>) -> bool {
