@@ -2,9 +2,33 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use derive_more::{Add, Constructor, From, Into, Sub};
+use derive_more::{
+    Add, AddAssign, Constructor, Div, DivAssign, From, Into, Mul, MulAssign, Sub, SubAssign,
+};
+use serde::{Deserialize, Serialize};
 
-#[derive(Add, Clone, Constructor, Copy, Debug, Eq, From, Into, PartialEq, Sub)]
+#[derive(
+    Add,
+    AddAssign,
+    Clone,
+    Constructor,
+    Copy,
+    Debug,
+    Deserialize,
+    Div,
+    DivAssign,
+    Eq,
+    From,
+    Into,
+    Mul,
+    MulAssign,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    Serialize,
+    Sub,
+    SubAssign,
+)]
 pub struct Vector2<T> {
     pub x: T,
     pub y: T,
@@ -25,27 +49,27 @@ impl<T: Copy> From<Vector2<T>> for [T; 2] {
     }
 }
 
-// Checks if the point (px, py) is inside a polygon using the ray-casting
-// algorithm. Division is not used to avoid integer truncation errors.
 macro_rules! impl_inside_polygon {
     ($type:ty) => {
         impl Vector2<$type> {
+            // Checks if the point (px, py) is inside a polygon using the ray-casting
+            // algorithm. Division is not used to avoid integer truncation errors.
             pub fn inside_polygon(&self, polygon: &[Vector2<$type>]) -> bool {
                 let mut inside = false;
                 let n = polygon.len();
                 let px = self.x;
                 let py = self.y;
 
-                let mut p1 = &polygon[n - 1];
+                let mut v1 = &polygon[n - 1];
 
-                for p2 in polygon.iter() {
-                    let dy = p2.y - p1.y;
+                for v2 in polygon.iter() {
+                    let dy = v2.y - v1.y;
                     let zero = 0 as $type;
 
-                    if dy != zero && (py > p1.y) != (py > p2.y) {
-                        let dx = p2.x - p1.x;
-                        let t = py - p1.y;
-                        let s = px - p1.x;
+                    if dy != zero && (py > v1.y) != (py > v2.y) {
+                        let dx = v2.x - v1.x;
+                        let t = py - v1.y;
+                        let s = px - v1.x;
 
                         let crosses = if dy > zero {
                             s * dy < dx * t
@@ -57,7 +81,7 @@ macro_rules! impl_inside_polygon {
                             inside = !inside;
                         }
                     }
-                    p1 = p2;
+                    v1 = v2;
                 }
 
                 inside
@@ -92,9 +116,9 @@ pub fn inflated_segment(x1: i64, y1: i64, x2: i64, y2: i64, half_width: u64) -> 
 }
 
 macro_rules! impl_rotate_around_point {
-    ($t:ty) => {
-        impl Vector2<$t> {
-            pub fn rotate_around_point(&mut self, angle: $t, origin: Vector2<$t>) -> Self {
+    ($type:ty) => {
+        impl Vector2<$type> {
+            pub fn rotate_around_point(&mut self, angle: $type, origin: Vector2<$type>) -> Self {
                 let sin = angle.sin();
                 let cos = angle.cos();
 
@@ -110,7 +134,11 @@ macro_rules! impl_rotate_around_point {
                 *self
             }
 
-            pub fn rotate_around_point_degrees(&mut self, angle: $t, origin: Vector2<$t>) -> Self {
+            pub fn rotate_around_point_degrees(
+                &mut self,
+                angle: $type,
+                origin: Vector2<$type>,
+            ) -> Self {
                 self.rotate_around_point(angle.to_radians(), origin)
             }
         }
@@ -119,3 +147,24 @@ macro_rules! impl_rotate_around_point {
 
 impl_rotate_around_point!(f32);
 impl_rotate_around_point!(f64);
+
+macro_rules! impl_polygon_centroid {
+    ($type:ty) => {
+        impl Vector2<$type> {
+            pub fn polygon_centroid(polygon: &[Vector2<$type>]) -> Self {
+                let mut sum = Vector2::new(0 as $type, 0 as $type);
+
+                for vertex in polygon.iter() {
+                    sum += *vertex;
+                }
+
+                sum / polygon.len() as $type
+            }
+        }
+    };
+}
+
+impl_polygon_centroid!(f32);
+impl_polygon_centroid!(f64);
+impl_polygon_centroid!(i32);
+impl_polygon_centroid!(i64);
