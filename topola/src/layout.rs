@@ -7,7 +7,7 @@ use std::collections::BTreeMap;
 use derive_getters::{Dissolve, Getters};
 use derive_more::Constructor;
 use rstar::{
-    RTree,
+    AABB, RTree,
     primitives::{GeomWithData, Rectangle},
 };
 use serde::{Deserialize, Serialize};
@@ -250,6 +250,40 @@ impl Layout {
                     .unwrap()
                     .contains_point(point)
             })
+    }
+
+    pub fn layer_joints(&self, layer: usize) -> impl Iterator<Item = JointId> + '_ {
+        let envelope = Self::whole_layer_aabb(layer);
+        self.joints_rtree
+            .as_ref()
+            .locate_in_envelope_intersecting(&envelope)
+            .map(|geom_with_data| geom_with_data.data)
+            .filter(move |&id| self.joint(id).layer == layer)
+    }
+
+    pub fn layer_segments(&self, layer: usize) -> impl Iterator<Item = SegmentId> + '_ {
+        let envelope = Self::whole_layer_aabb(layer);
+        self.segments_rtree
+            .as_ref()
+            .locate_in_envelope_intersecting(&envelope)
+            .map(|geom_with_data| geom_with_data.data)
+            .filter(move |&id| self.segment(id).layer == layer)
+    }
+
+    pub fn layer_polygons(&self, layer: usize) -> impl Iterator<Item = PolygonId> + '_ {
+        let envelope = Self::whole_layer_aabb(layer);
+        self.polygons_rtree
+            .as_ref()
+            .locate_in_envelope_intersecting(&envelope)
+            .map(|geom_with_data| geom_with_data.data)
+            .filter(move |&id| self.polygon(id).layer == layer)
+    }
+
+    fn whole_layer_aabb(layer: usize) -> AABB<[i64; 3]> {
+        AABB::from_corners(
+            [i64::MIN, i64::MIN, layer as i64],
+            [i64::MAX, i64::MAX, layer as i64],
+        )
     }
 
     pub fn joint(&self, joint_id: JointId) -> &Joint {
