@@ -17,13 +17,14 @@ impl Workspace {
         let appearance_panel = AppearancePanel::new(&board);
 
         Self {
-            autorouter: Autorouter::with_board(board),
+            autorouter: Autorouter::new(board),
             appearance_panel,
             pin_selection: PinSelection::new(),
         }
     }
 
     pub fn update_appearance_panel(&mut self, ctx: &egui::Context) {
-        self.appearance_panel.update(ctx, &self.autorouter.board());
+        self.appearance_panel
+            .update(ctx, &self.autorouter.navmesher_board().board());
     }
 }

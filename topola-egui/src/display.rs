@@ -3,10 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{viewport::Viewport, workspace::Workspace};
-use topola::{
-    Joint, JointId, PinSelection, Polygon, PolygonId, PrimitiveId, Ratline, Segment, SegmentId,
-    Vector2,
-};
+use topola::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2};
 
 pub struct Display {}
 
@@ -40,6 +37,7 @@ impl Display {
         ui.painter().line(
             workspace
                 .autorouter
+                .navmesher_board()
                 .board()
                 .layout()
                 .boundary()
@@ -52,7 +50,14 @@ impl Display {
             egui::Stroke::new(5.0 / viewport.scale_factor(), egui::Color32::WHITE),
         );
 
-        for (joint_index, joint) in workspace.autorouter.board().layout().joints().collection() {
+        for (joint_index, joint) in workspace
+            .autorouter
+            .navmesher_board()
+            .board()
+            .layout()
+            .joints()
+            .collection()
+        {
             if workspace.appearance_panel.visible[joint.layer] {
                 self.paint_joint(
                     ctx,
@@ -61,11 +66,19 @@ impl Display {
                     joint,
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        workspace.autorouter.board().layer_name(joint.layer),
-                        workspace.autorouter.board().pin_selection_contains_joint(
-                            &workspace.pin_selection,
-                            JointId::new(joint_index),
-                        ),
+                        workspace
+                            .autorouter
+                            .navmesher_board()
+                            .board()
+                            .layer_name(joint.layer),
+                        workspace
+                            .autorouter
+                            .navmesher_board()
+                            .board()
+                            .pin_selection_contains_joint(
+                                &workspace.pin_selection,
+                                JointId::new(joint_index),
+                            ),
                     ),
                 );
             }
@@ -73,6 +86,7 @@ impl Display {
 
         for (segment_index, segment) in workspace
             .autorouter
+            .navmesher_board()
             .board()
             .layout()
             .segments()
@@ -86,16 +100,25 @@ impl Display {
                     segment,
                     workspace
                         .autorouter
+                        .navmesher_board()
                         .board()
                         .layout()
                         .segment_endpoints(SegmentId::new(segment_index)),
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        workspace.autorouter.board().layer_name(segment.layer),
-                        workspace.autorouter.board().pin_selection_contains_segment(
-                            &workspace.pin_selection,
-                            SegmentId::new(segment_index),
-                        ),
+                        workspace
+                            .autorouter
+                            .navmesher_board()
+                            .board()
+                            .layer_name(segment.layer),
+                        workspace
+                            .autorouter
+                            .navmesher_board()
+                            .board()
+                            .pin_selection_contains_segment(
+                                &workspace.pin_selection,
+                                SegmentId::new(segment_index),
+                            ),
                     ),
                 );
             }
@@ -105,6 +128,7 @@ impl Display {
 
         for (polygon_index, polygon) in workspace
             .autorouter
+            .navmesher_board()
             .board()
             .layout()
             .polygons()
@@ -118,11 +142,19 @@ impl Display {
                     polygon,
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        workspace.autorouter.board().layer_name(polygon.layer),
-                        workspace.autorouter.board().pin_selection_contains_polygon(
-                            &workspace.pin_selection,
-                            PolygonId::new(polygon_index),
-                        ),
+                        workspace
+                            .autorouter
+                            .navmesher_board()
+                            .board()
+                            .layer_name(polygon.layer),
+                        workspace
+                            .autorouter
+                            .navmesher_board()
+                            .board()
+                            .pin_selection_contains_polygon(
+                                &workspace.pin_selection,
+                                PolygonId::new(polygon_index),
+                            ),
                     ),
                 );
             }
@@ -190,7 +222,14 @@ impl Display {
         viewport: &Viewport,
         workspace: &Workspace,
     ) {
-        for (_, joint) in workspace.autorouter.board().layout().joints().collection() {
+        for (_, joint) in workspace
+            .autorouter
+            .navmesher_board()
+            .board()
+            .layout()
+            .joints()
+            .collection()
+        {
             if workspace.appearance_panel.visible[joint.layer] {
                 ui.painter().rect_stroke(
                     egui::Rect {
@@ -212,6 +251,7 @@ impl Display {
 
         for (i, segment) in workspace
             .autorouter
+            .navmesher_board()
             .board()
             .layout()
             .segments()
@@ -220,6 +260,7 @@ impl Display {
             if workspace.appearance_panel.visible[segment.layer] {
                 let endpoints = workspace
                     .autorouter
+                    .navmesher_board()
                     .board()
                     .layout()
                     .segment_endpoints(SegmentId::new(i));
@@ -240,6 +281,7 @@ impl Display {
 
         for (i, polygon) in workspace
             .autorouter
+            .navmesher_board()
             .board()
             .layout()
             .polygons()
@@ -268,10 +310,20 @@ impl Display {
         viewport: &Viewport,
         workspace: &Workspace,
     ) {
-        for layer in 0..*workspace.autorouter.board().layout().layer_count() {
+        for layer in 0..*workspace
+            .autorouter
+            .navmesher_board()
+            .board()
+            .layout()
+            .layer_count()
+        {
             if workspace.appearance_panel.visible[layer] {
-                for navmesh in
-                    workspace.autorouter.navmesher().layer_navmeshers()[layer].navmeshes()
+                for navmesh in workspace
+                    .autorouter
+                    .navmesher_board()
+                    .navmesher()
+                    .layer_navmeshers()[layer]
+                    .navmeshes()
                 {
                     for edge_geom in navmesh
                         .triangulation()
@@ -309,7 +361,7 @@ impl Display {
                                 .appearance_panel
                                 .colors(ctx)
                                 .layers
-                                .color(workspace.navmesher_board.board().layer_name(layer))
+                                .color(workspace.autorouter.navmesher_board().board().layer_name(layer))
                                 .normal,*/
                             ),
                         );

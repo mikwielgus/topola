@@ -5,6 +5,7 @@
 use derive_more::{
     Add, AddAssign, Constructor, Div, DivAssign, From, Into, Mul, MulAssign, Sub, SubAssign,
 };
+use polygon_unionfind::UnionFind;
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -177,8 +178,7 @@ pub fn kruskal_mst<W: Copy + Ord>(
     let mut sorted_edges = edges.to_vec();
     sorted_edges.sort_by_key(|(w, _)| *w);
 
-    let mut unionfind: polygon_unionfind::UnionFind<Vec<usize>, Vec<usize>> =
-        polygon_unionfind::UnionFind::with_len(vertex_count);
+    let mut unionfind: UnionFind = UnionFind::with_len(vertex_count);
     let mut min_spanning_tree = Vec::new();
 
     for (_, uv) in sorted_edges {
