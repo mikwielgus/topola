@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{viewport::Viewport, workspace::Workspace};
-use topola::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2};
+use topola::{Joint, Polygon, Segment, Vector2};
 
 pub struct Display {}
 
@@ -34,12 +34,66 @@ impl Display {
         viewport: &Viewport,
         workspace: &Workspace,
     ) {
+        let board = workspace.autorouter.navmesher_board().board();
+        let layout = board.layout();
+
+        // Start from the bottom layer so that top layers are drawn on top.
+        for layer in (0..*layout.layer_count()).rev() {
+            if !workspace.appearance_panel.visible[layer] {
+                continue;
+            }
+
+            for joint_id in layout.layer_joints(layer) {
+                let joint = layout.joint(joint_id);
+                self.paint_joint(
+                    ctx,
+                    ui,
+                    viewport,
+                    joint,
+                    workspace.appearance_panel.layer_color(
+                        ctx,
+                        board.layer_name(joint.layer),
+                        board.pin_selection_contains_joint(&workspace.pin_selection, joint_id),
+                    ),
+                );
+            }
+
+            for segment_id in layout.layer_segments(layer) {
+                let segment = layout.segment(segment_id);
+                self.paint_segment(
+                    ctx,
+                    ui,
+                    viewport,
+                    segment,
+                    layout.segment_endpoints(segment_id),
+                    workspace.appearance_panel.layer_color(
+                        ctx,
+                        board.layer_name(segment.layer),
+                        board.pin_selection_contains_segment(&workspace.pin_selection, segment_id),
+                    ),
+                );
+            }
+
+            // TODO: Vias.
+
+            for polygon_id in layout.layer_polygons(layer) {
+                let polygon = layout.polygon(polygon_id);
+                self.paint_polygon(
+                    ctx,
+                    ui,
+                    viewport,
+                    polygon,
+                    workspace.appearance_panel.layer_color(
+                        ctx,
+                        board.layer_name(polygon.layer),
+                        board.pin_selection_contains_polygon(&workspace.pin_selection, polygon_id),
+                    ),
+                );
+            }
+        }
+
         ui.painter().line(
-            workspace
-                .autorouter
-                .navmesher_board()
-                .board()
-                .layout()
+            layout
                 .boundary()
                 .iter()
                 .map(|p| egui::Pos2 {
@@ -49,116 +103,6 @@ impl Display {
                 .collect::<Vec<_>>(),
             egui::Stroke::new(5.0 / viewport.scale_factor(), egui::Color32::WHITE),
         );
-
-        for (joint_index, joint) in workspace
-            .autorouter
-            .navmesher_board()
-            .board()
-            .layout()
-            .joints()
-            .collection()
-        {
-            if workspace.appearance_panel.visible[joint.layer] {
-                self.paint_joint(
-                    ctx,
-                    ui,
-                    viewport,
-                    joint,
-                    workspace.appearance_panel.layer_color(
-                        ctx,
-                        workspace
-                            .autorouter
-                            .navmesher_board()
-                            .board()
-                            .layer_name(joint.layer),
-                        workspace
-                            .autorouter
-                            .navmesher_board()
-                            .board()
-                            .pin_selection_contains_joint(
-                                &workspace.pin_selection,
-                                JointId::new(joint_index),
-                            ),
-                    ),
-                );
-            }
-        }
-
-        for (segment_index, segment) in workspace
-            .autorouter
-            .navmesher_board()
-            .board()
-            .layout()
-            .segments()
-            .collection()
-        {
-            if workspace.appearance_panel.visible[segment.layer] {
-                self.paint_segment(
-                    ctx,
-                    ui,
-                    viewport,
-                    segment,
-                    workspace
-                        .autorouter
-                        .navmesher_board()
-                        .board()
-                        .layout()
-                        .segment_endpoints(SegmentId::new(segment_index)),
-                    workspace.appearance_panel.layer_color(
-                        ctx,
-                        workspace
-                            .autorouter
-                            .navmesher_board()
-                            .board()
-                            .layer_name(segment.layer),
-                        workspace
-                            .autorouter
-                            .navmesher_board()
-                            .board()
-                            .pin_selection_contains_segment(
-                                &workspace.pin_selection,
-                                SegmentId::new(segment_index),
-                            ),
-                    ),
-                );
-            }
-        }
-
-        // TODO: Vias.
-
-        for (polygon_index, polygon) in workspace
-            .autorouter
-            .navmesher_board()
-            .board()
-            .layout()
-            .polygons()
-            .collection()
-        {
-            if workspace.appearance_panel.visible[polygon.layer] {
-                self.paint_polygon(
-                    ctx,
-                    ui,
-                    viewport,
-                    polygon,
-                    workspace.appearance_panel.layer_color(
-                        ctx,
-                        workspace
-                            .autorouter
-                            .navmesher_board()
-                            .board()
-                            .layer_name(polygon.layer),
-                        workspace
-                            .autorouter
-                            .navmesher_board()
-                            .board()
-                            .pin_selection_contains_polygon(
-                                &workspace.pin_selection,
-                                PolygonId::new(polygon_index),
-                            ),
-                    ),
-                );
-            }
-        }
     }
 
     fn paint_joint(
@@ -222,15 +166,16 @@ impl Display {
         viewport: &Viewport,
         workspace: &Workspace,
     ) {
-        for (_, joint) in workspace
-            .autorouter
-            .navmesher_board()
-            .board()
-            .layout()
-            .joints()
-            .collection()
-        {
-            if workspace.appearance_panel.visible[joint.layer] {
+        let board = workspace.autorouter.navmesher_board().board();
+        let layout = board.layout();
+
+        for layer in (0..*layout.layer_count()).rev() {
+            if !workspace.appearance_panel.visible[layer] {
+                continue;
+            }
+
+            for joint_id in layout.layer_joints(layer) {
+                let joint = layout.joint(joint_id);
                 ui.painter().rect_stroke(
                     egui::Rect {
                         min: egui::pos2(
@@ -247,23 +192,9 @@ impl Display {
                     egui::StrokeKind::Middle,
                 );
             }
-        }
 
-        for (i, segment) in workspace
-            .autorouter
-            .navmesher_board()
-            .board()
-            .layout()
-            .segments()
-            .collection()
-        {
-            if workspace.appearance_panel.visible[segment.layer] {
-                let endpoints = workspace
-                    .autorouter
-                    .navmesher_board()
-                    .board()
-                    .layout()
-                    .segment_endpoints(SegmentId::new(i));
+            for segment_id in layout.layer_segments(layer) {
+                let endpoints = layout.segment_endpoints(segment_id);
 
                 ui.painter().rect_stroke(
                     egui::Rect::from_two_pos(
@@ -275,19 +206,11 @@ impl Display {
                     egui::StrokeKind::Middle,
                 );
             }
-        }
 
-        // TODO: vias.
+            // TODO: vias.
 
-        for (i, polygon) in workspace
-            .autorouter
-            .navmesher_board()
-            .board()
-            .layout()
-            .polygons()
-            .collection()
-        {
-            if workspace.appearance_panel.visible[polygon.layer] {
+            for polygon_id in layout.layer_polygons(layer) {
+                let polygon = layout.polygon(polygon_id);
                 let bbox = polygon.bbox();
 
                 ui.painter().rect_stroke(
