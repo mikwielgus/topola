@@ -2,11 +2,15 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use std::collections::BTreeMap;
+
 use derive_getters::Getters;
 use serde::{Deserialize, Serialize};
 use spade::{DelaunayTriangulation, HasPosition, Triangulation, handles::FixedVertexHandle};
 
-use crate::{Board, JointId, PolygonId, SegmentId, Vector2, primitives::PrimitiveId};
+use crate::{
+    Board, JointId, PolygonId, SegmentId, Vector2, layout::NetId, primitives::PrimitiveId,
+};
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Getters, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Ratline {
@@ -39,53 +43,52 @@ impl Ratsnest {
     pub fn new(board: &Board) -> Self {
         let mut ratlines = Vec::new();
 
-        for layer in 0..*board.layout().layer_count() {
-            let mut triangulation: DelaunayTriangulation<DelaunayVertex> =
-                DelaunayTriangulation::new();
+        let mut triangulations: BTreeMap<(NetId, usize), DelaunayTriangulation<DelaunayVertex>> =
+            BTreeMap::new();
 
-            for layer in 0..*board.layout().layer_count() {
-                for (i, joint) in board.layout().joints().collection() {
-                    if joint.layer == layer {
-                        triangulation.insert(DelaunayVertex {
-                            layer,
-                            center: joint.center(),
-                            position: spade::Point2::new(
-                                joint.center().x as f64,
-                                joint.center().y as f64,
-                            ),
-                            primitive_id: PrimitiveId::Joint(JointId::new(i)),
-                        });
-                    }
-                }
+        for (i, joint) in board.layout().joints().collection() {
+            let _ = triangulations
+                .entry((joint.net, joint.layer))
+                .or_insert_with(DelaunayTriangulation::new)
+                .insert(DelaunayVertex {
+                    layer: joint.layer,
+                    center: joint.center(),
+                    position: spade::Point2::new(joint.center().x as f64, joint.center().y as f64),
+                    primitive_id: PrimitiveId::Joint(JointId::new(i)),
+                });
+        }
 
-                for (i, segment) in board.layout().segments().collection() {
-                    if segment.layer == layer {
-                        let segment_center = board.layout().segment_center(SegmentId::new(i));
-                        triangulation.insert(DelaunayVertex {
-                            layer,
-                            center: segment_center,
-                            position: spade::Point2::new(
-                                segment_center.x as f64,
-                                segment_center.y as f64,
-                            ),
-                            primitive_id: PrimitiveId::Segment(SegmentId::new(i)),
-                        });
-                    }
-                }
+        for (i, segment) in board.layout().segments().collection() {
+            let segment_center = board.layout().segment_center(SegmentId::new(i));
+            let _ = triangulations
+                .entry((segment.net, segment.layer))
+                .or_insert_with(DelaunayTriangulation::new)
+                .insert(DelaunayVertex {
+                    layer: segment.layer,
+                    center: segment_center,
+                    position: spade::Point2::new(segment_center.x as f64, segment_center.y as f64),
+                    primitive_id: PrimitiveId::Segment(SegmentId::new(i)),
+                });
+        }
 
-                for (i, polygon) in board.layout().polygons().collection() {
-                    if polygon.layer == layer {
-                        triangulation.insert(DelaunayVertex {
-                            layer,
-                            center: polygon.center(),
-                            position: spade::Point2::new(
-                                polygon.center().x as f64,
-                                polygon.center().y as f64,
-                            ),
-                            primitive_id: PrimitiveId::Polygon(PolygonId::new(i)),
-                        });
-                    }
-                }
+        for (i, polygon) in board.layout().polygons().collection() {
+            let _ = triangulations
+                .entry((polygon.net, polygon.layer))
+                .or_insert_with(DelaunayTriangulation::new)
+                .insert(DelaunayVertex {
+                    layer: polygon.layer,
+                    center: polygon.center(),
+                    position: spade::Point2::new(
+                        polygon.center().x as f64,
+                        polygon.center().y as f64,
+                    ),
+                    primitive_id: PrimitiveId::Polygon(PolygonId::new(i)),
+                });
+        }
+
+        for triangulation in triangulations.into_values() {
+            if triangulation.num_vertices() < 2 {
+                continue;
             }
 
             let mut weighted_edges: Vec<(u64, [usize; 2])> = Vec::new();
