@@ -25,6 +25,6 @@ impl Workspace {
 
     pub fn update_appearance_panel(&mut self, ctx: &egui::Context) {
         self.appearance_panel
-            .update(ctx, &self.autorouter.navmesher_board().board());
+            .update(ctx, &self.autorouter.router().navmesher_board().board());
     }
 }

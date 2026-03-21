@@ -55,6 +55,7 @@ impl Viewport {
                         if response.clicked() {
                             if let Some(pin_selector) = workspace
                                 .autorouter
+                                .router()
                                 .navmesher_board()
                                 .board()
                                 .point_pin_selector(
@@ -118,6 +119,7 @@ impl Viewport {
     fn boundary_bounding_box(workspace: &Workspace) -> egui::Rect {
         let first = workspace
             .autorouter
+            .router()
             .navmesher_board()
             .board()
             .layout()
@@ -130,6 +132,7 @@ impl Viewport {
 
         for point in workspace
             .autorouter
+            .router()
             .navmesher_board()
             .board()
             .layout()

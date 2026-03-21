@@ -4,12 +4,12 @@
 
 use derive_getters::Getters;
 
-use crate::{Board, Ratsnest, navmesher::NavmesherBoard};
+use crate::{Board, Ratsnest, router::Router};
 
 #[derive(Clone, Debug, Getters)]
 pub struct Autorouter {
-    navmesher_board: NavmesherBoard,
     ratsnest: Ratsnest,
+    router: Router,
 }
 
 impl Autorouter {
@@ -17,7 +17,7 @@ impl Autorouter {
         let ratsnest = Ratsnest::new(&board);
 
         Self {
-            navmesher_board: NavmesherBoard::new(board),
+            router: Router::new(board),
             ratsnest,
         }
     }

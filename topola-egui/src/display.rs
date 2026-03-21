@@ -34,7 +34,7 @@ impl Display {
         viewport: &Viewport,
         workspace: &Workspace,
     ) {
-        let board = workspace.autorouter.navmesher_board().board();
+        let board = workspace.autorouter.router().navmesher_board().board();
         let layout = board.layout();
 
         // Start from the bottom layer so that top layers are drawn on top.
@@ -166,7 +166,7 @@ impl Display {
         viewport: &Viewport,
         workspace: &Workspace,
     ) {
-        let board = workspace.autorouter.navmesher_board().board();
+        let board = workspace.autorouter.router().navmesher_board().board();
         let layout = board.layout();
 
         for layer in (0..*layout.layer_count()).rev() {
@@ -235,6 +235,7 @@ impl Display {
     ) {
         for layer in 0..*workspace
             .autorouter
+            .router()
             .navmesher_board()
             .board()
             .layout()
@@ -243,6 +244,7 @@ impl Display {
             if workspace.appearance_panel.visible[layer] {
                 for navmesh in workspace
                     .autorouter
+                    .router()
                     .navmesher_board()
                     .navmesher()
                     .layer_navmeshers()[layer]

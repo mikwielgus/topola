@@ -4,11 +4,14 @@
 
 mod autorouter;
 mod board;
+mod drawer;
 mod layout;
 mod math;
 mod navmesher;
+mod pathfinder;
 mod primitives;
 mod ratsnest;
+mod router;
 mod selection;
 mod specctra;
 
