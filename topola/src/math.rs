@@ -53,35 +53,55 @@ impl<T: Copy> From<Vector2<T>> for [T; 2] {
 macro_rules! impl_inside_polygon {
     ($type:ty) => {
         impl Vector2<$type> {
-            // Checks if the point (px, py) is inside a polygon using the ray-casting
-            // algorithm. Division is not used to avoid integer truncation errors.
+            // Checks if the point is inside a polygon by casting a ray to the
+            // right. Division is not used to avoid integer truncation errors.
             pub fn inside_polygon(&self, polygon: &[Vector2<$type>]) -> bool {
                 let mut inside = false;
                 let n = polygon.len();
-                let px = self.x;
-                let py = self.y;
 
+                // `self` is `v0`.
+
+                // `v1` is the previous vertex.
                 let mut v1 = &polygon[n - 1];
 
+                // `v2` is the current vertex.
                 for v2 in polygon.iter() {
-                    let dy = v2.y - v1.y;
-                    let zero = 0 as $type;
+                    let dx12 = v2.x - v1.x;
+                    let dy12 = v2.y - v1.y;
 
-                    if dy != zero && (py > v1.y) != (py > v2.y) {
-                        let dx = v2.x - v1.x;
-                        let t = py - v1.y;
-                        let s = px - v1.x;
+                    // First, check if the line of the horizontal rightward ray
+                    // cast to actually crosses the vertical span of the current
+                    // `(v1, v2)` edge.
+                    if dy12 != (0 as $type) && (self.y > v1.y) != (self.y > v2.y) {
+                        let dx01 = self.x - v1.x;
+                        let dy01 = self.y - v1.y;
 
-                        let crosses = if dy > zero {
-                            s * dy < dx * t
+                        // Now check if the (v1, v2) edge is actually on the
+                        // right side of the ray and not on the left.
+                        //
+                        // This just compares the X coordinate of `self` (`v0`)
+                        // to the X coordinate of the intersection between the
+                        // horizontal rightward ray and the current `(v1, v2)` edge:
+                        //
+                        // `self.x < v1.x + (self.y - v1.y) * (dx12 / dy12)`
+                        //
+                        // but is algebraically simplified and rewritten to not
+                        // use division.
+                        let crosses = if dy12 > (0 as $type) {
+                            dx01 * dy12 < dx12 * dy01
                         } else {
-                            s * dy > dx * t
+                            dx01 * dy12 > dx12 * dy01
                         };
 
+                        // Even-odd rule: flip whether the point is inside or
+                        // outside upon each detected crossing.
                         if crosses {
                             inside = !inside;
                         }
                     }
+
+                    // Make the current vertex previous for the next loop
+                    // iteration.
                     v1 = v2;
                 }
 
