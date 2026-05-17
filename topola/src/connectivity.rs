@@ -16,13 +16,13 @@ impl Connectivity {
     pub fn new(board: &Board) -> Self {
         let mut this = Connectivity {
             joints_unionfind: UnionFind::with_len(
-                board.layout().joints().collection().num_elements(),
+                board.layout().joints().container().num_elements(),
             ),
             segments_unionfind: UnionFind::with_len(
-                board.layout().segments().collection().num_elements(),
+                board.layout().segments().container().num_elements(),
             ),
             polygons_unionfind: UnionFind::with_len(
-                board.layout().polygons().collection().num_elements(),
+                board.layout().polygons().container().num_elements(),
             ),
         };
 

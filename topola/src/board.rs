@@ -201,11 +201,11 @@ pub struct BoardHalfDelta {
 }
 
 impl ApplyDelta<BoardHalfDelta> for Board {
-    fn apply_delta(&mut self, delta: &Delta<BoardHalfDelta>) {
-        let (removed, inserted) = delta.clone().dissolve();
+    fn apply_delta(&mut self, delta: Delta<BoardHalfDelta>) {
+        let (removed, inserted) = delta.dissolve();
 
         let layout_delta = Delta::with_removed_inserted(removed.layout, inserted.layout);
-        self.layout.apply_delta(&layout_delta);
+        self.layout.apply_delta(layout_delta);
     }
 }
 

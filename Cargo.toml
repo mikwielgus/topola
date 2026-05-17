@@ -12,7 +12,7 @@ derive-getters = "0.5"
 derive_more = { version = "2.1", features = ["full"] }
 serde = { version = "1", features = ["derive", "rc"] }
 thiserror = "2.0"
-undoredo = { version = "0.8", features = ["stable-vec"] }
+undoredo = { version = "0.10", features = ["derive", "stable-vec", "rstar"] }
 
 [profile.release]
 opt-level = 2 # Fast and small WASM.

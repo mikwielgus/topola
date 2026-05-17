@@ -6,6 +6,7 @@ use dearcut::{RecordingTriangulator, VertexId};
 use derive_getters::Getters;
 use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
+use stable_vec::StableVec;
 use undoredo::Recorder;
 
 use crate::{Board, Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2};
@@ -176,9 +177,9 @@ pub struct NavmesherBoard {
     navmesher: Navmesher,
     board: Board,
 
-    joint_multiobstacles: Recorder<Vec<MultiObstacleId>>,
-    segment_multiobstacles: Recorder<Vec<MultiObstacleId>>,
-    polygon_multiobstacles: Recorder<Vec<MultiObstacleId>>,
+    joint_multiobstacles: Recorder<StableVec<MultiObstacleId>>,
+    segment_multiobstacles: Recorder<StableVec<MultiObstacleId>>,
+    polygon_multiobstacles: Recorder<StableVec<MultiObstacleId>>,
 }
 
 impl NavmesherBoard {
@@ -194,12 +195,12 @@ impl NavmesherBoard {
             ),
             board,
 
-            joint_multiobstacles: Recorder::new(Vec::new()),
-            segment_multiobstacles: Recorder::new(Vec::new()),
-            polygon_multiobstacles: Recorder::new(Vec::new()),
+            joint_multiobstacles: Recorder::new(StableVec::new()),
+            segment_multiobstacles: Recorder::new(StableVec::new()),
+            polygon_multiobstacles: Recorder::new(StableVec::new()),
         };
 
-        for (i, joint) in this.board.layout().joints().collection() {
+        for (i, joint) in this.board.layout().joints().container().iter() {
             this.joint_multiobstacles.insert(
                 i,
                 this.navmesher
@@ -207,7 +208,7 @@ impl NavmesherBoard {
             );
         }
 
-        for (i, segment) in this.board.layout().segments().collection() {
+        for (i, segment) in this.board.layout().segments().container().iter() {
             this.segment_multiobstacles.insert(
                 i,
                 this.navmesher
@@ -215,7 +216,7 @@ impl NavmesherBoard {
             );
         }
 
-        for (i, polygon) in this.board.layout().polygons().collection() {
+        for (i, polygon) in this.board.layout().polygons().container().iter() {
             this.polygon_multiobstacles.insert(
                 i,
                 this.navmesher

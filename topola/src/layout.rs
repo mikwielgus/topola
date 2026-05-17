@@ -2,9 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use std::collections::BTreeMap;
-
-use derive_getters::{Dissolve, Getters};
+use derive_getters::Getters;
 use derive_more::Constructor;
 use rstar::{
     AABB, RTree,
@@ -12,7 +10,8 @@ use rstar::{
 };
 use serde::{Deserialize, Serialize};
 use stable_vec::StableVec;
-use undoredo::{ApplyDelta, Delta, FlushDelta, Recorder};
+use undoredo::aliases::RTreeHalfDelta;
+use undoredo::{Delta, Recorder};
 
 use crate::{
     Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2, Via, ViaId,
@@ -64,12 +63,16 @@ impl NetId {
     }
 }
 
-#[derive(Clone, Debug, Getters)]
+#[derive(Delta, Clone, Debug, Getters)]
 pub struct Layout {
+    #[undoredo(skip)]
     boundary: Vec<[i64; 2]>,
+    #[undoredo(skip)]
     place_boundary: Vec<[i64; 2]>,
+    #[undoredo(skip)]
     layer_count: usize,
 
+    #[undoredo(skip)]
     pins: StableVec<Pin>,
 
     joints: Recorder<StableVec<Joint>>,
@@ -77,10 +80,22 @@ pub struct Layout {
     vias: Recorder<StableVec<Via>>,
     polygons: Recorder<StableVec<Polygon>>,
 
-    joints_rtree: Recorder<RTree<GeomWithData<Rectangle<[i64; 3]>, JointId>>>,
-    segments_rtree: Recorder<RTree<GeomWithData<Rectangle<[i64; 3]>, SegmentId>>>,
-    vias_rtree: Recorder<RTree<GeomWithData<Rectangle<[i64; 3]>, ViaId>>>,
-    polygons_rtree: Recorder<RTree<GeomWithData<Rectangle<[i64; 3]>, PolygonId>>>,
+    joints_rtree: Recorder<
+        RTree<GeomWithData<Rectangle<[i64; 3]>, JointId>>,
+        RTreeHalfDelta<GeomWithData<Rectangle<[i64; 3]>, JointId>>,
+    >,
+    segments_rtree: Recorder<
+        RTree<GeomWithData<Rectangle<[i64; 3]>, SegmentId>>,
+        RTreeHalfDelta<GeomWithData<Rectangle<[i64; 3]>, SegmentId>>,
+    >,
+    vias_rtree: Recorder<
+        RTree<GeomWithData<Rectangle<[i64; 3]>, ViaId>>,
+        RTreeHalfDelta<GeomWithData<Rectangle<[i64; 3]>, ViaId>>,
+    >,
+    polygons_rtree: Recorder<
+        RTree<GeomWithData<Rectangle<[i64; 3]>, PolygonId>>,
+        RTreeHalfDelta<GeomWithData<Rectangle<[i64; 3]>, PolygonId>>,
+    >,
 }
 
 impl Layout {
@@ -201,7 +216,7 @@ impl Layout {
             .as_ref()
             .locate_all_at_point(&[point.x, point.y, layer as i64])
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |joint_id| {
+            .filter(move |&joint_id| {
                 self.joints
                     .get(&joint_id.index())
                     .unwrap()
@@ -232,7 +247,7 @@ impl Layout {
             .as_ref()
             .locate_all_at_point(&[point.x, point.y, layer as i64])
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |polygon_id| {
+            .filter(move |&polygon_id| {
                 self.polygons
                     .get(&polygon_id.index())
                     .unwrap()
@@ -288,59 +303,5 @@ impl Layout {
 
     pub fn pin(&self, pin_id: PinId) -> &Pin {
         &self.pins[pin_id.index()]
-    }
-}
-
-#[derive(Clone, Debug, Dissolve)]
-pub struct LayoutHalfDelta {
-    joints: BTreeMap<usize, Joint>,
-    segments: BTreeMap<usize, Segment>,
-    vias: BTreeMap<usize, Via>,
-    polygons: BTreeMap<usize, Polygon>,
-}
-
-impl ApplyDelta<LayoutHalfDelta> for Layout {
-    fn apply_delta(&mut self, delta: &Delta<LayoutHalfDelta>) {
-        let (removed, inserted) = delta.clone().dissolve();
-
-        let joints_delta = Delta::with_removed_inserted(removed.joints, inserted.joints);
-        self.joints.apply_delta(&joints_delta);
-
-        let segments_delta = Delta::with_removed_inserted(removed.segments, inserted.segments);
-        self.segments.apply_delta(&segments_delta);
-
-        let vias_delta = Delta::with_removed_inserted(removed.vias, inserted.vias);
-        self.vias.apply_delta(&vias_delta);
-
-        let polygons_delta = Delta::with_removed_inserted(removed.polygons, inserted.polygons);
-        self.polygons.apply_delta(&polygons_delta);
-
-        // TODO R-trees.
-    }
-}
-
-impl FlushDelta<LayoutHalfDelta> for Layout {
-    fn flush_delta(&mut self) -> Delta<LayoutHalfDelta> {
-        let (removed_joints, inserted_joints) = self.joints.flush_delta().dissolve();
-        let (removed_segments, inserted_segments) = self.segments.flush_delta().dissolve();
-        let (removed_vias, inserted_vias) = self.vias.flush_delta().dissolve();
-        let (removed_polygons, inserted_polygons) = self.polygons.flush_delta().dissolve();
-
-        // TODO R-trees.
-
-        Delta::with_removed_inserted(
-            LayoutHalfDelta {
-                joints: removed_joints,
-                segments: removed_segments,
-                vias: removed_vias,
-                polygons: removed_polygons,
-            },
-            LayoutHalfDelta {
-                joints: inserted_joints,
-                segments: inserted_segments,
-                vias: inserted_vias,
-                polygons: inserted_polygons,
-            },
-        )
     }
 }
