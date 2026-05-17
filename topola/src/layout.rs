@@ -14,7 +14,10 @@ use serde::{Deserialize, Serialize};
 use stable_vec::StableVec;
 use undoredo::{ApplyDelta, Delta, FlushDelta, Recorder};
 
-use crate::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2, Via, ViaId};
+use crate::{
+    Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2, Via, ViaId,
+    primitives::SegmentSpec,
+};
 
 #[derive(
     Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
@@ -24,7 +27,7 @@ pub struct PinId(usize);
 impl PinId {
     /// Returns the underlying index.
     #[inline]
-    pub fn id(self) -> usize {
+    pub fn index(self) -> usize {
         self.0
     }
 }
@@ -56,7 +59,7 @@ pub struct NetId(usize);
 impl NetId {
     /// Returns the underlying index.
     #[inline]
-    pub fn id(self) -> usize {
+    pub fn index(self) -> usize {
         self.0
     }
 }
@@ -114,22 +117,34 @@ impl Layout {
             .insert(GeomWithData::new(bbox, joint_id), ());
 
         if let Some(pin_id) = pin_id {
-            self.pins[pin_id.id()].joints.push(joint_id);
+            self.pins[pin_id.index()].joints.push(joint_id);
         }
 
         joint_id
     }
 
-    pub fn add_segment(&mut self, segment: Segment) -> SegmentId {
-        let pin_id = segment.pin;
+    pub fn add_segment(&mut self, segment: SegmentSpec) -> SegmentId {
+        self.add_segment_raw(Segment {
+            spec: segment,
+            endpoints: [
+                self.joint(segment.endjoints[0]).position,
+                self.joint(segment.endjoints[1]).position,
+            ],
+            layer: self.joint(segment.endjoints[0]).layer,
+            net: self.joint(segment.endjoints[0]).net,
+        })
+    }
+
+    pub fn add_segment_raw(&mut self, segment: Segment) -> SegmentId {
+        let pin_id = segment.spec.pin;
+        let bbox = segment.rtree_bbox();
         let segment_id = SegmentId::new(self.segments.push(segment));
-        let bbox = self.segment_bbox(segment_id);
 
         self.segments_rtree
             .insert(GeomWithData::new(bbox, segment_id), ());
 
         if let Some(pin_id) = pin_id {
-            self.pins[pin_id.id()].segments.push(segment_id);
+            self.pins[pin_id.index()].segments.push(segment_id);
         }
 
         segment_id
@@ -143,7 +158,7 @@ impl Layout {
         //self.vias_rtree.insert(GeomWithData::new(bbox, via_id), ());
 
         if let Some(pin_id) = pin_id {
-            self.pins[pin_id.id()].vias.push(via_id);
+            self.pins[pin_id.index()].vias.push(via_id);
         }
 
         via_id
@@ -158,50 +173,10 @@ impl Layout {
             .insert(GeomWithData::new(bbox, polygon_id), ());
 
         if let Some(pin_id) = pin_id {
-            self.pins[pin_id.id()].polygons.push(polygon_id);
+            self.pins[pin_id.index()].polygons.push(polygon_id);
         }
 
         polygon_id
-    }
-
-    pub fn segment_center(&self, segment_id: SegmentId) -> Vector2<i64> {
-        let endpoints = self.segment_endpoints(segment_id);
-
-        (endpoints[0] + endpoints[1]) / 2
-    }
-
-    pub fn segment_endpoints(&self, segment_id: SegmentId) -> [Vector2<i64>; 2] {
-        let endjoints = self.segments.get(&segment_id.index()).unwrap().endjoints;
-        [
-            self.joints.get(&endjoints[0].index()).unwrap().position,
-            self.joints.get(&endjoints[1].index()).unwrap().position,
-        ]
-    }
-
-    pub fn segment_contains_point(&self, segment_id: SegmentId, point: Vector2<i64>) -> bool {
-        let endpoints = self.segment_endpoints(segment_id);
-        let segment = self.segments.get(&segment_id.index()).unwrap();
-        let vertices = crate::math::inflated_segment(
-            endpoints[0].x,
-            endpoints[0].y,
-            endpoints[1].x,
-            endpoints[1].y,
-            segment.half_width,
-        );
-        point.inside_polygon(&vertices)
-    }
-
-    pub fn segment_bbox(&self, segment_id: SegmentId) -> Rectangle<[i64; 3]> {
-        let endpoints = self.segment_endpoints(segment_id);
-        let layer = self.segments.get(&segment_id.index()).unwrap().layer as i64;
-        let half_width = self.segments.get(&segment_id.index()).unwrap().half_width as i64;
-
-        let min_x = std::cmp::min(endpoints[0].x, endpoints[1].x) - half_width;
-        let min_y = std::cmp::min(endpoints[0].y, endpoints[1].y) - half_width;
-        let max_x = std::cmp::max(endpoints[0].x, endpoints[1].x) + half_width;
-        let max_y = std::cmp::max(endpoints[0].y, endpoints[1].y) + half_width;
-
-        Rectangle::from_corners([min_x, min_y, layer], [max_x, max_y, layer])
     }
 
     pub fn locate_joints_at_point(
@@ -230,7 +205,7 @@ impl Layout {
             .as_ref()
             .locate_all_at_point(&[point.x, point.y, layer as i64])
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |segment_id| self.segment_contains_point(*segment_id, point))
+            .filter(move |&segment_id| self.segment(segment_id).contains_point(point))
     }
 
     // TODO: vias.
@@ -299,7 +274,7 @@ impl Layout {
     }
 
     pub fn pin(&self, pin_id: PinId) -> &Pin {
-        &self.pins[pin_id.id()]
+        &self.pins[pin_id.index()]
     }
 }
 

@@ -14,7 +14,7 @@ use crate::{
     Segment, Vector2,
     board::Board,
     layout::{NetId, PinId},
-    primitives::{Joint, Polygon},
+    primitives::{Joint, Polygon, SegmentSpec},
 };
 
 impl Board {
@@ -351,12 +351,15 @@ impl Board {
             });
 
             // Add a seg between the current and previous coords.
-            let _ = board.add_segment(Segment {
-                endjoints: [prev_joint, joint],
+            let _ = board.add_segment_raw(Segment {
+                spec: SegmentSpec {
+                    endjoints: [prev_joint, joint],
+                    half_width: (width / 2.0) as u64,
+                    pin,
+                },
+                endpoints: [prev_pos, pos],
                 layer,
-                half_width: (width / 2.0) as u64,
                 net,
-                pin,
             });
 
             prev_pos = pos;
@@ -369,7 +372,7 @@ impl Board {
         place: PointWithRotation,
         pin_pos: PointWithRotation,
         coords: &[Point],
-        width: f64,
+        _width: f64,
         layer: usize,
         net: NetId,
         pin: Option<PinId>,

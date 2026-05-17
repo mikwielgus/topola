@@ -9,9 +9,8 @@ use undoredo::{ApplyDelta, Delta, FlushDelta};
 use crate::{
     layout::{Layout, LayoutHalfDelta, NetId, PinId},
     math::Vector2,
-    primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
-    selection::PinSelection,
-    selection::PinSelector,
+    primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId},
+    selection::{PinSelection, PinSelector},
 };
 
 #[derive(Clone, Debug, Getters)]
@@ -64,8 +63,12 @@ impl Board {
         self.layout.add_joint(joint)
     }
 
-    pub fn add_segment(&mut self, segment: Segment) -> SegmentId {
-        self.layout.add_segment(segment)
+    pub fn add_segment(&mut self, spec: SegmentSpec) -> SegmentId {
+        self.layout.add_segment(spec)
+    }
+
+    pub fn add_segment_raw(&mut self, segment: Segment) -> SegmentId {
+        self.layout.add_segment_raw(segment)
     }
 
     pub fn add_via(&mut self, via: Via) -> ViaId {
@@ -89,7 +92,7 @@ impl Board {
         let segment = self.layout.segment(segment_id);
 
         Some(PinSelector {
-            pin: self.pin_name(segment.pin?)?.to_string(),
+            pin: self.pin_name(segment.spec.pin?)?.to_string(),
             layer: self.layer_name(segment.layer)?.to_string(),
         })
     }

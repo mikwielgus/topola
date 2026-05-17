@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{viewport::Viewport, workspace::Workspace};
-use topola::{Joint, Polygon, Segment, Vector2};
+use topola::{Joint, Polygon, Segment};
 
 pub struct Display {}
 
@@ -65,7 +65,6 @@ impl Display {
                     ui,
                     viewport,
                     segment,
-                    layout.segment_endpoints(segment_id),
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_name(segment.layer),
@@ -126,15 +125,14 @@ impl Display {
         ui: &egui::Ui,
         viewport: &Viewport,
         segment: &Segment,
-        endpoints: [Vector2<i64>; 2],
         color: egui::Color32,
     ) {
         ui.painter().line_segment(
             [
-                egui::pos2(endpoints[0].x as f32, endpoints[0].y as f32),
-                egui::pos2(endpoints[1].x as f32, endpoints[1].y as f32),
+                egui::pos2(segment.endpoints[0].x as f32, segment.endpoints[0].y as f32),
+                egui::pos2(segment.endpoints[1].x as f32, segment.endpoints[1].y as f32),
             ],
-            egui::Stroke::new(segment.half_width as f32 * 2.0, color),
+            egui::Stroke::new(segment.spec.half_width as f32 * 2.0, color),
         );
     }
 
@@ -194,7 +192,7 @@ impl Display {
             }
 
             for segment_id in layout.layer_segments(layer) {
-                let endpoints = layout.segment_endpoints(segment_id);
+                let endpoints = layout.segment(segment_id).endpoints;
 
                 ui.painter().rect_stroke(
                     egui::Rect::from_two_pos(

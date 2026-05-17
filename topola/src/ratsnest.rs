@@ -59,7 +59,7 @@ impl Ratsnest {
         }
 
         for (i, segment) in board.layout().segments().collection() {
-            let segment_center = board.layout().segment_center(SegmentId::new(i));
+            let segment_center = segment.center();
             let _ = triangulations
                 .entry((segment.net, segment.layer))
                 .or_insert_with(DelaunayTriangulation::new)
