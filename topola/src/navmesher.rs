@@ -211,7 +211,7 @@ impl NavmesherBoard {
             this.segment_multiobstacles.insert(
                 i,
                 this.navmesher
-                    .insert_multiobstacle(segment.layer, segment.bbox()),
+                    .insert_multiobstacle(segment.layer, segment.bounding_rectangle()),
             );
         }
 
@@ -256,7 +256,7 @@ impl NavmesherBoard {
 
     pub fn insert_segment_with_cache(&mut self, segment: Segment) -> SegmentId {
         let layer = segment.layer;
-        let obstacle = segment.bbox();
+        let obstacle = segment.bounding_rectangle();
         let segment_id = self.board.add_segment_raw(segment);
         self.segment_multiobstacles.insert(
             segment_id.index(),

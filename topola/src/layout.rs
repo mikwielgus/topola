@@ -16,7 +16,7 @@ use undoredo::{ApplyDelta, Delta, FlushDelta, Recorder};
 
 use crate::{
     Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2, Via, ViaId,
-    primitives::SegmentSpec,
+    primitives::{SegmentSpec, ViaSpec},
 };
 
 #[derive(
@@ -123,21 +123,21 @@ impl Layout {
         joint_id
     }
 
-    pub fn add_segment(&mut self, segment: SegmentSpec) -> SegmentId {
+    pub fn add_segment(&mut self, spec: SegmentSpec) -> SegmentId {
         self.add_segment_raw(Segment {
-            spec: segment,
+            spec,
             endpoints: [
-                self.joint(segment.endjoints[0]).position,
-                self.joint(segment.endjoints[1]).position,
+                self.joint(spec.endjoints[0]).position,
+                self.joint(spec.endjoints[1]).position,
             ],
-            layer: self.joint(segment.endjoints[0]).layer,
-            net: self.joint(segment.endjoints[0]).net,
+            layer: self.joint(spec.endjoints[0]).layer,
+            net: self.joint(spec.endjoints[0]).net,
         })
     }
 
     pub fn add_segment_raw(&mut self, segment: Segment) -> SegmentId {
         let pin_id = segment.spec.pin;
-        let bbox = segment.rtree_bbox();
+        let bbox = segment.bbox();
         let segment_id = SegmentId::new(self.segments.push(segment));
 
         self.segments_rtree
@@ -150,12 +150,25 @@ impl Layout {
         segment_id
     }
 
-    pub fn add_via(&mut self, via: Via) -> ViaId {
-        //let bbox = via.bbox();
-        let pin_id = via.pin;
+    pub fn add_via(&mut self, spec: ViaSpec) -> ViaId {
+        let joint0 = self.joint(spec.endjoints[0]);
+        let joint1 = self.joint(spec.endjoints[1]);
+
+        self.add_via_raw(Via {
+            spec,
+            min_layer: std::cmp::min(joint0.layer, joint1.layer),
+            max_layer: std::cmp::max(joint0.layer, joint1.layer),
+            net: joint0.net,
+            position: (joint0.position + joint1.position) / 2,
+        })
+    }
+
+    pub fn add_via_raw(&mut self, via: Via) -> ViaId {
+        let bbox = via.bbox();
+        let pin_id = via.spec.pin;
         let via_id = ViaId::new(self.vias.push(via));
 
-        //self.vias_rtree.insert(GeomWithData::new(bbox, via_id), ());
+        self.vias_rtree.insert(GeomWithData::new(bbox, via_id), ());
 
         if let Some(pin_id) = pin_id {
             self.pins[pin_id.index()].vias.push(via_id);

@@ -3,9 +3,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use derive_more::Constructor;
+use rstar::{AABB, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
 use crate::layout::{NetId, PinId};
+use crate::math::Vector2;
 
 use super::joint::JointId;
 
@@ -23,16 +25,36 @@ impl ViaId {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct Via {
+pub struct ViaSpec {
     pub endjoints: [JointId; 2],
-    pub layer: usize, // ??? This should be a range.
     pub radius: u64,
-    pub net: NetId,
     pub pin: Option<PinId>,
 }
 
+#[derive(Clone, Copy, Debug)]
+pub struct Via {
+    pub spec: ViaSpec,
+    pub position: Vector2<i64>,
+    pub min_layer: usize,
+    pub max_layer: usize,
+    pub net: NetId,
+}
+
 impl Via {
-    /*pub fn bbox(&self) -> Rectangle<[i64; 3]> {
-        //
-    }*/
+    pub fn bbox(&self) -> Rectangle<[i64; 3]> {
+        let radius = self.spec.radius as i64;
+
+        Rectangle::from_aabb(AABB::from_corners(
+            [
+                self.position.x - radius,
+                self.position.y - radius,
+                self.min_layer as i64,
+            ],
+            [
+                self.position.x + radius,
+                self.position.y + radius,
+                self.max_layer as i64,
+            ],
+        ))
+    }
 }

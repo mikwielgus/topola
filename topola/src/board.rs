@@ -9,7 +9,9 @@ use undoredo::{ApplyDelta, Delta, FlushDelta};
 use crate::{
     layout::{Layout, LayoutHalfDelta, NetId, PinId},
     math::Vector2,
-    primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId},
+    primitives::{
+        Joint, JointId, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId, ViaSpec,
+    },
     selection::{PinSelection, PinSelector},
 };
 
@@ -71,8 +73,12 @@ impl Board {
         self.layout.add_segment_raw(segment)
     }
 
-    pub fn add_via(&mut self, via: Via) -> ViaId {
-        self.layout.add_via(via)
+    pub fn add_via(&mut self, spec: ViaSpec) -> ViaId {
+        self.layout.add_via(spec)
+    }
+
+    pub fn add_via_raw(&mut self, via: Via) -> ViaId {
+        self.layout.add_via_raw(via)
     }
 
     pub fn add_polygon(&mut self, polygon: Polygon) -> PolygonId {

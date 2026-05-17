@@ -54,7 +54,9 @@ impl Segment {
         point.inside_polygon(&vertices)
     }
 
-    pub fn bbox(&self) -> [Vector2<i64>; 4] {
+    /// NOTE: This is not the bounding box. The output rectangle is in general
+    /// not axis-aligned.
+    pub fn bounding_rectangle(&self) -> [Vector2<i64>; 4] {
         crate::math::inflated_segment(
             self.endpoints[0].x,
             self.endpoints[0].y,
@@ -64,7 +66,7 @@ impl Segment {
         )
     }
 
-    pub fn rtree_bbox(&self) -> Rectangle<[i64; 3]> {
+    pub fn bbox(&self) -> Rectangle<[i64; 3]> {
         let endpoints = self.endpoints;
         let layer = self.layer as i64;
         let half_width = self.spec.half_width as i64;

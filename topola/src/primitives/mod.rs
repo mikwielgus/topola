@@ -12,7 +12,7 @@ mod via;
 pub use joint::{Joint, JointId};
 pub use polygon::{Polygon, PolygonId};
 pub use segment::{Segment, SegmentId, SegmentSpec};
-pub use via::{Via, ViaId};
+pub use via::{Via, ViaId, ViaSpec};
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum PrimitiveId {
