@@ -9,7 +9,9 @@ use serde::{Deserialize, Serialize};
 use stable_vec::StableVec;
 use undoredo::Recorder;
 
-use crate::{Board, Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2};
+use crate::{
+    Board, Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2, primitives::JointSpec,
+};
 
 #[derive(
     Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
@@ -204,7 +206,7 @@ impl NavmesherBoard {
             this.joint_multiobstacles.insert(
                 i,
                 this.navmesher
-                    .insert_multiobstacle(joint.layer, Self::joint_bounding_octagon(*joint)),
+                    .insert_multiobstacle(joint.spec.layer, Self::joint_bounding_octagon(joint)),
             );
         }
 
@@ -227,21 +229,26 @@ impl NavmesherBoard {
         this
     }
 
-    pub fn insert_joint(&mut self, joint: Joint) -> JointId {
-        let joint_id = self.board.add_joint(joint);
+    pub fn insert_joint(&mut self, spec: JointSpec) -> JointId {
+        let layer = spec.layer;
+        let obstacle = Self::joint_bounding_octagon(&Joint {
+            spec,
+            segments: Vec::new(),
+            vias: Vec::new(),
+        });
+        let joint_id = self.board.add_joint(spec);
         self.joint_multiobstacles.insert(
             joint_id.index(),
-            self.navmesher
-                .insert_multiobstacle(joint.layer, Self::joint_bounding_octagon(joint)),
+            self.navmesher.insert_multiobstacle(layer, obstacle),
         );
 
         joint_id
     }
 
-    fn joint_bounding_octagon(joint: Joint) -> [Vector2<i64>; 8] {
-        let cx = joint.position.x;
-        let cy = joint.position.y;
-        let r = joint.radius as i64;
+    fn joint_bounding_octagon(joint: &Joint) -> [Vector2<i64>; 8] {
+        let cx = joint.spec.position.x;
+        let cy = joint.spec.position.y;
+        let r = joint.spec.radius as i64;
 
         [
             Vector2::new(cx + r, cy + r / 2),

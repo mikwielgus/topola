@@ -52,7 +52,7 @@ impl Display {
                     joint,
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        board.layer_name(joint.layer),
+                        board.layer_name(joint.spec.layer),
                         board.pin_selection_contains_joint(&workspace.pin_selection, joint_id),
                     ),
                 );
@@ -113,8 +113,8 @@ impl Display {
         color: egui::Color32,
     ) {
         ui.painter().circle_filled(
-            egui::pos2(joint.position.x as f32, joint.position.y as f32),
-            joint.radius as f32,
+            egui::pos2(joint.spec.position.x as f32, joint.spec.position.y as f32),
+            joint.spec.radius as f32,
             color,
         );
     }

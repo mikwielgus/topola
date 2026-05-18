@@ -9,7 +9,7 @@ mod polygon;
 mod segment;
 mod via;
 
-pub use joint::{Joint, JointId};
+pub use joint::{Joint, JointId, JointSpec};
 pub use polygon::{Polygon, PolygonId};
 pub use segment::{Segment, SegmentId, SegmentSpec};
 pub use via::{Via, ViaId, ViaSpec};

@@ -10,7 +10,8 @@ use crate::{
     layout::{Layout, LayoutHalfDelta, NetId, PinId},
     math::Vector2,
     primitives::{
-        Joint, JointId, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId, ViaSpec,
+        JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
+        ViaSpec,
     },
     selection::{PinSelection, PinSelector},
 };
@@ -61,8 +62,8 @@ impl Board {
         pin_id
     }
 
-    pub fn add_joint(&mut self, joint: Joint) -> JointId {
-        self.layout.add_joint(joint)
+    pub fn add_joint(&mut self, spec: JointSpec) -> JointId {
+        self.layout.add_joint(spec)
     }
 
     pub fn add_segment(&mut self, spec: SegmentSpec) -> SegmentId {
@@ -89,8 +90,8 @@ impl Board {
         let joint = self.layout.joint(joint_id);
 
         Some(PinSelector {
-            pin: self.pin_name(joint.pin?)?.to_string(),
-            layer: self.layer_name(joint.layer)?.to_string(),
+            pin: self.pin_name(joint.spec.pin?)?.to_string(),
+            layer: self.layer_name(joint.spec.layer)?.to_string(),
         })
     }
 

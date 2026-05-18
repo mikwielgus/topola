@@ -48,10 +48,10 @@ impl Ratsnest {
 
         for (i, joint) in board.layout().joints().container().iter() {
             let _ = triangulations
-                .entry((joint.net, joint.layer))
+                .entry((joint.spec.net, joint.spec.layer))
                 .or_insert_with(DelaunayTriangulation::new)
                 .insert(DelaunayVertex {
-                    layer: joint.layer,
+                    layer: joint.spec.layer,
                     center: joint.center(),
                     position: spade::Point2::new(joint.center().x as f64, joint.center().y as f64),
                     primitive_id: PrimitiveId::Joint(JointId::new(i)),

@@ -15,7 +15,7 @@ use undoredo::{Delta, Recorder};
 
 use crate::{
     Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2, Via, ViaId,
-    primitives::{SegmentSpec, ViaSpec},
+    primitives::{JointSpec, SegmentSpec, ViaSpec},
 };
 
 #[derive(
@@ -123,9 +123,14 @@ impl Layout {
         PinId::new(self.pins.push(Pin::new()))
     }
 
-    pub fn add_joint(&mut self, joint: Joint) -> JointId {
+    pub fn add_joint(&mut self, spec: JointSpec) -> JointId {
+        let joint = Joint {
+            spec,
+            segments: Vec::new(),
+            vias: Vec::new(),
+        };
         let bbox = joint.bbox();
-        let pin_id = joint.pin;
+        let pin_id = joint.spec.pin;
         let joint_id = JointId::new(self.joints.push(joint));
 
         self.joints_rtree
@@ -142,11 +147,11 @@ impl Layout {
         self.add_segment_raw(Segment {
             spec,
             endpoints: [
-                self.joint(spec.endjoints[0]).position,
-                self.joint(spec.endjoints[1]).position,
+                self.joint(spec.endjoints[0]).spec.position,
+                self.joint(spec.endjoints[1]).spec.position,
             ],
-            layer: self.joint(spec.endjoints[0]).layer,
-            net: self.joint(spec.endjoints[0]).net,
+            layer: self.joint(spec.endjoints[0]).spec.layer,
+            net: self.joint(spec.endjoints[0]).spec.net,
         })
     }
 
@@ -154,6 +159,15 @@ impl Layout {
         let pin_id = segment.spec.pin;
         let bbox = segment.bbox();
         let segment_id = SegmentId::new(self.segments.push(segment));
+
+        self.joints
+            .modify(segment.spec.endjoints[0].index(), |joint| {
+                joint.segments.push(segment_id)
+            });
+        self.joints
+            .modify(segment.spec.endjoints[1].index(), |joint| {
+                joint.segments.push(segment_id)
+            });
 
         self.segments_rtree
             .insert(GeomWithData::new(bbox, segment_id), ());
@@ -171,10 +185,10 @@ impl Layout {
 
         self.add_via_raw(Via {
             spec,
-            min_layer: std::cmp::min(joint0.layer, joint1.layer),
-            max_layer: std::cmp::max(joint0.layer, joint1.layer),
-            net: joint0.net,
-            position: (joint0.position + joint1.position) / 2,
+            min_layer: std::cmp::min(joint0.spec.layer, joint1.spec.layer),
+            max_layer: std::cmp::max(joint0.spec.layer, joint1.spec.layer),
+            net: joint0.spec.net,
+            position: (joint0.spec.position + joint1.spec.position) / 2,
         })
     }
 
@@ -182,6 +196,13 @@ impl Layout {
         let bbox = via.bbox();
         let pin_id = via.spec.pin;
         let via_id = ViaId::new(self.vias.push(via));
+
+        self.joints.modify(via.spec.endjoints[0].index(), |joint| {
+            joint.vias.push(via_id)
+        });
+        self.joints.modify(via.spec.endjoints[1].index(), |joint| {
+            joint.vias.push(via_id)
+        });
 
         self.vias_rtree.insert(GeomWithData::new(bbox, via_id), ());
 
@@ -261,7 +282,7 @@ impl Layout {
             .as_ref()
             .locate_in_envelope_intersecting(&envelope)
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&id| self.joint(id).layer == layer)
+            .filter(move |&id| self.joint(id).spec.layer == layer)
     }
 
     pub fn layer_segments(&self, layer: usize) -> impl Iterator<Item = SegmentId> + '_ {

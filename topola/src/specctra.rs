@@ -14,7 +14,7 @@ use crate::{
     Segment, Vector2,
     board::Board,
     layout::{NetId, PinId},
-    primitives::{Joint, Polygon, SegmentSpec},
+    primitives::{JointSpec, Polygon, SegmentSpec},
 };
 
 impl Board {
@@ -278,7 +278,7 @@ impl Board {
         pin: Option<PinId>,
         flip: bool,
     ) {
-        board.add_joint(Joint {
+        board.add_joint(JointSpec {
             position: Self::pos(place, pin_pos, 0.0, 0.0, flip),
             layer,
             net,
@@ -326,7 +326,7 @@ impl Board {
     ) {
         // Add the first coordinate in the wire path as a dot and save its index.
         let mut prev_pos: Vector2<i64> = Self::pos(place, pin_pos, coords[0].x, coords[0].y, flip);
-        let mut prev_joint = board.add_joint(Joint {
+        let mut prev_joint = board.add_joint(JointSpec {
             position: prev_pos,
             layer,
             radius: (width / 2.0) as u64,
@@ -342,7 +342,7 @@ impl Board {
                 continue;
             }
 
-            let joint = board.add_joint(Joint {
+            let joint = board.add_joint(JointSpec {
                 position: pos,
                 layer,
                 radius: (width / 2.0) as u64,
