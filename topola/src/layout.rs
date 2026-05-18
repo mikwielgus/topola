@@ -148,7 +148,7 @@ impl Layout {
         F: FnOnce(&mut JointSpec),
     {
         self.modify_joint_raw(id, |joint| f(&mut joint.spec));
-        let new_joint = self.joints.get(&id.index()).unwrap().clone();
+        let new_joint = self.joints[id.index()].clone();
 
         for &segment in &new_joint.segments {
             self.update_segment(segment);
@@ -163,13 +163,13 @@ impl Layout {
     where
         F: FnOnce(&mut Joint),
     {
-        let old_joint = self.joints.get(&id.index()).unwrap();
+        let old_joint = &self.joints[id.index()];
         self.joints_rtree
             .remove(&GeomWithData::new(old_joint.bbox(), id));
 
         self.joints.modify(id.index(), |joint| f(joint));
 
-        let new_joint = self.joints.get(&id.index()).unwrap().clone();
+        let new_joint = self.joints[id.index()].clone();
         self.joints_rtree
             .insert(GeomWithData::new(new_joint.bbox(), id), ());
     }
@@ -214,27 +214,27 @@ impl Layout {
     where
         F: FnOnce(&mut SegmentSpec),
     {
-        let old_segment = self.segments.get(&id.index()).unwrap();
+        let old_segment = &self.segments[id.index()];
         self.segments_rtree
             .remove(&GeomWithData::new(old_segment.bbox(), id));
 
         self.segments
             .modify(id.index(), |segment| f(&mut segment.spec));
 
-        let new_segment = self.segments.get(&id.index()).unwrap();
+        let new_segment = &self.segments[id.index()];
         self.segments_rtree
             .insert(GeomWithData::new(new_segment.bbox(), id), ());
     }
 
     fn update_segment(&mut self, id: SegmentId) {
-        let old_segment = self.segments.get(&id.index()).unwrap();
+        let old_segment = &self.segments[id.index()];
         self.segments_rtree
             .remove(&GeomWithData::new(old_segment.bbox(), id));
 
         let endjoint_ids = old_segment.spec.endjoints;
         let endjoint_specs = [
-            self.joints.get(&endjoint_ids[0].index()).unwrap().spec,
-            self.joints.get(&endjoint_ids[1].index()).unwrap().spec,
+            self.joints[endjoint_ids[0].index()].spec,
+            self.joints[endjoint_ids[1].index()].spec,
         ];
         self.segments.modify(id.index(), |segment| {
             segment.endpoints = [endjoint_specs[0].position, endjoint_specs[1].position];
@@ -242,7 +242,7 @@ impl Layout {
             segment.net = endjoint_specs[0].net;
         });
 
-        let new_segment = self.segments.get(&id.index()).unwrap();
+        let new_segment = &self.segments[id.index()];
         self.segments_rtree
             .insert(GeomWithData::new(new_segment.bbox(), id), ());
     }
@@ -284,26 +284,26 @@ impl Layout {
     where
         F: FnOnce(&mut ViaSpec),
     {
-        let old_via = self.vias.get(&id.index()).unwrap();
+        let old_via = &self.vias[id.index()];
         self.vias_rtree
             .remove(&GeomWithData::new(old_via.bbox(), id));
 
         self.vias.modify(id.index(), |via| f(&mut via.spec));
 
-        let new_via = self.vias.get(&id.index()).unwrap();
+        let new_via = &self.vias[id.index()];
         self.vias_rtree
             .insert(GeomWithData::new(new_via.bbox(), id), ());
     }
 
     fn update_via(&mut self, id: ViaId) {
-        let old_via = self.vias.get(&id.index()).unwrap();
+        let old_via = &self.vias[id.index()];
         self.vias_rtree
             .remove(&GeomWithData::new(old_via.bbox(), id));
 
         let endjoint_ids = old_via.spec.endjoints;
         let endjoint_specs = [
-            self.joints.get(&endjoint_ids[0].index()).unwrap().spec,
-            self.joints.get(&endjoint_ids[1].index()).unwrap().spec,
+            self.joints[endjoint_ids[0].index()].spec,
+            self.joints[endjoint_ids[1].index()].spec,
         ];
         self.vias.modify(id.index(), |via| {
             via.position = endjoint_specs[0].position;
@@ -312,7 +312,7 @@ impl Layout {
             via.net = endjoint_specs[0].net;
         });
 
-        let new_via = self.vias.get(&id.index()).unwrap();
+        let new_via = &self.vias[id.index()];
         self.vias_rtree
             .insert(GeomWithData::new(new_via.bbox(), id), ());
     }
@@ -336,13 +336,13 @@ impl Layout {
     where
         F: FnOnce(&mut Polygon),
     {
-        let old_polygon = self.polygons.get(&id.index()).unwrap();
+        let old_polygon = &self.polygons[id.index()];
         self.polygons_rtree
             .remove(&GeomWithData::new(old_polygon.bbox(), id));
 
         self.polygons.modify(id.index(), |polygon| f(polygon));
 
-        let new_polygon = self.polygons.get(&id.index()).unwrap();
+        let new_polygon = &self.polygons[id.index()];
         self.polygons_rtree
             .insert(GeomWithData::new(new_polygon.bbox(), id), ());
     }
@@ -356,12 +356,7 @@ impl Layout {
             .as_ref()
             .locate_all_at_point(&[point.x, point.y, layer as i64])
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&joint_id| {
-                self.joints
-                    .get(&joint_id.index())
-                    .unwrap()
-                    .contains_point(point)
-            })
+            .filter(move |&joint_id| self.joints[joint_id.index()].contains_point(point))
     }
 
     pub fn locate_segments_at_point(
@@ -387,12 +382,7 @@ impl Layout {
             .as_ref()
             .locate_all_at_point(&[point.x, point.y, layer as i64])
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&polygon_id| {
-                self.polygons
-                    .get(&polygon_id.index())
-                    .unwrap()
-                    .contains_point(point)
-            })
+            .filter(move |&polygon_id| self.polygons[polygon_id.index()].contains_point(point))
     }
 
     pub fn layer_joints(&self, layer: usize) -> impl Iterator<Item = JointId> + '_ {
@@ -430,15 +420,15 @@ impl Layout {
     }
 
     pub fn joint(&self, joint_id: JointId) -> &Joint {
-        self.joints.get(&joint_id.index()).unwrap()
+        &self.joints[joint_id.index()]
     }
 
     pub fn segment(&self, segment_id: SegmentId) -> &Segment {
-        self.segments.get(&segment_id.index()).unwrap()
+        &self.segments[segment_id.index()]
     }
 
     pub fn polygon(&self, polygon_id: PolygonId) -> &Polygon {
-        self.polygons.get(&polygon_id.index()).unwrap()
+        &self.polygons[polygon_id.index()]
     }
 
     pub fn pin(&self, pin_id: PinId) -> &Pin {
