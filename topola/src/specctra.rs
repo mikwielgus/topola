@@ -11,10 +11,11 @@ use specctra::{
 };
 
 use crate::{
-    Segment, Vector2,
     board::Board,
-    layout::{NetId, PinId},
-    primitives::{JointSpec, Polygon, SegmentSpec},
+    compounds::NetId,
+    compounds::PinId,
+    math::Vector2,
+    primitives::{JointSpec, Polygon, Segment, SegmentSpec},
 };
 
 impl Board {

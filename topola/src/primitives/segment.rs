@@ -6,7 +6,7 @@ use derive_more::Constructor;
 use rstar::primitives::Rectangle;
 use serde::{Deserialize, Serialize};
 
-use crate::layout::{NetId, PinId};
+use crate::compounds::{NetId, PinId};
 use crate::math::Vector2;
 use crate::primitives::JointId;
 

@@ -6,10 +6,9 @@ use derive_more::Constructor;
 use rstar::{AABB, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
-use crate::layout::{NetId, PinId};
+use crate::compounds::{NetId, PinId};
 use crate::math::Vector2;
-
-use super::joint::JointId;
+use crate::primitives::JointId;
 
 #[derive(
     Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,

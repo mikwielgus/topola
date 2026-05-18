@@ -7,7 +7,8 @@ use derive_getters::{Dissolve, Getters};
 use undoredo::{ApplyDelta, Delta, FlushDelta};
 
 use crate::{
-    layout::{Layout, LayoutHalfDelta, NetId, PinId},
+    compounds::{NetId, PinId},
+    layout::{Layout, LayoutHalfDelta},
     math::Vector2,
     primitives::{
         JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,

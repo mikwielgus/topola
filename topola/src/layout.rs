@@ -3,65 +3,22 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use derive_getters::Getters;
-use derive_more::Constructor;
 use rstar::{
     AABB, RTree,
     primitives::{GeomWithData, Rectangle},
 };
-use serde::{Deserialize, Serialize};
 use stable_vec::StableVec;
 use undoredo::aliases::RTreeHalfDelta;
 use undoredo::{Delta, Recorder};
 
 use crate::{
-    Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2, Via, ViaId,
-    primitives::{JointSpec, SegmentSpec, ViaSpec},
+    compounds::{Pin, PinId},
+    math::Vector2,
+    primitives::{
+        Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
+        ViaSpec,
+    },
 };
-
-#[derive(
-    Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
-)]
-pub struct PinId(usize);
-
-impl PinId {
-    /// Returns the underlying index.
-    #[inline]
-    pub fn index(self) -> usize {
-        self.0
-    }
-}
-
-#[derive(Clone, Debug)]
-pub struct Pin {
-    joints: Vec<JointId>,
-    segments: Vec<SegmentId>,
-    vias: Vec<ViaId>,
-    polygons: Vec<PolygonId>,
-}
-
-impl Pin {
-    pub fn new() -> Self {
-        Self {
-            joints: Vec::new(),
-            segments: Vec::new(),
-            vias: Vec::new(),
-            polygons: Vec::new(),
-        }
-    }
-}
-
-#[derive(
-    Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
-)]
-pub struct NetId(usize);
-
-impl NetId {
-    /// Returns the underlying index.
-    #[inline]
-    pub fn index(self) -> usize {
-        self.0
-    }
-}
 
 #[derive(Delta, Clone, Debug, Getters)]
 pub struct Layout {
@@ -72,8 +29,7 @@ pub struct Layout {
     #[undoredo(skip)]
     layer_count: usize,
 
-    #[undoredo(skip)]
-    pins: StableVec<Pin>,
+    pins: Recorder<StableVec<Pin>>,
 
     joints: Recorder<StableVec<Joint>>,
     segments: Recorder<StableVec<Segment>>,
@@ -105,7 +61,7 @@ impl Layout {
             place_boundary: boundary,
             layer_count,
 
-            pins: StableVec::new(),
+            pins: Recorder::new(StableVec::new()),
 
             joints: Recorder::new(StableVec::new()),
             segments: Recorder::new(StableVec::new()),
@@ -137,7 +93,8 @@ impl Layout {
             .insert(GeomWithData::new(bbox, joint_id), ());
 
         if let Some(pin_id) = pin_id {
-            self.pins[pin_id.index()].joints.push(joint_id);
+            self.pins
+                .modify(pin_id.index(), |pin| pin.joints.push(joint_id));
         }
 
         joint_id
@@ -204,7 +161,8 @@ impl Layout {
             .insert(GeomWithData::new(bbox, segment_id), ());
 
         if let Some(pin_id) = pin_id {
-            self.pins[pin_id.index()].segments.push(segment_id);
+            self.pins
+                .modify(pin_id.index(), |pin| pin.segments.push(segment_id));
         }
 
         segment_id
@@ -274,7 +232,8 @@ impl Layout {
         self.vias_rtree.insert(GeomWithData::new(bbox, via_id), ());
 
         if let Some(pin_id) = pin_id {
-            self.pins[pin_id.index()].vias.push(via_id);
+            self.pins
+                .modify(pin_id.index(), |pin| pin.vias.push(via_id));
         }
 
         via_id
@@ -326,7 +285,8 @@ impl Layout {
             .insert(GeomWithData::new(bbox, polygon_id), ());
 
         if let Some(pin_id) = pin_id {
-            self.pins[pin_id.index()].polygons.push(polygon_id);
+            self.pins
+                .modify(pin_id.index(), |pin| pin.polygons.push(polygon_id));
         }
 
         polygon_id

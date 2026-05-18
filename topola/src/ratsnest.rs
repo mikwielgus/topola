@@ -9,7 +9,10 @@ use serde::{Deserialize, Serialize};
 use spade::{DelaunayTriangulation, HasPosition, Triangulation, handles::FixedVertexHandle};
 
 use crate::{
-    Board, JointId, PolygonId, SegmentId, Vector2, layout::NetId, primitives::PrimitiveId,
+    Board,
+    compounds::NetId,
+    math::Vector2,
+    primitives::{JointId, PolygonId, PrimitiveId, SegmentId},
 };
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Getters, Ord, PartialEq, PartialOrd, Serialize)]

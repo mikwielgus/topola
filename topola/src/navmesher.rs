@@ -10,7 +10,9 @@ use stable_vec::StableVec;
 use undoredo::Recorder;
 
 use crate::{
-    Board, Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Vector2, primitives::JointSpec,
+    Board,
+    math::Vector2,
+    primitives::{Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId},
 };
 
 #[derive(
