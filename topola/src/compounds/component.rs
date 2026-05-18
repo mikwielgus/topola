@@ -10,9 +10,9 @@ use crate::primitives::{JointId, PolygonId, SegmentId, ViaId};
 #[derive(
     Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
 )]
-pub struct PinId(usize);
+pub struct ComponentId(usize);
 
-impl PinId {
+impl ComponentId {
     #[inline]
     pub fn index(self) -> usize {
         self.0
@@ -20,14 +20,14 @@ impl PinId {
 }
 
 #[derive(Clone, Debug)]
-pub struct Pin {
+pub struct Component {
     pub joints: Vec<JointId>,
     pub segments: Vec<SegmentId>,
     pub vias: Vec<ViaId>,
     pub polygons: Vec<PolygonId>,
 }
 
-impl Pin {
+impl Component {
     pub fn new() -> Self {
         Self {
             joints: Vec::new(),

@@ -6,7 +6,7 @@ use derive_more::Constructor;
 use rstar::{AABB, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
-use crate::compounds::{NetId, PinId};
+use crate::compounds::{ComponentId, NetId, PinId};
 use crate::math::Vector2;
 use crate::primitives::JointId;
 
@@ -27,6 +27,7 @@ impl ViaId {
 pub struct ViaSpec {
     pub endjoints: [JointId; 2],
     pub radius: u64,
+    pub component: Option<ComponentId>,
     pub pin: Option<PinId>,
 }
 

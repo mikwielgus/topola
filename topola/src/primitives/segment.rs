@@ -6,7 +6,7 @@ use derive_more::Constructor;
 use rstar::primitives::Rectangle;
 use serde::{Deserialize, Serialize};
 
-use crate::compounds::{NetId, PinId};
+use crate::compounds::{ComponentId, NetId, PinId};
 use crate::math::Vector2;
 use crate::primitives::JointId;
 
@@ -27,6 +27,7 @@ impl SegmentId {
 pub struct SegmentSpec {
     pub endjoints: [JointId; 2],
     pub half_width: u64,
+    pub component: Option<ComponentId>,
     pub pin: Option<PinId>,
 }
 

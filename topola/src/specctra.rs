@@ -12,8 +12,7 @@ use specctra::{
 
 use crate::{
     board::Board,
-    compounds::NetId,
-    compounds::PinId,
+    compounds::{ComponentId, NetId, PinId},
     math::Vector2,
     primitives::{JointSpec, Polygon, Segment, SegmentSpec},
 };
@@ -98,6 +97,7 @@ impl Board {
                 .unwrap();
 
             for place in &component.places {
+                let component_id = board.add_component();
                 let place_side_is_front = place.side == "front";
                 let get_layer = |board: &Board, name: &str| {
                     Self::layer(board, &dsn.pcb.structure.layers, name, place_side_is_front)
@@ -124,6 +124,7 @@ impl Board {
                                     (circle.diameter / 2.0) as u64,
                                     layer,
                                     net,
+                                    Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
                                 )
@@ -140,6 +141,7 @@ impl Board {
                                     rect.y2,
                                     layer,
                                     net,
+                                    Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
                                 )
@@ -154,6 +156,7 @@ impl Board {
                                     path.width,
                                     layer,
                                     net,
+                                    Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
                                 )
@@ -168,6 +171,7 @@ impl Board {
                                     polygon.width,
                                     layer,
                                     net,
+                                    Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
                                 )
@@ -198,6 +202,7 @@ impl Board {
                             layer,
                             net,
                             None,
+                            None,
                             false,
                         )
                     }
@@ -214,6 +219,7 @@ impl Board {
                             layer,
                             net,
                             None,
+                            None,
                             false,
                         )
                     }
@@ -228,6 +234,7 @@ impl Board {
                             layer,
                             net,
                             None,
+                            None,
                             false,
                         )
                     }
@@ -241,6 +248,7 @@ impl Board {
                             polygon.width,
                             layer,
                             net,
+                            None,
                             None,
                             false,
                         )
@@ -262,6 +270,7 @@ impl Board {
                 layer,
                 net,
                 None,
+                None,
                 false,
             );
         }
@@ -276,6 +285,7 @@ impl Board {
         radius: u64,
         layer: usize,
         net: NetId,
+        component: Option<ComponentId>,
         pin: Option<PinId>,
         flip: bool,
     ) {
@@ -283,6 +293,7 @@ impl Board {
             position: Self::pos(place, pin_pos, 0.0, 0.0, flip),
             layer,
             net,
+            component,
             pin,
             radius,
         });
@@ -298,6 +309,7 @@ impl Board {
         y2: f64,
         layer: usize,
         net: NetId,
+        component: Option<ComponentId>,
         pin: Option<PinId>,
         flip: bool,
     ) {
@@ -310,6 +322,7 @@ impl Board {
             ],
             layer,
             net,
+            component,
             pin,
         });
     }
@@ -322,6 +335,7 @@ impl Board {
         width: f64,
         layer: usize,
         net: NetId,
+        component: Option<ComponentId>,
         pin: Option<PinId>,
         flip: bool,
     ) {
@@ -332,6 +346,7 @@ impl Board {
             layer,
             radius: (width / 2.0) as u64,
             net,
+            component,
             pin,
         });
 
@@ -348,6 +363,7 @@ impl Board {
                 layer,
                 radius: (width / 2.0) as u64,
                 net,
+                component,
                 pin,
             });
 
@@ -356,6 +372,7 @@ impl Board {
                 spec: SegmentSpec {
                     endjoints: [prev_joint, joint],
                     half_width: (width / 2.0) as u64,
+                    component,
                     pin,
                 },
                 endpoints: [prev_pos, pos],
@@ -376,6 +393,7 @@ impl Board {
         _width: f64,
         layer: usize,
         net: NetId,
+        component: Option<ComponentId>,
         pin: Option<PinId>,
         flip: bool,
     ) {
@@ -387,6 +405,7 @@ impl Board {
             vertices,
             layer,
             net,
+            component,
             pin,
         });
     }

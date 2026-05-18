@@ -2,8 +2,10 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+mod component;
 mod net;
 mod pin;
 
+pub use component::{Component, ComponentId};
 pub use net::NetId;
 pub use pin::{Pin, PinId};

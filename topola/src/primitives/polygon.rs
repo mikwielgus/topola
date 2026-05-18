@@ -6,7 +6,7 @@ use derive_more::Constructor;
 use rstar::{AABB, Envelope, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
-use crate::compounds::{NetId, PinId};
+use crate::compounds::{ComponentId, NetId, PinId};
 use crate::math::Vector2;
 
 #[derive(
@@ -27,6 +27,7 @@ pub struct Polygon {
     pub vertices: Vec<Vector2<i64>>,
     pub layer: usize,
     pub net: NetId,
+    pub component: Option<ComponentId>,
     pub pin: Option<PinId>,
 }
 

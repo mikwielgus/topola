@@ -6,7 +6,7 @@ use derive_more::Constructor;
 use rstar::{AABB, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
-use crate::compounds::{NetId, PinId};
+use crate::compounds::{ComponentId, NetId, PinId};
 use crate::math::Vector2;
 use crate::primitives::{SegmentId, ViaId};
 
@@ -29,6 +29,7 @@ pub struct JointSpec {
     pub layer: usize,
     pub radius: u64,
     pub net: NetId,
+    pub component: Option<ComponentId>,
     pub pin: Option<PinId>,
 }
 

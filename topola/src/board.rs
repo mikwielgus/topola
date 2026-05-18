@@ -7,7 +7,7 @@ use derive_getters::{Dissolve, Getters};
 use undoredo::{ApplyDelta, Delta, FlushDelta};
 
 use crate::{
-    compounds::{NetId, PinId},
+    compounds::{ComponentId, NetId, PinId},
     layout::{Layout, LayoutHalfDelta},
     math::Vector2,
     primitives::{
@@ -61,6 +61,10 @@ impl Board {
         self.pin_names.insert(pin_id, pin_name);
 
         pin_id
+    }
+
+    pub fn add_component(&mut self) -> ComponentId {
+        self.layout.add_component()
     }
 
     pub fn add_joint(&mut self, spec: JointSpec) -> JointId {

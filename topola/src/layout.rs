@@ -12,7 +12,7 @@ use undoredo::aliases::RTreeHalfDelta;
 use undoredo::{Delta, Recorder};
 
 use crate::{
-    compounds::{Pin, PinId},
+    compounds::{Component, ComponentId, Pin, PinId},
     math::Vector2,
     primitives::{
         Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
@@ -29,6 +29,7 @@ pub struct Layout {
     #[undoredo(skip)]
     layer_count: usize,
 
+    components: Recorder<StableVec<Component>>,
     pins: Recorder<StableVec<Pin>>,
 
     joints: Recorder<StableVec<Joint>>,
@@ -61,6 +62,7 @@ impl Layout {
             place_boundary: boundary,
             layer_count,
 
+            components: Recorder::new(StableVec::new()),
             pins: Recorder::new(StableVec::new()),
 
             joints: Recorder::new(StableVec::new()),
@@ -75,6 +77,10 @@ impl Layout {
         }
     }
 
+    pub fn add_component(&mut self) -> ComponentId {
+        ComponentId::new(self.components.push(Component::new()))
+    }
+
     pub fn add_pin(&mut self) -> PinId {
         PinId::new(self.pins.push(Pin::new()))
     }
@@ -86,11 +92,18 @@ impl Layout {
             vias: Vec::new(),
         };
         let bbox = joint.bbox();
+        let component_id = joint.spec.component;
         let pin_id = joint.spec.pin;
         let joint_id = JointId::new(self.joints.push(joint));
 
         self.joints_rtree
             .insert(GeomWithData::new(bbox, joint_id), ());
+
+        if let Some(component_id) = component_id {
+            self.components.modify(component_id.index(), |component| {
+                component.joints.push(joint_id)
+            });
+        }
 
         if let Some(pin_id) = pin_id {
             self.pins
@@ -144,6 +157,7 @@ impl Layout {
     }
 
     pub fn add_segment_raw(&mut self, segment: Segment) -> SegmentId {
+        let component_id = segment.spec.component;
         let pin_id = segment.spec.pin;
         let bbox = segment.bbox();
         let segment_id = SegmentId::new(self.segments.push(segment));
@@ -159,6 +173,12 @@ impl Layout {
 
         self.segments_rtree
             .insert(GeomWithData::new(bbox, segment_id), ());
+
+        if let Some(component_id) = component_id {
+            self.components.modify(component_id.index(), |component| {
+                component.segments.push(segment_id)
+            });
+        }
 
         if let Some(pin_id) = pin_id {
             self.pins
@@ -219,6 +239,7 @@ impl Layout {
 
     pub fn add_via_raw(&mut self, via: Via) -> ViaId {
         let bbox = via.bbox();
+        let component_id = via.spec.component;
         let pin_id = via.spec.pin;
         let via_id = ViaId::new(self.vias.push(via));
 
@@ -230,6 +251,12 @@ impl Layout {
         });
 
         self.vias_rtree.insert(GeomWithData::new(bbox, via_id), ());
+
+        if let Some(component_id) = component_id {
+            self.components.modify(component_id.index(), |component| {
+                component.vias.push(via_id)
+            });
+        }
 
         if let Some(pin_id) = pin_id {
             self.pins
@@ -278,11 +305,18 @@ impl Layout {
 
     pub fn add_polygon(&mut self, polygon: Polygon) -> PolygonId {
         let bbox = polygon.bbox();
+        let component_id = polygon.component;
         let pin_id = polygon.pin;
         let polygon_id = PolygonId::new(self.polygons.push(polygon));
 
         self.polygons_rtree
             .insert(GeomWithData::new(bbox, polygon_id), ());
+
+        if let Some(component_id) = component_id {
+            self.components.modify(component_id.index(), |component| {
+                component.polygons.push(polygon_id)
+            });
+        }
 
         if let Some(pin_id) = pin_id {
             self.pins
