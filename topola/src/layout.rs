@@ -147,15 +147,8 @@ impl Layout {
     where
         F: FnOnce(&mut JointSpec),
     {
-        let old_joint = self.joints.get(&id.index()).unwrap();
-        self.joints_rtree
-            .remove(&GeomWithData::new(old_joint.bbox(), id));
-
-        self.joints.modify(id.index(), |joint| f(&mut joint.spec));
-
+        self.modify_joint_raw(id, |joint| f(&mut joint.spec));
         let new_joint = self.joints.get(&id.index()).unwrap().clone();
-        self.joints_rtree
-            .insert(GeomWithData::new(new_joint.bbox(), id), ());
 
         for &segment in &new_joint.segments {
             self.update_segment(segment);
@@ -164,6 +157,21 @@ impl Layout {
         for &via in &new_joint.vias {
             self.update_via(via);
         }
+    }
+
+    fn modify_joint_raw<F>(&mut self, id: JointId, f: F)
+    where
+        F: FnOnce(&mut Joint),
+    {
+        let old_joint = self.joints.get(&id.index()).unwrap();
+        self.joints_rtree
+            .remove(&GeomWithData::new(old_joint.bbox(), id));
+
+        self.joints.modify(id.index(), |joint| f(joint));
+
+        let new_joint = self.joints.get(&id.index()).unwrap().clone();
+        self.joints_rtree
+            .insert(GeomWithData::new(new_joint.bbox(), id), ());
     }
 
     pub fn add_segment(&mut self, spec: SegmentSpec) -> SegmentId {
