@@ -143,6 +143,29 @@ impl Layout {
         joint_id
     }
 
+    pub fn modify_joint<F>(&mut self, id: JointId, f: F)
+    where
+        F: FnOnce(&mut JointSpec),
+    {
+        let old_joint = self.joints.get(&id.index()).unwrap();
+        self.joints_rtree
+            .remove(&GeomWithData::new(old_joint.bbox(), id));
+
+        self.joints.modify(id.index(), |joint| f(&mut joint.spec));
+
+        let new_joint = self.joints.get(&id.index()).unwrap().clone();
+        self.joints_rtree
+            .insert(GeomWithData::new(new_joint.bbox(), id), ());
+
+        for &segment in &new_joint.segments {
+            self.update_segment(segment);
+        }
+
+        for &via in &new_joint.vias {
+            self.update_via(via);
+        }
+    }
+
     pub fn add_segment(&mut self, spec: SegmentSpec) -> SegmentId {
         self.add_segment_raw(Segment {
             spec,
@@ -179,16 +202,52 @@ impl Layout {
         segment_id
     }
 
+    pub fn modify_segment<F>(&mut self, id: SegmentId, f: F)
+    where
+        F: FnOnce(&mut SegmentSpec),
+    {
+        let old_segment = self.segments.get(&id.index()).unwrap();
+        self.segments_rtree
+            .remove(&GeomWithData::new(old_segment.bbox(), id));
+
+        self.segments
+            .modify(id.index(), |segment| f(&mut segment.spec));
+
+        let new_segment = self.segments.get(&id.index()).unwrap();
+        self.segments_rtree
+            .insert(GeomWithData::new(new_segment.bbox(), id), ());
+    }
+
+    fn update_segment(&mut self, id: SegmentId) {
+        let old_segment = self.segments.get(&id.index()).unwrap();
+        self.segments_rtree
+            .remove(&GeomWithData::new(old_segment.bbox(), id));
+
+        let endjoint_ids = old_segment.spec.endjoints;
+        let endjoint_specs = [
+            self.joints.get(&endjoint_ids[0].index()).unwrap().spec,
+            self.joints.get(&endjoint_ids[1].index()).unwrap().spec,
+        ];
+        self.segments.modify(id.index(), |segment| {
+            segment.endpoints = [endjoint_specs[0].position, endjoint_specs[1].position];
+            segment.layer = endjoint_specs[0].layer;
+            segment.net = endjoint_specs[0].net;
+        });
+
+        let new_segment = self.segments.get(&id.index()).unwrap();
+        self.segments_rtree
+            .insert(GeomWithData::new(new_segment.bbox(), id), ());
+    }
+
     pub fn add_via(&mut self, spec: ViaSpec) -> ViaId {
-        let joint0 = self.joint(spec.endjoints[0]);
-        let joint1 = self.joint(spec.endjoints[1]);
+        let joints = [self.joint(spec.endjoints[0]), self.joint(spec.endjoints[1])];
 
         self.add_via_raw(Via {
             spec,
-            min_layer: std::cmp::min(joint0.spec.layer, joint1.spec.layer),
-            max_layer: std::cmp::max(joint0.spec.layer, joint1.spec.layer),
-            net: joint0.spec.net,
-            position: (joint0.spec.position + joint1.spec.position) / 2,
+            position: joints[0].spec.position,
+            min_layer: std::cmp::min(joints[0].spec.layer, joints[1].spec.layer),
+            max_layer: std::cmp::max(joints[0].spec.layer, joints[1].spec.layer),
+            net: joints[0].spec.net,
         })
     }
 
@@ -213,6 +272,43 @@ impl Layout {
         via_id
     }
 
+    pub fn modify_via<F>(&mut self, id: ViaId, f: F)
+    where
+        F: FnOnce(&mut ViaSpec),
+    {
+        let old_via = self.vias.get(&id.index()).unwrap();
+        self.vias_rtree
+            .remove(&GeomWithData::new(old_via.bbox(), id));
+
+        self.vias.modify(id.index(), |via| f(&mut via.spec));
+
+        let new_via = self.vias.get(&id.index()).unwrap();
+        self.vias_rtree
+            .insert(GeomWithData::new(new_via.bbox(), id), ());
+    }
+
+    fn update_via(&mut self, id: ViaId) {
+        let old_via = self.vias.get(&id.index()).unwrap();
+        self.vias_rtree
+            .remove(&GeomWithData::new(old_via.bbox(), id));
+
+        let endjoint_ids = old_via.spec.endjoints;
+        let endjoint_specs = [
+            self.joints.get(&endjoint_ids[0].index()).unwrap().spec,
+            self.joints.get(&endjoint_ids[1].index()).unwrap().spec,
+        ];
+        self.vias.modify(id.index(), |via| {
+            via.position = endjoint_specs[0].position;
+            via.min_layer = std::cmp::min(endjoint_specs[0].layer, endjoint_specs[1].layer);
+            via.max_layer = std::cmp::max(endjoint_specs[0].layer, endjoint_specs[1].layer);
+            via.net = endjoint_specs[0].net;
+        });
+
+        let new_via = self.vias.get(&id.index()).unwrap();
+        self.vias_rtree
+            .insert(GeomWithData::new(new_via.bbox(), id), ());
+    }
+
     pub fn add_polygon(&mut self, polygon: Polygon) -> PolygonId {
         let bbox = polygon.bbox();
         let pin_id = polygon.pin;
@@ -226,6 +322,21 @@ impl Layout {
         }
 
         polygon_id
+    }
+
+    pub fn modify_polygon<F>(&mut self, id: PolygonId, f: F)
+    where
+        F: FnOnce(&mut Polygon),
+    {
+        let old_polygon = self.polygons.get(&id.index()).unwrap();
+        self.polygons_rtree
+            .remove(&GeomWithData::new(old_polygon.bbox(), id));
+
+        self.polygons.modify(id.index(), |polygon| f(polygon));
+
+        let new_polygon = self.polygons.get(&id.index()).unwrap();
+        self.polygons_rtree
+            .insert(GeomWithData::new(new_polygon.bbox(), id), ());
     }
 
     pub fn locate_joints_at_point(
