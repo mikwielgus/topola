@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+pub mod primitives;
+
 use derive_getters::Getters;
 use rstar::{
     AABB, RTree,
@@ -13,11 +15,11 @@ use undoredo::{Delta, Recorder};
 
 use crate::{
     compounds::{Component, ComponentId, Pin, PinId},
-    math::Vector2,
-    primitives::{
+    layout::primitives::{
         Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
         ViaSpec,
     },
+    math::Vector2,
 };
 
 #[derive(Clone, Debug, Delta, Getters)]

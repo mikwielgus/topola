@@ -8,7 +8,8 @@ use serde::{Deserialize, Serialize};
 
 use crate::compounds::{ComponentId, NetId, PinId};
 use crate::math::Vector2;
-use crate::primitives::{SegmentId, ViaId};
+
+use super::{SegmentId, ViaId};
 
 #[derive(
     Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,

@@ -11,12 +11,14 @@ use undoredo::{ApplyDelta, Delta, FlushDelta};
 
 use crate::{
     compounds::{ComponentId, NetId, PinId},
-    layout::{Layout, LayoutHalfDelta},
-    math::Vector2,
-    primitives::{
-        JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
-        ViaSpec,
+    layout::{
+        Layout, LayoutHalfDelta,
+        primitives::{
+            JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
+            ViaSpec,
+        },
     },
+    math::Vector2,
 };
 
 #[derive(Clone, Debug, Getters)]
