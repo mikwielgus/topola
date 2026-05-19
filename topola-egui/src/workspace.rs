@@ -4,17 +4,17 @@
 
 use topola::{Autorouter, Board, selections::PersistableSelection};
 
-use crate::{appearance_panel::AppearancePanel, translator::Translator};
+use crate::{layers_panel::LayersPanel, translator::Translator};
 
 pub struct Workspace {
     pub autorouter: Autorouter,
-    pub appearance_panel: AppearancePanel,
+    pub appearance_panel: LayersPanel,
     pub selection: PersistableSelection,
 }
 
 impl Workspace {
     pub fn new(board: Board, tr: &Translator) -> Self {
-        let appearance_panel = AppearancePanel::new(&board);
+        let appearance_panel = LayersPanel::new(&board);
 
         Self {
             autorouter: Autorouter::new(board),

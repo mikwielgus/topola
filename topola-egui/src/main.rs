@@ -7,8 +7,8 @@
 mod action;
 mod actions;
 mod app;
-mod appearance_panel;
 mod display;
+mod layers_panel;
 mod menu_bar;
 mod translator;
 mod viewport;

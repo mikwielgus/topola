@@ -34,7 +34,7 @@ pub struct LayerColors {
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
-pub struct AppearancePanel {
+pub struct LayersPanel {
     // TODO:
     // In1.Cu shall be #7fc87f (#d5ecd5 when selected).
     // In2.Cu shall be #ce7d2c (#e8c39e when selected).
@@ -42,10 +42,12 @@ pub struct AppearancePanel {
     light_colors: Colors,
 
     #[serde(skip)]
+    pub active: usize,
+    #[serde(skip)]
     pub visible: Box<[bool]>,
 }
 
-impl AppearancePanel {
+impl LayersPanel {
     pub fn new(board: &Board) -> Self {
         let dark_colors = Colors {
             layers: ColorLayers {
@@ -159,6 +161,7 @@ impl AppearancePanel {
         Self {
             dark_colors,
             light_colors,
+            active: 0,
             visible,
         }
     }
@@ -178,22 +181,11 @@ impl AppearancePanel {
                         .num_columns(3)
                         .start_row(start_row)
                         .show(ui, |ui| {
-                            for (layer, visible) in self.visible[row_range].iter_mut().enumerate() {
-                                let layer = layer + start_row;
+                            for layer in row_range {
+                                let visible = &mut self.visible[layer];
                                 let layer_name = board.layer_name(layer);
 
-                                // unnamed layers can't be used for routing
-                                /*if layer_name.is_some() {
-                                    ui.radio_value(
-                                        &mut options.planar.principal_layer,
-                                        layer,
-                                        WidgetText::default(),
-                                    );
-                                } else {
-                                    // dummy item to bump the grid
-                                    ui.label("");
-                                }*/
-
+                                ui.radio_value(&mut self.active, layer, WidgetText::default());
                                 ui.checkbox(visible, WidgetText::default());
                                 ui.label(
                                     layer_name

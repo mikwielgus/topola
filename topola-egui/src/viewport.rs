@@ -59,7 +59,7 @@ impl Viewport {
                                 .navmesher_board()
                                 .board()
                                 .point_pin_selector(
-                                    0,
+                                    workspace.appearance_panel.active,
                                     Vector2::new(
                                         pointer_scene_pos.x as i64,
                                         pointer_scene_pos.y as i64,
