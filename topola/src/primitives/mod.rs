@@ -9,10 +9,10 @@ mod polygon;
 mod segment;
 mod via;
 
-pub use joint::{Joint, JointId, JointSpec};
-pub use polygon::{Polygon, PolygonId};
-pub use segment::{Segment, SegmentId, SegmentSpec};
-pub use via::{Via, ViaId, ViaSpec};
+pub use joint::*;
+pub use polygon::*;
+pub use segment::*;
+pub use via::*;
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum PrimitiveId {

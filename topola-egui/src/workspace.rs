@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use topola::{Autorouter, Board, PinSelection};
+use topola::{Autorouter, Board, selections::PersistableSelection};
 
 use crate::{appearance_panel::AppearancePanel, translator::Translator};
 
 pub struct Workspace {
     pub autorouter: Autorouter,
     pub appearance_panel: AppearancePanel,
-    pub pin_selection: PinSelection,
+    pub selection: PersistableSelection,
 }
 
 impl Workspace {
@@ -19,7 +19,7 @@ impl Workspace {
         Self {
             autorouter: Autorouter::new(board),
             appearance_panel,
-            pin_selection: PinSelection::new(),
+            selection: PersistableSelection::new(),
         }
     }
 

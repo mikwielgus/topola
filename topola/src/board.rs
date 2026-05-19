@@ -14,7 +14,7 @@ use crate::{
         JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
         ViaSpec,
     },
-    selection::{PinSelection, PinSelector},
+    selections::{ComponentSelector, PinWithLayerSelection, PinWithLayerSelector},
 };
 
 #[derive(Clone, Debug, Getters)]
@@ -91,19 +91,19 @@ impl Board {
         self.layout.add_polygon(polygon)
     }
 
-    pub fn joint_pin_selector(&self, joint_id: JointId) -> Option<PinSelector> {
-        let joint = self.layout.joint(joint_id);
+    pub fn joint_pin_with_layer_selector(&self, id: JointId) -> Option<PinWithLayerSelector> {
+        let joint = self.layout.joint(id);
 
-        Some(PinSelector {
+        Some(PinWithLayerSelector {
             pin: self.pin_name(joint.spec.pin?)?.to_string(),
             layer: self.layer_name(joint.spec.layer)?.to_string(),
         })
     }
 
-    pub fn segment_pin_selector(&self, segment_id: SegmentId) -> Option<PinSelector> {
-        let segment = self.layout.segment(segment_id);
+    pub fn segment_pin_with_layer_selector(&self, id: SegmentId) -> Option<PinWithLayerSelector> {
+        let segment = self.layout.segment(id);
 
-        Some(PinSelector {
+        Some(PinWithLayerSelector {
             pin: self.pin_name(segment.spec.pin?)?.to_string(),
             layer: self.layer_name(segment.layer)?.to_string(),
         })
@@ -111,69 +111,73 @@ impl Board {
 
     // TODO: Vias.
 
-    pub fn polygon_pin_selector(&self, polygon_id: PolygonId) -> Option<PinSelector> {
-        let polygon = self.layout.polygon(polygon_id);
+    pub fn polygon_pin_with_layer_selector(&self, id: PolygonId) -> Option<PinWithLayerSelector> {
+        let polygon = self.layout.polygon(id);
 
-        Some(PinSelector {
+        Some(PinWithLayerSelector {
             pin: self.pin_name(polygon.pin?)?.to_string(),
             layer: self.layer_name(polygon.layer)?.to_string(),
         })
     }
 
-    pub fn point_pin_selector(&self, layer: usize, point: Vector2<i64>) -> Option<PinSelector> {
+    pub fn point_pin_with_layer_selector(
+        &self,
+        layer: usize,
+        point: Vector2<i64>,
+    ) -> Option<PinWithLayerSelector> {
         if let Some(joint_id) = self.layout.locate_joints_at_point(layer, point).next() {
-            return self.joint_pin_selector(joint_id);
+            return self.joint_pin_with_layer_selector(joint_id);
         }
 
         if let Some(segment_id) = self.layout.locate_segments_at_point(layer, point).next() {
-            return self.segment_pin_selector(segment_id);
+            return self.segment_pin_with_layer_selector(segment_id);
         }
 
         // TODO: Vias.
 
         if let Some(polygon_id) = self.layout.locate_polygons_at_point(layer, point).next() {
-            return self.polygon_pin_selector(polygon_id);
+            return self.polygon_pin_with_layer_selector(polygon_id);
         }
 
         None
     }
 
-    pub fn pin_selection_contains_joint(
+    pub fn pin_with_layer_selection_contains_joint(
         &self,
-        pin_selection: &PinSelection,
-        joint_id: JointId,
+        selection: &PinWithLayerSelection,
+        id: JointId,
     ) -> bool {
-        let Some(pin_selector) = self.joint_pin_selector(joint_id) else {
+        let Some(pin_selector) = self.joint_pin_with_layer_selector(id) else {
             return false;
         };
 
-        pin_selection.0.contains(&pin_selector)
+        selection.0.contains(&pin_selector)
     }
 
-    pub fn pin_selection_contains_segment(
+    pub fn pin_with_layer_selection_contains_segment(
         &self,
-        pin_selection: &PinSelection,
-        segment_id: SegmentId,
+        selection: &PinWithLayerSelection,
+        id: SegmentId,
     ) -> bool {
-        let Some(pin_selector) = self.segment_pin_selector(segment_id) else {
+        let Some(pin_selector) = self.segment_pin_with_layer_selector(id) else {
             return false;
         };
 
-        pin_selection.0.contains(&pin_selector)
+        selection.0.contains(&pin_selector)
     }
 
     // TODO: Vias.
 
-    pub fn pin_selection_contains_polygon(
+    pub fn pin_with_layer_selection_contains_polygon(
         &self,
-        pin_selection: &PinSelection,
-        polygon_id: PolygonId,
+        selection: &PinWithLayerSelection,
+        id: PolygonId,
     ) -> bool {
-        let Some(pin_selector) = self.polygon_pin_selector(polygon_id) else {
+        let Some(pin_selector) = self.polygon_pin_with_layer_selector(id) else {
             return false;
         };
 
-        pin_selection.0.contains(&pin_selector)
+        selection.0.contains(&pin_selector)
     }
 
     pub fn pin_name(&self, pin: PinId) -> Option<&str> {

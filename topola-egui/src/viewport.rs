@@ -58,7 +58,7 @@ impl Viewport {
                                 .router()
                                 .navmesher_board()
                                 .board()
-                                .point_pin_selector(
+                                .point_pin_with_layer_selector(
                                     0,
                                     Vector2::new(
                                         pointer_scene_pos.x as i64,
@@ -66,7 +66,7 @@ impl Viewport {
                                     ),
                                 )
                             {
-                                workspace.pin_selection.toggle(pin_selector);
+                                workspace.selection.pins.toggle(pin_selector);
                             }
                         }
                     }

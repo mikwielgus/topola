@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{viewport::Viewport, workspace::Workspace};
-use topola::{Joint, Polygon, Segment};
+use topola::primitives::{Joint, Polygon, Segment};
 
 pub struct Display {}
 
@@ -53,7 +53,10 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_name(joint.spec.layer),
-                        board.pin_selection_contains_joint(&workspace.pin_selection, joint_id),
+                        board.pin_with_layer_selection_contains_joint(
+                            &workspace.selection.pins,
+                            joint_id,
+                        ),
                     ),
                 );
             }
@@ -68,7 +71,10 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_name(segment.layer),
-                        board.pin_selection_contains_segment(&workspace.pin_selection, segment_id),
+                        board.pin_with_layer_selection_contains_segment(
+                            &workspace.selection.pins,
+                            segment_id,
+                        ),
                     ),
                 );
             }
@@ -85,7 +91,10 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_name(polygon.layer),
-                        board.pin_selection_contains_polygon(&workspace.pin_selection, polygon_id),
+                        board.pin_with_layer_selection_contains_polygon(
+                            &workspace.selection.pins,
+                            polygon_id,
+                        ),
                     ),
                 );
             }

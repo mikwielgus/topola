@@ -3,9 +3,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 mod component;
-mod net;
-mod pin;
+mod persistable;
+mod pin_with_layer;
 
 pub use component::*;
-pub use net::*;
-pub use pin::*;
+pub use persistable::*;
+pub use pin_with_layer::*;

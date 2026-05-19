@@ -10,10 +10,10 @@ mod layout;
 mod math;
 mod navmesher;
 mod pathfinder;
-mod primitives;
+pub mod primitives;
 mod ratsnest;
 mod router;
-mod selection;
+pub mod selections;
 mod specctra;
 
 pub use crate::autorouter::Autorouter;
@@ -21,8 +21,4 @@ pub use crate::board::Board;
 pub use crate::compounds::{Pin, PinId};
 pub use crate::layout::Layout;
 pub use crate::math::Vector2;
-pub use crate::primitives::{
-    Joint, JointId, Polygon, PolygonId, PrimitiveId, Segment, SegmentId, Via, ViaId,
-};
 pub use crate::ratsnest::{Ratline, Ratsnest};
-pub use crate::selection::{PinSelection, PinSelector};
