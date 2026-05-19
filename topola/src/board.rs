@@ -108,52 +108,61 @@ impl Board {
         self.layout.add_polygon(polygon)
     }
 
-    pub fn joint_component_selector(&self, id: JointId) -> Option<ComponentSelector> {
-        let joint = self.layout.joint(id);
+    pub fn pin_with_layer_selection_to_component_selection(
+        &mut self,
+        pin_with_layer_selection: PinWithLayerSelection,
+    ) -> ComponentSelection {
+        let mut component_selection = ComponentSelection::new();
 
-        Some(ComponentSelector {
-            component: self.component_name(joint.spec.component?)?.to_string(),
-        })
-    }
+        for selector in pin_with_layer_selection.0 {
+            let Some(pin_id) = self.pin_id(&selector.pin) else {
+                continue;
+            };
 
-    pub fn segment_component_selector(&self, id: SegmentId) -> Option<ComponentSelector> {
-        let segment = self.layout.segment(id);
+            let Some(layer_id) = self.layer_id(&selector.layer) else {
+                continue;
+            };
 
-        Some(ComponentSelector {
-            component: self.component_name(segment.spec.component?)?.to_string(),
-        })
-    }
+            for joint_id in self.layout.layer_joints(layer_id) {
+                if self.layout.joint(joint_id).spec.pin != Some(pin_id) {
+                    continue;
+                }
 
-    // TODO: Vias.
+                let Some(component_selector) = self.joint_component_selector(joint_id) else {
+                    continue;
+                };
 
-    pub fn polygon_component_selector(&self, id: PolygonId) -> Option<ComponentSelector> {
-        let polygon = self.layout.polygon(id);
+                component_selection.0.insert(component_selector);
+            }
 
-        Some(ComponentSelector {
-            component: self.component_name(polygon.component?)?.to_string(),
-        })
-    }
+            // TODO: Vias.
 
-    pub fn point_component_selector(
-        &self,
-        layer: usize,
-        point: Vector2<i64>,
-    ) -> Option<ComponentSelector> {
-        if let Some(joint_id) = self.layout.locate_joints_at_point(layer, point).next() {
-            return self.joint_component_selector(joint_id);
+            for segment_id in self.layout.layer_segments(layer_id) {
+                if self.layout.segment(segment_id).spec.pin != Some(pin_id) {
+                    continue;
+                }
+
+                let Some(component_selector) = self.segment_component_selector(segment_id) else {
+                    continue;
+                };
+
+                component_selection.0.insert(component_selector);
+            }
+
+            for polygon_id in self.layout.layer_polygons(layer_id) {
+                if self.layout.polygon(polygon_id).pin != Some(pin_id) {
+                    continue;
+                }
+
+                let Some(component_selector) = self.polygon_component_selector(polygon_id) else {
+                    continue;
+                };
+
+                component_selection.0.insert(component_selector);
+            }
         }
 
-        if let Some(segment_id) = self.layout.locate_segments_at_point(layer, point).next() {
-            return self.segment_component_selector(segment_id);
-        }
-
-        // TODO: Vias.
-
-        if let Some(polygon_id) = self.layout.locate_polygons_at_point(layer, point).next() {
-            return self.polygon_component_selector(polygon_id);
-        }
-
-        None
+        component_selection
     }
 
     pub fn component_selection_contains_joint(
@@ -194,55 +203,52 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn joint_pin_with_layer_selector(&self, id: JointId) -> Option<PinWithLayerSelector> {
-        let joint = self.layout.joint(id);
-
-        Some(PinWithLayerSelector {
-            pin: self.pin_name(joint.spec.pin?)?.to_string(),
-            layer: self.layer_name(joint.spec.layer)?.to_string(),
-        })
-    }
-
-    pub fn segment_pin_with_layer_selector(&self, id: SegmentId) -> Option<PinWithLayerSelector> {
-        let segment = self.layout.segment(id);
-
-        Some(PinWithLayerSelector {
-            pin: self.pin_name(segment.spec.pin?)?.to_string(),
-            layer: self.layer_name(segment.layer)?.to_string(),
-        })
-    }
-
-    // TODO: Vias.
-
-    pub fn polygon_pin_with_layer_selector(&self, id: PolygonId) -> Option<PinWithLayerSelector> {
-        let polygon = self.layout.polygon(id);
-
-        Some(PinWithLayerSelector {
-            pin: self.pin_name(polygon.pin?)?.to_string(),
-            layer: self.layer_name(polygon.layer)?.to_string(),
-        })
-    }
-
-    pub fn point_pin_with_layer_selector(
+    pub fn point_component_selector(
         &self,
         layer: usize,
         point: Vector2<i64>,
-    ) -> Option<PinWithLayerSelector> {
+    ) -> Option<ComponentSelector> {
         if let Some(joint_id) = self.layout.locate_joints_at_point(layer, point).next() {
-            return self.joint_pin_with_layer_selector(joint_id);
+            return self.joint_component_selector(joint_id);
         }
 
         if let Some(segment_id) = self.layout.locate_segments_at_point(layer, point).next() {
-            return self.segment_pin_with_layer_selector(segment_id);
+            return self.segment_component_selector(segment_id);
         }
 
         // TODO: Vias.
 
         if let Some(polygon_id) = self.layout.locate_polygons_at_point(layer, point).next() {
-            return self.polygon_pin_with_layer_selector(polygon_id);
+            return self.polygon_component_selector(polygon_id);
         }
 
         None
+    }
+
+    pub fn joint_component_selector(&self, id: JointId) -> Option<ComponentSelector> {
+        let joint = self.layout.joint(id);
+
+        Some(ComponentSelector {
+            component: self.component_name(joint.spec.component?)?.to_string(),
+        })
+    }
+
+    pub fn segment_component_selector(&self, id: SegmentId) -> Option<ComponentSelector> {
+        let segment = self.layout.segment(id);
+
+        Some(ComponentSelector {
+            component: self.component_name(segment.spec.component?)?.to_string(),
+        })
+    }
+
+    // TODO: Vias.
+
+    pub fn polygon_component_selector(&self, id: PolygonId) -> Option<ComponentSelector> {
+        let polygon = self.layout.polygon(id);
+
+        Some(ComponentSelector {
+            component: self.component_name(polygon.component?)?.to_string(),
+        })
     }
 
     pub fn pin_with_layer_selection_contains_joint(
@@ -281,6 +287,57 @@ impl Board {
         };
 
         selection.0.contains(&selector)
+    }
+
+    pub fn point_pin_with_layer_selector(
+        &self,
+        layer: usize,
+        point: Vector2<i64>,
+    ) -> Option<PinWithLayerSelector> {
+        if let Some(joint_id) = self.layout.locate_joints_at_point(layer, point).next() {
+            return self.joint_pin_with_layer_selector(joint_id);
+        }
+
+        if let Some(segment_id) = self.layout.locate_segments_at_point(layer, point).next() {
+            return self.segment_pin_with_layer_selector(segment_id);
+        }
+
+        // TODO: Vias.
+
+        if let Some(polygon_id) = self.layout.locate_polygons_at_point(layer, point).next() {
+            return self.polygon_pin_with_layer_selector(polygon_id);
+        }
+
+        None
+    }
+
+    pub fn joint_pin_with_layer_selector(&self, id: JointId) -> Option<PinWithLayerSelector> {
+        let joint = self.layout.joint(id);
+
+        Some(PinWithLayerSelector {
+            pin: self.pin_name(joint.spec.pin?)?.to_string(),
+            layer: self.layer_name(joint.spec.layer)?.to_string(),
+        })
+    }
+
+    pub fn segment_pin_with_layer_selector(&self, id: SegmentId) -> Option<PinWithLayerSelector> {
+        let segment = self.layout.segment(id);
+
+        Some(PinWithLayerSelector {
+            pin: self.pin_name(segment.spec.pin?)?.to_string(),
+            layer: self.layer_name(segment.layer)?.to_string(),
+        })
+    }
+
+    // TODO: Vias.
+
+    pub fn polygon_pin_with_layer_selector(&self, id: PolygonId) -> Option<PinWithLayerSelector> {
+        let polygon = self.layout.polygon(id);
+
+        Some(PinWithLayerSelector {
+            pin: self.pin_name(polygon.pin?)?.to_string(),
+            layer: self.layer_name(polygon.layer)?.to_string(),
+        })
     }
 
     pub fn component_name(&self, id: ComponentId) -> Option<&str> {
