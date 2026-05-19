@@ -7,20 +7,20 @@ use std::collections::BTreeSet;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct PinWithLayerSelector {
+pub struct PinSelector {
     pub pin: String,
     pub layer: String,
 }
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct PinWithLayerSelection(pub BTreeSet<PinWithLayerSelector>);
+pub struct PinSelection(pub BTreeSet<PinSelector>);
 
-impl PinWithLayerSelection {
+impl PinSelection {
     pub fn new() -> Self {
         Self(BTreeSet::new())
     }
 
-    pub fn toggle(&mut self, selector: PinWithLayerSelector) {
+    pub fn toggle(&mut self, selector: PinSelector) {
         if self.0.contains(&selector) {
             self.0.remove(&selector);
         } else {

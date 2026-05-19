@@ -13,11 +13,11 @@ mod pathfinder;
 pub mod primitives;
 mod ratsnest;
 mod router;
-pub mod selections;
 mod specctra;
 
 pub use crate::autorouter::Autorouter;
 pub use crate::board::Board;
+pub use crate::board::selections;
 pub use crate::compounds::{Pin, PinId};
 pub use crate::layout::Layout;
 pub use crate::math::Vector2;

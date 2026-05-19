@@ -20,7 +20,7 @@ use crate::{
     },
 };
 
-#[derive(Delta, Clone, Debug, Getters)]
+#[derive(Clone, Debug, Delta, Getters)]
 pub struct Layout {
     #[undoredo(skip)]
     boundary: Vec<[i64; 2]>,

@@ -4,19 +4,19 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::selections::{ComponentSelection, PinWithLayerSelection};
+use crate::board::selections::{ComponentSelection, PinSelection};
 
 #[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct PersistableSelection {
     pub components: ComponentSelection,
-    pub pins: PinWithLayerSelection,
+    pub pins: PinSelection,
 }
 
 impl PersistableSelection {
     pub fn new() -> Self {
         Self {
             components: ComponentSelection::new(),
-            pins: PinWithLayerSelection::new(),
+            pins: PinSelection::new(),
         }
     }
 }

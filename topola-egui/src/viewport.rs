@@ -58,7 +58,7 @@ impl Viewport {
                                 .router()
                                 .navmesher_board()
                                 .board()
-                                .point_pin_with_layer_selector(
+                                .point_pin_selector(
                                     0,
                                     Vector2::new(
                                         pointer_scene_pos.x as i64,
