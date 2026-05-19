@@ -97,7 +97,8 @@ impl Board {
                 .unwrap();
 
             for place in &component.places {
-                let component_id = board.add_component();
+                let component_id = board.ensure_named_component(place.name.clone());
+
                 let place_side_is_front = place.side == "front";
                 let get_layer = |board: &Board, name: &str| {
                     Self::layer(board, &dsn.pcb.structure.layers, name, place_side_is_front)
@@ -110,7 +111,7 @@ impl Board {
                         continue;
                     };
 
-                    let pin_id = board.ensure_pin(pin_name.clone());
+                    let pin_id = board.ensure_named_pin(pin_name.clone());
                     let padstack = dsn.pcb.library.find_padstack_by_name(&pin.name).unwrap();
 
                     for shape in padstack.shapes.iter() {

@@ -14,12 +14,16 @@ use crate::{
         JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
         ViaSpec,
     },
-    selections::{ComponentSelector, PinWithLayerSelection, PinWithLayerSelector},
+    selections::{
+        ComponentSelection, ComponentSelector, PinWithLayerSelection, PinWithLayerSelector,
+    },
 };
 
 #[derive(Clone, Debug, Getters)]
 pub struct Board {
     layout: Layout,
+    #[getter(skip)]
+    component_names: BiBTreeMap<ComponentId, String>,
     #[getter(skip)]
     pin_names: BiBTreeMap<PinId, String>,
     #[getter(skip)]
@@ -32,6 +36,7 @@ impl Board {
     pub fn new(boundary: Vec<Vector2<i64>>, layer_count: usize) -> Self {
         Self {
             layout: Layout::new(boundary.into_iter().map(Into::into).collect(), layer_count),
+            component_names: BiBTreeMap::new(),
             pin_names: BiBTreeMap::new(),
             layer_names: BiBTreeMap::new(),
             net_names: BiBTreeMap::new(),
@@ -46,13 +51,25 @@ impl Board {
     ) -> Self {
         Self {
             layout: Layout::new(boundary.into_iter().map(Into::into).collect(), layer_count),
+            component_names: BiBTreeMap::new(),
             pin_names: BiBTreeMap::new(),
             layer_names,
             net_names,
         }
     }
 
-    pub fn ensure_pin(&mut self, pin_name: String) -> PinId {
+    pub fn ensure_named_component(&mut self, component_name: String) -> ComponentId {
+        if let Some(component) = self.component_names.get_by_right(&component_name) {
+            return *component;
+        };
+
+        let component_id = self.layout.add_component();
+        self.component_names.insert(component_id, component_name);
+
+        component_id
+    }
+
+    pub fn ensure_named_pin(&mut self, pin_name: String) -> PinId {
         if let Some(pin) = self.pin_names.get_by_right(&pin_name) {
             return *pin;
         };
@@ -89,6 +106,92 @@ impl Board {
 
     pub fn add_polygon(&mut self, polygon: Polygon) -> PolygonId {
         self.layout.add_polygon(polygon)
+    }
+
+    pub fn joint_component_selector(&self, id: JointId) -> Option<ComponentSelector> {
+        let joint = self.layout.joint(id);
+
+        Some(ComponentSelector {
+            component: self.component_name(joint.spec.component?)?.to_string(),
+        })
+    }
+
+    pub fn segment_component_selector(&self, id: SegmentId) -> Option<ComponentSelector> {
+        let segment = self.layout.segment(id);
+
+        Some(ComponentSelector {
+            component: self.component_name(segment.spec.component?)?.to_string(),
+        })
+    }
+
+    // TODO: Vias.
+
+    pub fn polygon_component_selector(&self, id: PolygonId) -> Option<ComponentSelector> {
+        let polygon = self.layout.polygon(id);
+
+        Some(ComponentSelector {
+            component: self.component_name(polygon.component?)?.to_string(),
+        })
+    }
+
+    pub fn point_component_selector(
+        &self,
+        layer: usize,
+        point: Vector2<i64>,
+    ) -> Option<ComponentSelector> {
+        if let Some(joint_id) = self.layout.locate_joints_at_point(layer, point).next() {
+            return self.joint_component_selector(joint_id);
+        }
+
+        if let Some(segment_id) = self.layout.locate_segments_at_point(layer, point).next() {
+            return self.segment_component_selector(segment_id);
+        }
+
+        // TODO: Vias.
+
+        if let Some(polygon_id) = self.layout.locate_polygons_at_point(layer, point).next() {
+            return self.polygon_component_selector(polygon_id);
+        }
+
+        None
+    }
+
+    pub fn component_selection_contains_joint(
+        &self,
+        selection: &ComponentSelection,
+        id: JointId,
+    ) -> bool {
+        let Some(selector) = self.joint_component_selector(id) else {
+            return false;
+        };
+
+        selection.0.contains(&selector)
+    }
+
+    pub fn component_selection_contains_segment(
+        &self,
+        selection: &ComponentSelection,
+        id: SegmentId,
+    ) -> bool {
+        let Some(selector) = self.segment_component_selector(id) else {
+            return false;
+        };
+
+        selection.0.contains(&selector)
+    }
+
+    // TODO: Vias.
+
+    pub fn component_selection_contains_polygon(
+        &self,
+        selection: &ComponentSelection,
+        id: PolygonId,
+    ) -> bool {
+        let Some(selector) = self.polygon_component_selector(id) else {
+            return false;
+        };
+
+        selection.0.contains(&selector)
     }
 
     pub fn joint_pin_with_layer_selector(&self, id: JointId) -> Option<PinWithLayerSelector> {
@@ -147,11 +250,11 @@ impl Board {
         selection: &PinWithLayerSelection,
         id: JointId,
     ) -> bool {
-        let Some(pin_selector) = self.joint_pin_with_layer_selector(id) else {
+        let Some(selector) = self.joint_pin_with_layer_selector(id) else {
             return false;
         };
 
-        selection.0.contains(&pin_selector)
+        selection.0.contains(&selector)
     }
 
     pub fn pin_with_layer_selection_contains_segment(
@@ -159,11 +262,11 @@ impl Board {
         selection: &PinWithLayerSelection,
         id: SegmentId,
     ) -> bool {
-        let Some(pin_selector) = self.segment_pin_with_layer_selector(id) else {
+        let Some(selector) = self.segment_pin_with_layer_selector(id) else {
             return false;
         };
 
-        selection.0.contains(&pin_selector)
+        selection.0.contains(&selector)
     }
 
     // TODO: Vias.
@@ -173,15 +276,23 @@ impl Board {
         selection: &PinWithLayerSelection,
         id: PolygonId,
     ) -> bool {
-        let Some(pin_selector) = self.polygon_pin_with_layer_selector(id) else {
+        let Some(selector) = self.polygon_pin_with_layer_selector(id) else {
             return false;
         };
 
-        selection.0.contains(&pin_selector)
+        selection.0.contains(&selector)
     }
 
-    pub fn pin_name(&self, pin: PinId) -> Option<&str> {
-        self.pin_names.get_by_left(&pin).map(String::as_str)
+    pub fn component_name(&self, id: ComponentId) -> Option<&str> {
+        self.component_names.get_by_left(&id).map(String::as_str)
+    }
+
+    pub fn component_id(&self, component_name: &str) -> Option<ComponentId> {
+        self.component_names.get_by_right(component_name).copied()
+    }
+
+    pub fn pin_name(&self, id: PinId) -> Option<&str> {
+        self.pin_names.get_by_left(&id).map(String::as_str)
     }
 
     pub fn pin_id(&self, pin_name: &str) -> Option<PinId> {
@@ -196,8 +307,8 @@ impl Board {
         self.layer_names.get_by_right(layer_name).copied()
     }
 
-    pub fn net_name(&self, net: NetId) -> Option<&str> {
-        self.net_names.get_by_left(&net).map(String::as_str)
+    pub fn net_name(&self, id: NetId) -> Option<&str> {
+        self.net_names.get_by_left(&id).map(String::as_str)
     }
 
     pub fn net_id(&self, net_name: &str) -> Option<NetId> {
