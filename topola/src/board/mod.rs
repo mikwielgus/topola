@@ -2,8 +2,10 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+mod resolve;
 mod select;
 pub mod selections;
+mod transforms;
 
 use bimap::BiBTreeMap;
 use derive_getters::{Dissolve, Getters};

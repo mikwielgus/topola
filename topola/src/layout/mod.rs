@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 pub mod primitives;
+mod transforms;
 
 use derive_getters::Getters;
 use rstar::{
@@ -122,12 +123,12 @@ impl Layout {
         self.modify_joint_raw(id, |joint| f(&mut joint.spec));
         let new_joint = self.joints[id.index()].clone();
 
-        for &segment in &new_joint.segments {
-            self.update_segment(segment);
+        for &segment_id in &new_joint.segments {
+            self.update_segment(segment_id);
         }
 
-        for &via in &new_joint.vias {
-            self.update_via(via);
+        for &via_id in &new_joint.vias {
+            self.update_via(via_id);
         }
     }
 
