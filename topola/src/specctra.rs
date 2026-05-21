@@ -4,7 +4,7 @@
 
 use std::collections::BTreeMap;
 
-use bimap::BiBTreeMap;
+use bidimap::BiBTreeMap;
 use specctra::{
     math::PointWithRotation,
     structure::{DsnFile, Layer, Point, Shape},

@@ -7,9 +7,9 @@ mod select;
 pub mod selections;
 mod transforms;
 
-use bimap::BiBTreeMap;
-use derive_getters::{Dissolve, Getters};
-use undoredo::{ApplyDelta, Delta, FlushDelta};
+use bidimap::BiBTreeMap;
+use derive_getters::Getters;
+use undoredo::{Delta, Recorder};
 
 use crate::{
     compounds::{ComponentId, NetId, PinId},
@@ -23,27 +23,27 @@ use crate::{
     math::Vector2,
 };
 
-#[derive(Clone, Debug, Getters)]
+#[derive(Clone, Debug, Getters, Delta)]
 pub struct Board {
     layout: Layout,
     #[getter(skip)]
-    component_names: BiBTreeMap<ComponentId, String>,
+    component_names: Recorder<BiBTreeMap<ComponentId, String>>,
     #[getter(skip)]
-    pin_names: BiBTreeMap<PinId, String>,
+    pin_names: Recorder<BiBTreeMap<PinId, String>>,
     #[getter(skip)]
-    layer_names: BiBTreeMap<usize, String>,
+    layer_names: Recorder<BiBTreeMap<usize, String>>,
     #[getter(skip)]
-    net_names: BiBTreeMap<NetId, String>,
+    net_names: Recorder<BiBTreeMap<NetId, String>>,
 }
 
 impl Board {
     pub fn new(boundary: Vec<Vector2<i64>>, layer_count: usize) -> Self {
         Self {
             layout: Layout::new(boundary.into_iter().map(Into::into).collect(), layer_count),
-            component_names: BiBTreeMap::new(),
-            pin_names: BiBTreeMap::new(),
-            layer_names: BiBTreeMap::new(),
-            net_names: BiBTreeMap::new(),
+            component_names: Recorder::new(BiBTreeMap::new()),
+            pin_names: Recorder::new(BiBTreeMap::new()),
+            layer_names: Recorder::new(BiBTreeMap::new()),
+            net_names: Recorder::new(BiBTreeMap::new()),
         }
     }
 
@@ -55,10 +55,10 @@ impl Board {
     ) -> Self {
         Self {
             layout: Layout::new(boundary.into_iter().map(Into::into).collect(), layer_count),
-            component_names: BiBTreeMap::new(),
-            pin_names: BiBTreeMap::new(),
-            layer_names,
-            net_names,
+            component_names: Recorder::new(BiBTreeMap::new()),
+            pin_names: Recorder::new(BiBTreeMap::new()),
+            layer_names: Recorder::new(layer_names),
+            net_names: Recorder::new(net_names),
         }
     }
 
@@ -117,7 +117,10 @@ impl Board {
     }
 
     pub fn component_id(&self, component_name: &str) -> Option<ComponentId> {
-        self.component_names.get_by_right(component_name).copied()
+        self.component_names
+            .as_ref()
+            .get_by_right(component_name)
+            .copied()
     }
 
     pub fn pin_name(&self, id: PinId) -> Option<&str> {
@@ -125,7 +128,7 @@ impl Board {
     }
 
     pub fn pin_id(&self, pin_name: &str) -> Option<PinId> {
-        self.pin_names.get_by_right(pin_name).copied()
+        self.pin_names.as_ref().get_by_right(pin_name).copied()
     }
 
     pub fn layer_name(&self, layer: usize) -> Option<&str> {
@@ -133,7 +136,7 @@ impl Board {
     }
 
     pub fn layer_id(&self, layer_name: &str) -> Option<usize> {
-        self.layer_names.get_by_right(layer_name).copied()
+        self.layer_names.as_ref().get_by_right(layer_name).copied()
     }
 
     pub fn net_name(&self, id: NetId) -> Option<&str> {
@@ -141,35 +144,6 @@ impl Board {
     }
 
     pub fn net_id(&self, net_name: &str) -> Option<NetId> {
-        self.net_names.get_by_right(net_name).copied()
-    }
-}
-
-#[derive(Clone, Debug, Dissolve)]
-pub struct BoardHalfDelta {
-    layout: LayoutHalfDelta,
-}
-
-impl ApplyDelta<BoardHalfDelta> for Board {
-    fn apply_delta(&mut self, delta: Delta<BoardHalfDelta>) {
-        let (removed, inserted) = delta.dissolve();
-
-        let layout_delta = Delta::with_removed_inserted(removed.layout, inserted.layout);
-        self.layout.apply_delta(layout_delta);
-    }
-}
-
-impl FlushDelta<BoardHalfDelta> for Board {
-    fn flush_delta(&mut self) -> Delta<BoardHalfDelta> {
-        let (removed_layout, inserted_layout) = self.layout.flush_delta().dissolve();
-
-        Delta::with_removed_inserted(
-            BoardHalfDelta {
-                layout: removed_layout,
-            },
-            BoardHalfDelta {
-                layout: inserted_layout,
-            },
-        )
+        self.net_names.as_ref().get_by_right(net_name).copied()
     }
 }
