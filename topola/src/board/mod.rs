@@ -76,11 +76,10 @@ impl Board {
 
     pub fn with_names(
         boundary: Vec<Vector2<i64>>,
-        layer_groups: impl Into<Vec<LayerGroupId>>,
+        layer_groups: Vec<LayerGroupId>,
         layer_names: BiBTreeMap<LayerId, String>,
         net_names: BiBTreeMap<NetId, String>,
     ) -> Self {
-        let layer_groups = layer_groups.into();
         Self {
             layout: Layout::new(
                 boundary.into_iter().map(Into::into).collect(),
@@ -169,6 +168,10 @@ impl Board {
 
     pub fn layer_id(&self, layer_name: &str) -> Option<LayerId> {
         self.layer_names.as_ref().get_by_right(layer_name).copied()
+    }
+
+    pub fn layer_group(&self, layer: LayerId) -> LayerGroupId {
+        self.layer_groups[layer.index()]
     }
 
     pub fn net_name(&self, id: NetId) -> Option<&str> {

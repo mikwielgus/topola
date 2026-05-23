@@ -11,7 +11,7 @@ use specctra::{
 };
 
 use crate::{
-    board::Board,
+    board::{Board, LayerGroupId},
     layout::LayerId,
     layout::compounds::{ComponentId, NetId, PinId},
     math::Vector2,
@@ -20,36 +20,42 @@ use crate::{
 
 impl Board {
     pub fn from_specctra(dsn: DsnFile) -> Self {
-        let layer_names = BiBTreeMap::from_iter(
-            dsn.pcb
-                .structure
-                .layers
-                .iter()
-                .enumerate()
-                .map(|(index, layer)| (LayerId::new(index), layer.name.clone())),
-        );
+        let top_outline_layer_id = LayerId::new(0);
+        let pcb_layer_offset = 1;
+        let bottom_outline_layer_id =
+            LayerId::new(dsn.pcb.structure.layers.len() + pcb_layer_offset);
+        let mut layer_names =
+            BiBTreeMap::from_iter(dsn.pcb.structure.layers.iter().enumerate().map(
+                |(index, layer)| (LayerId::new(index + pcb_layer_offset), layer.name.clone()),
+            ));
+        layer_names.insert(top_outline_layer_id, "outlines.top".to_string());
+        layer_names.insert(bottom_outline_layer_id, "outlines.bottom".to_string());
 
         // assign IDs to all nets named in pcb.network
         let net_names = {
-            let mut tmp: Vec<_> = dsn
+            let mut tmp: Vec<String> = dsn
                 .pcb
                 .network
                 .classes
                 .iter()
                 .flat_map(|class| &class.nets)
                 .chain(dsn.pcb.network.nets.iter().map(|net| &net.name))
+                .cloned()
                 .collect();
             // deduplicate net names
+            tmp.push("outlines".to_string());
             tmp.sort_unstable();
             tmp.dedup();
 
-            BiBTreeMap::from_iter(
-                tmp.into_iter()
-                    .cloned()
-                    .enumerate()
-                    .map(|(i, v)| (NetId::new(i), v)),
-            )
+            BiBTreeMap::from_iter(tmp.into_iter().enumerate().map(|(i, v)| (NetId::new(i), v)))
         };
+
+        let mut layer_groups = vec![LayerGroupId::new(1)];
+        layer_groups.extend(std::iter::repeat_n(
+            LayerGroupId::new(0),
+            dsn.pcb.structure.layers.len(),
+        ));
+        layer_groups.push(LayerGroupId::new(1));
 
         let mut board = Board::with_names(
             dsn.pcb
@@ -62,10 +68,11 @@ impl Board {
                 .rev()
                 .map(|p| Vector2::new(p.x as i64, p.y as i64))
                 .collect(),
-            vec![crate::board::LayerGroupId::new(0); dsn.pcb.structure.layers.len()],
+            layer_groups,
             layer_names,
             net_names,
         );
+        let outline_net = board.net_id("outlines").unwrap();
 
         // Mapping of pin -> net prepared for adding pins.
         let pin_nets: BTreeMap<String, NetId> = dsn
@@ -104,6 +111,26 @@ impl Board {
                 let get_layer = |board: &Board, name: &str| {
                     Self::layer(board, &dsn.pcb.structure.layers, name, place_side_is_front)
                 };
+
+                for outline in &image.outlines {
+                    let outline_layer_id = if place_side_is_front {
+                        top_outline_layer_id
+                    } else {
+                        bottom_outline_layer_id
+                    };
+                    Self::place_path(
+                        &mut board,
+                        place.point_with_rotation(),
+                        PointWithRotation::default(),
+                        &outline.path.coords,
+                        outline.path.width,
+                        outline_layer_id,
+                        outline_net,
+                        Some(component_id),
+                        None,
+                        !place_side_is_front,
+                    );
+                }
 
                 for pin in &image.pins {
                     let pin_name = format!("{}-{}", place.name, pin.id);
@@ -413,12 +440,14 @@ impl Board {
     }
 
     fn layer(board: &Board, layers: &[Layer], name: &str, front: bool) -> LayerId {
+        let pcb_layer_offset = 1;
         let image_layer = board.layer_id(name).unwrap();
+        let image_layer_index = image_layer.index() - pcb_layer_offset;
 
         if front {
             image_layer
         } else {
-            LayerId::new(layers.len() - image_layer.index() - 1)
+            LayerId::new(layers.len() - image_layer_index)
         }
     }
 

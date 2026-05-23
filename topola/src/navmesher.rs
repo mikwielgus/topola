@@ -218,7 +218,7 @@ impl NavmesherBoard {
             polygon_multiobstacles: Recorder::new(StableVec::new()),
         };
 
-        for (i, joint) in this.board.layout().joints().container().iter() {
+        /*for (i, joint) in this.board.layout().joints().container().iter() {
             this.joint_multiobstacles.insert(
                 i,
                 this.navmesher
@@ -240,7 +240,7 @@ impl NavmesherBoard {
                 this.navmesher
                     .insert_multiobstacle(polygon.layer, polygon.vertices.clone()),
             );
-        }
+        }*/
 
         this
     }
