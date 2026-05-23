@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{Board, Vector2, compounds::ComponentId, selections::ComponentSelection};
+use crate::{Board, Vector2, layout::compounds::ComponentId, selections::ComponentSelection};
 
 impl Board {
     pub fn move_components_by(

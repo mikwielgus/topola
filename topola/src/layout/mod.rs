@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+pub mod compounds;
 pub mod primitives;
 mod transforms;
 
@@ -17,7 +18,7 @@ use undoredo::aliases::RTreeHalfDelta;
 use undoredo::{Delta, Recorder};
 
 use crate::{
-    compounds::{Component, ComponentId, Pin, PinId},
+    layout::compounds::{Component, ComponentId, Pin, PinId},
     layout::primitives::{
         Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
         ViaSpec,

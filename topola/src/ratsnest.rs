@@ -10,8 +10,8 @@ use spade::{DelaunayTriangulation, HasPosition, Triangulation, handles::FixedVer
 
 use crate::{
     Board,
-    compounds::NetId,
     layout::LayerId,
+    layout::compounds::NetId,
     math::Vector2,
     primitives::{JointId, PolygonId, PrimitiveId, SegmentId},
 };

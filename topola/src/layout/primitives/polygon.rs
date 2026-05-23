@@ -6,8 +6,8 @@ use derive_more::{Constructor, From};
 use rstar::{AABB, Envelope, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
-use crate::compounds::{ComponentId, NetId, PinId};
 use crate::layout::LayerId;
+use crate::layout::compounds::{ComponentId, NetId, PinId};
 use crate::math::Vector2;
 
 #[derive(

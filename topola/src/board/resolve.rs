@@ -4,7 +4,7 @@
 
 use crate::{
     board::{Board, selections::ComponentSelection},
-    compounds::ComponentId,
+    layout::compounds::ComponentId,
 };
 
 impl Board {

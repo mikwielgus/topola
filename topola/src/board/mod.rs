@@ -12,10 +12,10 @@ use derive_getters::Getters;
 use undoredo::{Delta, Recorder};
 
 use crate::{
-    compounds::{ComponentId, NetId, PinId},
     layout::LayerId,
     layout::{
         Layout, LayoutHalfDelta,
+        compounds::{ComponentId, NetId, PinId},
         primitives::{
             JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
             ViaSpec,

@@ -12,8 +12,8 @@ use specctra::{
 
 use crate::{
     board::Board,
-    compounds::{ComponentId, NetId, PinId},
     layout::LayerId,
+    layout::compounds::{ComponentId, NetId, PinId},
     math::Vector2,
     primitives::{JointSpec, Polygon, Segment, SegmentSpec},
 };
