@@ -2,13 +2,13 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use derive_more::Constructor;
+use derive_more::{Constructor, From};
 use serde::{Deserialize, Serialize};
 
 use crate::primitives::{JointId, PolygonId, SegmentId, ViaId};
 
 #[derive(
-    Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
+    Clone, Constructor, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize,
 )]
 pub struct ComponentId(usize);
 

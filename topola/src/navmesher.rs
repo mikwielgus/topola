@@ -4,7 +4,7 @@
 
 use dearcut::{RecordingTriangulator, VertexId};
 use derive_getters::Getters;
-use derive_more::Constructor;
+use derive_more::{Constructor, From};
 use serde::{Deserialize, Serialize};
 use stable_vec::StableVec;
 use undoredo::Recorder;
@@ -16,7 +16,7 @@ use crate::{
 };
 
 #[derive(
-    Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
+    Clone, Constructor, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize,
 )]
 pub struct MultiObstacleId {
     layer: usize,
@@ -37,7 +37,9 @@ impl MultiObstacleId {
     }
 }
 
-#[derive(Clone, Constructor, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(
+    Clone, Constructor, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize,
+)]
 pub struct MultiVertexId {
     layer: usize,
     indices: Vec<VertexId>,

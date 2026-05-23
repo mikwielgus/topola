@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use derive_more::Constructor;
+use derive_more::{Constructor, From};
 use rstar::{AABB, Envelope, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
@@ -10,7 +10,7 @@ use crate::compounds::{ComponentId, NetId, PinId};
 use crate::math::Vector2;
 
 #[derive(
-    Clone, Constructor, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
+    Clone, Constructor, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize,
 )]
 pub struct PolygonId(usize);
 
