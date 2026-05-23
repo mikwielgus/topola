@@ -9,12 +9,13 @@ mod transforms;
 
 use bidimap::BiBTreeMap;
 use derive_getters::Getters;
+use derive_more::{Constructor, From};
+use serde::{Deserialize, Serialize};
 use undoredo::{Delta, Recorder};
 
 use crate::{
-    layout::LayerId,
     layout::{
-        Layout, LayoutHalfDelta,
+        LayerId, Layout, LayoutHalfDelta,
         compounds::{ComponentId, NetId, PinId},
         primitives::{
             JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
@@ -24,9 +25,34 @@ use crate::{
     math::Vector2,
 };
 
+#[derive(
+    Clone,
+    Constructor,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    Eq,
+    From,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    Serialize,
+)]
+pub struct LayerGroupId(usize);
+
+impl LayerGroupId {
+    #[inline]
+    pub fn index(self) -> usize {
+        self.0
+    }
+}
+
 #[derive(Clone, Debug, Getters, Delta)]
 pub struct Board {
     layout: Layout,
+    #[getter(skip)]
+    layer_groups: Recorder<Vec<LayerGroupId>>,
     #[getter(skip)]
     component_names: Recorder<BiBTreeMap<ComponentId, String>>,
     #[getter(skip)]
@@ -38,7 +64,7 @@ pub struct Board {
 }
 
 impl Board {
-    pub fn new(boundary: Vec<Vector2<i64>>, layer_count: usize) -> Self {
+    /*pub fn new(boundary: Vec<Vector2<i64>>, layer_count: usize) -> Self {
         Self {
             layout: Layout::new(boundary.into_iter().map(Into::into).collect(), layer_count),
             component_names: Recorder::new(BiBTreeMap::new()),
@@ -46,16 +72,21 @@ impl Board {
             layer_names: Recorder::new(BiBTreeMap::new()),
             net_names: Recorder::new(BiBTreeMap::new()),
         }
-    }
+    }*/
 
     pub fn with_names(
         boundary: Vec<Vector2<i64>>,
-        layer_count: usize,
+        layer_groups: impl Into<Vec<LayerGroupId>>,
         layer_names: BiBTreeMap<LayerId, String>,
         net_names: BiBTreeMap<NetId, String>,
     ) -> Self {
+        let layer_groups = layer_groups.into();
         Self {
-            layout: Layout::new(boundary.into_iter().map(Into::into).collect(), layer_count),
+            layout: Layout::new(
+                boundary.into_iter().map(Into::into).collect(),
+                layer_groups.len(),
+            ),
+            layer_groups: Recorder::new(layer_groups),
             component_names: Recorder::new(BiBTreeMap::new()),
             pin_names: Recorder::new(BiBTreeMap::new()),
             layer_names: Recorder::new(layer_names),

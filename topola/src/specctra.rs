@@ -62,7 +62,7 @@ impl Board {
                 .rev()
                 .map(|p| Vector2::new(p.x as i64, p.y as i64))
                 .collect(),
-            dsn.pcb.structure.layers.len(),
+            vec![crate::board::LayerGroupId::new(0); dsn.pcb.structure.layers.len()],
             layer_names,
             net_names,
         );
