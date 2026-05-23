@@ -7,12 +7,24 @@ use rstar::primitives::Rectangle;
 use serde::{Deserialize, Serialize};
 
 use crate::compounds::{ComponentId, NetId, PinId};
+use crate::layout::LayerId;
 use crate::math::Vector2;
 
 use super::JointId;
 
 #[derive(
-    Clone, Constructor, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize,
+    Clone,
+    Constructor,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    Eq,
+    From,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    Serialize,
 )]
 pub struct SegmentId(usize);
 
@@ -36,7 +48,7 @@ pub struct SegmentSpec {
 pub struct Segment {
     pub spec: SegmentSpec,
     pub endpoints: [Vector2<i64>; 2],
-    pub layer: usize,
+    pub layer: LayerId,
     pub net: NetId,
 }
 
@@ -70,7 +82,7 @@ impl Segment {
 
     pub fn bbox(&self) -> Rectangle<[i64; 3]> {
         let endpoints = self.endpoints;
-        let layer = self.layer as i64;
+        let layer = self.layer.index() as i64;
         let half_width = self.spec.half_width as i64;
 
         let min_x = std::cmp::min(endpoints[0].x, endpoints[1].x) - half_width;

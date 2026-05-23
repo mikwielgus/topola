@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{viewport::Viewport, workspace::Workspace};
+use topola::LayerId;
 use topola::primitives::{Joint, Polygon, Segment};
 
 pub struct Display {}
@@ -38,8 +39,8 @@ impl Display {
         let layout = board.layout();
 
         // Start from the bottom layer so that top layers are drawn on top.
-        for layer in (0..*layout.layer_count()).rev() {
-            if !workspace.appearance_panel.visible[layer] {
+        for layer in (0..*layout.layer_count()).rev().map(LayerId::new) {
+            if !workspace.appearance_panel.visible[layer.index()] {
                 continue;
             }
 
@@ -167,8 +168,8 @@ impl Display {
         let board = workspace.autorouter.router().navmesher_board().board();
         let layout = board.layout();
 
-        for layer in (0..*layout.layer_count()).rev() {
-            if !workspace.appearance_panel.visible[layer] {
+        for layer in (0..*layout.layer_count()).rev().map(LayerId::new) {
+            if !workspace.appearance_panel.visible[layer.index()] {
                 continue;
             }
 
@@ -231,22 +232,23 @@ impl Display {
         viewport: &Viewport,
         workspace: &Workspace,
     ) {
-        for layer in 0..*workspace
+        for layer in (0..*workspace
             .autorouter
             .router()
             .navmesher_board()
             .board()
             .layout()
-            .layer_count()
+            .layer_count())
+            .map(LayerId::new)
         {
-            if workspace.appearance_panel.visible[layer] {
+            if workspace.appearance_panel.visible[layer.index()] {
                 for navmesh in workspace
                     .autorouter
                     .router()
                     .navmesher_board()
                     .navmesher()
-                    .layer_navmeshers()[layer]
-                    .navmeshes()
+                    .layer_navmeshers()[layer.index()]
+                .navmeshes()
                 {
                     for edge_geom in navmesh
                         .triangulation()
@@ -305,8 +307,8 @@ impl Display {
             let layers = *ratline.endpoint_layers();
             let endpoints = *ratline.endpoints();
 
-            if !workspace.appearance_panel.visible[layers[0]]
-                || !workspace.appearance_panel.visible[layers[1]]
+            if !workspace.appearance_panel.visible[layers[0].index()]
+                || !workspace.appearance_panel.visible[layers[1].index()]
             {
                 continue;
             }

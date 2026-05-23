@@ -7,10 +7,22 @@ use rstar::{AABB, Envelope, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
 use crate::compounds::{ComponentId, NetId, PinId};
+use crate::layout::LayerId;
 use crate::math::Vector2;
 
 #[derive(
-    Clone, Constructor, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize,
+    Clone,
+    Constructor,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    Eq,
+    From,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    Serialize,
 )]
 pub struct PolygonId(usize);
 
@@ -25,7 +37,7 @@ impl PolygonId {
 #[derive(Clone, Debug)]
 pub struct Polygon {
     pub vertices: Vec<Vector2<i64>>,
-    pub layer: usize,
+    pub layer: LayerId,
     pub net: NetId,
     pub component: Option<ComponentId>,
     pub pin: Option<PinId>,
@@ -33,14 +45,16 @@ pub struct Polygon {
 
 impl Polygon {
     pub fn bbox(&self) -> Rectangle<[i64; 3]> {
-        Rectangle::from_aabb(
-            self.vertices
-                .clone()
-                .into_iter()
-                .fold(AABB::new_empty(), |aabb, vertex| {
-                    aabb.merged(&AABB::from_point([vertex.x, vertex.y, self.layer as i64]))
-                }),
-        )
+        Rectangle::from_aabb(self.vertices.clone().into_iter().fold(
+            AABB::new_empty(),
+            |aabb, vertex| {
+                aabb.merged(&AABB::from_point([
+                    vertex.x,
+                    vertex.y,
+                    self.layer.index() as i64,
+                ]))
+            },
+        ))
     }
 
     pub fn center(&self) -> Vector2<i64> {

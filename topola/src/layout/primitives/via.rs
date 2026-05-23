@@ -7,12 +7,24 @@ use rstar::{AABB, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
 use crate::compounds::{ComponentId, NetId, PinId};
+use crate::layout::LayerId;
 use crate::math::Vector2;
 
 use super::JointId;
 
 #[derive(
-    Clone, Constructor, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize,
+    Clone,
+    Constructor,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    Eq,
+    From,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    Serialize,
 )]
 pub struct ViaId(usize);
 
@@ -36,8 +48,8 @@ pub struct ViaSpec {
 pub struct Via {
     pub spec: ViaSpec,
     pub position: Vector2<i64>,
-    pub min_layer: usize,
-    pub max_layer: usize,
+    pub min_layer: LayerId,
+    pub max_layer: LayerId,
     pub net: NetId,
 }
 
@@ -49,12 +61,12 @@ impl Via {
             [
                 self.position.x - radius,
                 self.position.y - radius,
-                self.min_layer as i64,
+                self.min_layer.index() as i64,
             ],
             [
                 self.position.x + radius,
                 self.position.y + radius,
-                self.max_layer as i64,
+                self.max_layer.index() as i64,
             ],
         ))
     }

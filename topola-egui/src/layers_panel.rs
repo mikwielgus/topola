@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 
 use egui::{Context, Grid, ScrollArea, SidePanel, widget_text::WidgetText};
 use serde::{Deserialize, Serialize};
-use topola::Board;
+use topola::{Board, LayerId};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Colors {
@@ -42,7 +42,7 @@ pub struct LayersPanel {
     light_colors: Colors,
 
     #[serde(skip)]
-    pub active: usize,
+    pub active: LayerId,
     #[serde(skip)]
     pub visible: Box<[bool]>,
 }
@@ -161,7 +161,7 @@ impl LayersPanel {
         Self {
             dark_colors,
             light_colors,
-            active: 0,
+            active: LayerId::new(0),
             visible,
         }
     }
@@ -181,17 +181,16 @@ impl LayersPanel {
                         .num_columns(3)
                         .start_row(start_row)
                         .show(ui, |ui| {
-                            for layer in row_range {
-                                let visible = &mut self.visible[layer];
+                            for layer_index in row_range {
+                                let layer = LayerId::new(layer_index);
+                                let visible = &mut self.visible[layer.index()];
                                 let layer_name = board.layer_name(layer);
 
                                 ui.radio_value(&mut self.active, layer, WidgetText::default());
                                 ui.checkbox(visible, WidgetText::default());
-                                ui.label(
-                                    layer_name
-                                        .map(|i| i.to_string())
-                                        .unwrap_or_else(|| format!("{} - Unnamed layer", layer)),
-                                );
+                                ui.label(layer_name.map(|i| i.to_string()).unwrap_or_else(|| {
+                                    format!("{} - Unnamed layer", layer.index())
+                                }));
                                 ui.end_row();
                             }
                         })

@@ -7,6 +7,7 @@ use crate::{
         Board,
         selections::{ComponentSelection, ComponentSelector, PinSelection, PinSelector},
     },
+    layout::LayerId,
     math::Vector2,
     primitives::{JointId, PolygonId, SegmentId},
 };
@@ -109,7 +110,7 @@ impl Board {
 
     pub fn point_component_selector(
         &self,
-        layer: usize,
+        layer: LayerId,
         point: Vector2<i64>,
     ) -> Option<ComponentSelector> {
         if let Some(joint_id) = self.layout.locate_joints_at_point(layer, point).next() {
@@ -181,7 +182,7 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn point_pin_selector(&self, layer: usize, point: Vector2<i64>) -> Option<PinSelector> {
+    pub fn point_pin_selector(&self, layer: LayerId, point: Vector2<i64>) -> Option<PinSelector> {
         if let Some(joint_id) = self.layout.locate_joints_at_point(layer, point).next() {
             return self.joint_pin_selector(joint_id);
         }

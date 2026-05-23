@@ -8,7 +8,18 @@ use serde::{Deserialize, Serialize};
 use crate::primitives::{JointId, PolygonId, SegmentId, ViaId};
 
 #[derive(
-    Clone, Constructor, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize,
+    Clone,
+    Constructor,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    Eq,
+    From,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    Serialize,
 )]
 pub struct ComponentId(usize);
 

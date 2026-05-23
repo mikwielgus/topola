@@ -7,12 +7,24 @@ use rstar::{AABB, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
 use crate::compounds::{ComponentId, NetId, PinId};
+use crate::layout::LayerId;
 use crate::math::Vector2;
 
 use super::{SegmentId, ViaId};
 
 #[derive(
-    Clone, Constructor, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize,
+    Clone,
+    Constructor,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    Eq,
+    From,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    Serialize,
 )]
 pub struct JointId(usize);
 
@@ -27,7 +39,7 @@ impl JointId {
 #[derive(Clone, Copy, Debug)]
 pub struct JointSpec {
     pub position: Vector2<i64>,
-    pub layer: usize,
+    pub layer: LayerId,
     pub radius: u64,
     pub net: NetId,
     pub component: Option<ComponentId>,
@@ -51,12 +63,12 @@ impl Joint {
             [
                 self.spec.position.x - self.spec.radius as i64,
                 self.spec.position.y - self.spec.radius as i64,
-                self.spec.layer as i64,
+                self.spec.layer.index() as i64,
             ],
             [
                 self.spec.position.x + self.spec.radius as i64,
                 self.spec.position.y + self.spec.radius as i64,
-                self.spec.layer as i64,
+                self.spec.layer.index() as i64,
             ],
         ))
     }

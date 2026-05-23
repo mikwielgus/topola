@@ -6,10 +6,12 @@ pub mod primitives;
 mod transforms;
 
 use derive_getters::Getters;
+use derive_more::{Constructor, From};
 use rstar::{
     AABB, RTree,
     primitives::{GeomWithData, Rectangle},
 };
+use serde::{Deserialize, Serialize};
 use stable_vec::StableVec;
 use undoredo::aliases::RTreeHalfDelta;
 use undoredo::{Delta, Recorder};
@@ -22,6 +24,29 @@ use crate::{
     },
     math::Vector2,
 };
+
+#[derive(
+    Clone,
+    Constructor,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    Eq,
+    From,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    Serialize,
+)]
+pub struct LayerId(usize);
+
+impl LayerId {
+    #[inline]
+    pub fn index(self) -> usize {
+        self.0
+    }
+}
 
 #[derive(Clone, Debug, Delta, Getters)]
 pub struct Layout {
@@ -346,24 +371,24 @@ impl Layout {
 
     pub fn locate_joints_at_point(
         &self,
-        layer: usize,
+        layer: LayerId,
         point: Vector2<i64>,
     ) -> impl Iterator<Item = JointId> {
         self.joints_rtree
             .as_ref()
-            .locate_all_at_point(&[point.x, point.y, layer as i64])
+            .locate_all_at_point(&[point.x, point.y, layer.index() as i64])
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |&joint_id| self.joints[joint_id.index()].contains_point(point))
     }
 
     pub fn locate_segments_at_point(
         &self,
-        layer: usize,
+        layer: LayerId,
         point: Vector2<i64>,
     ) -> impl Iterator<Item = SegmentId> {
         self.segments_rtree
             .as_ref()
-            .locate_all_at_point(&[point.x, point.y, layer as i64])
+            .locate_all_at_point(&[point.x, point.y, layer.index() as i64])
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |&segment_id| self.segment(segment_id).contains_point(point))
     }
@@ -372,17 +397,17 @@ impl Layout {
 
     pub fn locate_polygons_at_point(
         &self,
-        layer: usize,
+        layer: LayerId,
         point: Vector2<i64>,
     ) -> impl Iterator<Item = PolygonId> {
         self.polygons_rtree
             .as_ref()
-            .locate_all_at_point(&[point.x, point.y, layer as i64])
+            .locate_all_at_point(&[point.x, point.y, layer.index() as i64])
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |&polygon_id| self.polygons[polygon_id.index()].contains_point(point))
     }
 
-    pub fn layer_joints(&self, layer: usize) -> impl Iterator<Item = JointId> + '_ {
+    pub fn layer_joints(&self, layer: LayerId) -> impl Iterator<Item = JointId> + '_ {
         let envelope = Self::whole_layer_aabb(layer);
         self.joints_rtree
             .as_ref()
@@ -391,7 +416,7 @@ impl Layout {
             .filter(move |&id| self.joint(id).spec.layer == layer)
     }
 
-    pub fn layer_segments(&self, layer: usize) -> impl Iterator<Item = SegmentId> + '_ {
+    pub fn layer_segments(&self, layer: LayerId) -> impl Iterator<Item = SegmentId> + '_ {
         let envelope = Self::whole_layer_aabb(layer);
         self.segments_rtree
             .as_ref()
@@ -400,7 +425,7 @@ impl Layout {
             .filter(move |&id| self.segment(id).layer == layer)
     }
 
-    pub fn layer_polygons(&self, layer: usize) -> impl Iterator<Item = PolygonId> + '_ {
+    pub fn layer_polygons(&self, layer: LayerId) -> impl Iterator<Item = PolygonId> + '_ {
         let envelope = Self::whole_layer_aabb(layer);
         self.polygons_rtree
             .as_ref()
@@ -409,10 +434,10 @@ impl Layout {
             .filter(move |&id| self.polygon(id).layer == layer)
     }
 
-    fn whole_layer_aabb(layer: usize) -> AABB<[i64; 3]> {
+    fn whole_layer_aabb(layer: LayerId) -> AABB<[i64; 3]> {
         AABB::from_corners(
-            [i64::MIN, i64::MIN, layer as i64],
-            [i64::MAX, i64::MAX, layer as i64],
+            [i64::MIN, i64::MIN, layer.index() as i64],
+            [i64::MAX, i64::MAX, layer.index() as i64],
         )
     }
 

@@ -11,22 +11,34 @@ use undoredo::Recorder;
 
 use crate::{
     Board,
+    layout::LayerId,
     math::Vector2,
     primitives::{Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId},
 };
 
 #[derive(
-    Clone, Constructor, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize,
+    Clone,
+    Constructor,
+    Copy,
+    Debug,
+    Default,
+    Deserialize,
+    Eq,
+    From,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    Serialize,
 )]
 pub struct MultiObstacleId {
-    layer: usize,
+    layer: LayerId,
     index: usize,
 }
 
 impl MultiObstacleId {
     /// Layer of the obstacle.
     #[inline]
-    pub fn layer(self) -> usize {
+    pub fn layer(self) -> LayerId {
         self.layer
     }
 
@@ -38,17 +50,17 @@ impl MultiObstacleId {
 }
 
 #[derive(
-    Clone, Constructor, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize,
+    Clone, Constructor, Debug, Default, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize,
 )]
 pub struct MultiVertexId {
-    layer: usize,
+    layer: LayerId,
     indices: Vec<VertexId>,
 }
 
 impl MultiVertexId {
     /// Layer of the obstacle.
     #[inline]
-    pub fn layer(self) -> usize {
+    pub fn layer(self) -> LayerId {
         self.layer
     }
 }
@@ -156,12 +168,12 @@ impl Navmesher {
 
     pub fn insert_multiobstacle(
         &mut self,
-        layer: usize,
+        layer: LayerId,
         multiobstacle: impl IntoIterator<Item = Vector2<i64>>,
     ) -> MultiObstacleId {
         MultiObstacleId::new(
             layer,
-            self.layer_navmeshers[layer].insert_multiobstacle(multiobstacle),
+            self.layer_navmeshers[layer.index()].insert_multiobstacle(multiobstacle),
         )
     }
 
@@ -172,7 +184,7 @@ impl Navmesher {
     ) -> MultiVertexId {
         MultiVertexId {
             layer: multiobstacle_id.layer,
-            indices: self.layer_navmeshers[multiobstacle_id.layer]
+            indices: self.layer_navmeshers[multiobstacle_id.layer.index()]
                 .insert_free_multivertex_in_multiobstacle(multiobstacle_id.index, position),
         }
     }

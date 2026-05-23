@@ -13,6 +13,7 @@ use specctra::{
 use crate::{
     board::Board,
     compounds::{ComponentId, NetId, PinId},
+    layout::LayerId,
     math::Vector2,
     primitives::{JointSpec, Polygon, Segment, SegmentSpec},
 };
@@ -25,7 +26,7 @@ impl Board {
                 .layers
                 .iter()
                 .enumerate()
-                .map(|(index, layer)| (index, layer.name.clone())),
+                .map(|(index, layer)| (LayerId::new(index), layer.name.clone())),
         );
 
         // assign IDs to all nets named in pcb.network
@@ -284,7 +285,7 @@ impl Board {
         place: PointWithRotation,
         pin_pos: PointWithRotation,
         radius: u64,
-        layer: usize,
+        layer: LayerId,
         net: NetId,
         component: Option<ComponentId>,
         pin: Option<PinId>,
@@ -308,7 +309,7 @@ impl Board {
         y1: f64,
         x2: f64,
         y2: f64,
-        layer: usize,
+        layer: LayerId,
         net: NetId,
         component: Option<ComponentId>,
         pin: Option<PinId>,
@@ -334,7 +335,7 @@ impl Board {
         pin_pos: PointWithRotation,
         coords: &[Point],
         width: f64,
-        layer: usize,
+        layer: LayerId,
         net: NetId,
         component: Option<ComponentId>,
         pin: Option<PinId>,
@@ -392,7 +393,7 @@ impl Board {
         pin_pos: PointWithRotation,
         coords: &[Point],
         _width: f64,
-        layer: usize,
+        layer: LayerId,
         net: NetId,
         component: Option<ComponentId>,
         pin: Option<PinId>,
@@ -411,13 +412,13 @@ impl Board {
         });
     }
 
-    fn layer(board: &Board, layers: &[Layer], name: &str, front: bool) -> usize {
+    fn layer(board: &Board, layers: &[Layer], name: &str, front: bool) -> LayerId {
         let image_layer = board.layer_id(name).unwrap();
 
         if front {
             image_layer
         } else {
-            layers.len() - image_layer - 1
+            LayerId::new(layers.len() - image_layer.index() - 1)
         }
     }
 

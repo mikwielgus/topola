@@ -11,6 +11,7 @@ use spade::{DelaunayTriangulation, HasPosition, Triangulation, handles::FixedVer
 use crate::{
     Board,
     compounds::NetId,
+    layout::LayerId,
     math::Vector2,
     primitives::{JointId, PolygonId, PrimitiveId, SegmentId},
 };
@@ -18,12 +19,12 @@ use crate::{
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Getters, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Ratline {
     endpoint_primitive_ids: [PrimitiveId; 2],
-    endpoint_layers: [usize; 2],
+    endpoint_layers: [LayerId; 2],
     endpoints: [Vector2<i64>; 2],
 }
 
 struct DelaunayVertex {
-    pub layer: usize,
+    pub layer: LayerId,
     pub center: Vector2<i64>,
     pub position: spade::Point2<f64>,
     pub primitive_id: PrimitiveId,
@@ -46,7 +47,7 @@ impl Ratsnest {
     pub fn new(board: &Board) -> Self {
         let mut ratlines = Vec::new();
 
-        let mut triangulations: BTreeMap<(NetId, usize), DelaunayTriangulation<DelaunayVertex>> =
+        let mut triangulations: BTreeMap<(NetId, LayerId), DelaunayTriangulation<DelaunayVertex>> =
             BTreeMap::new();
 
         for (i, joint) in board.layout().joints().container().iter() {

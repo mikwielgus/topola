@@ -13,6 +13,7 @@ use undoredo::{Delta, Recorder};
 
 use crate::{
     compounds::{ComponentId, NetId, PinId},
+    layout::LayerId,
     layout::{
         Layout, LayoutHalfDelta,
         primitives::{
@@ -31,7 +32,7 @@ pub struct Board {
     #[getter(skip)]
     pin_names: Recorder<BiBTreeMap<PinId, String>>,
     #[getter(skip)]
-    layer_names: Recorder<BiBTreeMap<usize, String>>,
+    layer_names: Recorder<BiBTreeMap<LayerId, String>>,
     #[getter(skip)]
     net_names: Recorder<BiBTreeMap<NetId, String>>,
 }
@@ -50,7 +51,7 @@ impl Board {
     pub fn with_names(
         boundary: Vec<Vector2<i64>>,
         layer_count: usize,
-        layer_names: BiBTreeMap<usize, String>,
+        layer_names: BiBTreeMap<LayerId, String>,
         net_names: BiBTreeMap<NetId, String>,
     ) -> Self {
         Self {
@@ -131,11 +132,11 @@ impl Board {
         self.pin_names.as_ref().get_by_right(pin_name).copied()
     }
 
-    pub fn layer_name(&self, layer: usize) -> Option<&str> {
+    pub fn layer_name(&self, layer: LayerId) -> Option<&str> {
         self.layer_names.get_by_left(&layer).map(String::as_str)
     }
 
-    pub fn layer_id(&self, layer_name: &str) -> Option<usize> {
+    pub fn layer_id(&self, layer_name: &str) -> Option<LayerId> {
         self.layer_names.as_ref().get_by_right(layer_name).copied()
     }
 
