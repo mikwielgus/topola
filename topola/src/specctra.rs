@@ -11,7 +11,7 @@ use specctra::{
 };
 
 use crate::{
-    board::{Board, LayerDesc, LayerGroupId, LayerTier, LayerType},
+    board::{Board, LayerDesc, LayerTier, LayerType},
     layout::LayerId,
     layout::compounds::{ComponentId, NetId, PinId},
     math::Vector2,
@@ -80,13 +80,6 @@ impl Board {
             BiBTreeMap::from_iter(tmp.into_iter().enumerate().map(|(i, v)| (NetId::new(i), v)))
         };
 
-        let mut layer_groups = vec![LayerGroupId::new(1)];
-        layer_groups.extend(std::iter::repeat_n(
-            LayerGroupId::new(0),
-            dsn.pcb.structure.layers.len(),
-        ));
-        layer_groups.push(LayerGroupId::new(1));
-
         let mut board = Board::with_names(
             dsn.pcb
                 .structure
@@ -103,7 +96,6 @@ impl Board {
                     )
                 })
                 .collect(),
-            layer_groups,
             layer_descs,
             net_names,
         );

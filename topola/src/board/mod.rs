@@ -8,7 +8,7 @@ mod select;
 pub mod selections;
 mod transforms;
 
-pub use crate::board::layer::{LayerDesc, LayerGroupId, LayerTier, LayerType};
+pub use crate::board::layer::{LayerDesc, LayerTier, LayerType};
 
 use bidimap::BiBTreeMap;
 use derive_getters::Getters;
@@ -29,8 +29,6 @@ use crate::{
 #[derive(Clone, Debug, Getters, Delta)]
 pub struct Board {
     layout: Layout,
-    #[getter(skip)]
-    layer_groups: Recorder<Vec<LayerGroupId>>,
     #[getter(skip)]
     component_names: Recorder<BiBTreeMap<ComponentId, String>>,
     #[getter(skip)]
@@ -54,16 +52,14 @@ impl Board {
 
     pub fn with_names(
         boundary: Vec<Vector2<i64>>,
-        layer_groups: Vec<LayerGroupId>,
         layer_descs: BiBTreeMap<LayerId, LayerDesc>,
         net_names: BiBTreeMap<NetId, String>,
     ) -> Self {
         Self {
             layout: Layout::new(
                 boundary.into_iter().map(Into::into).collect(),
-                layer_groups.len(),
+                layer_descs.len(),
             ),
-            layer_groups: Recorder::new(layer_groups),
             component_names: Recorder::new(BiBTreeMap::new()),
             pin_names: Recorder::new(BiBTreeMap::new()),
             layer_descs: Recorder::new(layer_descs),
@@ -157,10 +153,6 @@ impl Board {
             .find_map(|(layer_id, layer_desc)| {
                 (layer_desc.to_string() == layer_name).then_some(*layer_id)
             })
-    }
-
-    pub fn layer_group(&self, layer: LayerId) -> LayerGroupId {
-        self.layer_groups[layer.index()]
     }
 
     pub fn net_name(&self, id: NetId) -> Option<&str> {

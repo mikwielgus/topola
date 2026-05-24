@@ -3,32 +3,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use core::fmt::Display;
-use derive_more::{Constructor, From};
+use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
 use std::fmt::Formatter;
-
-#[derive(
-    Clone,
-    Constructor,
-    Copy,
-    Debug,
-    Default,
-    Deserialize,
-    Eq,
-    From,
-    Ord,
-    PartialEq,
-    PartialOrd,
-    Serialize,
-)]
-pub struct LayerGroupId(usize);
-
-impl LayerGroupId {
-    #[inline]
-    pub fn index(self) -> usize {
-        self.0
-    }
-}
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum LayerType {
