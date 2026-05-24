@@ -15,6 +15,9 @@ mod specctra;
 
 pub use crate::autorouter::Autorouter;
 pub use crate::board::Board;
+pub use crate::board::LayerDesc;
+pub use crate::board::LayerTier;
+pub use crate::board::LayerType;
 pub use crate::board::selections;
 pub use crate::layout::LayerId;
 pub use crate::layout::Layout;

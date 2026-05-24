@@ -53,7 +53,7 @@ impl Display {
                     joint,
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        board.layer_name(joint.spec.layer),
+                        board.layer_desc(joint.spec.layer),
                         board.pin_selection_contains_joint(&workspace.selection.pins, joint_id),
                     ),
                 );
@@ -68,7 +68,7 @@ impl Display {
                     segment,
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        board.layer_name(segment.layer),
+                        board.layer_desc(segment.layer),
                         board.pin_selection_contains_segment(&workspace.selection.pins, segment_id),
                     ),
                 );
@@ -85,7 +85,7 @@ impl Display {
                     polygon,
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        board.layer_name(polygon.layer),
+                        board.layer_desc(polygon.layer),
                         board.pin_selection_contains_polygon(&workspace.selection.pins, polygon_id),
                     ),
                 );

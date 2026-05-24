@@ -11,7 +11,7 @@ use specctra::{
 };
 
 use crate::{
-    board::{Board, LayerGroupId},
+    board::{Board, LayerDesc, LayerGroupId, LayerTier, LayerType},
     layout::LayerId,
     layout::compounds::{ComponentId, NetId, PinId},
     math::Vector2,
@@ -21,16 +21,45 @@ use crate::{
 impl Board {
     pub fn from_specctra(dsn: DsnFile) -> Self {
         let coordinate_scale = Self::coordinate_scale(&dsn);
+
         let top_outline_layer_id = LayerId::new(0);
         let pcb_layer_offset = 1;
         let bottom_outline_layer_id =
             LayerId::new(dsn.pcb.structure.layers.len() + pcb_layer_offset);
-        let mut layer_names =
+
+        let mut layer_descs =
             BiBTreeMap::from_iter(dsn.pcb.structure.layers.iter().enumerate().map(
-                |(index, layer)| (LayerId::new(index + pcb_layer_offset), layer.name.clone()),
+                |(index, _layer)| {
+                    let tier = if index == 0 {
+                        LayerTier::Top
+                    } else if index + 1 == dsn.pcb.structure.layers.len() {
+                        LayerTier::Bottom
+                    } else {
+                        LayerTier::Inner
+                    };
+                    (
+                        LayerId::new(index + pcb_layer_offset),
+                        LayerDesc::new(LayerType::Copper, tier, index + pcb_layer_offset),
+                    )
+                },
             ));
-        layer_names.insert(top_outline_layer_id, "outlines.top".to_string());
-        layer_names.insert(bottom_outline_layer_id, "outlines.bottom".to_string());
+
+        layer_descs.insert(
+            top_outline_layer_id,
+            LayerDesc::new(
+                LayerType::Outline,
+                LayerTier::Top,
+                top_outline_layer_id.index(),
+            ),
+        );
+        layer_descs.insert(
+            bottom_outline_layer_id,
+            LayerDesc::new(
+                LayerType::Outline,
+                LayerTier::Bottom,
+                bottom_outline_layer_id.index(),
+            ),
+        );
 
         // assign IDs to all nets named in pcb.network
         let net_names = {
@@ -75,7 +104,7 @@ impl Board {
                 })
                 .collect(),
             layer_groups,
-            layer_names,
+            layer_descs,
             net_names,
         );
         let outline_net = board.net_id("outlines").unwrap();
@@ -302,7 +331,7 @@ impl Board {
         }
 
         for wire in dsn.pcb.wiring.wires.iter() {
-            let layer = board.layer_id(&wire.path.layer).unwrap();
+            let layer = Self::layer(&board, &dsn.pcb.structure.layers, &wire.path.layer, true);
             let net = board.net_id(&wire.net).unwrap();
 
             Self::place_path(
@@ -463,9 +492,11 @@ impl Board {
         });
     }
 
-    fn layer(board: &Board, layers: &[Layer], name: &str, front: bool) -> LayerId {
+    fn layer(_board: &Board, layers: &[Layer], name: &str, front: bool) -> LayerId {
         let pcb_layer_offset = 1;
-        let image_layer = board.layer_id(name).unwrap();
+        let image_layer = LayerId::new(
+            layers.iter().position(|layer| layer.name == name).unwrap() + pcb_layer_offset,
+        );
         let image_layer_index = image_layer.index() - pcb_layer_offset;
 
         if front {

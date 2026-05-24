@@ -205,7 +205,7 @@ impl Board {
 
         Some(PinSelector {
             pin: self.pin_name(joint.spec.pin?)?.to_string(),
-            layer: self.layer_name(joint.spec.layer)?.to_string(),
+            layer: self.layer_name(joint.spec.layer)?,
         })
     }
 
@@ -214,7 +214,7 @@ impl Board {
 
         Some(PinSelector {
             pin: self.pin_name(segment.spec.pin?)?.to_string(),
-            layer: self.layer_name(segment.layer)?.to_string(),
+            layer: self.layer_name(segment.layer)?,
         })
     }
 
@@ -225,7 +225,7 @@ impl Board {
 
         Some(PinSelector {
             pin: self.pin_name(polygon.pin?)?.to_string(),
-            layer: self.layer_name(polygon.layer)?.to_string(),
+            layer: self.layer_name(polygon.layer)?,
         })
     }
 }

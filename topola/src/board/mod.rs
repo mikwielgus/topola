@@ -2,15 +2,16 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+mod layer;
 mod resolve;
 mod select;
 pub mod selections;
 mod transforms;
 
+pub use crate::board::layer::{LayerDesc, LayerGroupId, LayerTier, LayerType};
+
 use bidimap::BiBTreeMap;
 use derive_getters::Getters;
-use derive_more::{Constructor, From};
-use serde::{Deserialize, Serialize};
 use undoredo::{Delta, Recorder};
 
 use crate::{
@@ -25,29 +26,6 @@ use crate::{
     math::Vector2,
 };
 
-#[derive(
-    Clone,
-    Constructor,
-    Copy,
-    Debug,
-    Default,
-    Deserialize,
-    Eq,
-    From,
-    Ord,
-    PartialEq,
-    PartialOrd,
-    Serialize,
-)]
-pub struct LayerGroupId(usize);
-
-impl LayerGroupId {
-    #[inline]
-    pub fn index(self) -> usize {
-        self.0
-    }
-}
-
 #[derive(Clone, Debug, Getters, Delta)]
 pub struct Board {
     layout: Layout,
@@ -58,7 +36,7 @@ pub struct Board {
     #[getter(skip)]
     pin_names: Recorder<BiBTreeMap<PinId, String>>,
     #[getter(skip)]
-    layer_names: Recorder<BiBTreeMap<LayerId, String>>,
+    layer_descs: Recorder<BiBTreeMap<LayerId, LayerDesc>>,
     #[getter(skip)]
     net_names: Recorder<BiBTreeMap<NetId, String>>,
 }
@@ -69,7 +47,7 @@ impl Board {
             layout: Layout::new(boundary.into_iter().map(Into::into).collect(), layer_count),
             component_names: Recorder::new(BiBTreeMap::new()),
             pin_names: Recorder::new(BiBTreeMap::new()),
-            layer_names: Recorder::new(BiBTreeMap::new()),
+            layer_descs: Recorder::new(BiBTreeMap::new()),
             net_names: Recorder::new(BiBTreeMap::new()),
         }
     }*/
@@ -77,7 +55,7 @@ impl Board {
     pub fn with_names(
         boundary: Vec<Vector2<i64>>,
         layer_groups: Vec<LayerGroupId>,
-        layer_names: BiBTreeMap<LayerId, String>,
+        layer_descs: BiBTreeMap<LayerId, LayerDesc>,
         net_names: BiBTreeMap<NetId, String>,
     ) -> Self {
         Self {
@@ -88,7 +66,7 @@ impl Board {
             layer_groups: Recorder::new(layer_groups),
             component_names: Recorder::new(BiBTreeMap::new()),
             pin_names: Recorder::new(BiBTreeMap::new()),
-            layer_names: Recorder::new(layer_names),
+            layer_descs: Recorder::new(layer_descs),
             net_names: Recorder::new(net_names),
         }
     }
@@ -162,12 +140,23 @@ impl Board {
         self.pin_names.as_ref().get_by_right(pin_name).copied()
     }
 
-    pub fn layer_name(&self, layer: LayerId) -> Option<&str> {
-        self.layer_names.get_by_left(&layer).map(String::as_str)
+    pub fn layer_name(&self, layer: LayerId) -> Option<String> {
+        self.layer_descs
+            .get_by_left(&layer)
+            .map(ToString::to_string)
+    }
+
+    pub fn layer_desc(&self, layer: LayerId) -> Option<&LayerDesc> {
+        self.layer_descs.get_by_left(&layer)
     }
 
     pub fn layer_id(&self, layer_name: &str) -> Option<LayerId> {
-        self.layer_names.as_ref().get_by_right(layer_name).copied()
+        self.layer_descs
+            .as_ref()
+            .iter()
+            .find_map(|(layer_id, layer_desc)| {
+                (layer_desc.to_string() == layer_name).then_some(*layer_id)
+            })
     }
 
     pub fn layer_group(&self, layer: LayerId) -> LayerGroupId {
