@@ -6,20 +6,20 @@ use std::{fs::File, io::BufReader};
 
 use topola::{
     autorouter::{
+        Autorouter,
         connected_components::ConnectedComponents,
         history::{History, HistoryError},
         invoker::{Invoker, InvokerError},
         ratline::RatlineUid,
-        Autorouter,
     },
-    board::{edit::BoardEdit, AccessMesadata, Board},
+    board::{AccessMesadata, Board, edit::BoardEdit},
     drawing::{
         graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex},
         primitive::MakePrimitiveShape,
     },
-    geometry::{shape::MeasureLength, GenericNode},
+    geometry::{GenericNode, shape::MeasureLength},
     graph::{GetIndex, MakeRef},
-    router::{navmesh::Navmesh, RouterOptions},
+    router::{RouterOptions, navmesh::Navmesh},
     specctra::{design::SpecctraDesign, mesadata::SpecctraMesadata},
 };
 
