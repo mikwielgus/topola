@@ -20,6 +20,7 @@ use crate::{
 
 impl Board {
     pub fn from_specctra(dsn: DsnFile) -> Self {
+        let coordinate_scale = Self::coordinate_scale(&dsn);
         let top_outline_layer_id = LayerId::new(0);
         let pcb_layer_offset = 1;
         let bottom_outline_layer_id =
@@ -66,7 +67,12 @@ impl Board {
                 .into_iter()
                 .skip(1)
                 .rev()
-                .map(|p| Vector2::new(p.x as i64, p.y as i64))
+                .map(|p| {
+                    Vector2::new(
+                        Self::scale_coord(p.x, coordinate_scale),
+                        Self::scale_coord(p.y, coordinate_scale),
+                    )
+                })
                 .collect(),
             layer_groups,
             layer_names,
@@ -129,6 +135,7 @@ impl Board {
                         Some(component_id),
                         None,
                         !place_side_is_front,
+                        coordinate_scale,
                     );
                 }
 
@@ -150,12 +157,13 @@ impl Board {
                                     &mut board,
                                     place.point_with_rotation(),
                                     pin.point_with_rotation(),
-                                    (circle.diameter / 2.0) as u64,
+                                    circle.diameter / 2.0,
                                     layer,
                                     net,
                                     Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
+                                    coordinate_scale,
                                 )
                             }
                             Shape::Rect(rect) => {
@@ -173,6 +181,7 @@ impl Board {
                                     Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
+                                    coordinate_scale,
                                 )
                             }
                             Shape::Path(path) => {
@@ -188,6 +197,7 @@ impl Board {
                                     Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
+                                    coordinate_scale,
                                 )
                             }
                             Shape::Polygon(polygon) => {
@@ -203,6 +213,7 @@ impl Board {
                                     Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
+                                    coordinate_scale,
                                 )
                             }
                         }
@@ -227,12 +238,13 @@ impl Board {
                             &mut board,
                             PointWithRotation::from_xy(via.x, via.y),
                             PointWithRotation::default(),
-                            (circle.diameter / 2.0) as u64,
+                            circle.diameter / 2.0,
                             layer,
                             net,
                             None,
                             None,
                             false,
+                            coordinate_scale,
                         )
                     }
                     Shape::Rect(rect) => {
@@ -250,6 +262,7 @@ impl Board {
                             None,
                             None,
                             false,
+                            coordinate_scale,
                         )
                     }
                     Shape::Path(path) => {
@@ -265,6 +278,7 @@ impl Board {
                             None,
                             None,
                             false,
+                            coordinate_scale,
                         )
                     }
                     Shape::Polygon(polygon) => {
@@ -280,6 +294,7 @@ impl Board {
                             None,
                             None,
                             false,
+                            coordinate_scale,
                         )
                     }
                 };
@@ -301,6 +316,7 @@ impl Board {
                 None,
                 None,
                 false,
+                coordinate_scale,
             );
         }
 
@@ -311,20 +327,21 @@ impl Board {
         board: &mut Board,
         place: PointWithRotation,
         pin_pos: PointWithRotation,
-        radius: u64,
+        radius: f64,
         layer: LayerId,
         net: NetId,
         component: Option<ComponentId>,
         pin: Option<PinId>,
         flip: bool,
+        coordinate_scale: f64,
     ) {
         board.add_joint(JointSpec {
-            position: Self::pos(place, pin_pos, 0.0, 0.0, flip),
+            position: Self::pos(place, pin_pos, 0.0, 0.0, flip, coordinate_scale),
             layer,
             net,
             component,
             pin,
-            radius,
+            radius: Self::scale_size(radius, coordinate_scale),
         });
     }
 
@@ -341,13 +358,14 @@ impl Board {
         component: Option<ComponentId>,
         pin: Option<PinId>,
         flip: bool,
+        coordinate_scale: f64,
     ) {
         board.add_polygon(Polygon {
             vertices: vec![
-                Self::pos(place, pin_pos, x1, y1, flip),
-                Self::pos(place, pin_pos, x2, y1, flip),
-                Self::pos(place, pin_pos, x2, y2, flip),
-                Self::pos(place, pin_pos, x1, y2, flip),
+                Self::pos(place, pin_pos, x1, y1, flip, coordinate_scale),
+                Self::pos(place, pin_pos, x2, y1, flip, coordinate_scale),
+                Self::pos(place, pin_pos, x2, y2, flip, coordinate_scale),
+                Self::pos(place, pin_pos, x1, y2, flip, coordinate_scale),
             ],
             layer,
             net,
@@ -367,21 +385,27 @@ impl Board {
         component: Option<ComponentId>,
         pin: Option<PinId>,
         flip: bool,
+        coordinate_scale: f64,
     ) {
-        // Add the first coordinate in the wire path as a dot and save its index.
-        let mut prev_pos: Vector2<i64> = Self::pos(place, pin_pos, coords[0].x, coords[0].y, flip);
+        let mut prev_pos: Vector2<i64> = Self::pos(
+            place,
+            pin_pos,
+            coords[0].x,
+            coords[0].y,
+            flip,
+            coordinate_scale,
+        );
         let mut prev_joint = board.add_joint(JointSpec {
             position: prev_pos,
             layer,
-            radius: (width / 2.0) as u64,
+            radius: Self::scale_size(width / 2.0, coordinate_scale),
             net,
             component,
             pin,
         });
 
-        // Iterate through path coords starting from the second.
         for coord in coords.iter().skip(1) {
-            let pos = Self::pos(place, pin_pos, coord.x, coord.y, flip);
+            let pos = Self::pos(place, pin_pos, coord.x, coord.y, flip, coordinate_scale);
 
             if pos == prev_pos {
                 continue;
@@ -390,17 +414,16 @@ impl Board {
             let joint = board.add_joint(JointSpec {
                 position: pos,
                 layer,
-                radius: (width / 2.0) as u64,
+                radius: Self::scale_size(width / 2.0, coordinate_scale),
                 net,
                 component,
                 pin,
             });
 
-            // Add a seg between the current and previous coords.
             let _ = board.add_segment_raw(Segment {
                 spec: SegmentSpec {
                     endjoints: [prev_joint, joint],
-                    half_width: (width / 2.0) as u64,
+                    half_width: Self::scale_size(width / 2.0, coordinate_scale),
                     component,
                     pin,
                 },
@@ -425,10 +448,11 @@ impl Board {
         component: Option<ComponentId>,
         pin: Option<PinId>,
         flip: bool,
+        coordinate_scale: f64,
     ) {
         let vertices: Vec<Vector2<i64>> = coords
             .iter()
-            .map(|coord| Self::pos(place, pin_pos, coord.x, coord.y, flip))
+            .map(|coord| Self::pos(place, pin_pos, coord.x, coord.y, flip, coordinate_scale))
             .collect();
         board.add_polygon(Polygon {
             vertices,
@@ -457,6 +481,7 @@ impl Board {
         x: f64,
         y: f64,
         flip: bool,
+        coordinate_scale: f64,
     ) -> Vector2<i64> {
         let pos = (Vector2::new(x, y) + Vector2::new(pin.pos.x(), pin.pos.y()))
             .rotate_around_point_degrees(pin.rot, Vector2::new(pin.pos.x(), pin.pos.y()));
@@ -464,6 +489,37 @@ impl Board {
             + flip.then_some(Vector2::new(-pos.x, pos.y)).unwrap_or(pos))
         .rotate_around_point_degrees(place.rot, Vector2::new(place.pos.x(), place.pos.y()));
 
-        Vector2::new(pos.x as i64, pos.y as i64)
+        Vector2::new(
+            Self::scale_coord(pos.x, coordinate_scale),
+            Self::scale_coord(pos.y, coordinate_scale),
+        )
+    }
+
+    fn coordinate_scale(dsn: &DsnFile) -> f64 {
+        let unit = dsn
+            .pcb
+            .unit
+            .as_deref()
+            .unwrap_or(&dsn.pcb.resolution.unit)
+            .to_ascii_lowercase();
+
+        match unit.as_str() {
+            "um" | "µm" => 1.0,
+            "mm" => 1000.0,
+            "cm" => 10_000.0,
+            "m" => 1_000_000.0,
+            "mil" => 25.4,
+            "in" | "inch" => 25_400.0,
+            "nm" => 0.001,
+            _ => 1.0,
+        }
+    }
+
+    fn scale_coord(value: f64, coordinate_scale: f64) -> i64 {
+        (value * coordinate_scale).round() as i64
+    }
+
+    fn scale_size(value: f64, coordinate_scale: f64) -> u64 {
+        ((value * coordinate_scale).round()).max(0.0) as u64
     }
 }
