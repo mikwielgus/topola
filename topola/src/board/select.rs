@@ -108,28 +108,6 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn point_component_selector(
-        &self,
-        layer: LayerId,
-        point: Vector2<i64>,
-    ) -> Option<ComponentSelector> {
-        if let Some(joint_id) = self.layout.locate_joints_at_point(layer, point).next() {
-            return self.joint_component_selector(joint_id);
-        }
-
-        if let Some(segment_id) = self.layout.locate_segments_at_point(layer, point).next() {
-            return self.segment_component_selector(segment_id);
-        }
-
-        // TODO: Vias.
-
-        if let Some(polygon_id) = self.layout.locate_polygons_at_point(layer, point).next() {
-            return self.polygon_component_selector(polygon_id);
-        }
-
-        None
-    }
-
     pub fn joint_component_selector(&self, id: JointId) -> Option<ComponentSelector> {
         let joint = self.layout.joint(id);
 

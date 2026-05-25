@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 pub mod compounds;
+mod locate;
 pub mod primitives;
 mod transforms;
 
@@ -23,7 +24,6 @@ use crate::{
         Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
         ViaSpec,
     },
-    math::Vector2,
 };
 
 #[derive(
@@ -368,44 +368,6 @@ impl Layout {
         let new_polygon = &self.polygons[id.index()];
         self.polygons_rtree
             .insert(GeomWithData::new(new_polygon.bbox(), id), ());
-    }
-
-    pub fn locate_joints_at_point(
-        &self,
-        layer: LayerId,
-        point: Vector2<i64>,
-    ) -> impl Iterator<Item = JointId> {
-        self.joints_rtree
-            .as_ref()
-            .locate_all_at_point(&[point.x, point.y, layer.index() as i64])
-            .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&joint_id| self.joints[joint_id.index()].contains_point(point))
-    }
-
-    pub fn locate_segments_at_point(
-        &self,
-        layer: LayerId,
-        point: Vector2<i64>,
-    ) -> impl Iterator<Item = SegmentId> {
-        self.segments_rtree
-            .as_ref()
-            .locate_all_at_point(&[point.x, point.y, layer.index() as i64])
-            .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&segment_id| self.segment(segment_id).contains_point(point))
-    }
-
-    // TODO: vias.
-
-    pub fn locate_polygons_at_point(
-        &self,
-        layer: LayerId,
-        point: Vector2<i64>,
-    ) -> impl Iterator<Item = PolygonId> {
-        self.polygons_rtree
-            .as_ref()
-            .locate_all_at_point(&[point.x, point.y, layer.index() as i64])
-            .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&polygon_id| self.polygons[polygon_id.index()].contains_point(point))
     }
 
     pub fn layer_joints(&self, layer: LayerId) -> impl Iterator<Item = JointId> + '_ {

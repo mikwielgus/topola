@@ -3,6 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 mod layer;
+mod locate;
 mod resolve;
 mod select;
 pub mod selections;
