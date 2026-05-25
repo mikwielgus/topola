@@ -4,19 +4,20 @@
 
 use std::collections::BTreeSet;
 
+use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Constructor, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct ComponentSelector {
     pub component: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct ComponentSelection(pub BTreeSet<ComponentSelector>);
 
 impl ComponentSelection {
     pub fn new() -> Self {
-        Self(BTreeSet::new())
+        Default::default()
     }
 
     pub fn toggle(&mut self, selector: ComponentSelector) {

@@ -5,6 +5,7 @@
 mod component;
 mod persistable;
 mod pin;
+mod route;
 
 pub use component::{ComponentSelection, ComponentSelector};
 pub use persistable::PersistableSelection;

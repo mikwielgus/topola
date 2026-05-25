@@ -4,20 +4,23 @@
 
 use std::collections::BTreeSet;
 
+use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
 
-#[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(
+    Clone, Constructor, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
+)]
 pub struct PinSelector {
     pub pin: String,
     pub layer: String,
 }
 
-#[derive(Clone, Debug, Deserialize, Eq, PartialEq, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct PinSelection(pub BTreeSet<PinSelector>);
 
 impl PinSelection {
     pub fn new() -> Self {
-        Self(BTreeSet::new())
+        Default::default()
     }
 
     pub fn toggle(&mut self, selector: PinSelector) {
