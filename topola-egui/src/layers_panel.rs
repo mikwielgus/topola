@@ -6,7 +6,7 @@ use std::collections::BTreeMap;
 
 use egui::{Context, Grid, ScrollArea, SidePanel, widget_text::WidgetText};
 use serde::{Deserialize, Serialize};
-use topola::{Board, LayerDesc, LayerId, LayerTier, LayerType};
+use topola::{Board, LayerDesc, LayerId, LayerSide, LayerType};
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Colors {
@@ -59,8 +59,8 @@ impl LayersPanel {
             };
 
             let color = match layer_desc.typ {
-                LayerType::Copper => match layer_desc.tier {
-                    LayerTier::Top => Some((
+                LayerType::Copper => match layer_desc.side {
+                    LayerSide::Top => Some((
                         LayerColors {
                             normal: egui::Color32::from_rgb(255, 52, 52),
                             highlighted: egui::Color32::from_rgb(255, 100, 100),
@@ -70,7 +70,7 @@ impl LayersPanel {
                             highlighted: egui::Color32::from_rgb(255, 52, 52),
                         },
                     )),
-                    LayerTier::Bottom => Some((
+                    LayerSide::Bottom => Some((
                         LayerColors {
                             normal: egui::Color32::from_rgb(52, 52, 255),
                             highlighted: egui::Color32::from_rgb(100, 100, 255),
@@ -80,7 +80,7 @@ impl LayersPanel {
                             highlighted: egui::Color32::from_rgb(52, 52, 255),
                         },
                     )),
-                    LayerTier::Inner => (layer_desc.index % 2 == 0)
+                    LayerSide::Inner => (layer_desc.index % 2 == 0)
                         .then_some((
                             LayerColors {
                                 normal: egui::Color32::from_rgb(127, 200, 127),

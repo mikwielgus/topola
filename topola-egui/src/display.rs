@@ -54,7 +54,7 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_desc(joint.spec.layer),
-                        board.pin_selection_contains_joint(&workspace.selection.pins, joint_id),
+                        board.pins_contain_joint(&workspace.selection.pins, joint_id),
                     ),
                 );
             }
@@ -69,7 +69,7 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_desc(segment.layer),
-                        board.pin_selection_contains_segment(&workspace.selection.pins, segment_id),
+                        board.pins_contain_segment(&workspace.selection.pins, segment_id),
                     ),
                 );
             }
@@ -84,7 +84,7 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_desc(layer),
-                        board.pin_selection_contains_via(&workspace.selection.pins, via_id),
+                        board.pins_contain_via(&workspace.selection.pins, via_id),
                     ),
                 );
             }
@@ -99,7 +99,7 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_desc(polygon.layer),
-                        board.pin_selection_contains_polygon(&workspace.selection.pins, polygon_id),
+                        board.pins_contain_polygon(&workspace.selection.pins, polygon_id),
                     ),
                 );
             }

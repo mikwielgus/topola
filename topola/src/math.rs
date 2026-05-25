@@ -2,11 +2,34 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use derive_getters::Getters;
 use derive_more::{
     Add, AddAssign, Constructor, Div, DivAssign, From, Into, Mul, MulAssign, Sub, SubAssign,
 };
 use polygon_unionfind::UnionFind;
+use rstar::AABB;
 use serde::{Deserialize, Serialize};
+
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Getters, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct Rect2<T> {
+    min: Vector2<T>,
+    max: Vector2<T>,
+}
+
+impl<T: Ord + Copy> Rect2<T> {
+    pub fn new(from: Vector2<T>, to: Vector2<T>) -> Self {
+        Self {
+            min: Vector2::new(std::cmp::min(from.x, to.x), std::cmp::min(from.y, to.y)),
+            max: Vector2::new(std::cmp::max(from.x, to.x), std::cmp::max(from.y, to.y)),
+        }
+    }
+}
+
+impl Rect2<i64> {
+    pub fn aabb3(self, z: i64) -> AABB<[i64; 3]> {
+        AABB::from_corners([self.min.x, self.min.y, z], [self.max.x, self.max.y, z])
+    }
+}
 
 #[derive(
     Add,

@@ -11,7 +11,7 @@ use specctra::{
 };
 
 use crate::{
-    board::{Board, LayerDesc, LayerTier, LayerType},
+    board::{Board, LayerDesc, LayerSide, LayerType},
     layout::LayerId,
     layout::compounds::{ComponentId, NetId, PinId},
     math::Vector2,
@@ -31,11 +31,11 @@ impl Board {
             BiBTreeMap::from_iter(dsn.pcb.structure.layers.iter().enumerate().map(
                 |(index, _layer)| {
                     let tier = if index == 0 {
-                        LayerTier::Top
+                        LayerSide::Top
                     } else if index + 1 == dsn.pcb.structure.layers.len() {
-                        LayerTier::Bottom
+                        LayerSide::Bottom
                     } else {
-                        LayerTier::Inner
+                        LayerSide::Inner
                     };
                     (
                         LayerId::new(index + pcb_layer_offset),
@@ -48,7 +48,7 @@ impl Board {
             top_outline_layer_id,
             LayerDesc::new(
                 LayerType::Outline,
-                LayerTier::Top,
+                LayerSide::Top,
                 top_outline_layer_id.index(),
             ),
         );
@@ -56,7 +56,7 @@ impl Board {
             bottom_outline_layer_id,
             LayerDesc::new(
                 LayerType::Outline,
-                LayerTier::Bottom,
+                LayerSide::Bottom,
                 bottom_outline_layer_id.index(),
             ),
         );

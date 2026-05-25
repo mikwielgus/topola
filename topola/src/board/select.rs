@@ -7,16 +7,11 @@ use crate::{
         Board,
         selections::{ComponentSelection, ComponentSelector, PinSelection, PinSelector},
     },
-    layout::LayerId,
-    math::Vector2,
     primitives::{JointId, PolygonId, SegmentId, ViaId},
 };
 
 impl Board {
-    pub fn pin_selection_to_component_selection(
-        &mut self,
-        pin_selection: PinSelection,
-    ) -> ComponentSelection {
+    pub fn pins_to_components(&mut self, pin_selection: PinSelection) -> ComponentSelection {
         let mut component_selection = ComponentSelection::new();
 
         for selector in pin_selection.0 {
@@ -80,11 +75,7 @@ impl Board {
         component_selection
     }
 
-    pub fn component_selection_contains_joint(
-        &self,
-        selection: &ComponentSelection,
-        id: JointId,
-    ) -> bool {
+    pub fn components_contain_joint(&self, selection: &ComponentSelection, id: JointId) -> bool {
         let Some(selector) = self.joint_component_selector(id) else {
             return false;
         };
@@ -92,7 +83,7 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn component_selection_contains_segment(
+    pub fn components_contain_segment(
         &self,
         selection: &ComponentSelection,
         id: SegmentId,
@@ -104,11 +95,7 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn component_selection_contains_via(
-        &self,
-        selection: &ComponentSelection,
-        id: ViaId,
-    ) -> bool {
+    pub fn components_contain_via(&self, selection: &ComponentSelection, id: ViaId) -> bool {
         let Some(selector) = self.via_component_selector(id) else {
             return false;
         };
@@ -116,7 +103,7 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn component_selection_contains_polygon(
+    pub fn components_contain_polygon(
         &self,
         selection: &ComponentSelection,
         id: PolygonId,
@@ -160,7 +147,7 @@ impl Board {
         })
     }
 
-    pub fn pin_selection_contains_joint(&self, selection: &PinSelection, id: JointId) -> bool {
+    pub fn pins_contain_joint(&self, selection: &PinSelection, id: JointId) -> bool {
         let Some(selector) = self.joint_pin_selector(id) else {
             return false;
         };
@@ -168,7 +155,7 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn pin_selection_contains_segment(&self, selection: &PinSelection, id: SegmentId) -> bool {
+    pub fn pins_contain_segment(&self, selection: &PinSelection, id: SegmentId) -> bool {
         let Some(selector) = self.segment_pin_selector(id) else {
             return false;
         };
@@ -176,7 +163,7 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn pin_selection_contains_via(&self, selection: &PinSelection, id: ViaId) -> bool {
+    pub fn pins_contain_via(&self, selection: &PinSelection, id: ViaId) -> bool {
         let Some(selector) = self.via_pin_selector(id) else {
             return false;
         };
@@ -184,32 +171,12 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn pin_selection_contains_polygon(&self, selection: &PinSelection, id: PolygonId) -> bool {
+    pub fn pins_contain_polygon(&self, selection: &PinSelection, id: PolygonId) -> bool {
         let Some(selector) = self.polygon_pin_selector(id) else {
             return false;
         };
 
         selection.0.contains(&selector)
-    }
-
-    pub fn point_pin_selector(&self, layer: LayerId, point: Vector2<i64>) -> Option<PinSelector> {
-        if let Some(joint_id) = self.layout.locate_joints_at_point(layer, point).next() {
-            return self.joint_pin_selector(joint_id);
-        }
-
-        if let Some(segment_id) = self.layout.locate_segments_at_point(layer, point).next() {
-            return self.segment_pin_selector(segment_id);
-        }
-
-        if let Some(via_id) = self.layout.locate_vias_at_point(layer, point).next() {
-            return self.via_pin_selector(via_id);
-        }
-
-        if let Some(polygon_id) = self.layout.locate_polygons_at_point(layer, point).next() {
-            return self.polygon_pin_selector(polygon_id);
-        }
-
-        None
     }
 
     pub fn joint_pin_selector(&self, id: JointId) -> Option<PinSelector> {

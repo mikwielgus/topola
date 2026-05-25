@@ -9,7 +9,7 @@ mod select;
 pub mod selections;
 mod transforms;
 
-pub use crate::board::layer::{LayerDesc, LayerTier, LayerType};
+pub use crate::board::layer::{LayerDesc, LayerSide, LayerType};
 
 use bidimap::BiBTreeMap;
 use derive_getters::Getters;

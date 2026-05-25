@@ -14,7 +14,7 @@ pub enum LayerType {
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-pub enum LayerTier {
+pub enum LayerSide {
     Top,
     Inner,
     Bottom,
@@ -23,22 +23,22 @@ pub enum LayerTier {
 #[derive(Clone, Constructor, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct LayerDesc {
     pub typ: LayerType,
-    pub tier: LayerTier,
+    pub side: LayerSide,
     pub index: usize,
 }
 
 impl Display for LayerDesc {
     fn fmt(&self, f: &mut Formatter<'_>) -> std::fmt::Result {
         match self.typ {
-            LayerType::Copper => match self.tier {
-                LayerTier::Top => write!(f, "F.Cu"),
-                LayerTier::Bottom => write!(f, "B.Cu"),
-                LayerTier::Inner => write!(f, "In{}.Cu", self.index.saturating_sub(1)),
+            LayerType::Copper => match self.side {
+                LayerSide::Top => write!(f, "F.Cu"),
+                LayerSide::Bottom => write!(f, "B.Cu"),
+                LayerSide::Inner => write!(f, "In{}.Cu", self.index.saturating_sub(1)),
             },
-            LayerType::Outline => match self.tier {
-                LayerTier::Top => write!(f, "outlines.top"),
-                LayerTier::Bottom => write!(f, "outlines.bottom"),
-                LayerTier::Inner => write!(f, "outlines.{}", self.index),
+            LayerType::Outline => match self.side {
+                LayerSide::Top => write!(f, "F.Outl"),
+                LayerSide::Bottom => write!(f, "B.Outl"),
+                LayerSide::Inner => write!(f, "In{}.Outl", self.index),
             },
         }
     }
