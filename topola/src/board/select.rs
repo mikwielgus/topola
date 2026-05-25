@@ -9,7 +9,7 @@ use crate::{
     },
     layout::LayerId,
     math::Vector2,
-    primitives::{JointId, PolygonId, SegmentId},
+    primitives::{JointId, PolygonId, SegmentId, ViaId},
 };
 
 impl Board {
@@ -40,7 +40,17 @@ impl Board {
                 component_selection.0.insert(component_selector);
             }
 
-            // TODO: Vias.
+            for via_id in self.layout.layer_vias(layer_id) {
+                if self.layout.via(via_id).spec.pin != Some(pin_id) {
+                    continue;
+                }
+
+                let Some(component_selector) = self.via_component_selector(via_id) else {
+                    continue;
+                };
+
+                component_selection.0.insert(component_selector);
+            }
 
             for segment_id in self.layout.layer_segments(layer_id) {
                 if self.layout.segment(segment_id).spec.pin != Some(pin_id) {
@@ -94,7 +104,17 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    // TODO: Vias.
+    pub fn component_selection_contains_via(
+        &self,
+        selection: &ComponentSelection,
+        id: ViaId,
+    ) -> bool {
+        let Some(selector) = self.via_component_selector(id) else {
+            return false;
+        };
+
+        selection.0.contains(&selector)
+    }
 
     pub fn component_selection_contains_polygon(
         &self,
@@ -124,7 +144,13 @@ impl Board {
         })
     }
 
-    // TODO: Vias.
+    pub fn via_component_selector(&self, id: ViaId) -> Option<ComponentSelector> {
+        let via = self.layout.via(id);
+
+        Some(ComponentSelector {
+            component: self.component_name(via.spec.component?)?.to_string(),
+        })
+    }
 
     pub fn polygon_component_selector(&self, id: PolygonId) -> Option<ComponentSelector> {
         let polygon = self.layout.polygon(id);
@@ -150,7 +176,13 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    // TODO: Vias.
+    pub fn pin_selection_contains_via(&self, selection: &PinSelection, id: ViaId) -> bool {
+        let Some(selector) = self.via_pin_selector(id) else {
+            return false;
+        };
+
+        selection.0.contains(&selector)
+    }
 
     pub fn pin_selection_contains_polygon(&self, selection: &PinSelection, id: PolygonId) -> bool {
         let Some(selector) = self.polygon_pin_selector(id) else {
@@ -169,7 +201,9 @@ impl Board {
             return self.segment_pin_selector(segment_id);
         }
 
-        // TODO: Vias.
+        if let Some(via_id) = self.layout.locate_vias_at_point(layer, point).next() {
+            return self.via_pin_selector(via_id);
+        }
 
         if let Some(polygon_id) = self.layout.locate_polygons_at_point(layer, point).next() {
             return self.polygon_pin_selector(polygon_id);
@@ -196,7 +230,14 @@ impl Board {
         })
     }
 
-    // TODO: Vias.
+    pub fn via_pin_selector(&self, id: ViaId) -> Option<PinSelector> {
+        let via = self.layout.via(id);
+
+        Some(PinSelector {
+            pin: self.pin_name(via.spec.pin?)?.to_string(),
+            layer: self.layer_name(via.min_layer)?,
+        })
+    }
 
     pub fn polygon_pin_selector(&self, id: PolygonId) -> Option<PinSelector> {
         let polygon = self.layout.polygon(id);

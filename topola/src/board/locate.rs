@@ -23,7 +23,9 @@ impl Board {
             return self.segment_component_selector(segment_id);
         }
 
-        // TODO: Vias.
+        if let Some(via_id) = self.layout.locate_vias_at_point(layer, point).next() {
+            return self.via_component_selector(via_id);
+        }
 
         if let Some(polygon_id) = self.layout.locate_polygons_at_point(layer, point).next() {
             return self.polygon_component_selector(polygon_id);
@@ -41,7 +43,9 @@ impl Board {
             return self.segment_pin_selector(segment_id);
         }
 
-        // TODO: Vias.
+        if let Some(via_id) = self.layout.locate_vias_at_point(layer, point).next() {
+            return self.via_pin_selector(via_id);
+        }
 
         if let Some(polygon_id) = self.layout.locate_polygons_at_point(layer, point).next() {
             return self.polygon_pin_selector(polygon_id);

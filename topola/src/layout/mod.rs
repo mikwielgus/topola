@@ -388,6 +388,18 @@ impl Layout {
             .filter(move |&id| self.segment(id).layer == layer)
     }
 
+    pub fn layer_vias(&self, layer: LayerId) -> impl Iterator<Item = ViaId> + '_ {
+        let envelope = Self::whole_layer_aabb(layer);
+        self.vias_rtree
+            .as_ref()
+            .locate_in_envelope_intersecting(&envelope)
+            .map(|geom_with_data| geom_with_data.data)
+            .filter(move |&id| {
+                let via = self.via(id);
+                via.min_layer <= layer && layer <= via.max_layer
+            })
+    }
+
     pub fn layer_polygons(&self, layer: LayerId) -> impl Iterator<Item = PolygonId> + '_ {
         let envelope = Self::whole_layer_aabb(layer);
         self.polygons_rtree
@@ -410,6 +422,10 @@ impl Layout {
 
     pub fn segment(&self, segment_id: SegmentId) -> &Segment {
         &self.segments[segment_id.index()]
+    }
+
+    pub fn via(&self, via_id: ViaId) -> &Via {
+        &self.vias[via_id.index()]
     }
 
     pub fn polygon(&self, polygon_id: PolygonId) -> &Polygon {

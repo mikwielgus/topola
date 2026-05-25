@@ -4,7 +4,7 @@
 
 use crate::{viewport::Viewport, workspace::Workspace};
 use topola::LayerId;
-use topola::primitives::{Joint, Polygon, Segment};
+use topola::primitives::{Joint, Polygon, Segment, Via};
 
 pub struct Display {}
 
@@ -74,7 +74,20 @@ impl Display {
                 );
             }
 
-            // TODO: Vias.
+            for via_id in layout.layer_vias(layer) {
+                let via = layout.via(via_id);
+                self.paint_via(
+                    ctx,
+                    ui,
+                    viewport,
+                    via,
+                    workspace.appearance_panel.layer_color(
+                        ctx,
+                        board.layer_desc(layer),
+                        board.pin_selection_contains_via(&workspace.selection.pins, via_id),
+                    ),
+                );
+            }
 
             for polygon_id in layout.layer_polygons(layer) {
                 let polygon = layout.polygon(polygon_id);
@@ -134,6 +147,21 @@ impl Display {
                 egui::pos2(segment.endpoints[1].x as f32, segment.endpoints[1].y as f32),
             ],
             egui::Stroke::new(segment.spec.half_width as f32 * 2.0, color),
+        );
+    }
+
+    fn paint_via(
+        &mut self,
+        ctx: &egui::Context,
+        ui: &egui::Ui,
+        viewport: &Viewport,
+        via: &Via,
+        color: egui::Color32,
+    ) {
+        ui.painter().circle_filled(
+            egui::pos2(via.position.x as f32, via.position.y as f32),
+            via.spec.radius as f32,
+            color,
         );
     }
 
@@ -206,7 +234,20 @@ impl Display {
                 );
             }
 
-            // TODO: vias.
+            for via_id in layout.layer_vias(layer) {
+                let via = layout.via(via_id);
+                let bbox = via.bbox();
+
+                ui.painter().rect_stroke(
+                    egui::Rect {
+                        min: egui::pos2(bbox.lower()[0] as f32, bbox.lower()[1] as f32),
+                        max: egui::pos2(bbox.upper()[0] as f32, bbox.upper()[1] as f32),
+                    },
+                    egui::CornerRadius::ZERO,
+                    egui::Stroke::new(5.0, egui::Color32::GRAY),
+                    egui::StrokeKind::Middle,
+                );
+            }
 
             for polygon_id in layout.layer_polygons(layer) {
                 let polygon = layout.polygon(polygon_id);
