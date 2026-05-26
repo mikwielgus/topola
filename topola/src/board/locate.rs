@@ -34,7 +34,7 @@ impl Board {
         None
     }
 
-    pub fn locate_component_intersecting_rect(
+    pub fn locate_components_intersecting_rect(
         &self,
         layer: LayerId,
         rect: Rect2<i64>,
@@ -59,7 +59,7 @@ impl Board {
             )
     }
 
-    pub fn locate_component_inside_rect(
+    pub fn locate_components_inside_rect(
         &self,
         layer: LayerId,
         rect: Rect2<i64>,
@@ -104,7 +104,7 @@ impl Board {
         None
     }
 
-    pub fn locate_pin_intersecting_rect(
+    pub fn locate_pins_intersecting_rect(
         &self,
         layer: LayerId,
         rect: Rect2<i64>,
@@ -129,7 +129,7 @@ impl Board {
             )
     }
 
-    pub fn locate_pin_inside_rect(
+    pub fn locate_pins_inside_rect(
         &self,
         layer: LayerId,
         rect: Rect2<i64>,

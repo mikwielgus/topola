@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use egui::Pos2;
-use topola::Vector2;
+use topola::{CrossingDragSelectionInteractor, InteractiveInput, Vector2};
 
 use crate::{display::Display, workspace::Workspace};
 
@@ -11,6 +11,7 @@ pub struct Viewport {
     pub scene_rect: egui::Rect,
     pub ref_scene_rect: egui::Rect,
     pub scheduled_zoom_to_fit: bool,
+    crossing_drag_selection_interactor: Option<CrossingDragSelectionInteractor>,
 }
 
 impl Viewport {
@@ -19,6 +20,7 @@ impl Viewport {
             scene_rect: egui::Rect::from_min_max(egui::pos2(-1.0, -1.0), egui::pos2(1.0, 1.0)),
             ref_scene_rect: egui::Rect::from_min_max(egui::pos2(-1.0, -1.0), egui::pos2(1.0, 1.0)),
             scheduled_zoom_to_fit: false,
+            crossing_drag_selection_interactor: None,
         }
     }
 
@@ -34,7 +36,7 @@ impl Viewport {
 
                 let response = egui::Scene::new()
                     .zoom_range(zoom_range.clone())
-                    //.sense(egui::Sense::hover())
+                    .drag_pan_buttons(egui::DragPanButtons::MIDDLE)
                     .show(ui, &mut scene_rect, |ui| {
                         if let Some(ref workspace) = workspace {
                             let mut display = Display::new();
@@ -49,10 +51,35 @@ impl Viewport {
                     Self::fit_to_rect_in_scene(viewport_rect, scene_rect, zoom_range.into());
 
                 if let Some(workspace) = workspace {
+                    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+                        self.crossing_drag_selection_interactor = None;
+                    }
+
+                    let primary_pressed =
+                        ctx.input(|i| i.pointer.button_pressed(egui::PointerButton::Primary));
+                    let primary_down =
+                        ctx.input(|i| i.pointer.button_down(egui::PointerButton::Primary));
+                    let primary_released =
+                        ctx.input(|i| i.pointer.button_released(egui::PointerButton::Primary));
+
                     if let Some(pointer_viewport_pos) = ctx.input(|i| i.pointer.interact_pos()) {
                         let pointer_scene_pos = scene_to_viewport.inverse() * pointer_viewport_pos;
+                        let pointer_scene =
+                            Vector2::new(pointer_scene_pos.x as i64, pointer_scene_pos.y as i64);
 
-                        if response.clicked() {
+                        if primary_pressed && response.hovered() {
+                            self.crossing_drag_selection_interactor =
+                                Some(CrossingDragSelectionInteractor::new(pointer_scene));
+                        }
+
+                        if let Some(interactor) = self.crossing_drag_selection_interactor.as_mut() {
+                            if primary_down || primary_released {
+                                interactor.update(
+                                    workspace.autorouter.router().navmesher_board().board(),
+                                    InteractiveInput::new(pointer_scene),
+                                );
+                            }
+                        } else if response.clicked() {
                             if let Some(pin_selector) = workspace
                                 .autorouter
                                 .router()
@@ -60,14 +87,17 @@ impl Viewport {
                                 .board()
                                 .locate_pin_at_point(
                                     workspace.appearance_panel.active,
-                                    Vector2::new(
-                                        pointer_scene_pos.x as i64,
-                                        pointer_scene_pos.y as i64,
-                                    ),
+                                    pointer_scene,
                                 )
                             {
                                 workspace.selection.pins.toggle(pin_selector);
                             }
+                        }
+                    }
+
+                    if primary_released {
+                        if let Some(interactor) = self.crossing_drag_selection_interactor.take() {
+                            workspace.selection = interactor.selection().clone();
                         }
                     }
 

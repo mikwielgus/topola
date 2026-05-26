@@ -25,8 +25,9 @@ use topola::{
 
 pub fn load_design(filename: &str) -> Autorouter<SpecctraMesadata> {
     let design_file = File::open(filename).unwrap();
-    let design_bufread = BufReader::new(design_file);
-    let design = SpecctraDesign::load(design_bufread).unwrap();
+    let design_bufreader = BufReader::new(design_file);
+    let design = SpecctraDesign::load(design_bufreader).unwrap();
+
     Autorouter::new(design.make_board(&mut BoardEdit::new())).unwrap()
 }
 

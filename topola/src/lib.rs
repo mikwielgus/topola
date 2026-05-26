@@ -18,6 +18,7 @@ pub use crate::board::Board;
 pub use crate::board::LayerDesc;
 pub use crate::board::LayerSide;
 pub use crate::board::LayerType;
+pub use crate::board::interactors::{CrossingDragSelectionInteractor, InteractiveInput};
 pub use crate::board::selections;
 pub use crate::layout::LayerId;
 pub use crate::layout::Layout;
