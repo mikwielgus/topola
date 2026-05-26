@@ -31,6 +31,38 @@ impl Rect2<i64> {
     }
 }
 
+#[derive(Clone, Copy, Debug, Deserialize, Eq, Getters, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct Rect3<T> {
+    min: Vector3<T>,
+    max: Vector3<T>,
+}
+
+impl<T: Ord + Copy> Rect3<T> {
+    pub fn new(from: Vector3<T>, to: Vector3<T>) -> Self {
+        Self {
+            min: Vector3::new(
+                std::cmp::min(from.x, to.x),
+                std::cmp::min(from.y, to.y),
+                std::cmp::min(from.z, to.z),
+            ),
+            max: Vector3::new(
+                std::cmp::max(from.x, to.x),
+                std::cmp::max(from.y, to.y),
+                std::cmp::max(from.z, to.z),
+            ),
+        }
+    }
+}
+
+impl Rect3<i64> {
+    pub fn aabb3(self) -> AABB<[i64; 3]> {
+        AABB::from_corners(
+            [self.min.x, self.min.y, self.min.z],
+            [self.max.x, self.max.y, self.max.z],
+        )
+    }
+}
+
 #[derive(
     Add,
     AddAssign,
@@ -56,6 +88,40 @@ impl Rect2<i64> {
 pub struct Vector2<T> {
     pub x: T,
     pub y: T,
+}
+
+#[derive(
+    Add,
+    AddAssign,
+    Clone,
+    Constructor,
+    Copy,
+    Debug,
+    Deserialize,
+    Div,
+    DivAssign,
+    Eq,
+    From,
+    Into,
+    Mul,
+    MulAssign,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    Serialize,
+    Sub,
+    SubAssign,
+)]
+pub struct Vector3<T> {
+    pub x: T,
+    pub y: T,
+    pub z: T,
+}
+
+impl<T: Copy> Vector3<T> {
+    pub fn xy(self) -> Vector2<T> {
+        Vector2::new(self.x, self.y)
+    }
 }
 
 impl<T: Copy> From<[T; 2]> for Vector2<T> {

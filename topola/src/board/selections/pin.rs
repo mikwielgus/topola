@@ -23,11 +23,23 @@ impl PinSelection {
         Default::default()
     }
 
-    pub fn toggle(&mut self, selector: PinSelector) {
-        if self.0.contains(&selector) {
+    pub fn add(&mut self, selectors: impl IntoIterator<Item = PinSelector>) {
+        self.0.extend(selectors);
+    }
+
+    pub fn sub(&mut self, selectors: impl IntoIterator<Item = PinSelector>) {
+        for selector in selectors {
             self.0.remove(&selector);
-        } else {
-            self.0.insert(selector);
+        }
+    }
+
+    pub fn xor(&mut self, selectors: impl IntoIterator<Item = PinSelector>) {
+        for selector in selectors {
+            if self.0.contains(&selector) {
+                self.0.remove(&selector);
+            } else {
+                self.0.insert(selector);
+            }
         }
     }
 }

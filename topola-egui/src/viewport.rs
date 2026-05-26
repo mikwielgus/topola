@@ -3,7 +3,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use egui::Pos2;
-use topola::{CrossingDragSelectionInteractor, InteractiveInput, Vector2};
+use topola::{
+    DragSelectionInteractor, InteractiveInput, SelectionCombineMode, SelectionContainMode,
+    SelectionOptions, Vector2, Vector3,
+};
 
 use crate::{display::Display, workspace::Workspace};
 
@@ -11,7 +14,7 @@ pub struct Viewport {
     pub scene_rect: egui::Rect,
     pub ref_scene_rect: egui::Rect,
     pub scheduled_zoom_to_fit: bool,
-    crossing_drag_selection_interactor: Option<CrossingDragSelectionInteractor>,
+    drag_selection_interactor: Option<DragSelectionInteractor>,
 }
 
 impl Viewport {
@@ -20,7 +23,7 @@ impl Viewport {
             scene_rect: egui::Rect::from_min_max(egui::pos2(-1.0, -1.0), egui::pos2(1.0, 1.0)),
             ref_scene_rect: egui::Rect::from_min_max(egui::pos2(-1.0, -1.0), egui::pos2(1.0, 1.0)),
             scheduled_zoom_to_fit: false,
-            crossing_drag_selection_interactor: None,
+            drag_selection_interactor: None,
         }
     }
 
@@ -52,7 +55,7 @@ impl Viewport {
 
                 if let Some(workspace) = workspace {
                     if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
-                        self.crossing_drag_selection_interactor = None;
+                        self.drag_selection_interactor = None;
                     }
 
                     let primary_pressed =
@@ -68,15 +71,21 @@ impl Viewport {
                             Vector2::new(pointer_scene_pos.x as i64, pointer_scene_pos.y as i64);
 
                         if primary_pressed && response.hovered() {
-                            self.crossing_drag_selection_interactor =
-                                Some(CrossingDragSelectionInteractor::new(pointer_scene));
+                            self.drag_selection_interactor = Some(DragSelectionInteractor::new(
+                                pointer_scene,
+                                workspace.selection.clone(),
+                                SelectionOptions::new(
+                                    SelectionCombineMode::Replace,
+                                    SelectionContainMode::Crossing,
+                                ),
+                            ));
                         }
 
-                        if let Some(interactor) = self.crossing_drag_selection_interactor.as_mut() {
+                        if let Some(interactor) = self.drag_selection_interactor.as_mut() {
                             if primary_down || primary_released {
-                                interactor.update(
+                                let _ = interactor.update(
                                     workspace.autorouter.router().navmesher_board().board(),
-                                    InteractiveInput::new(pointer_scene),
+                                    InteractiveInput::new(pointer_scene, false),
                                 );
                             }
                         } else if response.clicked() {
@@ -85,18 +94,19 @@ impl Viewport {
                                 .router()
                                 .navmesher_board()
                                 .board()
-                                .locate_pin_at_point(
-                                    workspace.appearance_panel.active,
-                                    pointer_scene,
-                                )
+                                .locate_pin_at_point(Vector3::new(
+                                    pointer_scene.x,
+                                    pointer_scene.y,
+                                    workspace.appearance_panel.active.index() as i64,
+                                ))
                             {
-                                workspace.selection.pins.toggle(pin_selector);
+                                workspace.selection.pins.xor(std::iter::once(pin_selector));
                             }
                         }
                     }
 
                     if primary_released {
-                        if let Some(interactor) = self.crossing_drag_selection_interactor.take() {
+                        if let Some(interactor) = self.drag_selection_interactor.take() {
                             workspace.selection = interactor.selection().clone();
                         }
                     }

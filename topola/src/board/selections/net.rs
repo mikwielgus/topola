@@ -25,11 +25,23 @@ impl NetSelection {
         Default::default()
     }
 
-    pub fn toggle(&mut self, selector: NetSelector) {
-        if self.0.contains(&selector) {
+    pub fn add(&mut self, selectors: impl IntoIterator<Item = NetSelector>) {
+        self.0.extend(selectors);
+    }
+
+    pub fn sub(&mut self, selectors: impl IntoIterator<Item = NetSelector>) {
+        for selector in selectors {
             self.0.remove(&selector);
-        } else {
-            self.0.insert(selector);
+        }
+    }
+
+    pub fn xor(&mut self, selectors: impl IntoIterator<Item = NetSelector>) {
+        for selector in selectors {
+            if self.0.contains(&selector) {
+                self.0.remove(&selector);
+            } else {
+                self.0.insert(selector);
+            }
         }
     }
 }

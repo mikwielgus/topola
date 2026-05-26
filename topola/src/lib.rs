@@ -18,11 +18,14 @@ pub use crate::board::Board;
 pub use crate::board::LayerDesc;
 pub use crate::board::LayerSide;
 pub use crate::board::LayerType;
-pub use crate::board::interactors::{CrossingDragSelectionInteractor, InteractiveInput};
+pub use crate::board::interactors::{
+    DragSelectionInteractor, InteractiveInput, SelectionCombineMode, SelectionContainMode,
+    SelectionOptions,
+};
 pub use crate::board::selections;
 pub use crate::layout::LayerId;
 pub use crate::layout::Layout;
 pub use crate::layout::compounds::{Pin, PinId};
 pub use crate::layout::primitives;
-pub use crate::math::{Rect2, Vector2};
+pub use crate::math::{Rect2, Rect3, Vector2, Vector3};
 pub use crate::ratsnest::{Ratline, Ratsnest};
