@@ -81,14 +81,7 @@ impl Viewport {
                             ));
                         }
 
-                        if let Some(interactor) = self.drag_selection_interactor.as_mut() {
-                            if primary_down || primary_released {
-                                let _ = interactor.update(
-                                    workspace.autorouter.router().navmesher_board().board(),
-                                    InteractiveInput::new(pointer_scene, false),
-                                );
-                            }
-                        } else if response.clicked() {
+                        if response.clicked() {
                             if let Some(pin_selector) = workspace
                                 .autorouter
                                 .router()
@@ -101,6 +94,13 @@ impl Viewport {
                                 ))
                             {
                                 workspace.selection.pins.xor(std::iter::once(pin_selector));
+                            }
+                        } else if let Some(interactor) = self.drag_selection_interactor.as_mut() {
+                            if primary_down || primary_released {
+                                let _ = interactor.update(
+                                    workspace.autorouter.router().navmesher_board().board(),
+                                    InteractiveInput::new(pointer_scene, false),
+                                );
                             }
                         }
                     }

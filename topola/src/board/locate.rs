@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use std::collections::BTreeSet;
+
 use crate::{
     Rect3, Vector3,
     board::Board,
@@ -77,6 +79,57 @@ impl Board {
             )
     }
 
+    pub fn locate_nets_at_point(
+        &self,
+        point: Vector3<i64>,
+    ) -> impl Iterator<Item = NetSelector> + '_ {
+        let mut selectors = BTreeSet::new();
+
+        for net_id in self.layout.locate_nets_at_point(point) {
+            let Some(net_name) = self.net_name(net_id) else {
+                continue;
+            };
+
+            selectors.insert(NetSelector::new(net_name.to_string()));
+        }
+
+        selectors.into_iter()
+    }
+
+    pub fn locate_nets_intersecting_rect(
+        &self,
+        rect: Rect3<i64>,
+    ) -> impl Iterator<Item = NetSelector> + '_ {
+        let mut selectors = BTreeSet::new();
+
+        for net_id in self.layout.locate_nets_intersecting_rect(rect) {
+            let Some(net_name) = self.net_name(net_id) else {
+                continue;
+            };
+
+            selectors.insert(NetSelector::new(net_name.to_string()));
+        }
+
+        selectors.into_iter()
+    }
+
+    pub fn locate_nets_inside_rect(
+        &self,
+        rect: Rect3<i64>,
+    ) -> impl Iterator<Item = NetSelector> + '_ {
+        let mut selectors = BTreeSet::new();
+
+        for net_id in self.layout.locate_nets_inside_rect(rect) {
+            let Some(net_name) = self.net_name(net_id) else {
+                continue;
+            };
+
+            selectors.insert(NetSelector::new(net_name.to_string()));
+        }
+
+        selectors.into_iter()
+    }
+
     pub fn locate_pin_at_point(&self, point: Vector3<i64>) -> Option<PinSelector> {
         if let Some(joint_id) = self.layout.locate_joints_at_point(point).next() {
             return self.joint_pin_selector(joint_id);
@@ -143,29 +196,5 @@ impl Board {
                     .locate_polygons_inside_rect(rect)
                     .filter_map(|polygon_id| self.polygon_pin_selector(polygon_id)),
             )
-    }
-
-    pub fn locate_nets_at_point(
-        &self,
-        _point: Vector3<i64>,
-    ) -> impl Iterator<Item = NetSelector> + '_ {
-        // TODO
-        std::iter::empty()
-    }
-
-    pub fn locate_nets_intersecting_rect(
-        &self,
-        _rect: Rect3<i64>,
-    ) -> impl Iterator<Item = NetSelector> + '_ {
-        // TODO
-        std::iter::empty()
-    }
-
-    pub fn locate_nets_inside_rect(
-        &self,
-        _rect: Rect3<i64>,
-    ) -> impl Iterator<Item = NetSelector> + '_ {
-        // TODO
-        std::iter::empty()
     }
 }

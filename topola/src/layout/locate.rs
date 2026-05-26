@@ -2,9 +2,11 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use std::collections::BTreeSet;
+
 use crate::{
     Rect3, Vector3,
-    layout::{LayerId, Layout},
+    layout::{LayerId, Layout, compounds::NetId},
     primitives::{JointId, PolygonId, SegmentId, ViaId},
 };
 
@@ -117,5 +119,71 @@ impl Layout {
             .as_ref()
             .locate_in_envelope(&rect_aabb)
             .map(|geom_with_data| geom_with_data.data)
+    }
+
+    pub fn locate_nets_at_point(&self, point: Vector3<i64>) -> impl Iterator<Item = NetId> {
+        let mut nets = BTreeSet::new();
+
+        for joint_id in self.locate_joints_at_point(point) {
+            nets.insert(self.joint(joint_id).spec.net);
+        }
+
+        for segment_id in self.locate_segments_at_point(point) {
+            nets.insert(self.segment(segment_id).net);
+        }
+
+        for via_id in self.locate_vias_at_point(point) {
+            nets.insert(self.via(via_id).net);
+        }
+
+        for polygon_id in self.locate_polygons_at_point(point) {
+            nets.insert(self.polygon(polygon_id).net);
+        }
+
+        nets.into_iter()
+    }
+
+    pub fn locate_nets_intersecting_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = NetId> {
+        let mut nets = BTreeSet::new();
+
+        for joint_id in self.locate_joints_intersecting_rect(rect) {
+            nets.insert(self.joint(joint_id).spec.net);
+        }
+
+        for segment_id in self.locate_segments_intersecting_rect(rect) {
+            nets.insert(self.segment(segment_id).net);
+        }
+
+        for via_id in self.locate_vias_intersecting_rect(rect) {
+            nets.insert(self.via(via_id).net);
+        }
+
+        for polygon_id in self.locate_polygons_intersecting_rect(rect) {
+            nets.insert(self.polygon(polygon_id).net);
+        }
+
+        nets.into_iter()
+    }
+
+    pub fn locate_nets_inside_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = NetId> {
+        let mut nets = BTreeSet::new();
+
+        for joint_id in self.locate_joints_inside_rect(rect) {
+            nets.insert(self.joint(joint_id).spec.net);
+        }
+
+        for segment_id in self.locate_segments_inside_rect(rect) {
+            nets.insert(self.segment(segment_id).net);
+        }
+
+        for via_id in self.locate_vias_inside_rect(rect) {
+            nets.insert(self.via(via_id).net);
+        }
+
+        for polygon_id in self.locate_polygons_inside_rect(rect) {
+            nets.insert(self.polygon(polygon_id).net);
+        }
+
+        nets.into_iter()
     }
 }

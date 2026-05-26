@@ -71,6 +71,17 @@ impl DragSelectionInteractor {
             match self.options.contain {
                 SelectionContainMode::Crossing => {
                     self.selection
+                        .nets
+                        .add(board.locate_nets_intersecting_rect(rect));
+                }
+                SelectionContainMode::Window => {
+                    self.selection.nets.add(board.locate_nets_inside_rect(rect));
+                }
+            }
+
+            match self.options.contain {
+                SelectionContainMode::Crossing => {
+                    self.selection
                         .pins
                         .add(board.locate_pins_intersecting_rect(rect));
                 }
@@ -85,12 +96,16 @@ impl DragSelectionInteractor {
         match self.options.combine {
             SelectionCombineMode::Replace => {
                 combined_selection.components = self.selection.components.clone();
+                combined_selection.nets = self.selection.nets.clone();
                 combined_selection.pins = self.selection.pins.clone();
             }
             SelectionCombineMode::Additive => {
                 combined_selection
                     .pins
                     .add(self.selection.pins.0.iter().cloned());
+                combined_selection
+                    .nets
+                    .add(self.selection.nets.0.iter().cloned());
                 combined_selection
                     .components
                     .add(self.selection.components.0.iter().cloned());
@@ -100,6 +115,9 @@ impl DragSelectionInteractor {
                     .pins
                     .sub(self.selection.pins.0.iter().cloned());
                 combined_selection
+                    .nets
+                    .sub(self.selection.nets.0.iter().cloned());
+                combined_selection
                     .components
                     .sub(self.selection.components.0.iter().cloned());
             }
@@ -107,6 +125,9 @@ impl DragSelectionInteractor {
                 combined_selection
                     .components
                     .xor(self.selection.components.0.iter().cloned());
+                combined_selection
+                    .nets
+                    .xor(self.selection.nets.0.iter().cloned());
                 combined_selection
                     .pins
                     .xor(self.selection.pins.0.iter().cloned());

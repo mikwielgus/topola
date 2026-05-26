@@ -46,6 +46,8 @@ impl Display {
 
             for joint_id in layout.layer_joints(layer) {
                 let joint = layout.joint(joint_id);
+                let pin_selected = board.pins_contain_joint(&workspace.selection.pins, joint_id);
+                let net_selected = board.nets_contain_joint(&workspace.selection.nets, joint_id);
                 self.paint_joint(
                     ctx,
                     ui,
@@ -54,13 +56,17 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_desc(joint.spec.layer),
-                        board.pins_contain_joint(&workspace.selection.pins, joint_id),
+                        pin_selected || (joint.spec.pin.is_none() && net_selected),
                     ),
                 );
             }
 
             for segment_id in layout.layer_segments(layer) {
                 let segment = layout.segment(segment_id);
+                let pin_selected =
+                    board.pins_contain_segment(&workspace.selection.pins, segment_id);
+                let net_selected =
+                    board.nets_contain_segment(&workspace.selection.nets, segment_id);
                 self.paint_segment(
                     ctx,
                     ui,
@@ -69,13 +75,15 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_desc(segment.layer),
-                        board.pins_contain_segment(&workspace.selection.pins, segment_id),
+                        pin_selected || (segment.spec.pin.is_none() && net_selected),
                     ),
                 );
             }
 
             for via_id in layout.layer_vias(layer) {
                 let via = layout.via(via_id);
+                let pin_selected = board.pins_contain_via(&workspace.selection.pins, via_id);
+                let net_selected = board.nets_contain_via(&workspace.selection.nets, via_id);
                 self.paint_via(
                     ctx,
                     ui,
@@ -84,13 +92,17 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_desc(layer),
-                        board.pins_contain_via(&workspace.selection.pins, via_id),
+                        pin_selected || (via.spec.pin.is_none() && net_selected),
                     ),
                 );
             }
 
             for polygon_id in layout.layer_polygons(layer) {
                 let polygon = layout.polygon(polygon_id);
+                let pin_selected =
+                    board.pins_contain_polygon(&workspace.selection.pins, polygon_id);
+                let net_selected =
+                    board.nets_contain_polygon(&workspace.selection.nets, polygon_id);
                 self.paint_polygon(
                     ctx,
                     ui,
@@ -99,7 +111,7 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_desc(polygon.layer),
-                        board.pins_contain_polygon(&workspace.selection.pins, polygon_id),
+                        pin_selected || (polygon.pin.is_none() && net_selected),
                     ),
                 );
             }

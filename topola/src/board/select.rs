@@ -5,7 +5,10 @@
 use crate::{
     board::{
         Board,
-        selections::{ComponentSelection, ComponentSelector, PinSelection, PinSelector},
+        selections::{
+            ComponentSelection, ComponentSelector, NetSelection, NetSelector, PinSelection,
+            PinSelector,
+        },
     },
     primitives::{JointId, PolygonId, SegmentId, ViaId},
 };
@@ -145,6 +148,50 @@ impl Board {
         Some(ComponentSelector {
             component: self.component_name(polygon.component?)?.to_string(),
         })
+    }
+
+    pub fn nets_contain_joint(&self, selection: &NetSelection, id: JointId) -> bool {
+        let joint = self.layout.joint(id);
+        let Some(net_name) = self.net_name(joint.spec.net) else {
+            return false;
+        };
+
+        selection
+            .0
+            .contains(&NetSelector::new(net_name.to_string()))
+    }
+
+    pub fn nets_contain_segment(&self, selection: &NetSelection, id: SegmentId) -> bool {
+        let segment = self.layout.segment(id);
+        let Some(net_name) = self.net_name(segment.net) else {
+            return false;
+        };
+
+        selection
+            .0
+            .contains(&NetSelector::new(net_name.to_string()))
+    }
+
+    pub fn nets_contain_via(&self, selection: &NetSelection, id: ViaId) -> bool {
+        let via = self.layout.via(id);
+        let Some(net_name) = self.net_name(via.net) else {
+            return false;
+        };
+
+        selection
+            .0
+            .contains(&NetSelector::new(net_name.to_string()))
+    }
+
+    pub fn nets_contain_polygon(&self, selection: &NetSelection, id: PolygonId) -> bool {
+        let polygon = self.layout.polygon(id);
+        let Some(net_name) = self.net_name(polygon.net) else {
+            return false;
+        };
+
+        selection
+            .0
+            .contains(&NetSelector::new(net_name.to_string()))
     }
 
     pub fn pins_contain_joint(&self, selection: &PinSelection, id: JointId) -> bool {
