@@ -4,15 +4,12 @@
 
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    board::selections::{ComponentSelection, PinSelection},
-    selections::route::RouteSelection,
-};
+use crate::board::selections::{ComponentSelection, NetSelection, PinSelection};
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct PersistableSelection {
     pub components: ComponentSelection,
-    pub routes: RouteSelection,
+    pub nets: NetSelection,
     pub pins: PinSelection,
 }
 
@@ -20,7 +17,7 @@ impl PersistableSelection {
     pub fn new() -> Self {
         Self {
             components: ComponentSelection::new(),
-            routes: RouteSelection::new(),
+            nets: NetSelection::new(),
             pins: PinSelection::new(),
         }
     }

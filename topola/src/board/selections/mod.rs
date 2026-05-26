@@ -3,10 +3,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 mod component;
+mod net;
 mod persistable;
 mod pin;
-mod route;
 
 pub use component::{ComponentSelection, ComponentSelector};
+pub use net::{NetSelection, NetSelector};
 pub use persistable::PersistableSelection;
 pub use pin::{PinSelection, PinSelector};

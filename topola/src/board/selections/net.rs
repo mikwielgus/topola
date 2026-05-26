@@ -6,32 +6,26 @@ use std::collections::BTreeSet;
 
 use serde::{Deserialize, Serialize};
 
-use crate::selections::PinSelector;
-
 #[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct RouteSelector {
-    lesser_pin: PinSelector,
-    greater_pin: PinSelector,
+pub struct NetSelector {
+    pub net: String,
 }
 
-impl RouteSelector {
-    pub fn new(pin1: PinSelector, pin2: PinSelector) -> Self {
-        Self {
-            lesser_pin: std::cmp::min(pin1.clone(), pin2.clone()),
-            greater_pin: std::cmp::max(pin1, pin2),
-        }
+impl NetSelector {
+    pub fn new(net: String) -> Self {
+        Self { net }
     }
 }
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct RouteSelection(pub BTreeSet<RouteSelector>);
+pub struct NetSelection(pub BTreeSet<NetSelector>);
 
-impl RouteSelection {
+impl NetSelection {
     pub fn new() -> Self {
         Default::default()
     }
 
-    pub fn toggle(&mut self, selector: RouteSelector) {
+    pub fn toggle(&mut self, selector: NetSelector) {
         if self.0.contains(&selector) {
             self.0.remove(&selector);
         } else {
