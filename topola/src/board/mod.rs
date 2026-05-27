@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+mod delete;
+mod insert;
 pub mod interactors;
 mod layer;
 mod locate;
@@ -20,10 +22,6 @@ use crate::{
     layout::{
         LayerId, Layout, LayoutHalfDelta,
         compounds::{ComponentId, NetId, PinId},
-        primitives::{
-            JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
-            ViaSpec,
-        },
     },
     math::Vector2,
 };
@@ -74,7 +72,7 @@ impl Board {
             return *component;
         };
 
-        let component_id = self.layout.add_component();
+        let component_id = self.layout.insert_component();
         self.component_names.insert(component_id, component_name);
 
         component_id
@@ -85,38 +83,10 @@ impl Board {
             return *pin;
         };
 
-        let pin_id = self.layout.add_pin();
+        let pin_id = self.layout.insert_pin();
         self.pin_names.insert(pin_id, pin_name);
 
         pin_id
-    }
-
-    pub fn add_component(&mut self) -> ComponentId {
-        self.layout.add_component()
-    }
-
-    pub fn add_joint(&mut self, spec: JointSpec) -> JointId {
-        self.layout.add_joint(spec)
-    }
-
-    pub fn add_segment(&mut self, spec: SegmentSpec) -> SegmentId {
-        self.layout.add_segment(spec)
-    }
-
-    pub fn add_segment_raw(&mut self, segment: Segment) -> SegmentId {
-        self.layout.add_segment_raw(segment)
-    }
-
-    pub fn add_via(&mut self, spec: ViaSpec) -> ViaId {
-        self.layout.add_via(spec)
-    }
-
-    pub fn add_via_raw(&mut self, via: Via) -> ViaId {
-        self.layout.add_via_raw(via)
-    }
-
-    pub fn add_polygon(&mut self, polygon: Polygon) -> PolygonId {
-        self.layout.add_polygon(polygon)
     }
 
     pub fn component_name(&self, id: ComponentId) -> Option<&str> {

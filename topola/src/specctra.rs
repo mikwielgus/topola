@@ -356,7 +356,7 @@ impl Board {
         flip: bool,
         coordinate_scale: f64,
     ) {
-        board.add_joint(JointSpec {
+        board.insert_joint(JointSpec {
             position: Self::pos(place, pin_pos, 0.0, 0.0, flip, coordinate_scale),
             layer,
             net,
@@ -381,7 +381,7 @@ impl Board {
         flip: bool,
         coordinate_scale: f64,
     ) {
-        board.add_polygon(Polygon {
+        board.insert_polygon(Polygon {
             vertices: vec![
                 Self::pos(place, pin_pos, x1, y1, flip, coordinate_scale),
                 Self::pos(place, pin_pos, x2, y1, flip, coordinate_scale),
@@ -416,7 +416,7 @@ impl Board {
             flip,
             coordinate_scale,
         );
-        let mut prev_joint = board.add_joint(JointSpec {
+        let mut prev_joint = board.insert_joint(JointSpec {
             position: prev_pos,
             layer,
             radius: Self::scale_size(width / 2.0, coordinate_scale),
@@ -432,7 +432,7 @@ impl Board {
                 continue;
             }
 
-            let joint = board.add_joint(JointSpec {
+            let joint = board.insert_joint(JointSpec {
                 position: pos,
                 layer,
                 radius: Self::scale_size(width / 2.0, coordinate_scale),
@@ -441,7 +441,7 @@ impl Board {
                 pin,
             });
 
-            let _ = board.add_segment_raw(Segment {
+            let _ = board.insert_segment_raw(Segment {
                 spec: SegmentSpec {
                     endjoints: [prev_joint, joint],
                     half_width: Self::scale_size(width / 2.0, coordinate_scale),
@@ -475,7 +475,7 @@ impl Board {
             .iter()
             .map(|coord| Self::pos(place, pin_pos, coord.x, coord.y, flip, coordinate_scale))
             .collect();
-        board.add_polygon(Polygon {
+        board.insert_polygon(Polygon {
             vertices,
             layer,
             net,

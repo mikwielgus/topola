@@ -252,7 +252,7 @@ impl NavmesherBoard {
             segments: Vec::new(),
             vias: Vec::new(),
         });
-        let joint_id = self.board.add_joint(spec);
+        let joint_id = self.board.insert_joint(spec);
         self.joint_multiobstacles.insert(
             joint_id.index(),
             self.navmesher.insert_multiobstacle(layer, obstacle),
@@ -281,7 +281,7 @@ impl NavmesherBoard {
     pub fn insert_segment_with_cache(&mut self, segment: Segment) -> SegmentId {
         let layer = segment.layer;
         let obstacle = segment.bounding_rectangle();
-        let segment_id = self.board.add_segment_raw(segment);
+        let segment_id = self.board.insert_segment_raw(segment);
         self.segment_multiobstacles.insert(
             segment_id.index(),
             self.navmesher.insert_multiobstacle(layer, obstacle),
@@ -291,7 +291,7 @@ impl NavmesherBoard {
     }
 
     pub fn insert_polygon(&mut self, polygon: Polygon) -> PolygonId {
-        let polygon_id = self.board.add_polygon(polygon.clone());
+        let polygon_id = self.board.insert_polygon(polygon.clone());
         self.polygon_multiobstacles.insert(
             polygon_id.index(),
             self.navmesher
