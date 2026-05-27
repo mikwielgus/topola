@@ -91,6 +91,40 @@ impl Viewport {
                                     workspace.appearance_panel.active,
                                     InteractiveInput::new(pointer_on_scene, false, false, false),
                                 );
+
+                                if let Some(selection_interactor) =
+                                    interactor.selection_interactor().as_ref()
+                                {
+                                    let origin = *selection_interactor.origin();
+                                    let drag_rect_scene = egui::Rect::from_min_max(
+                                        egui::pos2(
+                                            origin.x.min(pointer_on_scene.x) as f32,
+                                            origin.y.min(pointer_on_scene.y) as f32,
+                                        ),
+                                        egui::pos2(
+                                            origin.x.max(pointer_on_scene.x) as f32,
+                                            origin.y.max(pointer_on_scene.y) as f32,
+                                        ),
+                                    );
+
+                                    let drag_rect_on_viewport = egui::Rect::from_min_max(
+                                        scene_to_viewport * drag_rect_scene.min,
+                                        scene_to_viewport * drag_rect_scene.max,
+                                    );
+                                    let boundary_color = if pointer_on_scene.x >= origin.x {
+                                        egui::Color32::YELLOW
+                                    } else {
+                                        egui::Color32::from_rgb(80, 160, 255)
+                                    };
+
+                                    ui.painter().rect(
+                                        drag_rect_on_viewport,
+                                        egui::CornerRadius::ZERO,
+                                        egui::Color32::from_rgba_unmultiplied(80, 160, 255, 48),
+                                        egui::Stroke::new(1.5, boundary_color),
+                                        egui::StrokeKind::Outside,
+                                    );
+                                }
                             }
                         }
                     }

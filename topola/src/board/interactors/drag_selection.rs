@@ -13,6 +13,7 @@ use crate::{
         interactors::{InteractiveInput, SelectionCombineMode, SelectionContainMode},
         selections::PersistableSelection,
     },
+    layout::LayerId,
 };
 
 #[derive(Clone, Constructor, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -24,6 +25,7 @@ pub struct DragSelectionOptions {
 #[derive(Clone, Debug, Eq, Getters, PartialEq)]
 pub struct DragSelectionInteractor {
     origin: Vector2<i64>,
+    layer: LayerId,
     original_selection: PersistableSelection,
     selection: PersistableSelection,
     options: DragSelectionOptions,
@@ -32,11 +34,13 @@ pub struct DragSelectionInteractor {
 impl DragSelectionInteractor {
     pub fn new(
         origin: Vector2<i64>,
+        layer: LayerId,
         original_selection: PersistableSelection,
         options: DragSelectionOptions,
     ) -> Self {
         Self {
             origin,
+            layer,
             original_selection,
             selection: PersistableSelection::new(),
             options,
@@ -51,45 +55,43 @@ impl DragSelectionInteractor {
 
         self.selection = PersistableSelection::new();
 
-        for layer_index in 0..*board.layout().layer_count() {
-            let rect = Rect3::new(
-                Vector3::new(self.origin.x, self.origin.y, layer_index as i64),
-                Vector3::new(input.pointer.x, input.pointer.y, layer_index as i64),
-            );
+        let rect = Rect3::new(
+            Vector3::new(self.origin.x, self.origin.y, self.layer.index() as i64),
+            Vector3::new(input.pointer.x, input.pointer.y, self.layer.index() as i64),
+        );
 
-            match self.options.contain {
-                SelectionContainMode::Crossing => {
-                    self.selection
-                        .components
-                        .add(board.locate_components_intersecting_rect(rect));
-                }
-                SelectionContainMode::Window => {
-                    self.selection
-                        .components
-                        .add(board.locate_components_inside_rect(rect));
-                }
+        match self.options.contain {
+            SelectionContainMode::Crossing => {
+                self.selection
+                    .components
+                    .add(board.locate_components_intersecting_rect(rect));
             }
-
-            match self.options.contain {
-                SelectionContainMode::Crossing => {
-                    self.selection
-                        .nets
-                        .add(board.locate_nets_intersecting_rect(rect));
-                }
-                SelectionContainMode::Window => {
-                    self.selection.nets.add(board.locate_nets_inside_rect(rect));
-                }
+            SelectionContainMode::Window => {
+                self.selection
+                    .components
+                    .add(board.locate_components_inside_rect(rect));
             }
+        }
 
-            match self.options.contain {
-                SelectionContainMode::Crossing => {
-                    self.selection
-                        .pins
-                        .add(board.locate_pins_intersecting_rect(rect));
-                }
-                SelectionContainMode::Window => {
-                    self.selection.pins.add(board.locate_pins_inside_rect(rect));
-                }
+        match self.options.contain {
+            SelectionContainMode::Crossing => {
+                self.selection
+                    .nets
+                    .add(board.locate_nets_intersecting_rect(rect));
+            }
+            SelectionContainMode::Window => {
+                self.selection.nets.add(board.locate_nets_inside_rect(rect));
+            }
+        }
+
+        match self.options.contain {
+            SelectionContainMode::Crossing => {
+                self.selection
+                    .pins
+                    .add(board.locate_pins_intersecting_rect(rect));
+            }
+            SelectionContainMode::Window => {
+                self.selection.pins.add(board.locate_pins_inside_rect(rect));
             }
         }
 

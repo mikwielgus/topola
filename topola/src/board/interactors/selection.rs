@@ -82,8 +82,13 @@ impl SelectionInteractor {
         };
 
         let options = DragSelectionOptions::new(self.combine.clone(), contain);
-        let mut drag_selection_interactor =
-            DragSelectionInteractor::new(self.origin, self.original_selection.clone(), options);
+        let mut drag_selection_interactor = DragSelectionInteractor::new(
+            self.origin,
+            layer,
+            self.original_selection.clone(),
+            options,
+        );
+
         drag_selection_interactor.update(board, input);
         self.selection = drag_selection_interactor.selection().clone();
     }
