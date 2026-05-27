@@ -12,8 +12,8 @@ use undoredo::Recorder;
 use crate::{
     Board,
     layout::LayerId,
-    math::Vector2,
     primitives::{Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId},
+    vector::Vector2,
 };
 
 #[derive(

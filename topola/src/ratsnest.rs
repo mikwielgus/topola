@@ -12,8 +12,8 @@ use crate::{
     Board,
     layout::LayerId,
     layout::compounds::NetId,
-    math::Vector2,
     primitives::{JointId, PolygonId, PrimitiveId, SegmentId},
+    vector::Vector2,
 };
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Getters, Ord, PartialEq, PartialOrd, Serialize)]

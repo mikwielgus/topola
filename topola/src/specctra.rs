@@ -14,8 +14,8 @@ use crate::{
     board::{Board, LayerDesc, LayerSide, LayerType},
     layout::LayerId,
     layout::compounds::{ComponentId, NetId, PinId},
-    math::Vector2,
     primitives::{JointSpec, Polygon, Segment, SegmentSpec},
+    vector::Vector2,
 };
 
 impl Board {

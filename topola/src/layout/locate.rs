@@ -24,73 +24,94 @@ impl Layout {
         &self,
         rect: Rect3<i64>,
     ) -> impl Iterator<Item = JointId> {
-        let rect_aabb = rect.aabb3();
         self.joints_rtree
             .as_ref()
-            .locate_in_envelope_intersecting(&rect_aabb)
+            .locate_in_envelope_intersecting(&rect.aabb3())
             .map(|geom_with_data| geom_with_data.data)
+            .filter(move |&joint_id| {
+                let joint = self.joint(joint_id);
+                rect.rect2()
+                    .intersects_circle(joint.spec.position, joint.spec.radius as i64)
+            })
     }
 
     pub fn locate_joints_inside_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = JointId> {
-        let rect_aabb = rect.aabb3();
         self.joints_rtree
             .as_ref()
-            .locate_in_envelope(&rect_aabb)
+            .locate_in_envelope(&rect.aabb3())
             .map(|geom_with_data| geom_with_data.data)
+            .filter(move |&joint_id| {
+                let joint = self.joint(joint_id);
+                rect.rect2()
+                    .contains_circle(joint.spec.position, joint.spec.radius as i64)
+            })
     }
 
     pub fn locate_segments_at_point(&self, point: Vector3<i64>) -> impl Iterator<Item = SegmentId> {
-        let point2 = point.xy();
         self.segments_rtree
             .as_ref()
             .locate_all_at_point(&[point.x, point.y, point.z])
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&segment_id| self.segment(segment_id).contains_point(point2))
+            .filter(move |&segment_id| self.segment(segment_id).contains_point(point.xy()))
     }
 
     pub fn locate_segments_intersecting_rect(
         &self,
         rect: Rect3<i64>,
     ) -> impl Iterator<Item = SegmentId> {
-        let rect_aabb = rect.aabb3();
         self.segments_rtree
             .as_ref()
-            .locate_in_envelope_intersecting(&rect_aabb)
+            .locate_in_envelope_intersecting(&rect.aabb3())
             .map(|geom_with_data| geom_with_data.data)
+            .filter(move |&segment_id| {
+                let segment = self.segment(segment_id);
+                rect.rect2()
+                    .intersects_polygon(&segment.bounding_rectangle())
+            })
     }
 
     pub fn locate_segments_inside_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = SegmentId> {
-        let rect_aabb = rect.aabb3();
         self.segments_rtree
             .as_ref()
-            .locate_in_envelope(&rect_aabb)
+            .locate_in_envelope(&rect.aabb3())
             .map(|geom_with_data| geom_with_data.data)
+            .filter(move |&segment_id| {
+                let segment = self.segment(segment_id);
+                rect.rect2().contains_polygon(&segment.bounding_rectangle())
+            })
     }
 
     pub fn locate_vias_at_point(&self, point: Vector3<i64>) -> impl Iterator<Item = ViaId> {
         let layer = LayerId::new(point.z as usize);
-        let point2 = point.xy();
         self.vias_rtree
             .as_ref()
             .locate_all_at_point(&[point.x, point.y, point.z])
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&via_id| self.vias[via_id.index()].contains_point(layer, point2))
+            .filter(move |&via_id| self.vias[via_id.index()].contains_point(layer, point.xy()))
     }
 
     pub fn locate_vias_intersecting_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = ViaId> {
-        let rect_aabb = rect.aabb3();
         self.vias_rtree
             .as_ref()
-            .locate_in_envelope_intersecting(&rect_aabb)
+            .locate_in_envelope_intersecting(&rect.aabb3())
             .map(|geom_with_data| geom_with_data.data)
+            .filter(move |&via_id| {
+                let via = self.via(via_id);
+                rect.rect2()
+                    .intersects_circle(via.position, via.spec.radius as i64)
+            })
     }
 
     pub fn locate_vias_inside_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = ViaId> {
-        let rect_aabb = rect.aabb3();
         self.vias_rtree
             .as_ref()
-            .locate_in_envelope(&rect_aabb)
+            .locate_in_envelope(&rect.aabb3())
             .map(|geom_with_data| geom_with_data.data)
+            .filter(move |&via_id| {
+                let via = self.via(via_id);
+                rect.rect2()
+                    .contains_circle(via.position, via.spec.radius as i64)
+            })
     }
 
     pub fn locate_polygons_at_point(&self, point: Vector3<i64>) -> impl Iterator<Item = PolygonId> {
@@ -106,19 +127,25 @@ impl Layout {
         &self,
         rect: Rect3<i64>,
     ) -> impl Iterator<Item = PolygonId> {
-        let rect_aabb = rect.aabb3();
         self.polygons_rtree
             .as_ref()
-            .locate_in_envelope_intersecting(&rect_aabb)
+            .locate_in_envelope_intersecting(&rect.aabb3())
             .map(|geom_with_data| geom_with_data.data)
+            .filter(move |&polygon_id| {
+                let polygon = self.polygon(polygon_id);
+                rect.rect2().intersects_polygon(&polygon.vertices)
+            })
     }
 
     pub fn locate_polygons_inside_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = PolygonId> {
-        let rect_aabb = rect.aabb3();
         self.polygons_rtree
             .as_ref()
-            .locate_in_envelope(&rect_aabb)
+            .locate_in_envelope(&rect.aabb3())
             .map(|geom_with_data| geom_with_data.data)
+            .filter(move |&polygon_id| {
+                let polygon = self.polygon(polygon_id);
+                rect.rect2().contains_polygon(&polygon.vertices)
+            })
     }
 
     pub fn locate_nets_intersecting_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = NetId> {

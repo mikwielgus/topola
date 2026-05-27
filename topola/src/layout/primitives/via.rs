@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::layout::LayerId;
 use crate::layout::compounds::{ComponentId, NetId, PinId};
-use crate::math::Vector2;
+use crate::vector::Vector2;
 
 use super::JointId;
 

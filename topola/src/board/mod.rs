@@ -22,7 +22,7 @@ use crate::{
         LayerId, Layout, LayoutHalfDelta,
         compounds::{ComponentId, NetId, PinId},
     },
-    math::Vector2,
+    vector::Vector2,
 };
 
 #[derive(Clone, Debug, Getters, Delta)]

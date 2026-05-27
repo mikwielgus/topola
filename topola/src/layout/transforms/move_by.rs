@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{Layout, layout::compounds::ComponentId, math::Vector2};
+use crate::{Layout, layout::compounds::ComponentId, vector::Vector2};
 
 impl Layout {
     pub fn move_component_by(&mut self, id: ComponentId, translation: Vector2<i64>) {
