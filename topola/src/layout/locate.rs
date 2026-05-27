@@ -121,28 +121,6 @@ impl Layout {
             .map(|geom_with_data| geom_with_data.data)
     }
 
-    pub fn locate_nets_at_point(&self, point: Vector3<i64>) -> impl Iterator<Item = NetId> {
-        let mut nets = BTreeSet::new();
-
-        for joint_id in self.locate_joints_at_point(point) {
-            nets.insert(self.joint(joint_id).spec.net);
-        }
-
-        for segment_id in self.locate_segments_at_point(point) {
-            nets.insert(self.segment(segment_id).net);
-        }
-
-        for via_id in self.locate_vias_at_point(point) {
-            nets.insert(self.via(via_id).net);
-        }
-
-        for polygon_id in self.locate_polygons_at_point(point) {
-            nets.insert(self.polygon(polygon_id).net);
-        }
-
-        nets.into_iter()
-    }
-
     pub fn locate_nets_intersecting_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = NetId> {
         let mut nets = BTreeSet::new();
 

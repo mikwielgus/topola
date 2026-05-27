@@ -3,31 +3,37 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use derive_getters::Getters;
+use derive_more::Constructor;
+use serde::{Deserialize, Serialize};
 
 use crate::{
     Rect3, Vector2, Vector3,
     board::{
         Board,
-        interactors::{
-            InteractiveInput, SelectionCombineMode, SelectionContainMode, SelectionOptions,
-        },
+        interactors::{InteractiveInput, SelectionCombineMode, SelectionContainMode},
         selections::PersistableSelection,
     },
 };
+
+#[derive(Clone, Constructor, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct DragSelectionOptions {
+    combine: SelectionCombineMode,
+    contain: SelectionContainMode,
+}
 
 #[derive(Clone, Debug, Eq, Getters, Ord, PartialEq, PartialOrd)]
 pub struct DragSelectionInteractor {
     origin: Vector2<i64>,
     original_selection: PersistableSelection,
     selection: PersistableSelection,
-    options: SelectionOptions,
+    options: DragSelectionOptions,
 }
 
 impl DragSelectionInteractor {
     pub fn new(
         origin: Vector2<i64>,
         original_selection: PersistableSelection,
-        options: SelectionOptions,
+        options: DragSelectionOptions,
     ) -> Self {
         Self {
             origin,

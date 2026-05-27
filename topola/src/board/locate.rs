@@ -79,21 +79,24 @@ impl Board {
             )
     }
 
-    pub fn locate_nets_at_point(
-        &self,
-        point: Vector3<i64>,
-    ) -> impl Iterator<Item = NetSelector> + '_ {
-        let mut selectors = BTreeSet::new();
-
-        for net_id in self.layout.locate_nets_at_point(point) {
-            let Some(net_name) = self.net_name(net_id) else {
-                continue;
-            };
-
-            selectors.insert(NetSelector::new(net_name.to_string()));
+    pub fn locate_net_at_point(&self, point: Vector3<i64>) -> Option<NetSelector> {
+        if let Some(joint_id) = self.layout.locate_joints_at_point(point).next() {
+            return self.joint_net_selector(joint_id);
         }
 
-        selectors.into_iter()
+        if let Some(segment_id) = self.layout.locate_segments_at_point(point).next() {
+            return self.segment_net_selector(segment_id);
+        }
+
+        if let Some(via_id) = self.layout.locate_vias_at_point(point).next() {
+            return self.via_net_selector(via_id);
+        }
+
+        if let Some(polygon_id) = self.layout.locate_polygons_at_point(point).next() {
+            return self.polygon_net_selector(polygon_id);
+        }
+
+        None
     }
 
     pub fn locate_nets_intersecting_rect(
@@ -131,6 +134,11 @@ impl Board {
     }
 
     pub fn locate_pin_at_point(&self, point: Vector3<i64>) -> Option<PinSelector> {
+        // Polygons have intentional precedence for pins.
+        if let Some(polygon_id) = self.layout.locate_polygons_at_point(point).next() {
+            return self.polygon_pin_selector(polygon_id);
+        }
+
         if let Some(joint_id) = self.layout.locate_joints_at_point(point).next() {
             return self.joint_pin_selector(joint_id);
         }
@@ -141,10 +149,6 @@ impl Board {
 
         if let Some(via_id) = self.layout.locate_vias_at_point(point).next() {
             return self.via_pin_selector(via_id);
-        }
-
-        if let Some(polygon_id) = self.layout.locate_polygons_at_point(point).next() {
-            return self.polygon_pin_selector(polygon_id);
         }
 
         None

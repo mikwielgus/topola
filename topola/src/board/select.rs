@@ -194,6 +194,38 @@ impl Board {
             .contains(&NetSelector::new(net_name.to_string()))
     }
 
+    pub fn joint_net_selector(&self, id: JointId) -> Option<NetSelector> {
+        let joint = self.layout.joint(id);
+
+        Some(NetSelector {
+            net: self.net_name(joint.spec.net)?.to_string(),
+        })
+    }
+
+    pub fn segment_net_selector(&self, id: SegmentId) -> Option<NetSelector> {
+        let segment = self.layout.segment(id);
+
+        Some(NetSelector {
+            net: self.net_name(segment.net)?.to_string(),
+        })
+    }
+
+    pub fn via_net_selector(&self, id: ViaId) -> Option<NetSelector> {
+        let via = self.layout.via(id);
+
+        Some(NetSelector {
+            net: self.net_name(via.net)?.to_string(),
+        })
+    }
+
+    pub fn polygon_net_selector(&self, id: PolygonId) -> Option<NetSelector> {
+        let polygon = self.layout.polygon(id);
+
+        Some(NetSelector {
+            net: self.net_name(polygon.net)?.to_string(),
+        })
+    }
+
     pub fn pins_contain_joint(&self, selection: &PinSelection, id: JointId) -> bool {
         let Some(selector) = self.joint_pin_selector(id) else {
             return false;

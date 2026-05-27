@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 mod drag_selection;
+mod selection;
 
-use derive_more::Constructor;
-pub use drag_selection::DragSelectionInteractor;
+pub use drag_selection::{DragSelectionInteractor, DragSelectionOptions};
+pub use selection::SelectionInteractor;
 use serde::{Deserialize, Serialize};
 
 use crate::Vector2;
@@ -13,12 +14,17 @@ use crate::Vector2;
 #[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct InteractiveInput {
     pointer: Vector2<i64>,
+    released: bool,
     cancel: bool,
 }
 
 impl InteractiveInput {
-    pub fn new(pointer: Vector2<i64>, cancel: bool) -> Self {
-        Self { pointer, cancel }
+    pub fn new(pointer: Vector2<i64>, released: bool, cancel: bool) -> Self {
+        Self {
+            pointer,
+            released,
+            cancel,
+        }
     }
 }
 
@@ -34,10 +40,4 @@ pub enum SelectionCombineMode {
 pub enum SelectionContainMode {
     Crossing,
     Window,
-}
-
-#[derive(Clone, Constructor, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct SelectionOptions {
-    combine: SelectionCombineMode,
-    contain: SelectionContainMode,
 }

@@ -3,10 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use egui::Pos2;
-use topola::{
-    DragSelectionInteractor, InteractiveInput, SelectionCombineMode, SelectionContainMode,
-    SelectionOptions, Vector2, Vector3,
-};
+use topola::{InteractiveInput, SelectionCombineMode, SelectionInteractor, Vector2};
 
 use crate::{display::Display, workspace::Workspace};
 
@@ -14,7 +11,7 @@ pub struct Viewport {
     pub scene_rect: egui::Rect,
     pub ref_scene_rect: egui::Rect,
     pub scheduled_zoom_to_fit: bool,
-    drag_selection_interactor: Option<DragSelectionInteractor>,
+    selection_interactor: Option<SelectionInteractor>,
 }
 
 impl Viewport {
@@ -23,7 +20,7 @@ impl Viewport {
             scene_rect: egui::Rect::from_min_max(egui::pos2(-1.0, -1.0), egui::pos2(1.0, 1.0)),
             ref_scene_rect: egui::Rect::from_min_max(egui::pos2(-1.0, -1.0), egui::pos2(1.0, 1.0)),
             scheduled_zoom_to_fit: false,
-            drag_selection_interactor: None,
+            selection_interactor: None,
         }
     }
 
@@ -55,7 +52,7 @@ impl Viewport {
 
                 if let Some(workspace) = workspace {
                     if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
-                        self.drag_selection_interactor = None;
+                        self.selection_interactor = None;
                     }
 
                     let primary_pressed =
@@ -64,49 +61,46 @@ impl Viewport {
                         ctx.input(|i| i.pointer.button_down(egui::PointerButton::Primary));
                     let primary_released =
                         ctx.input(|i| i.pointer.button_released(egui::PointerButton::Primary));
+                    let mut maybe_pointer_on_scene: Option<Vector2<i64>> = None;
 
                     if let Some(pointer_viewport_pos) = ctx.input(|i| i.pointer.interact_pos()) {
-                        let pointer_scene_pos = scene_to_viewport.inverse() * pointer_viewport_pos;
-                        let pointer_scene =
-                            Vector2::new(pointer_scene_pos.x as i64, pointer_scene_pos.y as i64);
+                        let pointer_on_scene_pos =
+                            scene_to_viewport.inverse() * pointer_viewport_pos;
+                        let pointer_on_scene = Vector2::new(
+                            pointer_on_scene_pos.x as i64,
+                            pointer_on_scene_pos.y as i64,
+                        );
+                        maybe_pointer_on_scene = Some(pointer_on_scene);
 
                         if primary_pressed && response.hovered() {
-                            self.drag_selection_interactor = Some(DragSelectionInteractor::new(
-                                pointer_scene,
+                            self.selection_interactor = Some(SelectionInteractor::new(
+                                pointer_on_scene,
                                 workspace.selection.clone(),
-                                SelectionOptions::new(
-                                    SelectionCombineMode::Replace,
-                                    SelectionContainMode::Crossing,
-                                ),
+                                SelectionCombineMode::Replace,
                             ));
                         }
 
-                        if response.clicked() {
-                            if let Some(pin_selector) = workspace
-                                .autorouter
-                                .router()
-                                .navmesher_board()
-                                .board()
-                                .locate_pin_at_point(Vector3::new(
-                                    pointer_scene.x,
-                                    pointer_scene.y,
-                                    workspace.appearance_panel.active.index() as i64,
-                                ))
-                            {
-                                workspace.selection.pins.xor(std::iter::once(pin_selector));
-                            }
-                        } else if let Some(interactor) = self.drag_selection_interactor.as_mut() {
-                            if primary_down || primary_released {
+                        if let Some(interactor) = self.selection_interactor.as_mut() {
+                            if primary_down {
                                 let _ = interactor.update(
                                     workspace.autorouter.router().navmesher_board().board(),
-                                    InteractiveInput::new(pointer_scene, false),
+                                    workspace.appearance_panel.active,
+                                    InteractiveInput::new(pointer_on_scene, false, false),
                                 );
                             }
                         }
                     }
 
                     if primary_released {
-                        if let Some(interactor) = self.drag_selection_interactor.take() {
+                        if let Some(mut interactor) = self.selection_interactor.take() {
+                            let pointer_for_scene =
+                                maybe_pointer_on_scene.unwrap_or(*interactor.origin());
+                            let _ = interactor.update(
+                                workspace.autorouter.router().navmesher_board().board(),
+                                workspace.appearance_panel.active,
+                                InteractiveInput::new(pointer_for_scene, true, false),
+                            );
+
                             workspace.selection = interactor.selection().clone();
                         }
                     }
