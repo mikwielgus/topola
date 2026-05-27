@@ -2,9 +2,9 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{viewport::Viewport, workspace::Workspace};
-use topola::LayerId;
+use crate::{viewport::Viewport, workspace::GuiWorkspace};
 use topola::primitives::{Joint, Polygon, Segment, Via};
+use topola::{LayerId, Workspace};
 
 pub struct Display {}
 
@@ -19,7 +19,7 @@ impl Display {
         ui: &egui::Ui,
         //menu_bar: &MenuBar,
         viewport: &Viewport,
-        workspace: &Workspace,
+        workspace: &GuiWorkspace,
     ) {
         self.display_layout(ctx, ui, /*menu_bar,*/ viewport, workspace);
         self.display_bboxes(ctx, ui, viewport, workspace);
@@ -33,9 +33,9 @@ impl Display {
         ui: &egui::Ui,
         //menu_bar: &MenuBar,
         viewport: &Viewport,
-        workspace: &Workspace,
+        workspace: &GuiWorkspace,
     ) {
-        let board = workspace.autorouter.router().navmesher_board().board();
+        let board = workspace.workspace.board();
         let layout = board.layout();
 
         // Start from the bottom layer so that top layers are drawn on top.
@@ -46,8 +46,10 @@ impl Display {
 
             for joint_id in layout.layer_joints(layer) {
                 let joint = layout.joint(joint_id);
-                let pin_selected = board.pins_contain_joint(&workspace.selection.pins, joint_id);
-                let net_selected = board.nets_contain_joint(&workspace.selection.nets, joint_id);
+                let pin_selected =
+                    board.pins_contain_joint(&workspace.workspace.selection().pins, joint_id);
+                let net_selected =
+                    board.nets_contain_joint(&workspace.workspace.selection().nets, joint_id);
                 self.paint_joint(
                     ctx,
                     ui,
@@ -64,9 +66,9 @@ impl Display {
             for segment_id in layout.layer_segments(layer) {
                 let segment = layout.segment(segment_id);
                 let pin_selected =
-                    board.pins_contain_segment(&workspace.selection.pins, segment_id);
+                    board.pins_contain_segment(&workspace.workspace.selection().pins, segment_id);
                 let net_selected =
-                    board.nets_contain_segment(&workspace.selection.nets, segment_id);
+                    board.nets_contain_segment(&workspace.workspace.selection().nets, segment_id);
                 self.paint_segment(
                     ctx,
                     ui,
@@ -82,8 +84,10 @@ impl Display {
 
             for via_id in layout.layer_vias(layer) {
                 let via = layout.via(via_id);
-                let pin_selected = board.pins_contain_via(&workspace.selection.pins, via_id);
-                let net_selected = board.nets_contain_via(&workspace.selection.nets, via_id);
+                let pin_selected =
+                    board.pins_contain_via(&workspace.workspace.selection().pins, via_id);
+                let net_selected =
+                    board.nets_contain_via(&workspace.workspace.selection().nets, via_id);
                 self.paint_via(
                     ctx,
                     ui,
@@ -100,9 +104,9 @@ impl Display {
             for polygon_id in layout.layer_polygons(layer) {
                 let polygon = layout.polygon(polygon_id);
                 let pin_selected =
-                    board.pins_contain_polygon(&workspace.selection.pins, polygon_id);
+                    board.pins_contain_polygon(&workspace.workspace.selection().pins, polygon_id);
                 let net_selected =
-                    board.nets_contain_polygon(&workspace.selection.nets, polygon_id);
+                    board.nets_contain_polygon(&workspace.workspace.selection().nets, polygon_id);
                 self.paint_polygon(
                     ctx,
                     ui,
@@ -203,9 +207,9 @@ impl Display {
         ctx: &egui::Context,
         ui: &egui::Ui,
         viewport: &Viewport,
-        workspace: &Workspace,
+        workspace: &GuiWorkspace,
     ) {
-        let board = workspace.autorouter.router().navmesher_board().board();
+        let board = workspace.workspace.board();
         let layout = board.layout();
 
         for layer in (0..*layout.layer_count()).rev().map(LayerId::new) {
@@ -283,20 +287,16 @@ impl Display {
         ctx: &egui::Context,
         ui: &egui::Ui,
         viewport: &Viewport,
-        workspace: &Workspace,
+        workspace: &GuiWorkspace,
     ) {
-        for layer in (0..*workspace
-            .autorouter
-            .router()
-            .navmesher_board()
-            .board()
-            .layout()
-            .layer_count())
-            .map(LayerId::new)
-        {
+        let Workspace::Autorouter(autorouter_workspace) = &workspace.workspace else {
+            return;
+        };
+        let autorouter = &autorouter_workspace.autorouter;
+
+        for layer in (0..*workspace.workspace.board().layout().layer_count()).map(LayerId::new) {
             if workspace.appearance_panel.visible[layer.index()] {
-                for navmesh in workspace
-                    .autorouter
+                for navmesh in autorouter
                     .router()
                     .navmesher_board()
                     .navmesher()
@@ -354,9 +354,14 @@ impl Display {
         _ctx: &egui::Context,
         ui: &egui::Ui,
         _viewport: &Viewport,
-        workspace: &Workspace,
+        workspace: &GuiWorkspace,
     ) {
-        for ratline in workspace.autorouter.ratsnest().ratlines() {
+        let Workspace::Autorouter(autorouter_workspace) = &workspace.workspace else {
+            return;
+        };
+        let autorouter = &autorouter_workspace.autorouter;
+
+        for ratline in autorouter.ratsnest().ratlines() {
             let layers = *ratline.endpoint_layers();
             let endpoints = *ratline.endpoints();
 

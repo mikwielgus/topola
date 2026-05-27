@@ -8,6 +8,7 @@ mod selection;
 
 use derive_more::Constructor;
 pub use drag_selection::{DragSelectionInteractor, DragSelectionOptions};
+pub use master::MasterInteractor;
 pub use selection::SelectionInteractor;
 use serde::{Deserialize, Serialize};
 

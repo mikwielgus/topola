@@ -43,14 +43,10 @@ impl DragSelectionInteractor {
         }
     }
 
-    pub fn update(
-        &mut self,
-        board: &Board,
-        input: InteractiveInput,
-    ) -> Option<PersistableSelection> {
+    pub fn update(&mut self, board: &Board, input: InteractiveInput) {
         if input.cancel {
             self.selection = self.original_selection.clone();
-            return Some(self.selection.clone());
+            return;
         }
 
         self.selection = PersistableSelection::new();
@@ -141,6 +137,5 @@ impl DragSelectionInteractor {
         }
 
         self.selection = combined_selection;
-        Some(self.selection.clone())
     }
 }

@@ -39,15 +39,10 @@ impl SelectionInteractor {
         }
     }
 
-    pub fn update(
-        &mut self,
-        board: &Board,
-        layer: LayerId,
-        input: InteractiveInput,
-    ) -> Option<PersistableSelection> {
+    pub fn update(&mut self, board: &Board, layer: LayerId, input: InteractiveInput) {
         if input.cancel {
             self.selection = self.original_selection.clone();
-            return Some(self.selection.clone());
+            return;
         }
 
         if input.release && input.pointer == self.origin {
@@ -76,8 +71,8 @@ impl SelectionInteractor {
                     .xor(std::iter::once(component_selector));
             }
 
-            self.selection = selection.clone();
-            return Some(selection);
+            self.selection = selection;
+            return;
         }
 
         let contain = if input.pointer.x >= self.origin.x {
@@ -89,9 +84,7 @@ impl SelectionInteractor {
         let options = DragSelectionOptions::new(self.combine.clone(), contain);
         let mut drag_selection_interactor =
             DragSelectionInteractor::new(self.origin, self.original_selection.clone(), options);
-        let selection = drag_selection_interactor.update(board, input)?;
-
-        self.selection = selection.clone();
-        Some(selection)
+        drag_selection_interactor.update(board, input);
+        self.selection = drag_selection_interactor.selection().clone();
     }
 }

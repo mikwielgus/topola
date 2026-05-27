@@ -2,29 +2,30 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use topola::{Autorouter, Board, selections::PersistableSelection};
+use topola::{Board, Workspace};
 
 use crate::{layers_panel::LayersPanel, translator::Translator};
 
-pub struct Workspace {
-    pub autorouter: Autorouter,
+pub struct GuiWorkspace {
+    pub workspace: Workspace,
     pub appearance_panel: LayersPanel,
-    pub selection: PersistableSelection,
 }
 
-impl Workspace {
+impl GuiWorkspace {
     pub fn new(board: Board, tr: &Translator) -> Self {
         let appearance_panel = LayersPanel::new(&board);
 
         Self {
-            autorouter: Autorouter::new(board),
+            workspace: Workspace::new_board(board),
             appearance_panel,
-            selection: PersistableSelection::new(),
         }
     }
 
     pub fn update_appearance_panel(&mut self, ctx: &egui::Context) {
-        self.appearance_panel
-            .update(ctx, &self.autorouter.router().navmesher_board().board());
+        let Self {
+            workspace,
+            appearance_panel,
+        } = self;
+        appearance_panel.update(ctx, workspace.board());
     }
 }

@@ -3,15 +3,15 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use egui::Pos2;
-use topola::{InteractiveInput, SelectionCombineMode, SelectionInteractor, Vector2};
+use topola::{InteractiveInput, MasterInteractor, Vector2, Workspace};
 
-use crate::{display::Display, workspace::Workspace};
+use crate::{display::Display, workspace::GuiWorkspace};
 
 pub struct Viewport {
     pub scene_rect: egui::Rect,
     pub ref_scene_rect: egui::Rect,
     pub scheduled_zoom_to_fit: bool,
-    selection_interactor: Option<SelectionInteractor>,
+    master_interactor: Option<MasterInteractor>,
 }
 
 impl Viewport {
@@ -20,11 +20,11 @@ impl Viewport {
             scene_rect: egui::Rect::from_min_max(egui::pos2(-1.0, -1.0), egui::pos2(1.0, 1.0)),
             ref_scene_rect: egui::Rect::from_min_max(egui::pos2(-1.0, -1.0), egui::pos2(1.0, 1.0)),
             scheduled_zoom_to_fit: false,
-            selection_interactor: None,
+            master_interactor: None,
         }
     }
 
-    pub fn update(&mut self, ctx: &egui::Context, workspace: Option<&mut Workspace>) {
+    pub fn update(&mut self, ctx: &egui::Context, workspace: Option<&mut GuiWorkspace>) {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
                 ui.ctx().request_repaint();
@@ -52,7 +52,7 @@ impl Viewport {
 
                 if let Some(workspace) = workspace {
                     if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
-                        self.selection_interactor = None;
+                        self.master_interactor = None;
                     }
 
                     let primary_pressed =
@@ -61,6 +61,7 @@ impl Viewport {
                         ctx.input(|i| i.pointer.button_down(egui::PointerButton::Primary));
                     let primary_released =
                         ctx.input(|i| i.pointer.button_released(egui::PointerButton::Primary));
+                    let delete_pressed = ctx.input(|i| i.key_pressed(egui::Key::Delete));
                     let mut maybe_pointer_on_scene: Option<Vector2<i64>> = None;
 
                     if let Some(pointer_viewport_pos) = ctx.input(|i| i.pointer.interact_pos()) {
@@ -73,17 +74,20 @@ impl Viewport {
                         maybe_pointer_on_scene = Some(pointer_on_scene);
 
                         if primary_pressed && response.hovered() {
-                            self.selection_interactor = Some(SelectionInteractor::new(
-                                pointer_on_scene,
-                                workspace.selection.clone(),
-                                SelectionCombineMode::Replace,
+                            self.master_interactor = Some(MasterInteractor::new(
+                                None,
+                                workspace.workspace.selection().clone(),
                             ));
                         }
 
-                        if let Some(interactor) = self.selection_interactor.as_mut() {
+                        if let Some(interactor) = self.master_interactor.as_mut() {
                             if primary_down {
-                                let _ = interactor.update(
-                                    workspace.autorouter.router().navmesher_board().board(),
+                                let board = match &mut workspace.workspace {
+                                    Workspace::Board(workspace) => &mut workspace.board,
+                                    Workspace::Autorouter(_) => panic!("expected board workspace"),
+                                };
+                                interactor.update(
+                                    board,
                                     workspace.appearance_panel.active,
                                     InteractiveInput::new(pointer_on_scene, false, false, false),
                                 );
@@ -92,17 +96,43 @@ impl Viewport {
                     }
 
                     if primary_released {
-                        if let Some(mut interactor) = self.selection_interactor.take() {
-                            let pointer_for_scene =
-                                maybe_pointer_on_scene.unwrap_or(*interactor.origin());
-                            let _ = interactor.update(
-                                workspace.autorouter.router().navmesher_board().board(),
+                        if let Some(mut interactor) = self.master_interactor.take() {
+                            let pointer_for_scene = maybe_pointer_on_scene.unwrap_or_else(|| {
+                                interactor
+                                    .selection_interactor()
+                                    .as_ref()
+                                    .map(|selection_interactor| *selection_interactor.origin())
+                                    .unwrap_or(Vector2::new(0, 0))
+                            });
+                            let board = match &mut workspace.workspace {
+                                Workspace::Board(workspace) => &mut workspace.board,
+                                Workspace::Autorouter(_) => panic!("expected board workspace"),
+                            };
+                            interactor.update(
+                                board,
                                 workspace.appearance_panel.active,
                                 InteractiveInput::new(pointer_for_scene, true, false, false),
                             );
 
-                            workspace.selection = interactor.selection().clone();
+                            *workspace.workspace.selection_mut() = interactor.selection().clone();
                         }
+                    }
+
+                    if delete_pressed {
+                        let pointer_for_scene =
+                            maybe_pointer_on_scene.unwrap_or(Vector2::new(0, 0));
+                        let mut interactor =
+                            MasterInteractor::new(None, workspace.workspace.selection().clone());
+                        let board = match &mut workspace.workspace {
+                            Workspace::Board(workspace) => &mut workspace.board,
+                            Workspace::Autorouter(_) => panic!("expected board workspace"),
+                        };
+                        interactor.update(
+                            board,
+                            workspace.appearance_panel.active,
+                            InteractiveInput::new(pointer_for_scene, false, true, false),
+                        );
+                        *workspace.workspace.selection_mut() = interactor.selection().clone();
                     }
 
                     self.zoom_to_fit_if_scheduled(workspace);
@@ -141,7 +171,7 @@ impl Viewport {
             * egui::emath::TSTransform::from_scaling(scale)
     }
 
-    fn zoom_to_fit_if_scheduled(&mut self, workspace: &Workspace) {
+    fn zoom_to_fit_if_scheduled(&mut self, workspace: &GuiWorkspace) {
         if self.scheduled_zoom_to_fit {
             self.scene_rect = Self::boundary_bounding_box(workspace);
             self.ref_scene_rect = self.scene_rect.clone();
@@ -150,29 +180,15 @@ impl Viewport {
         self.scheduled_zoom_to_fit = false;
     }
 
-    fn boundary_bounding_box(workspace: &Workspace) -> egui::Rect {
-        let first = workspace
-            .autorouter
-            .router()
-            .navmesher_board()
-            .board()
-            .layout()
-            .boundary()[0];
+    fn boundary_bounding_box(workspace: &GuiWorkspace) -> egui::Rect {
+        let first = workspace.workspace.board().layout().boundary()[0];
 
         let mut min_x = first[0];
         let mut max_x = first[0];
         let mut min_y = first[1];
         let mut max_y = first[1];
 
-        for point in workspace
-            .autorouter
-            .router()
-            .navmesher_board()
-            .board()
-            .layout()
-            .boundary()[1..]
-            .iter()
-        {
+        for point in workspace.workspace.board().layout().boundary()[1..].iter() {
             if point[0] < min_x {
                 min_x = point[0];
             }

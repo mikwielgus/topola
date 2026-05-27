@@ -17,12 +17,12 @@ use crate::{
 
 #[derive(Clone, Constructor, Debug, Eq, Getters, PartialEq)]
 pub struct MasterInteractor {
-    selection: PersistableSelection,
     selection_interactor: Option<SelectionInteractor>,
+    selection: PersistableSelection,
 }
 
 impl MasterInteractor {
-    pub fn update(&mut self, board: &mut Board, input: InteractiveInput) {
+    pub fn update(&mut self, board: &mut Board, layer: LayerId, input: InteractiveInput) {
         if input.delete {
             board.delete_net_free_primitives(self.selection.nets.clone());
         }
@@ -31,16 +31,13 @@ impl MasterInteractor {
             self.selection_interactor = Some(SelectionInteractor::new(
                 input.pointer,
                 self.selection.clone(),
-                SelectionCombineMode::Additive,
+                SelectionCombineMode::Replace,
             ));
         }
 
         if let Some(selection_interactor) = self.selection_interactor.as_mut() {
-            if let Some(selection) =
-                selection_interactor.update(board, LayerId::new(0), input.clone())
-            {
-                self.selection = selection;
-            }
+            selection_interactor.update(board, layer, input.clone());
+            self.selection = selection_interactor.selection().clone();
         }
 
         if input.release || input.cancel {

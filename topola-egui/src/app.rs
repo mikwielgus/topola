@@ -8,7 +8,9 @@ use specctra::{error::ParseErrorContext, structure::DsnFile};
 use topola::Board;
 use unic_langid::langid;
 
-use crate::{menu_bar::MenuBar, translator::Translator, viewport::Viewport, workspace::Workspace};
+use crate::{
+    menu_bar::MenuBar, translator::Translator, viewport::Viewport, workspace::GuiWorkspace,
+};
 
 pub struct App {
     translator: Translator,
@@ -20,7 +22,7 @@ pub struct App {
 
     menu_bar: MenuBar,
     viewport: Viewport,
-    workspace: Option<Workspace>,
+    workspace: Option<GuiWorkspace>,
 }
 
 impl Default for App {
@@ -50,7 +52,7 @@ impl App {
 
     fn update_state(&mut self) {
         if let Ok(data) = self.content_channel.1.try_recv() {
-            self.workspace = Some(Workspace::new(
+            self.workspace = Some(GuiWorkspace::new(
                 Board::from_specctra(data.unwrap()),
                 &self.translator,
             ));
