@@ -4,6 +4,7 @@
 
 use std::collections::BTreeSet;
 
+use derive_more::IntoIterator;
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
@@ -17,7 +18,9 @@ impl NetSelector {
     }
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(
+    Clone, Debug, Default, Deserialize, Eq, IntoIterator, Ord, PartialEq, PartialOrd, Serialize,
+)]
 pub struct NetSelection(pub BTreeSet<NetSelector>);
 
 impl NetSelection {

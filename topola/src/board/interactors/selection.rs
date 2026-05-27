@@ -17,7 +17,7 @@ use crate::{
     layout::LayerId,
 };
 
-#[derive(Clone, Debug, Eq, Getters, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Getters, PartialEq)]
 pub struct SelectionInteractor {
     origin: Vector2<i64>,
     original_selection: PersistableSelection,
@@ -50,7 +50,7 @@ impl SelectionInteractor {
             return Some(self.selection.clone());
         }
 
-        if input.released && input.pointer == self.origin {
+        if input.release && input.pointer == self.origin {
             let mut selection = self.original_selection.clone();
 
             // Pins have intentional precedence over nets and components.

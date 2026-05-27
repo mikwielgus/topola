@@ -15,13 +15,13 @@ use crate::{
     },
 };
 
-#[derive(Clone, Constructor, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Constructor, Debug, Deserialize, Eq, PartialEq, Serialize)]
 pub struct DragSelectionOptions {
     combine: SelectionCombineMode,
     contain: SelectionContainMode,
 }
 
-#[derive(Clone, Debug, Eq, Getters, Ord, PartialEq, PartialOrd)]
+#[derive(Clone, Debug, Eq, Getters, PartialEq)]
 pub struct DragSelectionInteractor {
     origin: Vector2<i64>,
     original_selection: PersistableSelection,

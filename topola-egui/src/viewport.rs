@@ -85,7 +85,7 @@ impl Viewport {
                                 let _ = interactor.update(
                                     workspace.autorouter.router().navmesher_board().board(),
                                     workspace.appearance_panel.active,
-                                    InteractiveInput::new(pointer_on_scene, false, false),
+                                    InteractiveInput::new(pointer_on_scene, false, false, false),
                                 );
                             }
                         }
@@ -98,7 +98,7 @@ impl Viewport {
                             let _ = interactor.update(
                                 workspace.autorouter.router().navmesher_board().board(),
                                 workspace.appearance_panel.active,
-                                InteractiveInput::new(pointer_for_scene, true, false),
+                                InteractiveInput::new(pointer_for_scene, true, false, false),
                             );
 
                             workspace.selection = interactor.selection().clone();

@@ -5,12 +5,11 @@
 use crate::{Board, Vector2, layout::compounds::ComponentId, selections::ComponentSelection};
 
 impl Board {
-    pub fn move_components_by(
-        &mut self,
-        selection: &ComponentSelection,
-        translation: Vector2<i64>,
-    ) {
-        self.move_resolved_components_by(&self.resolve_components(selection.clone()), translation);
+    pub fn move_components_by(&mut self, selection: ComponentSelection, translation: Vector2<i64>) {
+        self.move_resolved_components_by(
+            &self.resolve_components(selection).collect::<Vec<_>>(),
+            translation,
+        );
     }
 
     pub fn move_resolved_components_by(

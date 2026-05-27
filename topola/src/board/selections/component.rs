@@ -4,7 +4,7 @@
 
 use std::collections::BTreeSet;
 
-use derive_more::Constructor;
+use derive_more::{Constructor, IntoIterator};
 use serde::{Deserialize, Serialize};
 
 #[derive(Clone, Constructor, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
@@ -12,7 +12,9 @@ pub struct ComponentSelector {
     pub component: String,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(
+    Clone, Debug, Default, Deserialize, Eq, IntoIterator, Ord, PartialEq, PartialOrd, Serialize,
+)]
 pub struct ComponentSelection(pub BTreeSet<ComponentSelector>);
 
 impl ComponentSelection {

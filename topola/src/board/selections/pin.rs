@@ -4,7 +4,7 @@
 
 use std::collections::BTreeSet;
 
-use derive_more::Constructor;
+use derive_more::{Constructor, IntoIterator};
 use serde::{Deserialize, Serialize};
 
 #[derive(
@@ -15,7 +15,9 @@ pub struct PinSelector {
     pub layer: String,
 }
 
-#[derive(Clone, Debug, Default, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(
+    Clone, Debug, Default, Deserialize, Eq, IntoIterator, Ord, PartialEq, PartialOrd, Serialize,
+)]
 pub struct PinSelection(pub BTreeSet<PinSelector>);
 
 impl PinSelection {

@@ -9,8 +9,7 @@ use serde::{Deserialize, Serialize};
 use crate::layout::LayerId;
 use crate::layout::compounds::{ComponentId, NetId, PinId};
 use crate::math::Vector2;
-
-use super::{SegmentId, ViaId};
+use crate::primitives::{SegmentId, ViaId};
 
 #[derive(
     Clone,

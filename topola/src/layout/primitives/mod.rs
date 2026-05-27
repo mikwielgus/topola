@@ -18,5 +18,6 @@ pub use via::*;
 pub enum PrimitiveId {
     Joint(JointId),
     Segment(SegmentId),
+    Via(ViaId),
     Polygon(PolygonId),
 }
