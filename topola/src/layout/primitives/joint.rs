@@ -40,7 +40,7 @@ pub struct JointSpec {
     pub position: Vector2<i64>,
     pub layer: LayerId,
     pub radius: u64,
-    pub net: NetId,
+    pub net: Option<NetId>,
     pub component: Option<ComponentId>,
     pub pin: Option<PinId>,
 }

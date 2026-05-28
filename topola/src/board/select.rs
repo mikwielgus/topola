@@ -152,7 +152,7 @@ impl Board {
 
     pub fn nets_contain_joint(&self, selection: &NetSelection, id: JointId) -> bool {
         let joint = self.layout.joint(id);
-        let Some(net_name) = self.net_name(joint.spec.net) else {
+        let Some(net_name) = joint.spec.net.and_then(|net| self.net_name(net)) else {
             return false;
         };
 
@@ -163,7 +163,7 @@ impl Board {
 
     pub fn nets_contain_segment(&self, selection: &NetSelection, id: SegmentId) -> bool {
         let segment = self.layout.segment(id);
-        let Some(net_name) = self.net_name(segment.net) else {
+        let Some(net_name) = segment.net.and_then(|net| self.net_name(net)) else {
             return false;
         };
 
@@ -174,7 +174,7 @@ impl Board {
 
     pub fn nets_contain_via(&self, selection: &NetSelection, id: ViaId) -> bool {
         let via = self.layout.via(id);
-        let Some(net_name) = self.net_name(via.net) else {
+        let Some(net_name) = via.net.and_then(|net| self.net_name(net)) else {
             return false;
         };
 
@@ -185,7 +185,7 @@ impl Board {
 
     pub fn nets_contain_polygon(&self, selection: &NetSelection, id: PolygonId) -> bool {
         let polygon = self.layout.polygon(id);
-        let Some(net_name) = self.net_name(polygon.net) else {
+        let Some(net_name) = polygon.net.and_then(|net| self.net_name(net)) else {
             return false;
         };
 
@@ -198,7 +198,7 @@ impl Board {
         let joint = self.layout.joint(id);
 
         Some(NetSelector {
-            net: self.net_name(joint.spec.net)?.to_string(),
+            net: self.net_name(joint.spec.net?)?.to_string(),
         })
     }
 
@@ -206,7 +206,7 @@ impl Board {
         let segment = self.layout.segment(id);
 
         Some(NetSelector {
-            net: self.net_name(segment.net)?.to_string(),
+            net: self.net_name(segment.net?)?.to_string(),
         })
     }
 
@@ -214,7 +214,7 @@ impl Board {
         let via = self.layout.via(id);
 
         Some(NetSelector {
-            net: self.net_name(via.net)?.to_string(),
+            net: self.net_name(via.net?)?.to_string(),
         })
     }
 
@@ -222,7 +222,7 @@ impl Board {
         let polygon = self.layout.polygon(id);
 
         Some(NetSelector {
-            net: self.net_name(polygon.net)?.to_string(),
+            net: self.net_name(polygon.net?)?.to_string(),
         })
     }
 

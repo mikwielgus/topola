@@ -53,6 +53,32 @@ impl<T: RTreeNum> Rect2<T> {
     }
 }
 
+macro_rules! impl_rect2_contains_point {
+    ($type:ty) => {
+        impl Rect2<$type> {
+            pub fn contains_point(&self, point: Vector2<$type>) -> bool {
+                point.x >= self.min.x
+                    && point.x <= self.max.x
+                    && point.y >= self.min.y
+                    && point.y <= self.max.y
+            }
+        }
+    };
+}
+
+impl_rect2_contains_point!(i8);
+impl_rect2_contains_point!(i16);
+impl_rect2_contains_point!(i32);
+impl_rect2_contains_point!(i64);
+impl_rect2_contains_point!(i128);
+impl_rect2_contains_point!(u8);
+impl_rect2_contains_point!(u16);
+impl_rect2_contains_point!(u32);
+impl_rect2_contains_point!(u64);
+impl_rect2_contains_point!(u128);
+impl_rect2_contains_point!(f32);
+impl_rect2_contains_point!(f64);
+
 macro_rules! impl_rect2_contains_circle {
     ($type:ty) => {
         impl Rect2<$type> {
@@ -152,12 +178,15 @@ macro_rules! impl_rect2_intersects_polygon {
                     return false;
                 }
 
-                if self.contains_polygon(polygon) {
+                if polygon.iter().any(|&vertex| self.contains_point(vertex)) {
                     return true;
                 }
 
-                let corners = self.corners();
-                if corners.iter().any(|corner| corner.inside_polygon(polygon)) {
+                if self
+                    .corners()
+                    .iter()
+                    .any(|corner| corner.inside_polygon(polygon))
+                {
                     return true;
                 }
 

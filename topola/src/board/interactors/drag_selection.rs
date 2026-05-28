@@ -60,29 +60,70 @@ impl DragSelectionInteractor {
             Vector3::new(input.pointer.x, input.pointer.y, self.layer.index() as i64),
         );
 
-        match self.options.contain {
+        let all_belong_to_pins = match self.options.contain {
             SelectionContainMode::Crossing => {
-                self.selection
-                    .components
-                    .add(board.locate_components_prefer_layer_intersecting_rect(rect));
+                board
+                    .layout()
+                    .locate_joints_prefer_layer_intersecting_rect(rect)
+                    .all(|joint_id| board.layout().joint(joint_id).spec.pin.is_some())
+                    && board
+                        .layout()
+                        .locate_segments_prefer_layer_intersecting_rect(rect)
+                        .all(|segment_id| board.layout().segment(segment_id).spec.pin.is_some())
+                    && board
+                        .layout()
+                        .locate_vias_prefer_layer_intersecting_rect(rect)
+                        .all(|via_id| board.layout().via(via_id).spec.pin.is_some())
+                    && board
+                        .layout()
+                        .locate_polygons_prefer_layer_intersecting_rect(rect)
+                        .all(|polygon_id| board.layout().polygon(polygon_id).pin.is_some())
             }
             SelectionContainMode::Window => {
-                self.selection
-                    .components
-                    .add(board.locate_components_prefer_layer_inside_rect(rect));
+                board
+                    .layout()
+                    .locate_joints_prefer_layer_inside_rect(rect)
+                    .all(|joint_id| board.layout().joint(joint_id).spec.pin.is_some())
+                    && board
+                        .layout()
+                        .locate_segments_prefer_layer_inside_rect(rect)
+                        .all(|segment_id| board.layout().segment(segment_id).spec.pin.is_some())
+                    && board
+                        .layout()
+                        .locate_vias_prefer_layer_inside_rect(rect)
+                        .all(|via_id| board.layout().via(via_id).spec.pin.is_some())
+                    && board
+                        .layout()
+                        .locate_polygons_prefer_layer_inside_rect(rect)
+                        .all(|polygon_id| board.layout().polygon(polygon_id).pin.is_some())
             }
-        }
+        };
 
-        match self.options.contain {
-            SelectionContainMode::Crossing => {
-                self.selection
-                    .nets
-                    .add(board.locate_nets_prefer_layer_intersecting_rect(rect));
+        if !all_belong_to_pins {
+            match self.options.contain {
+                SelectionContainMode::Crossing => {
+                    self.selection
+                        .components
+                        .add(board.locate_components_prefer_layer_intersecting_rect(rect));
+                }
+                SelectionContainMode::Window => {
+                    self.selection
+                        .components
+                        .add(board.locate_components_prefer_layer_inside_rect(rect));
+                }
             }
-            SelectionContainMode::Window => {
-                self.selection
-                    .nets
-                    .add(board.locate_nets_prefer_layer_inside_rect(rect));
+
+            match self.options.contain {
+                SelectionContainMode::Crossing => {
+                    self.selection
+                        .nets
+                        .add(board.locate_nets_prefer_layer_intersecting_rect(rect));
+                }
+                SelectionContainMode::Window => {
+                    self.selection
+                        .nets
+                        .add(board.locate_nets_prefer_layer_inside_rect(rect));
+                }
             }
         }
 

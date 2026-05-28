@@ -49,7 +49,7 @@ pub struct Segment {
     pub spec: SegmentSpec,
     pub endpoints: [Vector2<i64>; 2],
     pub layer: LayerId,
-    pub net: NetId,
+    pub net: Option<NetId>,
 }
 
 impl Segment {

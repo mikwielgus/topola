@@ -50,7 +50,7 @@ pub struct Via {
     pub position: Vector2<i64>,
     pub min_layer: LayerId,
     pub max_layer: LayerId,
-    pub net: NetId,
+    pub net: Option<NetId>,
 }
 
 impl Via {

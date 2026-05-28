@@ -31,6 +31,8 @@ impl ColorLayers {
 pub struct LayerColors {
     pub normal: egui::Color32,
     pub highlighted: egui::Color32,
+    pub pin_selected: egui::Color32,
+    pub pin_selected_highlighted: egui::Color32,
 }
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
@@ -58,26 +60,34 @@ impl LayersPanel {
                 continue;
             };
 
-            let color = match layer_desc.typ {
+            let dark_light_colors = match layer_desc.typ {
                 LayerType::Copper => match layer_desc.side {
                     LayerSide::Top => Some((
                         LayerColors {
                             normal: egui::Color32::from_rgb(255, 52, 52),
                             highlighted: egui::Color32::from_rgb(255, 100, 100),
+                            pin_selected: egui::Color32::from_rgb(190, 200, 70),
+                            pin_selected_highlighted: egui::Color32::from_rgb(210, 240, 110),
                         },
                         LayerColors {
                             normal: egui::Color32::from_rgb(255, 27, 27),
                             highlighted: egui::Color32::from_rgb(255, 52, 52),
+                            pin_selected: egui::Color32::from_rgb(160, 170, 50),
+                            pin_selected_highlighted: egui::Color32::from_rgb(190, 210, 80),
                         },
                     )),
                     LayerSide::Bottom => Some((
                         LayerColors {
                             normal: egui::Color32::from_rgb(52, 52, 255),
                             highlighted: egui::Color32::from_rgb(100, 100, 255),
+                            pin_selected: egui::Color32::from_rgb(70, 190, 190),
+                            pin_selected_highlighted: egui::Color32::from_rgb(100, 230, 230),
                         },
                         LayerColors {
                             normal: egui::Color32::from_rgb(27, 27, 255),
                             highlighted: egui::Color32::from_rgb(52, 52, 255),
+                            pin_selected: egui::Color32::from_rgb(50, 160, 160),
+                            pin_selected_highlighted: egui::Color32::from_rgb(70, 200, 200),
                         },
                     )),
                     LayerSide::Inner => (layer_desc.index % 2 == 0)
@@ -85,36 +95,65 @@ impl LayersPanel {
                             LayerColors {
                                 normal: egui::Color32::from_rgb(127, 200, 127),
                                 highlighted: egui::Color32::from_rgb(213, 236, 213),
+                                pin_selected: egui::Color32::from_rgb(100, 230, 100),
+                                pin_selected_highlighted: egui::Color32::from_rgb(170, 250, 170),
                             },
                             LayerColors {
                                 normal: egui::Color32::from_rgb(76, 169, 76),
                                 highlighted: egui::Color32::from_rgb(127, 200, 127),
+                                pin_selected: egui::Color32::from_rgb(60, 200, 60),
+                                pin_selected_highlighted: egui::Color32::from_rgb(100, 230, 100),
                             },
                         ))
                         .or(Some((
                             LayerColors {
                                 normal: egui::Color32::from_rgb(206, 125, 44),
                                 highlighted: egui::Color32::from_rgb(232, 195, 158),
+                                pin_selected: egui::Color32::from_rgb(170, 200, 70),
+                                pin_selected_highlighted: egui::Color32::from_rgb(200, 230, 120),
                             },
                             LayerColors {
                                 normal: egui::Color32::from_rgb(183, 80, 12),
                                 highlighted: egui::Color32::from_rgb(206, 125, 44),
+                                pin_selected: egui::Color32::from_rgb(140, 170, 50),
+                                pin_selected_highlighted: egui::Color32::from_rgb(170, 200, 80),
                             },
                         ))),
                 },
-                LayerType::Outline => Some((
-                    LayerColors {
-                        normal: egui::Color32::from_rgb(255, 255, 255),
-                        highlighted: egui::Color32::from_rgb(255, 255, 255),
-                    },
-                    LayerColors {
-                        normal: egui::Color32::from_rgb(255, 255, 255),
-                        highlighted: egui::Color32::from_rgb(255, 255, 255),
-                    },
-                )),
+                LayerType::Outline => match layer_desc.side {
+                    LayerSide::Top => Some((
+                        LayerColors {
+                            normal: egui::Color32::from_rgb(222, 217, 141),
+                            highlighted: egui::Color32::from_rgb(255, 255, 215),
+                            pin_selected: egui::Color32::from_rgb(170, 235, 100),
+                            pin_selected_highlighted: egui::Color32::from_rgb(210, 255, 160),
+                        },
+                        LayerColors {
+                            normal: egui::Color32::from_rgb(185, 180, 110),
+                            highlighted: egui::Color32::from_rgb(245, 240, 165),
+                            pin_selected: egui::Color32::from_rgb(140, 210, 80),
+                            pin_selected_highlighted: egui::Color32::from_rgb(190, 245, 130),
+                        },
+                    )),
+                    LayerSide::Bottom => Some((
+                        LayerColors {
+                            normal: egui::Color32::from_rgb(212, 158, 147),
+                            highlighted: egui::Color32::from_rgb(255, 228, 210),
+                            pin_selected: egui::Color32::from_rgb(160, 210, 110),
+                            pin_selected_highlighted: egui::Color32::from_rgb(200, 245, 165),
+                        },
+                        LayerColors {
+                            normal: egui::Color32::from_rgb(170, 130, 120),
+                            highlighted: egui::Color32::from_rgb(235, 195, 185),
+                            pin_selected: egui::Color32::from_rgb(130, 190, 85),
+                            pin_selected_highlighted: egui::Color32::from_rgb(175, 230, 140),
+                        },
+                    )),
+                    LayerSide::Inner => None,
+                },
             };
 
-            if let Some((dark_color, light_color)) = color {
+            if let Some((dark_color, light_color)) = dark_light_colors {
                 dark_layer_colors.insert(layer_desc.clone(), dark_color);
                 light_layer_colors.insert(layer_desc.clone(), light_color);
             }
@@ -125,6 +164,8 @@ impl LayersPanel {
                 default: LayerColors {
                     normal: egui::Color32::from_rgb(255, 255, 255),
                     highlighted: egui::Color32::from_rgb(255, 255, 255),
+                    pin_selected: egui::Color32::from_rgb(200, 255, 200),
+                    pin_selected_highlighted: egui::Color32::from_rgb(220, 255, 220),
                 },
                 colors: dark_layer_colors,
             },
@@ -134,6 +175,8 @@ impl LayersPanel {
                 default: LayerColors {
                     normal: egui::Color32::from_rgb(0, 0, 0),
                     highlighted: egui::Color32::from_rgb(0, 0, 0),
+                    pin_selected: egui::Color32::from_rgb(0, 100, 0),
+                    pin_selected_highlighted: egui::Color32::from_rgb(0, 140, 0),
                 },
                 colors: light_layer_colors,
             },
@@ -199,12 +242,20 @@ impl LayersPanel {
         &self,
         ctx: &Context,
         layer_desc: Option<&LayerDesc>,
+        pin_selected: bool,
         highlight: bool,
     ) -> egui::Color32 {
-        if highlight {
-            self.colors(ctx).layers.colors(layer_desc).highlighted
+        let colors = self.colors(ctx).layers.colors(layer_desc);
+        if pin_selected {
+            if highlight {
+                colors.pin_selected_highlighted
+            } else {
+                colors.pin_selected
+            }
+        } else if highlight {
+            colors.highlighted
         } else {
-            self.colors(ctx).layers.colors(layer_desc).normal
+            colors.normal
         }
     }
 

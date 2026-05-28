@@ -54,6 +54,10 @@ impl Display {
                     board.pins_contain_joint(&workspace.workspace.selection().pins, joint_id);
                 let net_selected =
                     board.nets_contain_joint(&workspace.workspace.selection().nets, joint_id);
+                let component_selected = board.components_contain_joint(
+                    &workspace.workspace.selection().components,
+                    joint_id,
+                );
                 self.paint_joint(
                     ctx,
                     ui,
@@ -62,7 +66,8 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_desc(joint.spec.layer),
-                        pin_selected || (joint.spec.pin.is_none() && net_selected),
+                        pin_selected,
+                        (joint.spec.pin.is_none() && net_selected) || component_selected,
                     ),
                 );
             }
@@ -73,6 +78,10 @@ impl Display {
                     board.pins_contain_segment(&workspace.workspace.selection().pins, segment_id);
                 let net_selected =
                     board.nets_contain_segment(&workspace.workspace.selection().nets, segment_id);
+                let component_selected = board.components_contain_segment(
+                    &workspace.workspace.selection().components,
+                    segment_id,
+                );
                 self.paint_segment(
                     ctx,
                     ui,
@@ -81,7 +90,8 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_desc(segment.layer),
-                        pin_selected || (segment.spec.pin.is_none() && net_selected),
+                        pin_selected,
+                        (segment.spec.pin.is_none() && net_selected) || component_selected,
                     ),
                 );
             }
@@ -92,6 +102,8 @@ impl Display {
                     board.pins_contain_via(&workspace.workspace.selection().pins, via_id);
                 let net_selected =
                     board.nets_contain_via(&workspace.workspace.selection().nets, via_id);
+                let component_selected =
+                    board.components_contain_via(&workspace.workspace.selection().components, via_id);
                 self.paint_via(
                     ctx,
                     ui,
@@ -100,7 +112,8 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_desc(layer),
-                        pin_selected || (via.spec.pin.is_none() && net_selected),
+                        pin_selected,
+                        (via.spec.pin.is_none() && net_selected) || component_selected,
                     ),
                 );
             }
@@ -111,6 +124,10 @@ impl Display {
                     board.pins_contain_polygon(&workspace.workspace.selection().pins, polygon_id);
                 let net_selected =
                     board.nets_contain_polygon(&workspace.workspace.selection().nets, polygon_id);
+                let component_selected = board.components_contain_polygon(
+                    &workspace.workspace.selection().components,
+                    polygon_id,
+                );
                 self.paint_polygon(
                     ctx,
                     ui,
@@ -119,7 +136,8 @@ impl Display {
                     workspace.appearance_panel.layer_color(
                         ctx,
                         board.layer_desc(polygon.layer),
-                        pin_selected || (polygon.pin.is_none() && net_selected),
+                        pin_selected,
+                        (polygon.pin.is_none() && net_selected) || component_selected,
                     ),
                 );
             }

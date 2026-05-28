@@ -51,8 +51,12 @@ impl Ratsnest {
             BTreeMap::new();
 
         for (i, joint) in board.layout().joints().container().iter() {
+            let Some(net) = joint.spec.net else {
+                continue;
+            };
+
             let _ = triangulations
-                .entry((joint.spec.net, joint.spec.layer))
+                .entry((net, joint.spec.layer))
                 .or_insert_with(DelaunayTriangulation::new)
                 .insert(DelaunayVertex {
                     layer: joint.spec.layer,
@@ -63,9 +67,13 @@ impl Ratsnest {
         }
 
         for (i, segment) in board.layout().segments().container().iter() {
+            let Some(net) = segment.net else {
+                continue;
+            };
+
             let segment_center = segment.center();
             let _ = triangulations
-                .entry((segment.net, segment.layer))
+                .entry((net, segment.layer))
                 .or_insert_with(DelaunayTriangulation::new)
                 .insert(DelaunayVertex {
                     layer: segment.layer,
@@ -76,8 +84,12 @@ impl Ratsnest {
         }
 
         for (i, polygon) in board.layout().polygons().container().iter() {
+            let Some(net) = polygon.net else {
+                continue;
+            };
+
             let _ = triangulations
-                .entry((polygon.net, polygon.layer))
+                .entry((net, polygon.layer))
                 .or_insert_with(DelaunayTriangulation::new)
                 .insert(DelaunayVertex {
                     layer: polygon.layer,

@@ -38,7 +38,7 @@ impl PolygonId {
 pub struct Polygon {
     pub vertices: Vec<Vector2<i64>>,
     pub layer: LayerId,
-    pub net: NetId,
+    pub net: Option<NetId>,
     pub component: Option<ComponentId>,
     pub pin: Option<PinId>,
 }

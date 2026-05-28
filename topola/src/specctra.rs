@@ -72,8 +72,6 @@ impl Board {
                 .chain(dsn.pcb.network.nets.iter().map(|net| &net.name))
                 .cloned()
                 .collect();
-            // deduplicate net names
-            tmp.push("outlines".to_string());
             tmp.sort_unstable();
             tmp.dedup();
 
@@ -99,7 +97,6 @@ impl Board {
             layer_descs,
             net_names,
         );
-        let outline_net = board.net_id("outlines").unwrap();
 
         // Mapping of pin -> net prepared for adding pins.
         let pin_nets: BTreeMap<String, NetId> = dsn
@@ -152,7 +149,7 @@ impl Board {
                         &outline.path.coords,
                         outline.path.width,
                         outline_layer_id,
-                        outline_net,
+                        None,
                         Some(component_id),
                         None,
                         !place_side_is_front,
@@ -180,7 +177,7 @@ impl Board {
                                     pin.point_with_rotation(),
                                     circle.diameter / 2.0,
                                     layer,
-                                    net,
+                                    Some(net),
                                     Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
@@ -198,7 +195,7 @@ impl Board {
                                     rect.x2,
                                     rect.y2,
                                     layer,
-                                    net,
+                                    Some(net),
                                     Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
@@ -214,7 +211,7 @@ impl Board {
                                     &path.coords,
                                     path.width,
                                     layer,
-                                    net,
+                                    Some(net),
                                     Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
@@ -230,7 +227,7 @@ impl Board {
                                     &polygon.coords,
                                     polygon.width,
                                     layer,
-                                    net,
+                                    Some(net),
                                     Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
@@ -261,7 +258,7 @@ impl Board {
                             PointWithRotation::default(),
                             circle.diameter / 2.0,
                             layer,
-                            net,
+                            Some(net),
                             None,
                             None,
                             false,
@@ -279,7 +276,7 @@ impl Board {
                             rect.x2,
                             rect.y2,
                             layer,
-                            net,
+                            Some(net),
                             None,
                             None,
                             false,
@@ -295,7 +292,7 @@ impl Board {
                             &path.coords,
                             path.width,
                             layer,
-                            net,
+                            Some(net),
                             None,
                             None,
                             false,
@@ -311,7 +308,7 @@ impl Board {
                             &polygon.coords,
                             polygon.width,
                             layer,
-                            net,
+                            Some(net),
                             None,
                             None,
                             false,
@@ -333,7 +330,7 @@ impl Board {
                 &wire.path.coords,
                 wire.path.width,
                 layer,
-                net,
+                Some(net),
                 None,
                 None,
                 false,
@@ -350,7 +347,7 @@ impl Board {
         pin_pos: PointWithRotation,
         radius: f64,
         layer: LayerId,
-        net: NetId,
+        net: Option<NetId>,
         component: Option<ComponentId>,
         pin: Option<PinId>,
         flip: bool,
@@ -375,7 +372,7 @@ impl Board {
         x2: f64,
         y2: f64,
         layer: LayerId,
-        net: NetId,
+        net: Option<NetId>,
         component: Option<ComponentId>,
         pin: Option<PinId>,
         flip: bool,
@@ -402,7 +399,7 @@ impl Board {
         coords: &[Point],
         width: f64,
         layer: LayerId,
-        net: NetId,
+        net: Option<NetId>,
         component: Option<ComponentId>,
         pin: Option<PinId>,
         flip: bool,
@@ -465,7 +462,7 @@ impl Board {
         coords: &[Point],
         _width: f64,
         layer: LayerId,
-        net: NetId,
+        net: Option<NetId>,
         component: Option<ComponentId>,
         pin: Option<PinId>,
         flip: bool,

@@ -528,19 +528,27 @@ impl Layout {
         let mut nets = BTreeSet::new();
 
         for joint_id in self.locate_joints_prefer_layer_intersecting_rect(rect) {
-            nets.insert(self.joint(joint_id).spec.net);
+            if let Some(net) = self.joint(joint_id).spec.net {
+                nets.insert(net);
+            }
         }
 
         for segment_id in self.locate_segments_prefer_layer_intersecting_rect(rect) {
-            nets.insert(self.segment(segment_id).net);
+            if let Some(net) = self.segment(segment_id).net {
+                nets.insert(net);
+            }
         }
 
         for via_id in self.locate_vias_prefer_layer_intersecting_rect(rect) {
-            nets.insert(self.via(via_id).net);
+            if let Some(net) = self.via(via_id).net {
+                nets.insert(net);
+            }
         }
 
         for polygon_id in self.locate_polygons_prefer_layer_intersecting_rect(rect) {
-            nets.insert(self.polygon(polygon_id).net);
+            if let Some(net) = self.polygon(polygon_id).net {
+                nets.insert(net);
+            }
         }
 
         nets.into_iter()
@@ -550,19 +558,27 @@ impl Layout {
         let mut nets = BTreeSet::new();
 
         for joint_id in self.locate_joints_intersecting_rect(rect) {
-            nets.insert(self.joint(joint_id).spec.net);
+            if let Some(net) = self.joint(joint_id).spec.net {
+                nets.insert(net);
+            }
         }
 
         for segment_id in self.locate_segments_intersecting_rect(rect) {
-            nets.insert(self.segment(segment_id).net);
+            if let Some(net) = self.segment(segment_id).net {
+                nets.insert(net);
+            }
         }
 
         for via_id in self.locate_vias_intersecting_rect(rect) {
-            nets.insert(self.via(via_id).net);
+            if let Some(net) = self.via(via_id).net {
+                nets.insert(net);
+            }
         }
 
         for polygon_id in self.locate_polygons_intersecting_rect(rect) {
-            nets.insert(self.polygon(polygon_id).net);
+            if let Some(net) = self.polygon(polygon_id).net {
+                nets.insert(net);
+            }
         }
 
         nets.into_iter()
@@ -575,19 +591,27 @@ impl Layout {
         let mut nets = BTreeSet::new();
 
         for joint_id in self.locate_joints_prefer_layer_inside_rect(rect) {
-            nets.insert(self.joint(joint_id).spec.net);
+            if let Some(net) = self.joint(joint_id).spec.net {
+                nets.insert(net);
+            }
         }
 
         for segment_id in self.locate_segments_prefer_layer_inside_rect(rect) {
-            nets.insert(self.segment(segment_id).net);
+            if let Some(net) = self.segment(segment_id).net {
+                nets.insert(net);
+            }
         }
 
         for via_id in self.locate_vias_prefer_layer_inside_rect(rect) {
-            nets.insert(self.via(via_id).net);
+            if let Some(net) = self.via(via_id).net {
+                nets.insert(net);
+            }
         }
 
         for polygon_id in self.locate_polygons_prefer_layer_inside_rect(rect) {
-            nets.insert(self.polygon(polygon_id).net);
+            if let Some(net) = self.polygon(polygon_id).net {
+                nets.insert(net);
+            }
         }
 
         nets.into_iter()
@@ -597,19 +621,27 @@ impl Layout {
         let mut nets = BTreeSet::new();
 
         for joint_id in self.locate_joints_inside_rect(rect) {
-            nets.insert(self.joint(joint_id).spec.net);
+            if let Some(net) = self.joint(joint_id).spec.net {
+                nets.insert(net);
+            }
         }
 
         for segment_id in self.locate_segments_inside_rect(rect) {
-            nets.insert(self.segment(segment_id).net);
+            if let Some(net) = self.segment(segment_id).net {
+                nets.insert(net);
+            }
         }
 
         for via_id in self.locate_vias_inside_rect(rect) {
-            nets.insert(self.via(via_id).net);
+            if let Some(net) = self.via(via_id).net {
+                nets.insert(net);
+            }
         }
 
         for polygon_id in self.locate_polygons_inside_rect(rect) {
-            nets.insert(self.polygon(polygon_id).net);
+            if let Some(net) = self.polygon(polygon_id).net {
+                nets.insert(net);
+            }
         }
 
         nets.into_iter()
