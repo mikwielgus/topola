@@ -39,7 +39,11 @@ impl Display {
         let layout = board.layout();
 
         // Start from the bottom layer so that top layers are drawn on top.
-        for layer in (0..*layout.layer_count()).rev().map(LayerId::new) {
+        // The active layer is drawn last so it stays visible above the rest.
+        for layer in workspace
+            .appearance_panel
+            .layers_in_display_order(*layout.layer_count())
+        {
             if !workspace.appearance_panel.visible[layer.index()] {
                 continue;
             }
@@ -212,7 +216,10 @@ impl Display {
         let board = workspace.workspace.board();
         let layout = board.layout();
 
-        for layer in (0..*layout.layer_count()).rev().map(LayerId::new) {
+        for layer in workspace
+            .appearance_panel
+            .layers_in_display_order(*layout.layer_count())
+        {
             if !workspace.appearance_panel.visible[layer.index()] {
                 continue;
             }
@@ -294,7 +301,10 @@ impl Display {
         };
         let autorouter = &autorouter_workspace.autorouter;
 
-        for layer in (0..*workspace.workspace.board().layout().layer_count()).map(LayerId::new) {
+        for layer in workspace
+            .appearance_panel
+            .layers_in_display_order(*workspace.workspace.board().layout().layer_count())
+        {
             if workspace.appearance_panel.visible[layer.index()] {
                 for navmesh in autorouter
                     .router()

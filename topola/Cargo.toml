@@ -14,6 +14,7 @@ dearcut = { version = "0.3", features = ["serde", "undoredo"] }
 derive-getters.workspace = true
 derive_more.workspace = true
 i_triangle = "0.40"
+num-traits.workspace = true
 polygon_unionfind = "0.7"
 rstar = "0.12"
 serde.workspace = true

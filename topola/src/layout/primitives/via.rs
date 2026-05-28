@@ -54,11 +54,7 @@ pub struct Via {
 }
 
 impl Via {
-    pub fn contains_point(&self, layer: LayerId, point: Vector2<i64>) -> bool {
-        if layer < self.min_layer || layer > self.max_layer {
-            return false;
-        }
-
+    pub fn contains_point2(&self, point: Vector2<i64>) -> bool {
         (point.x - self.position.x).pow(2) as u64 + (point.y - self.position.y).pow(2) as u64
             <= self.spec.radius.pow(2)
     }

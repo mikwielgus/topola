@@ -64,12 +64,12 @@ impl DragSelectionInteractor {
             SelectionContainMode::Crossing => {
                 self.selection
                     .components
-                    .add(board.locate_components_intersecting_rect(rect));
+                    .add(board.locate_components_prefer_layer_intersecting_rect(rect));
             }
             SelectionContainMode::Window => {
                 self.selection
                     .components
-                    .add(board.locate_components_inside_rect(rect));
+                    .add(board.locate_components_prefer_layer_inside_rect(rect));
             }
         }
 
@@ -77,10 +77,12 @@ impl DragSelectionInteractor {
             SelectionContainMode::Crossing => {
                 self.selection
                     .nets
-                    .add(board.locate_nets_intersecting_rect(rect));
+                    .add(board.locate_nets_prefer_layer_intersecting_rect(rect));
             }
             SelectionContainMode::Window => {
-                self.selection.nets.add(board.locate_nets_inside_rect(rect));
+                self.selection
+                    .nets
+                    .add(board.locate_nets_prefer_layer_inside_rect(rect));
             }
         }
 
@@ -88,10 +90,12 @@ impl DragSelectionInteractor {
             SelectionContainMode::Crossing => {
                 self.selection
                     .pins
-                    .add(board.locate_pins_intersecting_rect(rect));
+                    .add(board.locate_pins_prefer_layer_intersecting_rect(rect));
             }
             SelectionContainMode::Window => {
-                self.selection.pins.add(board.locate_pins_inside_rect(rect));
+                self.selection
+                    .pins
+                    .add(board.locate_pins_prefer_layer_inside_rect(rect));
             }
         }
 

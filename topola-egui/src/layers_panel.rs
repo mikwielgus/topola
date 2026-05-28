@@ -146,7 +146,7 @@ impl LayersPanel {
         Self {
             dark_colors,
             light_colors,
-            active: LayerId::new(0),
+            active: board.layer_id("F.Cu").unwrap_or(LayerId::new(0)),
             visible,
         }
     }
@@ -206,5 +206,18 @@ impl LayersPanel {
         } else {
             self.colors(ctx).layers.colors(layer_desc).normal
         }
+    }
+
+    pub fn layers_in_display_order(&self, layer_count: usize) -> Vec<LayerId> {
+        let active = self.active.index();
+        let mut layers = (0..layer_count)
+            .rev()
+            .filter(|&layer| layer != active)
+            .map(LayerId::new)
+            .collect::<Vec<_>>();
+
+        // The active layer should be drawn on top.
+        layers.push(self.active);
+        layers
     }
 }

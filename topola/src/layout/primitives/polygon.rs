@@ -61,7 +61,7 @@ impl Polygon {
         Vector2::<i64>::polygon_centroid(&self.vertices)
     }
 
-    pub fn contains_point(&self, point: Vector2<i64>) -> bool {
+    pub fn contains_point2(&self, point: Vector2<i64>) -> bool {
         point.inside_polygon(&self.vertices)
     }
 }

@@ -3,15 +3,37 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use derive_getters::Getters;
+use derive_more::Constructor;
+use num_traits::Bounded;
 use rstar::{AABB, RTreeNum};
 use serde::{Deserialize, Serialize};
 
 use crate::{Vector2, Vector3};
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Getters, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(
+    Clone, Constructor, Copy, Debug, Deserialize, Eq, Getters, Ord, PartialEq, PartialOrd, Serialize,
+)]
 pub struct Rect2<T> {
-    min: Vector2<T>,
-    max: Vector2<T>,
+    pub min: Vector2<T>,
+    pub max: Vector2<T>,
+}
+
+impl<T: Copy + Ord> Rect2<T> {
+    pub fn z_extruded(self, from: T, to: T) -> Rect3<T> {
+        Rect3 {
+            min: Vector3::new(self.min.x, self.min.y, std::cmp::min(from, to)),
+            max: Vector3::new(self.max.x, self.max.y, std::cmp::max(from, to)),
+        }
+    }
+}
+
+impl<T: Bounded + Copy> Rect2<T> {
+    pub fn z_extruded_infinitely(self) -> Rect3<T> {
+        Rect3 {
+            min: Vector3::new(self.min.x, self.min.y, Bounded::min_value()),
+            max: Vector3::new(self.max.x, self.max.y, Bounded::max_value()),
+        }
+    }
 }
 
 impl<T: Copy> Rect2<T> {
@@ -25,18 +47,9 @@ impl<T: Copy> Rect2<T> {
     }
 }
 
-impl<T: Copy + Ord> Rect2<T> {
-    pub fn new(from: Vector2<T>, to: Vector2<T>) -> Self {
-        Self {
-            min: Vector2::new(std::cmp::min(from.x, to.x), std::cmp::min(from.y, to.y)),
-            max: Vector2::new(std::cmp::max(from.x, to.x), std::cmp::max(from.y, to.y)),
-        }
-    }
-}
-
 impl<T: RTreeNum> Rect2<T> {
-    pub fn aabb3(self, z: T) -> AABB<[T; 3]> {
-        AABB::from_corners([self.min.x, self.min.y, z], [self.max.x, self.max.y, z])
+    pub fn aabb(self) -> AABB<[T; 2]> {
+        AABB::from_corners([self.min.x, self.min.y], [self.max.x, self.max.y])
     }
 }
 
@@ -172,8 +185,8 @@ impl_rect2_intersects_polygon!(f64);
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Getters, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Rect3<T> {
-    min: Vector3<T>,
-    max: Vector3<T>,
+    pub min: Vector3<T>,
+    pub max: Vector3<T>,
 }
 
 impl<T: Ord + Copy> Rect3<T> {
@@ -194,13 +207,13 @@ impl<T: Ord + Copy> Rect3<T> {
 }
 
 impl<T: Copy + Ord> Rect3<T> {
-    pub fn rect2(&self) -> Rect2<T> {
+    pub fn xy(self) -> Rect2<T> {
         Rect2::new(self.min.xy(), self.max.xy())
     }
 }
 
 impl<T: RTreeNum> Rect3<T> {
-    pub fn aabb3(&self) -> AABB<[T; 3]> {
+    pub fn aabb(self) -> AABB<[T; 3]> {
         AABB::from_corners(
             [self.min.x, self.min.y, self.min.z],
             [self.max.x, self.max.y, self.max.z],

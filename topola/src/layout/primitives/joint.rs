@@ -72,7 +72,7 @@ impl Joint {
         ))
     }
 
-    pub fn contains_point(&self, point: Vector2<i64>) -> bool {
+    pub fn contains_point2(&self, point: Vector2<i64>) -> bool {
         (point.x - self.spec.position.x).pow(2) as u64
             + (point.y - self.spec.position.y).pow(2) as u64
             <= self.spec.radius.pow(2)

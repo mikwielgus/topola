@@ -57,7 +57,7 @@ impl Segment {
         (self.endpoints[0] + self.endpoints[1]) / 2
     }
 
-    pub fn contains_point(&self, point: Vector2<i64>) -> bool {
+    pub fn contains_point2(&self, point: Vector2<i64>) -> bool {
         let vertices = crate::math::inflated_segment(
             self.endpoints[0].x,
             self.endpoints[0].y,

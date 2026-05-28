@@ -47,25 +47,16 @@ impl SelectionInteractor {
 
         if input.release && input.pointer == self.origin {
             let mut selection = self.original_selection.clone();
+            let point = Vector3::new(input.pointer.x, input.pointer.y, layer.index() as i64);
 
             // Pins have intentional precedence over nets and components.
-            if let Some(pin_selector) = board.locate_pin_at_point(Vector3::new(
-                input.pointer.x,
-                input.pointer.y,
-                layer.index() as i64,
-            )) {
+            if let Some(pin_selector) = board.locate_pins_prefer_layer_at_point(point).next() {
                 selection.pins.xor(std::iter::once(pin_selector));
-            } else if let Some(net_selector) = board.locate_net_at_point(Vector3::new(
-                input.pointer.x,
-                input.pointer.y,
-                layer.index() as i64,
-            )) {
+            } else if let Some(net_selector) = board.locate_nets_prefer_layer_at_point(point).next() {
                 selection.nets.xor(std::iter::once(net_selector));
-            } else if let Some(component_selector) = board.locate_component_at_point(Vector3::new(
-                input.pointer.x,
-                input.pointer.y,
-                layer.index() as i64,
-            )) {
+            } else if let Some(component_selector) =
+                board.locate_components_prefer_layer_at_point(point).next()
+            {
                 selection
                     .components
                     .xor(std::iter::once(component_selector));

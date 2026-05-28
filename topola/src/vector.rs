@@ -5,7 +5,10 @@
 use derive_more::{
     Add, AddAssign, Constructor, Div, DivAssign, From, Into, Mul, MulAssign, Sub, SubAssign,
 };
+use num_traits::Bounded;
 use serde::{Deserialize, Serialize};
+
+use crate::Rect3;
 
 #[derive(
     Add,
@@ -34,40 +37,6 @@ pub struct Vector2<T> {
     pub y: T,
 }
 
-#[derive(
-    Add,
-    AddAssign,
-    Clone,
-    Constructor,
-    Copy,
-    Debug,
-    Deserialize,
-    Div,
-    DivAssign,
-    Eq,
-    From,
-    Into,
-    Mul,
-    MulAssign,
-    Ord,
-    PartialEq,
-    PartialOrd,
-    Serialize,
-    Sub,
-    SubAssign,
-)]
-pub struct Vector3<T> {
-    pub x: T,
-    pub y: T,
-    pub z: T,
-}
-
-impl<T: Copy> Vector3<T> {
-    pub fn xy(self) -> Vector2<T> {
-        Vector2::new(self.x, self.y)
-    }
-}
-
 impl<T: Copy> From<[T; 2]> for Vector2<T> {
     fn from(from: [T; 2]) -> Self {
         Self {
@@ -80,6 +49,24 @@ impl<T: Copy> From<[T; 2]> for Vector2<T> {
 impl<T: Copy> From<Vector2<T>> for [T; 2] {
     fn from(from: Vector2<T>) -> Self {
         [from.x, from.y]
+    }
+}
+
+impl<T: Copy + Ord> Vector2<T> {
+    pub fn z_extruded(self, from: T, to: T) -> Rect3<T> {
+        Rect3 {
+            min: Vector3::new(self.x, self.y, std::cmp::min(from, to)),
+            max: Vector3::new(self.x, self.y, std::cmp::max(from, to)),
+        }
+    }
+}
+
+impl<T: Bounded + Copy> Vector2<T> {
+    pub fn z_extruded_infinitely(self) -> Rect3<T> {
+        Rect3 {
+            min: Vector3::new(self.x, self.y, Bounded::min_value()),
+            max: Vector3::new(self.x, self.y, Bounded::max_value()),
+        }
     }
 }
 
@@ -216,3 +203,37 @@ impl_polygon_centroid!(u32);
 impl_polygon_centroid!(u64);
 impl_polygon_centroid!(f32);
 impl_polygon_centroid!(f64);
+
+#[derive(
+    Add,
+    AddAssign,
+    Clone,
+    Constructor,
+    Copy,
+    Debug,
+    Deserialize,
+    Div,
+    DivAssign,
+    Eq,
+    From,
+    Into,
+    Mul,
+    MulAssign,
+    Ord,
+    PartialEq,
+    PartialOrd,
+    Serialize,
+    Sub,
+    SubAssign,
+)]
+pub struct Vector3<T> {
+    pub x: T,
+    pub y: T,
+    pub z: T,
+}
+
+impl<T: Copy> Vector3<T> {
+    pub fn xy(self) -> Vector2<T> {
+        Vector2::new(self.x, self.y)
+    }
+}
