@@ -3,10 +3,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use derive_more::{Constructor, From};
-use rstar::{AABB, Envelope, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
-use crate::layout::LayerId;
+use crate::{Rect3, Vector3, layout::LayerId};
 use crate::layout::compounds::{ComponentId, NetId, PinId};
 use crate::vector::Vector2;
 
@@ -44,17 +43,26 @@ pub struct Polygon {
 }
 
 impl Polygon {
-    pub fn bbox(&self) -> Rectangle<[i64; 3]> {
-        Rectangle::from_aabb(self.vertices.clone().into_iter().fold(
-            AABB::new_empty(),
-            |aabb, vertex| {
-                aabb.merged(&AABB::from_point([
-                    vertex.x,
-                    vertex.y,
-                    self.layer.index() as i64,
-                ]))
-            },
-        ))
+    pub fn bbox(&self) -> Rect3<i64> {
+        let layer = self.layer.index() as i64;
+        let mut min = Vector2::new(i64::MAX, i64::MAX);
+        let mut max = Vector2::new(i64::MIN, i64::MIN);
+
+        for vertex in &self.vertices {
+            min.x = std::cmp::min(min.x, vertex.x);
+            min.y = std::cmp::min(min.y, vertex.y);
+            max.x = std::cmp::max(max.x, vertex.x);
+            max.y = std::cmp::max(max.y, vertex.y);
+        }
+
+        if self.vertices.is_empty() {
+            return Rect3::new(Vector3::new(0, 0, layer), Vector3::new(0, 0, layer));
+        }
+
+        Rect3::new(
+            Vector3::new(min.x, min.y, layer),
+            Vector3::new(max.x, max.y, layer),
+        )
     }
 
     pub fn center(&self) -> Vector2<i64> {

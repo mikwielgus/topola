@@ -36,19 +36,19 @@ impl MasterInteractor {
 
     pub fn hold(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
         if self.select_interactor.is_none() && self.drag_move_interactor.is_none() {
-            /*if board.selected_components_contain_point(&self.selection.components, input.pointer) {
+            if board.components_contain_point(&self.selection.components, pointer) {
                 self.drag_move_interactor = Some(DragMoveInteractor::new(
-                    input.pointer,
+                    pointer,
                     layer,
                     self.selection.components.clone(),
                 ));
-            } else {*/
-            self.select_interactor = Some(SelectInteractor::new(
-                pointer,
-                self.selection.clone(),
-                SelectionCombineMode::Replace,
-            ));
-            //}
+            } else {
+                self.select_interactor = Some(SelectInteractor::new(
+                    pointer,
+                    self.selection.clone(),
+                    SelectionCombineMode::Replace,
+                ));
+            }
         }
 
         if let Some(drag_move_interactor) = self.drag_move_interactor.as_mut() {

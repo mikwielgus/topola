@@ -243,17 +243,11 @@ impl Display {
             }
 
             for joint_id in layout.layer_joints(layer) {
-                let joint = layout.joint(joint_id);
+                let bbox = layout.joint(joint_id).bbox();
                 ui.painter().rect_stroke(
                     egui::Rect {
-                        min: egui::pos2(
-                            joint.bbox().lower()[0] as f32,
-                            joint.bbox().lower()[1] as f32,
-                        ),
-                        max: egui::pos2(
-                            joint.bbox().upper()[0] as f32,
-                            joint.bbox().upper()[1] as f32,
-                        ),
+                        min: egui::pos2(bbox.min.x as f32, bbox.min.y as f32),
+                        max: egui::pos2(bbox.max.x as f32, bbox.max.y as f32),
                     },
                     egui::CornerRadius::ZERO,
                     egui::Stroke::new(5.0, egui::Color32::GRAY),
@@ -281,8 +275,8 @@ impl Display {
 
                 ui.painter().rect_stroke(
                     egui::Rect {
-                        min: egui::pos2(bbox.lower()[0] as f32, bbox.lower()[1] as f32),
-                        max: egui::pos2(bbox.upper()[0] as f32, bbox.upper()[1] as f32),
+                        min: egui::pos2(bbox.min.x as f32, bbox.min.y as f32),
+                        max: egui::pos2(bbox.max.x as f32, bbox.max.y as f32),
                     },
                     egui::CornerRadius::ZERO,
                     egui::Stroke::new(5.0, egui::Color32::GRAY),
@@ -296,8 +290,8 @@ impl Display {
 
                 ui.painter().rect_stroke(
                     egui::Rect {
-                        min: egui::pos2(bbox.lower()[0] as f32, bbox.lower()[1] as f32),
-                        max: egui::pos2(bbox.upper()[0] as f32, bbox.upper()[1] as f32),
+                        min: egui::pos2(bbox.min.x as f32, bbox.min.y as f32),
+                        max: egui::pos2(bbox.max.x as f32, bbox.max.y as f32),
                     },
                     egui::CornerRadius::ZERO,
                     egui::Stroke::new(5.0, egui::Color32::GRAY),

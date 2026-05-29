@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use undoredo::FlushDelta;
+
 use crate::{Autorouter, Board, selections::PersistableSelection};
 
 pub enum Workspace {
@@ -10,7 +12,9 @@ pub enum Workspace {
 }
 
 impl Workspace {
-    pub fn new_board(board: Board) -> Self {
+    pub fn new_board(mut board: Board) -> Self {
+        board.flush_delta();
+
         Self::Board(BoardWorkspace::new(board))
     }
 

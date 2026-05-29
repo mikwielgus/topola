@@ -3,10 +3,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use derive_more::{Constructor, From};
-use rstar::{AABB, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
-use crate::layout::LayerId;
+use crate::{Rect3, Vector3, layout::LayerId};
 use crate::layout::compounds::{ComponentId, NetId, PinId};
 use crate::primitives::{SegmentId, ViaId};
 use crate::vector::Vector2;
@@ -57,19 +56,22 @@ impl Joint {
         self.spec.position
     }
 
-    pub fn bbox(&self) -> Rectangle<[i64; 3]> {
-        Rectangle::from_aabb(AABB::from_corners(
-            [
-                self.spec.position.x - self.spec.radius as i64,
-                self.spec.position.y - self.spec.radius as i64,
-                self.spec.layer.index() as i64,
-            ],
-            [
-                self.spec.position.x + self.spec.radius as i64,
-                self.spec.position.y + self.spec.radius as i64,
-                self.spec.layer.index() as i64,
-            ],
-        ))
+    pub fn bbox(&self) -> Rect3<i64> {
+        let radius = self.spec.radius as i64;
+        let layer = self.spec.layer.index() as i64;
+
+        Rect3::new(
+            Vector3::new(
+                self.spec.position.x - radius,
+                self.spec.position.y - radius,
+                layer,
+            ),
+            Vector3::new(
+                self.spec.position.x + radius,
+                self.spec.position.y + radius,
+                layer,
+            ),
+        )
     }
 
     pub fn contains_point2(&self, point: Vector2<i64>) -> bool {

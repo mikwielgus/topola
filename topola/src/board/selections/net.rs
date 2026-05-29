@@ -38,7 +38,7 @@ impl NetSelection {
         }
     }
 
-    pub fn xor(&mut self, selectors: impl IntoIterator<Item = NetSelector>) {
+    pub fn toggle(&mut self, selectors: impl IntoIterator<Item = NetSelector>) {
         for selector in selectors {
             if self.0.contains(&selector) {
                 self.0.remove(&selector);

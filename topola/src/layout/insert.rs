@@ -37,7 +37,7 @@ impl Layout {
         let joint_id = JointId::new(self.joints.push(joint));
 
         self.joints_rtree
-            .insert(GeomWithData::new(bbox, joint_id), ());
+            .insert(GeomWithData::new(bbox.rtree_rectangle(), joint_id), ());
 
         if let Some(component_id) = component_id {
             self.components.modify(component_id.index(), |component| {
@@ -81,7 +81,7 @@ impl Layout {
             });
 
         self.segments_rtree
-            .insert(GeomWithData::new(bbox, segment_id), ());
+            .insert(GeomWithData::new(bbox.rtree_rectangle(), segment_id), ());
 
         if let Some(component_id) = component_id {
             self.components.modify(component_id.index(), |component| {
@@ -122,7 +122,8 @@ impl Layout {
             joint.vias.push(via_id)
         });
 
-        self.vias_rtree.insert(GeomWithData::new(bbox, via_id), ());
+        self.vias_rtree
+            .insert(GeomWithData::new(bbox.rtree_rectangle(), via_id), ());
 
         if let Some(component_id) = component_id {
             self.components.modify(component_id.index(), |component| {
@@ -145,7 +146,7 @@ impl Layout {
         let polygon_id = PolygonId::new(self.polygons.push(polygon));
 
         self.polygons_rtree
-            .insert(GeomWithData::new(bbox, polygon_id), ());
+            .insert(GeomWithData::new(bbox.rtree_rectangle(), polygon_id), ());
 
         if let Some(component_id) = component_id {
             self.components.modify(component_id.index(), |component| {

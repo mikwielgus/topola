@@ -3,10 +3,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use derive_more::{Constructor, From};
-use rstar::{AABB, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
-use crate::layout::LayerId;
+use crate::{Rect3, Vector3, layout::LayerId};
 use crate::layout::compounds::{ComponentId, NetId, PinId};
 use crate::vector::Vector2;
 
@@ -59,20 +58,20 @@ impl Via {
             <= self.spec.radius.pow(2)
     }
 
-    pub fn bbox(&self) -> Rectangle<[i64; 3]> {
+    pub fn bbox(&self) -> Rect3<i64> {
         let radius = self.spec.radius as i64;
 
-        Rectangle::from_aabb(AABB::from_corners(
-            [
+        Rect3::new(
+            Vector3::new(
                 self.position.x - radius,
                 self.position.y - radius,
                 self.min_layer.index() as i64,
-            ],
-            [
+            ),
+            Vector3::new(
                 self.position.x + radius,
                 self.position.y + radius,
                 self.max_layer.index() as i64,
-            ],
-        ))
+            ),
+        )
     }
 }

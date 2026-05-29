@@ -24,6 +24,15 @@ impl Layout {
             for &via_id in &component.vias {
                 self.update_via(via_id);
             }
+
+            for &polygon_id in &component.polygons {
+                self.modify_polygon(polygon_id, |polygon| {
+                    polygon
+                        .vertices
+                        .iter_mut()
+                        .for_each(|vertex| *vertex += translation)
+                });
+            }
         }
     }
 }

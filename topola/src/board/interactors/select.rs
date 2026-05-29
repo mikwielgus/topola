@@ -64,16 +64,16 @@ impl SelectInteractor {
 
             // Pins have intentional precedence over nets and components.
             if let Some(pin_selector) = board.locate_pins_prefer_layer_at_point(point).next() {
-                selection.pins.xor(std::iter::once(pin_selector));
+                selection.pins.toggle(std::iter::once(pin_selector));
             } else if let Some(net_selector) = board.locate_nets_prefer_layer_at_point(point).next()
             {
-                selection.nets.xor(std::iter::once(net_selector));
+                selection.nets.toggle(std::iter::once(net_selector));
             } else if let Some(component_selector) =
                 board.locate_components_prefer_layer_at_point(point).next()
             {
                 selection
                     .components
-                    .xor(std::iter::once(component_selector));
+                    .toggle(std::iter::once(component_selector));
             }
 
             self.selection = selection;

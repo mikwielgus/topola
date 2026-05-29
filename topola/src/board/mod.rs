@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+mod bbox;
+mod contains;
 mod insert;
 pub mod interactors;
 mod layer;

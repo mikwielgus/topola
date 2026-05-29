@@ -172,13 +172,13 @@ impl DragSelectInteractor {
             SelectionCombineMode::Toggle => {
                 combined_selection
                     .components
-                    .xor(self.selection.components.0.iter().cloned());
+                    .toggle(self.selection.components.0.iter().cloned());
                 combined_selection
                     .nets
-                    .xor(self.selection.nets.0.iter().cloned());
+                    .toggle(self.selection.nets.0.iter().cloned());
                 combined_selection
                     .pins
-                    .xor(self.selection.pins.0.iter().cloned());
+                    .toggle(self.selection.pins.0.iter().cloned());
             }
         }
 

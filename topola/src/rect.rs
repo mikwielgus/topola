@@ -5,7 +5,7 @@
 use derive_getters::Getters;
 use derive_more::Constructor;
 use num_traits::Bounded;
-use rstar::{AABB, RTreeNum};
+use rstar::{AABB, RTreeNum, primitives::Rectangle};
 use serde::{Deserialize, Serialize};
 
 use crate::{Vector2, Vector3};
@@ -19,6 +19,36 @@ pub struct Rect2<T> {
 }
 
 impl<T: Copy + Ord> Rect2<T> {
+    pub fn union(self, other: Self) -> Self {
+        Self {
+            min: Vector2::new(
+                std::cmp::min(self.min.x, other.min.x),
+                std::cmp::min(self.min.y, other.min.y),
+            ),
+            max: Vector2::new(
+                std::cmp::max(self.max.x, other.max.x),
+                std::cmp::max(self.max.y, other.max.y),
+            ),
+        }
+    }
+
+    pub fn intersection(self, other: Self) -> Option<Self> {
+        let min = Vector2::new(
+            std::cmp::max(self.min.x, other.min.x),
+            std::cmp::max(self.min.y, other.min.y),
+        );
+        let max = Vector2::new(
+            std::cmp::min(self.max.x, other.max.x),
+            std::cmp::min(self.max.y, other.max.y),
+        );
+
+        if min.x > max.x || min.y > max.y {
+            return None;
+        }
+
+        Some(Self { min, max })
+    }
+
     pub fn z_extruded(self, from: T, to: T) -> Rect3<T> {
         Rect3 {
             min: Vector3::new(self.min.x, self.min.y, std::cmp::min(from, to)),
@@ -233,6 +263,40 @@ impl<T: Ord + Copy> Rect3<T> {
             ),
         }
     }
+
+    pub fn union(self, other: Self) -> Self {
+        Self {
+            min: Vector3::new(
+                std::cmp::min(self.min.x, other.min.x),
+                std::cmp::min(self.min.y, other.min.y),
+                std::cmp::min(self.min.z, other.min.z),
+            ),
+            max: Vector3::new(
+                std::cmp::max(self.max.x, other.max.x),
+                std::cmp::max(self.max.y, other.max.y),
+                std::cmp::max(self.max.z, other.max.z),
+            ),
+        }
+    }
+
+    pub fn intersection(self, other: Self) -> Option<Self> {
+        let min = Vector3::new(
+            std::cmp::max(self.min.x, other.min.x),
+            std::cmp::max(self.min.y, other.min.y),
+            std::cmp::max(self.min.z, other.min.z),
+        );
+        let max = Vector3::new(
+            std::cmp::min(self.max.x, other.max.x),
+            std::cmp::min(self.max.y, other.max.y),
+            std::cmp::min(self.max.z, other.max.z),
+        );
+
+        if min.x > max.x || min.y > max.y || min.z > max.z {
+            return None;
+        }
+
+        Some(Self { min, max })
+    }
 }
 
 impl<T: Copy + Ord> Rect3<T> {
@@ -247,5 +311,9 @@ impl<T: RTreeNum> Rect3<T> {
             [self.min.x, self.min.y, self.min.z],
             [self.max.x, self.max.y, self.max.z],
         )
+    }
+
+    pub fn rtree_rectangle(self) -> Rectangle<[T; 3]> {
+        Rectangle::from_aabb(self.aabb())
     }
 }

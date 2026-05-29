@@ -35,7 +35,7 @@ impl PinSelection {
         }
     }
 
-    pub fn xor(&mut self, selectors: impl IntoIterator<Item = PinSelector>) {
+    pub fn toggle(&mut self, selectors: impl IntoIterator<Item = PinSelector>) {
         for selector in selectors {
             if self.0.contains(&selector) {
                 self.0.remove(&selector);

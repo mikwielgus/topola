@@ -32,7 +32,7 @@ impl ComponentSelection {
         }
     }
 
-    pub fn xor(&mut self, selectors: impl IntoIterator<Item = ComponentSelector>) {
+    pub fn toggle(&mut self, selectors: impl IntoIterator<Item = ComponentSelector>) {
         for selector in selectors {
             if self.0.contains(&selector) {
                 self.0.remove(&selector);

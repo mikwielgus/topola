@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+mod bbox;
 pub mod compounds;
 mod delete;
 mod insert;
@@ -21,9 +22,9 @@ use stable_vec::StableVec;
 use undoredo::aliases::RTreeHalfDelta;
 use undoredo::{Delta, Recorder};
 
-use crate::{
-    layout::compounds::{Component, Pin, PinId},
-    layout::primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
+use crate::layout::{
+    compounds::{Component, ComponentId, Pin, PinId},
+    primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
 };
 
 #[derive(
@@ -152,6 +153,14 @@ impl Layout {
         )
     }
 
+    pub fn component(&self, component_id: ComponentId) -> &Component {
+        &self.components[component_id.index()]
+    }
+
+    pub fn pin(&self, pin_id: PinId) -> &Pin {
+        &self.pins[pin_id.index()]
+    }
+
     pub fn joint(&self, joint_id: JointId) -> &Joint {
         &self.joints[joint_id.index()]
     }
@@ -166,9 +175,5 @@ impl Layout {
 
     pub fn polygon(&self, polygon_id: PolygonId) -> &Polygon {
         &self.polygons[polygon_id.index()]
-    }
-
-    pub fn pin(&self, pin_id: PinId) -> &Pin {
-        &self.pins[pin_id.index()]
     }
 }

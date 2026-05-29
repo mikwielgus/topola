@@ -3,10 +3,9 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use derive_more::{Constructor, From};
-use rstar::primitives::Rectangle;
 use serde::{Deserialize, Serialize};
 
-use crate::layout::LayerId;
+use crate::{Rect3, Vector3, layout::LayerId};
 use crate::layout::compounds::{ComponentId, NetId, PinId};
 use crate::vector::Vector2;
 
@@ -80,16 +79,22 @@ impl Segment {
         )
     }
 
-    pub fn bbox(&self) -> Rectangle<[i64; 3]> {
+    pub fn bbox(&self) -> Rect3<i64> {
         let endpoints = self.endpoints;
         let layer = self.layer.index() as i64;
         let half_width = self.spec.half_width as i64;
 
-        let min_x = std::cmp::min(endpoints[0].x, endpoints[1].x) - half_width;
-        let min_y = std::cmp::min(endpoints[0].y, endpoints[1].y) - half_width;
-        let max_x = std::cmp::max(endpoints[0].x, endpoints[1].x) + half_width;
-        let max_y = std::cmp::max(endpoints[0].y, endpoints[1].y) + half_width;
-
-        Rectangle::from_corners([min_x, min_y, layer], [max_x, max_y, layer])
+        Rect3::new(
+            Vector3::new(
+                std::cmp::min(endpoints[0].x, endpoints[1].x) - half_width,
+                std::cmp::min(endpoints[0].y, endpoints[1].y) - half_width,
+                layer,
+            ),
+            Vector3::new(
+                std::cmp::max(endpoints[0].x, endpoints[1].x) + half_width,
+                std::cmp::max(endpoints[0].y, endpoints[1].y) + half_width,
+                layer,
+            ),
+        )
     }
 }

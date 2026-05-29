@@ -32,7 +32,8 @@ impl Layout {
             });
         }
 
-        self.joints_rtree.remove(&GeomWithData::new(bbox, joint_id));
+        self.joints_rtree
+            .remove(&GeomWithData::new(bbox.rtree_rectangle(), joint_id));
         self.joints.remove(&joint_id.index());
     }
 
@@ -63,7 +64,7 @@ impl Layout {
         }
 
         self.segments_rtree
-            .remove(&GeomWithData::new(bbox, segment_id));
+            .remove(&GeomWithData::new(bbox.rtree_rectangle(), segment_id));
         self.segments.remove(&segment_id.index());
     }
 
@@ -89,7 +90,8 @@ impl Layout {
             });
         }
 
-        self.vias_rtree.remove(&GeomWithData::new(bbox, via_id));
+        self.vias_rtree
+            .remove(&GeomWithData::new(bbox.rtree_rectangle(), via_id));
         self.vias.remove(&via_id.index());
     }
 
@@ -120,7 +122,7 @@ impl Layout {
         }
 
         self.polygons_rtree
-            .remove(&GeomWithData::new(bbox, polygon_id));
+            .remove(&GeomWithData::new(bbox.rtree_rectangle(), polygon_id));
         self.polygons.remove(&polygon_id.index());
     }
 }
