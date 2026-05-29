@@ -10,33 +10,33 @@ use crate::{
     Rect3, Vector2, Vector3,
     board::{
         Board,
-        interactors::{InteractiveInput, SelectionCombineMode, SelectionContainMode},
+        interactors::{SelectionCombineMode, SelectionContainMode},
         selections::PersistableSelection,
     },
     layout::LayerId,
 };
 
-#[derive(Clone, Constructor, Debug, Deserialize, Eq, PartialEq, Serialize)]
-pub struct DragSelectionOptions {
+#[derive(Clone, Constructor, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+pub struct DragSelectOptions {
     combine: SelectionCombineMode,
     contain: SelectionContainMode,
 }
 
 #[derive(Clone, Debug, Eq, Getters, PartialEq)]
-pub struct DragSelectionInteractor {
+pub struct DragSelectInteractor {
     origin: Vector2<i64>,
     layer: LayerId,
     original_selection: PersistableSelection,
     selection: PersistableSelection,
-    options: DragSelectionOptions,
+    options: DragSelectOptions,
 }
 
-impl DragSelectionInteractor {
+impl DragSelectInteractor {
     pub fn new(
         origin: Vector2<i64>,
         layer: LayerId,
         original_selection: PersistableSelection,
-        options: DragSelectionOptions,
+        options: DragSelectOptions,
     ) -> Self {
         Self {
             origin,
@@ -47,17 +47,16 @@ impl DragSelectionInteractor {
         }
     }
 
-    pub fn update(&mut self, board: &Board, input: InteractiveInput) {
-        if input.cancel {
-            self.selection = self.original_selection.clone();
-            return;
-        }
+    pub fn abort(&mut self) {
+        self.selection = self.original_selection.clone();
+    }
 
+    pub fn hold(&mut self, board: &Board, pointer: Vector2<i64>) {
         self.selection = PersistableSelection::new();
 
         let rect = Rect3::new(
             Vector3::new(self.origin.x, self.origin.y, self.layer.index() as i64),
-            Vector3::new(input.pointer.x, input.pointer.y, self.layer.index() as i64),
+            Vector3::new(pointer.x, pointer.y, self.layer.index() as i64),
         );
 
         let all_belong_to_pins = match self.options.contain {

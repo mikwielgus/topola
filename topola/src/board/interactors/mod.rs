@@ -2,25 +2,16 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-mod drag_selection;
+mod drag_move;
+mod drag_select;
 mod master;
-mod selection;
+mod select;
 
-use derive_more::Constructor;
-pub use drag_selection::{DragSelectionInteractor, DragSelectionOptions};
+pub use drag_move::DragMoveInteractor;
+pub use drag_select::{DragSelectInteractor, DragSelectOptions};
 pub use master::MasterInteractor;
-pub use selection::SelectionInteractor;
+pub use select::SelectInteractor;
 use serde::{Deserialize, Serialize};
-
-use crate::Vector2;
-
-#[derive(Clone, Constructor, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
-pub struct InteractiveInput {
-    pointer: Vector2<i64>,
-    release: bool,
-    delete: bool,
-    cancel: bool,
-}
 
 #[derive(Clone, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum SelectionCombineMode {

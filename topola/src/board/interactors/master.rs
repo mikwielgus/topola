@@ -3,45 +3,85 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use derive_getters::Getters;
-use derive_more::Constructor;
 
 use crate::{
-    InteractiveInput,
+    Vector2,
     board::{
         Board,
-        interactors::{SelectionCombineMode, SelectionInteractor},
+        interactors::{DragMoveInteractor, SelectInteractor, SelectionCombineMode},
         selections::PersistableSelection,
     },
     layout::LayerId,
 };
 
-#[derive(Clone, Constructor, Debug, Eq, Getters, PartialEq)]
+#[derive(Clone, Debug, Eq, Getters, PartialEq)]
 pub struct MasterInteractor {
-    selection_interactor: Option<SelectionInteractor>,
+    select_interactor: Option<SelectInteractor>,
+    drag_move_interactor: Option<DragMoveInteractor>,
     selection: PersistableSelection,
 }
 
 impl MasterInteractor {
-    pub fn update(&mut self, board: &mut Board, layer: LayerId, input: InteractiveInput) {
-        if input.delete {
-            board.delete_net_free_primitives(self.selection.nets.clone());
+    pub fn new(selection: PersistableSelection) -> Self {
+        Self {
+            select_interactor: None,
+            drag_move_interactor: None,
+            selection,
         }
+    }
 
-        if self.selection_interactor.is_none() {
-            self.selection_interactor = Some(SelectionInteractor::new(
-                input.pointer,
+    pub fn delete(&mut self, board: &mut Board) {
+        board.delete_net_free_primitives(self.selection.nets.clone());
+    }
+
+    pub fn hold(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
+        if self.select_interactor.is_none() && self.drag_move_interactor.is_none() {
+            /*if board.selected_components_contain_point(&self.selection.components, input.pointer) {
+                self.drag_move_interactor = Some(DragMoveInteractor::new(
+                    input.pointer,
+                    layer,
+                    self.selection.components.clone(),
+                ));
+            } else {*/
+            self.select_interactor = Some(SelectInteractor::new(
+                pointer,
                 self.selection.clone(),
                 SelectionCombineMode::Replace,
             ));
+            //}
         }
 
-        if let Some(selection_interactor) = self.selection_interactor.as_mut() {
-            selection_interactor.update(board, layer, input.clone());
-            self.selection = selection_interactor.selection().clone();
+        if let Some(drag_move_interactor) = self.drag_move_interactor.as_mut() {
+            drag_move_interactor.hold(board, pointer);
+        } else if let Some(select_interactor) = self.select_interactor.as_mut() {
+            select_interactor.hold(board, layer, pointer);
+            self.selection = select_interactor.selection().clone();
+        }
+    }
+
+    pub fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
+        if let Some(drag_move_interactor) = self.drag_move_interactor.as_mut() {
+            drag_move_interactor.release(board, pointer);
+        } else if let Some(select_interactor) = self.select_interactor.as_mut() {
+            select_interactor.release(board, layer, pointer);
+            self.selection = select_interactor.selection().clone();
         }
 
-        if input.release || input.cancel {
-            self.selection_interactor = None;
+        self.select_interactor = None;
+        self.drag_move_interactor = None;
+    }
+
+    pub fn abort(&mut self, board: &mut Board) {
+        if let Some(drag_move_interactor) = self.drag_move_interactor.as_mut() {
+            drag_move_interactor.abort(board);
         }
+
+        if let Some(select_interactor) = self.select_interactor.as_mut() {
+            select_interactor.abort();
+            self.selection = select_interactor.original_selection().clone();
+        }
+
+        self.select_interactor = None;
+        self.drag_move_interactor = None;
     }
 }

@@ -22,8 +22,8 @@ pub use crate::board::LayerDesc;
 pub use crate::board::LayerSide;
 pub use crate::board::LayerType;
 pub use crate::board::interactors::{
-    DragSelectionInteractor, DragSelectionOptions, InteractiveInput, MasterInteractor,
-    SelectionCombineMode, SelectionContainMode, SelectionInteractor,
+    DragSelectInteractor, DragSelectOptions, MasterInteractor, SelectInteractor,
+    SelectionCombineMode, SelectionContainMode,
 };
 pub use crate::board::selections;
 pub use crate::layout::LayerId;

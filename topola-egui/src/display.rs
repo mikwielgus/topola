@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{viewport::Viewport, workspace::GuiWorkspace};
+use topola::Workspace;
 use topola::primitives::{Joint, Polygon, Segment, Via};
-use topola::{LayerId, Workspace};
 
 pub struct Display {}
 
@@ -102,8 +102,8 @@ impl Display {
                     board.pins_contain_via(&workspace.workspace.selection().pins, via_id);
                 let net_selected =
                     board.nets_contain_via(&workspace.workspace.selection().nets, via_id);
-                let component_selected =
-                    board.components_contain_via(&workspace.workspace.selection().components, via_id);
+                let component_selected = board
+                    .components_contain_via(&workspace.workspace.selection().components, via_id);
                 self.paint_via(
                     ctx,
                     ui,

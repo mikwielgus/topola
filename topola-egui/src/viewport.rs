@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use egui::Pos2;
-use topola::{InteractiveInput, MasterInteractor, Vector2, Workspace};
+use topola::{MasterInteractor, Vector2, Workspace};
 
 use crate::{display::Display, workspace::GuiWorkspace};
 
@@ -51,7 +51,16 @@ impl Viewport {
                     Self::fit_to_rect_in_scene(viewport_rect, scene_rect, zoom_range.into());
 
                 if let Some(workspace) = workspace {
-                    if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
+                    let escape_pressed = ctx.input(|i| i.key_pressed(egui::Key::Escape));
+                    if escape_pressed {
+                        if let Some(interactor) = self.master_interactor.as_mut() {
+                            let board = match &mut workspace.workspace {
+                                Workspace::Board(workspace) => &mut workspace.board,
+                                Workspace::Autorouter(_) => panic!("expected board workspace"),
+                            };
+                            interactor.abort(board);
+                            *workspace.workspace.selection_mut() = interactor.selection().clone();
+                        }
                         self.master_interactor = None;
                     }
 
@@ -75,7 +84,6 @@ impl Viewport {
 
                         if primary_pressed && response.hovered() {
                             self.master_interactor = Some(MasterInteractor::new(
-                                None,
                                 workspace.workspace.selection().clone(),
                             ));
                         }
@@ -86,16 +94,16 @@ impl Viewport {
                                     Workspace::Board(workspace) => &mut workspace.board,
                                     Workspace::Autorouter(_) => panic!("expected board workspace"),
                                 };
-                                interactor.update(
+                                interactor.hold(
                                     board,
                                     workspace.appearance_panel.active,
-                                    InteractiveInput::new(pointer_on_scene, false, false, false),
+                                    pointer_on_scene,
                                 );
 
-                                if let Some(selection_interactor) =
-                                    interactor.selection_interactor().as_ref()
+                                if let Some(select_interactor) =
+                                    interactor.select_interactor().as_ref()
                                 {
-                                    let origin = *selection_interactor.origin();
+                                    let origin = *select_interactor.origin();
                                     let drag_rect_scene = egui::Rect::from_min_max(
                                         egui::pos2(
                                             origin.x.min(pointer_on_scene.x) as f32,
@@ -133,19 +141,19 @@ impl Viewport {
                         if let Some(mut interactor) = self.master_interactor.take() {
                             let pointer_for_scene = maybe_pointer_on_scene.unwrap_or_else(|| {
                                 interactor
-                                    .selection_interactor()
+                                    .select_interactor()
                                     .as_ref()
-                                    .map(|selection_interactor| *selection_interactor.origin())
+                                    .map(|select_interactor| *select_interactor.origin())
                                     .unwrap_or(Vector2::new(0, 0))
                             });
                             let board = match &mut workspace.workspace {
                                 Workspace::Board(workspace) => &mut workspace.board,
                                 Workspace::Autorouter(_) => panic!("expected board workspace"),
                             };
-                            interactor.update(
+                            interactor.release(
                                 board,
                                 workspace.appearance_panel.active,
-                                InteractiveInput::new(pointer_for_scene, true, false, false),
+                                pointer_for_scene,
                             );
 
                             *workspace.workspace.selection_mut() = interactor.selection().clone();
@@ -153,19 +161,13 @@ impl Viewport {
                     }
 
                     if delete_pressed {
-                        let pointer_for_scene =
-                            maybe_pointer_on_scene.unwrap_or(Vector2::new(0, 0));
                         let mut interactor =
-                            MasterInteractor::new(None, workspace.workspace.selection().clone());
+                            MasterInteractor::new(workspace.workspace.selection().clone());
                         let board = match &mut workspace.workspace {
                             Workspace::Board(workspace) => &mut workspace.board,
                             Workspace::Autorouter(_) => panic!("expected board workspace"),
                         };
-                        interactor.update(
-                            board,
-                            workspace.appearance_panel.active,
-                            InteractiveInput::new(pointer_for_scene, false, true, false),
-                        );
+                        interactor.delete(board);
                         *workspace.workspace.selection_mut() = interactor.selection().clone();
                     }
 
