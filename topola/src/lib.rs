@@ -4,6 +4,7 @@
 
 mod autorouter;
 mod board;
+mod compass;
 mod drawer;
 mod layout;
 mod math;

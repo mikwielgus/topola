@@ -5,10 +5,10 @@
 use derive_more::{Constructor, From};
 use serde::{Deserialize, Serialize};
 
-use crate::{Rect3, Vector3, layout::LayerId};
 use crate::layout::compounds::{ComponentId, NetId, PinId};
 use crate::primitives::{SegmentId, ViaId};
 use crate::vector::Vector2;
+use crate::{Rect3, Vector3, layout::LayerId};
 
 #[derive(
     Clone,

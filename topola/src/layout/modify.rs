@@ -39,8 +39,10 @@ impl Layout {
         self.joints.modify(id.index(), |joint| f(joint));
 
         let new_joint = self.joints[id.index()].clone();
-        self.joints_rtree
-            .insert(GeomWithData::new(new_joint.bbox().rtree_rectangle(), id), ());
+        self.joints_rtree.insert(
+            GeomWithData::new(new_joint.bbox().rtree_rectangle(), id),
+            (),
+        );
     }
 
     pub fn modify_segment<F>(&mut self, id: SegmentId, f: F)
@@ -55,8 +57,10 @@ impl Layout {
             .modify(id.index(), |segment| f(&mut segment.spec));
 
         let new_segment = &self.segments[id.index()];
-        self.segments_rtree
-            .insert(GeomWithData::new(new_segment.bbox().rtree_rectangle(), id), ());
+        self.segments_rtree.insert(
+            GeomWithData::new(new_segment.bbox().rtree_rectangle(), id),
+            (),
+        );
     }
 
     pub(super) fn update_segment(&mut self, id: SegmentId) {
@@ -76,8 +80,10 @@ impl Layout {
         });
 
         let new_segment = &self.segments[id.index()];
-        self.segments_rtree
-            .insert(GeomWithData::new(new_segment.bbox().rtree_rectangle(), id), ());
+        self.segments_rtree.insert(
+            GeomWithData::new(new_segment.bbox().rtree_rectangle(), id),
+            (),
+        );
     }
 
     pub fn modify_via<F>(&mut self, id: ViaId, f: F)
@@ -128,7 +134,9 @@ impl Layout {
         self.polygons.modify(id.index(), |polygon| f(polygon));
 
         let new_polygon = &self.polygons[id.index()];
-        self.polygons_rtree
-            .insert(GeomWithData::new(new_polygon.bbox().rtree_rectangle(), id), ());
+        self.polygons_rtree.insert(
+            GeomWithData::new(new_polygon.bbox().rtree_rectangle(), id),
+            (),
+        );
     }
 }
