@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use derive_more::From;
 use serde::{Deserialize, Serialize};
 
 mod joint;
@@ -14,7 +15,7 @@ pub use polygon::*;
 pub use segment::*;
 pub use via::*;
 
-#[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
+#[derive(Clone, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum PrimitiveId {
     Joint(JointId),
     Segment(SegmentId),

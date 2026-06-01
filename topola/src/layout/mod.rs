@@ -5,6 +5,7 @@
 mod bbox;
 pub mod compounds;
 mod delete;
+mod infringement;
 mod insert;
 mod locate;
 mod modify;

@@ -49,21 +49,21 @@ impl<T: Copy + PartialOrd + Signed + Zero> CompassDirection<T> for CardinalDirec
         }
     }
 
-    fn turn_clockwise(self) -> Self {
-        match self {
-            Self::East => Self::South,
-            Self::North => Self::East,
-            Self::West => Self::North,
-            Self::South => Self::West,
-        }
-    }
-
     fn turn_counterclockwise(self) -> Self {
         match self {
             Self::East => Self::North,
             Self::North => Self::West,
             Self::West => Self::South,
             Self::South => Self::East,
+        }
+    }
+
+    fn turn_clockwise(self) -> Self {
+        match self {
+            Self::East => Self::South,
+            Self::North => Self::East,
+            Self::West => Self::North,
+            Self::South => Self::West,
         }
     }
 }
