@@ -3,14 +3,29 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
-    Board, Rect2, Vector2,
+    Rect2, Vector2,
     compass::CompassDirection,
-    layout::compounds::ComponentId,
+    layout::{Layout, compounds::ComponentId},
     orientation::Orientation,
     primitives::{JointId, PolygonId, PrimitiveId, SegmentId, ViaId},
 };
 
-impl Board {
+impl Layout {
+    pub fn locate_component_repulsions(
+        &self,
+        infringer: ComponentId,
+        orientation: Orientation,
+    ) -> impl Iterator<Item = Vector2<i64>> {
+        self.locate_component_infringements(infringer)
+            .map(move |infringement| {
+                self.component_component_repulsion(
+                    infringement.infringer(),
+                    infringement.infringee(),
+                    orientation,
+                )
+            })
+    }
+
     pub fn component_component_repulsion(
         &self,
         infringer: ComponentId,
@@ -20,8 +35,8 @@ impl Board {
         let mut max_repulsion = Vector2::new(0, 0);
         let mut max_repulsion_magnitude = 0;
 
-        for infringer_primitive in self.layout().component(infringer).primitives() {
-            for infringee_primitive in self.layout().component(infringee).primitives() {
+        for infringer_primitive in self.component(infringer).primitives() {
+            for infringee_primitive in self.component(infringee).primitives() {
                 let repulsion = self.primitive_primitive_repulsion(
                     infringer_primitive,
                     infringee_primitive,
@@ -69,8 +84,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.joint_joint_rect_overlap(infringer, infringee),
-            self.layout().joint(infringer).center(),
-            self.layout().joint(infringee).center(),
+            self.joint(infringer).center(),
+            self.joint(infringee).center(),
             orientation,
         )
     }
@@ -83,8 +98,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.joint_segment_rect_overlap(infringer, infringee),
-            self.layout().joint(infringer).center(),
-            self.layout().segment(infringee).center(),
+            self.joint(infringer).center(),
+            self.segment(infringee).center(),
             orientation,
         )
     }
@@ -97,8 +112,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.joint_via_rect_overlap(infringer, infringee),
-            self.layout().joint(infringer).center(),
-            self.layout().via(infringee).position,
+            self.joint(infringer).center(),
+            self.via(infringee).position,
             orientation,
         )
     }
@@ -111,8 +126,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.joint_polygon_rect_overlap(infringer, infringee),
-            self.layout().joint(infringer).center(),
-            self.layout().polygon(infringee).center(),
+            self.joint(infringer).center(),
+            self.polygon(infringee).center(),
             orientation,
         )
     }
@@ -147,8 +162,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.segment_joint_rect_overlap(infringer, infringee),
-            self.layout().segment(infringer).center(),
-            self.layout().joint(infringee).center(),
+            self.segment(infringer).center(),
+            self.joint(infringee).center(),
             orientation,
         )
     }
@@ -161,8 +176,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.segment_segment_rect_overlap(infringer, infringee),
-            self.layout().segment(infringer).center(),
-            self.layout().segment(infringee).center(),
+            self.segment(infringer).center(),
+            self.segment(infringee).center(),
             orientation,
         )
     }
@@ -175,8 +190,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.segment_via_rect_overlap(infringer, infringee),
-            self.layout().segment(infringer).center(),
-            self.layout().via(infringee).position,
+            self.segment(infringer).center(),
+            self.via(infringee).position,
             orientation,
         )
     }
@@ -189,8 +204,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.segment_polygon_rect_overlap(infringer, infringee),
-            self.layout().segment(infringer).center(),
-            self.layout().polygon(infringee).center(),
+            self.segment(infringer).center(),
+            self.polygon(infringee).center(),
             orientation,
         )
     }
@@ -225,8 +240,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.via_joint_rect_overlap(infringer, infringee),
-            self.layout().via(infringer).position,
-            self.layout().joint(infringee).center(),
+            self.via(infringer).position,
+            self.joint(infringee).center(),
             orientation,
         )
     }
@@ -239,8 +254,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.via_segment_rect_overlap(infringer, infringee),
-            self.layout().via(infringer).position,
-            self.layout().segment(infringee).center(),
+            self.via(infringer).position,
+            self.segment(infringee).center(),
             orientation,
         )
     }
@@ -253,8 +268,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.via_via_rect_overlap(infringer, infringee),
-            self.layout().via(infringer).position,
-            self.layout().via(infringee).position,
+            self.via(infringer).position,
+            self.via(infringee).position,
             orientation,
         )
     }
@@ -267,8 +282,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.via_polygon_rect_overlap(infringer, infringee),
-            self.layout().via(infringer).position,
-            self.layout().polygon(infringee).center(),
+            self.via(infringer).position,
+            self.polygon(infringee).center(),
             orientation,
         )
     }
@@ -303,8 +318,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.polygon_joint_rect_overlap(infringer, infringee),
-            self.layout().polygon(infringer).center(),
-            self.layout().joint(infringee).center(),
+            self.polygon(infringer).center(),
+            self.joint(infringee).center(),
             orientation,
         )
     }
@@ -317,8 +332,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.polygon_segment_rect_overlap(infringer, infringee),
-            self.layout().polygon(infringer).center(),
-            self.layout().segment(infringee).center(),
+            self.polygon(infringer).center(),
+            self.segment(infringee).center(),
             orientation,
         )
     }
@@ -331,8 +346,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.polygon_via_rect_overlap(infringer, infringee),
-            self.layout().polygon(infringer).center(),
-            self.layout().via(infringee).position,
+            self.polygon(infringer).center(),
+            self.via(infringee).position,
             orientation,
         )
     }
@@ -345,8 +360,8 @@ impl Board {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.polygon_polygon_rect_overlap(infringer, infringee),
-            self.layout().polygon(infringer).center(),
-            self.layout().polygon(infringee).center(),
+            self.polygon(infringer).center(),
+            self.polygon(infringee).center(),
             orientation,
         )
     }

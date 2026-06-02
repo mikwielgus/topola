@@ -4,7 +4,6 @@
 
 use std::collections::BTreeSet;
 
-use derive_getters::Getters;
 use derive_more::Constructor;
 use rstar::{
     AABB, RTree,
@@ -12,18 +11,28 @@ use rstar::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::board::Board;
 use crate::primitives::PrimitiveId;
 
+use super::Layout;
 use super::compounds::{ComponentId, NetId};
 use super::primitives::{JointId, PolygonId, SegmentId, ViaId};
 
 #[derive(
-    Clone, Copy, Constructor, Debug, Deserialize, Eq, Getters, Ord, PartialEq, PartialOrd, Serialize,
+    Clone, Copy, Constructor, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize,
 )]
-pub struct Infringement<I = PrimitiveId, E = PrimitiveId> {
-    infringer: I,
-    infringee: E,
+pub struct Infringement<T = PrimitiveId, U = PrimitiveId> {
+    infringer: T,
+    infringee: U,
+}
+
+impl<T: Copy, U: Copy> Infringement<T, U> {
+    pub fn infringer(&self) -> T {
+        self.infringer
+    }
+
+    pub fn infringee(&self) -> U {
+        self.infringee
+    }
 }
 
 mod sealed {
@@ -39,12 +48,12 @@ mod sealed {
     impl IntoPrimitiveId for PolygonId {}
 }
 
-impl<I: sealed::IntoPrimitiveId, E: sealed::IntoPrimitiveId> From<Infringement<I, E>>
-    for Infringement<I, PrimitiveId>
+impl<T: sealed::IntoPrimitiveId, U: sealed::IntoPrimitiveId> From<Infringement<T, U>>
+    for Infringement<T, PrimitiveId>
 where
-    E: sealed::IntoPrimitiveId,
+    U: sealed::IntoPrimitiveId,
 {
-    fn from(from: Infringement<I, E>) -> Self {
+    fn from(from: Infringement<T, U>) -> Self {
         Infringement {
             infringer: from.infringer,
             infringee: from.infringee.into(),
@@ -52,10 +61,10 @@ where
     }
 }
 
-impl<I: sealed::IntoPrimitiveId, E: sealed::IntoPrimitiveId> From<Infringement<I, E>>
+impl<T: sealed::IntoPrimitiveId, U: sealed::IntoPrimitiveId> From<Infringement<T, U>>
     for Infringement
 {
-    fn from(from: Infringement<I, E>) -> Self {
+    fn from(from: Infringement<T, U>) -> Self {
         Infringement {
             infringer: from.infringer.into(),
             infringee: from.infringee.into(),
@@ -63,8 +72,8 @@ impl<I: sealed::IntoPrimitiveId, E: sealed::IntoPrimitiveId> From<Infringement<I
     }
 }
 
-impl<I: sealed::IntoPrimitiveId> From<Infringement<I, PrimitiveId>> for Infringement {
-    fn from(from: Infringement<I, PrimitiveId>) -> Self {
+impl<T: sealed::IntoPrimitiveId> From<Infringement<T, PrimitiveId>> for Infringement {
+    fn from(from: Infringement<T, PrimitiveId>) -> Self {
         Infringement {
             infringer: from.infringer.into(),
             infringee: from.infringee,
@@ -72,15 +81,16 @@ impl<I: sealed::IntoPrimitiveId> From<Infringement<I, PrimitiveId>> for Infringe
     }
 }
 
-impl Board {
-    pub fn locate_component_component_infringements(
+impl Layout {
+    pub fn locate_component_infringements(
         &self,
         infringer: ComponentId,
     ) -> impl Iterator<Item = Infringement<ComponentId, ComponentId>> + '_ {
         let mut infringee_components = BTreeSet::new();
 
         for infringement in self.locate_component_primitive_infringements(infringer) {
-            let Some(infringee_component) = self.primitive_component(*infringement.infringee()) else {
+            let Some(infringee_component) = self.primitive_component(infringement.infringee())
+            else {
                 continue;
             };
 
@@ -93,14 +103,17 @@ impl Board {
 
         infringee_components
             .into_iter()
-            .map(move |infringee| Infringement::new(infringer, infringee))
+            .map(move |infringee| Infringement {
+                infringer,
+                infringee,
+            })
     }
 
     pub fn locate_component_primitive_infringements(
         &self,
         infringer: ComponentId,
     ) -> impl Iterator<Item = Infringement> + '_ {
-        let component = self.layout().component(infringer);
+        let component = self.component(infringer);
 
         let joint_infringements = component
             .joints
@@ -151,28 +164,28 @@ impl Board {
         &self,
         infringer: JointId,
     ) -> impl Iterator<Item = Infringement<JointId, JointId>> + '_ {
-        self.locate_same_infringements(infringer, self.layout().joints_rtree().as_ref())
+        self.locate_same_infringements(infringer, self.joints_rtree().as_ref())
     }
 
     pub fn locate_joint_segment_infringements(
         &self,
         infringer: JointId,
     ) -> impl Iterator<Item = Infringement<JointId, SegmentId>> + '_ {
-        self.locate_cross_infringements(infringer, self.layout().segments_rtree().as_ref())
+        self.locate_cross_infringements(infringer, self.segments_rtree().as_ref())
     }
 
     pub fn locate_joint_via_infringements(
         &self,
         infringer: JointId,
     ) -> impl Iterator<Item = Infringement<JointId, ViaId>> + '_ {
-        self.locate_cross_infringements(infringer, self.layout().vias_rtree().as_ref())
+        self.locate_cross_infringements(infringer, self.vias_rtree().as_ref())
     }
 
     pub fn locate_joint_polygon_infringements(
         &self,
         infringer: JointId,
     ) -> impl Iterator<Item = Infringement<JointId, PolygonId>> + '_ {
-        self.locate_cross_infringements(infringer, self.layout().polygons_rtree().as_ref())
+        self.locate_cross_infringements(infringer, self.polygons_rtree().as_ref())
     }
 
     pub fn locate_segment_infringements(
@@ -199,28 +212,28 @@ impl Board {
         &self,
         infringer: SegmentId,
     ) -> impl Iterator<Item = Infringement<SegmentId, JointId>> + '_ {
-        self.locate_cross_infringements(infringer, self.layout().joints_rtree().as_ref())
+        self.locate_cross_infringements(infringer, self.joints_rtree().as_ref())
     }
 
     pub fn locate_segment_segment_infringements(
         &self,
         infringer: SegmentId,
     ) -> impl Iterator<Item = Infringement<SegmentId, SegmentId>> + '_ {
-        self.locate_same_infringements(infringer, self.layout().segments_rtree().as_ref())
+        self.locate_same_infringements(infringer, self.segments_rtree().as_ref())
     }
 
     pub fn locate_segment_via_infringements(
         &self,
         infringer: SegmentId,
     ) -> impl Iterator<Item = Infringement<SegmentId, ViaId>> + '_ {
-        self.locate_cross_infringements(infringer, self.layout().vias_rtree().as_ref())
+        self.locate_cross_infringements(infringer, self.vias_rtree().as_ref())
     }
 
     pub fn locate_segment_polygon_infringements(
         &self,
         infringer: SegmentId,
     ) -> impl Iterator<Item = Infringement<SegmentId, PolygonId>> + '_ {
-        self.locate_cross_infringements(infringer, self.layout().polygons_rtree().as_ref())
+        self.locate_cross_infringements(infringer, self.polygons_rtree().as_ref())
     }
 
     pub fn locate_via_infringements(
@@ -244,28 +257,28 @@ impl Board {
         &self,
         infringer: ViaId,
     ) -> impl Iterator<Item = Infringement<ViaId, JointId>> + '_ {
-        self.locate_cross_infringements(infringer, self.layout().joints_rtree().as_ref())
+        self.locate_cross_infringements(infringer, self.joints_rtree().as_ref())
     }
 
     pub fn locate_via_segment_infringements(
         &self,
         infringer: ViaId,
     ) -> impl Iterator<Item = Infringement<ViaId, SegmentId>> + '_ {
-        self.locate_cross_infringements(infringer, self.layout().segments_rtree().as_ref())
+        self.locate_cross_infringements(infringer, self.segments_rtree().as_ref())
     }
 
     pub fn locate_via_via_infringements(
         &self,
         infringer: ViaId,
     ) -> impl Iterator<Item = Infringement<ViaId, ViaId>> + '_ {
-        self.locate_same_infringements(infringer, self.layout().vias_rtree().as_ref())
+        self.locate_same_infringements(infringer, self.vias_rtree().as_ref())
     }
 
     pub fn locate_via_polygon_infringements(
         &self,
         infringer: ViaId,
     ) -> impl Iterator<Item = Infringement<ViaId, PolygonId>> + '_ {
-        self.locate_cross_infringements(infringer, self.layout().polygons_rtree().as_ref())
+        self.locate_cross_infringements(infringer, self.polygons_rtree().as_ref())
     }
 
     pub fn locate_polygon_infringements(
@@ -292,39 +305,39 @@ impl Board {
         &self,
         infringer: PolygonId,
     ) -> impl Iterator<Item = Infringement<PolygonId, JointId>> + '_ {
-        self.locate_cross_infringements(infringer, self.layout().joints_rtree().as_ref())
+        self.locate_cross_infringements(infringer, self.joints_rtree().as_ref())
     }
 
     pub fn locate_polygon_segment_infringements(
         &self,
         infringer: PolygonId,
     ) -> impl Iterator<Item = Infringement<PolygonId, SegmentId>> + '_ {
-        self.locate_cross_infringements(infringer, self.layout().segments_rtree().as_ref())
+        self.locate_cross_infringements(infringer, self.segments_rtree().as_ref())
     }
 
     pub fn locate_polygon_via_infringements(
         &self,
         infringer: PolygonId,
     ) -> impl Iterator<Item = Infringement<PolygonId, ViaId>> + '_ {
-        self.locate_cross_infringements(infringer, self.layout().vias_rtree().as_ref())
+        self.locate_cross_infringements(infringer, self.vias_rtree().as_ref())
     }
 
     pub fn locate_polygon_polygon_infringements(
         &self,
         infringer: PolygonId,
     ) -> impl Iterator<Item = Infringement<PolygonId, PolygonId>> + '_ {
-        self.locate_same_infringements(infringer, self.layout().polygons_rtree().as_ref())
+        self.locate_same_infringements(infringer, self.polygons_rtree().as_ref())
     }
 
     fn locate_cross_infringements<
         'a,
-        I: Copy + Into<PrimitiveId> + 'a,
-        E: Copy + Into<PrimitiveId>,
+        T: Copy + Into<PrimitiveId> + 'a,
+        U: Copy + Into<PrimitiveId>,
     >(
         &'a self,
-        infringer: I,
-        infringee_tree: &'a RTree<GeomWithData<Rectangle<[i64; 3]>, E>>,
-    ) -> impl Iterator<Item = Infringement<I, E>> + 'a {
+        infringer: T,
+        infringee_tree: &'a RTree<GeomWithData<Rectangle<[i64; 3]>, U>>,
+    ) -> impl Iterator<Item = Infringement<T, U>> + 'a {
         infringee_tree
             .locate_in_envelope_intersecting(&self.primitive_bbox_envelope(infringer.into()))
             .map(|infringee_geom| infringee_geom.data)
@@ -340,11 +353,11 @@ impl Board {
             })
     }
 
-    fn locate_same_infringements<'a, I: Copy + PartialEq + Into<PrimitiveId> + 'a>(
+    fn locate_same_infringements<'a, T: Copy + PartialEq + Into<PrimitiveId> + 'a>(
         &'a self,
-        infringer: I,
-        rtree: &'a RTree<GeomWithData<Rectangle<[i64; 3]>, I>>,
-    ) -> impl Iterator<Item = Infringement<I, I>> + 'a {
+        infringer: T,
+        rtree: &'a RTree<GeomWithData<Rectangle<[i64; 3]>, T>>,
+    ) -> impl Iterator<Item = Infringement<T, T>> + 'a {
         rtree
             .locate_in_envelope_intersecting(&self.primitive_bbox_envelope(infringer.into()))
             .map(|infringee_geom| infringee_geom.data)
@@ -363,28 +376,28 @@ impl Board {
 
     fn primitive_component(&self, primitive: PrimitiveId) -> Option<ComponentId> {
         match primitive {
-            PrimitiveId::Joint(joint_id) => self.layout().joint(joint_id).spec.component,
-            PrimitiveId::Segment(segment_id) => self.layout().segment(segment_id).spec.component,
-            PrimitiveId::Via(via_id) => self.layout().via(via_id).spec.component,
-            PrimitiveId::Polygon(polygon_id) => self.layout().polygon(polygon_id).component,
+            PrimitiveId::Joint(joint_id) => self.joint(joint_id).spec.component,
+            PrimitiveId::Segment(segment_id) => self.segment(segment_id).spec.component,
+            PrimitiveId::Via(via_id) => self.via(via_id).spec.component,
+            PrimitiveId::Polygon(polygon_id) => self.polygon(polygon_id).component,
         }
     }
 
     fn primitive_bbox_envelope(&self, primitive: PrimitiveId) -> AABB<[i64; 3]> {
         match primitive {
-            PrimitiveId::Joint(joint_id) => self.layout().joint(joint_id).bbox().aabb(),
-            PrimitiveId::Segment(segment_id) => self.layout().segment(segment_id).bbox().aabb(),
-            PrimitiveId::Via(via_id) => self.layout().via(via_id).bbox().aabb(),
-            PrimitiveId::Polygon(polygon_id) => self.layout().polygon(polygon_id).bbox().aabb(),
+            PrimitiveId::Joint(joint_id) => self.joint(joint_id).bbox().aabb(),
+            PrimitiveId::Segment(segment_id) => self.segment(segment_id).bbox().aabb(),
+            PrimitiveId::Via(via_id) => self.via(via_id).bbox().aabb(),
+            PrimitiveId::Polygon(polygon_id) => self.polygon(polygon_id).bbox().aabb(),
         }
     }
 
     fn primitive_net(&self, primitive: PrimitiveId) -> Option<NetId> {
         match primitive {
-            PrimitiveId::Joint(joint_id) => self.layout().joint(joint_id).spec.net,
-            PrimitiveId::Segment(segment_id) => self.layout().segment(segment_id).net,
-            PrimitiveId::Via(via_id) => self.layout().via(via_id).net,
-            PrimitiveId::Polygon(polygon_id) => self.layout().polygon(polygon_id).net,
+            PrimitiveId::Joint(joint_id) => self.joint(joint_id).spec.net,
+            PrimitiveId::Segment(segment_id) => self.segment(segment_id).net,
+            PrimitiveId::Via(via_id) => self.via(via_id).net,
+            PrimitiveId::Polygon(polygon_id) => self.polygon(polygon_id).net,
         }
     }
 

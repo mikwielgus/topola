@@ -4,18 +4,20 @@
 
 use crate::{
     Rect2,
-    board::Board,
-    primitives::{JointId, PolygonId, SegmentId, ViaId},
+    layout::{
+        Layout,
+        primitives::{JointId, PolygonId, SegmentId, ViaId},
+    },
 };
 
-impl Board {
+impl Layout {
     pub fn joint_joint_rect_overlap(
         &self,
         infringer: JointId,
         infringee: JointId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().joint(infringer).bbox().xy();
-        let infringee_bbox = self.layout().joint(infringee).bbox().xy();
+        let infringer_bbox = self.joint(infringer).bbox().xy();
+        let infringee_bbox = self.joint(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -25,8 +27,8 @@ impl Board {
         infringer: JointId,
         infringee: SegmentId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().joint(infringer).bbox().xy();
-        let infringee_bbox = self.layout().segment(infringee).bbox().xy();
+        let infringer_bbox = self.joint(infringer).bbox().xy();
+        let infringee_bbox = self.segment(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -36,8 +38,8 @@ impl Board {
         infringer: JointId,
         infringee: ViaId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().joint(infringer).bbox().xy();
-        let infringee_bbox = self.layout().via(infringee).bbox().xy();
+        let infringer_bbox = self.joint(infringer).bbox().xy();
+        let infringee_bbox = self.via(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -47,8 +49,8 @@ impl Board {
         infringer: JointId,
         infringee: PolygonId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().joint(infringer).bbox().xy();
-        let infringee_bbox = self.layout().polygon(infringee).bbox().xy();
+        let infringer_bbox = self.joint(infringer).bbox().xy();
+        let infringee_bbox = self.polygon(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -58,8 +60,8 @@ impl Board {
         infringer: SegmentId,
         infringee: JointId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().segment(infringer).bbox().xy();
-        let infringee_bbox = self.layout().joint(infringee).bbox().xy();
+        let infringer_bbox = self.segment(infringer).bbox().xy();
+        let infringee_bbox = self.joint(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -69,8 +71,8 @@ impl Board {
         infringer: SegmentId,
         infringee: SegmentId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().segment(infringer).bbox().xy();
-        let infringee_bbox = self.layout().segment(infringee).bbox().xy();
+        let infringer_bbox = self.segment(infringer).bbox().xy();
+        let infringee_bbox = self.segment(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -80,8 +82,8 @@ impl Board {
         infringer: SegmentId,
         infringee: ViaId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().segment(infringer).bbox().xy();
-        let infringee_bbox = self.layout().via(infringee).bbox().xy();
+        let infringer_bbox = self.segment(infringer).bbox().xy();
+        let infringee_bbox = self.via(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -91,8 +93,8 @@ impl Board {
         infringer: SegmentId,
         infringee: PolygonId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().segment(infringer).bbox().xy();
-        let infringee_bbox = self.layout().polygon(infringee).bbox().xy();
+        let infringer_bbox = self.segment(infringer).bbox().xy();
+        let infringee_bbox = self.polygon(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -102,8 +104,8 @@ impl Board {
         infringer: ViaId,
         infringee: JointId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().via(infringer).bbox().xy();
-        let infringee_bbox = self.layout().joint(infringee).bbox().xy();
+        let infringer_bbox = self.via(infringer).bbox().xy();
+        let infringee_bbox = self.joint(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -113,8 +115,8 @@ impl Board {
         infringer: ViaId,
         infringee: SegmentId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().via(infringer).bbox().xy();
-        let infringee_bbox = self.layout().segment(infringee).bbox().xy();
+        let infringer_bbox = self.via(infringer).bbox().xy();
+        let infringee_bbox = self.segment(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -124,8 +126,8 @@ impl Board {
         infringer: ViaId,
         infringee: ViaId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().via(infringer).bbox().xy();
-        let infringee_bbox = self.layout().via(infringee).bbox().xy();
+        let infringer_bbox = self.via(infringer).bbox().xy();
+        let infringee_bbox = self.via(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -135,8 +137,8 @@ impl Board {
         infringer: ViaId,
         infringee: PolygonId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().via(infringer).bbox().xy();
-        let infringee_bbox = self.layout().polygon(infringee).bbox().xy();
+        let infringer_bbox = self.via(infringer).bbox().xy();
+        let infringee_bbox = self.polygon(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -146,8 +148,8 @@ impl Board {
         infringer: PolygonId,
         infringee: JointId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().polygon(infringer).bbox().xy();
-        let infringee_bbox = self.layout().joint(infringee).bbox().xy();
+        let infringer_bbox = self.polygon(infringer).bbox().xy();
+        let infringee_bbox = self.joint(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -157,8 +159,8 @@ impl Board {
         infringer: PolygonId,
         infringee: SegmentId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().polygon(infringer).bbox().xy();
-        let infringee_bbox = self.layout().segment(infringee).bbox().xy();
+        let infringer_bbox = self.polygon(infringer).bbox().xy();
+        let infringee_bbox = self.segment(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -168,8 +170,8 @@ impl Board {
         infringer: PolygonId,
         infringee: ViaId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().polygon(infringer).bbox().xy();
-        let infringee_bbox = self.layout().via(infringee).bbox().xy();
+        let infringer_bbox = self.polygon(infringer).bbox().xy();
+        let infringee_bbox = self.via(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -179,8 +181,8 @@ impl Board {
         infringer: PolygonId,
         infringee: PolygonId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.layout().polygon(infringer).bbox().xy();
-        let infringee_bbox = self.layout().polygon(infringee).bbox().xy();
+        let infringer_bbox = self.polygon(infringer).bbox().xy();
+        let infringee_bbox = self.polygon(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
