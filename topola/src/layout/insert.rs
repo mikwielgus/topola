@@ -5,10 +5,9 @@
 use rstar::primitives::GeomWithData;
 
 use crate::{
-    Pin, PinId,
     layout::{
         Layout,
-        compounds::{Component, ComponentId, NetId},
+        compounds::{Component, ComponentId, Pin, PinId, PinSpec},
     },
     primitives::{
         Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
@@ -21,10 +20,16 @@ impl Layout {
         ComponentId::new(self.components.push(Component::new()))
     }
 
-    pub fn insert_pin(&mut self, net_id: Option<NetId>) -> PinId {
-        let pin_id = PinId::new(self.pins.push(Pin::new()));
+    pub fn insert_pin(&mut self, spec: PinSpec) -> PinId {
+        let pin_id = PinId::new(self.pins.push(Pin::new(spec)));
 
-        if let Some(net_id) = net_id {
+        if let Some(component_id) = spec.component {
+            self.components.modify(component_id.index(), |component| {
+                component.pins.push(pin_id)
+            });
+        }
+
+        if let Some(net_id) = spec.net {
             self.nets
                 .modify(net_id.index(), |net| net.pins.push(pin_id));
         }
@@ -33,11 +38,7 @@ impl Layout {
     }
 
     pub fn insert_joint(&mut self, spec: JointSpec) -> JointId {
-        let joint = Joint {
-            spec,
-            segments: Vec::new(),
-            vias: Vec::new(),
-        };
+        let joint = Joint::new(spec);
         let bbox = joint.bbox();
         let component_id = joint.spec.component;
         let pin_id = joint.spec.pin;

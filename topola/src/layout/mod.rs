@@ -2,6 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+mod attraction;
 mod bbox;
 pub mod compounds;
 mod delete;
@@ -90,14 +91,19 @@ pub struct Layout {
 }
 
 impl Layout {
-    pub fn new(boundary: Vec<[i64; 2]>, layer_count: usize) -> Self {
+    pub fn new(boundary: Vec<[i64; 2]>, layer_count: usize, net_count: usize) -> Self {
+        let mut nets = StableVec::new();
+        for _ in 0..net_count {
+            nets.push(Net::default());
+        }
+
         Self {
             boundary: boundary.clone(),
             place_boundary: boundary,
             layer_count,
 
             components: Recorder::new(StableVec::new()),
-            nets: Recorder::new(StableVec::new()),
+            nets: Recorder::new(nets),
             pins: Recorder::new(StableVec::new()),
 
             joints: Recorder::new(StableVec::new()),

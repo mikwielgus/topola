@@ -6,6 +6,7 @@ use derive_more::{Constructor, From};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    PinId,
     layout::primitives::{JointId, PolygonId, SegmentId, ViaId},
     primitives::PrimitiveId,
 };
@@ -35,6 +36,7 @@ impl ComponentId {
 
 #[derive(Clone, Debug, Default)]
 pub struct Component {
+    pub pins: Vec<PinId>,
     pub joints: Vec<JointId>,
     pub segments: Vec<SegmentId>,
     pub vias: Vec<ViaId>,

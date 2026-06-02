@@ -12,8 +12,10 @@ use specctra::{
 
 use crate::{
     board::{Board, LayerDesc, LayerSide, LayerType},
-    layout::LayerId,
-    layout::compounds::{ComponentId, NetId, PinId},
+    layout::{
+        LayerId,
+        compounds::{ComponentId, NetId, PinId, PinSpec},
+    },
     primitives::{JointSpec, Polygon, Segment, SegmentSpec},
     vector::Vector2,
 };
@@ -161,7 +163,13 @@ impl Board {
                     let pin_name = format!("{}-{}", place.name, pin.id);
                     let net_id = pin_nets.get(&pin_name).copied();
 
-                    let pin_id = board.ensure_named_pin(pin_name.clone(), net_id);
+                    let pin_id = board.ensure_named_pin(
+                        pin_name.clone(),
+                        PinSpec {
+                            component: Some(component_id),
+                            net: net_id,
+                        },
+                    );
                     let padstack = dsn.pcb.library.find_padstack_by_name(&pin.name).unwrap();
 
                     for shape in padstack.shapes.iter() {

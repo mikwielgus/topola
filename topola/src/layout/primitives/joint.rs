@@ -52,6 +52,14 @@ pub struct Joint {
 }
 
 impl Joint {
+    pub fn new(spec: JointSpec) -> Self {
+        Joint {
+            spec,
+            segments: Vec::new(),
+            vias: Vec::new(),
+        }
+    }
+
     pub fn center(&self) -> Vector2<i64> {
         self.spec.position
     }

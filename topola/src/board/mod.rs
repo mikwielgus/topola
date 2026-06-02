@@ -22,7 +22,7 @@ use undoredo::{Delta, Recorder};
 use crate::{
     layout::{
         LayerId, Layout, LayoutHalfDelta,
-        compounds::{ComponentId, NetId, PinId},
+        compounds::{ComponentId, NetId, PinId, PinSpec},
     },
     vector::Vector2,
 };
@@ -43,7 +43,11 @@ pub struct Board {
 impl Board {
     /*pub fn new(boundary: Vec<Vector2<i64>>, layer_count: usize) -> Self {
         Self {
-            layout: Layout::new(boundary.into_iter().map(Into::into).collect(), layer_count),
+            layout: Layout::new(
+                boundary.into_iter().map(Into::into).collect(),
+                layer_count,
+                0,
+            ),
             component_names: Recorder::new(BiBTreeMap::new()),
             pin_names: Recorder::new(BiBTreeMap::new()),
             layer_descs: Recorder::new(BiBTreeMap::new()),
@@ -60,6 +64,7 @@ impl Board {
             layout: Layout::new(
                 boundary.into_iter().map(Into::into).collect(),
                 layer_descs.len(),
+                net_names.len(),
             ),
             component_names: Recorder::new(BiBTreeMap::new()),
             pin_names: Recorder::new(BiBTreeMap::new()),
@@ -79,12 +84,12 @@ impl Board {
         component_id
     }
 
-    pub fn ensure_named_pin(&mut self, pin_name: String, net_id: Option<NetId>) -> PinId {
+    pub fn ensure_named_pin(&mut self, pin_name: String, pin_spec: PinSpec) -> PinId {
         if let Some(pin) = self.pin_names.get_by_right(&pin_name) {
             return *pin;
         };
 
-        let pin_id = self.layout.insert_pin(net_id);
+        let pin_id = self.layout.insert_pin(pin_spec);
         self.pin_names.insert(pin_id, pin_name);
 
         pin_id

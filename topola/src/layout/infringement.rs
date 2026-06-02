@@ -392,7 +392,7 @@ impl Layout {
         }
     }
 
-    fn primitive_net(&self, primitive: PrimitiveId) -> Option<NetId> {
+    pub fn primitive_net(&self, primitive: PrimitiveId) -> Option<NetId> {
         match primitive {
             PrimitiveId::Joint(joint_id) => self.joint(joint_id).spec.net,
             PrimitiveId::Segment(segment_id) => self.segment(segment_id).net,
