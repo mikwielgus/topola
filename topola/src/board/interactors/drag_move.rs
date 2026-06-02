@@ -16,14 +16,14 @@ pub struct DragMoveInteractor {
 }
 
 impl DragMoveInteractor {
-    pub fn abort(&mut self, board: &mut Board) {
-        board.discard_delta();
-    }
-
     pub fn hold(&mut self, board: &mut Board, pointer: Vector2<i64>) {
         board.discard_delta();
 
         board.move_components_by(self.selection.clone(), pointer - self.origin);
+    }
+
+    pub fn abort(&mut self, board: &mut Board) {
+        board.discard_delta();
     }
 
     pub fn release(&mut self, board: &mut Board, pointer: Vector2<i64>) {

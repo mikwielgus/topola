@@ -5,6 +5,8 @@
 use derive_more::{Constructor, From};
 use serde::{Deserialize, Serialize};
 
+use crate::PinId;
+
 #[derive(
     Clone,
     Constructor,
@@ -25,5 +27,16 @@ impl NetId {
     #[inline]
     pub fn index(self) -> usize {
         self.0
+    }
+}
+
+#[derive(Clone, Debug, Default)]
+pub struct Net {
+    pub pins: Vec<PinId>,
+}
+
+impl Net {
+    pub fn new() -> Self {
+        Default::default()
     }
 }

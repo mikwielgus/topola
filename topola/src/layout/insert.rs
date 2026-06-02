@@ -8,7 +8,7 @@ use crate::{
     Pin, PinId,
     layout::{
         Layout,
-        compounds::{Component, ComponentId},
+        compounds::{Component, ComponentId, NetId},
     },
     primitives::{
         Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
@@ -21,8 +21,15 @@ impl Layout {
         ComponentId::new(self.components.push(Component::new()))
     }
 
-    pub fn insert_pin(&mut self) -> PinId {
-        PinId::new(self.pins.push(Pin::new()))
+    pub fn insert_pin(&mut self, net_id: Option<NetId>) -> PinId {
+        let pin_id = PinId::new(self.pins.push(Pin::new()));
+
+        if let Some(net_id) = net_id {
+            self.nets
+                .modify(net_id.index(), |net| net.pins.push(pin_id));
+        }
+
+        pin_id
     }
 
     pub fn insert_joint(&mut self, spec: JointSpec) -> JointId {

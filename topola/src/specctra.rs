@@ -159,9 +159,9 @@ impl Board {
 
                 for pin in &image.pins {
                     let pin_name = format!("{}-{}", place.name, pin.id);
-                    let net = pin_nets.get(&pin_name).copied();
+                    let net_id = pin_nets.get(&pin_name).copied();
 
-                    let pin_id = board.ensure_named_pin(pin_name.clone());
+                    let pin_id = board.ensure_named_pin(pin_name.clone(), net_id);
                     let padstack = dsn.pcb.library.find_padstack_by_name(&pin.name).unwrap();
 
                     for shape in padstack.shapes.iter() {
@@ -174,7 +174,7 @@ impl Board {
                                     pin.point_with_rotation(),
                                     circle.diameter / 2.0,
                                     layer,
-                                    net,
+                                    net_id,
                                     Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
@@ -192,7 +192,7 @@ impl Board {
                                     rect.x2,
                                     rect.y2,
                                     layer,
-                                    net,
+                                    net_id,
                                     Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
@@ -208,7 +208,7 @@ impl Board {
                                     &path.coords,
                                     path.width,
                                     layer,
-                                    net,
+                                    net_id,
                                     Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,
@@ -224,7 +224,7 @@ impl Board {
                                     &polygon.coords,
                                     polygon.width,
                                     layer,
-                                    net,
+                                    net_id,
                                     Some(component_id),
                                     Some(pin_id),
                                     !place_side_is_front,

@@ -79,12 +79,12 @@ impl Board {
         component_id
     }
 
-    pub fn ensure_named_pin(&mut self, pin_name: String) -> PinId {
+    pub fn ensure_named_pin(&mut self, pin_name: String, net_id: Option<NetId>) -> PinId {
         if let Some(pin) = self.pin_names.get_by_right(&pin_name) {
             return *pin;
         };
 
-        let pin_id = self.layout.insert_pin();
+        let pin_id = self.layout.insert_pin(net_id);
         self.pin_names.insert(pin_id, pin_name);
 
         pin_id

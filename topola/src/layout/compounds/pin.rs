@@ -30,7 +30,7 @@ impl PinId {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, Default)]
 pub struct Pin {
     pub joints: Vec<JointId>,
     pub segments: Vec<SegmentId>,
@@ -40,11 +40,6 @@ pub struct Pin {
 
 impl Pin {
     pub fn new() -> Self {
-        Self {
-            joints: Vec::new(),
-            segments: Vec::new(),
-            vias: Vec::new(),
-            polygons: Vec::new(),
-        }
+        Default::default()
     }
 }

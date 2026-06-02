@@ -26,7 +26,7 @@ use undoredo::aliases::RTreeHalfDelta;
 use undoredo::{Delta, Recorder};
 
 use crate::layout::{
-    compounds::{Component, ComponentId, Pin, PinId},
+    compounds::{Component, ComponentId, Net, Pin, PinId},
     primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
 };
 
@@ -63,6 +63,7 @@ pub struct Layout {
     layer_count: usize,
 
     components: Recorder<StableVec<Component>>,
+    nets: Recorder<StableVec<Net>>,
     pins: Recorder<StableVec<Pin>>,
 
     joints: Recorder<StableVec<Joint>>,
@@ -96,6 +97,7 @@ impl Layout {
             layer_count,
 
             components: Recorder::new(StableVec::new()),
+            nets: Recorder::new(StableVec::new()),
             pins: Recorder::new(StableVec::new()),
 
             joints: Recorder::new(StableVec::new()),

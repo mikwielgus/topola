@@ -47,10 +47,6 @@ impl DragSelectInteractor {
         }
     }
 
-    pub fn abort(&mut self) {
-        self.selection = self.original_selection.clone();
-    }
-
     pub fn hold(&mut self, board: &Board, pointer: Vector2<i64>) {
         self.selection = PersistableSelection::new();
 
@@ -183,5 +179,9 @@ impl DragSelectInteractor {
         }
 
         self.selection = combined_selection;
+    }
+
+    pub fn abort(&mut self) {
+        self.selection = self.original_selection.clone();
     }
 }
