@@ -9,6 +9,7 @@ mod infringement;
 mod insert;
 mod locate;
 mod modify;
+mod overlap;
 pub mod primitives;
 mod transforms;
 
