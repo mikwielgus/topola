@@ -5,7 +5,10 @@
 use derive_more::{Constructor, From};
 use serde::{Deserialize, Serialize};
 
-use crate::layout::primitives::{JointId, PolygonId, SegmentId, ViaId};
+use crate::{
+    layout::primitives::{JointId, PolygonId, SegmentId, ViaId},
+    primitives::PrimitiveId,
+};
 
 #[derive(
     Clone,
@@ -41,5 +44,22 @@ pub struct Component {
 impl Component {
     pub fn new() -> Self {
         Default::default()
+    }
+
+    pub fn primitives(&self) -> impl Iterator<Item = PrimitiveId> + '_ {
+        self.joints
+            .iter()
+            .map(|&joint_id| PrimitiveId::Joint(joint_id))
+            .chain(
+                self.segments
+                    .iter()
+                    .map(|&segment_id| PrimitiveId::Segment(segment_id)),
+            )
+            .chain(self.vias.iter().map(|&via_id| PrimitiveId::Via(via_id)))
+            .chain(
+                self.polygons
+                    .iter()
+                    .map(|&polygon_id| PrimitiveId::Polygon(polygon_id)),
+            )
     }
 }

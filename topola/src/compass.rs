@@ -13,6 +13,55 @@ pub trait CompassDirection<T>: Copy + PartialEq + Into<Vector2<T>> {
     fn nearest_from_vector(vector: Vector2<T>) -> Self;
     fn turn_clockwise(self) -> Self;
     fn turn_counterclockwise(self) -> Self;
+
+    fn cast_vector(self, vector: Vector2<T>) -> Vector2<T>
+    where
+        T: Copy + Neg<Output = T> + PartialOrd + Signed + Zero,
+    {
+        let axis = self.into();
+        let zero = T::zero();
+
+        if axis.y.is_zero() {
+            let x = if axis.x < zero {
+                -vector.x
+            } else {
+                vector.x
+            };
+            return Vector2::new(x, zero);
+        }
+
+        if axis.x.is_zero() {
+            let y = if axis.y < zero {
+                -vector.y
+            } else {
+                vector.y
+            };
+            return Vector2::new(zero, y);
+        }
+
+        let magnitude = if vector.x.abs() < vector.y.abs() {
+            vector.x.abs()
+        } else {
+            vector.y.abs()
+        };
+
+        Vector2::new(
+            if axis.x > zero {
+                magnitude
+            } else if axis.x < zero {
+                -magnitude
+            } else {
+                zero
+            },
+            if axis.y > zero {
+                magnitude
+            } else if axis.y < zero {
+                -magnitude
+            } else {
+                zero
+            },
+        )
+    }
 }
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]

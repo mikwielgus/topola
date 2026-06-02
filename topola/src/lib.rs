@@ -9,6 +9,7 @@ mod drawer;
 mod layout;
 mod math;
 mod navmesher;
+mod orientation;
 mod pathfinder;
 mod ratsnest;
 mod rect;

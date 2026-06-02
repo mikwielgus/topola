@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use std::ops::Sub;
+
 use derive_getters::Getters;
 use derive_more::Constructor;
 use num_traits::Bounded;
@@ -63,6 +65,12 @@ impl<T: Bounded + Copy> Rect2<T> {
             min: Vector3::new(self.min.x, self.min.y, Bounded::min_value()),
             max: Vector3::new(self.max.x, self.max.y, Bounded::max_value()),
         }
+    }
+}
+
+impl<T: Copy + Sub<Output = T>> Rect2<T> {
+    pub fn size(&self) -> Vector2<T> {
+        Vector2::new(self.max.x - self.min.x, self.max.y - self.min.y)
     }
 }
 

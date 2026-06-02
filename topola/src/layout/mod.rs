@@ -11,6 +11,7 @@ mod locate;
 mod modify;
 mod overlap;
 pub mod primitives;
+mod repulsion;
 mod transforms;
 
 use derive_getters::Getters;
