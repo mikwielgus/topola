@@ -3,8 +3,8 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{viewport::Viewport, workspace::GuiWorkspace};
-use topola::Workspace;
 use topola::primitives::{Joint, Polygon, Segment, Via};
+use topola::{Orientation, Vector2, Workspace};
 
 pub struct Display {}
 
@@ -22,6 +22,8 @@ impl Display {
         workspace: &GuiWorkspace,
     ) {
         self.display_layout(ctx, ui, /*menu_bar,*/ viewport, workspace);
+        self.display_repulsions(ui, viewport, workspace);
+        self.display_attractions(ui, viewport, workspace);
         self.display_bboxes(ctx, ui, viewport, workspace);
         self.display_navmeshes(ctx, ui, viewport, workspace);
         self.display_ratsnest(ctx, ui, viewport, workspace);
@@ -154,6 +156,109 @@ impl Display {
                 .collect::<Vec<_>>(),
             egui::Stroke::new(5.0 / viewport.scale_factor(), egui::Color32::WHITE),
         );
+    }
+
+    fn display_repulsions(&mut self, ui: &egui::Ui, viewport: &Viewport, workspace: &GuiWorkspace) {
+        let board = workspace.workspace.board();
+        let stroke = egui::Stroke::new(150.0 / viewport.scale_factor(), egui::Color32::YELLOW);
+
+        for selector in &workspace.workspace.selection().components.0 {
+            let Some(component_id) = board.component_id(&selector.component) else {
+                continue;
+            };
+
+            let Some(bbox) = board.layout().component_bbox2(component_id) else {
+                continue;
+            };
+
+            let origin = Vector2::new((bbox.min.x + bbox.max.x) / 2, (bbox.min.y + bbox.max.y) / 2);
+
+            Self::paint_arrows(
+                ui,
+                origin,
+                board
+                    .layout()
+                    .locate_component_repulsions(component_id, Orientation::Oblique),
+                stroke,
+            );
+        }
+
+        for selector in &workspace.workspace.selection().pins.0 {
+            let Some(pin_id) = board.pin_id(&selector.pin) else {
+                continue;
+            };
+
+            Self::paint_arrows(
+                ui,
+                board.layout().pin_centroid(pin_id),
+                board
+                    .layout()
+                    .locate_pin_repulsions(pin_id, Orientation::Oblique),
+                stroke,
+            );
+        }
+    }
+
+    fn display_attractions(
+        &mut self,
+        ui: &egui::Ui,
+        viewport: &Viewport,
+        workspace: &GuiWorkspace,
+    ) {
+        let board = workspace.workspace.board();
+        let layout = board.layout();
+        let stroke = egui::Stroke::new(150.0 / viewport.scale_factor(), egui::Color32::BLUE);
+
+        for selector in &workspace.workspace.selection().components.0 {
+            let Some(component_id) = board.component_id(&selector.component) else {
+                continue;
+            };
+
+            let Some(bbox) = layout.component_bbox2(component_id) else {
+                continue;
+            };
+
+            let origin = Vector2::new((bbox.min.x + bbox.max.x) / 2, (bbox.min.y + bbox.max.y) / 2);
+
+            Self::paint_arrows(
+                ui,
+                origin,
+                layout.component_attractions(component_id),
+                stroke,
+            );
+        }
+
+        for selector in &workspace.workspace.selection().pins.0 {
+            let Some(pin_id) = board.pin_id(&selector.pin) else {
+                continue;
+            };
+
+            Self::paint_arrows(
+                ui,
+                layout.pin_centroid(pin_id),
+                layout.pin_attractions(pin_id),
+                stroke,
+            );
+        }
+    }
+
+    fn paint_arrows(
+        ui: &egui::Ui,
+        origin: Vector2<i64>,
+        repulsions: impl IntoIterator<Item = Vector2<i64>>,
+        stroke: egui::Stroke,
+    ) {
+        for repulsion in repulsions {
+            if repulsion.x == 0 && repulsion.y == 0 {
+                continue;
+            }
+
+            ui.painter().arrow(
+                egui::pos2(origin.x as f32, origin.y as f32),
+                egui::vec2(repulsion.x as f32, repulsion.y as f32),
+                stroke,
+            );
+        }
     }
 
     fn paint_joint(

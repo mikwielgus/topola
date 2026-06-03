@@ -14,7 +14,7 @@ use serde::{Deserialize, Serialize};
 use crate::primitives::PrimitiveId;
 
 use super::Layout;
-use super::compounds::{ComponentId, NetId};
+use super::compounds::{ComponentId, NetId, PinId};
 use super::primitives::{JointId, PolygonId, SegmentId, ViaId};
 
 #[derive(
@@ -138,6 +138,60 @@ impl Layout {
             .chain(segment_infringements)
             .chain(via_infringements)
             .chain(polygon_infringements)
+    }
+
+    pub fn locate_pin_infringements(
+        &self,
+        infringer: PinId,
+    ) -> impl Iterator<Item = Infringement<PinId, PinId>> + '_ {
+        let mut infringee_pins = BTreeSet::new();
+
+        for infringement in self.locate_pin_primitive_infringements(infringer) {
+            let Some(infringee_pin) = self.primitive_pin(infringement.infringee()) else {
+                continue;
+            };
+
+            if infringee_pin == infringer {
+                continue;
+            }
+
+            infringee_pins.insert(infringee_pin);
+        }
+
+        infringee_pins
+            .into_iter()
+            .map(move |infringee| Infringement {
+                infringer,
+                infringee,
+            })
+    }
+
+    pub fn locate_pin_primitive_infringements(
+        &self,
+        infringer: PinId,
+    ) -> impl Iterator<Item = Infringement> + '_ {
+        let pin = self.pin(infringer);
+
+        pin.joints
+            .iter()
+            .copied()
+            .flat_map(|joint_id| self.locate_joint_infringements(joint_id).map(Into::into))
+            .chain(
+                pin.segments.iter().copied().flat_map(|segment_id| {
+                    self.locate_segment_infringements(segment_id)
+                        .map(Into::into)
+                }),
+            )
+            .chain(
+                pin.vias
+                    .iter()
+                    .copied()
+                    .flat_map(|via_id| self.locate_via_infringements(via_id).map(Into::into)),
+            )
+            .chain(pin.polygons.iter().copied().flat_map(|polygon_id| {
+                self.locate_polygon_infringements(polygon_id)
+                    .map(Into::into)
+            }))
     }
 
     pub fn locate_joint_infringements(

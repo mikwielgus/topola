@@ -5,7 +5,10 @@
 use crate::{
     Rect2, Vector2,
     compass::CompassDirection,
-    layout::{Layout, compounds::ComponentId},
+    layout::{
+        Layout,
+        compounds::{ComponentId, PinId},
+    },
     orientation::Orientation,
     primitives::{JointId, PolygonId, PrimitiveId, SegmentId, ViaId},
 };
@@ -35,8 +38,47 @@ impl Layout {
         let mut max_repulsion = Vector2::new(0, 0);
         let mut max_repulsion_magnitude = 0;
 
-        for infringer_primitive in self.component(infringer).primitives() {
-            for infringee_primitive in self.component(infringee).primitives() {
+        for &infringer_pin in self.component(infringer).pins.iter() {
+            for &infringee_pin in self.component(infringee).pins.iter() {
+                let repulsion = self.pin_pin_repulsion(infringer_pin, infringee_pin, orientation);
+                let repulsion_magnitude = repulsion.x.abs() + repulsion.y.abs();
+
+                if repulsion_magnitude > max_repulsion_magnitude {
+                    max_repulsion = repulsion;
+                    max_repulsion_magnitude = repulsion_magnitude;
+                }
+            }
+        }
+
+        max_repulsion
+    }
+
+    pub fn locate_pin_repulsions(
+        &self,
+        infringer: PinId,
+        orientation: Orientation,
+    ) -> impl Iterator<Item = Vector2<i64>> + '_ {
+        self.locate_pin_infringements(infringer)
+            .map(move |infringement| {
+                self.pin_pin_repulsion(
+                    infringement.infringer(),
+                    infringement.infringee(),
+                    orientation,
+                )
+            })
+    }
+
+    pub fn pin_pin_repulsion(
+        &self,
+        infringer: PinId,
+        infringee: PinId,
+        orientation: Orientation,
+    ) -> Vector2<i64> {
+        let mut max_repulsion = Vector2::new(0, 0);
+        let mut max_repulsion_magnitude = 0;
+
+        for infringer_primitive in self.pin(infringer).primitives() {
+            for infringee_primitive in self.pin(infringee).primitives() {
                 let repulsion = self.primitive_primitive_repulsion(
                     infringer_primitive,
                     infringee_primitive,

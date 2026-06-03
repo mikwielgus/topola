@@ -11,6 +11,7 @@ use crate::{
         compounds::{ComponentId, NetId},
         primitives::{JointId, PolygonId, SegmentId, ViaId},
     },
+    primitives::PrimitiveId,
 };
 
 #[derive(
@@ -60,6 +61,23 @@ impl Pin {
             vias: Vec::new(),
             polygons: Vec::new(),
         }
+    }
+
+    pub fn primitives(&self) -> impl Iterator<Item = PrimitiveId> + '_ {
+        self.joints
+            .iter()
+            .map(|&joint_id| PrimitiveId::Joint(joint_id))
+            .chain(
+                self.segments
+                    .iter()
+                    .map(|&segment_id| PrimitiveId::Segment(segment_id)),
+            )
+            .chain(self.vias.iter().map(|&via_id| PrimitiveId::Via(via_id)))
+            .chain(
+                self.polygons
+                    .iter()
+                    .map(|&polygon_id| PrimitiveId::Polygon(polygon_id)),
+            )
     }
 }
 

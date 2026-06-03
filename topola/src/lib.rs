@@ -32,6 +32,7 @@ pub use crate::layout::LayerId;
 pub use crate::layout::Layout;
 pub use crate::layout::compounds::{Pin, PinId};
 pub use crate::layout::primitives;
+pub use crate::orientation::Orientation;
 pub use crate::ratsnest::{Ratline, Ratsnest};
 pub use crate::rect::{Rect2, Rect3};
 pub use crate::vector::{Vector2, Vector3};
