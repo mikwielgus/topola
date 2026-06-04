@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{Board, selections::NetSelection};
+use crate::{board::Board, selections::NetSelection};
 
 impl Board {
     pub fn delete_net_free_primitives(&mut self, selection: NetSelection) {

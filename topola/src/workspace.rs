@@ -4,7 +4,7 @@
 
 use undoredo::FlushDelta;
 
-use crate::{Autorouter, Board, selections::PersistableSelection};
+use crate::{autorouter::Autorouter, board::Board, selections::PersistableSelection};
 
 pub enum Workspace {
     Board(BoardWorkspace),

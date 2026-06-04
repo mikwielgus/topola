@@ -4,8 +4,10 @@
 
 use crate::{
     board::{Board, selections::ComponentSelection},
-    layout::compounds::ComponentId,
-    primitives::{JointId, PolygonId, SegmentId, ViaId},
+    layout::{
+        compounds::ComponentId,
+        primitives::{JointId, PolygonId, SegmentId, ViaId},
+    },
     selections::NetSelection,
 };
 

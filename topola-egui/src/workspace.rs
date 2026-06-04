@@ -4,7 +4,7 @@
 
 use std::{ops::ControlFlow, time::Instant};
 
-use topola::{Board, Workspace};
+use topola::{Workspace, board::Board};
 
 use crate::{layers_panel::LayersPanel, translator::Translator};
 

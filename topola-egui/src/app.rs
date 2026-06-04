@@ -5,7 +5,7 @@
 use std::sync::mpsc::{Receiver, Sender, channel};
 
 use specctra::{error::ParseErrorContext, structure::DsnFile};
-use topola::Board;
+use topola::board::Board;
 use unic_langid::langid;
 
 use crate::{

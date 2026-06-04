@@ -4,7 +4,7 @@
 
 use derive_getters::Getters;
 
-use crate::{Board, Ratsnest, router::Router};
+use crate::{board::Board, ratsnest::Ratsnest, router::Router};
 
 #[derive(Clone, Debug, Getters)]
 pub struct Autorouter {

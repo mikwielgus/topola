@@ -9,7 +9,7 @@ use crate::{
             ComponentSelection, ComponentSelector, NetSelector, PinSelection, PinSelector,
         },
     },
-    primitives::{JointId, PolygonId, SegmentId, ViaId},
+    layout::primitives::{JointId, PolygonId, SegmentId, ViaId},
 };
 
 impl Board {

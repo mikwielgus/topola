@@ -3,8 +3,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{viewport::Viewport, workspace::GuiWorkspace};
-use topola::primitives::{Joint, Polygon, Segment, Via};
-use topola::{Orientation, Vector2, Workspace};
+use topola::{
+    Orientation, Vector2, Workspace,
+    layout::primitives::{Joint, Polygon, Segment, Via},
+};
 
 pub struct Display {}
 

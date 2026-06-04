@@ -3,14 +3,15 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
-    Rect2, Vector2,
     compass::CompassDirection,
     layout::{
         Layout,
         compounds::{ComponentId, PinId},
+        primitives::{JointId, PolygonId, PrimitiveId, SegmentId, ViaId},
     },
     orientation::Orientation,
-    primitives::{JointId, PolygonId, PrimitiveId, SegmentId, ViaId},
+    rect::Rect2,
+    vector::Vector2,
 };
 
 impl Layout {

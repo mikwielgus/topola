@@ -16,7 +16,7 @@ use crate::{
         LayerId,
         compounds::{ComponentId, NetId, PinId, PinSpec},
     },
-    primitives::{JointSpec, Polygon, Segment, SegmentSpec},
+    layout::primitives::{JointSpec, Polygon, Segment, SegmentSpec},
     vector::Vector2,
 };
 

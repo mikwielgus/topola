@@ -3,8 +3,11 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
-    Layout, Vector2,
-    layout::compounds::{ComponentId, PinId},
+    layout::{
+        Layout,
+        compounds::{ComponentId, PinId},
+    },
+    vector::Vector2,
 };
 
 impl Layout {

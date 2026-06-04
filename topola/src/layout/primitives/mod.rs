@@ -15,7 +15,7 @@ pub use polygon::*;
 pub use segment::*;
 pub use via::*;
 
-use crate::{Layout, PinId};
+use crate::layout::{Layout, compounds::PinId};
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum PrimitiveId {

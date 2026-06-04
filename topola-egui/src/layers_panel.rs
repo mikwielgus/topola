@@ -6,7 +6,8 @@ use std::collections::BTreeMap;
 
 use egui::{Context, Grid, ScrollArea, SidePanel, widget_text::WidgetText};
 use serde::{Deserialize, Serialize};
-use topola::{Board, LayerDesc, LayerId, LayerSide, LayerType};
+use topola::board::{Board, LayerDesc, LayerSide, LayerType};
+use topola::layout::LayerId;
 
 #[derive(Clone, Debug, Deserialize, Serialize)]
 pub struct Colors {

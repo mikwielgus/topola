@@ -7,8 +7,11 @@ use rand_distr::{Distribution, Normal};
 use undoredo::{FlushDelta, ResetDelta};
 
 use crate::{
-    Board, Vector2, board::BoardDelta, layout::compounds::ComponentId, orientation::Orientation,
+    board::{Board, BoardDelta},
+    layout::compounds::ComponentId,
+    orientation::Orientation,
     selections::ComponentSelection,
+    vector::Vector2,
 };
 
 pub struct AutoplacerSchedule {

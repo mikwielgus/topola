@@ -6,12 +6,12 @@ use derive_more::{Constructor, From};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Layout, Vector2,
     layout::{
+        Layout,
         compounds::{ComponentId, NetId},
-        primitives::{JointId, PolygonId, SegmentId, ViaId},
+        primitives::{JointId, PolygonId, PrimitiveId, SegmentId, ViaId},
     },
-    primitives::PrimitiveId,
+    vector::Vector2,
 };
 
 #[derive(

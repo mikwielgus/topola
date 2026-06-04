@@ -4,10 +4,12 @@
 
 use crate::{
     board::Board,
-    layout::compounds::ComponentId,
-    primitives::{
-        JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
-        ViaSpec,
+    layout::{
+        compounds::ComponentId,
+        primitives::{
+            JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
+            ViaSpec,
+        },
     },
 };
 

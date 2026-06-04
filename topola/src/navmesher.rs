@@ -10,9 +10,11 @@ use stable_vec::StableVec;
 use undoredo::Recorder;
 
 use crate::{
-    Board,
-    layout::LayerId,
-    primitives::{Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId},
+    board::Board,
+    layout::{
+        LayerId,
+        primitives::{Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId},
+    },
     vector::Vector2,
 };
 

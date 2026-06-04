@@ -9,10 +9,12 @@ use serde::{Deserialize, Serialize};
 use spade::{DelaunayTriangulation, HasPosition, Triangulation, handles::FixedVertexHandle};
 
 use crate::{
-    Board,
-    layout::LayerId,
-    layout::compounds::NetId,
-    primitives::{JointId, PolygonId, PrimitiveId, SegmentId},
+    board::Board,
+    layout::{
+        LayerId,
+        compounds::NetId,
+        primitives::{JointId, PolygonId, PrimitiveId, SegmentId},
+    },
     vector::Vector2,
 };
 

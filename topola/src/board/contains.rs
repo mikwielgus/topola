@@ -3,9 +3,10 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
-    Board, Vector2,
-    primitives::{JointId, PolygonId, SegmentId, ViaId},
+    board::Board,
+    layout::primitives::{JointId, PolygonId, SegmentId, ViaId},
     selections::{ComponentSelection, NetSelection, NetSelector, PinSelection},
+    vector::Vector2,
 };
 
 impl Board {

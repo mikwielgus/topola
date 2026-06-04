@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{Board, drawer::Drawer, navmesher::NavmesherBoard, pathfinder::Pathfinder};
+use crate::{board::Board, drawer::Drawer, navmesher::NavmesherBoard, pathfinder::Pathfinder};
 
 #[derive(Clone, Debug)]
 pub enum Router {

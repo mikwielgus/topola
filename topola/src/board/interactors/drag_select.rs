@@ -7,13 +7,15 @@ use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Rect3, Vector2, Vector3,
     board::{
         Board,
         interactors::{SelectionCombineMode, SelectionContainMode},
         selections::PersistableSelection,
     },
+    interactor::Interactor,
     layout::LayerId,
+    rect::Rect3,
+    vector::{Vector2, Vector3},
 };
 
 #[derive(Clone, Constructor, Debug, Deserialize, Eq, Ord, PartialEq, PartialOrd, Serialize)]
@@ -46,8 +48,12 @@ impl DragSelectInteractor {
             options,
         }
     }
+}
 
-    pub fn hold(&mut self, board: &Board, pointer: Vector2<i64>) {
+impl Interactor for DragSelectInteractor {
+    fn delete(&mut self, _board: &mut Board) {}
+
+    fn hold(&mut self, board: &mut Board, _layer: LayerId, pointer: Vector2<i64>) {
         self.selection = PersistableSelection::new();
 
         let rect = Rect3::new(
@@ -181,7 +187,11 @@ impl DragSelectInteractor {
         self.selection = combined_selection;
     }
 
-    pub fn abort(&mut self) {
+    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
+        self.hold(board, layer, pointer);
+    }
+
+    fn abort(&mut self, _board: &mut Board) {
         self.selection = self.original_selection.clone();
     }
 }

@@ -5,7 +5,6 @@
 use derive_getters::Getters;
 
 use crate::{
-    Vector2, Vector3,
     board::{
         Board,
         interactors::{
@@ -13,7 +12,9 @@ use crate::{
         },
         selections::PersistableSelection,
     },
+    interactor::Interactor,
     layout::LayerId,
+    vector::{Vector2, Vector3},
 };
 
 #[derive(Clone, Debug, Eq, Getters, PartialEq)]
@@ -37,12 +38,12 @@ impl SelectInteractor {
             combine,
         }
     }
+}
 
-    pub fn abort(&mut self) {
-        self.selection = self.original_selection.clone();
-    }
+impl Interactor for SelectInteractor {
+    fn delete(&mut self, _board: &mut Board) {}
 
-    pub fn hold(&mut self, board: &Board, layer: LayerId, pointer: Vector2<i64>) {
+    fn hold(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
         let contain = if pointer.x >= self.origin.x {
             SelectionContainMode::Window
         } else {
@@ -53,11 +54,11 @@ impl SelectInteractor {
         let mut drag_selection_interactor =
             DragSelectInteractor::new(self.origin, layer, self.original_selection.clone(), options);
 
-        drag_selection_interactor.hold(board, pointer);
+        drag_selection_interactor.hold(board, layer, pointer);
         self.selection = drag_selection_interactor.selection().clone();
     }
 
-    pub fn release(&mut self, board: &Board, layer: LayerId, pointer: Vector2<i64>) {
+    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
         if pointer == self.origin {
             let mut selection = self.original_selection.clone();
             let point = Vector3::new(pointer.x, pointer.y, layer.index() as i64);
@@ -81,5 +82,9 @@ impl SelectInteractor {
         }
 
         self.hold(board, layer, pointer);
+    }
+
+    fn abort(&mut self, _board: &mut Board) {
+        self.selection = self.original_selection.clone();
     }
 }

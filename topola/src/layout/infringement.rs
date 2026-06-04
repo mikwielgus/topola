@@ -11,7 +11,7 @@ use rstar::{
 };
 use serde::{Deserialize, Serialize};
 
-use crate::primitives::PrimitiveId;
+use crate::layout::primitives::PrimitiveId;
 
 use super::Layout;
 use super::compounds::{ComponentId, NetId, PinId};

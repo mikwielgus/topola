@@ -5,9 +5,13 @@
 use std::collections::BTreeSet;
 
 use crate::{
-    Rect2, Rect3, Vector2, Vector3,
-    layout::{Layout, compounds::NetId},
-    primitives::{JointId, PolygonId, SegmentId, ViaId},
+    layout::{
+        Layout,
+        compounds::NetId,
+        primitives::{JointId, PolygonId, SegmentId, ViaId},
+    },
+    rect::{Rect2, Rect3},
+    vector::{Vector2, Vector3},
 };
 
 impl Layout {

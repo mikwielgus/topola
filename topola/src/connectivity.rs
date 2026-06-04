@@ -4,7 +4,7 @@
 
 use polygon_unionfind::UnionFind;
 
-use crate::Board;
+use crate::board::Board;
 
 pub struct Connectivity {
     joints_unionfind: UnionFind,

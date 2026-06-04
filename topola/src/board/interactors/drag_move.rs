@@ -6,7 +6,13 @@ use derive_getters::Getters;
 use derive_more::Constructor;
 use undoredo::ResetDelta;
 
-use crate::{Board, LayerId, Vector2, selections::ComponentSelection};
+use crate::{
+    board::Board,
+    interactor::Interactor,
+    layout::LayerId,
+    selections::ComponentSelection,
+    vector::Vector2,
+};
 
 #[derive(Clone, Constructor, Debug, Eq, Getters, PartialEq)]
 pub struct DragMoveInteractor {
@@ -15,18 +21,20 @@ pub struct DragMoveInteractor {
     selection: ComponentSelection,
 }
 
-impl DragMoveInteractor {
-    pub fn hold(&mut self, board: &mut Board, pointer: Vector2<i64>) {
+impl Interactor for DragMoveInteractor {
+    fn delete(&mut self, _board: &mut Board) {}
+
+    fn hold(&mut self, board: &mut Board, _layer: LayerId, pointer: Vector2<i64>) {
         board.reset_delta();
 
         board.move_components_by(self.selection.clone(), pointer - self.origin);
     }
 
-    pub fn abort(&mut self, board: &mut Board) {
-        board.reset_delta();
+    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
+        self.hold(board, layer, pointer);
     }
 
-    pub fn release(&mut self, board: &mut Board, pointer: Vector2<i64>) {
-        self.hold(board, pointer);
+    fn abort(&mut self, board: &mut Board) {
+        board.reset_delta();
     }
 }

@@ -4,11 +4,9 @@
 
 use rstar::primitives::GeomWithData;
 
-use crate::{
-    layout::{
-        Layout,
-        compounds::{Component, ComponentId, Pin, PinId, PinSpec},
-    },
+use crate::layout::{
+    Layout,
+    compounds::{Component, ComponentId, Pin, PinId, PinSpec},
     primitives::{
         Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
         ViaSpec,

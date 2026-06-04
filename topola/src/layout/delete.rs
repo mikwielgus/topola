@@ -4,8 +4,8 @@
 
 use rstar::primitives::GeomWithData;
 
-use crate::{
-    layout::Layout,
+use crate::layout::{
+    Layout,
     primitives::{JointId, PolygonId, SegmentId, ViaId},
 };
 

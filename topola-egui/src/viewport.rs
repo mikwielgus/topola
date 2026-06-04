@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use egui::Pos2;
-use topola::{MasterInteractor, Vector2, Workspace};
+use topola::{Interactor, MasterInteractor, Vector2, Workspace};
 
 use crate::{display::Display, menu_bar::MenuBar, translator::Translator, workspace::GuiWorkspace};
 

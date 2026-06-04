@@ -5,7 +5,7 @@
 use derive_more::{Constructor, From};
 use serde::{Deserialize, Serialize};
 
-use crate::PinId;
+use crate::layout::compounds::PinId;
 
 #[derive(
     Clone,

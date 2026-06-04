@@ -2,7 +2,12 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{Board, Rect2, layout::compounds::ComponentId, selections::ComponentSelection};
+use crate::{
+    board::Board,
+    layout::compounds::ComponentId,
+    rect::Rect2,
+    selections::ComponentSelection,
+};
 
 impl Board {
     pub fn components_bbox2(&self, selection: ComponentSelection) -> Option<Rect2<i64>> {

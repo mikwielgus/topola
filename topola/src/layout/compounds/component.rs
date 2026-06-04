@@ -5,10 +5,9 @@
 use derive_more::{Constructor, From};
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    PinId,
-    layout::primitives::{JointId, PolygonId, SegmentId, ViaId},
-    primitives::PrimitiveId,
+use crate::layout::{
+    compounds::PinId,
+    primitives::{JointId, PolygonId, PrimitiveId, SegmentId, ViaId},
 };
 
 #[derive(

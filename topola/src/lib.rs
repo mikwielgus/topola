@@ -4,10 +4,11 @@
 
 mod autoplacer;
 mod autorouter;
-mod board;
+pub mod board;
 mod compass;
 mod drawer;
-mod layout;
+mod interactor;
+pub mod layout;
 mod math;
 mod navmesher;
 mod orientation;
@@ -20,19 +21,8 @@ mod vector;
 mod workspace;
 
 pub use crate::autorouter::Autorouter;
-pub use crate::board::Board;
-pub use crate::board::LayerDesc;
-pub use crate::board::LayerSide;
-pub use crate::board::LayerType;
-pub use crate::board::interactors::{
-    DragSelectInteractor, DragSelectOptions, MasterInteractor, SelectInteractor,
-    SelectionCombineMode, SelectionContainMode,
-};
 pub use crate::board::selections;
-pub use crate::layout::LayerId;
-pub use crate::layout::Layout;
-pub use crate::layout::compounds::{Pin, PinId};
-pub use crate::layout::primitives;
+pub use crate::interactor::{Interactor, MasterInteractor};
 pub use crate::orientation::Orientation;
 pub use crate::ratsnest::{Ratline, Ratsnest};
 pub use crate::rect::{Rect2, Rect3};
