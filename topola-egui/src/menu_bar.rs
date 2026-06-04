@@ -4,6 +4,10 @@
 
 use std::sync::mpsc::Sender;
 
+use egui::{
+    PopupCloseBehavior,
+    containers::menu::{MenuButton, MenuConfig},
+};
 use serde::{Deserialize, Serialize};
 use specctra::{
     error::{ParseError, ParseErrorContext},
@@ -19,12 +23,16 @@ use crate::{
 
 #[derive(Deserialize, Serialize)]
 pub struct MenuBar {
-    step_rate: f32,
+    pub fix_step_rate: bool,
+    pub step_rate: f64,
 }
 
 impl MenuBar {
     pub fn new() -> Self {
-        Self { step_rate: 1.0 }
+        Self {
+            fix_step_rate: false,
+            step_rate: 1.0,
+        }
     }
 
     pub fn update(
@@ -42,6 +50,29 @@ impl MenuBar {
                 });
 
                 ui.separator();
+
+                MenuButton::new(tr.text("tr-menu-debug"))
+                    .config(
+                        MenuConfig::default()
+                            .close_behavior(PopupCloseBehavior::CloseOnClickOutside),
+                    )
+                    .ui(ui, |ui| {
+                        actions.debug.render_menu(ctx, ui, self);
+
+                        ui.add_enabled_ui(self.fix_step_rate, |ui| {
+                            ui.label(tr.text("tr-menu-debug-step-rate"));
+                            ui.add(
+                                egui::widgets::Slider::new(&mut self.step_rate, 0.1..=1000.0)
+                                    .suffix(format!(
+                                        " {}",
+                                        tr.text("tr-menu-debug-step-rate-unit")
+                                    )),
+                            );
+                        });
+                    });
+
+                ui.separator();
+
                 egui::widgets::global_theme_preference_switch(ui);
             });
 

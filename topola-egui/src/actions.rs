@@ -2,19 +2,24 @@
 //
 // SPDX-License-Identifier: MIT
 
+use egui::{Context, Ui};
+
 use crate::{
-    action::{Action, Trigger},
+    action::{Action, Switch, Trigger},
+    menu_bar::MenuBar,
     translator::Translator,
 };
 
 pub struct Actions {
     pub file: FileActions,
+    pub debug: DebugActions,
 }
 
 impl Actions {
     pub fn new(tr: &Translator) -> Self {
         Self {
             file: FileActions::new(tr),
+            debug: DebugActions::new(tr),
         }
     }
 }
@@ -66,5 +71,22 @@ impl FileActions {
         if !cfg!(target_arch = "wasm32") {
             self.quit.button(ctx, ui);
         }
+    }
+}
+
+pub struct DebugActions {
+    pub fix_step_rate: Switch,
+}
+
+impl DebugActions {
+    pub fn new(tr: &Translator) -> Self {
+        Self {
+            fix_step_rate: Action::new_keyless(tr.text("tr-menu-debug-fix-step-rate"))
+                .into_switch(),
+        }
+    }
+
+    pub fn render_menu(&mut self, _ctx: &Context, ui: &mut Ui, menu_bar: &mut MenuBar) {
+        self.fix_step_rate.checkbox(ui, &mut menu_bar.fix_step_rate);
     }
 }

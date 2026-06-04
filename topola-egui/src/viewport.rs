@@ -5,7 +5,7 @@
 use egui::Pos2;
 use topola::{MasterInteractor, Vector2, Workspace};
 
-use crate::{display::Display, workspace::GuiWorkspace};
+use crate::{display::Display, menu_bar::MenuBar, translator::Translator, workspace::GuiWorkspace};
 
 pub struct Viewport {
     pub scene_rect: egui::Rect,
@@ -24,7 +24,13 @@ impl Viewport {
         }
     }
 
-    pub fn update(&mut self, ctx: &egui::Context, workspace: Option<&mut GuiWorkspace>) {
+    pub fn update(
+        &mut self,
+        tr: &Translator,
+        ctx: &egui::Context,
+        menu_bar: &MenuBar,
+        workspace: Option<&mut GuiWorkspace>,
+    ) {
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
                 ui.ctx().request_repaint();
@@ -51,6 +57,20 @@ impl Viewport {
                     Self::fit_to_rect_in_scene(viewport_rect, scene_rect, zoom_range.into());
 
                 if let Some(workspace) = workspace {
+                    workspace.advance_state_by_dt(
+                        tr,
+                        menu_bar.fix_step_rate.then_some(menu_bar.step_rate),
+                        ctx.input(|i| {
+                            if i.stable_dt <= i.predicted_dt {
+                                i.stable_dt
+                            } else {
+                                // Clamp dt to egui's predicted dt to
+                                // additionally safeguard against stuttering.
+                                i.predicted_dt
+                            }
+                        }) as f64,
+                    );
+
                     let escape_pressed = ctx.input(|i| i.key_pressed(egui::Key::Escape));
                     if escape_pressed {
                         if let Some(interactor) = self.master_interactor.as_mut() {
@@ -70,6 +90,7 @@ impl Viewport {
                         ctx.input(|i| i.pointer.button_down(egui::PointerButton::Primary));
                     let primary_released =
                         ctx.input(|i| i.pointer.button_released(egui::PointerButton::Primary));
+
                     let delete_pressed = ctx.input(|i| i.key_pressed(egui::Key::Delete));
                     let mut maybe_pointer_on_scene: Option<Vector2<i64>> = None;
 

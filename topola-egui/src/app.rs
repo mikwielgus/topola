@@ -134,7 +134,12 @@ impl eframe::App for App {
             workspace.update_appearance_panel(ctx);
         }
 
-        self.viewport.update(ctx, self.workspace.as_mut());
+        self.viewport.update(
+            &self.translator,
+            ctx,
+            &self.menu_bar,
+            self.workspace.as_mut(),
+        );
 
         self.update_locale();
         self.update_title(ctx);
