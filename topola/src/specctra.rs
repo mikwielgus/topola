@@ -12,11 +12,11 @@ use specctra::{
 
 use crate::{
     board::{Board, LayerDesc, LayerSide, LayerType},
+    layout::primitives::{JointSpec, Polygon, Segment, SegmentSpec},
     layout::{
         LayerId,
         compounds::{ComponentId, NetId, PinId, PinSpec},
     },
-    layout::primitives::{JointSpec, Polygon, Segment, SegmentSpec},
     vector::Vector2,
 };
 

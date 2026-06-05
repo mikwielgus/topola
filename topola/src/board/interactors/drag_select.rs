@@ -51,8 +51,6 @@ impl DragSelectInteractor {
 }
 
 impl Interactor for DragSelectInteractor {
-    fn delete(&mut self, _board: &mut Board) {}
-
     fn hold(&mut self, board: &mut Board, _layer: LayerId, pointer: Vector2<i64>) {
         self.selection = PersistableSelection::new();
 

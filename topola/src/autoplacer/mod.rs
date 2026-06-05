@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+pub mod interactors;
+
 use rand::RngExt;
 use rand_distr::{Distribution, Normal};
 use undoredo::{FlushDelta, ResetDelta};

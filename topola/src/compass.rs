@@ -22,20 +22,12 @@ pub trait CompassDirection<T>: Copy + PartialEq + Into<Vector2<T>> {
         let zero = T::zero();
 
         if axis.y.is_zero() {
-            let x = if axis.x < zero {
-                -vector.x
-            } else {
-                vector.x
-            };
+            let x = if axis.x < zero { -vector.x } else { vector.x };
             return Vector2::new(x, zero);
         }
 
         if axis.x.is_zero() {
-            let y = if axis.y < zero {
-                -vector.y
-            } else {
-                vector.y
-            };
+            let y = if axis.y < zero { -vector.y } else { vector.y };
             return Vector2::new(zero, y);
         }
 

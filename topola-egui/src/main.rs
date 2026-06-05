@@ -7,12 +7,12 @@
 mod action;
 mod actions;
 mod app;
+mod controller;
 mod display;
 mod layers_panel;
 mod menu_bar;
 mod translator;
 mod viewport;
-mod workspace;
 
 use crate::app::App;
 

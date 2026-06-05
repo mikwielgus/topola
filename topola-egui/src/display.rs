@@ -2,7 +2,7 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use crate::{viewport::Viewport, workspace::GuiWorkspace};
+use crate::{controller::Controller, viewport::Viewport};
 use topola::{
     Orientation, Vector2, Workspace,
     layout::primitives::{Joint, Polygon, Segment, Via},
@@ -21,7 +21,7 @@ impl Display {
         ui: &egui::Ui,
         //menu_bar: &MenuBar,
         viewport: &Viewport,
-        workspace: &GuiWorkspace,
+        workspace: &Controller,
     ) {
         self.display_layout(ctx, ui, /*menu_bar,*/ viewport, workspace);
         self.display_repulsions(ui, viewport, workspace);
@@ -37,7 +37,7 @@ impl Display {
         ui: &egui::Ui,
         //menu_bar: &MenuBar,
         viewport: &Viewport,
-        workspace: &GuiWorkspace,
+        workspace: &Controller,
     ) {
         let board = workspace.workspace.board();
         let layout = board.layout();
@@ -160,7 +160,7 @@ impl Display {
         );
     }
 
-    fn display_repulsions(&mut self, ui: &egui::Ui, viewport: &Viewport, workspace: &GuiWorkspace) {
+    fn display_repulsions(&mut self, ui: &egui::Ui, viewport: &Viewport, workspace: &Controller) {
         let board = workspace.workspace.board();
         let stroke = egui::Stroke::new(150.0 / viewport.scale_factor(), egui::Color32::YELLOW);
 
@@ -201,12 +201,7 @@ impl Display {
         }
     }
 
-    fn display_attractions(
-        &mut self,
-        ui: &egui::Ui,
-        viewport: &Viewport,
-        workspace: &GuiWorkspace,
-    ) {
+    fn display_attractions(&mut self, ui: &egui::Ui, viewport: &Viewport, workspace: &Controller) {
         let board = workspace.workspace.board();
         let layout = board.layout();
         let stroke = egui::Stroke::new(150.0 / viewport.scale_factor(), egui::Color32::BLUE);
@@ -336,7 +331,7 @@ impl Display {
         ctx: &egui::Context,
         ui: &egui::Ui,
         viewport: &Viewport,
-        workspace: &GuiWorkspace,
+        workspace: &Controller,
     ) {
         let board = workspace.workspace.board();
         let layout = board.layout();
@@ -413,7 +408,7 @@ impl Display {
         ctx: &egui::Context,
         ui: &egui::Ui,
         viewport: &Viewport,
-        workspace: &GuiWorkspace,
+        workspace: &Controller,
     ) {
         let Workspace::Autorouter(autorouter_workspace) = &workspace.workspace else {
             return;
@@ -483,7 +478,7 @@ impl Display {
         _ctx: &egui::Context,
         ui: &egui::Ui,
         _viewport: &Viewport,
-        workspace: &GuiWorkspace,
+        workspace: &Controller,
     ) {
         let Workspace::Autorouter(autorouter_workspace) = &workspace.workspace else {
             return;

@@ -41,8 +41,6 @@ impl SelectInteractor {
 }
 
 impl Interactor for SelectInteractor {
-    fn delete(&mut self, _board: &mut Board) {}
-
     fn hold(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
         let contain = if pointer.x >= self.origin.x {
             SelectionContainMode::Window

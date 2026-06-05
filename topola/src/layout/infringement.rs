@@ -176,12 +176,10 @@ impl Layout {
             .iter()
             .copied()
             .flat_map(|joint_id| self.locate_joint_infringements(joint_id).map(Into::into))
-            .chain(
-                pin.segments.iter().copied().flat_map(|segment_id| {
-                    self.locate_segment_infringements(segment_id)
-                        .map(Into::into)
-                }),
-            )
+            .chain(pin.segments.iter().copied().flat_map(|segment_id| {
+                self.locate_segment_infringements(segment_id)
+                    .map(Into::into)
+            }))
             .chain(
                 pin.vias
                     .iter()

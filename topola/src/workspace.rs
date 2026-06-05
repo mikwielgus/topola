@@ -44,6 +44,16 @@ impl Workspace {
             }
         }
     }
+
+    pub fn board_mut(&mut self) -> &mut Board {
+        match self {
+            Workspace::Board(workspace) => &mut workspace.board,
+            Workspace::Autorouter(_workspace) => todo!(),
+            /*Workspace::Autorouter(workspace) => {
+                workspace.autorouter.router().navmesher_board().board()
+            }*/
+        }
+    }
 }
 
 pub struct BoardWorkspace {

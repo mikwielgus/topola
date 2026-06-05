@@ -7,10 +7,7 @@ use derive_more::Constructor;
 use undoredo::ResetDelta;
 
 use crate::{
-    board::Board,
-    interactor::Interactor,
-    layout::LayerId,
-    selections::ComponentSelection,
+    board::Board, interactor::Interactor, layout::LayerId, selections::ComponentSelection,
     vector::Vector2,
 };
 
@@ -22,8 +19,6 @@ pub struct DragMoveInteractor {
 }
 
 impl Interactor for DragMoveInteractor {
-    fn delete(&mut self, _board: &mut Board) {}
-
     fn hold(&mut self, board: &mut Board, _layer: LayerId, pointer: Vector2<i64>) {
         board.reset_delta();
 

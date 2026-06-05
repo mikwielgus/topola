@@ -121,11 +121,7 @@ impl Layout {
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn via_via_rect_overlap(
-        &self,
-        infringer: ViaId,
-        infringee: ViaId,
-    ) -> Option<Rect2<i64>> {
+    pub fn via_via_rect_overlap(&self, infringer: ViaId, infringee: ViaId) -> Option<Rect2<i64>> {
         let infringer_bbox = self.via(infringer).bbox().xy();
         let infringee_bbox = self.via(infringee).bbox().xy();
 

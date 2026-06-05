@@ -9,7 +9,7 @@ use topola::board::Board;
 use unic_langid::langid;
 
 use crate::{
-    menu_bar::MenuBar, translator::Translator, viewport::Viewport, workspace::GuiWorkspace,
+    controller::Controller, menu_bar::MenuBar, translator::Translator, viewport::Viewport,
 };
 
 pub struct App {
@@ -22,7 +22,7 @@ pub struct App {
 
     menu_bar: MenuBar,
     viewport: Viewport,
-    workspace: Option<GuiWorkspace>,
+    controller: Option<Controller>,
 }
 
 impl Default for App {
@@ -32,7 +32,7 @@ impl Default for App {
             content_channel: channel(),
             menu_bar: MenuBar::new(),
             viewport: Viewport::new(),
-            workspace: None,
+            controller: None,
         }
     }
 }
@@ -52,7 +52,7 @@ impl App {
 
     fn update_state(&mut self) {
         if let Ok(data) = self.content_channel.1.try_recv() {
-            self.workspace = Some(GuiWorkspace::new(
+            self.controller = Some(Controller::new(
                 Board::from_specctra(data.unwrap()),
                 &self.translator,
             ));
@@ -130,15 +130,15 @@ impl eframe::App for App {
 
         self.update_state();
 
-        if let Some(ref mut workspace) = self.workspace {
-            workspace.update_appearance_panel(ctx);
+        if let Some(ref mut controller) = self.controller {
+            controller.update_appearance_panel(ctx);
         }
 
         self.viewport.update(
             &self.translator,
             ctx,
             &self.menu_bar,
-            self.workspace.as_mut(),
+            self.controller.as_mut(),
         );
 
         self.update_locale();

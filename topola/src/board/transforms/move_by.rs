@@ -3,10 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
-    board::Board,
-    layout::compounds::ComponentId,
-    selections::ComponentSelection,
-    vector::Vector2,
+    board::Board, layout::compounds::ComponentId, selections::ComponentSelection, vector::Vector2,
 };
 
 impl Board {
