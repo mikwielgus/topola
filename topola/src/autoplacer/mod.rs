@@ -4,6 +4,8 @@
 
 pub mod interactors;
 
+use std::ops::ControlFlow;
+
 use rand::RngExt;
 use rand_distr::{Distribution, Normal};
 use undoredo::{FlushDelta, ResetDelta};
@@ -17,10 +19,11 @@ use crate::{
 };
 
 pub struct AutoplacerSchedule {
-    initial_temperature: f64,
-    temperature_common_ratio: f64,
-    initial_std_dev: f64,
-    std_dev_common_ratio: f64,
+    pub initial_temperature: f64,
+    pub temperature_common_ratio: f64,
+    pub initial_std_dev: f64,
+    pub std_dev_common_ratio: f64,
+    pub max_steps: u64,
 }
 
 #[derive(Clone, Copy)]
@@ -32,7 +35,7 @@ pub struct AutoplacerStepParams {
 pub struct Autoplacer {
     components: Vec<ComponentId>,
     schedule: AutoplacerSchedule,
-    step_counter: u32,
+    step_counter: u64,
     origin_delta: BoardDelta, //rng: ThreadRng,
 }
 
@@ -50,22 +53,29 @@ impl Autoplacer {
         }
     }
 
-    pub fn step(&mut self, board: &mut Board) -> bool {
-        self.step_with_params(
-            board,
-            AutoplacerStepParams {
-                temperature: self.schedule.initial_temperature
-                    * self
-                        .schedule
-                        .temperature_common_ratio
-                        .powf(self.step_counter as f64),
-                std_dev: self.schedule.initial_std_dev
-                    * self
-                        .schedule
-                        .std_dev_common_ratio
-                        .powf(self.step_counter as f64),
-            },
-        )
+    pub fn step(&mut self, board: &mut Board) -> ControlFlow<()> {
+        if self.step_counter < self.schedule.max_steps {
+            let control_flow = self.step_with_params(
+                board,
+                AutoplacerStepParams {
+                    temperature: self.schedule.initial_temperature
+                        * self
+                            .schedule
+                            .temperature_common_ratio
+                            .powf(self.step_counter as f64),
+                    std_dev: self.schedule.initial_std_dev
+                        * self
+                            .schedule
+                            .std_dev_common_ratio
+                            .powf(self.step_counter as f64),
+                },
+            );
+
+            self.step_counter += 1;
+            control_flow
+        } else {
+            ControlFlow::Break(())
+        }
     }
 
     // TODO.
@@ -73,10 +83,15 @@ impl Autoplacer {
 
     }*/
 
-    fn step_with_params(&mut self, board: &mut Board, params: AutoplacerStepParams) -> bool {
+    fn step_with_params(
+        &mut self,
+        board: &mut Board,
+        params: AutoplacerStepParams,
+    ) -> ControlFlow<()> {
         for &component in self.components.iter() {
             //self.step_component_with_params(component, params);
-            let last_cost = self.cost(board, params);
+            //let last_cost = self.cost(board, params);
+            let last_cost = self.component_cost(board, component, params);
 
             let dx_gaussian = Normal::new(0.0, params.std_dev).unwrap();
             let dy_gaussian = Normal::new(0.0, params.std_dev).unwrap();
@@ -86,13 +101,14 @@ impl Autoplacer {
             let dx = dx_gaussian.sample(&mut rand::rng());
             let dy = dy_gaussian.sample(&mut rand::rng());
 
-            board.move_resolved_components_by(&self.components, Vector2::new(dx as i64, dy as i64));
+            board.move_resolved_components_by(&[component], Vector2::new(dx as i64, dy as i64));
 
-            let new_cost = self.cost(board, params);
+            //let new_cost = self.cost(board, params);
+            let new_cost = self.component_cost(board, component, params);
             let delta_cost = new_cost - last_cost;
 
-            if delta_cost <= 0.0
-                || f64::exp(-delta_cost / params.temperature) <= rand::rng().random()
+            if delta_cost < 0.0
+                || rand::rng().random::<f64>() < f64::exp(-delta_cost / params.temperature)
             {
                 self.origin_delta = self.origin_delta.clone().merge_delta(board.flush_delta());
             } else {
@@ -100,21 +116,21 @@ impl Autoplacer {
             }
         }
 
-        true
+        ControlFlow::Continue(())
     }
 
-    fn cost(&self, board: &Board, params: AutoplacerStepParams) -> f64 {
+    /*fn cost(&self, board: &Board, params: AutoplacerStepParams) -> f64 {
         self.components
             .iter()
             .map(|&component| self.component_cost(board, component, params))
             .sum()
-    }
+    }*/
 
     fn component_cost(
         &self,
         board: &Board,
         component: ComponentId,
-        _params: AutoplacerStepParams,
+        params: AutoplacerStepParams,
     ) -> f64 {
         let layout = board.layout();
 
@@ -126,8 +142,12 @@ impl Autoplacer {
             .component_attractions(component)
             .map(|vector| 1.0 / (1.0 + (vector.x.abs() + vector.y.abs()) as f64))
             .sum();
+        let retention_cost: i64 = layout
+            .component_retentions(component)
+            .map(|vector| 100 * (vector.x.abs() + vector.y.abs()))
+            .sum();
 
-        repulsion_cost as f64 + attraction_cost
+        repulsion_cost as f64 + attraction_cost + retention_cost as f64
     }
 
     /*fn step_component_with_params(

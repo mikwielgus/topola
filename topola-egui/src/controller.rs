@@ -11,18 +11,19 @@ use crate::{layers_panel::LayersPanel, translator::Translator};
 pub struct Controller {
     pub workspace: Workspace,
     pub appearance_panel: LayersPanel,
-    pub master_interactor: Option<MasterInteractor>,
-    pub dt_accum: f64,
+    pub master_interactor: MasterInteractor,
+    dt_accum: f64,
 }
 
 impl Controller {
     pub fn new(board: Board, tr: &Translator) -> Self {
         let appearance_panel = LayersPanel::new(&board);
+        let workspace = Workspace::new_board(board);
 
         Self {
-            workspace: Workspace::new_board(board),
+            master_interactor: MasterInteractor::new(workspace.selection().clone()),
+            workspace,
             appearance_panel,
-            master_interactor: None,
             dt_accum: 0.0,
         }
     }
@@ -59,11 +60,8 @@ impl Controller {
         true
     }
 
-    pub fn step(&mut self, tr: &Translator) -> ControlFlow<()> {
-        self.master_interactor
-            .as_mut()
-            .map(|master_interactor| master_interactor.step(self.workspace.board_mut()));
-        ControlFlow::Continue(())
+    pub fn step(&mut self, _tr: &Translator) -> ControlFlow<()> {
+        self.master_interactor.step(self.workspace.board_mut())
     }
 
     pub fn update_appearance_panel(&mut self, ctx: &egui::Context) {
@@ -87,13 +85,22 @@ impl Controller {
         ui: &mut egui::Ui,
     ) {
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
-            if let (Some(interactor), Workspace::Board(workspace)) =
-                (&mut self.master_interactor, &mut self.workspace)
-            {
-                interactor.abort(&mut workspace.board);
-                *self.workspace.selection_mut() = interactor.selection().clone();
+            let board_master =
+                if let MasterInteractor::Autoplacer(interactor) = &self.master_interactor {
+                    Some(interactor.board_master().clone())
+                } else {
+                    None
+                };
+
+            if let Workspace::Board(workspace) = &mut self.workspace {
+                self.master_interactor.abort(&mut workspace.board);
+
+                if let Some(board_master) = board_master {
+                    self.master_interactor = MasterInteractor::Board(board_master);
+                }
+
+                *self.workspace.selection_mut() = self.master_interactor.selection().clone();
             }
-            self.master_interactor = None;
         }
 
         let primary_pressed = ctx.input(|i| i.pointer.button_pressed(egui::PointerButton::Primary));
@@ -110,21 +117,20 @@ impl Controller {
             maybe_pointer_on_scene = Some(pointer_on_scene);
 
             if primary_pressed && scene_hovered {
-                self.master_interactor =
-                    Some(MasterInteractor::new(self.workspace.selection().clone()));
+                self.master_interactor = MasterInteractor::new(self.workspace.selection().clone());
             }
 
-            if let (Some(interactor), Workspace::Board(workspace)) =
-                (&mut self.master_interactor, &mut self.workspace)
-            {
+            if let Workspace::Board(workspace) = &mut self.workspace {
                 if primary_down {
-                    interactor.hold(
+                    self.master_interactor.hold(
                         &mut workspace.board,
                         self.appearance_panel.active,
                         pointer_on_scene,
                     );
 
-                    if let Some(select_interactor) = interactor.select_interactor().as_ref() {
+                    if let Some(select_interactor) =
+                        self.master_interactor.select_interactor().as_ref()
+                    {
                         let origin = *select_interactor.origin();
                         let drag_rect_scene = egui::Rect::from_min_max(
                             egui::pos2(
@@ -160,27 +166,25 @@ impl Controller {
         }
 
         if primary_released {
-            if let Some(mut interactor) = self.master_interactor.take() {
-                let active = self.appearance_panel.active;
-                let pointer_for_scene = maybe_pointer_on_scene.unwrap_or_else(|| {
-                    interactor
-                        .select_interactor()
-                        .as_ref()
-                        .map(|select_interactor| *select_interactor.origin())
-                        .unwrap_or(Vector2::new(0, 0))
-                });
-                if let Workspace::Board(workspace) = &mut self.workspace {
-                    interactor.release(&mut workspace.board, active, pointer_for_scene);
-                    *self.workspace.selection_mut() = interactor.selection().clone();
-                }
+            let active = self.appearance_panel.active;
+            let pointer_for_scene = maybe_pointer_on_scene.unwrap_or_else(|| {
+                self.master_interactor
+                    .select_interactor()
+                    .as_ref()
+                    .map(|select_interactor| *select_interactor.origin())
+                    .unwrap_or(Vector2::new(0, 0))
+            });
+            if let Workspace::Board(workspace) = &mut self.workspace {
+                self.master_interactor
+                    .release(&mut workspace.board, active, pointer_for_scene);
+                *self.workspace.selection_mut() = self.master_interactor.selection().clone();
             }
         }
 
         if delete_pressed {
-            let mut interactor = MasterInteractor::new(self.workspace.selection().clone());
             if let Workspace::Board(workspace) = &mut self.workspace {
-                interactor.delete(&mut workspace.board);
-                *self.workspace.selection_mut() = interactor.selection().clone();
+                self.master_interactor.delete(&mut workspace.board);
+                *self.workspace.selection_mut() = self.master_interactor.selection().clone();
             }
         }
     }

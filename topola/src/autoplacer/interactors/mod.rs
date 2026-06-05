@@ -4,4 +4,4 @@
 
 mod master;
 
-pub use master::MasterInteractor;
+pub use master::AutoplacerMasterInteractor;

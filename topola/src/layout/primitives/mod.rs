@@ -15,7 +15,10 @@ pub use polygon::*;
 pub use segment::*;
 pub use via::*;
 
-use crate::layout::{Layout, compounds::PinId};
+use crate::{
+    Rect2,
+    layout::{Layout, compounds::PinId},
+};
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, From, Ord, PartialEq, PartialOrd, Serialize)]
 pub enum PrimitiveId {
@@ -32,6 +35,15 @@ impl Layout {
             PrimitiveId::Segment(segment_id) => self.segment(segment_id).spec.pin,
             PrimitiveId::Via(via_id) => self.via(via_id).spec.pin,
             PrimitiveId::Polygon(polygon_id) => self.polygon(polygon_id).pin,
+        }
+    }
+
+    pub fn primitive_bbox2(&self, primitive: PrimitiveId) -> Rect2<i64> {
+        match primitive {
+            PrimitiveId::Joint(joint_id) => self.joint(joint_id).bbox().xy(),
+            PrimitiveId::Segment(segment_id) => self.segment(segment_id).bbox().xy(),
+            PrimitiveId::Via(via_id) => self.via(via_id).bbox().xy(),
+            PrimitiveId::Polygon(polygon_id) => self.polygon(polygon_id).bbox().xy(),
         }
     }
 }

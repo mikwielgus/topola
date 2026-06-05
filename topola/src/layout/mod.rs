@@ -13,6 +13,7 @@ mod modify;
 mod overlap;
 pub mod primitives;
 mod repulsion;
+mod retention;
 mod transforms;
 
 use derive_getters::Getters;
@@ -26,9 +27,12 @@ use stable_vec::StableVec;
 use undoredo::aliases::RTreeHalfDelta;
 use undoredo::{Delta, Recorder};
 
-use crate::layout::{
-    compounds::{Component, ComponentId, Net, Pin, PinId},
-    primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
+use crate::{
+    layout::{
+        compounds::{Component, ComponentId, Net, Pin, PinId},
+        primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
+    },
+    vector::Vector2,
 };
 
 #[derive(
@@ -57,9 +61,9 @@ impl LayerId {
 #[derive(Clone, Debug, Delta, Getters)]
 pub struct Layout {
     #[undoredo(skip)]
-    boundary: Vec<[i64; 2]>,
+    boundary: Vec<Vector2<i64>>,
     #[undoredo(skip)]
-    place_boundary: Vec<[i64; 2]>,
+    place_boundary: Vec<Vector2<i64>>,
     #[undoredo(skip)]
     layer_count: usize,
 
@@ -91,7 +95,7 @@ pub struct Layout {
 }
 
 impl Layout {
-    pub fn new(boundary: Vec<[i64; 2]>, layer_count: usize, net_count: usize) -> Self {
+    pub fn new(boundary: Vec<Vector2<i64>>, layer_count: usize, net_count: usize) -> Self {
         let mut nets = StableVec::new();
         for _ in 0..net_count {
             nets.push(Net::default());

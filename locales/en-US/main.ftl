@@ -35,6 +35,7 @@ tr-menu-route-planar-autoroute = Planar Autoroute
 tr-menu-route-topo-autoroute = Topological planar Autoroute
 tr-menu-route-routed-band-width = Routed Band Width
 tr-menu-route-fanout-clearance = Fanout Clearance
+tr-menu-route-autoplace = Autoplace
 
 tr-menu-debug = Debug
 tr-menu-debug-highlight-obstacles = Highlight Obstacles

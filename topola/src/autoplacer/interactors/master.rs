@@ -2,11 +2,15 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use std::ops::ControlFlow;
+
+use derive_getters::Getters;
+
 use crate::{
     autoplacer::{Autoplacer, AutoplacerSchedule},
     board::{
         Board,
-        interactors::{MasterInteractor as BoardMasterInteractor, SelectInteractor},
+        interactors::{BoardMasterInteractor, SelectInteractor},
         selections::PersistableSelection,
     },
     interactor::Interactor,
@@ -14,20 +18,23 @@ use crate::{
     vector::Vector2,
 };
 
-pub struct MasterInteractor {
+#[derive(Getters)]
+pub struct AutoplacerMasterInteractor {
     board_master: BoardMasterInteractor,
     autoplacer: Autoplacer,
 }
 
-impl MasterInteractor {
+impl AutoplacerMasterInteractor {
     pub fn new(
         board: &mut Board,
-        selection: PersistableSelection,
+        board_master: BoardMasterInteractor,
         schedule: AutoplacerSchedule,
     ) -> Self {
+        let selection = board_master.selection().components.clone();
+
         Self {
-            board_master: BoardMasterInteractor::new(selection.clone()),
-            autoplacer: Autoplacer::new(board, selection.components.clone(), schedule),
+            board_master,
+            autoplacer: Autoplacer::new(board, selection, schedule),
         }
     }
 
@@ -40,9 +47,9 @@ impl MasterInteractor {
     }
 }
 
-impl Interactor for MasterInteractor {
-    fn step(&mut self, board: &mut Board) {
-        self.autoplacer.step(board);
+impl Interactor for AutoplacerMasterInteractor {
+    fn step(&mut self, board: &mut Board) -> ControlFlow<()> {
+        self.autoplacer.step(board)
     }
 
     fn hold(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {

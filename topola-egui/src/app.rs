@@ -125,8 +125,12 @@ impl eframe::App for App {
 
     /// Called each time the UI has to be repainted.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
-        self.menu_bar
-            .update(ctx, &mut self.translator, self.content_channel.0.clone());
+        self.menu_bar.update(
+            ctx,
+            &mut self.translator,
+            self.content_channel.0.clone(),
+            self.controller.as_mut(),
+        );
 
         self.update_state();
 

@@ -19,10 +19,10 @@ impl Layout {
         &self,
         infringer: ComponentId,
         orientation: Orientation,
-    ) -> impl Iterator<Item = Vector2<i64>> {
+    ) -> impl Iterator<Item = Vector2<i64>> + '_ {
         self.locate_component_infringements(infringer)
-            .map(move |infringement| {
-                self.component_component_repulsion(
+            .flat_map(move |infringement| {
+                self.component_component_repulsions(
                     infringement.infringer(),
                     infringement.infringee(),
                     orientation,
@@ -30,28 +30,25 @@ impl Layout {
             })
     }
 
-    pub fn component_component_repulsion(
+    pub fn component_component_repulsions(
         &self,
         infringer: ComponentId,
         infringee: ComponentId,
         orientation: Orientation,
-    ) -> Vector2<i64> {
-        let mut max_repulsion = Vector2::new(0, 0);
-        let mut max_repulsion_magnitude = 0;
-
-        for &infringer_pin in self.component(infringer).pins.iter() {
-            for &infringee_pin in self.component(infringee).pins.iter() {
-                let repulsion = self.pin_pin_repulsion(infringer_pin, infringee_pin, orientation);
-                let repulsion_magnitude = repulsion.x.abs() + repulsion.y.abs();
-
-                if repulsion_magnitude > max_repulsion_magnitude {
-                    max_repulsion = repulsion;
-                    max_repulsion_magnitude = repulsion_magnitude;
-                }
-            }
-        }
-
-        max_repulsion
+    ) -> impl Iterator<Item = Vector2<i64>> + '_ {
+        self.component(infringer)
+            .pins
+            .iter()
+            .copied()
+            .flat_map(move |infringer_pin| {
+                self.component(infringee)
+                    .pins
+                    .iter()
+                    .copied()
+                    .flat_map(move |infringee_pin| {
+                        self.pin_pin_repulsions(infringer_pin, infringee_pin, orientation)
+                    })
+            })
     }
 
     pub fn locate_pin_repulsions(
@@ -60,8 +57,8 @@ impl Layout {
         orientation: Orientation,
     ) -> impl Iterator<Item = Vector2<i64>> + '_ {
         self.locate_pin_infringements(infringer)
-            .map(move |infringement| {
-                self.pin_pin_repulsion(
+            .flat_map(move |infringement| {
+                self.pin_pin_repulsions(
                     infringement.infringer(),
                     infringement.infringee(),
                     orientation,
@@ -69,32 +66,25 @@ impl Layout {
             })
     }
 
-    pub fn pin_pin_repulsion(
+    pub fn pin_pin_repulsions(
         &self,
         infringer: PinId,
         infringee: PinId,
         orientation: Orientation,
-    ) -> Vector2<i64> {
-        let mut max_repulsion = Vector2::new(0, 0);
-        let mut max_repulsion_magnitude = 0;
-
-        for infringer_primitive in self.pin(infringer).primitives() {
-            for infringee_primitive in self.pin(infringee).primitives() {
-                let repulsion = self.primitive_primitive_repulsion(
-                    infringer_primitive,
-                    infringee_primitive,
-                    orientation,
-                );
-                let repulsion_magnitude = repulsion.x.abs() + repulsion.y.abs();
-
-                if repulsion_magnitude > max_repulsion_magnitude {
-                    max_repulsion = repulsion;
-                    max_repulsion_magnitude = repulsion_magnitude;
-                }
-            }
-        }
-
-        max_repulsion
+    ) -> impl Iterator<Item = Vector2<i64>> + '_ {
+        self.pin(infringer)
+            .primitives()
+            .flat_map(move |infringer_primitive| {
+                self.pin(infringee)
+                    .primitives()
+                    .map(move |infringee_primitive| {
+                        self.primitive_primitive_repulsion(
+                            infringer_primitive,
+                            infringee_primitive,
+                            orientation,
+                        )
+                    })
+            })
     }
 
     pub fn primitive_primitive_repulsion(

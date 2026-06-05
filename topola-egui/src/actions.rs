@@ -12,6 +12,7 @@ use crate::{
 
 pub struct Actions {
     pub file: FileActions,
+    pub run: RunActions,
     pub debug: DebugActions,
 }
 
@@ -19,6 +20,7 @@ impl Actions {
     pub fn new(tr: &Translator) -> Self {
         Self {
             file: FileActions::new(tr),
+            run: RunActions::new(tr),
             debug: DebugActions::new(tr),
         }
     }
@@ -71,6 +73,29 @@ impl FileActions {
         if !cfg!(target_arch = "wasm32") {
             self.quit.button(ctx, ui);
         }
+    }
+}
+
+pub struct RunActions {
+    pub autoplace: Trigger,
+}
+
+impl RunActions {
+    pub fn new(tr: &Translator) -> Self {
+        Self {
+            autoplace: Action::new(
+                tr.text("tr-menu-route-autoplace"),
+                egui::Modifiers::NONE,
+                egui::Key::Space,
+            )
+            .into_trigger(),
+        }
+    }
+
+    pub fn render_menu(&mut self, ctx: &egui::Context, ui: &mut egui::Ui, have_workspace: bool) {
+        ui.add_enabled_ui(have_workspace, |ui| {
+            self.autoplace.button(ctx, ui);
+        });
     }
 }
 

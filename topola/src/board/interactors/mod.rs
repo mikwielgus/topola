@@ -9,7 +9,7 @@ mod select;
 
 pub use drag_move::DragMoveInteractor;
 pub use drag_select::{DragSelectInteractor, DragSelectOptions};
-pub use master::MasterInteractor;
+pub use master::BoardMasterInteractor;
 pub use select::SelectInteractor;
 use serde::{Deserialize, Serialize};
 

@@ -14,10 +14,12 @@ use specctra::{
     read::ListTokenizer,
     structure::DsnFile,
 };
+use topola::AutoplacerSchedule;
 
 use crate::{
     actions::Actions,
     app::{execute, handle_file},
+    controller::Controller,
     translator::Translator,
 };
 
@@ -40,14 +42,19 @@ impl MenuBar {
         ctx: &egui::Context,
         tr: &mut Translator,
         content_sender: Sender<Result<DsnFile, ParseErrorContext>>,
+        controller: Option<&mut Controller>,
     ) {
         let mut actions = Actions::new(tr);
 
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("File", |ui| {
-                    actions.file.render_menu(ctx, ui, false);
+                    actions.file.render_menu(ctx, ui, controller.is_some());
                 });
+
+                ui.separator();
+
+                actions.run.render_menu(ctx, ui, controller.is_some());
 
                 ui.separator();
 
@@ -94,6 +101,21 @@ impl MenuBar {
                         ctx.request_repaint();
                     }
                 });
+            }
+
+            if actions.run.autoplace.consume_key_triggered(ctx, ui) {
+                if let Some(controller) = controller {
+                    controller.master_interactor.autoplace(
+                        controller.workspace.board_mut(),
+                        AutoplacerSchedule {
+                            initial_temperature: 1000.0,
+                            temperature_common_ratio: 0.95,
+                            initial_std_dev: 1000.0,
+                            std_dev_common_ratio: 0.995,
+                            max_steps: 200,
+                        },
+                    );
+                }
             }
         });
     }

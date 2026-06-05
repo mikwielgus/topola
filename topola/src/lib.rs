@@ -20,6 +20,7 @@ mod specctra;
 mod vector;
 mod workspace;
 
+pub use crate::autoplacer::AutoplacerSchedule;
 pub use crate::autorouter::Autorouter;
 pub use crate::board::selections;
 pub use crate::interactor::{Interactor, MasterInteractor};

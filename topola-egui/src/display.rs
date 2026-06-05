@@ -26,6 +26,7 @@ impl Display {
         self.display_layout(ctx, ui, /*menu_bar,*/ viewport, workspace);
         self.display_repulsions(ui, viewport, workspace);
         self.display_attractions(ui, viewport, workspace);
+        self.display_retentions(ui, viewport, workspace);
         self.display_bboxes(ctx, ui, viewport, workspace);
         self.display_navmeshes(ctx, ui, viewport, workspace);
         self.display_ratsnest(ctx, ui, viewport, workspace);
@@ -152,8 +153,8 @@ impl Display {
                 .boundary()
                 .iter()
                 .map(|p| egui::Pos2 {
-                    x: p[0] as f32,
-                    y: p[1] as f32,
+                    x: p.x as f32,
+                    y: p.y as f32,
                 })
                 .collect::<Vec<_>>(),
             egui::Stroke::new(5.0 / viewport.scale_factor(), egui::Color32::WHITE),
@@ -196,6 +197,47 @@ impl Display {
                 board
                     .layout()
                     .locate_pin_repulsions(pin_id, Orientation::Oblique),
+                stroke,
+            );
+        }
+    }
+
+    fn display_retentions(&mut self, ui: &egui::Ui, viewport: &Viewport, workspace: &Controller) {
+        let board = workspace.workspace.board();
+        let layout = board.layout();
+        let stroke = egui::Stroke::new(
+            150.0 / viewport.scale_factor(),
+            egui::Color32::from_rgb(192, 64, 255),
+        );
+
+        for selector in &workspace.workspace.selection().components.0 {
+            let Some(component_id) = board.component_id(&selector.component) else {
+                continue;
+            };
+
+            let Some(bbox) = layout.component_bbox2(component_id) else {
+                continue;
+            };
+
+            let origin = Vector2::new((bbox.min.x + bbox.max.x) / 2, (bbox.min.y + bbox.max.y) / 2);
+
+            Self::paint_arrows(
+                ui,
+                origin,
+                layout.component_retentions(component_id),
+                stroke,
+            );
+        }
+
+        for selector in &workspace.workspace.selection().pins.0 {
+            let Some(pin_id) = board.pin_id(&selector.pin) else {
+                continue;
+            };
+
+            Self::paint_arrows(
+                ui,
+                layout.pin_centroid(pin_id),
+                layout.pin_retentions(pin_id),
                 stroke,
             );
         }

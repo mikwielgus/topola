@@ -16,13 +16,13 @@ use crate::{
 };
 
 #[derive(Clone, Debug, Eq, Getters, PartialEq)]
-pub struct MasterInteractor {
+pub struct BoardMasterInteractor {
     select_interactor: Option<SelectInteractor>,
     drag_move_interactor: Option<DragMoveInteractor>,
     selection: PersistableSelection,
 }
 
-impl MasterInteractor {
+impl BoardMasterInteractor {
     pub fn new(selection: PersistableSelection) -> Self {
         Self {
             select_interactor: None,
@@ -32,7 +32,7 @@ impl MasterInteractor {
     }
 }
 
-impl Interactor for MasterInteractor {
+impl Interactor for BoardMasterInteractor {
     fn delete(&mut self, board: &mut Board) {
         board.delete_net_free_primitives(self.selection.nets.clone());
     }

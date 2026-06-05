@@ -61,11 +61,7 @@ impl Board {
         net_names: BiBTreeMap<NetId, String>,
     ) -> Self {
         Self {
-            layout: Layout::new(
-                boundary.into_iter().map(Into::into).collect(),
-                layer_descs.len(),
-                net_names.len(),
-            ),
+            layout: Layout::new(boundary, layer_descs.len(), net_names.len()),
             component_names: Recorder::new(BiBTreeMap::new()),
             pin_names: Recorder::new(BiBTreeMap::new()),
             layer_descs: Recorder::new(layer_descs),

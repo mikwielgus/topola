@@ -144,6 +144,72 @@ impl_vector2_inside_polygon!(u128);
 impl_vector2_inside_polygon!(f32);
 impl_vector2_inside_polygon!(f64);
 
+macro_rules! impl_vector2_closest_point_on_boundary {
+    ($type:ty) => {
+        impl Vector2<$type> {
+            pub fn closest_point_on_segment(
+                self,
+                segment_start: Vector2<$type>,
+                segment_end: Vector2<$type>,
+            ) -> Vector2<$type> {
+                let abx = segment_end.x - segment_start.x;
+                let aby = segment_end.y - segment_start.y;
+                let apx = self.x - segment_start.x;
+                let apy = self.y - segment_start.y;
+                let ab_len_sq = abx * abx + aby * aby;
+
+                if ab_len_sq == 0 as $type {
+                    return segment_start;
+                }
+
+                let t = (apx * abx + apy * aby).clamp(0 as $type, ab_len_sq);
+
+                Vector2::new(
+                    segment_start.x + abx * t / ab_len_sq,
+                    segment_start.y + aby * t / ab_len_sq,
+                )
+            }
+
+            pub fn closest_point_on_polygon_boundary(
+                self,
+                polygon: &[Vector2<$type>],
+            ) -> Vector2<$type> {
+                let mut closest_point = polygon[0];
+                let mut best_distance_sq = <$type as Bounded>::max_value();
+
+                for i in 0..polygon.len() {
+                    let segment_start = polygon[i];
+                    let segment_end = polygon[(i + 1) % polygon.len()];
+                    let candidate = self.closest_point_on_segment(segment_start, segment_end);
+                    let dx = self.x - candidate.x;
+                    let dy = self.y - candidate.y;
+                    let distance_sq = dx * dx + dy * dy;
+
+                    if distance_sq < best_distance_sq {
+                        best_distance_sq = distance_sq;
+                        closest_point = candidate;
+                    }
+                }
+
+                closest_point
+            }
+        }
+    };
+}
+
+impl_vector2_closest_point_on_boundary!(i8);
+impl_vector2_closest_point_on_boundary!(i16);
+impl_vector2_closest_point_on_boundary!(i32);
+impl_vector2_closest_point_on_boundary!(i64);
+impl_vector2_closest_point_on_boundary!(i128);
+impl_vector2_closest_point_on_boundary!(u8);
+impl_vector2_closest_point_on_boundary!(u16);
+impl_vector2_closest_point_on_boundary!(u32);
+impl_vector2_closest_point_on_boundary!(u64);
+impl_vector2_closest_point_on_boundary!(u128);
+impl_vector2_closest_point_on_boundary!(f32);
+impl_vector2_closest_point_on_boundary!(f64);
+
 macro_rules! impl_vector2_rotate_around_point {
     ($type:ty) => {
         impl Vector2<$type> {
@@ -197,10 +263,12 @@ impl_polygon_centroid!(i8);
 impl_polygon_centroid!(i16);
 impl_polygon_centroid!(i32);
 impl_polygon_centroid!(i64);
+impl_polygon_centroid!(i128);
 impl_polygon_centroid!(u8);
 impl_polygon_centroid!(u16);
 impl_polygon_centroid!(u32);
 impl_polygon_centroid!(u64);
+impl_polygon_centroid!(u128);
 impl_polygon_centroid!(f32);
 impl_polygon_centroid!(f64);
 

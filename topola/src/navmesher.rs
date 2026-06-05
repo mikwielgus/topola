@@ -206,11 +206,7 @@ impl NavmesherBoard {
     pub fn new(board: Board) -> Self {
         let mut this = Self {
             navmesher: Navmesher::new(
-                board
-                    .layout()
-                    .boundary()
-                    .iter()
-                    .map(|p| Vector2::new(p[0], p[1])),
+                board.layout().boundary().iter().copied(),
                 *board.layout().layer_count(),
             ),
             board,

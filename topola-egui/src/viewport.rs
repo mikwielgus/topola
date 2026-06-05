@@ -124,23 +124,23 @@ impl Viewport {
     fn boundary_bounding_box(controller: &Controller) -> egui::Rect {
         let first = controller.workspace.board().layout().boundary()[0];
 
-        let mut min_x = first[0];
-        let mut max_x = first[0];
-        let mut min_y = first[1];
-        let mut max_y = first[1];
+        let mut min_x = first.x;
+        let mut max_x = first.x;
+        let mut min_y = first.y;
+        let mut max_y = first.y;
 
         for point in controller.workspace.board().layout().boundary()[1..].iter() {
-            if point[0] < min_x {
-                min_x = point[0];
+            if point.x < min_x {
+                min_x = point.x;
             }
-            if point[0] > max_x {
-                max_x = point[0];
+            if point.x > max_x {
+                max_x = point.x;
             }
-            if point[1] < min_y {
-                min_y = point[1];
+            if point.y < min_y {
+                min_y = point.y;
             }
-            if point[1] > max_y {
-                max_y = point[1];
+            if point.y > max_y {
+                max_y = point.y;
             }
         }
 
