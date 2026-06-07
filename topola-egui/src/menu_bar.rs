@@ -138,10 +138,10 @@ impl MenuBar {
                         controller.workspace.board_mut(),
                         AutoplacerSchedule {
                             initial_temperature: 1000.0,
-                            temperature_common_ratio: 0.95,
+                            temperature_common_ratio: 0.98,
                             initial_std_dev: 1000.0,
                             std_dev_common_ratio: 0.995,
-                            max_steps: 200,
+                            max_steps: 500,
                         },
                     );
                 }

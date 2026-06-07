@@ -11,7 +11,7 @@ use rand_distr::{Distribution, Normal};
 use undoredo::{FlushDelta, ResetDelta};
 
 use crate::{
-    board::{Board, BoardDelta},
+    board::Board,
     layout::{Layout, compounds::ComponentId},
     orientation::Orientation,
     selections::ComponentSelection,
@@ -36,7 +36,6 @@ pub struct Autoplacer {
     components: Vec<ComponentId>,
     schedule: AutoplacerSchedule,
     step_counter: u64,
-    origin_delta: BoardDelta, //rng: ThreadRng,
 }
 
 impl Autoplacer {
@@ -49,7 +48,6 @@ impl Autoplacer {
             components: board.resolve_components(selection).collect(),
             schedule,
             step_counter: 0,
-            origin_delta: board.flush_delta(),
         }
     }
 
@@ -171,7 +169,7 @@ impl Autoplacer {
         crate::profile_function!();
         layout
             .locate_component_repulsions(component, Orientation::Oblique)
-            .map(|vector| vector.x.abs() + vector.y.abs())
+            .map(|vector| 1000 * (vector.x.abs() + vector.y.abs()))
             .sum()
     }
 
@@ -179,7 +177,11 @@ impl Autoplacer {
         crate::profile_function!();
         layout
             .component_attractions(component)
-            .map(|vector| 1.0 / (1.0 + (vector.x.abs() + vector.y.abs()) as f64))
+            .map(|vector| {
+                (vector.x.abs().pow(2) as f64 + vector.y.abs().pow(2) as f64)
+                    .sqrt()
+                    .powf(0.5)
+            })
             .sum()
     }
 
@@ -187,7 +189,7 @@ impl Autoplacer {
         crate::profile_function!();
         layout
             .component_retentions(component)
-            .map(|vector| 100 * (vector.x.abs() + vector.y.abs()))
+            .map(|vector| 1000 * (vector.x.abs() + vector.y.abs()))
             .sum()
     }
 
