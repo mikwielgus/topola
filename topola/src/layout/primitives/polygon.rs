@@ -66,6 +66,7 @@ impl Polygon {
     }
 
     pub fn center(&self) -> Vector2<i64> {
+        crate::profile_function!();
         Vector2::<i64>::polygon_centroid(&self.vertices)
     }
 

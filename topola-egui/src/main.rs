@@ -11,6 +11,7 @@ mod controller;
 mod display;
 mod layers_panel;
 mod menu_bar;
+mod profiler;
 mod translator;
 mod viewport;
 
@@ -20,6 +21,8 @@ use crate::app::App;
 #[cfg(not(target_arch = "wasm32"))]
 fn main() -> eframe::Result {
     env_logger::init(); // Log to stderr (if you run with `RUST_LOG=debug`).
+
+    profiler::enable();
 
     let native_options = eframe::NativeOptions {
         viewport: egui::ViewportBuilder::default()

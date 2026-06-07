@@ -19,6 +19,7 @@ impl Board {
         selection: &[ComponentId],
         translation: Vector2<i64>,
     ) {
+        crate::profile_function!();
         self.layout.move_components_by(selection, translation);
     }
 }

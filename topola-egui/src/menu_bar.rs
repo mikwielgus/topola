@@ -27,6 +27,8 @@ use crate::{
 pub struct MenuBar {
     pub fix_step_rate: bool,
     pub step_rate: f64,
+    #[serde(default)]
+    pub show_profiler: bool,
 }
 
 impl MenuBar {
@@ -34,6 +36,7 @@ impl MenuBar {
         Self {
             fix_step_rate: false,
             step_rate: 1.0,
+            show_profiler: false,
         }
     }
 
@@ -44,6 +47,8 @@ impl MenuBar {
         content_sender: Sender<Result<DsnFile, ParseErrorContext>>,
         controller: Option<&mut Controller>,
     ) {
+        crate::profile_function!();
+
         let mut actions = Actions::new(tr);
 
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
@@ -76,6 +81,15 @@ impl MenuBar {
                                     )),
                             );
                         });
+
+                        #[cfg(feature = "profiler")]
+                        {
+                            ui.separator();
+
+                            if ui.button(tr.text("tr-menu-debug-profiler")).clicked() {
+                                self.show_profiler = true;
+                            }
+                        }
                     });
 
                 ui.separator();
@@ -118,5 +132,7 @@ impl MenuBar {
                 }
             }
         });
+
+        crate::profiler::profiler_window(ctx, &mut self.show_profiler);
     }
 }

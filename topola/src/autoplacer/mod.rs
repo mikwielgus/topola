@@ -12,7 +12,7 @@ use undoredo::{FlushDelta, ResetDelta};
 
 use crate::{
     board::{Board, BoardDelta},
-    layout::compounds::ComponentId,
+    layout::{Layout, compounds::ComponentId},
     orientation::Orientation,
     selections::ComponentSelection,
     vector::Vector2,
@@ -54,6 +54,8 @@ impl Autoplacer {
     }
 
     pub fn step(&mut self, board: &mut Board) -> ControlFlow<()> {
+        crate::profile_function!();
+
         if self.step_counter < self.schedule.max_steps {
             let control_flow = self.step_with_params(
                 board,
@@ -88,35 +90,57 @@ impl Autoplacer {
         board: &mut Board,
         params: AutoplacerStepParams,
     ) -> ControlFlow<()> {
-        for &component in self.components.iter() {
-            //self.step_component_with_params(component, params);
-            //let last_cost = self.cost(board, params);
-            let last_cost = self.component_cost(board, component, params);
+        crate::profile_function!();
 
-            let dx_gaussian = Normal::new(0.0, params.std_dev).unwrap();
-            let dy_gaussian = Normal::new(0.0, params.std_dev).unwrap();
-
-            //let dx = dx_gaussian.sample(&mut self.rng);
-            //let dy = dy_gaussian.sample(&mut self.rng);
-            let dx = dx_gaussian.sample(&mut rand::rng());
-            let dy = dy_gaussian.sample(&mut rand::rng());
-
-            board.move_resolved_components_by(&[component], Vector2::new(dx as i64, dy as i64));
-
-            //let new_cost = self.cost(board, params);
-            let new_cost = self.component_cost(board, component, params);
-            let delta_cost = new_cost - last_cost;
-
-            if delta_cost < 0.0
-                || rand::rng().random::<f64>() < f64::exp(-delta_cost / params.temperature)
-            {
-                self.origin_delta = self.origin_delta.clone().merge_delta(board.flush_delta());
-            } else {
-                board.reset_delta();
-            }
+        for i in 0..self.components.len() {
+            let component = self.components[i];
+            self.step_component(board, component, params);
         }
 
         ControlFlow::Continue(())
+    }
+
+    fn step_component(
+        &mut self,
+        board: &mut Board,
+        component: ComponentId,
+        params: AutoplacerStepParams,
+    ) {
+        crate::profile_function!();
+
+        let last_cost = self.component_cost(board, component, params);
+        let translation = self.sample_move(params);
+        board.move_resolved_components_by(&[component], translation);
+        let new_cost = self.component_cost(board, component, params);
+        let delta_cost = new_cost - last_cost;
+
+        if delta_cost < 0.0
+            || rand::rng().random::<f64>() < f64::exp(-delta_cost / params.temperature)
+        {
+            self.accept_move(board);
+        } else {
+            self.reject_move(board);
+        }
+    }
+
+    fn sample_move(&self, params: AutoplacerStepParams) -> Vector2<i64> {
+        crate::profile_function!();
+        let dx_gaussian = Normal::new(0.0, params.std_dev).unwrap();
+        let dy_gaussian = Normal::new(0.0, params.std_dev).unwrap();
+        Vector2::new(
+            dx_gaussian.sample(&mut rand::rng()) as i64,
+            dy_gaussian.sample(&mut rand::rng()) as i64,
+        )
+    }
+
+    fn accept_move(&mut self, board: &mut Board) {
+        crate::profile_function!();
+        self.origin_delta = self.origin_delta.clone().merge_delta(board.flush_delta());
+    }
+
+    fn reject_move(&mut self, board: &mut Board) {
+        crate::profile_function!();
+        board.reset_delta();
     }
 
     /*fn cost(&self, board: &Board, params: AutoplacerStepParams) -> f64 {
@@ -130,24 +154,40 @@ impl Autoplacer {
         &self,
         board: &Board,
         component: ComponentId,
-        params: AutoplacerStepParams,
+        _params: AutoplacerStepParams,
     ) -> f64 {
-        let layout = board.layout();
+        crate::profile_function!();
 
-        let repulsion_cost: i64 = layout
-            .locate_component_repulsions(component, Orientation::Oblique)
-            .map(|vector| vector.x.abs() + vector.y.abs())
-            .sum();
-        let attraction_cost: f64 = layout
-            .component_attractions(component)
-            .map(|vector| 1.0 / (1.0 + (vector.x.abs() + vector.y.abs()) as f64))
-            .sum();
-        let retention_cost: i64 = layout
-            .component_retentions(component)
-            .map(|vector| 100 * (vector.x.abs() + vector.y.abs()))
-            .sum();
+        let layout = board.layout();
+        let repulsion_cost = self.repulsion_cost(layout, component);
+        let attraction_cost = self.attraction_cost(layout, component);
+        let retention_cost = self.retention_cost(layout, component);
 
         repulsion_cost as f64 + attraction_cost + retention_cost as f64
+    }
+
+    fn repulsion_cost(&self, layout: &Layout, component: ComponentId) -> i64 {
+        crate::profile_function!();
+        layout
+            .locate_component_repulsions(component, Orientation::Oblique)
+            .map(|vector| vector.x.abs() + vector.y.abs())
+            .sum()
+    }
+
+    fn attraction_cost(&self, layout: &Layout, component: ComponentId) -> f64 {
+        crate::profile_function!();
+        layout
+            .component_attractions(component)
+            .map(|vector| 1.0 / (1.0 + (vector.x.abs() + vector.y.abs()) as f64))
+            .sum()
+    }
+
+    fn retention_cost(&self, layout: &Layout, component: ComponentId) -> i64 {
+        crate::profile_function!();
+        layout
+            .component_retentions(component)
+            .map(|vector| 100 * (vector.x.abs() + vector.y.abs()))
+            .sum()
     }
 
     /*fn step_component_with_params(

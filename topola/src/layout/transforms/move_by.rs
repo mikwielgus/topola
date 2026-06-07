@@ -13,6 +13,7 @@ impl Layout {
     }
 
     pub fn move_components_by(&mut self, ids: &[ComponentId], translation: Vector2<i64>) {
+        crate::profile_function!();
         for id in ids {
             let component = self.components[id.index()].clone();
 

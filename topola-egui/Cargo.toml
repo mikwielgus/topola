@@ -11,6 +11,7 @@ edition = "2024"
 [features]
 default = ["xdg-portal"]
 gtk3 = ["rfd/gtk3"]
+profiler = ["puffin", "puffin_egui", "puffin_http", "topola/profiler"]
 xdg-portal = ["rfd/xdg-portal"]
 
 [package.metadata.docs.rs]
@@ -41,6 +42,9 @@ serde = { version = "1.0", features = ["derive"] }
 [target.'cfg(not(target_arch = "wasm32"))'.dependencies]
 futures-lite = "2.6"
 env_logger = "0.11"
+puffin = { version = "0.20", optional = true }
+puffin_egui = { version = "0.30", optional = true }
+puffin_http = { version = "0.17", optional = true }
 
 # Web:
 [target.'cfg(target_arch = "wasm32")'.dependencies]

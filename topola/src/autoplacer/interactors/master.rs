@@ -49,6 +49,7 @@ impl AutoplacerMasterInteractor {
 
 impl Interactor for AutoplacerMasterInteractor {
     fn step(&mut self, board: &mut Board) -> ControlFlow<()> {
+        crate::profile_function!();
         self.autoplacer.step(board)
     }
 

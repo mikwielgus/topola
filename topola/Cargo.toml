@@ -8,6 +8,9 @@ description = "Work-in-progress free and open-source topological (rubberband) ro
 version = "0.1.0"
 edition = "2024"
 
+[features]
+profiler = ["puffin"]
+
 [dependencies]
 bidimap = "0.7"
 dearcut = { version = "0.3", features = ["serde", "undoredo"] }
@@ -24,6 +27,7 @@ spade = "2.15"
 specctra = { path = "../specctra" }
 stable-vec = "0.4"
 undoredo.workspace = true
+puffin = { version = "0.20", optional = true }
 
 [dev-dependencies]
 walkdir = "2.5"

@@ -83,6 +83,7 @@ impl Pin {
 
 impl Layout {
     pub fn pin_centroid(&self, pin_id: PinId) -> Vector2<i64> {
+        crate::profile_function!();
         let pin = self.pin(pin_id);
         let mut sum = Vector2::new(0, 0);
         let mut count = 0;

@@ -125,6 +125,9 @@ impl eframe::App for App {
 
     /// Called each time the UI has to be repainted.
     fn update(&mut self, ctx: &egui::Context, _frame: &mut eframe::Frame) {
+        crate::profiler::begin_frame();
+        crate::profile_function!();
+
         self.menu_bar.update(
             ctx,
             &mut self.translator,

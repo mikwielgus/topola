@@ -28,6 +28,8 @@ impl Viewport {
         menu_bar: &MenuBar,
         controller: Option<&mut Controller>,
     ) {
+        crate::profile_function!();
+
         egui::CentralPanel::default().show(ctx, |ui| {
             egui::Frame::canvas(ui.style()).show(ui, |ui| {
                 ui.ctx().request_repaint();

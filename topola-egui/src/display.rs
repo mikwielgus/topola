@@ -23,6 +23,8 @@ impl Display {
         viewport: &Viewport,
         workspace: &Controller,
     ) {
+        crate::profile_function!();
+
         self.display_layout(ctx, ui, /*menu_bar,*/ viewport, workspace);
         self.display_repulsions(ui, viewport, workspace);
         self.display_attractions(ui, viewport, workspace);
@@ -40,6 +42,7 @@ impl Display {
         viewport: &Viewport,
         workspace: &Controller,
     ) {
+        crate::profile_function!();
         let board = workspace.workspace.board();
         let layout = board.layout();
 
@@ -162,6 +165,7 @@ impl Display {
     }
 
     fn display_repulsions(&mut self, ui: &egui::Ui, viewport: &Viewport, workspace: &Controller) {
+        crate::profile_function!();
         let board = workspace.workspace.board();
         let stroke = egui::Stroke::new(150.0 / viewport.scale_factor(), egui::Color32::YELLOW);
 
@@ -203,6 +207,7 @@ impl Display {
     }
 
     fn display_retentions(&mut self, ui: &egui::Ui, viewport: &Viewport, workspace: &Controller) {
+        crate::profile_function!();
         let board = workspace.workspace.board();
         let layout = board.layout();
         let stroke = egui::Stroke::new(
@@ -244,6 +249,7 @@ impl Display {
     }
 
     fn display_attractions(&mut self, ui: &egui::Ui, viewport: &Viewport, workspace: &Controller) {
+        crate::profile_function!();
         let board = workspace.workspace.board();
         let layout = board.layout();
         let stroke = egui::Stroke::new(150.0 / viewport.scale_factor(), egui::Color32::BLUE);
@@ -375,6 +381,7 @@ impl Display {
         viewport: &Viewport,
         workspace: &Controller,
     ) {
+        crate::profile_function!();
         let board = workspace.workspace.board();
         let layout = board.layout();
 
@@ -452,6 +459,7 @@ impl Display {
         viewport: &Viewport,
         workspace: &Controller,
     ) {
+        crate::profile_function!();
         let Workspace::Autorouter(autorouter_workspace) = &workspace.workspace else {
             return;
         };
@@ -522,6 +530,7 @@ impl Display {
         _viewport: &Viewport,
         workspace: &Controller,
     ) {
+        crate::profile_function!();
         let Workspace::Autorouter(autorouter_workspace) = &workspace.workspace else {
             return;
         };

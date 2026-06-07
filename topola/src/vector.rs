@@ -247,6 +247,7 @@ macro_rules! impl_polygon_centroid {
     ($type:ty) => {
         impl Vector2<$type> {
             pub fn polygon_centroid(polygon: &[Vector2<$type>]) -> Self {
+                crate::profile_function!();
                 let mut sum = Vector2::new(0 as $type, 0 as $type);
 
                 for vertex in polygon.iter() {

@@ -51,6 +51,7 @@ tr-menu-debug-show-bboxes = Show BBoxes
 tr-menu-debug-show-primitive-indices = Show Primitive Indices
 tr-menu-debug-show-bend-endpoint-tangents = Show Bend Endpoint Tangents
 tr-menu-debug-fix-step-rate = Fix Step Rate
+tr-menu-debug-profiler = Profiler
 tr-menu-debug-step-rate = Step Rate
 tr-menu-debug-step-rate-unit = steps/s
 

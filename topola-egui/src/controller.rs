@@ -34,6 +34,7 @@ impl Controller {
         step_rate: Option<f64>,
         dt: f64,
     ) -> bool {
+        crate::profile_function!();
         let instant = Instant::now();
 
         if step_rate.is_some() {
@@ -61,17 +62,18 @@ impl Controller {
     }
 
     pub fn step(&mut self, _tr: &Translator) -> ControlFlow<()> {
+        crate::profile_function!();
         self.master_interactor.step(self.workspace.board_mut())
     }
 
     pub fn update_appearance_panel(&mut self, ctx: &egui::Context) {
+        crate::profile_function!();
         let Self {
             workspace,
             appearance_panel,
             master_interactor: _,
             dt_accum,
         } = self;
-
         appearance_panel.update(ctx, workspace.board_mut());
     }
 
@@ -84,6 +86,7 @@ impl Controller {
         scene_hovered: bool,
         ui: &mut egui::Ui,
     ) {
+        crate::profile_function!();
         if ctx.input(|i| i.key_pressed(egui::Key::Escape)) {
             let board_master =
                 if let MasterInteractor::Autoplacer(interactor) = &self.master_interactor {
