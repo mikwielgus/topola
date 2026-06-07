@@ -29,6 +29,16 @@ pub struct MenuBar {
     pub step_rate: f64,
     #[serde(default)]
     pub show_profiler: bool,
+    #[serde(default)]
+    pub show_repulsions: bool,
+    #[serde(default)]
+    pub show_attractions: bool,
+    #[serde(default)]
+    pub show_retentions: bool,
+    #[serde(default)]
+    pub show_bboxes: bool,
+    #[serde(default)]
+    pub show_navmeshes: bool,
 }
 
 impl MenuBar {
@@ -37,6 +47,11 @@ impl MenuBar {
             fix_step_rate: false,
             step_rate: 1.0,
             show_profiler: false,
+            show_repulsions: false,
+            show_attractions: false,
+            show_retentions: false,
+            show_bboxes: false,
+            show_navmeshes: false,
         }
     }
 

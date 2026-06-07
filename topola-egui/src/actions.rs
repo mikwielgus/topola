@@ -101,6 +101,11 @@ impl RunActions {
 
 pub struct DebugActions {
     pub fix_step_rate: Switch,
+    pub show_repulsions: Switch,
+    pub show_attractions: Switch,
+    pub show_retentions: Switch,
+    pub show_bboxes: Switch,
+    pub show_navmeshes: Switch,
 }
 
 impl DebugActions {
@@ -108,10 +113,27 @@ impl DebugActions {
         Self {
             fix_step_rate: Action::new_keyless(tr.text("tr-menu-debug-fix-step-rate"))
                 .into_switch(),
+            show_repulsions: Action::new_keyless(tr.text("tr-menu-debug-show-repulsions"))
+                .into_switch(),
+            show_attractions: Action::new_keyless(tr.text("tr-menu-debug-show-attractions"))
+                .into_switch(),
+            show_retentions: Action::new_keyless(tr.text("tr-menu-debug-show-retentions"))
+                .into_switch(),
+            show_bboxes: Action::new_keyless(tr.text("tr-menu-debug-show-bboxes")).into_switch(),
+            show_navmeshes: Action::new_keyless(tr.text("tr-menu-debug-show-navmesh"))
+                .into_switch(),
         }
     }
 
     pub fn render_menu(&mut self, _ctx: &Context, ui: &mut Ui, menu_bar: &mut MenuBar) {
         self.fix_step_rate.checkbox(ui, &mut menu_bar.fix_step_rate);
+
+        ui.separator();
+
+        self.show_repulsions.checkbox(ui, &mut menu_bar.show_repulsions);
+        self.show_attractions.checkbox(ui, &mut menu_bar.show_attractions);
+        self.show_retentions.checkbox(ui, &mut menu_bar.show_retentions);
+        self.show_bboxes.checkbox(ui, &mut menu_bar.show_bboxes);
+        self.show_navmeshes.checkbox(ui, &mut menu_bar.show_navmeshes);
     }
 }

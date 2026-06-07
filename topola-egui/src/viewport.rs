@@ -45,7 +45,7 @@ impl Viewport {
                     .show(ui, &mut scene_rect, |ui| {
                         if let Some(ref controller) = controller {
                             let mut display = Display::new();
-                            display.update(ctx, ui, &self, controller);
+                            display.update(ctx, ui, &self, controller, menu_bar);
                         }
                     })
                     .response;

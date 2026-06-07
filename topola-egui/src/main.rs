@@ -8,6 +8,7 @@ mod action;
 mod actions;
 mod app;
 mod controller;
+mod debug_overlay;
 mod display;
 mod layers_panel;
 mod menu_bar;
