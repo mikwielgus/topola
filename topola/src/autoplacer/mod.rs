@@ -135,7 +135,8 @@ impl Autoplacer {
 
     fn accept_move(&mut self, board: &mut Board) {
         crate::profile_function!();
-        self.origin_delta = self.origin_delta.clone().merge_delta(board.flush_delta());
+        //self.origin_delta = self.origin_delta.clone().merge_delta(board.flush_delta());
+        board.flush_delta();
     }
 
     fn reject_move(&mut self, board: &mut Board) {
