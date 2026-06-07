@@ -156,9 +156,9 @@ impl Display {
                     polygon,
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        board.layer_desc(polygon.layer),
+                        board.layer_desc(polygon.spec.layer),
                         pin_selected,
-                        (polygon.pin.is_none() && net_selected) || component_selected,
+                        (polygon.spec.pin.is_none() && net_selected) || component_selected,
                     ),
                 );
             }
@@ -233,7 +233,7 @@ impl Display {
         color: egui::Color32,
     ) {
         let points: Vec<egui::Pos2> = polygon
-            .vertices
+            .spec.vertices
             .iter()
             .map(|v| egui::pos2(v.x as f32, v.y as f32))
             .collect();

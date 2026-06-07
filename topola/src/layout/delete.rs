@@ -98,8 +98,8 @@ impl Layout {
     pub fn delete_polygon(&mut self, polygon_id: PolygonId) {
         let polygon = self.polygon(polygon_id);
         let bbox = polygon.bbox();
-        let component = polygon.component;
-        let pin = polygon.pin;
+        let component = polygon.spec.component;
+        let pin = polygon.spec.pin;
 
         if let Some(component_id) = component {
             self.components.modify(component_id.index(), |component| {

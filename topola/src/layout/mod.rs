@@ -158,7 +158,7 @@ impl Layout {
             .as_ref()
             .locate_in_envelope_intersecting(&envelope)
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&id| self.polygon(id).layer == layer)
+            .filter(move |&id| self.polygon(id).spec.layer == layer)
     }
 
     fn whole_layer_aabb(layer: LayerId) -> AABB<[i64; 3]> {

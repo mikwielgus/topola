@@ -62,7 +62,7 @@ impl Board {
             }
 
             for polygon_id in self.layout.layer_polygons(layer_id) {
-                if self.layout.polygon(polygon_id).pin != Some(pin_id) {
+                if self.layout.polygon(polygon_id).spec.pin != Some(pin_id) {
                     continue;
                 }
 
@@ -105,7 +105,7 @@ impl Board {
         let polygon = self.layout.polygon(id);
 
         Some(ComponentSelector {
-            component: self.component_name(polygon.component?)?.to_string(),
+            component: self.component_name(polygon.spec.component?)?.to_string(),
         })
     }
 
@@ -137,7 +137,7 @@ impl Board {
         let polygon = self.layout.polygon(id);
 
         Some(NetSelector {
-            net: self.net_name(polygon.net?)?.to_string(),
+            net: self.net_name(polygon.spec.net?)?.to_string(),
         })
     }
 
@@ -172,8 +172,8 @@ impl Board {
         let polygon = self.layout.polygon(id);
 
         Some(PinSelector {
-            pin: self.pin_name(polygon.pin?)?.to_string(),
-            layer: self.layer_name(polygon.layer)?,
+            pin: self.pin_name(polygon.spec.pin?)?.to_string(),
+            layer: self.layer_name(polygon.spec.layer)?,
         })
     }
 }

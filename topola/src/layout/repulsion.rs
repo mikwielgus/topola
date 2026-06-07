@@ -160,7 +160,7 @@ impl Layout {
         Self::repulsion_from_rect_overlap(
             self.joint_polygon_rect_overlap(infringer, infringee),
             self.joint(infringer).center(),
-            self.polygon(infringee).center(),
+            self.polygon(infringee).centroid,
             orientation,
         )
     }
@@ -238,7 +238,7 @@ impl Layout {
         Self::repulsion_from_rect_overlap(
             self.segment_polygon_rect_overlap(infringer, infringee),
             self.segment(infringer).center(),
-            self.polygon(infringee).center(),
+            self.polygon(infringee).centroid,
             orientation,
         )
     }
@@ -316,7 +316,7 @@ impl Layout {
         Self::repulsion_from_rect_overlap(
             self.via_polygon_rect_overlap(infringer, infringee),
             self.via(infringer).position,
-            self.polygon(infringee).center(),
+            self.polygon(infringee).centroid,
             orientation,
         )
     }
@@ -351,7 +351,7 @@ impl Layout {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.polygon_joint_rect_overlap(infringer, infringee),
-            self.polygon(infringer).center(),
+            self.polygon(infringer).centroid,
             self.joint(infringee).center(),
             orientation,
         )
@@ -365,7 +365,7 @@ impl Layout {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.polygon_segment_rect_overlap(infringer, infringee),
-            self.polygon(infringer).center(),
+            self.polygon(infringer).centroid,
             self.segment(infringee).center(),
             orientation,
         )
@@ -379,7 +379,7 @@ impl Layout {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.polygon_via_rect_overlap(infringer, infringee),
-            self.polygon(infringer).center(),
+            self.polygon(infringer).centroid,
             self.via(infringee).position,
             orientation,
         )
@@ -393,8 +393,8 @@ impl Layout {
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
             self.polygon_polygon_rect_overlap(infringer, infringee),
-            self.polygon(infringer).center(),
-            self.polygon(infringee).center(),
+            self.polygon(infringer).centroid,
+            self.polygon(infringee).centroid,
             orientation,
         )
     }

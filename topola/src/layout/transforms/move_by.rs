@@ -32,9 +32,10 @@ impl Layout {
             for &polygon_id in &component.polygons {
                 self.modify_polygon(polygon_id, |polygon| {
                     polygon
-                        .vertices
+                        .spec.vertices
                         .iter_mut()
-                        .for_each(|vertex| *vertex += translation)
+                        .for_each(|vertex| *vertex += translation);
+                    polygon.centroid += translation;
                 });
             }
         }

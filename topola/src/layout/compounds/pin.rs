@@ -101,7 +101,7 @@ impl Layout {
             count += 1;
         }
         for &polygon_id in &pin.polygons {
-            sum = sum + self.polygon(polygon_id).center();
+            sum = sum + self.polygon(polygon_id).centroid;
             count += 1;
         }
 

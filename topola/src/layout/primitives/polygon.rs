@@ -34,7 +34,7 @@ impl PolygonId {
 }
 
 #[derive(Clone, Debug)]
-pub struct Polygon {
+pub struct PolygonSpec {
     pub vertices: Vec<Vector2<i64>>,
     pub layer: LayerId,
     pub net: Option<NetId>,
@@ -42,20 +42,26 @@ pub struct Polygon {
     pub pin: Option<PinId>,
 }
 
+#[derive(Clone, Debug)]
+pub struct Polygon {
+    pub spec: PolygonSpec,
+    pub centroid: Vector2<i64>,
+}
+
 impl Polygon {
     pub fn bbox(&self) -> Rect3<i64> {
-        let layer = self.layer.index() as i64;
+        let layer = self.spec.layer.index() as i64;
         let mut min = Vector2::new(i64::MAX, i64::MAX);
         let mut max = Vector2::new(i64::MIN, i64::MIN);
 
-        for vertex in &self.vertices {
+        for vertex in &self.spec.vertices {
             min.x = std::cmp::min(min.x, vertex.x);
             min.y = std::cmp::min(min.y, vertex.y);
             max.x = std::cmp::max(max.x, vertex.x);
             max.y = std::cmp::max(max.y, vertex.y);
         }
 
-        if self.vertices.is_empty() {
+        if self.spec.vertices.is_empty() {
             return Rect3::new(Vector3::new(0, 0, layer), Vector3::new(0, 0, layer));
         }
 
@@ -65,12 +71,7 @@ impl Polygon {
         )
     }
 
-    pub fn center(&self) -> Vector2<i64> {
-        crate::profile_function!();
-        Vector2::<i64>::polygon_centroid(&self.vertices)
-    }
-
     pub fn contains_point2(&self, point: Vector2<i64>) -> bool {
-        point.inside_polygon(&self.vertices)
+        point.inside_polygon(&self.spec.vertices)
     }
 }

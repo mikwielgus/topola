@@ -34,7 +34,7 @@ impl Layout {
             PrimitiveId::Joint(joint_id) => self.joint(joint_id).spec.pin,
             PrimitiveId::Segment(segment_id) => self.segment(segment_id).spec.pin,
             PrimitiveId::Via(via_id) => self.via(via_id).spec.pin,
-            PrimitiveId::Polygon(polygon_id) => self.polygon(polygon_id).pin,
+            PrimitiveId::Polygon(polygon_id) => self.polygon(polygon_id).spec.pin,
         }
     }
 

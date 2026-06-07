@@ -12,7 +12,7 @@ use specctra::{
 
 use crate::{
     board::{Board, LayerDesc, LayerSide, LayerType},
-    layout::primitives::{JointSpec, Polygon, Segment, SegmentSpec},
+    layout::primitives::{JointSpec, Polygon, PolygonSpec, Segment, SegmentSpec},
     layout::{
         LayerId,
         compounds::{ComponentId, NetId, PinId, PinSpec},
@@ -383,17 +383,22 @@ impl Board {
         flip: bool,
         coordinate_scale: f64,
     ) {
-        board.insert_polygon(Polygon {
-            vertices: vec![
-                Self::pos(place, pin_pos, x1, y1, flip, coordinate_scale),
-                Self::pos(place, pin_pos, x2, y1, flip, coordinate_scale),
-                Self::pos(place, pin_pos, x2, y2, flip, coordinate_scale),
-                Self::pos(place, pin_pos, x1, y2, flip, coordinate_scale),
-            ],
-            layer,
-            net,
-            component,
-            pin,
+        board.insert_polygon({
+            let spec = PolygonSpec {
+                vertices: vec![
+                    Self::pos(place, pin_pos, x1, y1, flip, coordinate_scale),
+                    Self::pos(place, pin_pos, x2, y1, flip, coordinate_scale),
+                    Self::pos(place, pin_pos, x2, y2, flip, coordinate_scale),
+                    Self::pos(place, pin_pos, x1, y2, flip, coordinate_scale),
+                ],
+                layer,
+                net,
+                component,
+                pin,
+            };
+            let centroid = Vector2::<i64>::polygon_centroid(&spec.vertices);
+
+            Polygon { spec, centroid }
         });
     }
 
@@ -477,12 +482,17 @@ impl Board {
             .iter()
             .map(|coord| Self::pos(place, pin_pos, coord.x, coord.y, flip, coordinate_scale))
             .collect();
-        board.insert_polygon(Polygon {
-            vertices,
-            layer,
-            net,
-            component,
-            pin,
+        board.insert_polygon({
+            let spec = PolygonSpec {
+                vertices,
+                layer,
+                net,
+                component,
+                pin,
+            };
+            let centroid = Vector2::<i64>::polygon_centroid(&spec.vertices);
+
+            Polygon { spec, centroid }
         });
     }
 

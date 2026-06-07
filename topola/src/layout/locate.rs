@@ -462,7 +462,7 @@ impl Layout {
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |&polygon_id| {
                 let polygon = self.polygon(polygon_id);
-                rect.xy().intersects_polygon(&polygon.vertices)
+                rect.xy().intersects_polygon(&polygon.spec.vertices)
             })
     }
 
@@ -478,7 +478,7 @@ impl Layout {
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |&polygon_id| {
                 let polygon = self.polygon(polygon_id);
-                rect.intersects_polygon(&polygon.vertices)
+                rect.intersects_polygon(&polygon.spec.vertices)
             })
     }
 
@@ -505,7 +505,7 @@ impl Layout {
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |&polygon_id| {
                 let polygon = self.polygon(polygon_id);
-                rect.xy().contains_polygon(&polygon.vertices)
+                rect.xy().contains_polygon(&polygon.spec.vertices)
             })
     }
 
@@ -521,7 +521,7 @@ impl Layout {
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |&polygon_id| {
                 let polygon = self.polygon(polygon_id);
-                rect.contains_polygon(&polygon.vertices)
+                rect.contains_polygon(&polygon.spec.vertices)
             })
     }
 
@@ -550,7 +550,7 @@ impl Layout {
         }
 
         for polygon_id in self.locate_polygons_prefer_layer_intersecting_rect(rect) {
-            if let Some(net) = self.polygon(polygon_id).net {
+            if let Some(net) = self.polygon(polygon_id).spec.net {
                 nets.insert(net);
             }
         }
@@ -580,7 +580,7 @@ impl Layout {
         }
 
         for polygon_id in self.locate_polygons_intersecting_rect(rect) {
-            if let Some(net) = self.polygon(polygon_id).net {
+            if let Some(net) = self.polygon(polygon_id).spec.net {
                 nets.insert(net);
             }
         }
@@ -613,7 +613,7 @@ impl Layout {
         }
 
         for polygon_id in self.locate_polygons_prefer_layer_inside_rect(rect) {
-            if let Some(net) = self.polygon(polygon_id).net {
+            if let Some(net) = self.polygon(polygon_id).spec.net {
                 nets.insert(net);
             }
         }
@@ -643,7 +643,7 @@ impl Layout {
         }
 
         for polygon_id in self.locate_polygons_inside_rect(rect) {
-            if let Some(net) = self.polygon(polygon_id).net {
+            if let Some(net) = self.polygon(polygon_id).spec.net {
                 nets.insert(net);
             }
         }

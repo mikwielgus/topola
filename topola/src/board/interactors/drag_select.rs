@@ -76,7 +76,7 @@ impl Interactor for DragSelectInteractor {
                     && board
                         .layout()
                         .locate_polygons_prefer_layer_intersecting_rect(rect)
-                        .all(|polygon_id| board.layout().polygon(polygon_id).pin.is_some())
+                        .all(|polygon_id| board.layout().polygon(polygon_id).spec.pin.is_some())
             }
             SelectionContainMode::Window => {
                 board
@@ -94,7 +94,7 @@ impl Interactor for DragSelectInteractor {
                     && board
                         .layout()
                         .locate_polygons_prefer_layer_inside_rect(rect)
-                        .all(|polygon_id| board.layout().polygon(polygon_id).pin.is_some())
+                        .all(|polygon_id| board.layout().polygon(polygon_id).spec.pin.is_some())
             }
         };
 

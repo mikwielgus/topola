@@ -86,19 +86,19 @@ impl Ratsnest {
         }
 
         for (i, polygon) in board.layout().polygons().container().iter() {
-            let Some(net) = polygon.net else {
+            let Some(net) = polygon.spec.net else {
                 continue;
             };
 
             let _ = triangulations
-                .entry((net, polygon.layer))
+                .entry((net, polygon.spec.layer))
                 .or_insert_with(DelaunayTriangulation::new)
                 .insert(DelaunayVertex {
-                    layer: polygon.layer,
-                    center: polygon.center(),
+                    layer: polygon.spec.layer,
+                    center: polygon.centroid,
                     position: spade::Point2::new(
-                        polygon.center().x as f64,
-                        polygon.center().y as f64,
+                        polygon.centroid.x as f64,
+                        polygon.centroid.y as f64,
                     ),
                     primitive_id: PrimitiveId::Polygon(PolygonId::new(i)),
                 });

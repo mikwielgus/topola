@@ -97,7 +97,7 @@ impl Board {
 
     pub fn nets_contain_polygon(&self, selection: &NetSelection, id: PolygonId) -> bool {
         let polygon = self.layout.polygon(id);
-        let Some(net_name) = polygon.net.and_then(|net| self.net_name(net)) else {
+        let Some(net_name) = polygon.spec.net.and_then(|net| self.net_name(net)) else {
             return false;
         };
 

@@ -236,7 +236,7 @@ impl NavmesherBoard {
             this.polygon_multiobstacles.insert(
                 i,
                 this.navmesher
-                    .insert_multiobstacle(polygon.layer, polygon.vertices.clone()),
+                    .insert_multiobstacle(polygon.spec.layer, polygon.spec.vertices.clone()),
             );
         }*/
 
@@ -293,7 +293,7 @@ impl NavmesherBoard {
         self.polygon_multiobstacles.insert(
             polygon_id.index(),
             self.navmesher
-                .insert_multiobstacle(polygon.layer, polygon.vertices),
+                .insert_multiobstacle(polygon.spec.layer, polygon.spec.vertices),
         );
 
         polygon_id

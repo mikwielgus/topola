@@ -35,7 +35,7 @@ impl Board {
 
         for polygon_id in self
             .resolve_net_polygons(selection.clone())
-            .filter(|&polygon_id| self.layout.polygon(polygon_id).pin.is_none())
+            .filter(|&polygon_id| self.layout.polygon(polygon_id).spec.pin.is_none())
             .collect::<Vec<_>>()
             .clone()
         {

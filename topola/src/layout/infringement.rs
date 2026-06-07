@@ -431,7 +431,7 @@ impl Layout {
             PrimitiveId::Joint(joint_id) => self.joint(joint_id).spec.component,
             PrimitiveId::Segment(segment_id) => self.segment(segment_id).spec.component,
             PrimitiveId::Via(via_id) => self.via(via_id).spec.component,
-            PrimitiveId::Polygon(polygon_id) => self.polygon(polygon_id).component,
+            PrimitiveId::Polygon(polygon_id) => self.polygon(polygon_id).spec.component,
         }
     }
 
@@ -449,7 +449,7 @@ impl Layout {
             PrimitiveId::Joint(joint_id) => self.joint(joint_id).spec.net,
             PrimitiveId::Segment(segment_id) => self.segment(segment_id).net,
             PrimitiveId::Via(via_id) => self.via(via_id).net,
-            PrimitiveId::Polygon(polygon_id) => self.polygon(polygon_id).net,
+            PrimitiveId::Polygon(polygon_id) => self.polygon(polygon_id).spec.net,
         }
     }
 

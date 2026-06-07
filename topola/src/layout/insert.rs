@@ -147,8 +147,8 @@ impl Layout {
 
     pub fn insert_polygon(&mut self, polygon: Polygon) -> PolygonId {
         let bbox = polygon.bbox();
-        let component_id = polygon.component;
-        let pin_id = polygon.pin;
+        let component_id = polygon.spec.component;
+        let pin_id = polygon.spec.pin;
         let polygon_id = PolygonId::new(self.polygons.push(polygon));
 
         self.polygons_rtree
