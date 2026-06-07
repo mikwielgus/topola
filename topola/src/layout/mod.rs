@@ -30,7 +30,7 @@ use undoredo::{Delta, Recorder};
 use crate::{
     layout::{
         compounds::{Component, ComponentId, Net, Pin, PinId},
-        primitives::{Joint, JointId, Polygon, PolygonId, Segment, SegmentId, Via, ViaId},
+        primitives::{Joint, JointId, Poly, PolyId, Seg, SegId, Via, ViaId},
     },
     vector::Vector2,
 };
@@ -72,25 +72,25 @@ pub struct Layout {
     pins: Recorder<StableVec<Pin>>,
 
     joints: Recorder<StableVec<Joint>>,
-    segments: Recorder<StableVec<Segment>>,
+    segs: Recorder<StableVec<Seg>>,
     vias: Recorder<StableVec<Via>>,
-    polygons: Recorder<StableVec<Polygon>>,
+    polys: Recorder<StableVec<Poly>>,
 
     joints_rtree: Recorder<
         RTree<GeomWithData<Rectangle<[i64; 3]>, JointId>>,
         RTreeHalfDelta<GeomWithData<Rectangle<[i64; 3]>, JointId>>,
     >,
-    segments_rtree: Recorder<
-        RTree<GeomWithData<Rectangle<[i64; 3]>, SegmentId>>,
-        RTreeHalfDelta<GeomWithData<Rectangle<[i64; 3]>, SegmentId>>,
+    segs_rtree: Recorder<
+        RTree<GeomWithData<Rectangle<[i64; 3]>, SegId>>,
+        RTreeHalfDelta<GeomWithData<Rectangle<[i64; 3]>, SegId>>,
     >,
     vias_rtree: Recorder<
         RTree<GeomWithData<Rectangle<[i64; 3]>, ViaId>>,
         RTreeHalfDelta<GeomWithData<Rectangle<[i64; 3]>, ViaId>>,
     >,
-    polygons_rtree: Recorder<
-        RTree<GeomWithData<Rectangle<[i64; 3]>, PolygonId>>,
-        RTreeHalfDelta<GeomWithData<Rectangle<[i64; 3]>, PolygonId>>,
+    polys_rtree: Recorder<
+        RTree<GeomWithData<Rectangle<[i64; 3]>, PolyId>>,
+        RTreeHalfDelta<GeomWithData<Rectangle<[i64; 3]>, PolyId>>,
     >,
 }
 
@@ -111,14 +111,14 @@ impl Layout {
             pins: Recorder::new(StableVec::new()),
 
             joints: Recorder::new(StableVec::new()),
-            segments: Recorder::new(StableVec::new()),
+            segs: Recorder::new(StableVec::new()),
             vias: Recorder::new(StableVec::new()),
-            polygons: Recorder::new(StableVec::new()),
+            polys: Recorder::new(StableVec::new()),
 
             joints_rtree: Recorder::new(RTree::new()),
-            segments_rtree: Recorder::new(RTree::new()),
+            segs_rtree: Recorder::new(RTree::new()),
             vias_rtree: Recorder::new(RTree::new()),
-            polygons_rtree: Recorder::new(RTree::new()),
+            polys_rtree: Recorder::new(RTree::new()),
         }
     }
 
@@ -131,13 +131,13 @@ impl Layout {
             .filter(move |&id| self.joint(id).spec.layer == layer)
     }
 
-    pub fn layer_segments(&self, layer: LayerId) -> impl Iterator<Item = SegmentId> + '_ {
+    pub fn layer_segs(&self, layer: LayerId) -> impl Iterator<Item = SegId> + '_ {
         let envelope = Self::whole_layer_aabb(layer);
-        self.segments_rtree
+        self.segs_rtree
             .as_ref()
             .locate_in_envelope_intersecting(&envelope)
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&id| self.segment(id).layer == layer)
+            .filter(move |&id| self.seg(id).layer == layer)
     }
 
     pub fn layer_vias(&self, layer: LayerId) -> impl Iterator<Item = ViaId> + '_ {
@@ -152,13 +152,13 @@ impl Layout {
             })
     }
 
-    pub fn layer_polygons(&self, layer: LayerId) -> impl Iterator<Item = PolygonId> + '_ {
+    pub fn layer_polys(&self, layer: LayerId) -> impl Iterator<Item = PolyId> + '_ {
         let envelope = Self::whole_layer_aabb(layer);
-        self.polygons_rtree
+        self.polys_rtree
             .as_ref()
             .locate_in_envelope_intersecting(&envelope)
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&id| self.polygon(id).spec.layer == layer)
+            .filter(move |&id| self.poly(id).spec.layer == layer)
     }
 
     fn whole_layer_aabb(layer: LayerId) -> AABB<[i64; 3]> {
@@ -180,15 +180,15 @@ impl Layout {
         &self.joints[joint_id.index()]
     }
 
-    pub fn segment(&self, segment_id: SegmentId) -> &Segment {
-        &self.segments[segment_id.index()]
+    pub fn seg(&self, seg_id: SegId) -> &Seg {
+        &self.segs[seg_id.index()]
     }
 
     pub fn via(&self, via_id: ViaId) -> &Via {
         &self.vias[via_id.index()]
     }
 
-    pub fn polygon(&self, polygon_id: PolygonId) -> &Polygon {
-        &self.polygons[polygon_id.index()]
+    pub fn poly(&self, poly_id: PolyId) -> &Poly {
+        &self.polys[poly_id.index()]
     }
 }

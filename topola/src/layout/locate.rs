@@ -8,7 +8,7 @@ use crate::{
     layout::{
         Layout,
         compounds::NetId,
-        primitives::{JointId, PolygonId, SegmentId, ViaId},
+        primitives::{JointId, PolyId, SegId, ViaId},
     },
     rect::{Rect2, Rect3},
     vector::{Vector2, Vector3},
@@ -144,53 +144,53 @@ impl Layout {
             })
     }
 
-    pub fn locate_segments_prefer_layer_at_point(
+    pub fn locate_segs_prefer_layer_at_point(
         &self,
         point: Vector3<i64>,
-    ) -> impl Iterator<Item = SegmentId> {
-        let at_point = self.locate_segments_at_point(point).collect::<Vec<_>>();
+    ) -> impl Iterator<Item = SegId> {
+        let at_point = self.locate_segs_at_point(point).collect::<Vec<_>>();
 
-        let segments = if at_point.is_empty() {
-            self.locate_segments_any_layer_at_point(point.xy())
+        let segs = if at_point.is_empty() {
+            self.locate_segs_any_layer_at_point(point.xy())
                 .collect()
         } else {
             at_point
         };
 
-        segments.into_iter()
+        segs.into_iter()
     }
 
-    pub fn locate_segments_at_point(&self, point: Vector3<i64>) -> impl Iterator<Item = SegmentId> {
-        self.segments_rtree
+    pub fn locate_segs_at_point(&self, point: Vector3<i64>) -> impl Iterator<Item = SegId> {
+        self.segs_rtree
             .as_ref()
             .locate_all_at_point(&[point.x, point.y, point.z])
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&segment_id| self.segment(segment_id).contains_point2(point.xy()))
+            .filter(move |&seg_id| self.seg(seg_id).contains_point2(point.xy()))
     }
 
-    pub fn locate_segments_any_layer_at_point(
+    pub fn locate_segs_any_layer_at_point(
         &self,
         point: Vector2<i64>,
-    ) -> impl Iterator<Item = SegmentId> {
+    ) -> impl Iterator<Item = SegId> {
         let envelope = point.z_extruded_infinitely().aabb();
 
-        self.segments_rtree
+        self.segs_rtree
             .as_ref()
             .locate_in_envelope_intersecting(&envelope)
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&segment_id| self.segments[segment_id.index()].contains_point2(point))
+            .filter(move |&seg_id| self.segs[seg_id.index()].contains_point2(point))
     }
 
-    pub fn locate_segments_prefer_layer_intersecting_rect(
+    pub fn locate_segs_prefer_layer_intersecting_rect(
         &self,
         rect: Rect3<i64>,
-    ) -> impl Iterator<Item = SegmentId> {
+    ) -> impl Iterator<Item = SegId> {
         let at_point = self
-            .locate_segments_intersecting_rect(rect)
+            .locate_segs_intersecting_rect(rect)
             .collect::<Vec<_>>();
 
         let joints = if at_point.is_empty() {
-            self.locate_segments_any_layer_intersecting_rect(rect.xy())
+            self.locate_segs_any_layer_intersecting_rect(rect.xy())
                 .collect()
         } else {
             at_point
@@ -199,44 +199,44 @@ impl Layout {
         joints.into_iter()
     }
 
-    pub fn locate_segments_intersecting_rect(
+    pub fn locate_segs_intersecting_rect(
         &self,
         rect: Rect3<i64>,
-    ) -> impl Iterator<Item = SegmentId> {
-        self.segments_rtree
+    ) -> impl Iterator<Item = SegId> {
+        self.segs_rtree
             .as_ref()
             .locate_in_envelope_intersecting(&rect.aabb())
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&segment_id| {
-                let segment = self.segment(segment_id);
-                rect.xy().intersects_polygon(&segment.bounding_rectangle())
+            .filter(move |&seg_id| {
+                let seg = self.seg(seg_id);
+                rect.xy().intersects_poly(&seg.bounding_rectangle())
             })
     }
 
-    pub fn locate_segments_any_layer_intersecting_rect(
+    pub fn locate_segs_any_layer_intersecting_rect(
         &self,
         rect: Rect2<i64>,
-    ) -> impl Iterator<Item = SegmentId> {
+    ) -> impl Iterator<Item = SegId> {
         let envelope = rect.z_extruded_infinitely().aabb();
 
-        self.segments_rtree
+        self.segs_rtree
             .as_ref()
             .locate_in_envelope_intersecting(&envelope)
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&segment_id| {
-                let segment = self.segment(segment_id);
-                rect.intersects_polygon(&segment.bounding_rectangle())
+            .filter(move |&seg_id| {
+                let seg = self.seg(seg_id);
+                rect.intersects_poly(&seg.bounding_rectangle())
             })
     }
 
-    pub fn locate_segments_prefer_layer_inside_rect(
+    pub fn locate_segs_prefer_layer_inside_rect(
         &self,
         rect: Rect3<i64>,
-    ) -> impl Iterator<Item = SegmentId> {
-        let at_point = self.locate_segments_inside_rect(rect).collect::<Vec<_>>();
+    ) -> impl Iterator<Item = SegId> {
+        let at_point = self.locate_segs_inside_rect(rect).collect::<Vec<_>>();
 
         let joints = if at_point.is_empty() {
-            self.locate_segments_any_layer_inside_rect(rect.xy())
+            self.locate_segs_any_layer_inside_rect(rect.xy())
                 .collect()
         } else {
             at_point
@@ -245,30 +245,30 @@ impl Layout {
         joints.into_iter()
     }
 
-    pub fn locate_segments_inside_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = SegmentId> {
-        self.segments_rtree
+    pub fn locate_segs_inside_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = SegId> {
+        self.segs_rtree
             .as_ref()
             .locate_in_envelope(&rect.aabb())
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&segment_id| {
-                let segment = self.segment(segment_id);
-                rect.xy().contains_polygon(&segment.bounding_rectangle())
+            .filter(move |&seg_id| {
+                let seg = self.seg(seg_id);
+                rect.xy().contains_poly(&seg.bounding_rectangle())
             })
     }
 
-    pub fn locate_segments_any_layer_inside_rect(
+    pub fn locate_segs_any_layer_inside_rect(
         &self,
         rect: Rect2<i64>,
-    ) -> impl Iterator<Item = SegmentId> {
+    ) -> impl Iterator<Item = SegId> {
         let envelope = rect.z_extruded_infinitely().aabb();
 
-        self.segments_rtree
+        self.segs_rtree
             .as_ref()
             .locate_in_envelope(&envelope)
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&segment_id| {
-                let segment = self.segment(segment_id);
-                rect.contains_polygon(&segment.bounding_rectangle())
+            .filter(move |&seg_id| {
+                let seg = self.seg(seg_id);
+                rect.contains_poly(&seg.bounding_rectangle())
             })
     }
 
@@ -395,133 +395,133 @@ impl Layout {
             })
     }
 
-    pub fn locate_polygons_prefer_layer_at_point(
+    pub fn locate_polys_prefer_layer_at_point(
         &self,
         point: Vector3<i64>,
-    ) -> impl Iterator<Item = PolygonId> {
-        let at_point = self.locate_polygons_at_point(point).collect::<Vec<_>>();
+    ) -> impl Iterator<Item = PolyId> {
+        let at_point = self.locate_polys_at_point(point).collect::<Vec<_>>();
 
-        let polygons = if at_point.is_empty() {
-            self.locate_polygons_any_layer_at_point(point.xy())
+        let polys = if at_point.is_empty() {
+            self.locate_polys_any_layer_at_point(point.xy())
                 .collect()
         } else {
             at_point
         };
 
-        polygons.into_iter()
+        polys.into_iter()
     }
 
-    pub fn locate_polygons_at_point(&self, point: Vector3<i64>) -> impl Iterator<Item = PolygonId> {
-        self.polygons_rtree
+    pub fn locate_polys_at_point(&self, point: Vector3<i64>) -> impl Iterator<Item = PolyId> {
+        self.polys_rtree
             .as_ref()
             .locate_all_at_point(&[point.x, point.y, point.z])
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&polygon_id| {
-                self.polygons[polygon_id.index()].contains_point2(point.xy())
+            .filter(move |&poly_id| {
+                self.polys[poly_id.index()].contains_point2(point.xy())
             })
     }
 
-    pub fn locate_polygons_any_layer_at_point(
+    pub fn locate_polys_any_layer_at_point(
         &self,
         point: Vector2<i64>,
-    ) -> impl Iterator<Item = PolygonId> {
+    ) -> impl Iterator<Item = PolyId> {
         let envelope = point.z_extruded_infinitely().aabb();
 
-        self.polygons_rtree
+        self.polys_rtree
             .as_ref()
             .locate_in_envelope_intersecting(&envelope)
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&polygon_id| self.polygons[polygon_id.index()].contains_point2(point))
+            .filter(move |&poly_id| self.polys[poly_id.index()].contains_point2(point))
     }
 
-    pub fn locate_polygons_prefer_layer_intersecting_rect(
+    pub fn locate_polys_prefer_layer_intersecting_rect(
         &self,
         rect: Rect3<i64>,
-    ) -> impl Iterator<Item = PolygonId> {
+    ) -> impl Iterator<Item = PolyId> {
         let at_rect = self
-            .locate_polygons_intersecting_rect(rect)
+            .locate_polys_intersecting_rect(rect)
             .collect::<Vec<_>>();
 
-        let polygons = if at_rect.is_empty() {
-            self.locate_polygons_any_layer_intersecting_rect(rect.xy())
+        let polys = if at_rect.is_empty() {
+            self.locate_polys_any_layer_intersecting_rect(rect.xy())
                 .collect()
         } else {
             at_rect
         };
 
-        polygons.into_iter()
+        polys.into_iter()
     }
 
-    pub fn locate_polygons_intersecting_rect(
+    pub fn locate_polys_intersecting_rect(
         &self,
         rect: Rect3<i64>,
-    ) -> impl Iterator<Item = PolygonId> {
-        self.polygons_rtree
+    ) -> impl Iterator<Item = PolyId> {
+        self.polys_rtree
             .as_ref()
             .locate_in_envelope_intersecting(&rect.aabb())
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&polygon_id| {
-                let polygon = self.polygon(polygon_id);
-                rect.xy().intersects_polygon(&polygon.spec.vertices)
+            .filter(move |&poly_id| {
+                let poly = self.poly(poly_id);
+                rect.xy().intersects_poly(&poly.spec.vertices)
             })
     }
 
-    pub fn locate_polygons_any_layer_intersecting_rect(
+    pub fn locate_polys_any_layer_intersecting_rect(
         &self,
         rect: Rect2<i64>,
-    ) -> impl Iterator<Item = PolygonId> {
+    ) -> impl Iterator<Item = PolyId> {
         let envelope = rect.z_extruded_infinitely().aabb();
 
-        self.polygons_rtree
+        self.polys_rtree
             .as_ref()
             .locate_in_envelope_intersecting(&envelope)
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&polygon_id| {
-                let polygon = self.polygon(polygon_id);
-                rect.intersects_polygon(&polygon.spec.vertices)
+            .filter(move |&poly_id| {
+                let poly = self.poly(poly_id);
+                rect.intersects_poly(&poly.spec.vertices)
             })
     }
 
-    pub fn locate_polygons_prefer_layer_inside_rect(
+    pub fn locate_polys_prefer_layer_inside_rect(
         &self,
         rect: Rect3<i64>,
-    ) -> impl Iterator<Item = PolygonId> {
-        let at_rect = self.locate_polygons_inside_rect(rect).collect::<Vec<_>>();
+    ) -> impl Iterator<Item = PolyId> {
+        let at_rect = self.locate_polys_inside_rect(rect).collect::<Vec<_>>();
 
-        let polygons = if at_rect.is_empty() {
-            self.locate_polygons_any_layer_inside_rect(rect.xy())
+        let polys = if at_rect.is_empty() {
+            self.locate_polys_any_layer_inside_rect(rect.xy())
                 .collect()
         } else {
             at_rect
         };
 
-        polygons.into_iter()
+        polys.into_iter()
     }
 
-    pub fn locate_polygons_inside_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = PolygonId> {
-        self.polygons_rtree
+    pub fn locate_polys_inside_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = PolyId> {
+        self.polys_rtree
             .as_ref()
             .locate_in_envelope(&rect.aabb())
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&polygon_id| {
-                let polygon = self.polygon(polygon_id);
-                rect.xy().contains_polygon(&polygon.spec.vertices)
+            .filter(move |&poly_id| {
+                let poly = self.poly(poly_id);
+                rect.xy().contains_poly(&poly.spec.vertices)
             })
     }
 
-    pub fn locate_polygons_any_layer_inside_rect(
+    pub fn locate_polys_any_layer_inside_rect(
         &self,
         rect: Rect2<i64>,
-    ) -> impl Iterator<Item = PolygonId> {
+    ) -> impl Iterator<Item = PolyId> {
         let envelope = rect.z_extruded_infinitely().aabb();
 
-        self.polygons_rtree
+        self.polys_rtree
             .as_ref()
             .locate_in_envelope(&envelope)
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&polygon_id| {
-                let polygon = self.polygon(polygon_id);
-                rect.contains_polygon(&polygon.spec.vertices)
+            .filter(move |&poly_id| {
+                let poly = self.poly(poly_id);
+                rect.contains_poly(&poly.spec.vertices)
             })
     }
 
@@ -537,8 +537,8 @@ impl Layout {
             }
         }
 
-        for segment_id in self.locate_segments_prefer_layer_intersecting_rect(rect) {
-            if let Some(net) = self.segment(segment_id).net {
+        for seg_id in self.locate_segs_prefer_layer_intersecting_rect(rect) {
+            if let Some(net) = self.seg(seg_id).net {
                 nets.insert(net);
             }
         }
@@ -549,8 +549,8 @@ impl Layout {
             }
         }
 
-        for polygon_id in self.locate_polygons_prefer_layer_intersecting_rect(rect) {
-            if let Some(net) = self.polygon(polygon_id).spec.net {
+        for poly_id in self.locate_polys_prefer_layer_intersecting_rect(rect) {
+            if let Some(net) = self.poly(poly_id).spec.net {
                 nets.insert(net);
             }
         }
@@ -567,8 +567,8 @@ impl Layout {
             }
         }
 
-        for segment_id in self.locate_segments_intersecting_rect(rect) {
-            if let Some(net) = self.segment(segment_id).net {
+        for seg_id in self.locate_segs_intersecting_rect(rect) {
+            if let Some(net) = self.seg(seg_id).net {
                 nets.insert(net);
             }
         }
@@ -579,8 +579,8 @@ impl Layout {
             }
         }
 
-        for polygon_id in self.locate_polygons_intersecting_rect(rect) {
-            if let Some(net) = self.polygon(polygon_id).spec.net {
+        for poly_id in self.locate_polys_intersecting_rect(rect) {
+            if let Some(net) = self.poly(poly_id).spec.net {
                 nets.insert(net);
             }
         }
@@ -600,8 +600,8 @@ impl Layout {
             }
         }
 
-        for segment_id in self.locate_segments_prefer_layer_inside_rect(rect) {
-            if let Some(net) = self.segment(segment_id).net {
+        for seg_id in self.locate_segs_prefer_layer_inside_rect(rect) {
+            if let Some(net) = self.seg(seg_id).net {
                 nets.insert(net);
             }
         }
@@ -612,8 +612,8 @@ impl Layout {
             }
         }
 
-        for polygon_id in self.locate_polygons_prefer_layer_inside_rect(rect) {
-            if let Some(net) = self.polygon(polygon_id).spec.net {
+        for poly_id in self.locate_polys_prefer_layer_inside_rect(rect) {
+            if let Some(net) = self.poly(poly_id).spec.net {
                 nets.insert(net);
             }
         }
@@ -630,8 +630,8 @@ impl Layout {
             }
         }
 
-        for segment_id in self.locate_segments_inside_rect(rect) {
-            if let Some(net) = self.segment(segment_id).net {
+        for seg_id in self.locate_segs_inside_rect(rect) {
+            if let Some(net) = self.seg(seg_id).net {
                 nets.insert(net);
             }
         }
@@ -642,8 +642,8 @@ impl Layout {
             }
         }
 
-        for polygon_id in self.locate_polygons_inside_rect(rect) {
-            if let Some(net) = self.polygon(polygon_id).spec.net {
+        for poly_id in self.locate_polys_inside_rect(rect) {
+            if let Some(net) = self.poly(poly_id).spec.net {
                 nets.insert(net);
             }
         }

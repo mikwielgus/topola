@@ -12,7 +12,7 @@ use specctra::{
 
 use crate::{
     board::{Board, LayerDesc, LayerSide, LayerType},
-    layout::primitives::{JointSpec, Polygon, PolygonSpec, Segment, SegmentSpec},
+    layout::primitives::{JointSpec, Poly, PolySpec, Seg, SegSpec},
     layout::{
         LayerId,
         compounds::{ComponentId, NetId, PinId, PinSpec},
@@ -225,7 +225,7 @@ impl Board {
                             }
                             Shape::Polygon(polygon) => {
                                 let layer = get_layer(&board, &polygon.layer);
-                                Self::place_polygon(
+                                Self::place_poly(
                                     &mut board,
                                     place.point_with_rotation(),
                                     pin.point_with_rotation(),
@@ -306,7 +306,7 @@ impl Board {
                     }
                     Shape::Polygon(polygon) => {
                         let layer = get_layer(&board, &polygon.layer);
-                        Self::place_polygon(
+                        Self::place_poly(
                             &mut board,
                             PointWithRotation::from_xy(via.x, via.y),
                             PointWithRotation::default(),
@@ -383,8 +383,8 @@ impl Board {
         flip: bool,
         coordinate_scale: f64,
     ) {
-        board.insert_polygon({
-            let spec = PolygonSpec {
+        board.insert_poly({
+            let spec = PolySpec {
                 vertices: vec![
                     Self::pos(place, pin_pos, x1, y1, flip, coordinate_scale),
                     Self::pos(place, pin_pos, x2, y1, flip, coordinate_scale),
@@ -396,9 +396,9 @@ impl Board {
                 component,
                 pin,
             };
-            let centroid = Vector2::<i64>::polygon_centroid(&spec.vertices);
+            let centroid = Vector2::<i64>::poly_centroid(&spec.vertices);
 
-            Polygon { spec, centroid }
+            Poly { spec, centroid }
         });
     }
 
@@ -448,8 +448,8 @@ impl Board {
                 pin,
             });
 
-            let _ = board.insert_segment_raw(Segment {
-                spec: SegmentSpec {
+            let _ = board.insert_seg_raw(Seg {
+                spec: SegSpec {
                     endjoints: [prev_joint, joint],
                     half_width: Self::scale_size(width / 2.0, coordinate_scale),
                     component,
@@ -465,7 +465,7 @@ impl Board {
         }
     }
 
-    fn place_polygon(
+    fn place_poly(
         board: &mut Board,
         place: PointWithRotation,
         pin_pos: PointWithRotation,
@@ -482,17 +482,17 @@ impl Board {
             .iter()
             .map(|coord| Self::pos(place, pin_pos, coord.x, coord.y, flip, coordinate_scale))
             .collect();
-        board.insert_polygon({
-            let spec = PolygonSpec {
+        board.insert_poly({
+            let spec = PolySpec {
                 vertices,
                 layer,
                 net,
                 component,
                 pin,
             };
-            let centroid = Vector2::<i64>::polygon_centroid(&spec.vertices);
+            let centroid = Vector2::<i64>::poly_centroid(&spec.vertices);
 
-            Polygon { spec, centroid }
+            Poly { spec, centroid }
         });
     }
 

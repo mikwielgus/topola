@@ -8,7 +8,7 @@ use crate::layout::{
     Layout,
     compounds::{Component, ComponentId, Pin, PinId, PinSpec},
     primitives::{
-        Joint, JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
+        Joint, JointId, JointSpec, Poly, PolyId, Seg, SegId, SegSpec, Via, ViaId,
         ViaSpec,
     },
 };
@@ -59,8 +59,8 @@ impl Layout {
         joint_id
     }
 
-    pub fn insert_segment(&mut self, spec: SegmentSpec) -> SegmentId {
-        self.insert_segment_raw(Segment {
+    pub fn insert_seg(&mut self, spec: SegSpec) -> SegId {
+        self.insert_seg_raw(Seg {
             spec,
             endpoints: [
                 self.joint(spec.endjoints[0]).spec.position,
@@ -71,36 +71,36 @@ impl Layout {
         })
     }
 
-    pub fn insert_segment_raw(&mut self, segment: Segment) -> SegmentId {
-        let component_id = segment.spec.component;
-        let pin_id = segment.spec.pin;
-        let bbox = segment.bbox();
-        let segment_id = SegmentId::new(self.segments.push(segment));
+    pub fn insert_seg_raw(&mut self, seg: Seg) -> SegId {
+        let component_id = seg.spec.component;
+        let pin_id = seg.spec.pin;
+        let bbox = seg.bbox();
+        let seg_id = SegId::new(self.segs.push(seg));
 
         self.joints
-            .modify(segment.spec.endjoints[0].index(), |joint| {
-                joint.segments.push(segment_id)
+            .modify(seg.spec.endjoints[0].index(), |joint| {
+                joint.segs.push(seg_id)
             });
         self.joints
-            .modify(segment.spec.endjoints[1].index(), |joint| {
-                joint.segments.push(segment_id)
+            .modify(seg.spec.endjoints[1].index(), |joint| {
+                joint.segs.push(seg_id)
             });
 
-        self.segments_rtree
-            .insert(GeomWithData::new(bbox.rtree_rectangle(), segment_id), ());
+        self.segs_rtree
+            .insert(GeomWithData::new(bbox.rtree_rectangle(), seg_id), ());
 
         if let Some(component_id) = component_id {
             self.components.modify(component_id.index(), |component| {
-                component.segments.push(segment_id)
+                component.segs.push(seg_id)
             });
         }
 
         if let Some(pin_id) = pin_id {
             self.pins
-                .modify(pin_id.index(), |pin| pin.segments.push(segment_id));
+                .modify(pin_id.index(), |pin| pin.segs.push(seg_id));
         }
 
-        segment_id
+        seg_id
     }
 
     pub fn insert_via(&mut self, spec: ViaSpec) -> ViaId {
@@ -145,26 +145,26 @@ impl Layout {
         via_id
     }
 
-    pub fn insert_polygon(&mut self, polygon: Polygon) -> PolygonId {
-        let bbox = polygon.bbox();
-        let component_id = polygon.spec.component;
-        let pin_id = polygon.spec.pin;
-        let polygon_id = PolygonId::new(self.polygons.push(polygon));
+    pub fn insert_poly(&mut self, poly: Poly) -> PolyId {
+        let bbox = poly.bbox();
+        let component_id = poly.spec.component;
+        let pin_id = poly.spec.pin;
+        let poly_id = PolyId::new(self.polys.push(poly));
 
-        self.polygons_rtree
-            .insert(GeomWithData::new(bbox.rtree_rectangle(), polygon_id), ());
+        self.polys_rtree
+            .insert(GeomWithData::new(bbox.rtree_rectangle(), poly_id), ());
 
         if let Some(component_id) = component_id {
             self.components.modify(component_id.index(), |component| {
-                component.polygons.push(polygon_id)
+                component.polys.push(poly_id)
             });
         }
 
         if let Some(pin_id) = pin_id {
             self.pins
-                .modify(pin_id.index(), |pin| pin.polygons.push(polygon_id));
+                .modify(pin_id.index(), |pin| pin.polys.push(poly_id));
         }
 
-        polygon_id
+        poly_id
     }
 }

@@ -6,9 +6,9 @@ use polygon_unionfind::UnionFind;
 
 use crate::Vector2;
 
-/// Returns the four vertices of a segment inflated by `half_width`, forming a
-/// convex quadrilateral. The segment goes from (x1, y1) to (x2, y2).
-pub fn inflated_segment(x1: i64, y1: i64, x2: i64, y2: i64, half_width: u64) -> [Vector2<i64>; 4] {
+/// Returns the four vertices of a seg inflated by `half_width`, forming a
+/// convex quadrilateral. The seg goes from (x1, y1) to (x2, y2).
+pub fn inflated_seg(x1: i64, y1: i64, x2: i64, y2: i64, half_width: u64) -> [Vector2<i64>; 4] {
     let dx = x2 - x1;
     let dy = y2 - y1;
 

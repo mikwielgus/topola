@@ -23,9 +23,9 @@ use crate::{Rect3, Vector3, layout::LayerId};
     PartialOrd,
     Serialize,
 )]
-pub struct PolygonId(usize);
+pub struct PolyId(usize);
 
-impl PolygonId {
+impl PolyId {
     /// Returns the underlying index.
     #[inline]
     pub fn index(self) -> usize {
@@ -34,7 +34,7 @@ impl PolygonId {
 }
 
 #[derive(Clone, Debug)]
-pub struct PolygonSpec {
+pub struct PolySpec {
     pub vertices: Vec<Vector2<i64>>,
     pub layer: LayerId,
     pub net: Option<NetId>,
@@ -43,12 +43,19 @@ pub struct PolygonSpec {
 }
 
 #[derive(Clone, Debug)]
-pub struct Polygon {
-    pub spec: PolygonSpec,
+pub struct Poly {
+    pub spec: PolySpec,
     pub centroid: Vector2<i64>,
 }
 
-impl Polygon {
+impl Poly {
+    pub fn new(spec: PolySpec) -> Self {
+        Self {
+            centroid: Vector2::<i64>::poly_centroid(&spec.vertices),
+            spec,
+        }
+    }
+
     pub fn bbox(&self) -> Rect3<i64> {
         let layer = self.spec.layer.index() as i64;
         let mut min = Vector2::new(i64::MAX, i64::MAX);

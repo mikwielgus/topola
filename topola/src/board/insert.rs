@@ -7,7 +7,7 @@ use crate::{
     layout::{
         compounds::ComponentId,
         primitives::{
-            JointId, JointSpec, Polygon, PolygonId, Segment, SegmentId, SegmentSpec, Via, ViaId,
+            JointId, JointSpec, Poly, PolyId, Seg, SegId, SegSpec, Via, ViaId,
             ViaSpec,
         },
     },
@@ -22,12 +22,12 @@ impl Board {
         self.layout.insert_joint(spec)
     }
 
-    pub fn insert_segment(&mut self, spec: SegmentSpec) -> SegmentId {
-        self.layout.insert_segment(spec)
+    pub fn insert_seg(&mut self, spec: SegSpec) -> SegId {
+        self.layout.insert_seg(spec)
     }
 
-    pub fn insert_segment_raw(&mut self, segment: Segment) -> SegmentId {
-        self.layout.insert_segment_raw(segment)
+    pub fn insert_seg_raw(&mut self, seg: Seg) -> SegId {
+        self.layout.insert_seg_raw(seg)
     }
 
     pub fn insert_via(&mut self, spec: ViaSpec) -> ViaId {
@@ -38,7 +38,7 @@ impl Board {
         self.layout.insert_via_raw(via)
     }
 
-    pub fn insert_polygon(&mut self, polygon: Polygon) -> PolygonId {
-        self.layout.insert_polygon(polygon)
+    pub fn insert_poly(&mut self, poly: Poly) -> PolyId {
+        self.layout.insert_poly(poly)
     }
 }

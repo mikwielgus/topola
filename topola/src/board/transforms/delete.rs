@@ -15,13 +15,13 @@ impl Board {
             self.layout.delete_joint(joint_id);
         }
 
-        for segment_id in self
-            .resolve_net_segments(selection.clone())
-            .filter(|&segment_id| self.layout.segment(segment_id).spec.pin.is_none())
+        for seg_id in self
+            .resolve_net_segs(selection.clone())
+            .filter(|&seg_id| self.layout.seg(seg_id).spec.pin.is_none())
             .collect::<Vec<_>>()
             .clone()
         {
-            self.layout.delete_segment(segment_id);
+            self.layout.delete_seg(seg_id);
         }
 
         for via_id in self
@@ -33,13 +33,13 @@ impl Board {
             self.layout.delete_via(via_id);
         }
 
-        for polygon_id in self
-            .resolve_net_polygons(selection.clone())
-            .filter(|&polygon_id| self.layout.polygon(polygon_id).spec.pin.is_none())
+        for poly_id in self
+            .resolve_net_polys(selection.clone())
+            .filter(|&poly_id| self.layout.poly(poly_id).spec.pin.is_none())
             .collect::<Vec<_>>()
             .clone()
         {
-            self.layout.delete_polygon(polygon_id);
+            self.layout.delete_poly(poly_id);
         }
     }
 }

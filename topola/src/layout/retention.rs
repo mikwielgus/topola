@@ -44,6 +44,6 @@ impl Layout {
             return Vector2::new(0, 0);
         }
 
-        violator.closest_point_on_polygon_boundary(boundary) - violator
+        violator.closest_point_on_poly_boundary(boundary) - violator
     }
 }

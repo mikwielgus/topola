@@ -4,7 +4,7 @@
 
 use crate::{
     board::Board,
-    layout::primitives::{JointId, PolygonId, SegmentId, ViaId},
+    layout::primitives::{JointId, PolyId, SegId, ViaId},
     selections::{ComponentSelection, NetSelection, NetSelector, PinSelection},
     vector::Vector2,
 };
@@ -30,12 +30,12 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn components_contain_segment(
+    pub fn components_contain_seg(
         &self,
         selection: &ComponentSelection,
-        id: SegmentId,
+        id: SegId,
     ) -> bool {
-        let Some(selector) = self.segment_component_selector(id) else {
+        let Some(selector) = self.seg_component_selector(id) else {
             return false;
         };
 
@@ -50,12 +50,12 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn components_contain_polygon(
+    pub fn components_contain_poly(
         &self,
         selection: &ComponentSelection,
-        id: PolygonId,
+        id: PolyId,
     ) -> bool {
-        let Some(selector) = self.polygon_component_selector(id) else {
+        let Some(selector) = self.poly_component_selector(id) else {
             return false;
         };
 
@@ -73,9 +73,9 @@ impl Board {
             .contains(&NetSelector::new(net_name.to_string()))
     }
 
-    pub fn nets_contain_segment(&self, selection: &NetSelection, id: SegmentId) -> bool {
-        let segment = self.layout.segment(id);
-        let Some(net_name) = segment.net.and_then(|net| self.net_name(net)) else {
+    pub fn nets_contain_seg(&self, selection: &NetSelection, id: SegId) -> bool {
+        let seg = self.layout.seg(id);
+        let Some(net_name) = seg.net.and_then(|net| self.net_name(net)) else {
             return false;
         };
 
@@ -95,9 +95,9 @@ impl Board {
             .contains(&NetSelector::new(net_name.to_string()))
     }
 
-    pub fn nets_contain_polygon(&self, selection: &NetSelection, id: PolygonId) -> bool {
-        let polygon = self.layout.polygon(id);
-        let Some(net_name) = polygon.spec.net.and_then(|net| self.net_name(net)) else {
+    pub fn nets_contain_poly(&self, selection: &NetSelection, id: PolyId) -> bool {
+        let poly = self.layout.poly(id);
+        let Some(net_name) = poly.spec.net.and_then(|net| self.net_name(net)) else {
             return false;
         };
 
@@ -114,8 +114,8 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn pins_contain_segment(&self, selection: &PinSelection, id: SegmentId) -> bool {
-        let Some(selector) = self.segment_pin_selector(id) else {
+    pub fn pins_contain_seg(&self, selection: &PinSelection, id: SegId) -> bool {
+        let Some(selector) = self.seg_pin_selector(id) else {
             return false;
         };
 
@@ -130,8 +130,8 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn pins_contain_polygon(&self, selection: &PinSelection, id: PolygonId) -> bool {
-        let Some(selector) = self.polygon_pin_selector(id) else {
+    pub fn pins_contain_poly(&self, selection: &PinSelection, id: PolyId) -> bool {
+        let Some(selector) = self.poly_pin_selector(id) else {
             return false;
         };
 

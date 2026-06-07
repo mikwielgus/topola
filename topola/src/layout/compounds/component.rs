@@ -7,7 +7,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::layout::{
     compounds::PinId,
-    primitives::{JointId, PolygonId, PrimitiveId, SegmentId, ViaId},
+    primitives::{JointId, PolyId, PrimitiveId, SegId, ViaId},
 };
 
 #[derive(
@@ -37,9 +37,9 @@ impl ComponentId {
 pub struct Component {
     pub pins: Vec<PinId>,
     pub joints: Vec<JointId>,
-    pub segments: Vec<SegmentId>,
+    pub segs: Vec<SegId>,
     pub vias: Vec<ViaId>,
-    pub polygons: Vec<PolygonId>,
+    pub polys: Vec<PolyId>,
 }
 
 impl Component {
@@ -52,15 +52,15 @@ impl Component {
             .iter()
             .map(|&joint_id| PrimitiveId::Joint(joint_id))
             .chain(
-                self.segments
+                self.segs
                     .iter()
-                    .map(|&segment_id| PrimitiveId::Segment(segment_id)),
+                    .map(|&seg_id| PrimitiveId::Seg(seg_id)),
             )
             .chain(self.vias.iter().map(|&via_id| PrimitiveId::Via(via_id)))
             .chain(
-                self.polygons
+                self.polys
                     .iter()
-                    .map(|&polygon_id| PrimitiveId::Polygon(polygon_id)),
+                    .map(|&poly_id| PrimitiveId::Poly(poly_id)),
             )
     }
 }

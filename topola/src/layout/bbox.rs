@@ -16,16 +16,16 @@ impl Layout {
             unionize(&mut maybe_accum_bbox2, self.joint(joint_id).bbox().xy());
         }
 
-        for &segment_id in &component.segments {
-            unionize(&mut maybe_accum_bbox2, self.segment(segment_id).bbox().xy());
+        for &seg_id in &component.segs {
+            unionize(&mut maybe_accum_bbox2, self.seg(seg_id).bbox().xy());
         }
 
         for &via_id in &component.vias {
             unionize(&mut maybe_accum_bbox2, self.via(via_id).bbox().xy());
         }
 
-        for &polygon_id in &component.polygons {
-            unionize(&mut maybe_accum_bbox2, self.polygon(polygon_id).bbox().xy());
+        for &poly_id in &component.polys {
+            unionize(&mut maybe_accum_bbox2, self.poly(poly_id).bbox().xy());
         }
 
         maybe_accum_bbox2

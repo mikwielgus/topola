@@ -9,7 +9,7 @@ use crate::layout::compounds::{ComponentId, NetId, PinId};
 use crate::vector::Vector2;
 use crate::{Rect3, Vector3, layout::LayerId};
 
-use super::JointId;
+use super::{Joint, JointId};
 
 #[derive(
     Clone,
@@ -25,9 +25,9 @@ use super::JointId;
     PartialOrd,
     Serialize,
 )]
-pub struct SegmentId(usize);
+pub struct SegId(usize);
 
-impl SegmentId {
+impl SegId {
     /// Returns the underlying index.
     #[inline]
     pub fn index(self) -> usize {
@@ -36,7 +36,7 @@ impl SegmentId {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct SegmentSpec {
+pub struct SegSpec {
     pub endjoints: [JointId; 2],
     pub half_width: u64,
     pub component: Option<ComponentId>,
@@ -44,20 +44,29 @@ pub struct SegmentSpec {
 }
 
 #[derive(Clone, Copy, Debug)]
-pub struct Segment {
-    pub spec: SegmentSpec,
+pub struct Seg {
+    pub spec: SegSpec,
     pub endpoints: [Vector2<i64>; 2],
     pub layer: LayerId,
     pub net: Option<NetId>,
 }
 
-impl Segment {
+impl Seg {
+    pub fn new(spec: SegSpec, endjoints: [&Joint; 2]) -> Self {
+        Self {
+            spec,
+            endpoints: [endjoints[0].spec.position, endjoints[1].spec.position],
+            layer: endjoints[0].spec.layer,
+            net: endjoints[0].spec.net,
+        }
+    }
+
     pub fn center(&self) -> Vector2<i64> {
         (self.endpoints[0] + self.endpoints[1]) / 2
     }
 
     pub fn contains_point2(&self, point: Vector2<i64>) -> bool {
-        let vertices = crate::math::inflated_segment(
+        let vertices = crate::math::inflated_seg(
             self.endpoints[0].x,
             self.endpoints[0].y,
             self.endpoints[1].x,
@@ -70,7 +79,7 @@ impl Segment {
     /// NOTE: This is not the bounding box. The output rectangle is in general
     /// not axis-aligned.
     pub fn bounding_rectangle(&self) -> [Vector2<i64>; 4] {
-        crate::math::inflated_segment(
+        crate::math::inflated_seg(
             self.endpoints[0].x,
             self.endpoints[0].y,
             self.endpoints[1].x,

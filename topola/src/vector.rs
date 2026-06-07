@@ -73,19 +73,19 @@ impl<T: Bounded + Copy> Vector2<T> {
 macro_rules! impl_vector2_inside_polygon {
     ($type:ty) => {
         impl Vector2<$type> {
-            // Checks if the point is inside a polygon by casting a ray to the
+            // Checks if the point is inside a poly by casting a ray to the
             // right. Division is not used to avoid integer truncation errors.
-            pub fn inside_polygon(&self, polygon: &[Vector2<$type>]) -> bool {
+            pub fn inside_polygon(&self, poly: &[Vector2<$type>]) -> bool {
                 let mut inside = false;
-                let n = polygon.len();
+                let n = poly.len();
 
                 // `self` is `v0`.
 
                 // `v1` is the previous vertex.
-                let mut v1 = &polygon[n - 1];
+                let mut v1 = &poly[n - 1];
 
                 // `v2` is the current vertex.
-                for v2 in polygon.iter() {
+                for v2 in poly.iter() {
                     let dx12 = v2.x - v1.x;
                     let dy12 = v2.y - v1.y;
 
@@ -147,40 +147,40 @@ impl_vector2_inside_polygon!(f64);
 macro_rules! impl_vector2_closest_point_on_boundary {
     ($type:ty) => {
         impl Vector2<$type> {
-            pub fn closest_point_on_segment(
+            pub fn closest_point_on_seg(
                 self,
-                segment_start: Vector2<$type>,
-                segment_end: Vector2<$type>,
+                seg_start: Vector2<$type>,
+                seg_end: Vector2<$type>,
             ) -> Vector2<$type> {
-                let abx = segment_end.x - segment_start.x;
-                let aby = segment_end.y - segment_start.y;
-                let apx = self.x - segment_start.x;
-                let apy = self.y - segment_start.y;
+                let abx = seg_end.x - seg_start.x;
+                let aby = seg_end.y - seg_start.y;
+                let apx = self.x - seg_start.x;
+                let apy = self.y - seg_start.y;
                 let ab_len_sq = abx * abx + aby * aby;
 
                 if ab_len_sq == 0 as $type {
-                    return segment_start;
+                    return seg_start;
                 }
 
                 let t = (apx * abx + apy * aby).clamp(0 as $type, ab_len_sq);
 
                 Vector2::new(
-                    segment_start.x + abx * t / ab_len_sq,
-                    segment_start.y + aby * t / ab_len_sq,
+                    seg_start.x + abx * t / ab_len_sq,
+                    seg_start.y + aby * t / ab_len_sq,
                 )
             }
 
-            pub fn closest_point_on_polygon_boundary(
+            pub fn closest_point_on_poly_boundary(
                 self,
-                polygon: &[Vector2<$type>],
+                poly: &[Vector2<$type>],
             ) -> Vector2<$type> {
-                let mut closest_point = polygon[0];
+                let mut closest_point = poly[0];
                 let mut best_distance_sq = <$type as Bounded>::max_value();
 
-                for i in 0..polygon.len() {
-                    let segment_start = polygon[i];
-                    let segment_end = polygon[(i + 1) % polygon.len()];
-                    let candidate = self.closest_point_on_segment(segment_start, segment_end);
+                for i in 0..poly.len() {
+                    let seg_start = poly[i];
+                    let seg_end = poly[(i + 1) % poly.len()];
+                    let candidate = self.closest_point_on_seg(seg_start, seg_end);
                     let dx = self.x - candidate.x;
                     let dy = self.y - candidate.y;
                     let distance_sq = dx * dx + dy * dy;
@@ -243,35 +243,35 @@ macro_rules! impl_vector2_rotate_around_point {
 impl_vector2_rotate_around_point!(f32);
 impl_vector2_rotate_around_point!(f64);
 
-macro_rules! impl_polygon_centroid {
+macro_rules! impl_poly_centroid {
     ($type:ty) => {
         impl Vector2<$type> {
-            pub fn polygon_centroid(polygon: &[Vector2<$type>]) -> Self {
+            pub fn poly_centroid(poly: &[Vector2<$type>]) -> Self {
                 crate::profile_function!();
                 let mut sum = Vector2::new(0 as $type, 0 as $type);
 
-                for vertex in polygon.iter() {
+                for vertex in poly.iter() {
                     sum += *vertex;
                 }
 
-                sum / polygon.len() as $type
+                sum / poly.len() as $type
             }
         }
     };
 }
 
-impl_polygon_centroid!(i8);
-impl_polygon_centroid!(i16);
-impl_polygon_centroid!(i32);
-impl_polygon_centroid!(i64);
-impl_polygon_centroid!(i128);
-impl_polygon_centroid!(u8);
-impl_polygon_centroid!(u16);
-impl_polygon_centroid!(u32);
-impl_polygon_centroid!(u64);
-impl_polygon_centroid!(u128);
-impl_polygon_centroid!(f32);
-impl_polygon_centroid!(f64);
+impl_poly_centroid!(i8);
+impl_poly_centroid!(i16);
+impl_poly_centroid!(i32);
+impl_poly_centroid!(i64);
+impl_poly_centroid!(i128);
+impl_poly_centroid!(u8);
+impl_poly_centroid!(u16);
+impl_poly_centroid!(u32);
+impl_poly_centroid!(u64);
+impl_poly_centroid!(u128);
+impl_poly_centroid!(f32);
+impl_poly_centroid!(f64);
 
 #[derive(
     Add,

@@ -9,7 +9,7 @@ use crate::{
     layout::{
         Layout,
         compounds::{ComponentId, NetId},
-        primitives::{JointId, PolygonId, PrimitiveId, SegmentId, ViaId},
+        primitives::{JointId, PolyId, PrimitiveId, SegId, ViaId},
     },
     vector::Vector2,
 };
@@ -47,9 +47,9 @@ pub struct PinSpec {
 pub struct Pin {
     pub spec: PinSpec,
     pub joints: Vec<JointId>,
-    pub segments: Vec<SegmentId>,
+    pub segs: Vec<SegId>,
     pub vias: Vec<ViaId>,
-    pub polygons: Vec<PolygonId>,
+    pub polys: Vec<PolyId>,
 }
 
 impl Pin {
@@ -57,9 +57,9 @@ impl Pin {
         Pin {
             spec,
             joints: Vec::new(),
-            segments: Vec::new(),
+            segs: Vec::new(),
             vias: Vec::new(),
-            polygons: Vec::new(),
+            polys: Vec::new(),
         }
     }
 
@@ -68,15 +68,15 @@ impl Pin {
             .iter()
             .map(|&joint_id| PrimitiveId::Joint(joint_id))
             .chain(
-                self.segments
+                self.segs
                     .iter()
-                    .map(|&segment_id| PrimitiveId::Segment(segment_id)),
+                    .map(|&seg_id| PrimitiveId::Seg(seg_id)),
             )
             .chain(self.vias.iter().map(|&via_id| PrimitiveId::Via(via_id)))
             .chain(
-                self.polygons
+                self.polys
                     .iter()
-                    .map(|&polygon_id| PrimitiveId::Polygon(polygon_id)),
+                    .map(|&poly_id| PrimitiveId::Poly(poly_id)),
             )
     }
 }
@@ -92,16 +92,16 @@ impl Layout {
             sum = sum + self.joint(joint_id).center();
             count += 1;
         }
-        for &segment_id in &pin.segments {
-            sum = sum + self.segment(segment_id).center();
+        for &seg_id in &pin.segs {
+            sum = sum + self.seg(seg_id).center();
             count += 1;
         }
         for &via_id in &pin.vias {
             sum = sum + self.via(via_id).position;
             count += 1;
         }
-        for &polygon_id in &pin.polygons {
-            sum = sum + self.polygon(polygon_id).centroid;
+        for &poly_id in &pin.polys {
+            sum = sum + self.poly(poly_id).centroid;
             count += 1;
         }
 

@@ -20,8 +20,8 @@ impl Board {
             .filter_map(|joint_id| self.joint_component_selector(joint_id))
             .chain(
                 self.layout
-                    .locate_segments_prefer_layer_at_point(point)
-                    .filter_map(|segment_id| self.segment_component_selector(segment_id)),
+                    .locate_segs_prefer_layer_at_point(point)
+                    .filter_map(|seg_id| self.seg_component_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -30,8 +30,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_polygons_prefer_layer_at_point(point)
-                    .filter_map(|polygon_id| self.polygon_component_selector(polygon_id)),
+                    .locate_polys_prefer_layer_at_point(point)
+                    .filter_map(|poly_id| self.poly_component_selector(poly_id)),
             )
     }
 
@@ -44,8 +44,8 @@ impl Board {
             .filter_map(|joint_id| self.joint_component_selector(joint_id))
             .chain(
                 self.layout
-                    .locate_segments_at_point(point)
-                    .filter_map(|segment_id| self.segment_component_selector(segment_id)),
+                    .locate_segs_at_point(point)
+                    .filter_map(|seg_id| self.seg_component_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -54,8 +54,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_polygons_at_point(point)
-                    .filter_map(|polygon_id| self.polygon_component_selector(polygon_id)),
+                    .locate_polys_at_point(point)
+                    .filter_map(|poly_id| self.poly_component_selector(poly_id)),
             )
     }
 
@@ -68,8 +68,8 @@ impl Board {
             .filter_map(|joint_id| self.joint_component_selector(joint_id))
             .chain(
                 self.layout
-                    .locate_segments_prefer_layer_intersecting_rect(rect)
-                    .filter_map(|segment_id| self.segment_component_selector(segment_id)),
+                    .locate_segs_prefer_layer_intersecting_rect(rect)
+                    .filter_map(|seg_id| self.seg_component_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -78,8 +78,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_polygons_prefer_layer_intersecting_rect(rect)
-                    .filter_map(|polygon_id| self.polygon_component_selector(polygon_id)),
+                    .locate_polys_prefer_layer_intersecting_rect(rect)
+                    .filter_map(|poly_id| self.poly_component_selector(poly_id)),
             )
     }
 
@@ -92,8 +92,8 @@ impl Board {
             .filter_map(|joint_id| self.joint_component_selector(joint_id))
             .chain(
                 self.layout
-                    .locate_segments_intersecting_rect(rect)
-                    .filter_map(|segment_id| self.segment_component_selector(segment_id)),
+                    .locate_segs_intersecting_rect(rect)
+                    .filter_map(|seg_id| self.seg_component_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -102,8 +102,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_polygons_intersecting_rect(rect)
-                    .filter_map(|polygon_id| self.polygon_component_selector(polygon_id)),
+                    .locate_polys_intersecting_rect(rect)
+                    .filter_map(|poly_id| self.poly_component_selector(poly_id)),
             )
     }
 
@@ -116,8 +116,8 @@ impl Board {
             .filter_map(|joint_id| self.joint_component_selector(joint_id))
             .chain(
                 self.layout
-                    .locate_segments_prefer_layer_inside_rect(rect)
-                    .filter_map(|segment_id| self.segment_component_selector(segment_id)),
+                    .locate_segs_prefer_layer_inside_rect(rect)
+                    .filter_map(|seg_id| self.seg_component_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -126,8 +126,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_polygons_prefer_layer_inside_rect(rect)
-                    .filter_map(|polygon_id| self.polygon_component_selector(polygon_id)),
+                    .locate_polys_prefer_layer_inside_rect(rect)
+                    .filter_map(|poly_id| self.poly_component_selector(poly_id)),
             )
     }
 
@@ -140,8 +140,8 @@ impl Board {
             .filter_map(|joint_id| self.joint_component_selector(joint_id))
             .chain(
                 self.layout
-                    .locate_segments_prefer_layer_inside_rect(rect)
-                    .filter_map(|segment_id| self.segment_component_selector(segment_id)),
+                    .locate_segs_prefer_layer_inside_rect(rect)
+                    .filter_map(|seg_id| self.seg_component_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -150,8 +150,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_polygons_prefer_layer_inside_rect(rect)
-                    .filter_map(|polygon_id| self.polygon_component_selector(polygon_id)),
+                    .locate_polys_prefer_layer_inside_rect(rect)
+                    .filter_map(|poly_id| self.poly_component_selector(poly_id)),
             )
     }
 
@@ -164,8 +164,8 @@ impl Board {
             .filter_map(|joint_id| self.joint_net_selector(joint_id))
             .chain(
                 self.layout
-                    .locate_segments_prefer_layer_at_point(point)
-                    .filter_map(|segment_id| self.segment_net_selector(segment_id)),
+                    .locate_segs_prefer_layer_at_point(point)
+                    .filter_map(|seg_id| self.seg_net_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -174,8 +174,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_polygons_prefer_layer_at_point(point)
-                    .filter_map(|polygon_id| self.polygon_net_selector(polygon_id)),
+                    .locate_polys_prefer_layer_at_point(point)
+                    .filter_map(|poly_id| self.poly_net_selector(poly_id)),
             )
     }
 
@@ -188,8 +188,8 @@ impl Board {
             .filter_map(|joint_id| self.joint_net_selector(joint_id))
             .chain(
                 self.layout
-                    .locate_segments_at_point(point)
-                    .filter_map(|segment_id| self.segment_net_selector(segment_id)),
+                    .locate_segs_at_point(point)
+                    .filter_map(|seg_id| self.seg_net_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -198,8 +198,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_polygons_at_point(point)
-                    .filter_map(|polygon_id| self.polygon_net_selector(polygon_id)),
+                    .locate_polys_at_point(point)
+                    .filter_map(|poly_id| self.poly_net_selector(poly_id)),
             )
     }
 
@@ -276,8 +276,8 @@ impl Board {
         point: Vector3<i64>,
     ) -> impl Iterator<Item = PinSelector> + '_ {
         self.layout
-            .locate_polygons_prefer_layer_at_point(point)
-            .filter_map(|polygon_id| self.polygon_pin_selector(polygon_id))
+            .locate_polys_prefer_layer_at_point(point)
+            .filter_map(|poly_id| self.poly_pin_selector(poly_id))
             .chain(
                 self.layout
                     .locate_joints_prefer_layer_at_point(point)
@@ -285,8 +285,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_segments_prefer_layer_at_point(point)
-                    .filter_map(|segment_id| self.segment_pin_selector(segment_id)),
+                    .locate_segs_prefer_layer_at_point(point)
+                    .filter_map(|seg_id| self.seg_pin_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -300,8 +300,8 @@ impl Board {
         point: Vector3<i64>,
     ) -> impl Iterator<Item = PinSelector> + '_ {
         self.layout
-            .locate_polygons_at_point(point)
-            .filter_map(|polygon_id| self.polygon_pin_selector(polygon_id))
+            .locate_polys_at_point(point)
+            .filter_map(|poly_id| self.poly_pin_selector(poly_id))
             .chain(
                 self.layout
                     .locate_joints_at_point(point)
@@ -309,8 +309,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_segments_at_point(point)
-                    .filter_map(|segment_id| self.segment_pin_selector(segment_id)),
+                    .locate_segs_at_point(point)
+                    .filter_map(|seg_id| self.seg_pin_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -324,8 +324,8 @@ impl Board {
         rect: Rect3<i64>,
     ) -> impl Iterator<Item = PinSelector> + '_ {
         self.layout
-            .locate_polygons_prefer_layer_intersecting_rect(rect)
-            .filter_map(|polygon_id| self.polygon_pin_selector(polygon_id))
+            .locate_polys_prefer_layer_intersecting_rect(rect)
+            .filter_map(|poly_id| self.poly_pin_selector(poly_id))
             .chain(
                 self.layout
                     .locate_joints_prefer_layer_intersecting_rect(rect)
@@ -333,8 +333,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_segments_prefer_layer_intersecting_rect(rect)
-                    .filter_map(|segment_id| self.segment_pin_selector(segment_id)),
+                    .locate_segs_prefer_layer_intersecting_rect(rect)
+                    .filter_map(|seg_id| self.seg_pin_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -348,8 +348,8 @@ impl Board {
         rect: Rect3<i64>,
     ) -> impl Iterator<Item = PinSelector> + '_ {
         self.layout
-            .locate_polygons_intersecting_rect(rect)
-            .filter_map(|polygon_id| self.polygon_pin_selector(polygon_id))
+            .locate_polys_intersecting_rect(rect)
+            .filter_map(|poly_id| self.poly_pin_selector(poly_id))
             .chain(
                 self.layout
                     .locate_joints_intersecting_rect(rect)
@@ -357,8 +357,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_segments_intersecting_rect(rect)
-                    .filter_map(|segment_id| self.segment_pin_selector(segment_id)),
+                    .locate_segs_intersecting_rect(rect)
+                    .filter_map(|seg_id| self.seg_pin_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -372,8 +372,8 @@ impl Board {
         rect: Rect3<i64>,
     ) -> impl Iterator<Item = PinSelector> + '_ {
         self.layout
-            .locate_polygons_prefer_layer_inside_rect(rect)
-            .filter_map(|polygon_id| self.polygon_pin_selector(polygon_id))
+            .locate_polys_prefer_layer_inside_rect(rect)
+            .filter_map(|poly_id| self.poly_pin_selector(poly_id))
             .chain(
                 self.layout
                     .locate_joints_prefer_layer_inside_rect(rect)
@@ -381,8 +381,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_segments_prefer_layer_inside_rect(rect)
-                    .filter_map(|segment_id| self.segment_pin_selector(segment_id)),
+                    .locate_segs_prefer_layer_inside_rect(rect)
+                    .filter_map(|seg_id| self.seg_pin_selector(seg_id)),
             )
             .chain(
                 self.layout
@@ -396,8 +396,8 @@ impl Board {
         rect: Rect3<i64>,
     ) -> impl Iterator<Item = PinSelector> + '_ {
         self.layout
-            .locate_polygons_inside_rect(rect)
-            .filter_map(|polygon_id| self.polygon_pin_selector(polygon_id))
+            .locate_polys_inside_rect(rect)
+            .filter_map(|poly_id| self.poly_pin_selector(poly_id))
             .chain(
                 self.layout
                     .locate_joints_inside_rect(rect)
@@ -405,8 +405,8 @@ impl Board {
             )
             .chain(
                 self.layout
-                    .locate_segments_inside_rect(rect)
-                    .filter_map(|segment_id| self.segment_pin_selector(segment_id)),
+                    .locate_segs_inside_rect(rect)
+                    .filter_map(|seg_id| self.seg_pin_selector(seg_id)),
             )
             .chain(
                 self.layout

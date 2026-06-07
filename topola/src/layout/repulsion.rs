@@ -7,7 +7,7 @@ use crate::{
     layout::{
         Layout,
         compounds::{ComponentId, PinId},
-        primitives::{JointId, PolygonId, PrimitiveId, SegmentId, ViaId},
+        primitives::{JointId, PolyId, PrimitiveId, SegId, ViaId},
     },
     orientation::Orientation,
     rect::Rect2,
@@ -97,14 +97,14 @@ impl Layout {
             PrimitiveId::Joint(infringer) => {
                 self.joint_primitive_repulsion(infringer, infringee, orientation)
             }
-            PrimitiveId::Segment(infringer) => {
-                self.segment_primitive_repulsion(infringer, infringee, orientation)
+            PrimitiveId::Seg(infringer) => {
+                self.seg_primitive_repulsion(infringer, infringee, orientation)
             }
             PrimitiveId::Via(infringer) => {
                 self.via_primitive_repulsion(infringer, infringee, orientation)
             }
-            PrimitiveId::Polygon(infringer) => {
-                self.polygon_primitive_repulsion(infringer, infringee, orientation)
+            PrimitiveId::Poly(infringer) => {
+                self.poly_primitive_repulsion(infringer, infringee, orientation)
             }
         }
     }
@@ -123,16 +123,16 @@ impl Layout {
         )
     }
 
-    pub fn joint_segment_repulsion(
+    pub fn joint_seg_repulsion(
         &self,
         infringer: JointId,
-        infringee: SegmentId,
+        infringee: SegId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
-            self.joint_segment_rect_overlap(infringer, infringee),
+            self.joint_seg_rect_overlap(infringer, infringee),
             self.joint(infringer).center(),
-            self.segment(infringee).center(),
+            self.seg(infringee).center(),
             orientation,
         )
     }
@@ -151,16 +151,16 @@ impl Layout {
         )
     }
 
-    pub fn joint_polygon_repulsion(
+    pub fn joint_poly_repulsion(
         &self,
         infringer: JointId,
-        infringee: PolygonId,
+        infringee: PolyId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
-            self.joint_polygon_rect_overlap(infringer, infringee),
+            self.joint_poly_rect_overlap(infringer, infringee),
             self.joint(infringer).center(),
-            self.polygon(infringee).centroid,
+            self.poly(infringee).centroid,
             orientation,
         )
     }
@@ -175,92 +175,92 @@ impl Layout {
             PrimitiveId::Joint(infringee) => {
                 self.joint_joint_repulsion(infringer, infringee, orientation)
             }
-            PrimitiveId::Segment(infringee) => {
-                self.joint_segment_repulsion(infringer, infringee, orientation)
+            PrimitiveId::Seg(infringee) => {
+                self.joint_seg_repulsion(infringer, infringee, orientation)
             }
             PrimitiveId::Via(infringee) => {
                 self.joint_via_repulsion(infringer, infringee, orientation)
             }
-            PrimitiveId::Polygon(infringee) => {
-                self.joint_polygon_repulsion(infringer, infringee, orientation)
+            PrimitiveId::Poly(infringee) => {
+                self.joint_poly_repulsion(infringer, infringee, orientation)
             }
         }
     }
 
-    pub fn segment_joint_repulsion(
+    pub fn seg_joint_repulsion(
         &self,
-        infringer: SegmentId,
+        infringer: SegId,
         infringee: JointId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
-            self.segment_joint_rect_overlap(infringer, infringee),
-            self.segment(infringer).center(),
+            self.seg_joint_rect_overlap(infringer, infringee),
+            self.seg(infringer).center(),
             self.joint(infringee).center(),
             orientation,
         )
     }
 
-    pub fn segment_segment_repulsion(
+    pub fn seg_seg_repulsion(
         &self,
-        infringer: SegmentId,
-        infringee: SegmentId,
+        infringer: SegId,
+        infringee: SegId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
-            self.segment_segment_rect_overlap(infringer, infringee),
-            self.segment(infringer).center(),
-            self.segment(infringee).center(),
+            self.seg_seg_rect_overlap(infringer, infringee),
+            self.seg(infringer).center(),
+            self.seg(infringee).center(),
             orientation,
         )
     }
 
-    pub fn segment_via_repulsion(
+    pub fn seg_via_repulsion(
         &self,
-        infringer: SegmentId,
+        infringer: SegId,
         infringee: ViaId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
-            self.segment_via_rect_overlap(infringer, infringee),
-            self.segment(infringer).center(),
+            self.seg_via_rect_overlap(infringer, infringee),
+            self.seg(infringer).center(),
             self.via(infringee).position,
             orientation,
         )
     }
 
-    pub fn segment_polygon_repulsion(
+    pub fn seg_poly_repulsion(
         &self,
-        infringer: SegmentId,
-        infringee: PolygonId,
+        infringer: SegId,
+        infringee: PolyId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
-            self.segment_polygon_rect_overlap(infringer, infringee),
-            self.segment(infringer).center(),
-            self.polygon(infringee).centroid,
+            self.seg_poly_rect_overlap(infringer, infringee),
+            self.seg(infringer).center(),
+            self.poly(infringee).centroid,
             orientation,
         )
     }
 
-    pub fn segment_primitive_repulsion(
+    pub fn seg_primitive_repulsion(
         &self,
-        infringer: SegmentId,
+        infringer: SegId,
         infringee: PrimitiveId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         match infringee {
             PrimitiveId::Joint(infringee) => {
-                self.segment_joint_repulsion(infringer, infringee, orientation)
+                self.seg_joint_repulsion(infringer, infringee, orientation)
             }
-            PrimitiveId::Segment(infringee) => {
-                self.segment_segment_repulsion(infringer, infringee, orientation)
+            PrimitiveId::Seg(infringee) => {
+                self.seg_seg_repulsion(infringer, infringee, orientation)
             }
             PrimitiveId::Via(infringee) => {
-                self.segment_via_repulsion(infringer, infringee, orientation)
+                self.seg_via_repulsion(infringer, infringee, orientation)
             }
-            PrimitiveId::Polygon(infringee) => {
-                self.segment_polygon_repulsion(infringer, infringee, orientation)
+            PrimitiveId::Poly(infringee) => {
+                self.seg_poly_repulsion(infringer, infringee, orientation)
             }
         }
     }
@@ -279,16 +279,16 @@ impl Layout {
         )
     }
 
-    pub fn via_segment_repulsion(
+    pub fn via_seg_repulsion(
         &self,
         infringer: ViaId,
-        infringee: SegmentId,
+        infringee: SegId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
-            self.via_segment_rect_overlap(infringer, infringee),
+            self.via_seg_rect_overlap(infringer, infringee),
             self.via(infringer).position,
-            self.segment(infringee).center(),
+            self.seg(infringee).center(),
             orientation,
         )
     }
@@ -307,16 +307,16 @@ impl Layout {
         )
     }
 
-    pub fn via_polygon_repulsion(
+    pub fn via_poly_repulsion(
         &self,
         infringer: ViaId,
-        infringee: PolygonId,
+        infringee: PolyId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
-            self.via_polygon_rect_overlap(infringer, infringee),
+            self.via_poly_rect_overlap(infringer, infringee),
             self.via(infringer).position,
-            self.polygon(infringee).centroid,
+            self.poly(infringee).centroid,
             orientation,
         )
     }
@@ -331,92 +331,92 @@ impl Layout {
             PrimitiveId::Joint(infringee) => {
                 self.via_joint_repulsion(infringer, infringee, orientation)
             }
-            PrimitiveId::Segment(infringee) => {
-                self.via_segment_repulsion(infringer, infringee, orientation)
+            PrimitiveId::Seg(infringee) => {
+                self.via_seg_repulsion(infringer, infringee, orientation)
             }
             PrimitiveId::Via(infringee) => {
                 self.via_via_repulsion(infringer, infringee, orientation)
             }
-            PrimitiveId::Polygon(infringee) => {
-                self.via_polygon_repulsion(infringer, infringee, orientation)
+            PrimitiveId::Poly(infringee) => {
+                self.via_poly_repulsion(infringer, infringee, orientation)
             }
         }
     }
 
-    pub fn polygon_joint_repulsion(
+    pub fn poly_joint_repulsion(
         &self,
-        infringer: PolygonId,
+        infringer: PolyId,
         infringee: JointId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
-            self.polygon_joint_rect_overlap(infringer, infringee),
-            self.polygon(infringer).centroid,
+            self.poly_joint_rect_overlap(infringer, infringee),
+            self.poly(infringer).centroid,
             self.joint(infringee).center(),
             orientation,
         )
     }
 
-    pub fn polygon_segment_repulsion(
+    pub fn poly_seg_repulsion(
         &self,
-        infringer: PolygonId,
-        infringee: SegmentId,
+        infringer: PolyId,
+        infringee: SegId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
-            self.polygon_segment_rect_overlap(infringer, infringee),
-            self.polygon(infringer).centroid,
-            self.segment(infringee).center(),
+            self.poly_seg_rect_overlap(infringer, infringee),
+            self.poly(infringer).centroid,
+            self.seg(infringee).center(),
             orientation,
         )
     }
 
-    pub fn polygon_via_repulsion(
+    pub fn poly_via_repulsion(
         &self,
-        infringer: PolygonId,
+        infringer: PolyId,
         infringee: ViaId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
-            self.polygon_via_rect_overlap(infringer, infringee),
-            self.polygon(infringer).centroid,
+            self.poly_via_rect_overlap(infringer, infringee),
+            self.poly(infringer).centroid,
             self.via(infringee).position,
             orientation,
         )
     }
 
-    pub fn polygon_polygon_repulsion(
+    pub fn poly_poly_repulsion(
         &self,
-        infringer: PolygonId,
-        infringee: PolygonId,
+        infringer: PolyId,
+        infringee: PolyId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         Self::repulsion_from_rect_overlap(
-            self.polygon_polygon_rect_overlap(infringer, infringee),
-            self.polygon(infringer).centroid,
-            self.polygon(infringee).centroid,
+            self.poly_poly_rect_overlap(infringer, infringee),
+            self.poly(infringer).centroid,
+            self.poly(infringee).centroid,
             orientation,
         )
     }
 
-    pub fn polygon_primitive_repulsion(
+    pub fn poly_primitive_repulsion(
         &self,
-        infringer: PolygonId,
+        infringer: PolyId,
         infringee: PrimitiveId,
         orientation: Orientation,
     ) -> Vector2<i64> {
         match infringee {
             PrimitiveId::Joint(infringee) => {
-                self.polygon_joint_repulsion(infringer, infringee, orientation)
+                self.poly_joint_repulsion(infringer, infringee, orientation)
             }
-            PrimitiveId::Segment(infringee) => {
-                self.polygon_segment_repulsion(infringer, infringee, orientation)
+            PrimitiveId::Seg(infringee) => {
+                self.poly_seg_repulsion(infringer, infringee, orientation)
             }
             PrimitiveId::Via(infringee) => {
-                self.polygon_via_repulsion(infringer, infringee, orientation)
+                self.poly_via_repulsion(infringer, infringee, orientation)
             }
-            PrimitiveId::Polygon(infringee) => {
-                self.polygon_polygon_repulsion(infringer, infringee, orientation)
+            PrimitiveId::Poly(infringee) => {
+                self.poly_poly_repulsion(infringer, infringee, orientation)
             }
         }
     }

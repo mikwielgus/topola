@@ -7,7 +7,7 @@ use rstar::primitives::GeomWithData;
 use crate::layout::{
     Layout,
     primitives::{
-        Joint, JointId, JointSpec, Polygon, PolygonId, SegmentId, SegmentSpec, ViaId, ViaSpec,
+        Joint, JointId, JointSpec, Poly, PolyId, SegId, SegSpec, ViaId, ViaSpec,
     },
 };
 
@@ -19,8 +19,8 @@ impl Layout {
         self.modify_joint_raw(id, |joint| f(&mut joint.spec));
         let new_joint = self.joints[id.index()].clone();
 
-        for &segment_id in &new_joint.segments {
-            self.update_segment(segment_id);
+        for &seg_id in &new_joint.segs {
+            self.update_seg(seg_id);
         }
 
         for &via_id in &new_joint.vias {
@@ -45,43 +45,43 @@ impl Layout {
         );
     }
 
-    pub fn modify_segment<F>(&mut self, id: SegmentId, f: F)
+    pub fn modify_seg<F>(&mut self, id: SegId, f: F)
     where
-        F: FnOnce(&mut SegmentSpec),
+        F: FnOnce(&mut SegSpec),
     {
-        let old_segment = &self.segments[id.index()];
-        self.segments_rtree
-            .remove(&GeomWithData::new(old_segment.bbox().rtree_rectangle(), id));
+        let old_seg = &self.segs[id.index()];
+        self.segs_rtree
+            .remove(&GeomWithData::new(old_seg.bbox().rtree_rectangle(), id));
 
-        self.segments
-            .modify(id.index(), |segment| f(&mut segment.spec));
+        self.segs
+            .modify(id.index(), |seg| f(&mut seg.spec));
 
-        let new_segment = &self.segments[id.index()];
-        self.segments_rtree.insert(
-            GeomWithData::new(new_segment.bbox().rtree_rectangle(), id),
+        let new_seg = &self.segs[id.index()];
+        self.segs_rtree.insert(
+            GeomWithData::new(new_seg.bbox().rtree_rectangle(), id),
             (),
         );
     }
 
-    pub(super) fn update_segment(&mut self, id: SegmentId) {
-        let old_segment = &self.segments[id.index()];
-        self.segments_rtree
-            .remove(&GeomWithData::new(old_segment.bbox().rtree_rectangle(), id));
+    pub(super) fn update_seg(&mut self, id: SegId) {
+        let old_seg = &self.segs[id.index()];
+        self.segs_rtree
+            .remove(&GeomWithData::new(old_seg.bbox().rtree_rectangle(), id));
 
-        let endjoint_ids = old_segment.spec.endjoints;
+        let endjoint_ids = old_seg.spec.endjoints;
         let endjoint_specs = [
             self.joints[endjoint_ids[0].index()].spec,
             self.joints[endjoint_ids[1].index()].spec,
         ];
-        self.segments.modify(id.index(), |segment| {
-            segment.endpoints = [endjoint_specs[0].position, endjoint_specs[1].position];
-            segment.layer = endjoint_specs[0].layer;
-            segment.net = endjoint_specs[0].net;
+        self.segs.modify(id.index(), |seg| {
+            seg.endpoints = [endjoint_specs[0].position, endjoint_specs[1].position];
+            seg.layer = endjoint_specs[0].layer;
+            seg.net = endjoint_specs[0].net;
         });
 
-        let new_segment = &self.segments[id.index()];
-        self.segments_rtree.insert(
-            GeomWithData::new(new_segment.bbox().rtree_rectangle(), id),
+        let new_seg = &self.segs[id.index()];
+        self.segs_rtree.insert(
+            GeomWithData::new(new_seg.bbox().rtree_rectangle(), id),
             (),
         );
     }
@@ -123,19 +123,19 @@ impl Layout {
             .insert(GeomWithData::new(new_via.bbox().rtree_rectangle(), id), ());
     }
 
-    pub fn modify_polygon<F>(&mut self, id: PolygonId, f: F)
+    pub fn modify_poly<F>(&mut self, id: PolyId, f: F)
     where
-        F: FnOnce(&mut Polygon),
+        F: FnOnce(&mut Poly),
     {
-        let old_polygon = &self.polygons[id.index()];
-        self.polygons_rtree
-            .remove(&GeomWithData::new(old_polygon.bbox().rtree_rectangle(), id));
+        let old_poly = &self.polys[id.index()];
+        self.polys_rtree
+            .remove(&GeomWithData::new(old_poly.bbox().rtree_rectangle(), id));
 
-        self.polygons.modify(id.index(), |polygon| f(polygon));
+        self.polys.modify(id.index(), |poly| f(poly));
 
-        let new_polygon = &self.polygons[id.index()];
-        self.polygons_rtree.insert(
-            GeomWithData::new(new_polygon.bbox().rtree_rectangle(), id),
+        let new_poly = &self.polys[id.index()];
+        self.polys_rtree.insert(
+            GeomWithData::new(new_poly.bbox().rtree_rectangle(), id),
             (),
         );
     }

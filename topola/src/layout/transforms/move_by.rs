@@ -21,21 +21,21 @@ impl Layout {
                 self.modify_joint_raw(joint_id, |joint| joint.spec.position += translation);
             }
 
-            for &segment_id in &component.segments {
-                self.update_segment(segment_id);
+            for &seg_id in &component.segs {
+                self.update_seg(seg_id);
             }
 
             for &via_id in &component.vias {
                 self.update_via(via_id);
             }
 
-            for &polygon_id in &component.polygons {
-                self.modify_polygon(polygon_id, |polygon| {
-                    polygon
+            for &poly_id in &component.polys {
+                self.modify_poly(poly_id, |poly| {
+                    poly
                         .spec.vertices
                         .iter_mut()
                         .for_each(|vertex| *vertex += translation);
-                    polygon.centroid += translation;
+                    poly.centroid += translation;
                 });
             }
         }

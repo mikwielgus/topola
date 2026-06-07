@@ -6,7 +6,7 @@ use crate::{
     board::{Board, selections::ComponentSelection},
     layout::{
         compounds::ComponentId,
-        primitives::{JointId, PolygonId, SegmentId, ViaId},
+        primitives::{JointId, PolyId, SegId, ViaId},
     },
     selections::NetSelection,
 };
@@ -41,22 +41,22 @@ impl Board {
         resolved_joints.into_iter()
     }
 
-    pub fn resolve_net_segments(&self, selection: NetSelection) -> impl Iterator<Item = SegmentId> {
-        let mut resolved_segments = Vec::new();
+    pub fn resolve_net_segs(&self, selection: NetSelection) -> impl Iterator<Item = SegId> {
+        let mut resolved_segs = Vec::new();
 
-        for (index, _) in self.layout.segments().container() {
-            let segment_id = SegmentId::new(index);
+        for (index, _) in self.layout.segs().container() {
+            let seg_id = SegId::new(index);
 
-            let Some(selector) = self.segment_net_selector(segment_id) else {
+            let Some(selector) = self.seg_net_selector(seg_id) else {
                 continue;
             };
 
             if selection.0.contains(&selector) {
-                resolved_segments.push(segment_id);
+                resolved_segs.push(seg_id);
             }
         }
 
-        resolved_segments.into_iter()
+        resolved_segs.into_iter()
     }
 
     pub fn resolve_net_vias(&self, selection: NetSelection) -> impl Iterator<Item = ViaId> {
@@ -77,21 +77,21 @@ impl Board {
         resolved_vias.into_iter()
     }
 
-    pub fn resolve_net_polygons(&self, selection: NetSelection) -> impl Iterator<Item = PolygonId> {
-        let mut resolved_polygons = Vec::new();
+    pub fn resolve_net_polys(&self, selection: NetSelection) -> impl Iterator<Item = PolyId> {
+        let mut resolved_polys = Vec::new();
 
-        for (index, _) in self.layout.polygons().container() {
-            let polygon_id = PolygonId::new(index);
+        for (index, _) in self.layout.polys().container() {
+            let poly_id = PolyId::new(index);
 
-            let Some(selector) = self.polygon_net_selector(polygon_id) else {
+            let Some(selector) = self.poly_net_selector(poly_id) else {
                 continue;
             };
 
             if selection.0.contains(&selector) {
-                resolved_polygons.push(polygon_id);
+                resolved_polys.push(poly_id);
             }
         }
 
-        resolved_polygons.into_iter()
+        resolved_polys.into_iter()
     }
 }

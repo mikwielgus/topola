@@ -6,7 +6,7 @@ use derive_more::{Constructor, From};
 use serde::{Deserialize, Serialize};
 
 use crate::layout::compounds::{ComponentId, NetId, PinId};
-use crate::layout::primitives::{SegmentId, ViaId};
+use crate::layout::primitives::{SegId, ViaId};
 use crate::vector::Vector2;
 use crate::{Rect3, Vector3, layout::LayerId};
 
@@ -47,7 +47,7 @@ pub struct JointSpec {
 #[derive(Clone, Debug)]
 pub struct Joint {
     pub spec: JointSpec,
-    pub segments: Vec<SegmentId>,
+    pub segs: Vec<SegId>,
     pub vias: Vec<ViaId>,
 }
 
@@ -55,7 +55,7 @@ impl Joint {
     pub fn new(spec: JointSpec) -> Self {
         Joint {
             spec,
-            segments: Vec::new(),
+            segs: Vec::new(),
             vias: Vec::new(),
         }
     }

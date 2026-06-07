@@ -184,46 +184,46 @@ impl_rect2_intersects_circle!(u128);
 impl_rect2_intersects_circle!(f32);
 impl_rect2_intersects_circle!(f64);
 
-macro_rules! impl_rect2_contains_polygon {
+macro_rules! impl_rect2_contains_poly {
     ($type:ty) => {
         impl Rect2<$type> {
-            pub fn contains_polygon(&self, polygon: &[Vector2<$type>]) -> bool {
+            pub fn contains_poly(&self, poly: &[Vector2<$type>]) -> bool {
                 let corners = self.corners();
-                polygon.iter().all(|point| point.inside_polygon(&corners))
+                poly.iter().all(|point| point.inside_polygon(&corners))
             }
         }
     };
 }
 
-impl_rect2_contains_polygon!(i8);
-impl_rect2_contains_polygon!(i16);
-impl_rect2_contains_polygon!(i32);
-impl_rect2_contains_polygon!(i64);
-impl_rect2_contains_polygon!(i128);
-impl_rect2_contains_polygon!(u8);
-impl_rect2_contains_polygon!(u16);
-impl_rect2_contains_polygon!(u32);
-impl_rect2_contains_polygon!(u64);
-impl_rect2_contains_polygon!(u128);
-impl_rect2_contains_polygon!(f32);
-impl_rect2_contains_polygon!(f64);
+impl_rect2_contains_poly!(i8);
+impl_rect2_contains_poly!(i16);
+impl_rect2_contains_poly!(i32);
+impl_rect2_contains_poly!(i64);
+impl_rect2_contains_poly!(i128);
+impl_rect2_contains_poly!(u8);
+impl_rect2_contains_poly!(u16);
+impl_rect2_contains_poly!(u32);
+impl_rect2_contains_poly!(u64);
+impl_rect2_contains_poly!(u128);
+impl_rect2_contains_poly!(f32);
+impl_rect2_contains_poly!(f64);
 
-macro_rules! impl_rect2_intersects_polygon {
+macro_rules! impl_rect2_intersects_poly {
     ($type:ty) => {
         impl Rect2<$type> {
-            pub fn intersects_polygon(&self, polygon: &[Vector2<$type>]) -> bool {
-                if polygon.is_empty() {
+            pub fn intersects_poly(&self, poly: &[Vector2<$type>]) -> bool {
+                if poly.is_empty() {
                     return false;
                 }
 
-                if polygon.iter().any(|&vertex| self.contains_point(vertex)) {
+                if poly.iter().any(|&vertex| self.contains_point(vertex)) {
                     return true;
                 }
 
                 if self
                     .corners()
                     .iter()
-                    .any(|corner| corner.inside_polygon(polygon))
+                    .any(|corner| corner.inside_polygon(poly))
                 {
                     return true;
                 }
@@ -237,18 +237,18 @@ macro_rules! impl_rect2_intersects_polygon {
     };
 }
 
-impl_rect2_intersects_polygon!(i8);
-impl_rect2_intersects_polygon!(i16);
-impl_rect2_intersects_polygon!(i32);
-impl_rect2_intersects_polygon!(i64);
-impl_rect2_intersects_polygon!(i128);
-impl_rect2_intersects_polygon!(u8);
-impl_rect2_intersects_polygon!(u16);
-impl_rect2_intersects_polygon!(u32);
-impl_rect2_intersects_polygon!(u64);
-impl_rect2_intersects_polygon!(u128);
-impl_rect2_intersects_polygon!(f32);
-impl_rect2_intersects_polygon!(f64);
+impl_rect2_intersects_poly!(i8);
+impl_rect2_intersects_poly!(i16);
+impl_rect2_intersects_poly!(i32);
+impl_rect2_intersects_poly!(i64);
+impl_rect2_intersects_poly!(i128);
+impl_rect2_intersects_poly!(u8);
+impl_rect2_intersects_poly!(u16);
+impl_rect2_intersects_poly!(u32);
+impl_rect2_intersects_poly!(u64);
+impl_rect2_intersects_poly!(u128);
+impl_rect2_intersects_poly!(f32);
+impl_rect2_intersects_poly!(f64);
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, Getters, Ord, PartialEq, PartialOrd, Serialize)]
 pub struct Rect3<T> {

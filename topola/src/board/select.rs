@@ -9,7 +9,7 @@ use crate::{
             ComponentSelection, ComponentSelector, NetSelector, PinSelection, PinSelector,
         },
     },
-    layout::primitives::{JointId, PolygonId, SegmentId, ViaId},
+    layout::primitives::{JointId, PolyId, SegId, ViaId},
 };
 
 impl Board {
@@ -49,24 +49,24 @@ impl Board {
                 component_selection.0.insert(component_selector);
             }
 
-            for segment_id in self.layout.layer_segments(layer_id) {
-                if self.layout.segment(segment_id).spec.pin != Some(pin_id) {
+            for seg_id in self.layout.layer_segs(layer_id) {
+                if self.layout.seg(seg_id).spec.pin != Some(pin_id) {
                     continue;
                 }
 
-                let Some(component_selector) = self.segment_component_selector(segment_id) else {
+                let Some(component_selector) = self.seg_component_selector(seg_id) else {
                     continue;
                 };
 
                 component_selection.0.insert(component_selector);
             }
 
-            for polygon_id in self.layout.layer_polygons(layer_id) {
-                if self.layout.polygon(polygon_id).spec.pin != Some(pin_id) {
+            for poly_id in self.layout.layer_polys(layer_id) {
+                if self.layout.poly(poly_id).spec.pin != Some(pin_id) {
                     continue;
                 }
 
-                let Some(component_selector) = self.polygon_component_selector(polygon_id) else {
+                let Some(component_selector) = self.poly_component_selector(poly_id) else {
                     continue;
                 };
 
@@ -85,11 +85,11 @@ impl Board {
         })
     }
 
-    pub fn segment_component_selector(&self, id: SegmentId) -> Option<ComponentSelector> {
-        let segment = self.layout.segment(id);
+    pub fn seg_component_selector(&self, id: SegId) -> Option<ComponentSelector> {
+        let seg = self.layout.seg(id);
 
         Some(ComponentSelector {
-            component: self.component_name(segment.spec.component?)?.to_string(),
+            component: self.component_name(seg.spec.component?)?.to_string(),
         })
     }
 
@@ -101,11 +101,11 @@ impl Board {
         })
     }
 
-    pub fn polygon_component_selector(&self, id: PolygonId) -> Option<ComponentSelector> {
-        let polygon = self.layout.polygon(id);
+    pub fn poly_component_selector(&self, id: PolyId) -> Option<ComponentSelector> {
+        let poly = self.layout.poly(id);
 
         Some(ComponentSelector {
-            component: self.component_name(polygon.spec.component?)?.to_string(),
+            component: self.component_name(poly.spec.component?)?.to_string(),
         })
     }
 
@@ -117,11 +117,11 @@ impl Board {
         })
     }
 
-    pub fn segment_net_selector(&self, id: SegmentId) -> Option<NetSelector> {
-        let segment = self.layout.segment(id);
+    pub fn seg_net_selector(&self, id: SegId) -> Option<NetSelector> {
+        let seg = self.layout.seg(id);
 
         Some(NetSelector {
-            net: self.net_name(segment.net?)?.to_string(),
+            net: self.net_name(seg.net?)?.to_string(),
         })
     }
 
@@ -133,11 +133,11 @@ impl Board {
         })
     }
 
-    pub fn polygon_net_selector(&self, id: PolygonId) -> Option<NetSelector> {
-        let polygon = self.layout.polygon(id);
+    pub fn poly_net_selector(&self, id: PolyId) -> Option<NetSelector> {
+        let poly = self.layout.poly(id);
 
         Some(NetSelector {
-            net: self.net_name(polygon.spec.net?)?.to_string(),
+            net: self.net_name(poly.spec.net?)?.to_string(),
         })
     }
 
@@ -150,12 +150,12 @@ impl Board {
         })
     }
 
-    pub fn segment_pin_selector(&self, id: SegmentId) -> Option<PinSelector> {
-        let segment = self.layout.segment(id);
+    pub fn seg_pin_selector(&self, id: SegId) -> Option<PinSelector> {
+        let seg = self.layout.seg(id);
 
         Some(PinSelector {
-            pin: self.pin_name(segment.spec.pin?)?.to_string(),
-            layer: self.layer_name(segment.layer)?,
+            pin: self.pin_name(seg.spec.pin?)?.to_string(),
+            layer: self.layer_name(seg.layer)?,
         })
     }
 
@@ -168,12 +168,12 @@ impl Board {
         })
     }
 
-    pub fn polygon_pin_selector(&self, id: PolygonId) -> Option<PinSelector> {
-        let polygon = self.layout.polygon(id);
+    pub fn poly_pin_selector(&self, id: PolyId) -> Option<PinSelector> {
+        let poly = self.layout.poly(id);
 
         Some(PinSelector {
-            pin: self.pin_name(polygon.spec.pin?)?.to_string(),
-            layer: self.layer_name(polygon.spec.layer)?,
+            pin: self.pin_name(poly.spec.pin?)?.to_string(),
+            layer: self.layer_name(poly.spec.layer)?,
         })
     }
 }

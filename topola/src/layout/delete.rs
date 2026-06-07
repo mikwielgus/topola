@@ -6,7 +6,7 @@ use rstar::primitives::GeomWithData;
 
 use crate::layout::{
     Layout,
-    primitives::{JointId, PolygonId, SegmentId, ViaId},
+    primitives::{JointId, PolyId, SegId, ViaId},
 };
 
 impl Layout {
@@ -37,35 +37,35 @@ impl Layout {
         self.joints.remove(&joint_id.index());
     }
 
-    pub fn delete_segment(&mut self, segment_id: SegmentId) {
-        let segment = self.segment(segment_id);
-        let bbox = segment.bbox();
-        let component = segment.spec.component;
-        let pin = segment.spec.pin;
+    pub fn delete_seg(&mut self, seg_id: SegId) {
+        let seg = self.seg(seg_id);
+        let bbox = seg.bbox();
+        let component = seg.spec.component;
+        let pin = seg.spec.pin;
 
         if let Some(component_id) = component {
             self.components.modify(component_id.index(), |component| {
                 if let Some(index) = component
-                    .segments
+                    .segs
                     .iter()
-                    .position(|&curr| curr == segment_id)
+                    .position(|&curr| curr == seg_id)
                 {
-                    component.segments.remove(index);
+                    component.segs.remove(index);
                 }
             });
         }
 
         if let Some(pin_id) = pin {
             self.pins.modify(pin_id.index(), |pin| {
-                if let Some(index) = pin.segments.iter().position(|&curr| curr == segment_id) {
-                    pin.segments.remove(index);
+                if let Some(index) = pin.segs.iter().position(|&curr| curr == seg_id) {
+                    pin.segs.remove(index);
                 }
             });
         }
 
-        self.segments_rtree
-            .remove(&GeomWithData::new(bbox.rtree_rectangle(), segment_id));
-        self.segments.remove(&segment_id.index());
+        self.segs_rtree
+            .remove(&GeomWithData::new(bbox.rtree_rectangle(), seg_id));
+        self.segs.remove(&seg_id.index());
     }
 
     pub fn delete_via(&mut self, via_id: ViaId) {
@@ -95,34 +95,34 @@ impl Layout {
         self.vias.remove(&via_id.index());
     }
 
-    pub fn delete_polygon(&mut self, polygon_id: PolygonId) {
-        let polygon = self.polygon(polygon_id);
-        let bbox = polygon.bbox();
-        let component = polygon.spec.component;
-        let pin = polygon.spec.pin;
+    pub fn delete_poly(&mut self, poly_id: PolyId) {
+        let poly = self.poly(poly_id);
+        let bbox = poly.bbox();
+        let component = poly.spec.component;
+        let pin = poly.spec.pin;
 
         if let Some(component_id) = component {
             self.components.modify(component_id.index(), |component| {
                 if let Some(index) = component
-                    .polygons
+                    .polys
                     .iter()
-                    .position(|&curr| curr == polygon_id)
+                    .position(|&curr| curr == poly_id)
                 {
-                    component.polygons.remove(index);
+                    component.polys.remove(index);
                 }
             });
         }
 
         if let Some(pin_id) = pin {
             self.pins.modify(pin_id.index(), |pin| {
-                if let Some(index) = pin.polygons.iter().position(|&curr| curr == polygon_id) {
-                    pin.polygons.remove(index);
+                if let Some(index) = pin.polys.iter().position(|&curr| curr == poly_id) {
+                    pin.polys.remove(index);
                 }
             });
         }
 
-        self.polygons_rtree
-            .remove(&GeomWithData::new(bbox.rtree_rectangle(), polygon_id));
-        self.polygons.remove(&polygon_id.index());
+        self.polys_rtree
+            .remove(&GeomWithData::new(bbox.rtree_rectangle(), poly_id));
+        self.polys.remove(&poly_id.index());
     }
 }

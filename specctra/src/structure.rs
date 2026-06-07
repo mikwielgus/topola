@@ -164,7 +164,7 @@ impl Boundary {
         }
     }
 
-    pub fn to_polygon(&self) -> GeoPolygon {
+    pub fn to_poly(&self) -> GeoPolygon {
         GeoPolygon::new(
             LineString(
                 self.coords()
@@ -619,7 +619,7 @@ pub struct Polygon {
 }
 
 impl Polygon {
-    pub fn to_polygon(&self) -> GeoPolygon {
+    pub fn to_poly(&self) -> GeoPolygon {
         GeoPolygon::new(
             LineString(
                 self.coords

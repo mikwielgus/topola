@@ -6,7 +6,7 @@ use crate::{
     Rect2,
     layout::{
         Layout,
-        primitives::{JointId, PolygonId, SegmentId, ViaId},
+        primitives::{JointId, PolyId, SegId, ViaId},
     },
 };
 
@@ -22,13 +22,13 @@ impl Layout {
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn joint_segment_rect_overlap(
+    pub fn joint_seg_rect_overlap(
         &self,
         infringer: JointId,
-        infringee: SegmentId,
+        infringee: SegId,
     ) -> Option<Rect2<i64>> {
         let infringer_bbox = self.joint(infringer).bbox().xy();
-        let infringee_bbox = self.segment(infringee).bbox().xy();
+        let infringee_bbox = self.seg(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -44,57 +44,57 @@ impl Layout {
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn joint_polygon_rect_overlap(
+    pub fn joint_poly_rect_overlap(
         &self,
         infringer: JointId,
-        infringee: PolygonId,
+        infringee: PolyId,
     ) -> Option<Rect2<i64>> {
         let infringer_bbox = self.joint(infringer).bbox().xy();
-        let infringee_bbox = self.polygon(infringee).bbox().xy();
+        let infringee_bbox = self.poly(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn segment_joint_rect_overlap(
+    pub fn seg_joint_rect_overlap(
         &self,
-        infringer: SegmentId,
+        infringer: SegId,
         infringee: JointId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.segment(infringer).bbox().xy();
+        let infringer_bbox = self.seg(infringer).bbox().xy();
         let infringee_bbox = self.joint(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn segment_segment_rect_overlap(
+    pub fn seg_seg_rect_overlap(
         &self,
-        infringer: SegmentId,
-        infringee: SegmentId,
+        infringer: SegId,
+        infringee: SegId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.segment(infringer).bbox().xy();
-        let infringee_bbox = self.segment(infringee).bbox().xy();
+        let infringer_bbox = self.seg(infringer).bbox().xy();
+        let infringee_bbox = self.seg(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn segment_via_rect_overlap(
+    pub fn seg_via_rect_overlap(
         &self,
-        infringer: SegmentId,
+        infringer: SegId,
         infringee: ViaId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.segment(infringer).bbox().xy();
+        let infringer_bbox = self.seg(infringer).bbox().xy();
         let infringee_bbox = self.via(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn segment_polygon_rect_overlap(
+    pub fn seg_poly_rect_overlap(
         &self,
-        infringer: SegmentId,
-        infringee: PolygonId,
+        infringer: SegId,
+        infringee: PolyId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.segment(infringer).bbox().xy();
-        let infringee_bbox = self.polygon(infringee).bbox().xy();
+        let infringer_bbox = self.seg(infringer).bbox().xy();
+        let infringee_bbox = self.poly(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -110,13 +110,13 @@ impl Layout {
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn via_segment_rect_overlap(
+    pub fn via_seg_rect_overlap(
         &self,
         infringer: ViaId,
-        infringee: SegmentId,
+        infringee: SegId,
     ) -> Option<Rect2<i64>> {
         let infringer_bbox = self.via(infringer).bbox().xy();
-        let infringee_bbox = self.segment(infringee).bbox().xy();
+        let infringee_bbox = self.seg(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
@@ -128,57 +128,57 @@ impl Layout {
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn via_polygon_rect_overlap(
+    pub fn via_poly_rect_overlap(
         &self,
         infringer: ViaId,
-        infringee: PolygonId,
+        infringee: PolyId,
     ) -> Option<Rect2<i64>> {
         let infringer_bbox = self.via(infringer).bbox().xy();
-        let infringee_bbox = self.polygon(infringee).bbox().xy();
+        let infringee_bbox = self.poly(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn polygon_joint_rect_overlap(
+    pub fn poly_joint_rect_overlap(
         &self,
-        infringer: PolygonId,
+        infringer: PolyId,
         infringee: JointId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.polygon(infringer).bbox().xy();
+        let infringer_bbox = self.poly(infringer).bbox().xy();
         let infringee_bbox = self.joint(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn polygon_segment_rect_overlap(
+    pub fn poly_seg_rect_overlap(
         &self,
-        infringer: PolygonId,
-        infringee: SegmentId,
+        infringer: PolyId,
+        infringee: SegId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.polygon(infringer).bbox().xy();
-        let infringee_bbox = self.segment(infringee).bbox().xy();
+        let infringer_bbox = self.poly(infringer).bbox().xy();
+        let infringee_bbox = self.seg(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn polygon_via_rect_overlap(
+    pub fn poly_via_rect_overlap(
         &self,
-        infringer: PolygonId,
+        infringer: PolyId,
         infringee: ViaId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.polygon(infringer).bbox().xy();
+        let infringer_bbox = self.poly(infringer).bbox().xy();
         let infringee_bbox = self.via(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn polygon_polygon_rect_overlap(
+    pub fn poly_poly_rect_overlap(
         &self,
-        infringer: PolygonId,
-        infringee: PolygonId,
+        infringer: PolyId,
+        infringee: PolyId,
     ) -> Option<Rect2<i64>> {
-        let infringer_bbox = self.polygon(infringer).bbox().xy();
-        let infringee_bbox = self.polygon(infringee).bbox().xy();
+        let infringer_bbox = self.poly(infringer).bbox().xy();
+        let infringee_bbox = self.poly(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }

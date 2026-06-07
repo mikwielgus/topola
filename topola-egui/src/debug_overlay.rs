@@ -219,8 +219,8 @@ impl DebugOverlay {
                 );
             }
 
-            for segment_id in layout.layer_segments(layer) {
-                let endpoints = layout.segment(segment_id).endpoints;
+            for seg_id in layout.layer_segs(layer) {
+                let endpoints = layout.seg(seg_id).endpoints;
 
                 ui.painter().rect_stroke(
                     egui::Rect::from_two_pos(
@@ -248,9 +248,9 @@ impl DebugOverlay {
                 );
             }
 
-            for polygon_id in layout.layer_polygons(layer) {
-                let polygon = layout.polygon(polygon_id);
-                let bbox = polygon.bbox();
+            for poly_id in layout.layer_polys(layer) {
+                let poly = layout.poly(poly_id);
+                let bbox = poly.bbox();
 
                 ui.painter().rect_stroke(
                     egui::Rect {

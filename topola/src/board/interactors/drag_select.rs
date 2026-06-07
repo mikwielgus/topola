@@ -67,16 +67,16 @@ impl Interactor for DragSelectInteractor {
                     .all(|joint_id| board.layout().joint(joint_id).spec.pin.is_some())
                     && board
                         .layout()
-                        .locate_segments_prefer_layer_intersecting_rect(rect)
-                        .all(|segment_id| board.layout().segment(segment_id).spec.pin.is_some())
+                        .locate_segs_prefer_layer_intersecting_rect(rect)
+                        .all(|seg_id| board.layout().seg(seg_id).spec.pin.is_some())
                     && board
                         .layout()
                         .locate_vias_prefer_layer_intersecting_rect(rect)
                         .all(|via_id| board.layout().via(via_id).spec.pin.is_some())
                     && board
                         .layout()
-                        .locate_polygons_prefer_layer_intersecting_rect(rect)
-                        .all(|polygon_id| board.layout().polygon(polygon_id).spec.pin.is_some())
+                        .locate_polys_prefer_layer_intersecting_rect(rect)
+                        .all(|poly_id| board.layout().poly(poly_id).spec.pin.is_some())
             }
             SelectionContainMode::Window => {
                 board
@@ -85,16 +85,16 @@ impl Interactor for DragSelectInteractor {
                     .all(|joint_id| board.layout().joint(joint_id).spec.pin.is_some())
                     && board
                         .layout()
-                        .locate_segments_prefer_layer_inside_rect(rect)
-                        .all(|segment_id| board.layout().segment(segment_id).spec.pin.is_some())
+                        .locate_segs_prefer_layer_inside_rect(rect)
+                        .all(|seg_id| board.layout().seg(seg_id).spec.pin.is_some())
                     && board
                         .layout()
                         .locate_vias_prefer_layer_inside_rect(rect)
                         .all(|via_id| board.layout().via(via_id).spec.pin.is_some())
                     && board
                         .layout()
-                        .locate_polygons_prefer_layer_inside_rect(rect)
-                        .all(|polygon_id| board.layout().polygon(polygon_id).spec.pin.is_some())
+                        .locate_polys_prefer_layer_inside_rect(rect)
+                        .all(|poly_id| board.layout().poly(poly_id).spec.pin.is_some())
             }
         };
 

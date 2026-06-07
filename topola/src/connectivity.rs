@@ -2,14 +2,14 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use polygon_unionfind::UnionFind;
+use poly_unionfind::UnionFind;
 
 use crate::board::Board;
 
 pub struct Connectivity {
     joints_unionfind: UnionFind,
-    segments_unionfind: UnionFind,
-    polygons_unionfind: UnionFind,
+    segs_unionfind: UnionFind,
+    polys_unionfind: UnionFind,
 }
 
 impl Connectivity {
@@ -18,11 +18,11 @@ impl Connectivity {
             joints_unionfind: UnionFind::with_len(
                 board.layout().joints().container().num_elements(),
             ),
-            segments_unionfind: UnionFind::with_len(
-                board.layout().segments().container().num_elements(),
+            segs_unionfind: UnionFind::with_len(
+                board.layout().segs().container().num_elements(),
             ),
-            polygons_unionfind: UnionFind::with_len(
-                board.layout().polygons().container().num_elements(),
+            polys_unionfind: UnionFind::with_len(
+                board.layout().polys().container().num_elements(),
             ),
         };
 

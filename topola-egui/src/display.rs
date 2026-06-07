@@ -3,12 +3,14 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
-    controller::Controller, debug_overlay::{DebugOverlay, DebugOverlayOptions}, menu_bar::MenuBar,
+    controller::Controller,
+    debug_overlay::{DebugOverlay, DebugOverlayOptions},
+    menu_bar::MenuBar,
     viewport::Viewport,
 };
 use topola::{
     Workspace,
-    layout::primitives::{Joint, Polygon, Segment, Via},
+    layout::primitives::{Joint, Poly, Seg, Via},
 };
 
 pub struct Display {}
@@ -93,26 +95,24 @@ impl Display {
                 );
             }
 
-            for segment_id in layout.layer_segments(layer) {
-                let segment = layout.segment(segment_id);
+            for seg_id in layout.layer_segs(layer) {
+                let seg = layout.seg(seg_id);
                 let pin_selected =
-                    board.pins_contain_segment(&workspace.workspace.selection().pins, segment_id);
+                    board.pins_contain_seg(&workspace.workspace.selection().pins, seg_id);
                 let net_selected =
-                    board.nets_contain_segment(&workspace.workspace.selection().nets, segment_id);
-                let component_selected = board.components_contain_segment(
-                    &workspace.workspace.selection().components,
-                    segment_id,
-                );
-                self.paint_segment(
+                    board.nets_contain_seg(&workspace.workspace.selection().nets, seg_id);
+                let component_selected = board
+                    .components_contain_seg(&workspace.workspace.selection().components, seg_id);
+                self.paint_seg(
                     ctx,
                     ui,
                     viewport,
-                    segment,
+                    seg,
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        board.layer_desc(segment.layer),
+                        board.layer_desc(seg.layer),
                         pin_selected,
-                        (segment.spec.pin.is_none() && net_selected) || component_selected,
+                        (seg.spec.pin.is_none() && net_selected) || component_selected,
                     ),
                 );
             }
@@ -139,26 +139,24 @@ impl Display {
                 );
             }
 
-            for polygon_id in layout.layer_polygons(layer) {
-                let polygon = layout.polygon(polygon_id);
+            for poly_id in layout.layer_polys(layer) {
+                let poly = layout.poly(poly_id);
                 let pin_selected =
-                    board.pins_contain_polygon(&workspace.workspace.selection().pins, polygon_id);
+                    board.pins_contain_poly(&workspace.workspace.selection().pins, poly_id);
                 let net_selected =
-                    board.nets_contain_polygon(&workspace.workspace.selection().nets, polygon_id);
-                let component_selected = board.components_contain_polygon(
-                    &workspace.workspace.selection().components,
-                    polygon_id,
-                );
-                self.paint_polygon(
+                    board.nets_contain_poly(&workspace.workspace.selection().nets, poly_id);
+                let component_selected = board
+                    .components_contain_poly(&workspace.workspace.selection().components, poly_id);
+                self.paint_poly(
                     ctx,
                     ui,
                     viewport,
-                    polygon,
+                    poly,
                     workspace.appearance_panel.layer_color(
                         ctx,
-                        board.layer_desc(polygon.spec.layer),
+                        board.layer_desc(poly.spec.layer),
                         pin_selected,
-                        (polygon.spec.pin.is_none() && net_selected) || component_selected,
+                        (poly.spec.pin.is_none() && net_selected) || component_selected,
                     ),
                 );
             }
@@ -192,20 +190,20 @@ impl Display {
         );
     }
 
-    fn paint_segment(
+    fn paint_seg(
         &mut self,
         ctx: &egui::Context,
         ui: &egui::Ui,
         viewport: &Viewport,
-        segment: &Segment,
+        seg: &Seg,
         color: egui::Color32,
     ) {
         ui.painter().line_segment(
             [
-                egui::pos2(segment.endpoints[0].x as f32, segment.endpoints[0].y as f32),
-                egui::pos2(segment.endpoints[1].x as f32, segment.endpoints[1].y as f32),
+                egui::pos2(seg.endpoints[0].x as f32, seg.endpoints[0].y as f32),
+                egui::pos2(seg.endpoints[1].x as f32, seg.endpoints[1].y as f32),
             ],
-            egui::Stroke::new(segment.spec.half_width as f32 * 2.0, color),
+            egui::Stroke::new(seg.spec.half_width as f32 * 2.0, color),
         );
     }
 
@@ -224,16 +222,17 @@ impl Display {
         );
     }
 
-    fn paint_polygon(
+    fn paint_poly(
         &mut self,
         ctx: &egui::Context,
         ui: &egui::Ui,
         viewport: &Viewport,
-        polygon: &Polygon,
+        poly: &Poly,
         color: egui::Color32,
     ) {
-        let points: Vec<egui::Pos2> = polygon
-            .spec.vertices
+        let points: Vec<egui::Pos2> = poly
+            .spec
+            .vertices
             .iter()
             .map(|v| egui::pos2(v.x as f32, v.y as f32))
             .collect();

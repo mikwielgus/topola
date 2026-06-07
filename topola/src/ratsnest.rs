@@ -13,7 +13,7 @@ use crate::{
     layout::{
         LayerId,
         compounds::NetId,
-        primitives::{JointId, PolygonId, PrimitiveId, SegmentId},
+        primitives::{JointId, PolyId, PrimitiveId, SegId},
     },
     vector::Vector2,
 };
@@ -68,39 +68,39 @@ impl Ratsnest {
                 });
         }
 
-        for (i, segment) in board.layout().segments().container().iter() {
-            let Some(net) = segment.net else {
+        for (i, seg) in board.layout().segs().container().iter() {
+            let Some(net) = seg.net else {
                 continue;
             };
 
-            let segment_center = segment.center();
+            let seg_center = seg.center();
             let _ = triangulations
-                .entry((net, segment.layer))
+                .entry((net, seg.layer))
                 .or_insert_with(DelaunayTriangulation::new)
                 .insert(DelaunayVertex {
-                    layer: segment.layer,
-                    center: segment_center,
-                    position: spade::Point2::new(segment_center.x as f64, segment_center.y as f64),
-                    primitive_id: PrimitiveId::Segment(SegmentId::new(i)),
+                    layer: seg.layer,
+                    center: seg_center,
+                    position: spade::Point2::new(seg_center.x as f64, seg_center.y as f64),
+                    primitive_id: PrimitiveId::Seg(SegId::new(i)),
                 });
         }
 
-        for (i, polygon) in board.layout().polygons().container().iter() {
-            let Some(net) = polygon.spec.net else {
+        for (i, poly) in board.layout().polys().container().iter() {
+            let Some(net) = poly.spec.net else {
                 continue;
             };
 
             let _ = triangulations
-                .entry((net, polygon.spec.layer))
+                .entry((net, poly.spec.layer))
                 .or_insert_with(DelaunayTriangulation::new)
                 .insert(DelaunayVertex {
-                    layer: polygon.spec.layer,
-                    center: polygon.centroid,
+                    layer: poly.spec.layer,
+                    center: poly.centroid,
                     position: spade::Point2::new(
-                        polygon.centroid.x as f64,
-                        polygon.centroid.y as f64,
+                        poly.centroid.x as f64,
+                        poly.centroid.y as f64,
                     ),
-                    primitive_id: PrimitiveId::Polygon(PolygonId::new(i)),
+                    primitive_id: PrimitiveId::Poly(PolyId::new(i)),
                 });
         }
 
