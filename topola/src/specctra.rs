@@ -12,7 +12,7 @@ use specctra::{
 
 use crate::{
     board::{Board, LayerDesc, LayerSide, LayerType},
-    layout::primitives::{JointSpec, Poly, PolySpec, Seg, SegSpec},
+    layout::primitives::{JointSpec, Poly, PolySpec, SegSpec},
     layout::{
         LayerId,
         compounds::{ComponentId, NetId, PinId, PinSpec},
@@ -383,23 +383,18 @@ impl Board {
         flip: bool,
         coordinate_scale: f64,
     ) {
-        board.insert_poly({
-            let spec = PolySpec {
-                vertices: vec![
-                    Self::pos(place, pin_pos, x1, y1, flip, coordinate_scale),
-                    Self::pos(place, pin_pos, x2, y1, flip, coordinate_scale),
-                    Self::pos(place, pin_pos, x2, y2, flip, coordinate_scale),
-                    Self::pos(place, pin_pos, x1, y2, flip, coordinate_scale),
-                ],
-                layer,
-                net,
-                component,
-                pin,
-            };
-            let centroid = Vector2::<i64>::poly_centroid(&spec.vertices);
-
-            Poly { spec, centroid }
-        });
+        board.insert_poly(Poly::new(PolySpec {
+            vertices: vec![
+                Self::pos(place, pin_pos, x1, y1, flip, coordinate_scale),
+                Self::pos(place, pin_pos, x2, y1, flip, coordinate_scale),
+                Self::pos(place, pin_pos, x2, y2, flip, coordinate_scale),
+                Self::pos(place, pin_pos, x1, y2, flip, coordinate_scale),
+            ],
+            layer,
+            net,
+            component,
+            pin,
+        }));
     }
 
     fn place_path(
@@ -448,16 +443,11 @@ impl Board {
                 pin,
             });
 
-            let _ = board.insert_seg_raw(Seg {
-                spec: SegSpec {
-                    endjoints: [prev_joint, joint],
-                    half_width: Self::scale_size(width / 2.0, coordinate_scale),
-                    component,
-                    pin,
-                },
-                endpoints: [prev_pos, pos],
-                layer,
-                net,
+            let _ = board.insert_seg(SegSpec {
+                endjoints: [prev_joint, joint],
+                half_width: Self::scale_size(width / 2.0, coordinate_scale),
+                component,
+                pin,
             });
 
             prev_pos = pos;
@@ -482,18 +472,13 @@ impl Board {
             .iter()
             .map(|coord| Self::pos(place, pin_pos, coord.x, coord.y, flip, coordinate_scale))
             .collect();
-        board.insert_poly({
-            let spec = PolySpec {
-                vertices,
-                layer,
-                net,
-                component,
-                pin,
-            };
-            let centroid = Vector2::<i64>::poly_centroid(&spec.vertices);
-
-            Poly { spec, centroid }
-        });
+        board.insert_poly(Poly::new(PolySpec {
+            vertices,
+            layer,
+            net,
+            component,
+            pin,
+        }));
     }
 
     fn layer(_board: &Board, layers: &[Layer], name: &str, front: bool) -> LayerId {

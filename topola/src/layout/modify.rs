@@ -7,7 +7,7 @@ use rstar::primitives::GeomWithData;
 use crate::layout::{
     Layout,
     primitives::{
-        Joint, JointId, JointSpec, Poly, PolyId, SegId, SegSpec, ViaId, ViaSpec,
+        Joint, JointId, JointSpec, Poly, PolyId, Seg, SegId, SegSpec, Via, ViaId, ViaSpec,
     },
 };
 
@@ -69,14 +69,13 @@ impl Layout {
             .remove(&GeomWithData::new(old_seg.bbox().rtree_rectangle(), id));
 
         let endjoint_ids = old_seg.spec.endjoints;
-        let endjoint_specs = [
-            self.joints[endjoint_ids[0].index()].spec,
-            self.joints[endjoint_ids[1].index()].spec,
+        let endjoints = [
+            &self.joints[endjoint_ids[0].index()],
+            &self.joints[endjoint_ids[1].index()],
         ];
+        let spec = old_seg.spec;
         self.segs.modify(id.index(), |seg| {
-            seg.endpoints = [endjoint_specs[0].position, endjoint_specs[1].position];
-            seg.layer = endjoint_specs[0].layer;
-            seg.net = endjoint_specs[0].net;
+            *seg = Seg::new(spec, endjoints);
         });
 
         let new_seg = &self.segs[id.index()];
@@ -107,15 +106,13 @@ impl Layout {
             .remove(&GeomWithData::new(old_via.bbox().rtree_rectangle(), id));
 
         let endjoint_ids = old_via.spec.endjoints;
-        let endjoint_specs = [
-            self.joints[endjoint_ids[0].index()].spec,
-            self.joints[endjoint_ids[1].index()].spec,
+        let endjoints = [
+            &self.joints[endjoint_ids[0].index()],
+            &self.joints[endjoint_ids[1].index()],
         ];
+        let spec = old_via.spec;
         self.vias.modify(id.index(), |via| {
-            via.position = endjoint_specs[0].position;
-            via.min_layer = std::cmp::min(endjoint_specs[0].layer, endjoint_specs[1].layer);
-            via.max_layer = std::cmp::max(endjoint_specs[0].layer, endjoint_specs[1].layer);
-            via.net = endjoint_specs[0].net;
+            *via = Via::new(spec, endjoints);
         });
 
         let new_via = &self.vias[id.index()];

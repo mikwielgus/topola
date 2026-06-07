@@ -245,11 +245,7 @@ impl NavmesherBoard {
 
     pub fn insert_joint(&mut self, spec: JointSpec) -> JointId {
         let layer = spec.layer;
-        let obstacle = Self::joint_bounding_octagon(&Joint {
-            spec,
-            segs: Vec::new(),
-            vias: Vec::new(),
-        });
+        let obstacle = Self::joint_bounding_octagon(&Joint::new(spec));
         let joint_id = self.board.insert_joint(spec);
         self.joint_multiobstacles.insert(
             joint_id.index(),

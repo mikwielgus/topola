@@ -60,15 +60,11 @@ impl Layout {
     }
 
     pub fn insert_seg(&mut self, spec: SegSpec) -> SegId {
-        self.insert_seg_raw(Seg {
-            spec,
-            endpoints: [
-                self.joint(spec.endjoints[0]).spec.position,
-                self.joint(spec.endjoints[1]).spec.position,
-            ],
-            layer: self.joint(spec.endjoints[0]).spec.layer,
-            net: self.joint(spec.endjoints[0]).spec.net,
-        })
+        let endjoints = [
+            &self.joints[spec.endjoints[0].index()],
+            &self.joints[spec.endjoints[1].index()],
+        ];
+        self.insert_seg_raw(Seg::new(spec, endjoints))
     }
 
     pub fn insert_seg_raw(&mut self, seg: Seg) -> SegId {
@@ -104,15 +100,11 @@ impl Layout {
     }
 
     pub fn insert_via(&mut self, spec: ViaSpec) -> ViaId {
-        let joints = [self.joint(spec.endjoints[0]), self.joint(spec.endjoints[1])];
-
-        self.insert_via_raw(Via {
-            spec,
-            position: joints[0].spec.position,
-            min_layer: std::cmp::min(joints[0].spec.layer, joints[1].spec.layer),
-            max_layer: std::cmp::max(joints[0].spec.layer, joints[1].spec.layer),
-            net: joints[0].spec.net,
-        })
+        let endjoints = [
+            &self.joints[spec.endjoints[0].index()],
+            &self.joints[spec.endjoints[1].index()],
+        ];
+        self.insert_via_raw(Via::new(spec, endjoints))
     }
 
     pub fn insert_via_raw(&mut self, via: Via) -> ViaId {

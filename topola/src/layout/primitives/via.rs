@@ -9,7 +9,7 @@ use crate::layout::compounds::{ComponentId, NetId, PinId};
 use crate::vector::Vector2;
 use crate::{Rect3, Vector3, layout::LayerId};
 
-use super::JointId;
+use super::{Joint, JointId};
 
 #[derive(
     Clone,
@@ -53,6 +53,16 @@ pub struct Via {
 }
 
 impl Via {
+    pub fn new(spec: ViaSpec, endjoints: [&Joint; 2]) -> Self {
+        Self {
+            spec,
+            position: endjoints[0].spec.position,
+            min_layer: std::cmp::min(endjoints[0].spec.layer, endjoints[1].spec.layer),
+            max_layer: std::cmp::max(endjoints[0].spec.layer, endjoints[1].spec.layer),
+            net: endjoints[0].spec.net,
+        }
+    }
+
     pub fn contains_point2(&self, point: Vector2<i64>) -> bool {
         (point.x - self.position.x).pow(2) as u64 + (point.y - self.position.y).pow(2) as u64
             <= self.spec.radius.pow(2)
