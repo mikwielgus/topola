@@ -12,6 +12,7 @@ use crate::{
 
 pub struct Actions {
     pub file: FileActions,
+    pub edit: EditActions,
     pub run: RunActions,
     pub debug: DebugActions,
 }
@@ -20,6 +21,7 @@ impl Actions {
     pub fn new(tr: &Translator) -> Self {
         Self {
             file: FileActions::new(tr),
+            edit: EditActions::new(tr),
             run: RunActions::new(tr),
             debug: DebugActions::new(tr),
         }
@@ -73,6 +75,48 @@ impl FileActions {
         if !cfg!(target_arch = "wasm32") {
             self.quit.button(ctx, ui);
         }
+    }
+}
+
+pub struct EditActions {
+    pub undo: Trigger,
+    pub redo: Trigger,
+}
+
+impl EditActions {
+    pub fn new(tr: &Translator) -> Self {
+        Self {
+            undo: Action::new(
+                tr.text("tr-menu-edit-undo"),
+                egui::Modifiers::CTRL,
+                egui::Key::Z,
+            )
+            .into_trigger(),
+            redo: Action::new(
+                tr.text("tr-menu-edit-redo"),
+                egui::Modifiers::CTRL,
+                egui::Key::Y,
+            )
+            .into_trigger(),
+        }
+    }
+
+    pub fn render_menu(
+        &mut self,
+        ctx: &Context,
+        ui: &mut Ui,
+        have_workspace: bool,
+        can_undo: bool,
+        can_redo: bool,
+    ) {
+        ui.add_enabled_ui(have_workspace, |ui| {
+            ui.add_enabled_ui(can_undo, |ui| {
+                self.undo.button(ctx, ui);
+            });
+            ui.add_enabled_ui(can_redo, |ui| {
+                self.redo.button(ctx, ui);
+            });
+        });
     }
 }
 

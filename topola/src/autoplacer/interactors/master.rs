@@ -57,8 +57,8 @@ impl Interactor for AutoplacerMasterInteractor {
         self.board_master.hold(board, layer, pointer);
     }
 
-    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
-        self.board_master.release(board, layer, pointer);
+    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) -> ControlFlow<()> {
+        self.board_master.release(board, layer, pointer)
     }
 
     fn abort(&mut self, board: &mut Board) {

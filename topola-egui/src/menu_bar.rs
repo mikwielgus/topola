@@ -65,12 +65,28 @@ impl MenuBar {
         crate::profile_function!();
 
         let mut actions = Actions::new(tr);
+        let mut controller = controller;
+
+        let can_undo = controller
+            .as_ref()
+            .is_some_and(|controller| !controller.workspace.history().done().is_empty());
+        let can_redo = controller
+            .as_ref()
+            .is_some_and(|controller| !controller.workspace.history().undone().is_empty());
 
         egui::TopBottomPanel::top("menu_bar").show(ctx, |ui| {
             egui::MenuBar::new().ui(ui, |ui| {
                 ui.menu_button("File", |ui| {
                     actions.file.render_menu(ctx, ui, controller.is_some());
                 });
+
+                ui.separator();
+
+                //ui.menu_button(tr.text("tr-menu-edit"), |ui| {
+                actions
+                    .edit
+                    .render_menu(ctx, ui, controller.is_some(), can_undo, can_redo);
+                //});
 
                 ui.separator();
 
@@ -132,8 +148,20 @@ impl MenuBar {
                 });
             }
 
+            if can_undo && actions.edit.undo.consume_key_triggered(ctx, ui) {
+                if let Some(controller) = controller.as_mut() {
+                    controller.workspace.undo();
+                }
+            }
+
+            if can_redo && actions.edit.redo.consume_key_triggered(ctx, ui) {
+                if let Some(controller) = controller.as_mut() {
+                    controller.workspace.redo();
+                }
+            }
+
             if actions.run.autoplace.consume_key_triggered(ctx, ui) {
-                if let Some(controller) = controller {
+                if let Some(controller) = controller.as_mut() {
                     controller.master_interactor.autoplace(
                         controller.workspace.board_mut(),
                         AutoplacerSchedule {

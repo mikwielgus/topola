@@ -2,84 +2,67 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
-use undoredo::FlushDelta;
+use derive_getters::Getters;
+use undoredo::{FlushDelta, UndoRedo};
 
-use crate::{autorouter::Autorouter, board::Board, selections::PersistableSelection};
+use crate::{
+    board::{Board, BoardDelta, selections::PersistableSelection},
+    ratsnest::Ratsnest,
+};
 
-pub enum Workspace {
-    Board(BoardWorkspace),
-    Autorouter(AutorouterWorkspace),
+#[derive(Getters)]
+pub struct Workspace {
+    board: Board,
+    selection: PersistableSelection,
+    history: UndoRedo<BoardDelta>,
+    ratsnest: Ratsnest,
 }
 
 impl Workspace {
-    pub fn new_board(mut board: Board) -> Self {
+    pub fn new(mut board: Board) -> Self {
         board.flush_delta();
+        let ratsnest = Ratsnest::new(board.layout());
 
-        Self::Board(BoardWorkspace::new(board))
-    }
-
-    pub fn new_autorouter(board: Board) -> Self {
-        Self::Autorouter(AutorouterWorkspace::new(board))
-    }
-
-    pub fn selection(&self) -> &PersistableSelection {
-        match self {
-            Workspace::Board(workspace) => &workspace.selection,
-            Workspace::Autorouter(workspace) => &workspace.selection,
-        }
-    }
-
-    pub fn selection_mut(&mut self) -> &mut PersistableSelection {
-        match self {
-            Workspace::Board(workspace) => &mut workspace.selection,
-            Workspace::Autorouter(workspace) => &mut workspace.selection,
-        }
-    }
-
-    pub fn board(&self) -> &Board {
-        match self {
-            Workspace::Board(workspace) => &workspace.board,
-            Workspace::Autorouter(workspace) => {
-                workspace.autorouter.router().navmesher_board().board()
-            }
+        Self {
+            board,
+            selection: PersistableSelection::new(),
+            history: UndoRedo::new(),
+            ratsnest,
         }
     }
 
     pub fn board_mut(&mut self) -> &mut Board {
-        match self {
-            Workspace::Board(workspace) => &mut workspace.board,
-            Workspace::Autorouter(_workspace) => todo!(),
-            /*Workspace::Autorouter(workspace) => {
-                workspace.autorouter.router().navmesher_board().board()
-            }*/
+        &mut self.board
+    }
+
+    pub fn selection_mut(&mut self) -> &mut PersistableSelection {
+        &mut self.selection
+    }
+
+    pub fn commit(&mut self) {
+        self.history.commit(&mut self.board);
+        self.rebuild_ratsnest();
+    }
+
+    pub fn undo(&mut self) -> bool {
+        if self.history.undo(&mut self.board).is_some() {
+            self.rebuild_ratsnest();
+            true
+        } else {
+            false
         }
     }
-}
 
-pub struct BoardWorkspace {
-    pub board: Board,
-    pub selection: PersistableSelection,
-}
-
-impl BoardWorkspace {
-    pub fn new(board: Board) -> Self {
-        Self {
-            board,
-            selection: PersistableSelection::new(),
+    pub fn redo(&mut self) -> bool {
+        if self.history.redo(&mut self.board).is_some() {
+            self.rebuild_ratsnest();
+            true
+        } else {
+            false
         }
     }
-}
 
-pub struct AutorouterWorkspace {
-    pub autorouter: Autorouter,
-    pub selection: PersistableSelection,
-}
-
-impl AutorouterWorkspace {
-    pub fn new(board: Board) -> Self {
-        Self {
-            autorouter: Autorouter::new(board),
-            selection: PersistableSelection::new(),
-        }
+    fn rebuild_ratsnest(&mut self) {
+        self.ratsnest = Ratsnest::new(self.board.layout());
     }
 }

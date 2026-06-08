@@ -8,10 +8,7 @@ use crate::{
     menu_bar::MenuBar,
     viewport::Viewport,
 };
-use topola::{
-    Workspace,
-    layout::primitives::{Joint, Poly, Seg, Via},
-};
+use topola::layout::primitives::{Joint, Poly, Seg, Via};
 
 pub struct Display {}
 
@@ -252,12 +249,8 @@ impl Display {
         workspace: &Controller,
     ) {
         crate::profile_function!();
-        let Workspace::Autorouter(autorouter_workspace) = &workspace.workspace else {
-            return;
-        };
-        let autorouter = &autorouter_workspace.autorouter;
 
-        for ratline in autorouter.ratsnest().ratlines() {
+        for ratline in workspace.workspace.ratsnest().ratlines() {
             let layers = *ratline.endpoint_layers();
             let endpoints = *ratline.endpoints();
 
@@ -266,8 +259,6 @@ impl Display {
             {
                 continue;
             }
-
-            //let stroke_width = 2.0 / viewport.scale_factor().max(1e-6);
 
             ui.painter().line_segment(
                 [

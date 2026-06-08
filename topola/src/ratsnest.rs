@@ -9,11 +9,11 @@ use serde::{Deserialize, Serialize};
 use spade::{DelaunayTriangulation, HasPosition, Triangulation, handles::FixedVertexHandle};
 
 use crate::{
-    board::Board,
     layout::{
         LayerId,
         compounds::NetId,
         primitives::{JointId, PolyId, PrimitiveId, SegId},
+        Layout,
     },
     vector::Vector2,
 };
@@ -40,19 +40,19 @@ impl HasPosition for DelaunayVertex {
     }
 }
 
-#[derive(Clone, Debug, Deserialize, Getters, Serialize)]
+#[derive(Clone, Debug, Default, Deserialize, Getters, Serialize)]
 pub struct Ratsnest {
     ratlines: Vec<Ratline>,
 }
 
 impl Ratsnest {
-    pub fn new(board: &Board) -> Self {
+    pub fn new(layout: &Layout) -> Self {
         let mut ratlines = Vec::new();
 
         let mut triangulations: BTreeMap<(NetId, LayerId), DelaunayTriangulation<DelaunayVertex>> =
             BTreeMap::new();
 
-        for (i, joint) in board.layout().joints().container().iter() {
+        for (i, joint) in layout.joints().container().iter() {
             let Some(net) = joint.spec.net else {
                 continue;
             };
@@ -68,7 +68,7 @@ impl Ratsnest {
                 });
         }
 
-        for (i, seg) in board.layout().segs().container().iter() {
+        for (i, seg) in layout.segs().container().iter() {
             let Some(net) = seg.net else {
                 continue;
             };
@@ -85,7 +85,7 @@ impl Ratsnest {
                 });
         }
 
-        for (i, poly) in board.layout().polys().container().iter() {
+        for (i, poly) in layout.polys().container().iter() {
             let Some(net) = poly.spec.net else {
                 continue;
             };

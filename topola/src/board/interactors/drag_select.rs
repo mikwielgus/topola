@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use std::ops::ControlFlow;
+
 use derive_getters::Getters;
 use derive_more::Constructor;
 use serde::{Deserialize, Serialize};
@@ -185,8 +187,9 @@ impl Interactor for DragSelectInteractor {
         self.selection = combined_selection;
     }
 
-    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
+    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) -> ControlFlow<()> {
         self.hold(board, layer, pointer);
+        ControlFlow::Continue(())
     }
 
     fn abort(&mut self, _board: &mut Board) {

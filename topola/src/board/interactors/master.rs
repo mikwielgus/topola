@@ -2,6 +2,8 @@
 //
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
+use std::ops::ControlFlow;
+
 use derive_getters::Getters;
 
 use crate::{
@@ -62,16 +64,21 @@ impl Interactor for BoardMasterInteractor {
         }
     }
 
-    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
-        if let Some(drag_move_interactor) = self.drag_move_interactor.as_mut() {
-            drag_move_interactor.release(board, layer, pointer);
+    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) -> ControlFlow<()> {
+        let commit = if let Some(drag_move_interactor) = self.drag_move_interactor.as_mut() {
+            drag_move_interactor.release(board, layer, pointer)
         } else if let Some(select_interactor) = self.select_interactor.as_mut() {
             select_interactor.release(board, layer, pointer);
             self.selection = select_interactor.selection().clone();
-        }
+            ControlFlow::Continue(())
+        } else {
+            ControlFlow::Continue(())
+        };
 
         self.select_interactor = None;
         self.drag_move_interactor = None;
+
+        commit
     }
 
     fn abort(&mut self, board: &mut Board) {

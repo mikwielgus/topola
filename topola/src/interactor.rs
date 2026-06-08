@@ -19,10 +19,19 @@ pub trait Interactor {
     fn step(&mut self, _board: &mut Board) -> ControlFlow<()> {
         ControlFlow::Continue(())
     }
-    fn delete(&mut self, board: &mut Board) {}
-    fn hold(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {}
-    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {}
-    fn abort(&mut self, board: &mut Board) {}
+    fn delete(&mut self, board: &mut Board) {
+        let _ = board;
+    }
+    fn hold(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
+        let _ = (board, layer, pointer);
+    }
+    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) -> ControlFlow<()> {
+        let _ = (board, layer, pointer);
+        ControlFlow::Continue(())
+    }
+    fn abort(&mut self, board: &mut Board) {
+        let _ = board;
+    }
 }
 
 pub enum MasterInteractor {
@@ -47,7 +56,6 @@ impl MasterInteractor {
                 ));
             }
             _ => (),
-            //_ => panic!("autoplacement can be only started from board at rest"),
         }
     }
 
@@ -94,7 +102,7 @@ impl Interactor for MasterInteractor {
         }
     }
 
-    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
+    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) -> ControlFlow<()> {
         match self {
             Self::Board(interactor) => interactor.release(board, layer, pointer),
             Self::Autoplacer(interactor) => interactor.release(board, layer, pointer),

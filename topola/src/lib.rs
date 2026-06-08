@@ -22,6 +22,7 @@ mod specctra;
 mod vector;
 mod workspace;
 
+pub use crate::board::BoardDelta;
 pub use crate::autoplacer::AutoplacerSchedule;
 pub use crate::autorouter::Autorouter;
 pub use crate::board::selections;
@@ -30,4 +31,4 @@ pub use crate::orientation::Orientation;
 pub use crate::ratsnest::{Ratline, Ratsnest};
 pub use crate::rect::{Rect2, Rect3};
 pub use crate::vector::{Vector2, Vector3};
-pub use crate::workspace::{AutorouterWorkspace, BoardWorkspace, Workspace};
+pub use crate::workspace::Workspace;

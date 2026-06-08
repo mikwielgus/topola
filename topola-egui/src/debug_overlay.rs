@@ -3,7 +3,7 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{controller::Controller, viewport::Viewport};
-use topola::{Orientation, Vector2, Workspace};
+use topola::{Orientation, Vector2};
 
 pub struct DebugOverlay {}
 
@@ -267,72 +267,10 @@ impl DebugOverlay {
 
     fn display_navmeshes(
         &mut self,
-        ctx: &egui::Context,
-        ui: &egui::Ui,
-        viewport: &Viewport,
-        workspace: &Controller,
+        _ctx: &egui::Context,
+        _ui: &egui::Ui,
+        _viewport: &Viewport,
+        _workspace: &Controller,
     ) {
-        crate::profile_function!();
-        let Workspace::Autorouter(autorouter_workspace) = &workspace.workspace else {
-            return;
-        };
-        let autorouter = &autorouter_workspace.autorouter;
-
-        for layer in workspace
-            .appearance_panel
-            .layers_in_display_order(*workspace.workspace.board().layout().layer_count())
-        {
-            if workspace.appearance_panel.visible[layer.index()] {
-                for navmesh in autorouter
-                    .router()
-                    .navmesher_board()
-                    .navmesher()
-                    .layer_navmeshers()[layer.index()]
-                .navmeshes()
-                {
-                    for edge_geom in navmesh
-                        .triangulation()
-                        .rtreed_dcel()
-                        .edges_rtree()
-                        .as_ref()
-                        .iter()
-                    {
-                        let (from_vertex, to_vertex) = navmesh
-                            .triangulation()
-                            .rtreed_dcel()
-                            .dcel()
-                            .edge_endpoints(edge_geom.data);
-                        let from = navmesh
-                            .triangulation()
-                            .rtreed_dcel()
-                            .dcel()
-                            .vertex_weight(from_vertex)
-                            .position();
-                        let to = navmesh
-                            .triangulation()
-                            .rtreed_dcel()
-                            .dcel()
-                            .vertex_weight(to_vertex)
-                            .position();
-                        ui.painter().line_segment(
-                            [
-                                egui::pos2(*from.x() as f32, *from.y() as f32),
-                                egui::pos2(*to.x() as f32, *to.y() as f32),
-                            ],
-                            egui::Stroke::new(
-                                10.0,
-                                egui::Color32::WHITE,
-                                /*workspace
-                                .appearance_panel
-                                .colors(ctx)
-                                .layers
-                                .color(workspace.autorouter.navmesher_board().board().layer_name(layer))
-                                .normal,*/
-                            ),
-                        );
-                    }
-                }
-            }
-        }
     }
 }
