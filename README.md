@@ -23,8 +23,8 @@ To install Topola, follow our [Installation guide](INSTALL.md).
 
 ## Contributing
 
-*Anyone* can contribute to Topola, including you. If you want to help us
-out, please follow our [Contribution guide](CONTRIBUTING.md).
+*Anyone* can contribute to Topola, including you. If you want to help us out,
+follow our [Contribution guide](CONTRIBUTING.md).
 
 The easiest way to contribute is by reporting issues on our
 [issue tracker](https://codeberg.org/topola/topola/issues). If you know any

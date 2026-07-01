@@ -58,6 +58,23 @@ any problems.
 To build Topola, follow the build instructions from our
 [Installation guide](INSTALL.md).
 
+### Generative AI policy
+
+We accept contributions created with the help of generative artificial
+intelligence (AI) tools as long as they are of good quality. Disclosure is
+welcome but not required, unless we ask you.
+
+However, outside of our repository's code, everywhere in our community's spaces
+(including bug tracker), any text or other media that has been synthesized with
+large language models (LLMs) or any other generative tool should be clearly
+marked as such.
+
+So far, the vast majority of Topola's code was written by hand.
+
+For tasks that are funded by NLnet the policy is much stricter: AI use must be
+always disclosed, together with the prompts, to conform to NLnet's [Generative
+AI policy](https://nlnet.nl/foundation/policies/generativeAI/).
+
 ### Contribution workflow
 
 Topola accepts contributions as pull requests. For a step-by-step guide on how
@@ -71,7 +88,7 @@ link to install rustfmt and set up your editor to format code automatically.
 ### Working on paid coding tasks
 
 Topola's development is sponsored by [NLnet](https://nlnet.nl/). If there are
-any paid tasks available, they are tracked in issues labeled
+any paid tasks available to pick, they are tracked in issues labeled
 [Paid](https://codeberg.org/topola/topola/issues?q=&type=all&state=open&labels=245942&milestone=0&assignee=0&poster=0&fuzzy=false).
 Each grant is tracked in a separate milestone. Anyone, including newcomers, can
 seek to work on paid tasks and will receive the allocated funds upon completion.
@@ -79,6 +96,9 @@ seek to work on paid tasks and will receive the allocated funds upon completion.
 Before you start working on a paid task, remember to tell us that you are
 claiming it and make sure we agree, so that any potential collision with someone
 else's work is prevented.
+
+Note that our [generative AI policy](#generative-ai-policy) is stricter for
+tasks that are funded by NLnet.
 
 #### Receiving money upon task completion
 
