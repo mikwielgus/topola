@@ -30,9 +30,16 @@ use crate::{
     math::Circle,
 };
 
+fn default_via_radius() -> f64 {
+    100.0
+}
+
 #[derive(Clone, Copy, Debug, Deserialize, Serialize)]
 pub struct AnterouterOptions {
     pub fanout_clearance: f64,
+    /// Via pad radius in design units (half of the Specctra via padstack diameter).
+    #[serde(default = "default_via_radius")]
+    pub via_radius: f64,
 }
 
 #[derive(Clone, Debug, Eq, Ord, PartialEq, PartialOrd)]
@@ -437,7 +444,10 @@ impl Anterouter {
             ViaWeight {
                 from_layer: std::cmp::min(source_layer, target_layer),
                 to_layer: std::cmp::max(source_layer, target_layer),
-                circle: Circle { pos, r: 100.0 },
+                circle: Circle {
+                    pos,
+                    r: options.via_radius,
+                },
                 maybe_net: pin_maybe_net,
             },
             autorouter

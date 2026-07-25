@@ -9,7 +9,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     board::{AccessMesadata, BandName, Board, ResolvedSelector},
-    drawing::graph::{MakePrimitiveRef, PrimitiveIndex},
+    drawing::graph::{GetMaybeNet, MakePrimitiveRef, PrimitiveIndex},
     geometry::{
         shape::{AccessShape, Shape},
         GenericNode, GetLayer,
@@ -88,6 +88,46 @@ impl PinSelection {
             }
         }
 
+        this
+    }
+
+    /// Select pin endpoints on every copper layer (for multilayer autoroute).
+    pub fn new_select_all_layers(board: &Board<impl AccessMesadata>) -> Self {
+        let mut this = Self::default();
+        for layer in 0..board.layout().drawing().layer_count() {
+            this.0
+                .extend(Self::new_select_layer(board, layer).0.into_iter());
+        }
+        this
+    }
+
+    /// Keep only selectors whose pin belongs to one of `net_names`.
+    pub fn filter_by_net_names(
+        &self,
+        board: &Board<impl AccessMesadata>,
+        net_names: &BTreeSet<String>,
+    ) -> Self {
+        let mut this = Self::default();
+        for selector in self.selectors() {
+            for node in board.pinname_nodes(&selector.pin) {
+                let GenericNode::Primitive(primitive) = node else {
+                    continue;
+                };
+                let Some(net) = primitive
+                    .primitive_ref(board.layout().drawing())
+                    .maybe_net()
+                else {
+                    continue;
+                };
+                let Some(netname) = board.layout().rules().net_netname(net) else {
+                    continue;
+                };
+                if net_names.contains(netname) {
+                    this.0.insert(selector.clone());
+                    break;
+                }
+            }
+        }
         this
     }
 
