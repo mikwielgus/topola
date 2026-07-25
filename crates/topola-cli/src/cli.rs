@@ -66,4 +66,34 @@ pub struct Cli {
         help = "Override via pad radius in design units (default: from DSN via padstack)"
     )]
     pub via_radius: Option<f64>,
+    #[arg(
+        long,
+        help = "Allow ratline order permutation / rip-up retries (can loop for a long time on dense boards)"
+    )]
+    pub permutate: bool,
+    #[arg(
+        long,
+        default_value = "GND,gnd",
+        value_name = "NET[,NET...]",
+        help = "Net names to skip (default: GND,gnd). Pass empty string to skip nothing"
+    )]
+    pub skip_nets: String,
+    #[arg(
+        long,
+        default_value_t = 2.0,
+        help = "Initial per-attempt timeout seconds (TimeVsProgressAccumulator)"
+    )]
+    pub timeout_initial: f64,
+    #[arg(
+        long,
+        default_value_t = 0.0,
+        help = "Progress bonus seconds (0 avoids timeout extending forever on dense boards)"
+    )]
+    pub timeout_progress_bonus: f64,
+    #[arg(
+        long,
+        default_value_t = 120.0,
+        help = "Hard wall-clock seconds for the whole autoroute job (abort and still write SES)"
+    )]
+    pub wall_timeout: f64,
 }

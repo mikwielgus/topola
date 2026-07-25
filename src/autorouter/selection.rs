@@ -101,6 +101,27 @@ impl PinSelection {
         this
     }
 
+    fn pin_netname(
+        board: &Board<impl AccessMesadata>,
+        pin: &str,
+    ) -> Option<String> {
+        for node in board.pinname_nodes(pin) {
+            let GenericNode::Primitive(primitive) = node else {
+                continue;
+            };
+            let Some(net) = primitive
+                .primitive_ref(board.layout().drawing())
+                .maybe_net()
+            else {
+                continue;
+            };
+            if let Some(netname) = board.layout().rules().net_netname(net) {
+                return Some(netname.to_string());
+            }
+        }
+        None
+    }
+
     /// Keep only selectors whose pin belongs to one of `net_names`.
     pub fn filter_by_net_names(
         &self,
@@ -109,22 +130,27 @@ impl PinSelection {
     ) -> Self {
         let mut this = Self::default();
         for selector in self.selectors() {
-            for node in board.pinname_nodes(&selector.pin) {
-                let GenericNode::Primitive(primitive) = node else {
-                    continue;
-                };
-                let Some(net) = primitive
-                    .primitive_ref(board.layout().drawing())
-                    .maybe_net()
-                else {
-                    continue;
-                };
-                let Some(netname) = board.layout().rules().net_netname(net) else {
-                    continue;
-                };
-                if net_names.contains(netname) {
+            if let Some(netname) = Self::pin_netname(board, &selector.pin) {
+                if net_names.contains(&netname) {
                     this.0.insert(selector.clone());
-                    break;
+                }
+            }
+        }
+        this
+    }
+
+    /// Drop selectors whose pin belongs to one of `net_names`.
+    pub fn exclude_net_names(
+        &self,
+        board: &Board<impl AccessMesadata>,
+        net_names: &BTreeSet<String>,
+    ) -> Self {
+        let mut this = Self::default();
+        for selector in self.selectors() {
+            match Self::pin_netname(board, &selector.pin) {
+                Some(netname) if net_names.contains(&netname) => {}
+                _ => {
+                    this.0.insert(selector.clone());
                 }
             }
         }
