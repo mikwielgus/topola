@@ -121,14 +121,13 @@ impl<M: AccessMesadata> Autorouter<M> {
         selection: &PinSelection,
         options: MultilayerAutorouteOptions,
     ) -> Result<MultilayerAutorouteReconfigurator, AutorouterError> {
-        let mut ratlines = BTreeSet::new();
-        for layer in 0..self.board().layout().drawing().layer_count() {
-            ratlines.extend(self.selected_ratlines(selection, layer));
-        }
-
+        // Ratline indices are per-principal-layer graph; only collect from the
+        // planar principal layer. The anterouter still places vias to other layers.
         MultilayerAutorouteReconfigurator::new(
             self,
-            MultilayerAutoroutePreconfigurerInput { ratlines },
+            MultilayerAutoroutePreconfigurerInput {
+                ratlines: self.selected_ratlines(selection, options.planar.principal_layer),
+            },
             options,
         )
     }

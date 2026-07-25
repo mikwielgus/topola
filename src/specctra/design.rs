@@ -193,6 +193,7 @@ impl SpecctraDesign {
                                             )
                                         })?
                                         .to_owned(),
+                                    r#type: None,
                                 });
 
                                 visited_vias.insert(via);
