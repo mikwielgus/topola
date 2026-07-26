@@ -240,7 +240,12 @@ impl Anterouter {
             return;
         }
 
-        panic!();
+        // Dense boards (e.g. lightbar-dock V3) can fail every fanout bbox strategy.
+        // Skip this pin rather than aborting the whole autoroute job.
+        eprintln!(
+            "topola: warning: anteroute fanout failed for ratline {:?}; skipping pin",
+            ratline
+        );
     }
 
     fn anteroute_fanout_on_bbox(

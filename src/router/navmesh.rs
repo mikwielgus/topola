@@ -115,6 +115,8 @@ pub struct NavnodeWeight {
 pub enum NavmeshError {
     #[error("failed to insert vertex in navmesh")]
     Insertion(#[from] InsertionError),
+    #[error("navmesh origin and destination are on different copper layers")]
+    LayerMismatch,
 }
 
 /// The navmesh holds the entire Topola's search space represented as a graph.
@@ -159,10 +161,13 @@ impl Navmesh {
         destination: FixedDotIndex,
         options: RouterOptions,
     ) -> Result<Self, NavmeshError> {
-        assert!(
-            origin.primitive_ref(layout.drawing()).layer()
-                == destination.primitive_ref(layout.drawing()).layer()
-        );
+        if origin.primitive_ref(layout.drawing()).layer()
+            != destination.primitive_ref(layout.drawing()).layer()
+        {
+            // Multilayer fanout can leave origin/destination on different
+            // layers; planar navmesh cannot search that pair — skip it.
+            return Err(NavmeshError::LayerMismatch);
+        }
 
         let mut graph: UnGraph<NavnodeWeight, (), usize> = UnGraph::default();
         let mut origin_navnode = None;
