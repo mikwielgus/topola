@@ -517,7 +517,8 @@ pub struct Wiring {
 pub struct Wire {
     pub path: Path,
     pub net: String,
-    pub r#type: String,
+    /// KiCad / Freerouting emit `(type route)` on pre-routed wires.
+    pub r#type: Option<String>,
 }
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]
@@ -683,6 +684,8 @@ pub struct Via {
     #[anon]
     pub y: f64,
     pub net: String,
+    /// KiCad / Freerouting emit `(type route)` on placed vias.
+    pub r#type: Option<String>,
 }
 
 #[derive(ReadDsn, WriteSes, Debug, Clone, PartialEq)]

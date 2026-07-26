@@ -64,6 +64,47 @@ impl SpecctraDesign {
         &self.pcb.name
     }
 
+    /// Number of copper layers declared in the Specctra structure block.
+    pub fn layer_count(&self) -> usize {
+        self.pcb.structure.layers.len()
+    }
+
+    /// Default routed trace width from the structure rule (design units).
+    pub fn default_trace_width(&self) -> f64 {
+        self.pcb
+            .structure
+            .rules
+            .iter()
+            .find_map(|rule| rule.width.map(|w| w as f64))
+            .unwrap_or(100.0)
+    }
+
+    /// Default via pad radius from the first named via padstack (design units).
+    pub fn default_via_radius(&self) -> f64 {
+        let Some(via_name) = self.pcb.structure.via.names.first() else {
+            return 100.0;
+        };
+
+        if let Some(padstack) = self.pcb.library.find_padstack_by_name(via_name) {
+            for shape in &padstack.shapes {
+                if let structure::Shape::Circle(circle) = shape {
+                    return circle.diameter / 2.0;
+                }
+            }
+        }
+
+        // KiCad via names often encode diameter: Via[0-1]_600:300_um
+        if let Some((_, rest)) = via_name.split_once('_') {
+            if let Some(diam) = rest.split(':').next() {
+                if let Ok(d) = diam.parse::<f64>() {
+                    return d / 2.0;
+                }
+            }
+        }
+
+        100.0
+    }
+
     /// Writes the Specctra Session (.ses) file format using the current board layout and mesadata.
     ///
     /// This function generates a Specctra SES session file that represents the board's net routing and
@@ -152,6 +193,7 @@ impl SpecctraDesign {
                                             )
                                         })?
                                         .to_owned(),
+                                    r#type: None,
                                 });
 
                                 visited_vias.insert(via);

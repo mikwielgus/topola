@@ -20,8 +20,8 @@ use crate::{
     },
     board::{AccessMesadata, Board},
     drawing::{band::BandTermsegIndex, graph::MakePrimitiveRef},
-    geometry::GetLayer,
-    graph::MakeRef,
+    geometry::{GenericNode, GetLayer},
+    graph::{GetIndex, MakeRef},
     layout::{via::ViaWeight, LayoutEdit, LayoutException},
     router::{navmesh::NavmeshError, ng, thetastar::ThetastarError, RouterOptions},
     stepper::TimeoutOptions,
@@ -35,7 +35,7 @@ use super::{
     ratline::RatlineUid,
     ratsnest::RatvertexNodeIndex,
     remove_bands::RemoveBandsExecutionStepper,
-    selection::{BandSelection, PinSelection},
+    selection::{BandSelection, PinSelection, PinSelector},
 };
 
 #[derive(Clone, Copy, Debug, Deserialize, Eq, PartialEq, Serialize)]
@@ -121,6 +121,8 @@ impl<M: AccessMesadata> Autorouter<M> {
         selection: &PinSelection,
         options: MultilayerAutorouteOptions,
     ) -> Result<MultilayerAutorouteReconfigurator, AutorouterError> {
+        // Ratline indices are per-principal-layer graph; only collect from the
+        // planar principal layer. The anterouter still places vias to other layers.
         MultilayerAutorouteReconfigurator::new(
             self,
             MultilayerAutoroutePreconfigurerInput {
@@ -128,6 +130,45 @@ impl<M: AccessMesadata> Autorouter<M> {
             },
             options,
         )
+    }
+
+    /// Pin selection covering only endpoints of still-open ratlines (any layer).
+    pub fn pin_selection_for_unconnected_ratlines(&self) -> PinSelection {
+        use crate::autorouter::connected_components::ConnectedComponents;
+
+        let conncomps = ConnectedComponents::new(self.board());
+        let mut selection = PinSelection::new();
+
+        for principal_layer in 0..self.board().layout().drawing().layer_count() {
+            for index in self
+                .ratsnests()
+                .on_principal_layer(principal_layer)
+                .graph()
+                .edge_indices()
+            {
+                let ratline = RatlineUid {
+                    principal_layer,
+                    index,
+                };
+                let (origin_dot, destination_dot) = ratline.ref_(self).endpoint_dots();
+                let origin = conncomps.unionfind().find(origin_dot.index());
+                let destination = conncomps.unionfind().find(destination_dot.index());
+                if origin == destination {
+                    continue;
+                }
+
+                for node in [
+                    GenericNode::Primitive(origin_dot.into()),
+                    GenericNode::Primitive(destination_dot.into()),
+                ] {
+                    if let Some(selector) = PinSelector::try_from_node(self.board(), node) {
+                        selection.0.insert(selector);
+                    }
+                }
+            }
+        }
+
+        selection
     }
 
     pub fn planar_autoroute(

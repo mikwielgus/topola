@@ -54,6 +54,7 @@ impl MenuBar {
             multilayer_autoroute_options: MultilayerAutorouteOptions {
                 anterouter: AnterouterOptions {
                     fanout_clearance: 200.0,
+                    via_radius: 100.0,
                 },
                 planar: PlanarAutorouteOptions {
                     principal_layer: 0,

@@ -60,13 +60,11 @@ impl Scc {
         };
 
         for ratline in ratlines.iter() {
-            if this
-                .node_indices
-                .contains(&filtered_ratsnest.edge_endpoints(ratline.index).unwrap().0)
-                && this
-                    .node_indices
-                    .contains(&filtered_ratsnest.edge_endpoints(ratline.index).unwrap().1)
-            {
+            let Some((a, b)) = filtered_ratsnest.edge_endpoints(ratline.index) else {
+                // Ratline index may belong to another principal-layer ratsnest.
+                continue;
+            };
+            if this.node_indices.contains(&a) && this.node_indices.contains(&b) {
                 this.length += ratline.ref_(autorouter).length();
                 this.intersector_count +=
                     ratline.ref_(autorouter).interiorly_cut_ratlines().count();
