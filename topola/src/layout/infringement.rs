@@ -399,20 +399,12 @@ impl Layout {
         infringer: T,
         rtree: &'a RTree<GeomWithData<Rectangle<[i64; 3]>, T>>,
     ) -> impl Iterator<Item = Infringement<T, T>> + 'a {
-        rtree
-            .locate_in_envelope_intersecting(&self.primitive_bbox_envelope(infringer.into()))
-            .map(|infringee_geom| infringee_geom.data)
-            .filter(move |&infringee| infringee != infringer)
-            .filter(move |&infringee| {
-                !Self::nets_match(
-                    self.primitive_net(infringer.into()),
-                    self.primitive_net(infringee.into()),
-                )
-            })
-            .map(move |infringee| Infringement {
-                infringer,
-                infringee,
-            })
+        self.locate_cross_infringements(infringer, rtree).filter(
+            |Infringement {
+                 infringee,
+                 infringer,
+             }| infringee != infringer,
+        )
     }
 
     fn primitive_component(&self, primitive: PrimitiveId) -> Option<ComponentId> {
@@ -426,11 +418,12 @@ impl Layout {
 
     fn primitive_bbox_envelope(&self, primitive: PrimitiveId) -> AABB<[i64; 3]> {
         match primitive {
-            PrimitiveId::Joint(joint_id) => self.joint(joint_id).bbox().aabb(),
-            PrimitiveId::Seg(seg_id) => self.seg(seg_id).bbox().aabb(),
-            PrimitiveId::Via(via_id) => self.via(via_id).bbox().aabb(),
-            PrimitiveId::Poly(poly_id) => self.poly(poly_id).bbox().aabb(),
+            PrimitiveId::Joint(joint_id) => self.joint(joint_id).bbox(),
+            PrimitiveId::Seg(seg_id) => self.seg(seg_id).bbox(),
+            PrimitiveId::Via(via_id) => self.via(via_id).bbox(),
+            PrimitiveId::Poly(poly_id) => self.poly(poly_id).bbox(),
         }
+        .aabb()
     }
 
     pub fn primitive_net(&self, primitive: PrimitiveId) -> Option<NetId> {
