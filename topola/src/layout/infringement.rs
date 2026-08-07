@@ -118,23 +118,19 @@ impl Layout {
         let joint_infringements = component
             .joints
             .iter()
-            .copied()
-            .flat_map(|joint_id| self.locate_joint_infringements(joint_id).map(Into::into));
+            .flat_map(|&joint_id| self.locate_joint_infringements(joint_id).map(Into::into));
         let seg_infringements = component
             .segs
             .iter()
-            .copied()
-            .flat_map(|seg_id| self.locate_seg_infringements(seg_id).map(Into::into));
+            .flat_map(|&seg_id| self.locate_seg_infringements(seg_id).map(Into::into));
         let via_infringements = component
             .vias
             .iter()
-            .copied()
-            .flat_map(|via_id| self.locate_via_infringements(via_id).map(Into::into));
+            .flat_map(|&via_id| self.locate_via_infringements(via_id).map(Into::into));
         let poly_infringements = component
             .polys
             .iter()
-            .copied()
-            .flat_map(|poly_id| self.locate_poly_infringements(poly_id).map(Into::into));
+            .flat_map(|&poly_id| self.locate_poly_infringements(poly_id).map(Into::into));
 
         joint_infringements
             .chain(seg_infringements)
@@ -176,25 +172,21 @@ impl Layout {
 
         pin.joints
             .iter()
-            .copied()
-            .flat_map(|joint_id| self.locate_joint_infringements(joint_id).map(Into::into))
+            .flat_map(|&joint_id| self.locate_joint_infringements(joint_id).map(Into::into))
             .chain(
                 pin.segs
                     .iter()
-                    .copied()
-                    .flat_map(|seg_id| self.locate_seg_infringements(seg_id).map(Into::into)),
+                    .flat_map(|&seg_id| self.locate_seg_infringements(seg_id).map(Into::into)),
             )
             .chain(
                 pin.vias
                     .iter()
-                    .copied()
-                    .flat_map(|via_id| self.locate_via_infringements(via_id).map(Into::into)),
+                    .flat_map(|&via_id| self.locate_via_infringements(via_id).map(Into::into)),
             )
             .chain(
                 pin.polys
                     .iter()
-                    .copied()
-                    .flat_map(|poly_id| self.locate_poly_infringements(poly_id).map(Into::into)),
+                    .flat_map(|&poly_id| self.locate_poly_infringements(poly_id).map(Into::into)),
             )
     }
 

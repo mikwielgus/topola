@@ -19,8 +19,7 @@ impl Layout {
         self.component(violator)
             .pins
             .iter()
-            .copied()
-            .flat_map(move |pin_id| self.pin_retentions(pin_id))
+            .flat_map(move |&pin_id| self.pin_retentions(pin_id))
     }
 
     pub fn pin_retentions(&self, violator: PinId) -> impl Iterator<Item = Vector2<i64>> + '_ {

@@ -39,13 +39,11 @@ impl Layout {
         self.component(infringer)
             .pins
             .iter()
-            .copied()
-            .flat_map(move |infringer_pin| {
+            .flat_map(move |&infringer_pin| {
                 self.component(infringee)
                     .pins
                     .iter()
-                    .copied()
-                    .flat_map(move |infringee_pin| {
+                    .flat_map(move |&infringee_pin| {
                         self.pin_pin_repulsions(infringer_pin, infringee_pin, orientation)
                     })
             })
