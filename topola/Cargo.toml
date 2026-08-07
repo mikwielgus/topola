@@ -13,7 +13,6 @@ profiler = ["puffin"]
 
 [dependencies]
 bidimap = "0.7"
-dearcut = { version = "0.3", features = ["serde", "undoredo"] }
 derive-getters.workspace = true
 derive_more.workspace = true
 i_triangle = "0.40"

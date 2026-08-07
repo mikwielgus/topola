@@ -5,25 +5,19 @@
 mod profiler;
 
 mod autoplacer;
-mod autorouter;
 pub mod board;
 mod compass;
-mod drawer;
 mod interactor;
 pub mod layout;
 mod math;
-mod navmesher;
 mod orientation;
-mod pathfinder;
 mod ratsnest;
 mod rect;
-mod router;
 mod specctra;
 mod vector;
 mod workspace;
 
 pub use crate::autoplacer::AutoplacerSchedule;
-pub use crate::autorouter::Autorouter;
 pub use crate::board::BoardDelta;
 pub use crate::board::selections;
 pub use crate::interactor::{Interactor, MasterInteractor};
