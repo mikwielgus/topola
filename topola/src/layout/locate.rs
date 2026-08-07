@@ -151,8 +151,7 @@ impl Layout {
         let at_point = self.locate_segs_at_point(point).collect::<Vec<_>>();
 
         let segs = if at_point.is_empty() {
-            self.locate_segs_any_layer_at_point(point.xy())
-                .collect()
+            self.locate_segs_any_layer_at_point(point.xy()).collect()
         } else {
             at_point
         };
@@ -185,9 +184,7 @@ impl Layout {
         &self,
         rect: Rect3<i64>,
     ) -> impl Iterator<Item = SegId> {
-        let at_point = self
-            .locate_segs_intersecting_rect(rect)
-            .collect::<Vec<_>>();
+        let at_point = self.locate_segs_intersecting_rect(rect).collect::<Vec<_>>();
 
         let joints = if at_point.is_empty() {
             self.locate_segs_any_layer_intersecting_rect(rect.xy())
@@ -199,10 +196,7 @@ impl Layout {
         joints.into_iter()
     }
 
-    pub fn locate_segs_intersecting_rect(
-        &self,
-        rect: Rect3<i64>,
-    ) -> impl Iterator<Item = SegId> {
+    pub fn locate_segs_intersecting_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = SegId> {
         self.segs_rtree
             .as_ref()
             .locate_in_envelope_intersecting(&rect.aabb())
@@ -236,8 +230,7 @@ impl Layout {
         let at_point = self.locate_segs_inside_rect(rect).collect::<Vec<_>>();
 
         let joints = if at_point.is_empty() {
-            self.locate_segs_any_layer_inside_rect(rect.xy())
-                .collect()
+            self.locate_segs_any_layer_inside_rect(rect.xy()).collect()
         } else {
             at_point
         };
@@ -402,8 +395,7 @@ impl Layout {
         let at_point = self.locate_polys_at_point(point).collect::<Vec<_>>();
 
         let polys = if at_point.is_empty() {
-            self.locate_polys_any_layer_at_point(point.xy())
-                .collect()
+            self.locate_polys_any_layer_at_point(point.xy()).collect()
         } else {
             at_point
         };
@@ -416,9 +408,7 @@ impl Layout {
             .as_ref()
             .locate_all_at_point(&[point.x, point.y, point.z])
             .map(|geom_with_data| geom_with_data.data)
-            .filter(move |&poly_id| {
-                self.polys[poly_id.index()].contains_point2(point.xy())
-            })
+            .filter(move |&poly_id| self.polys[poly_id.index()].contains_point2(point.xy()))
     }
 
     pub fn locate_polys_any_layer_at_point(
@@ -452,10 +442,7 @@ impl Layout {
         polys.into_iter()
     }
 
-    pub fn locate_polys_intersecting_rect(
-        &self,
-        rect: Rect3<i64>,
-    ) -> impl Iterator<Item = PolyId> {
+    pub fn locate_polys_intersecting_rect(&self, rect: Rect3<i64>) -> impl Iterator<Item = PolyId> {
         self.polys_rtree
             .as_ref()
             .locate_in_envelope_intersecting(&rect.aabb())
@@ -489,8 +476,7 @@ impl Layout {
         let at_rect = self.locate_polys_inside_rect(rect).collect::<Vec<_>>();
 
         let polys = if at_rect.is_empty() {
-            self.locate_polys_any_layer_inside_rect(rect.xy())
-                .collect()
+            self.locate_polys_any_layer_inside_rect(rect.xy()).collect()
         } else {
             at_rect
         };

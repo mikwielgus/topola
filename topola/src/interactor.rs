@@ -25,7 +25,12 @@ pub trait Interactor {
     fn hold(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) {
         let _ = (board, layer, pointer);
     }
-    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) -> ControlFlow<()> {
+    fn release(
+        &mut self,
+        board: &mut Board,
+        layer: LayerId,
+        pointer: Vector2<i64>,
+    ) -> ControlFlow<()> {
         let _ = (board, layer, pointer);
         ControlFlow::Continue(())
     }
@@ -102,7 +107,12 @@ impl Interactor for MasterInteractor {
         }
     }
 
-    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) -> ControlFlow<()> {
+    fn release(
+        &mut self,
+        board: &mut Board,
+        layer: LayerId,
+        pointer: Vector2<i64>,
+    ) -> ControlFlow<()> {
         match self {
             Self::Board(interactor) => interactor.release(board, layer, pointer),
             Self::Autoplacer(interactor) => interactor.release(board, layer, pointer),

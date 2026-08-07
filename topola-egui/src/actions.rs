@@ -174,10 +174,14 @@ impl DebugActions {
 
         ui.separator();
 
-        self.show_repulsions.checkbox(ui, &mut menu_bar.show_repulsions);
-        self.show_attractions.checkbox(ui, &mut menu_bar.show_attractions);
-        self.show_retentions.checkbox(ui, &mut menu_bar.show_retentions);
+        self.show_repulsions
+            .checkbox(ui, &mut menu_bar.show_repulsions);
+        self.show_attractions
+            .checkbox(ui, &mut menu_bar.show_attractions);
+        self.show_retentions
+            .checkbox(ui, &mut menu_bar.show_retentions);
         self.show_bboxes.checkbox(ui, &mut menu_bar.show_bboxes);
-        self.show_navmeshes.checkbox(ui, &mut menu_bar.show_navmeshes);
+        self.show_navmeshes
+            .checkbox(ui, &mut menu_bar.show_navmeshes);
     }
 }

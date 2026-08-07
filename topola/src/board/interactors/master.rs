@@ -64,7 +64,12 @@ impl Interactor for BoardMasterInteractor {
         }
     }
 
-    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) -> ControlFlow<()> {
+    fn release(
+        &mut self,
+        board: &mut Board,
+        layer: LayerId,
+        pointer: Vector2<i64>,
+    ) -> ControlFlow<()> {
         let commit = if let Some(drag_move_interactor) = self.drag_move_interactor.as_mut() {
             drag_move_interactor.release(board, layer, pointer)
         } else if let Some(select_interactor) = self.select_interactor.as_mut() {

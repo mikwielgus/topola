@@ -22,9 +22,9 @@ mod specctra;
 mod vector;
 mod workspace;
 
-pub use crate::board::BoardDelta;
 pub use crate::autoplacer::AutoplacerSchedule;
 pub use crate::autorouter::Autorouter;
+pub use crate::board::BoardDelta;
 pub use crate::board::selections;
 pub use crate::interactor::{Interactor, MasterInteractor};
 pub use crate::orientation::Orientation;

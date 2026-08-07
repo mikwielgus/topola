@@ -6,10 +6,7 @@ use crate::{
     board::Board,
     layout::{
         compounds::ComponentId,
-        primitives::{
-            JointId, JointSpec, Poly, PolyId, Seg, SegId, SegSpec, Via, ViaId,
-            ViaSpec,
-        },
+        primitives::{JointId, JointSpec, Poly, PolyId, Seg, SegId, SegSpec, Via, ViaId, ViaSpec},
     },
 };
 

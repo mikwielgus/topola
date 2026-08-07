@@ -8,8 +8,7 @@ use crate::layout::{
     Layout,
     compounds::{Component, ComponentId, Pin, PinId, PinSpec},
     primitives::{
-        Joint, JointId, JointSpec, Poly, PolyId, Seg, SegId, SegSpec, Via, ViaId,
-        ViaSpec,
+        Joint, JointId, JointSpec, Poly, PolyId, Seg, SegId, SegSpec, Via, ViaId, ViaSpec,
     },
 };
 
@@ -73,14 +72,12 @@ impl Layout {
         let bbox = seg.bbox();
         let seg_id = SegId::new(self.segs.push(seg));
 
-        self.joints
-            .modify(seg.spec.endjoints[0].index(), |joint| {
-                joint.segs.push(seg_id)
-            });
-        self.joints
-            .modify(seg.spec.endjoints[1].index(), |joint| {
-                joint.segs.push(seg_id)
-            });
+        self.joints.modify(seg.spec.endjoints[0].index(), |joint| {
+            joint.segs.push(seg_id)
+        });
+        self.joints.modify(seg.spec.endjoints[1].index(), |joint| {
+            joint.segs.push(seg_id)
+        });
 
         self.segs_rtree
             .insert(GeomWithData::new(bbox.rtree_rectangle(), seg_id), ());

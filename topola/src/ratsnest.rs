@@ -10,10 +10,9 @@ use spade::{DelaunayTriangulation, HasPosition, Triangulation, handles::FixedVer
 
 use crate::{
     layout::{
-        LayerId,
+        LayerId, Layout,
         compounds::NetId,
         primitives::{JointId, PolyId, PrimitiveId, SegId},
-        Layout,
     },
     vector::Vector2,
 };
@@ -96,10 +95,7 @@ impl Ratsnest {
                 .insert(DelaunayVertex {
                     layer: poly.spec.layer,
                     center: poly.centroid,
-                    position: spade::Point2::new(
-                        poly.centroid.x as f64,
-                        poly.centroid.y as f64,
-                    ),
+                    position: spade::Point2::new(poly.centroid.x as f64, poly.centroid.y as f64),
                     primitive_id: PrimitiveId::Poly(PolyId::new(i)),
                 });
         }

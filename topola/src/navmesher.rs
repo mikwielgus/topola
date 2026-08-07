@@ -83,10 +83,7 @@ impl LayerNavmesher {
         }
     }
 
-    pub fn insert_multiobstacle(
-        &mut self,
-        poly: impl IntoIterator<Item = Vector2<i64>>,
-    ) -> usize {
+    pub fn insert_multiobstacle(&mut self, poly: impl IntoIterator<Item = Vector2<i64>>) -> usize {
         let poly: Vec<Vector2<i64>> = poly.into_iter().collect();
         let mut index = 0;
 

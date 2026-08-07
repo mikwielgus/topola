@@ -31,8 +31,8 @@ impl Layout {
 
             for &poly_id in &component.polys {
                 self.modify_poly(poly_id, |poly| {
-                    poly
-                        .spec.vertices
+                    poly.spec
+                        .vertices
                         .iter_mut()
                         .for_each(|vertex| *vertex += translation);
                     poly.centroid += translation;

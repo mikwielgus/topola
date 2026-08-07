@@ -120,19 +120,21 @@ impl Layout {
             .iter()
             .copied()
             .flat_map(|joint_id| self.locate_joint_infringements(joint_id).map(Into::into));
-        let seg_infringements = component.segs.iter().copied().flat_map(|seg_id| {
-            self.locate_seg_infringements(seg_id)
-                .map(Into::into)
-        });
+        let seg_infringements = component
+            .segs
+            .iter()
+            .copied()
+            .flat_map(|seg_id| self.locate_seg_infringements(seg_id).map(Into::into));
         let via_infringements = component
             .vias
             .iter()
             .copied()
             .flat_map(|via_id| self.locate_via_infringements(via_id).map(Into::into));
-        let poly_infringements = component.polys.iter().copied().flat_map(|poly_id| {
-            self.locate_poly_infringements(poly_id)
-                .map(Into::into)
-        });
+        let poly_infringements = component
+            .polys
+            .iter()
+            .copied()
+            .flat_map(|poly_id| self.locate_poly_infringements(poly_id).map(Into::into));
 
         joint_infringements
             .chain(seg_infringements)
@@ -176,20 +178,24 @@ impl Layout {
             .iter()
             .copied()
             .flat_map(|joint_id| self.locate_joint_infringements(joint_id).map(Into::into))
-            .chain(pin.segs.iter().copied().flat_map(|seg_id| {
-                self.locate_seg_infringements(seg_id)
-                    .map(Into::into)
-            }))
+            .chain(
+                pin.segs
+                    .iter()
+                    .copied()
+                    .flat_map(|seg_id| self.locate_seg_infringements(seg_id).map(Into::into)),
+            )
             .chain(
                 pin.vias
                     .iter()
                     .copied()
                     .flat_map(|via_id| self.locate_via_infringements(via_id).map(Into::into)),
             )
-            .chain(pin.polys.iter().copied().flat_map(|poly_id| {
-                self.locate_poly_infringements(poly_id)
-                    .map(Into::into)
-            }))
+            .chain(
+                pin.polys
+                    .iter()
+                    .copied()
+                    .flat_map(|poly_id| self.locate_poly_infringements(poly_id).map(Into::into)),
+            )
     }
 
     pub fn locate_joint_infringements(
@@ -246,14 +252,8 @@ impl Layout {
     ) -> impl Iterator<Item = Infringement<SegId>> + '_ {
         self.locate_seg_joint_infringements(infringer)
             .map(Into::into)
-            .chain(
-                self.locate_seg_seg_infringements(infringer)
-                    .map(Into::into),
-            )
-            .chain(
-                self.locate_seg_via_infringements(infringer)
-                    .map(Into::into),
-            )
+            .chain(self.locate_seg_seg_infringements(infringer).map(Into::into))
+            .chain(self.locate_seg_via_infringements(infringer).map(Into::into))
             .chain(
                 self.locate_seg_poly_infringements(infringer)
                     .map(Into::into),
@@ -294,10 +294,7 @@ impl Layout {
     ) -> impl Iterator<Item = Infringement<ViaId>> + '_ {
         self.locate_via_joint_infringements(infringer)
             .map(Into::into)
-            .chain(
-                self.locate_via_seg_infringements(infringer)
-                    .map(Into::into),
-            )
+            .chain(self.locate_via_seg_infringements(infringer).map(Into::into))
             .chain(self.locate_via_via_infringements(infringer).map(Into::into))
             .chain(
                 self.locate_via_poly_infringements(infringer)

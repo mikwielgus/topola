@@ -45,11 +45,7 @@ impl Layout {
 
         if let Some(component_id) = component {
             self.components.modify(component_id.index(), |component| {
-                if let Some(index) = component
-                    .segs
-                    .iter()
-                    .position(|&curr| curr == seg_id)
-                {
+                if let Some(index) = component.segs.iter().position(|&curr| curr == seg_id) {
                     component.segs.remove(index);
                 }
             });
@@ -103,11 +99,7 @@ impl Layout {
 
         if let Some(component_id) = component {
             self.components.modify(component_id.index(), |component| {
-                if let Some(index) = component
-                    .polys
-                    .iter()
-                    .position(|&curr| curr == poly_id)
-                {
+                if let Some(index) = component.polys.iter().position(|&curr| curr == poly_id) {
                     component.polys.remove(index);
                 }
             });

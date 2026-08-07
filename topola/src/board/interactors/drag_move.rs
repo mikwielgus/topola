@@ -27,7 +27,12 @@ impl Interactor for DragMoveInteractor {
         board.move_components_by(self.selection.clone(), pointer - self.origin);
     }
 
-    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) -> ControlFlow<()> {
+    fn release(
+        &mut self,
+        board: &mut Board,
+        layer: LayerId,
+        pointer: Vector2<i64>,
+    ) -> ControlFlow<()> {
         self.hold(board, layer, pointer);
         ControlFlow::Break(())
     }

@@ -187,7 +187,12 @@ impl Interactor for DragSelectInteractor {
         self.selection = combined_selection;
     }
 
-    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) -> ControlFlow<()> {
+    fn release(
+        &mut self,
+        board: &mut Board,
+        layer: LayerId,
+        pointer: Vector2<i64>,
+    ) -> ControlFlow<()> {
         self.hold(board, layer, pointer);
         ControlFlow::Continue(())
     }

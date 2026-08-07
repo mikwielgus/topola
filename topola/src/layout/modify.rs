@@ -53,14 +53,11 @@ impl Layout {
         self.segs_rtree
             .remove(&GeomWithData::new(old_seg.bbox().rtree_rectangle(), id));
 
-        self.segs
-            .modify(id.index(), |seg| f(&mut seg.spec));
+        self.segs.modify(id.index(), |seg| f(&mut seg.spec));
 
         let new_seg = &self.segs[id.index()];
-        self.segs_rtree.insert(
-            GeomWithData::new(new_seg.bbox().rtree_rectangle(), id),
-            (),
-        );
+        self.segs_rtree
+            .insert(GeomWithData::new(new_seg.bbox().rtree_rectangle(), id), ());
     }
 
     pub(super) fn update_seg(&mut self, id: SegId) {
@@ -79,10 +76,8 @@ impl Layout {
         });
 
         let new_seg = &self.segs[id.index()];
-        self.segs_rtree.insert(
-            GeomWithData::new(new_seg.bbox().rtree_rectangle(), id),
-            (),
-        );
+        self.segs_rtree
+            .insert(GeomWithData::new(new_seg.bbox().rtree_rectangle(), id), ());
     }
 
     pub fn modify_via<F>(&mut self, id: ViaId, f: F)
@@ -131,9 +126,7 @@ impl Layout {
         self.polys.modify(id.index(), |poly| f(poly));
 
         let new_poly = &self.polys[id.index()];
-        self.polys_rtree.insert(
-            GeomWithData::new(new_poly.bbox().rtree_rectangle(), id),
-            (),
-        );
+        self.polys_rtree
+            .insert(GeomWithData::new(new_poly.bbox().rtree_rectangle(), id), ());
     }
 }

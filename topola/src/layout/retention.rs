@@ -3,7 +3,6 @@
 // SPDX-License-Identifier: MIT OR Apache-2.0
 
 use crate::{
-    Rect2,
     layout::{
         Layout,
         compounds::{ComponentId, PinId},
@@ -35,7 +34,9 @@ impl Layout {
         violator: PrimitiveId,
     ) -> impl Iterator<Item = Vector2<i64>> + '_ {
         let boundary = self.place_boundary();
-        std::array::IntoIter::new(self.primitive_bbox2(violator).corners())
+        self.primitive_bbox2(violator)
+            .corners()
+            .into_iter()
             .map(move |corner| Self::point_retention(corner, boundary))
     }
 

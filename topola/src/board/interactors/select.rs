@@ -58,7 +58,12 @@ impl Interactor for SelectInteractor {
         self.selection = drag_selection_interactor.selection().clone();
     }
 
-    fn release(&mut self, board: &mut Board, layer: LayerId, pointer: Vector2<i64>) -> ControlFlow<()> {
+    fn release(
+        &mut self,
+        board: &mut Board,
+        layer: LayerId,
+        pointer: Vector2<i64>,
+    ) -> ControlFlow<()> {
         if pointer == self.origin {
             let mut selection = self.original_selection.clone();
             let point = Vector3::new(pointer.x, pointer.y, layer.index() as i64);

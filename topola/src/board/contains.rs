@@ -30,11 +30,7 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn components_contain_seg(
-        &self,
-        selection: &ComponentSelection,
-        id: SegId,
-    ) -> bool {
+    pub fn components_contain_seg(&self, selection: &ComponentSelection, id: SegId) -> bool {
         let Some(selector) = self.seg_component_selector(id) else {
             return false;
         };
@@ -50,11 +46,7 @@ impl Board {
         selection.0.contains(&selector)
     }
 
-    pub fn components_contain_poly(
-        &self,
-        selection: &ComponentSelection,
-        id: PolyId,
-    ) -> bool {
+    pub fn components_contain_poly(&self, selection: &ComponentSelection, id: PolyId) -> bool {
         let Some(selector) = self.poly_component_selector(id) else {
             return false;
         };

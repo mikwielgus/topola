@@ -66,33 +66,21 @@ impl Layout {
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn seg_seg_rect_overlap(
-        &self,
-        infringer: SegId,
-        infringee: SegId,
-    ) -> Option<Rect2<i64>> {
+    pub fn seg_seg_rect_overlap(&self, infringer: SegId, infringee: SegId) -> Option<Rect2<i64>> {
         let infringer_bbox = self.seg(infringer).bbox().xy();
         let infringee_bbox = self.seg(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn seg_via_rect_overlap(
-        &self,
-        infringer: SegId,
-        infringee: ViaId,
-    ) -> Option<Rect2<i64>> {
+    pub fn seg_via_rect_overlap(&self, infringer: SegId, infringee: ViaId) -> Option<Rect2<i64>> {
         let infringer_bbox = self.seg(infringer).bbox().xy();
         let infringee_bbox = self.via(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn seg_poly_rect_overlap(
-        &self,
-        infringer: SegId,
-        infringee: PolyId,
-    ) -> Option<Rect2<i64>> {
+    pub fn seg_poly_rect_overlap(&self, infringer: SegId, infringee: PolyId) -> Option<Rect2<i64>> {
         let infringer_bbox = self.seg(infringer).bbox().xy();
         let infringee_bbox = self.poly(infringee).bbox().xy();
 
@@ -110,11 +98,7 @@ impl Layout {
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn via_seg_rect_overlap(
-        &self,
-        infringer: ViaId,
-        infringee: SegId,
-    ) -> Option<Rect2<i64>> {
+    pub fn via_seg_rect_overlap(&self, infringer: ViaId, infringee: SegId) -> Option<Rect2<i64>> {
         let infringer_bbox = self.via(infringer).bbox().xy();
         let infringee_bbox = self.seg(infringee).bbox().xy();
 
@@ -128,11 +112,7 @@ impl Layout {
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn via_poly_rect_overlap(
-        &self,
-        infringer: ViaId,
-        infringee: PolyId,
-    ) -> Option<Rect2<i64>> {
+    pub fn via_poly_rect_overlap(&self, infringer: ViaId, infringee: PolyId) -> Option<Rect2<i64>> {
         let infringer_bbox = self.via(infringer).bbox().xy();
         let infringee_bbox = self.poly(infringee).bbox().xy();
 
@@ -150,22 +130,14 @@ impl Layout {
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn poly_seg_rect_overlap(
-        &self,
-        infringer: PolyId,
-        infringee: SegId,
-    ) -> Option<Rect2<i64>> {
+    pub fn poly_seg_rect_overlap(&self, infringer: PolyId, infringee: SegId) -> Option<Rect2<i64>> {
         let infringer_bbox = self.poly(infringer).bbox().xy();
         let infringee_bbox = self.seg(infringee).bbox().xy();
 
         infringer_bbox.intersection(infringee_bbox)
     }
 
-    pub fn poly_via_rect_overlap(
-        &self,
-        infringer: PolyId,
-        infringee: ViaId,
-    ) -> Option<Rect2<i64>> {
+    pub fn poly_via_rect_overlap(&self, infringer: PolyId, infringee: ViaId) -> Option<Rect2<i64>> {
         let infringer_bbox = self.poly(infringer).bbox().xy();
         let infringee_bbox = self.via(infringee).bbox().xy();
 

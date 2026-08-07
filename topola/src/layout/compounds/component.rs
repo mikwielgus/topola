@@ -51,16 +51,8 @@ impl Component {
         self.joints
             .iter()
             .map(|&joint_id| PrimitiveId::Joint(joint_id))
-            .chain(
-                self.segs
-                    .iter()
-                    .map(|&seg_id| PrimitiveId::Seg(seg_id)),
-            )
+            .chain(self.segs.iter().map(|&seg_id| PrimitiveId::Seg(seg_id)))
             .chain(self.vias.iter().map(|&via_id| PrimitiveId::Via(via_id)))
-            .chain(
-                self.polys
-                    .iter()
-                    .map(|&poly_id| PrimitiveId::Poly(poly_id)),
-            )
+            .chain(self.polys.iter().map(|&poly_id| PrimitiveId::Poly(poly_id)))
     }
 }

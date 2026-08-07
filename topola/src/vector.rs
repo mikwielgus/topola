@@ -170,10 +170,7 @@ macro_rules! impl_vector2_closest_point_on_boundary {
                 )
             }
 
-            pub fn closest_point_on_poly_boundary(
-                self,
-                poly: &[Vector2<$type>],
-            ) -> Vector2<$type> {
+            pub fn closest_point_on_poly_boundary(self, poly: &[Vector2<$type>]) -> Vector2<$type> {
                 let mut closest_point = poly[0];
                 let mut best_distance_sq = <$type as Bounded>::max_value();
 
