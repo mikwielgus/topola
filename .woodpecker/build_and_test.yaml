@@ -13,17 +13,6 @@ matrix:
       FEATURES:
 
 steps:
-  build_cli:
-    image: rust
-    environment:
-      RUST_BACKTRACE: 1
-      CARGO_TERM_COLOR: always
-    commands:
-      - rustup default "$CHANNEL"
-      - cargo build -j4 --profile "$PROFILE" -p topola-cli --no-default-features --features "$FEATURES" --
-    when:
-      event: [pull_request, push, tag]
-
   # Testing is a step instead of a separate flow to reduce Codeberg's CI usage.
   test:
     image: rust
