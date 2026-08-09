@@ -380,7 +380,7 @@ impl Layout {
         infringee_tree: &'a RTree<GeomWithData<Rectangle<[i64; 3]>, U>>,
     ) -> impl Iterator<Item = Infringement<T, U>> + 'a {
         infringee_tree
-            .locate_in_envelope_intersecting(&self.primitive_bbox_envelope(infringer.into()))
+            .locate_in_envelope_intersecting(self.primitive_bbox_envelope(infringer.into()))
             .map(|infringee_geom| infringee_geom.data)
             .filter(move |&infringee| {
                 !Self::nets_match(

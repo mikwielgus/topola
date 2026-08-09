@@ -33,7 +33,7 @@ impl PolyId {
     }
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct PolySpec {
     pub vertices: Vec<Vector2<i64>>,
     pub layer: LayerId,
@@ -42,7 +42,7 @@ pub struct PolySpec {
     pub pin: Option<PinId>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Poly {
     pub spec: PolySpec,
     pub centroid: Vector2<i64>,

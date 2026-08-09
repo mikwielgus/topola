@@ -35,7 +35,7 @@ impl SegId {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct SegSpec {
     pub endjoints: [JointId; 2],
     pub half_width: u64,
@@ -43,7 +43,7 @@ pub struct SegSpec {
     pub pin: Option<PinId>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Seg {
     pub spec: SegSpec,
     pub endpoints: [Vector2<i64>; 2],

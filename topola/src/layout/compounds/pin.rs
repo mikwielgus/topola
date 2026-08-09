@@ -37,13 +37,13 @@ impl PinId {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct PinSpec {
     pub component: Option<ComponentId>,
     pub net: Option<NetId>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Pin {
     pub spec: PinSpec,
     pub joints: Vec<JointId>,

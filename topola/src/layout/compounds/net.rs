@@ -30,7 +30,7 @@ impl NetId {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Net {
     pub pins: Vec<PinId>,
 }

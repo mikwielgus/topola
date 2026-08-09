@@ -33,7 +33,7 @@ impl ComponentId {
     }
 }
 
-#[derive(Clone, Debug, Default)]
+#[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub struct Component {
     pub pins: Vec<PinId>,
     pub joints: Vec<JointId>,

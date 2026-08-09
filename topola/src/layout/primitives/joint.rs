@@ -34,7 +34,7 @@ impl JointId {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct JointSpec {
     pub position: Vector2<i64>,
     pub layer: LayerId,
@@ -44,7 +44,7 @@ pub struct JointSpec {
     pub pin: Option<PinId>,
 }
 
-#[derive(Clone, Debug)]
+#[derive(Clone, Debug, PartialEq, Eq)]
 pub struct Joint {
     pub spec: JointSpec,
     pub segs: Vec<SegId>,

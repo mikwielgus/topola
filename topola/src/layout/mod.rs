@@ -126,7 +126,7 @@ impl Layout {
         let envelope = Self::whole_layer_aabb(layer);
         self.joints_rtree
             .as_ref()
-            .locate_in_envelope_intersecting(&envelope)
+            .locate_in_envelope_intersecting(envelope)
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |&id| self.joint(id).spec.layer == layer)
     }
@@ -135,7 +135,7 @@ impl Layout {
         let envelope = Self::whole_layer_aabb(layer);
         self.segs_rtree
             .as_ref()
-            .locate_in_envelope_intersecting(&envelope)
+            .locate_in_envelope_intersecting(envelope)
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |&id| self.seg(id).layer == layer)
     }
@@ -144,7 +144,7 @@ impl Layout {
         let envelope = Self::whole_layer_aabb(layer);
         self.vias_rtree
             .as_ref()
-            .locate_in_envelope_intersecting(&envelope)
+            .locate_in_envelope_intersecting(envelope)
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |&id| {
                 let via = self.via(id);
@@ -156,7 +156,7 @@ impl Layout {
         let envelope = Self::whole_layer_aabb(layer);
         self.polys_rtree
             .as_ref()
-            .locate_in_envelope_intersecting(&envelope)
+            .locate_in_envelope_intersecting(envelope)
             .map(|geom_with_data| geom_with_data.data)
             .filter(move |&id| self.poly(id).spec.layer == layer)
     }

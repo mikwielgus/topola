@@ -35,7 +35,7 @@ impl ViaId {
     }
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct ViaSpec {
     pub endjoints: [JointId; 2],
     pub radius: u64,
@@ -43,7 +43,7 @@ pub struct ViaSpec {
     pub pin: Option<PinId>,
 }
 
-#[derive(Clone, Copy, Debug)]
+#[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub struct Via {
     pub spec: ViaSpec,
     pub position: Vector2<i64>,
