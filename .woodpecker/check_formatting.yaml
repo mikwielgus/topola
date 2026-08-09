@@ -10,7 +10,7 @@ steps:
       CARGO_TERM_COLOR: always
     commands:
       - cargo install committed
-      - committed develop..HEAD
+      - committed rewrite..HEAD
       - committed HEAD
       - rustup component add rustfmt
       - cargo fmt --all -- --check
