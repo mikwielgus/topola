@@ -175,7 +175,7 @@ Zenity is needed because it is used by the default `xdg-portal` backend of
 Rusty File Dialogs. As an alternative, you can try its other backend, `gtk3`, by
 building `topola-egui` with the following command:
 
-    cargo build -p topola-egui --release --no-default-features --features disable_contracts --features gtk3
+    cargo build -p topola-egui --release --no-default-features --features gtk3
 
 ### Automated tests
 
@@ -215,18 +215,3 @@ To use nightly Rust, run the following command:
 You can go back to stable with
 
     rustup override unset
-
-#### Enabling contracts
-
-To enable contracts, simply add a `--no-default-features` switch. This switches
-off a default feature called `disable_contracts` that was expanding every
-contract to a no-op during Rust's macro expansion. For instance, to build tests
-with contracts, simply run
-
-    cargo test --no-default-features
-
-Of course, you can enable contracts for any build target. For example, the
-following command will build the Topola's GUI application with debug profile and
-contracts enabled:
-
-    cargo build -p topola-egui --no-default-features

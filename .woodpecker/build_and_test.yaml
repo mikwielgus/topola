@@ -6,10 +6,8 @@ matrix:
   include:
     - CHANNEL: stable
       PROFILE: release
-      FEATURES: disable_contracts
     - CHANNEL: stable
       PROFILE: dev
-      FEATURES: disable_contracts
     - CHANNEL: nightly
       PROFILE: dev
       FEATURES:
